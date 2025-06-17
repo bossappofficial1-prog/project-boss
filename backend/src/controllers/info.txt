@@ -1,0 +1,3 @@
+isi fungsi handler untuk tiap route.  
+Contoh: AuthController.login(),  
+UserController.getProfile(), dsb.

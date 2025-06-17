@@ -1,0 +1,3 @@
+schema/validator untuk validasi input:  
+• auth.validator.ts (express-validator schema)  
+• user.validator.ts

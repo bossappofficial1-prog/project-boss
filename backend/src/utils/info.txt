@@ -1,0 +1,4 @@
+helper function kecil yang sering dipakai:  
+• formatDate(),  
+• generateRandomPassword(),  
+• sendEmail()

@@ -1,0 +1,3 @@
+tempat file konfigurasi aplikasi, biasanya:
+• db.ts/dbConfig.ts   (setting koneksi database)
+• env.ts              (baca variabel .env)
