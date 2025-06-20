@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { ResponseApiType } from "../types/api_types";
-import { ResponseUtil } from "@/utils/response.util";
+import { ResponseUtil } from "../utils/response.util";
 
 export class AppError extends Error {
     public errors?: any[];

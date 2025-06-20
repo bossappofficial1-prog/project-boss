@@ -1,4 +1,4 @@
-import { config } from "@/configs/config";
+import { config } from "../configs/config";
 import { sign } from "jsonwebtoken";
 
 export const generateToken = async (payload: Record<string, string | number | Date>) => {

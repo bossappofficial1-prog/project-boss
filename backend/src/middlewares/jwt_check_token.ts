@@ -8,7 +8,7 @@ export const jwtCheckToken = (req: Request, res: Response, next: NextFunction) =
 
     const JWT_SECRET = process.env.JWT_SECRET || "123456";
 
-    verify(token, JWT_SECRET, {
+    return verify(token, JWT_SECRET, {
         algorithms: ["HS256"]
     }, (err, decode) => {
         if (err) {
@@ -18,7 +18,7 @@ export const jwtCheckToken = (req: Request, res: Response, next: NextFunction) =
         }
         (req as any).user = decode
 
-        next()
+        return next()
     });
 
 }

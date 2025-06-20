@@ -2,9 +2,9 @@ import { config } from "./config";
 
 export const midtransConfig = {
     isProduction: config.NODE_ENV === "production",
-    serverKey: config.MIDTRANS_SERVER_KEY,
-    clientKey: config.MIDTRANS_CLIENT_KEY,
-    merchantId: config.MIDTRANS_MERCHANT_ID
+    serverKey: config.midtrans.MIDTRANS_SERVER_KEY,
+    clientKey: config.midtrans.MIDTRANS_CLIENT_KEY,
+    merchantId: config.midtrans.MIDTRANS_MERCHANT_ID
 } as const
 
 export const MIDTRANS_API = {

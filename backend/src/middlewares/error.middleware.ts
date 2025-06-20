@@ -1,6 +1,6 @@
-import logger from "@/utils/logger.util";
-import { ResponseUtil } from "@/utils/response.util";
 import { Request, Response, NextFunction } from "express"
+import logger from "../utils/logger.util";
+import { ResponseUtil } from "../utils/response.util";
 
 export interface CustomError extends Error {
     statusCode?: number,

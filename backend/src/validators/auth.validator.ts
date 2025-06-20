@@ -1,4 +1,4 @@
-import { checkIfEmailExists } from "@/services/user.service";
+import { checkIfEmailExists } from "../services/user.service";
 import { body } from "express-validator";
 
 export const registerValidator = [
@@ -11,4 +11,10 @@ export const registerValidator = [
         }),
     body('name').notEmpty().withMessage('Name is required'),
     body('password').notEmpty().withMessage('Password is required')
+]
+
+export const loginValidator = [
+    body('email').notEmpty().withMessage("Email is required").bail()
+        .isEmail().withMessage("Email not valid"),
+    body("password").notEmpty().withMessage("Password is required")
 ]

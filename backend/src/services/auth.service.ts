@@ -1,16 +1,16 @@
 import {
-    hashing,
-    verifyHash
-} from "@/utils/bcrypt";
-import {
     createUser,
     deleteUser,
     getUserByEmail,
     updateUserService
 } from "./user.service";
 import { sendVerificationEmail } from "./email.service";
-import { generateOtp } from "@/utils/otp.utils";
-import { AppError } from "@/errors/api_errors";
+import { OAuth2Client } from "google-auth-library";
+import { hashing, verifyHash } from "../utils/bcrypt";
+import { generateOtp } from "../utils/otp.utils";
+import { AppError } from "../errors/api_errors";
+import { config } from "../configs/config";
+import { generateToken } from "../utils/jwt";
 
 export async function registerService(data: {
     email: string,
@@ -105,4 +105,36 @@ export async function verifyOtpService(email: string, otp: string) {
     })
 
     return user
+}
+
+const client = new OAuth2Client(config.GOOGLE_CLIENT_ID)
+
+export async function googleLoginService(token: string): Promise<string | null> {
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: config.GOOGLE_CLIENT_ID
+        })
+
+        const payload = ticket.getPayload()
+        if (!payload || !payload.email || !payload.name) throw new AppError('Invalid token payload');
+
+        const { email, name } = payload
+
+        let user = await getUserByEmail(email)
+
+        if (!user) {
+            user = await createUser({ email, name, password: `${email}-${name}` })
+        }
+        const accessToken = generateToken(
+            {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            })
+        return accessToken
+    } catch (error) {
+        return null
+    }
 }
