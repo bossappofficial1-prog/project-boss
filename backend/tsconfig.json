@@ -6,7 +6,7 @@
     ],
     "module": "commonjs",
     "moduleResolution": "node",
-    "rootDir": "./src",
+    "rootDir": "./",
     "outDir": "./dist",
     // "baseUrl": "./src",
     "resolveJsonModule": true,
@@ -28,9 +28,6 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true
   },
-  "include": [
-    "src"
-  ],
   "exclude": [
     "node_modules",
     "dist"

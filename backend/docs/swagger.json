@@ -262,6 +262,227 @@
                     }
                 }
             }
+        },
+        "/businesses": {
+            "get": {
+                "tags": [
+                    "Business"
+                ],
+                "summary": "List bisnis untuk landing page",
+                "description": "Mengambil daftar bisnis UMKM.",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil ambil daftar bisnis",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "example": "ckv123abc"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Toko Kopi Abah"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "example": "Jual kopi dan alat seduh"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/businesses/{id}/products": {
+            "get": {
+                "tags": [
+                    "Business"
+                ],
+                "summary": "List produk/jasa dari bisnis",
+                "description": "Mengambil daftar produk/jasa dari bisnis berdasarkan ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "ID bisnis"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil ambil daftar produk/jasa",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "example": "prod1"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Kopi Arabica 250gr"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "example": "Biji kopi arabica pilihan"
+                                            },
+                                            "price": {
+                                                "type": "number",
+                                                "example": 75000
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "example": "GOODS"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bisnis tidak ditemukan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bisnis tidak ditemukan"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/businesses/{id}/detail": {
+            "get": {
+                "tags": [
+                    "Business"
+                ],
+                "summary": "Detail bisnis + outlet + produk/jasa",
+                "description": "Mengambil detail bisnis beserta outlet dan produk/jasa yang tersedia.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "ID bisnis"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detail bisnis berhasil diambil",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "example": "ckv123abc"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "example": "Toko Kopi Abah"
+                                        },
+                                        "description": {
+                                            "type": "string",
+                                            "example": "Jual kopi dan alat seduh"
+                                        },
+                                        "outlets": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "example": "outlet1"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Outlet Pusat"
+                                                    },
+                                                    "address": {
+                                                        "type": "string",
+                                                        "example": "Jl. Raya No.1"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "products": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "example": "prod1"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Kopi Arabica 250gr"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Biji kopi arabica pilihan"
+                                                    },
+                                                    "price": {
+                                                        "type": "number",
+                                                        "example": 75000
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "example": "GOODS"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Bisnis tidak ditemukan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bisnis tidak ditemukan"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

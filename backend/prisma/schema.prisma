@@ -220,6 +220,8 @@ model Transaction {
   status        TransactionStatus @default(PENDING)
   externalId    String?           @unique // ID dari payment gateway (Midtrans)
   fee           Float // Biaya admin yang dikenakan (misal: 2%)
+  adminFee      Float             @default(0)
+  feePaidBy     String? // CUSTOMER / OWNER
 
   // Relasi: Transaksi ini untuk membayar pesanan mana
   orderId String @unique
