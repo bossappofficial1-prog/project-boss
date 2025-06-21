@@ -5,10 +5,12 @@ import {
     loginService,
     registerService,
     resendOtpService,
+    updateProfileService,
     verifyOtpService
 } from "../services/auth.service";
 import { generateToken } from "../utils/jwt";
 import { ResponseUtil } from "../utils/response.util";
+import { getUserByEmail } from "../services/user.service";
 
 export async function registerController(req: Request, res: Response) {
     try {
@@ -66,6 +68,27 @@ export async function googleLoginController(req: Request, res: Response) {
         const accessToken = await googleLoginService(token)
 
         return ResponseUtil.success(res, { token: accessToken })
+    } catch (error) {
+        return handlerAnyError(error, res)
+    }
+}
+
+export async function getInfoUserLoginController(req: Request, res: Response) {
+    try {
+        let user = (req as any).user
+        user = await getUserByEmail(user.email)
+        return ResponseUtil.success(res, user, "Berhasil mendapatkan informasi user", 200)
+    } catch (error) {
+        return handlerAnyError(error, res)
+    }
+}
+
+export async function updateProfileController(req: Request, res: Response) {
+    try {
+        const user = req.user
+        const { name, password } = req.body
+        const updated = await updateProfileService(user?.id!, { name, password })
+        return ResponseUtil.success(res, updated, "Berhasil memperbarui profile")
     } catch (error) {
         return handlerAnyError(error, res)
     }

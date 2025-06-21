@@ -10,6 +10,7 @@ import logger from "./utils/logger.util"
 import compression from 'compression'
 import { notFound } from "./middlewares/error.middleware"
 import helmet from 'helmet'
+import setupSwagger from "./utils/swagger"
 
 dotenv.config()
 
@@ -78,6 +79,7 @@ app.use('/health', (req, res) => {
     })
 })
 
+setupSwagger(app)
 app.use("/api", testRouter)
 app.use('/api/v1', apiRouter)
 app.use(notFound)

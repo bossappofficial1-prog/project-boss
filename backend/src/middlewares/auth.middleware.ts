@@ -12,6 +12,19 @@ export interface AuthRequest extends Request {
     }
 }
 
+declare global {
+    namespace Express {
+        interface Request {
+            user?: {
+                id: string,
+                email: string,
+                role: string
+            };
+        }
+    }
+}
+
+
 export const authenticate = asyncHandler(
     async (req: AuthRequest, res: Response, next: NextFunction) => {
         let token: string | undefined

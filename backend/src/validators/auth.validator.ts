@@ -18,3 +18,10 @@ export const loginValidator = [
         .isEmail().withMessage("Email not valid"),
     body("password").notEmpty().withMessage("Password is required")
 ]
+
+export const updateProfileValidator = [
+    body('name').optional().bail()
+        .notEmpty().withMessage("Name is required"),
+    body("password").optional().bail()
+        .notEmpty().withMessage("Password is required")
+]

@@ -134,7 +134,23 @@ export async function googleLoginService(token: string): Promise<string | null> 
                 role: user.role
             })
         return accessToken
-    } catch (error) {
-        return null
+    } catch (error: any) {
+        console.log(error);
+        throw new AppError("Internal server error")
     }
+}
+
+export async function updateProfileService(id: string, data: { name: string, password: string }) {
+    const updateData: any = {}
+
+    if (data.name && data.name.trim() !== '') {
+        updateData.name = data.name;
+    }
+
+    if (data.password && data.password.trim() !== '') {
+        updateData.password = await hashing(data.password) as string;
+    }
+
+    const user = await updateUserService(id, updateData)
+    return user
 }

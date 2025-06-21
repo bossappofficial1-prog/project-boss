@@ -1,13 +1,16 @@
 import { Router } from "express";
 import {
+    getInfoUserLoginController,
     googleLoginController,
     loginController,
     registerController,
     resendOtpController,
+    updateProfileController,
     verifyOtpController
 } from "../controllers/auth.controller";
-import { loginValidator, registerValidator } from "../validators/auth.validator";
+import { loginValidator, registerValidator, updateProfileValidator } from "../validators/auth.validator";
 import { handleValidationErrors } from "../middlewares/handle_validation_errors";
+import { jwtCheckToken } from "../middlewares/jwt_check_token";
 
 const authRouter = Router()
 
@@ -16,5 +19,7 @@ authRouter.post('/login', loginValidator, handleValidationErrors, loginControlle
 authRouter.post('/login-google', googleLoginController)
 authRouter.post('/resend-otp', resendOtpController)
 authRouter.post('/verify-otp', verifyOtpController)
+authRouter.get('/me', jwtCheckToken, getInfoUserLoginController)
+authRouter.patch('/me', jwtCheckToken, updateProfileValidator, handleValidationErrors, updateProfileController)
 
 export default authRouter
