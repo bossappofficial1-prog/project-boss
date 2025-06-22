@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer'
-import { config } from "@/configs/config";
-import logger from '@/utils/logger.util';
-import { getOtpEmailTemplate } from '@/templates/otp-email.template';
+import { config } from "../configs/config";
+import logger from '../utils/logger.util';
+import { getOtpEmailTemplate } from '../templates/otp-email.template';
 
 interface MailOptions {
     to: string;

@@ -1,5 +1,5 @@
 import rateLimit from 'express-rate-limit';
-import { config } from '@/configs/config';
+import { config } from '../configs/config';
 
 export const generalLimiter = rateLimit({
     windowMs: config.rate_limit.WINDOW_MS, // 15 minutes

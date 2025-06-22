@@ -4,7 +4,7 @@ export const config = {
     PORT: parseInt(process.env.PORT || "2020", 10),
     FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
     JWT_SECRET: process.env.JWT_SECRET || "rahasia-bro",
-
+    GOOGLE_CLIENT_ID: "",
     rate_limit: {
         WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
         MAX: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // limit each IP to 100 requests per windowMs

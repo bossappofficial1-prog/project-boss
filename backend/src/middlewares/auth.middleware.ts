@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { asyncHandler } from "./error.middleware";
-import { ResponseUtil } from "@/utils/response.util";
+import { ResponseUtil } from "../utils/response.util";
 import { verify } from "jsonwebtoken";
-import { config } from "@/configs/config";
+import { config } from "../configs/config";
 
 export interface AuthRequest extends Request {
     user?: {
@@ -11,6 +11,19 @@ export interface AuthRequest extends Request {
         role: string
     }
 }
+
+declare global {
+    namespace Express {
+        interface Request {
+            user?: {
+                id: string,
+                email: string,
+                role: string
+            };
+        }
+    }
+}
+
 
 export const authenticate = asyncHandler(
     async (req: AuthRequest, res: Response, next: NextFunction) => {

@@ -1,8 +1,8 @@
 import axios from 'axios';
 import crypto from 'crypto';
-import { PaymentRequest, PaymentResponse, PaymentStatus } from '@/types/payment.types';
-import logger from '@/utils/logger.util';
-import { config } from '@/configs/config';
+import { PaymentRequest, PaymentResponse, PaymentStatus } from '../types/payment.types';
+import logger from '../utils/logger.util';
+import { config } from '../configs/config';
 
 export class PaymentService {
     private midtransServerKey: string;

@@ -1,4 +1,4 @@
-import { ApiResponse, PaginatedResponse } from "@/types/response.types";
+import { ApiResponse, PaginatedResponse } from "../types/response.types";
 import { Response } from "express";
 
 export class ResponseUtil {

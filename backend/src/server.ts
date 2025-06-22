@@ -21,6 +21,7 @@ function startServer(port: number) {
     const server = app.listen(port, () => {
         console.log(`• Server running on:`);
         console.log(`   Local:   http://localhost:${port}`);
+        console.log(`   Swagger docs di http://localhost:${port}/api/v1/docs`);
 
         const addrs = getNetworkAdresses();
         if (addrs.length) {
