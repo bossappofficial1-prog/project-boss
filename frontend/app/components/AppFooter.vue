@@ -7,12 +7,9 @@
           <div class="flex items-center space-x-2">
             <UIcon name="i-heroicons-shopping-bag" class="w-8 h-8 text-primary-600" />
             <span class="text-xl font-bold text-gray-900 dark:text-white">
-              TokoKu
+              BOSS
             </span>
           </div>
-          <p class="text-gray-600 dark:text-gray-400 text-sm">
-            Platform belanja online terpercaya dengan produk berkualitas dan harga terjangkau.
-          </p>
           <div class="flex space-x-4">
             <UButton 
               icon="i-heroicons-envelope" 

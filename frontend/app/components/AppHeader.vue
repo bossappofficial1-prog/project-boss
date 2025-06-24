@@ -1,11 +1,10 @@
 <template>
-  <header class="bg-primaryBlue-500 text-white p-4">
-    <div class="container mx-auto flex justify-between items-center">
-      <div class="text-2xl font-bold">BOSS</div>
-      <nav>
-        <UButton label="Antrian" color="primary" class="mr-2" />
-        <UButton label="Pemesanan" color="primary" />
-      </nav>
-    </div>
-  </header>
+  <UContainer class="py-4 flex bg-gray-100 dark:bg-gray-800 justify-between items-center">
+    <h1 class="text-xl font-bold">BOSS</h1>
+    <nav class="space-x-4">
+      <ULink to="/home">Home</ULink>
+      <ULink to="/login">Login</ULink>
+    </nav>
+    <ColorModeButton />
+  </UContainer>
 </template>
