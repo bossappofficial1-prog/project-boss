@@ -1,5 +1,5 @@
 // This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// learn more about it in the docs: https://pris.lyd/prisma-schema
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
@@ -27,11 +27,27 @@ enum ProductType {
   SERVICE // Layanan jasa
 }
 
-enum OrderStatus {
-  PENDING // Menunggu pembayaran
-  PAID // Sudah dibayar
-  COMPLETED // Pesanan selesai (misal: barang sudah diambil/jasa selesai)
-  CANCELLED // Dibatalkan
+enum OrderPaymentStatus {
+  PENDING // Menunggu pembayaran atau belum ada konfirmasi dari Midtrans
+  SUCCESS // Pembayaran berhasil (settlement/capture)
+  FAILURE // Pembayaran gagal (deny/expire/cancel)
+  REFUNDED // Pembayaran dikembalikan
+  CHALLENGE // Pembayaran dalam sengketa/investigasi
+  CANCELLED_BY_SYSTEM // Dibatalkan oleh sistem (misal: melewati batas waktu)
+  UNKNOWN // Status tidak dikenal
+}
+
+enum OrderQueueStatus {
+  CREATED // Pesanan baru dibuat, belum diproses lebih lanjut
+  AWAITING_PAYMENT // Pesanan menunggu konfirmasi pembayaran
+  IN_QUEUE // Pembayaran berhasil, pesanan jasa masuk antrian
+  READY_FOR_PICKUP // Pembayaran berhasil, barang fisik siap diambil
+  IN_PROGRESS // Jasa sedang dikerjakan atau barang sedang disiapkan
+  COMPLETED // Jasa/barang selesai diproses/diambil
+  CANCELLED // Pesanan dibatalkan (misal oleh customer)
+  REFUNDED // Pesanan direfund
+  FAILED_PROCESSING // Gagal diproses setelah pembayaran
+  UNKNOWN
 }
 
 enum TransactionStatus {
@@ -46,9 +62,11 @@ enum WithdrawalStatus {
   REJECTED
 }
 
-// =============================================
-// MODELS - Representasi tabel di database
-// =============================================
+// === Enum untuk Siapa yang Menanggung Biaya ===
+enum FeeBearer {
+  CUSTOMER
+  OWNER
+}
 
 // Model untuk pengguna, baik Owner maupun Customer
 model User {
@@ -97,6 +115,9 @@ model Business {
 
   // Relasi: Setiap bisnis memiliki satu dompet virtual
   wallet Wallet?
+
+  // Menentukan siapa yang menanggung biaya Midtrans untuk transaksi QRIS/booking
+  defaultTransactionFeeBearer FeeBearer @default(OWNER) // Defaultnya owner yang menanggung
 
   @@index([ownerId])
 }
@@ -168,10 +189,16 @@ model Stock {
 
 // Model untuk pesanan/booking yang dibuat oleh customer
 model Order {
-  id          String      @id @default(cuid())
+  id          String    @id @default(cuid())
   totalAmount Int
-  status      OrderStatus @default(PENDING)
   bookingDate DateTime? // Digunakan khusus untuk booking jasa
+
+  paymentStatus OrderPaymentStatus @default(PENDING) // lebih spesifik untuk pembayaran
+  queueStatus   OrderQueueStatus   @default(AWAITING_PAYMENT) // Status antrian/proses order
+
+  midtransTransactionToken   String? @unique // Token dari Midtrans Snap (untuk popup)
+  midtransRedirectUrl        String? // URL redirect dari Midtrans Snap (untuk redirect browser)
+  midtransTransactionDetails Json? // Menyimpan seluruh payload notifikasi dari Midtrans (opsional tapi disarankan)
 
   // Relasi: Pesanan dibuat oleh siapa (customer)
   customerId String
@@ -184,7 +211,7 @@ model Order {
   // Relasi: Satu pesanan punya banyak item
   items OrderItem[]
 
-  // Relasi: Satu pesanan dibayar dengan satu transaksi
+  // Relasi: Satu pesanan dibayar dengan satu transaksi (tetap)
   transaction Transaction?
 
   createdAt DateTime @default(now())
@@ -221,7 +248,7 @@ model Transaction {
   externalId    String?           @unique // ID dari payment gateway (Midtrans)
   fee           Float // Biaya admin yang dikenakan (misal: 2%)
   adminFee      Float             @default(0)
-  feePaidBy     String? // CUSTOMER / OWNER
+  feePaidBy     String? // CUSTOMER / OWNER (Ini akan diisi dari konfigurasi Business)
 
   // Relasi: Transaksi ini untuk membayar pesanan mana
   orderId String @unique

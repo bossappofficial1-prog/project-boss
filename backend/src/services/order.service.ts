@@ -72,7 +72,6 @@ export async function createOrderService(order: {
                 outletId: order.outletId,
                 totalAmount: Math.round(totalAmount),
                 bookingDate: order.bookingDate,
-                status: 'PENDING',
                 items: {
                     create: validatedItems.map(item => ({
                         productId: item.productId,

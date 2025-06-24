@@ -15,17 +15,6 @@ export const errorHandler = (
     let statusCode = err.statusCode || 500;
     let message = err.message || 'Internal server error'
 
-    logger.error('Error occurred', {
-        error: err.message,
-        stack: err.stack,
-        url: req.url,
-        method: req.method,
-        ip: req.ip,
-        userAgent: req.get('User-Agent')
-    })
-
-    console.log('ERROR: ', err.message);
-
     if (err.message.startsWith("File type")) {
         message = err.message;
         statusCode = 400;
