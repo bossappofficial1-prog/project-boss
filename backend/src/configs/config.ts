@@ -1,4 +1,5 @@
 export const config = {
+    BASE_URL: process.env.BASE_URL || "http://localhost:4444",
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://192.168.221.41:3000',
     NODE_ENV: process.env.NODE_ENV || "development",
     PORT: parseInt(process.env.PORT || "2020", 10),

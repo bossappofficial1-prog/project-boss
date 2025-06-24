@@ -5,12 +5,14 @@ import {
     loginService,
     registerService,
     resendOtpService,
+    updateAvatarService,
     updateProfileService,
     verifyOtpService
 } from "../services/auth.service";
 import { generateToken } from "../utils/jwt";
 import { ResponseUtil } from "../utils/response.util";
 import { getUserByEmail } from "../services/user.service";
+import { config } from "../configs/config";
 
 export async function registerController(req: Request, res: Response) {
     try {
@@ -89,6 +91,18 @@ export async function updateProfileController(req: Request, res: Response) {
         const { name, password } = req.body
         const updated = await updateProfileService(user?.id!, { name, password })
         return ResponseUtil.success(res, updated, "Berhasil memperbarui profile")
+    } catch (error) {
+        return handlerAnyError(error, res)
+    }
+}
+
+export async function updateAvatarController(req: Request, res: Response) {
+    try {
+        const file = req.file
+        const user = req.user
+        const updatedUser = await updateAvatarService(user?.id!, `${config.BASE_URL}/avatars/${file?.filename}`)
+
+        return ResponseUtil.success(res, updatedUser, "Berhasil upload avatar")
     } catch (error) {
         return handlerAnyError(error, res)
     }

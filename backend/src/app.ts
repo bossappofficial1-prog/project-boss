@@ -8,9 +8,10 @@ import { config } from "./configs/config"
 import { generalLimiter } from "./middlewares/rate_limit.middleware"
 import logger from "./utils/logger.util"
 import compression from 'compression'
-import { notFound } from "./middlewares/error.middleware"
+import { errorHandler, notFound } from "./middlewares/error.middleware"
 import helmet from 'helmet'
 import setupSwagger from "./utils/swagger"
+import path from "node:path"
 
 dotenv.config()
 
@@ -65,6 +66,8 @@ app.use((req, res, next) => {
     next()
 })
 
+
+app.use(express.static(path.join(__dirname, '../public')))
 app.get('/', (req, res) => {
     return res.status(200).json({ message: 'Selamat datang di BOSS API v1' });
 });
@@ -83,5 +86,6 @@ setupSwagger(app)
 app.use("/api", testRouter)
 app.use('/api/v1', apiRouter)
 app.use(notFound)
+app.use(errorHandler)
 
 export default app

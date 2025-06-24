@@ -24,6 +24,12 @@ export const errorHandler = (
         userAgent: req.get('User-Agent')
     })
 
+    console.log('ERROR: ', err.message);
+
+    if (err.message.startsWith("File type")) {
+        message = err.message;
+        statusCode = 400;
+    }
     // JWT errors
     if (err.name === 'JsonWebTokenError') {
         message = 'Invalid token';

@@ -2,6 +2,7 @@ import {
     createUser,
     deleteUser,
     getUserByEmail,
+    getUserById,
     updateUserService
 } from "./user.service";
 import { sendVerificationEmail } from "./email.service";
@@ -11,6 +12,10 @@ import { generateOtp } from "../utils/otp.utils";
 import { AppError } from "../errors/api_errors";
 import { config } from "../configs/config";
 import { generateToken } from "../utils/jwt";
+import fs from "node:fs";
+import { deleteFile } from "../configs/multer";
+import path from "node:path";
+import logger from "../utils/logger.util";
 
 export async function registerService(data: {
     email: string,
@@ -153,4 +158,18 @@ export async function updateProfileService(id: string, data: { name: string, pas
 
     const user = await updateUserService(id, updateData)
     return user
+}
+
+export async function updateAvatarService(userId: string, avatar: string) {
+    const user = await getUserById(userId)
+
+    if (user.avatar !== null) {
+        const filename = path.basename(new URL(user.avatar).pathname)
+        const deleteAvatar = await deleteFile("avatars", filename)
+        logger.info(`User ${userId} avatar updated: ${avatar}`)
+        if (!deleteAvatar) throw new AppError('Gagal hapus file', 400)
+    }
+    const updatedUser = await updateUserService(userId, { avatar })
+
+    return { ...updatedUser, password: "_" }
 }

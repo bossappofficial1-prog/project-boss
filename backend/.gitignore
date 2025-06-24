@@ -3,3 +3,5 @@ node_modules
 .env
 logs
 dist
+public/*
+!public/info.txt

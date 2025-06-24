@@ -5,8 +5,14 @@ import { ResponseUtil } from "../utils/response.util";
 
 export async function getAllBusinessesController(req: Request, res: Response) {
     try {
-        const businesses = await getAllBusiness()
-        return ResponseUtil.success(res, businesses, "berhasil mengambil data")
+        const { page, limit, search } = req.query
+        const pageNumber = Number(page) > 0 ? Number(page) : 1
+        const limitNumber = Number(limit) > 0 ? Number(limit) : 10
+        const searchTerm = typeof search === "string" ? search : ''
+
+        const businesses = await getAllBusiness(pageNumber, limitNumber, searchTerm)
+        return ResponseUtil.paginated(res, businesses, pageNumber, limitNumber, (pageNumber * limitNumber), "berhasil mengambil data")
+        // return ResponseUtil.success(res, businesses, "berhasil mengambil data")
     } catch (error) {
         return handlerAnyError(error, res)
     }
