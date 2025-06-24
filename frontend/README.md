@@ -1,5 +1,8 @@
 # Business One Stop System (BOSS) - Frontend
 
+## TODO
+[] Halaman dasar
+
 ## Struktur Direktori
 ```
 frontend/
