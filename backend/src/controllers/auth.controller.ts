@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { handlerAnyError } from "../errors/api_errors";
 import {
+    businessRegister,
     googleLoginService,
     loginService,
     registerService,
@@ -13,6 +14,7 @@ import { generateToken } from "../utils/jwt";
 import { ResponseUtil } from "../utils/response.util";
 import { getUserByEmail } from "../services/user.service";
 import { config } from "../configs/config";
+import { hashing } from "../utils/bcrypt";
 
 export async function registerController(req: Request, res: Response) {
     try {
@@ -103,6 +105,29 @@ export async function updateAvatarController(req: Request, res: Response) {
         const updatedUser = await updateAvatarService(user?.id!, `${config.BASE_URL}/avatars/${file?.filename}`)
 
         return ResponseUtil.success(res, updatedUser, "Berhasil upload avatar")
+    } catch (error) {
+        return handlerAnyError(error, res)
+    }
+}
+
+export async function businessRegisterController(req: Request, res: Response) {
+    try {
+        const file = req.body
+        console.log(file);
+
+        const { name, email, password, business, outlets } = req.body
+        console.log("outlets:", outlets, "business", business);
+
+        const newBusiness = await businessRegister({
+            avatar: `${config.BASE_URL}/avatars/${file?.filename}`,
+            business: business,
+            email,
+            name,
+            outlets,
+            password: (await hashing(password))!
+        })
+
+        return ResponseUtil.success(res, newBusiness, "Berhasil membuat bisnis baru", 201)
     } catch (error) {
         return handlerAnyError(error, res)
     }

@@ -29,9 +29,9 @@ export class PaymentService {
                 credit_card: {
                     secure: true
                 },
-                callbacks: {
-                    finish: paymentData.callback_url
-                }
+                // callbacks: {
+                //     notification: paymentData.callback_url
+                // }
             };
 
             const response = await axios.post(

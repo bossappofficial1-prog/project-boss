@@ -79,6 +79,7 @@ declare module 'midtrans-client' {
         finish?: string;
         error?: string;
         pending?: string;
+        notification?: string
     }
 
     interface Expiry {
