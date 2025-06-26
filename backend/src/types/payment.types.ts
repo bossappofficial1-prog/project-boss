@@ -10,7 +10,8 @@ export enum PaymentMethod {
     CREDIT_CARD = 'credit_card',
     BANK_TRANSFER = 'bank_transfer',
     E_WALLET = 'e_wallet',
-    VIRTUAL_ACCOUNT = 'virtual_account'
+    VIRTUAL_ACCOUNT = 'virtual_account',
+    QRIS = "qris"
 }
 
 export interface PaymentRequest {
@@ -26,9 +27,6 @@ export interface CustomerDetails {
     first_name: string;
     last_name: string;
     email: string;
-    phone: string;
-    billing_address?: Address;
-    shipping_address?: Address;
 }
 
 export interface ItemDetails {

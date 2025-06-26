@@ -28,13 +28,18 @@ enum ProductType {
 }
 
 enum OrderPaymentStatus {
-  PENDING // Menunggu pembayaran atau belum ada konfirmasi dari Midtrans
-  SUCCESS // Pembayaran berhasil (settlement/capture)
-  FAILURE // Pembayaran gagal (deny/expire/cancel)
-  REFUNDED // Pembayaran dikembalikan
-  CHALLENGE // Pembayaran dalam sengketa/investigasi
-  CANCELLED_BY_SYSTEM // Dibatalkan oleh sistem (misal: melewati batas waktu)
-  UNKNOWN // Status tidak dikenal
+  AUTHORIZE
+  CAPTURE
+  SETTLEMENT
+  DENY
+  PENDING
+  CANCEL
+  REFUND
+  PARTIAL_REFUND
+  CHARGEBACK
+  PARTIAL_CHARGEBACK
+  EXPIRE
+  FAILURE
 }
 
 enum OrderQueueStatus {
@@ -51,6 +56,7 @@ enum OrderQueueStatus {
 }
 
 enum TransactionStatus {
+  CREATED
   PENDING
   SUCCESS
   FAILED
@@ -70,7 +76,7 @@ enum FeeBearer {
 
 // Model untuk pengguna, baik Owner maupun Customer
 model User {
-  id                      String    @id @default(cuid())
+  id                      String    @id @default(uuid())
   email                   String    @unique
   name                    String
   avatar                  String?
@@ -93,7 +99,7 @@ model User {
 
 // Model untuk entitas bisnis utama milik seorang Owner
 model Business {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   name        String
   description String?
   createdAt   DateTime @default(now())
@@ -124,7 +130,7 @@ model Business {
 
 // Model untuk cabang/outlet dari sebuah bisnis
 model Outlet {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   name      String
   address   String?
   phone     String?
@@ -149,7 +155,7 @@ model Outlet {
 
 // Model untuk produk (barang) atau jasa yang ditawarkan
 model Product {
-  id          String      @id @default(cuid())
+  id          String      @id @default(uuid())
   name        String
   description String?
   price       Float // Harga Jual
@@ -170,7 +176,7 @@ model Product {
 
 // Tabel pivot untuk manajemen stok per produk per outlet
 model Stock {
-  id        String @id @default(cuid())
+  id        String @id @default(uuid())
   quantity  Int // Jumlah stok saat ini
   unit      String // Satuan (misal: Pcs, Kg, Box)
   costPrice Float // Harga Pokok Penjualan (HPP)
@@ -189,7 +195,7 @@ model Stock {
 
 // Model untuk pesanan/booking yang dibuat oleh customer
 model Order {
-  id          String    @id @default(cuid())
+  id          String    @id @default(uuid())
   totalAmount Int
   bookingDate DateTime? // Digunakan khusus untuk booking jasa
 
@@ -223,7 +229,7 @@ model Order {
 
 // Item-item yang ada di dalam sebuah pesanan
 model OrderItem {
-  id                 String @id @default(cuid())
+  id                 String @id @default(uuid())
   quantity           Int
   priceAtTimeOfOrder Float // Menyimpan harga saat itu untuk arsip
 
@@ -241,25 +247,25 @@ model OrderItem {
 
 // Model untuk mencatat setiap transaksi pembayaran (Midtrans, QRIS)
 model Transaction {
-  id            String            @id @default(cuid())
+  id            String            @id @default(uuid())
   amount        Float
-  paymentMethod String // misal: "midtrans_qris", "midtrans_gopay"
+  paymentMethod String? // misal: "midtrans_qris", "midtrans_gopay"
   status        TransactionStatus @default(PENDING)
   externalId    String?           @unique // ID dari payment gateway (Midtrans)
   fee           Float // Biaya admin yang dikenakan (misal: 2%)
   adminFee      Float             @default(0)
   feePaidBy     String? // CUSTOMER / OWNER (Ini akan diisi dari konfigurasi Business)
-
+  paidAt        DateTime?
   // Relasi: Transaksi ini untuk membayar pesanan mana
-  orderId String @unique
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId       String            @unique
+  order         Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 }
 
 // Model untuk dompet virtual milik bisnis
 model Wallet {
-  id      String @id @default(cuid())
+  id      String @id @default(uuid())
   balance Float  @default(0)
 
   // Relasi: Dompet ini milik bisnis mana (satu-ke-satu)
@@ -274,7 +280,7 @@ model Wallet {
 
 // Model untuk mencatat riwayat penarikan dana oleh owner
 model Withdrawal {
-  id              String           @id @default(cuid())
+  id              String           @id @default(uuid())
   amount          Float // Jumlah yang ditarik owner
   applicationFee  Float // Potongan 2% untuk aplikasi
   bankTransferFee Float // Potongan Rp 4.000 untuk bank
@@ -293,7 +299,7 @@ model Withdrawal {
 
 // Model untuk mencatat pengeluaran manual per outlet
 model Expense {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   description String
   amount      Float
   date        DateTime

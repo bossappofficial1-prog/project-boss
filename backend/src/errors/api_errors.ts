@@ -20,6 +20,7 @@ export const handlerAnyError = (error: any, res: Response<ResponseApiType>) => {
     if (error instanceof AppError) {
         return ResponseUtil.error(res, error.message, error.statusCode, error.errors)
     }
+    console.log(error);
 
     return ResponseUtil.error(res)
 }

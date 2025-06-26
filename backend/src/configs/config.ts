@@ -23,6 +23,7 @@ export const config = {
         MIDTRANS_SERVER_KEY: process.env.MIDTRANS_SERVER_KEY,
         MIDTRANS_CLIENT_KEY: process.env.MIDTRANS_CLIENT_KEY,
         MIDTRANS_MERCHANT_ID: process.env.MIDTRANS_MERCHANT_ID,
-        IS_PRODUCTION: process.env.NODE_ENV === "production"
+        IS_PRODUCTION: process.env.NODE_ENV === "production",
+        MIDTRANS_NOTIFICATION_CALLBACK_URL: process.env.MIDTRANS_NOTIFICATION_CALLBACK_URL || "http://localhost:3000/midtrans-notification"
     } as const
 } as const
