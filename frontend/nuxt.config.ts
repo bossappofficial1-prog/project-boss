@@ -2,21 +2,25 @@
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
-  compatibilityDate: '2025-05-15',
+  compatibilityDate: "2025-05-15",
   devtools: { enabled: true },
 
-  css: ['~/assets/css/main.css'],
-  
+  css: ["~/assets/css/main.css"],
+
   vite: {
-    plugins: [
-      tailwindcss(),
-    ],
+    plugins: [tailwindcss()],
   },
 
-  modules: ["@nuxt/icon", '@pinia/nuxt', '@nuxt/image'],
-  
+  modules: ["@nuxt/icon", "@nuxt/image", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt"],
+
   icon: {
-    mode: 'css',
-    cssLayer: 'base'
-  }
-})
+    mode: "css",
+    cssLayer: "base",
+  },
+
+  runtimeConfig: {
+    public: {
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL,
+    },
+  },
+});

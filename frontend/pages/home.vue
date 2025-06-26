@@ -1,33 +1,13 @@
 <script setup>
-const featuredBusinesses = ref([
-  {
-    id: 1,
-    name: 'Warung Kopi Sederhana',
-    description: 'Kopi berkualitas dengan harga terjangkau',
-    image: 'https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg?auto=compress&cs=tinysrgb&w=400',
-    category: 'F&B',
-    rating: 4.8,
-    location: 'Jakarta Selatan'
-  },
-  {
-    id: 2,
-    name: 'Toko Elektronik Maju',
-    description: 'Elektronik terlengkap dengan garansi resmi',
-    image: 'https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg?auto=compress&cs=tinysrgb&w=400',
-    category: 'Elektronik',
-    rating: 4.6,
-    location: 'Bandung'
-  },
-  {
-    id: 3,
-    name: 'Salon Cantik Indah',
-    description: 'Perawatan kecantikan profesional',
-    image: 'https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg?auto=compress&cs=tinysrgb&w=400',
-    category: 'Kecantikan',
-    rating: 4.9,
-    location: 'Surabaya'
+const config = useRuntimeConfig()
+
+const { data: outletsRes, error, pending } = await useFetch(`${config.public.apiBaseUrl}/outlets`, {
+  query: {
+    limit: 3
   }
-])
+})
+
+const outlets = computed(() => outletsRes.value?.data || [])
 
 const stats = ref([
   { label: 'UMKM Terdaftar', value: '1,200+', icon: 'mdi:store' },
@@ -50,9 +30,11 @@ const stats = ref([
           </p>
         </div>
 
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div v-if="pending" class="text-center text-primary-700">Sedang memuat data...</div>
+        <div v-else-if="error" class="text-center text-red-700">Terjadi kesalahan: {{ error.message }}</div>
+        <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <BaseCard
-            v-for="business in featuredBusinesses"
+            v-for="business in outlets"
             :key="business.id"
             hover
             clickable
@@ -69,7 +51,7 @@ const stats = ref([
             
             <div class="p-6">
               <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ business.name }}</h3>
-              <p class="text-gray-600 dark:text-gray-400 mb-4">{{ business.description }}</p>
+              <p class="text-gray-600 dark:text-gray-400 mb-4">{{ business.business }}</p>
               
               <div class="flex items-center justify-between">
                 <div class="flex items-center text-gray-500 dark:text-gray-400">
