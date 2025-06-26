@@ -19,7 +19,7 @@ const footerLinks = [
 </script>
 
 <template>
-  <footer class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+  <footer class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 md:px-6">
     <div class="max-w-7xl mx-auto px-4 py-12">
       <div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
