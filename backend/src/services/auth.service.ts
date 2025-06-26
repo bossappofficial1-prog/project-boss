@@ -16,6 +16,7 @@ import fs from "node:fs";
 import { deleteFile } from "../configs/multer";
 import path from "node:path";
 import logger from "../utils/logger.util";
+import { db } from "../configs/database";
 
 export async function registerService(data: {
     email: string,
@@ -172,4 +173,55 @@ export async function updateAvatarService(userId: string, avatar: string) {
     const updatedUser = await updateUserService(userId, { avatar })
 
     return { ...updatedUser, password: "_" }
+}
+
+export async function businessRegister(data: {
+    name: string,
+    email: string,
+    password: string,
+    avatar: string,
+    business: {
+        name: string,
+        description: string
+    },
+    outlets: [{
+        address: string,
+        name: string,
+        phone: string,
+    }]
+}) {
+    const newBusiness = await db.user.create({
+        data: {
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            avatar: data.avatar,
+            role: "OWNER",
+            businesses: {
+                create: {
+                    name: data.business.name,
+                    description: data.business.description,
+                    outlets: {
+                        createMany: {
+                            data: data.outlets
+                        }
+                    }
+                }
+            }
+        },
+        include: {
+            businesses: {
+                select: {
+                    name: true,
+                    description: true,
+                    outlets: { select: { name: true, phone: true, address: true } }
+                }
+            }
+        }
+    })
+
+    if (!newBusiness) throw new AppError("Gagal membuat business", 400);
+
+    const { businesses, ...restOfObject } = newBusiness
+    return { ...restOfObject, password: "_", business: businesses }
 }
