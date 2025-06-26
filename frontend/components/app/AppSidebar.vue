@@ -7,11 +7,13 @@ defineProps({
 
 const auth = useAuthStore()
 
-const outletOptions = [
-    { id: '1', name: 'Outlet Pusat' },
-    { id: '2', name: 'Outlet Cabang A' },
-    { id: '3', name: 'Outlet Cabang B' }
-]
+const outletOptions = computed(() => auth.outletOptions)
+const selectedOutletId = ref(auth.outletFokus?.id || '')
+
+watch(selectedOutletId, (newId) => {
+  const outlet = outletOptions.value.find(o => o.id === newId)
+  if (outlet) auth.setOutletFokus(outlet)
+})
 
 const menuItems = [
     { to: '/umkm', icon: 'mdi:view-dashboard', label: 'Dashboard' },
@@ -22,10 +24,6 @@ const menuItems = [
     { to: '/umkm/settings', icon: 'mdi:cog', label: 'Pengaturan' }
 ]
 
-const setOutlet = (outlet) => {
-    auth.setOutletFokus(outlet)
-}
-
 const handleLogout = () => {
     auth.clearSession()
     navigateTo('/home')
@@ -34,9 +32,12 @@ const handleLogout = () => {
 
 <template>
     <aside
-        class="fixed top-0 left-0 z-50 w-64 h-screen transition-transform bg-gradient-to-b from-primary-600 to-primary-800 text-white shadow-2xl"
-        :class="{ '-translate-x-full': !show, 'translate-x-0': show }">
-        
+        class="fixed top-0 left-0 z-50 w-64 h-screen transition-transform duration-300 bg-gradient-to-b from-primary-600 to-primary-800 text-white shadow-2xl md:translate-x-0"
+        :class="{ 
+            '-translate-x-full': !show, 
+            'translate-x-0': show 
+        }"
+    >
         <div class="flex flex-col h-full">
             <!-- Header -->
             <div class="p-6 border-b border-primary-500/30">
@@ -57,12 +58,11 @@ const handleLogout = () => {
                     Pilih Outlet
                 </label>
                 <BaseSelect
-                    v-model="auth.outletFokus"
+                    v-model="selectedOutletId"
                     :options="outletOptions"
                     placeholder="Pilih Outlet"
                     value-key="id"
                     label-key="name"
-                    @update:model-value="setOutlet"
                     class="bg-primary-700/50 border-primary-500"
                 />
             </div>

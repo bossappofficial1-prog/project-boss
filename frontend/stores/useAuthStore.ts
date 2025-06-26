@@ -13,7 +13,12 @@ export const useAuthStore = defineStore('auth', {
     outletFokus: null as null | {
       id: string
       name: string
-    }
+    },
+    outletOptions: [
+      { id: '1', name: 'Outlet Pusat' },
+      { id: '2', name: 'Outlet Cabang A' },
+      { id: '3', name: 'Outlet Cabang B' }
+    ]
   }),
 
   getters: {
@@ -45,5 +50,6 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.outletFokus = null
     }
-  }
+  },
+  persist: true 
 })
