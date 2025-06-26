@@ -9,7 +9,6 @@ export const useAuthStore = defineStore('auth', {
       name: string
       avatar: string | null
       role: 'CUSTOMER' | 'OWNER' | 'ADMIN'
-      isVerified: boolean
     },
     outletFokus: null as null | {
       id: string
@@ -35,7 +34,6 @@ export const useAuthStore = defineStore('auth', {
       name: string
       avatar: string | null
       role: 'CUSTOMER' | 'OWNER' | 'ADMIN'
-      isVerified: boolean
     }) {
       this.user = userData
     },
