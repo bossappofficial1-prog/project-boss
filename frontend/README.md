@@ -1,25 +1,75 @@
-# Business One Stop System (BOSS) - Frontend
+# Nuxt Minimal Starter
 
-## TODO
-[] Halaman dasar
+Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
-## Struktur Direktori
+## Setup
+
+Make sure to install dependencies:
+
+```bash
+# npm
+npm install
+
+# pnpm
+pnpm install
+
+# yarn
+yarn install
+
+# bun
+bun install
 ```
-frontend/
-├── app/
-│   ├── assets/            # File statis
-│   ├── components/        # Komponen modular
-│   ├── lauouts/           # Templaye halaman aplikasi
-│   ├── pages/             # Halaman aplikasi
-│   ├── app.vue            # Komponen root aplikasi Nuxt
-│   ├── app.config.ts
-├── public/
-├── server/
-├── nuxt.config.ts         # Konfigurasi utama Nuxt.js
-├── package.json
+
+## Development Server
+
+Start the development server on `http://localhost:3000`:
+
+```bash
+# npm
+npm run dev
+
+# pnpm
+pnpm dev
+
+# yarn
+yarn dev
+
+# bun
+bun run dev
 ```
 
-## Pengembangan
-- Gunakan komponen Nuxt UI seperti `<UButton>`, `<UCard>`, atau `<UForm>` untuk membangun antarmuka.
-- Kustomisasi gaya menggunakan kelas Tailwind CSS.
-- Untuk integrasi pembayaran, gunakan SDK resmi (misalnya Midtrans) di sisi frontend.
+## Production
+
+Build the application for production:
+
+```bash
+# npm
+npm run build
+
+# pnpm
+pnpm build
+
+# yarn
+yarn build
+
+# bun
+bun run build
+```
+
+Locally preview production build:
+
+```bash
+# npm
+npm run preview
+
+# pnpm
+pnpm preview
+
+# yarn
+yarn preview
+
+# bun
+bun run preview
+```
+
+Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
