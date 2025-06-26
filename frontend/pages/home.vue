@@ -1,7 +1,12 @@
 <script setup>
-const config = useRuntimeConfig()
+// const config = useRuntimeConfig()
 
-const { data: outletsRes, error, pending } = await useFetch(`${config.public.apiBaseUrl}/outlets`, {
+// const { data: outletsRes, error, pending } = await useLazyFetch(`${config.public.apiBaseUrl}/outlets`, {
+//   query: {
+//     limit: 3
+//   }
+// })
+const { data: outletsRes, error, pending } = await useLazyFetch(`/api/outlets`, {
   query: {
     limit: 3
   }
@@ -30,47 +35,56 @@ const stats = ref([
           </p>
         </div>
 
-        <div v-if="pending" class="text-center text-primary-700">Sedang memuat data...</div>
+        <div v-if="pending" class="flex justify-center items-center space-x-2 text-primary-700">
+          <Icon name="line-md:loading-alt-loop" class="h-8 w-8" />
+          <span>Sedang memuat data...</span>
+        </div>
         <div v-else-if="error" class="text-center text-red-700">Terjadi kesalahan: {{ error.message }}</div>
         <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <BaseCard
-            v-for="business in outlets"
-            :key="business.id"
+            v-for="outlet in outlets"
+            :key="outlet.id"
             hover
             clickable
             padding="none"
             class="overflow-hidden group"
           >
-            <div class="relative">
+            <!-- <div class="relative">
               <img
-                :src="business.image"
-                :alt="business.name"
+                :src="outlet.image"
+                :alt="outlet.name"
                 class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
               />
-            </div>
-            
+            </div> -->
+
             <div class="p-6">
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ business.name }}</h3>
-              <p class="text-gray-600 dark:text-gray-400 mb-4">{{ business.business }}</p>
-              
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ outlet.business.name }}</h3>
+              <p class="text-gray-600 dark:text-gray-400 mb-4">
+                {{ outlet.name }}
+              </p>
+
               <div class="flex items-center justify-between">
                 <div class="flex items-center text-gray-500 dark:text-gray-400">
                   <Icon name="mdi:map-marker" size="16" class="mr-1" />
-                  <span class="text-sm">{{ business.location }}</span>
+                  <span class="text-sm">{{ outlet.address }}</span>
                 </div>
-                <BaseButton size="sm" variant="outline">
-                  Lihat Detail
-                </BaseButton>
+                <NuxtLink to="/outlets/{{ outlet.id }}">
+                  <BaseButton size="sm" variant="outline">
+                    Lihat Detail
+                  </BaseButton>
+                </NuxtLink>
               </div>
             </div>
           </BaseCard>
         </div>
 
         <div class="text-center mt-12">
-          <BaseButton size="lg" variant="primary">
-            Lihat Semua UMKM
-            <Icon name="mdi:arrow-right" class="ml-2" />
-          </BaseButton>
+          <NuxtLink to="/outlets">
+            <BaseButton size="lg" variant="primary">
+              Lihat Semua UMKM
+              <Icon name="material-symbols:arrow-forward-ios-rounded" class="ml-2" />
+            </BaseButton>
+          </NuxtLink>
         </div>
       </div>
     </section>
