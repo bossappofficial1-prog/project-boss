@@ -2,7 +2,7 @@
   <div>
     <AppHeader />
 
-    <main class="min-h-screen py-8">
+    <main class="min-h-screen">
       <slot />
     </main>
 

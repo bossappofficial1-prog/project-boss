@@ -1,6 +1,5 @@
 <script setup>
 import { useAuthStore } from '@/stores/useAuthStore'
-import { ref } from 'vue'
 
 defineProps({
     show: Boolean
@@ -9,9 +8,18 @@ defineProps({
 const auth = useAuthStore()
 
 const outletOptions = [
-    { id: '1', name: 'Outlet A' },
-    { id: '2', name: 'Outlet B' },
-    { id: '3', name: 'Outlet C' }
+    { id: '1', name: 'Outlet Pusat' },
+    { id: '2', name: 'Outlet Cabang A' },
+    { id: '3', name: 'Outlet Cabang B' }
+]
+
+const menuItems = [
+    { to: '/umkm', icon: 'mdi:view-dashboard', label: 'Dashboard' },
+    { to: '/umkm/products', icon: 'mdi:package-variant', label: 'Produk & Layanan' },
+    { to: '/umkm/orders', icon: 'mdi:clipboard-list', label: 'Pesanan' },
+    { to: '/umkm/queue', icon: 'mdi:account-group', label: 'Antrian' },
+    { to: '/umkm/reports', icon: 'mdi:chart-line', label: 'Laporan' },
+    { to: '/umkm/settings', icon: 'mdi:cog', label: 'Pengaturan' }
 ]
 
 const setOutlet = (outlet) => {
@@ -26,58 +34,87 @@ const handleLogout = () => {
 
 <template>
     <aside
-        class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform bg-primary-700 dark:bg-neutral-900 text-white p-4 space-y-4 flex flex-col justify-between"
+        class="fixed top-0 left-0 z-50 w-64 h-screen transition-transform bg-gradient-to-b from-primary-600 to-primary-800 text-white shadow-2xl"
         :class="{ '-translate-x-full': !show, 'translate-x-0': show }">
-        <!-- Header -->
-        <div>
-            <h2 class="text-2xl font-bold mb-6">BOSS UMKM</h2>
-
-            <!-- Dropdown Outlet -->
-            <div class="mb-6">
-                <label class="text-xs uppercase tracking-wide text-gray-200 mb-1 block">Pilih Outlet</label>
-                <select v-model="auth.outletFokus" @change="setOutlet(auth.outletFokus)"
-                    class="w-full p-2 rounded bg-primary-600 text-white focus:outline-none focus:ring-2 focus:ring-primary-300">
-                    <option :value="null" disabled>Pilih Outlet</option>
-                    <option v-for="outlet in outletOptions" :key="outlet.id" :value="outlet">
-                        {{ outlet.name }}
-                    </option>
-                </select>
+        
+        <div class="flex flex-col h-full">
+            <!-- Header -->
+            <div class="p-6 border-b border-primary-500/30">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <Icon name="mdi:bag-personal" size="24" />
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">BOSS</h2>
+                        <p class="text-primary-200 text-sm">UMKM Dashboard</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Active Menu -->
-            <nav v-if="auth.outletFokus" class="flex flex-col space-y-1">
-                <NuxtLink to="/umkm" class="flex items-center gap-2 p-2 rounded hover:bg-primary-600 transition">
-                    <Icon name="mdi:view-dashboard" />
-                    Beranda
-                </NuxtLink>
+            <!-- Outlet Selector -->
+            <div class="p-4 border-b border-primary-500/30">
+                <label class="text-xs uppercase tracking-wide text-primary-200 mb-2 block font-medium">
+                    Pilih Outlet
+                </label>
+                <BaseSelect
+                    v-model="auth.outletFokus"
+                    :options="outletOptions"
+                    placeholder="Pilih Outlet"
+                    value-key="id"
+                    label-key="name"
+                    @update:model-value="setOutlet"
+                    class="bg-primary-700/50 border-primary-500"
+                />
+            </div>
 
-                <NuxtLink to="/umkm/layanan"
-                    class="flex items-center gap-2 p-2 rounded hover:bg-primary-600 transition">
-                    <Icon name="mdi:package-variant" />
-                    Layanan
-                </NuxtLink>
-
-                <NuxtLink to="/umkm/laporan"
-                    class="flex items-center gap-2 p-2 rounded hover:bg-primary-600 transition">
-                    <Icon name="mdi:file-document-outline" />
-                    Laporan
-                </NuxtLink>
-
-                <NuxtLink to="/umkm/kasir" class="flex items-center gap-2 p-2 rounded hover:bg-primary-600 transition">
-                    <Icon name="mdi:cart" />
-                    Kasir
-                </NuxtLink>
+            <!-- Navigation Menu -->
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+                <template v-if="auth.outletFokus">
+                    <NuxtLink
+                        v-for="item in menuItems"
+                        :key="item.to"
+                        :to="item.to"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-500/30 transition-all duration-200 group"
+                        active-class="bg-primary-500/50 shadow-lg"
+                    >
+                        <Icon :name="item.icon" size="20" class="group-hover:scale-110 transition-transform" />
+                        <span class="font-medium">{{ item.label }}</span>
+                    </NuxtLink>
+                </template>
+                
+                <div v-else class="text-center py-8">
+                    <Icon name="mdi:store-alert" size="48" class="text-primary-300 mx-auto mb-3" />
+                    <p class="text-primary-200 text-sm">Pilih outlet untuk melanjutkan</p>
+                </div>
             </nav>
-        </div>
 
-        <!-- Bottom Section -->
-        <div class="space-y-2">
-            <BaseColorMode />
-            <button @click="handleLogout"
-                class="flex items-center gap-2 p-2 rounded hover:bg-primary-600 w-full transition">
-                <Icon name="mdi:logout" />
-                Keluar
-            </button>
+            <!-- Bottom Section -->
+            <div class="p-4 border-t border-primary-500/30 space-y-3">
+                <!-- User Info -->
+                <div class="flex items-center space-x-3 p-3 bg-primary-700/30 rounded-lg">
+                    <div class="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
+                        <span class="text-sm font-bold">
+                            {{ auth.user?.name?.charAt(0).toUpperCase() }}
+                        </span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium truncate">{{ auth.user?.name }}</p>
+                        <p class="text-xs text-primary-200 truncate">{{ auth.user?.email }}</p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex space-x-2">
+                    <BaseColorMode />
+                    <button
+                        @click="handleLogout"
+                        class="flex-1 flex items-center justify-center gap-2 p-2 rounded-lg hover:bg-red-500/20 text-red-200 hover:text-red-100 transition-all duration-200"
+                    >
+                        <Icon name="mdi:logout" size="18" />
+                        <span class="text-sm font-medium">Keluar</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </aside>
 </template>

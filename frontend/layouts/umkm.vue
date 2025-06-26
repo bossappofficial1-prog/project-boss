@@ -4,6 +4,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 const sidebarOpen = ref(false)
 const isDesktop = ref(false)
 
+const sidebarRef = ref(null)
+
 onMounted(() => {
   const checkScreen = () => {
     isDesktop.value = window.innerWidth >= 768
