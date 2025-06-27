@@ -14,9 +14,9 @@ const handleLogout = () => {
 <template>
   <button
     @click="handleLogout"
-    class="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition"
+    class="flex items-center gap-2 px-3 py-2 rounded-lg text-red-600 hover:text-red-700 hover:underline text-sm font-medium transition"
   >
-    <Icon name="mdi:logout" size="18" />
+    <Icon name="lucide:log-out" size="18" />
     Keluar
   </button>
 </template>

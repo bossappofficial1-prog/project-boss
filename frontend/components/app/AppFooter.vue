@@ -1,17 +1,17 @@
 <script setup>
 const footerLinks = [
   {
-    icon: 'mdi:email-outline',
+    icon: 'lucide:mail',
     label: 'Email',
     link: 'mailto:halo@boss.id'
   },
   {
-    icon: 'mdi:phone-outline',
+    icon: 'lucide:phone',
     label: 'Telepon',
     link: 'tel:+6281234567890'
   },
   {
-    icon: 'mdi:map-marker-outline',
+    icon: 'lucide:map-pin',
     label: 'Alamat',
     link: 'https://goo.gl/maps/yourlocation'
   }

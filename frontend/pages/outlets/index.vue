@@ -39,18 +39,20 @@ function updateQuery() {
 <template>
   <div class="">
     <section class="py-6 bg-gray-100 dark:bg-gray-900">
-      <div class="max-w-7xl mx-auto px-4">
+      <div class="max-w-7xl mx-auto px-10">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
-          <h2 class="text-3xl font-bold text-gray-900 dark:text-white">UMKM</h2>
-          <div class="flex space-x-3">
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Semua Outlet</h2>
+          <div class="flex">
             <input
               v-model="search"
               @keydown.enter="updateQuery"
               type="text"
-              placeholder="Cari UMKM..."
-              class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none dark:bg-gray-800 dark:text-white"
+              placeholder="Cari outlet..."
+              class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-primary-500 focus:outline-none dark:bg-gray-800 dark:text-white"
             />
-            <BaseButton variant="primary" @click="updateQuery">Cari</BaseButton>
+            <BaseButton variant="primary" class="rounded-r-lg rounded-l-none pr-2" @click="updateQuery">
+              <Icon name="lucide:search" class="h-5 w-5" />
+            </BaseButton>
           </div>
         </div>
 
