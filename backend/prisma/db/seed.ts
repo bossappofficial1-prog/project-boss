@@ -6,7 +6,7 @@ async function main() {
     // Create Owner
     const owner = await db.user.create({
         data: {
-            email: 'owner@example.com',
+            email: 'toko2@example.com',
             name: 'Owner BOSS',
             password: await hashing("Password!23") as string,
             role: 'OWNER',
@@ -17,7 +17,7 @@ async function main() {
     // Create Customer
     await db.user.create({
         data: {
-            email: 'customer@example.com',
+            email: 'pelanggan@example.com',
             name: 'Customer BOSS',
             password: await hashing("Password!23") as string,
             role: 'CUSTOMER',
@@ -59,7 +59,9 @@ async function main() {
             description: 'Biji kopi arabica pilihan',
             price: 75000,
             type: 'GOODS',
-            businessId: business.id
+            businessId: business.id,
+            unit: "pcs",
+            quantity: 200
         }
     });
 
@@ -69,18 +71,8 @@ async function main() {
             description: 'Paket servis ringan',
             price: 150000,
             type: 'SERVICE',
-            businessId: business.id
-        }
-    });
-
-    // Create Stock for GOODS product
-    await db.stock.create({
-        data: {
-            quantity: 100,
-            unit: 'Pcs',
-            costPrice: 50000,
-            productId: kopi.id,
-            outletId: outlet.id
+            businessId: business.id,
+            costPrice: 12000,
         }
     });
 

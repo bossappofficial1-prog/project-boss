@@ -27,64 +27,91 @@ export async function createOrderService(order: {
     outletId: string,
     items: OrderItemInput[],
     bookingDate?: Date
-}
-) {
+}) {
     const newOrder = await db.$transaction(async (tx) => {
-        const customer = await getUserById(order.customerId)
+        const customer = await getUserById(order.customerId);
+        if (!customer) throw new AppError('Customer not found', 404); // Added check for customer
 
         const outlet = await tx.outlet.findUnique({
             where: { id: order.outletId },
             include: { business: true }
-        })
+        });
 
         if (!outlet) throw new AppError('Outlet not found', 404);
 
         const feeBearerPrefrence: FeeBearerType = outlet.business.defaultTransactionFeeBearer;
 
-        let totalAmount = 0
+        let totalAmount = 0;
         const validatedItems = [];
 
         for (const item of order.items) {
             const product = await tx.product.findUnique({
                 where: { id: item.productId },
-                include: { stockEntries: { where: { outletId: order.outletId } } }
-            })
+            });
 
-            if (!product) throw new AppError("Product not found", 404);
+            if (!product) throw new AppError(`Product with ID ${item.productId} not found`, 404); // More specific error
 
+            const itemTotal = product.price * item.quantity;
+            totalAmount += itemTotal; // ADD TO totalAmount REGARDLESS OF TYPE
+
+            validatedItems.push({
+                productId: item.productId,
+                quantity: item.quantity,
+                priceAtTimeOfOrder: product.price,
+                product: product // Keep product for later stock/item details
+            });
+
+            // Handle stock deduction ONLY for GOODS type
             if (product.type === "GOODS") {
-                const stock = product.stockEntries[0];
-                if (!stock || stock.quantity < item.quantity) {
-                    throw new AppError(`Stok tidak mencukupi untuk produk ${product.name}`, 400)
+                // Ensure product.quantity (stok) exists for GOODS
+                if (product.quantity === null || product.quantity === undefined) {
+                    throw new AppError(`Stok produk ${product.name} tidak terdefinisi.`, 400);
                 }
-
-                const itemTotal = product.price * item.quantity
-                totalAmount += itemTotal
-                validatedItems.push({
-                    productId: item.productId,
-                    quantity: item.quantity,
-                    priceAtTimeOfOrder: product.price,
-                    product: product
-                })
+                if (product.quantity < item.quantity) {
+                    throw new AppError(`Stok tidak mencukupi untuk produk ${product.name}. Stok tersedia: ${product.quantity}, Diminta: ${item.quantity}`, 400);
+                }
+                // Don't update stock here yet, do it after successful Midtrans payment or order creation.
+                // Your commented out stock update loop is correct for later.
             }
+            // For 'SERVICE' type, you might not have a 'quantity' or 'stock' check needed here.
+            // If service has a limited capacity, you'd check that here instead of 'product.quantity'.
         }
 
-        const platformFee = totalAmount * FEES.QRIS
-        let finalAmountMidtrans = totalAmount + platformFee
-        let bookingAdminFee = 0
+        // Ensure totalAmount is not zero before proceeding to Midtrans
+        if (totalAmount <= 0) {
+            throw new AppError('Total order amount must be greater than zero.', 400);
+        }
 
-        bookingAdminFee = totalAmount * FEES.TRANSACTION
 
-        // Di sini kita fokus pada biaya admin booking 2% aplikasi.
+        const platformFee = totalAmount * FEES.QRIS;
+        let finalAmountMidtrans = totalAmount; // Start with base total amount
+        let bookingAdminFee = 0;
+
+        // Calculate bookingAdminFee based on totalAmount
+        bookingAdminFee = totalAmount * FEES.TRANSACTION;
+
+        // If customer bears fees, add them to finalAmountMidtrans
         if (feeBearerPrefrence === "CUSTOMER") {
-            finalAmountMidtrans += bookingAdminFee
+            finalAmountMidtrans += bookingAdminFee;
+            finalAmountMidtrans += platformFee; // Add platform fee if customer bears it
+        } else {
+            // If OWNER bears fees, they are not added to finalAmountMidtrans sent to Midtrans
+            // but might be deducted from the owner's payout later.
+            // For Midtrans gross_amount, it's the customer's payable amount.
+            // So if owner pays platformFee, don't add to finalAmountMidtrans here.
+            // If owner pays bookingAdminFee, don't add to finalAmountMidtrans here.
         }
+
+        // Round finalAmountMidtrans to two decimal places for Midtrans if necessary,
+        // though integer amounts (rupiah) are typically sent without decimals.
+        // If your prices can have decimals, ensure rounding:
+        // finalAmountMidtrans = parseFloat(finalAmountMidtrans.toFixed(2));
 
         const createOrder = await tx.order.create({
             data: {
                 customerId: order.customerId,
                 outletId: order.outletId,
-                totalAmount: totalAmount,
+                totalAmount: totalAmount, // Store the base total amount without fees
                 bookingDate: order.bookingDate,
                 paymentStatus: 'PENDING',
                 queueStatus: 'AWAITING_PAYMENT',
@@ -104,51 +131,54 @@ export async function createOrderService(order: {
                 customer: { select: { name: true, avatar: true } },
                 outlet: { select: { name: true, address: true } },
             }
-        })
+        });
 
-        // // update stok untuk produk type GOODS
-        // for (const item of validatedItems) {
-        //     if (item.product.type === "GOODS") {
-        //         await tx.stock.update({
-        //             where: { productId_outletId: { productId: item.productId, outletId: order.outletId } },
-        //             data: { quantity: { decrement: item.quantity } }
-        //         })
-        //     }
-        // }
-
-        // buat pembayaran via midtrans
         const midtransItemDetails = validatedItems.map(item => ({
             id: item.productId,
             price: item.priceAtTimeOfOrder,
             quantity: item.quantity,
             name: item.product.name
-        }))
+        }));
 
-        // Tambahkan biaya admin sebagai item terpisah di Midtrans jika dibebankan ke customer
-        if (feeBearerPrefrence === "CUSTOMER" && bookingAdminFee > 0) {
-            midtransItemDetails.push({
-                id: `admin_fee`,
-                price: bookingAdminFee,
-                quantity: 1,
-                name: 'Biaya Admin'
-            })
-            midtransItemDetails.push({
-                id: 'midtrans_fee',
-                price: totalAmount * FEES.QRIS,
-                name: "Biaya Platform",
-                quantity: 1
-            })
+        // Conditionally add fees as separate items if customer bears them
+        if (feeBearerPrefrence === "CUSTOMER") {
+            if (bookingAdminFee > 0) {
+                midtransItemDetails.push({
+                    id: `admin_fee_booking`, // Unique ID
+                    price: bookingAdminFee,
+                    quantity: 1,
+                    name: 'Biaya Admin Booking'
+                });
+            }
+            if (platformFee > 0) { // Add platform fee as a separate item if customer bears it
+                midtransItemDetails.push({
+                    id: 'platform_fee', // Unique ID
+                    price: platformFee,
+                    name: "Biaya Platform",
+                    quantity: 1
+                });
+            }
         }
+        // IMPORTANT: Ensure the sum of item prices matches finalAmountMidtrans
 
         const midtransCustomerDetail = {
             first_name: customer.name.split(" ")[0],
             last_name: customer.name.split(" ").slice(1).join(" ") || "",
             email: customer.email
+        };
+
+        // Ensure finalAmountMidtrans is at least 0.01 (or 1 in IDR if it's integer based)
+        if (finalAmountMidtrans < 0.01) { // Or finalAmountMidtrans < 1 if only integer amounts are allowed
+            throw new AppError('Final transaction amount for Midtrans must be at least 0.01.', 400);
         }
 
         const midtransResponse = await initiateMidtransPayment(
-            createOrder.id, finalAmountMidtrans, midtransItemDetails, midtransCustomerDetail, config.midtrans.MIDTRANS_NOTIFICATION_CALLBACK_URL
-        )
+            createOrder.id,
+            finalAmountMidtrans, // This is the gross_amount Midtrans will receive
+            midtransItemDetails,
+            midtransCustomerDetail,
+            config.midtrans.MIDTRANS_NOTIFICATION_CALLBACK_URL
+        );
 
         await tx.order.update({
             where: { id: createOrder.id },
@@ -156,24 +186,71 @@ export async function createOrderService(order: {
                 midtransTransactionToken: midtransResponse.token,
                 midtransRedirectUrl: midtransResponse.redirectUrl
             }
-        })
+        });
 
+        // Create the transaction record
         await tx.transaction.create({
             data: {
                 orderId: createOrder.id,
-                amount: (finalAmountMidtrans),
+                amount: finalAmountMidtrans, // Store the amount sent to Midtrans
                 status: 'CREATED',
-                fee: 0,
-                adminFee: bookingAdminFee,
+                fee: platformFee, // This is the platform fee
+                adminFee: bookingAdminFee, // This is your booking admin fee
                 feePaidBy: feeBearerPrefrence
             }
-        })
+        });
 
-        return {
-            ...createOrder,
-            midtransPayment: midtransResponse
+        // Uncomment this section when you are ready to update stock
+        // for (const item of validatedItems) {
+        //     if (item.product.type === "GOODS") {
+        //         await tx.product.update({ // Update product directly if stock is on Product
+        //             where: { id: item.productId },
+        //             data: { quantity: { decrement: item.quantity } }
+        //         })
+        //     }
+        // }
+
+        return { ...midtransResponse };
+    });
+
+    return newOrder;
+}
+
+export async function getAllOrderService(page: number, limit: number, search?: string) {
+    const take = page * limit // banyak data yang diambil
+    const skip = (page - 1) * limit
+
+    const orders = await db.order.findMany({
+        include: {
+            transaction: {
+                select: {
+                    amount: true
+                }
+            }
+        },
+        take,
+        skip
+    });
+
+    // Urutkan pesanan di JavaScript
+    const sortedOrders = orders.sort((a, b) => {
+        // Bandingkan jumlah transaksi dari terbesar ke terkecil
+        // Jika kedua pesanan memiliki transaksi (atau keduanya tidak), urutkan berdasarkan amount
+        if (a.transaction && b.transaction) {
+            return b.transaction.amount - a.transaction.amount;
         }
-    })
 
-    return newOrder
+        // Jika hanya salah satu yang punya transaksi, yang punya transaksi diletakkan di depan
+        if (a.transaction && !b.transaction) {
+            return -1; // 'a' (punya transaksi) datang sebelum 'b' (tidak punya)
+        }
+        if (!a.transaction && b.transaction) {
+            return 1; // 'b' (punya transaksi) datang sebelum 'a' (tidak punya)
+        }
+
+        // Jika keduanya tidak punya transaksi, tidak ada perubahan urutan relatif
+        return 0;
+    });
+
+    return sortedOrders;
 }
