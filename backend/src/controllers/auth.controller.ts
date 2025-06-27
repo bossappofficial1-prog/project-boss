@@ -112,12 +112,9 @@ export async function updateAvatarController(req: Request, res: Response) {
 
 export async function businessRegisterController(req: Request, res: Response) {
     try {
-        const file = req.body
-        console.log(file);
+        const file = req.file
 
         const { name, email, password, business, outlets } = req.body
-        console.log("outlets:", outlets, "business", business);
-
         const newBusiness = await businessRegister({
             avatar: `${config.BASE_URL}/avatars/${file?.filename}`,
             business: business,

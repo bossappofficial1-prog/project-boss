@@ -2,10 +2,10 @@ export const config = {
     BASE_URL: process.env.BASE_URL || "http://localhost:4444",
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://192.168.221.41:3000',
     NODE_ENV: process.env.NODE_ENV || "development",
-    PORT: parseInt(process.env.PORT || "2020", 10),
+    PORT: parseInt(process.env.PORT || "4444", 10),
     FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
     JWT_SECRET: process.env.JWT_SECRET || "rahasia-bro",
-    GOOGLE_CLIENT_ID: "",
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     rate_limit: {
         WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
         MAX: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // limit each IP to 100 requests per windowMs

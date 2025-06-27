@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { ResponseApiType } from "../types/api_types";
 import { ResponseUtil } from "../utils/response.util";
+import logger from "../utils/logger.util";
 
 export class AppError extends Error {
     public errors?: any[];
@@ -20,7 +21,7 @@ export const handlerAnyError = (error: any, res: Response<ResponseApiType>) => {
     if (error instanceof AppError) {
         return ResponseUtil.error(res, error.message, error.statusCode, error.errors)
     }
-    console.log(error);
 
+    logger.error("error",)
     return ResponseUtil.error(res)
 }
