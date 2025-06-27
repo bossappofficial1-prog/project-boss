@@ -36,6 +36,11 @@ export const validateBusinessRegister = [
     body('email')
         .notEmpty().withMessage('Email tidak boleh kosong').bail()
         .isEmail().withMessage('Email tidak valid').bail()
+        .custom(async (email) => {
+            const check = await checkIfEmailExists(email)
+            if (check) throw new Error('Email already exists');
+            return true
+        })
         .normalizeEmail(),
 
     body('password')

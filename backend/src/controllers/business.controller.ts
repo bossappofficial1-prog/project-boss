@@ -12,7 +12,6 @@ export async function getAllBusinessesController(req: Request, res: Response) {
 
         const businesses = await getAllBusiness(pageNumber, limitNumber, searchTerm)
         return ResponseUtil.paginated(res, businesses, pageNumber, limitNumber, (pageNumber * limitNumber), "berhasil mengambil data")
-        // return ResponseUtil.success(res, businesses, "berhasil mengambil data")
     } catch (error) {
         return handlerAnyError(error, res)
     }

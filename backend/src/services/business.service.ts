@@ -73,18 +73,23 @@ export async function getBusinessDetailService(id: string) {
                 select: {
                     id: true,
                     name: true,
-                    address: true
+                    address: true,
+                    createdAt: true,
+                    // products: true
+                    products: {
+                        select: {
+                            id: true,
+                            name: true,
+                            description: true,
+                            price: true,
+                            type: true,
+                            quantity: true,
+                            costPrice: true,
+                            unit: true
+                        }
+                    }
                 }
             },
-            products: {
-                select: {
-                    id: true,
-                    name: true,
-                    description: true,
-                    price: true,
-                    type: true
-                }
-            }
         }
     });
 

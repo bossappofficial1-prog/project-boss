@@ -15,7 +15,7 @@ export async function getTransactionById(id: string) {
 }
 
 export async function updateTransactionService(
-    id: string,
+    orderId: string,
     data: {
         fee?: number,
         paymentMethod: string,
@@ -23,65 +23,96 @@ export async function updateTransactionService(
         status: typeof VALID_MIDTRANS_STATUSES[number],
     }) {
 
-    const status = () => {
-        let status;
-        if (data.status === "SETTLEMENT") {
-            status = "SUCCESS";
-        } else if (data.status === "PENDING") {
-            status = "PENDING"
-        } else {
-            status = "FAILED"
-        }
-
-        return status as TransactionStatus
+    const mapMidtransStatusToTransactionStatus = () => {
+        if (data.status === "SETTLEMENT") return "SUCCESS";
+        if (data.status === "PENDING") return "PENDING";
+        return "FAILED";
     }
-    await getOrderById(id)
 
-    const updatedTransaction = await db.transaction.update({
-        where: { orderId: id },
-        data: {
-            fee: data.fee || 0,
-            externalId: data.externalId,
-            status: status(),
-            paymentMethod: data.paymentMethod,
-            order: {
-                update: {
-                    paymentStatus: data.status,
-                }
-            }
-        },
-        include: {
-            order: {
-                select: {
-                    items: {
-                        select: {
-                            product: true,
-                            quantity: true
-                        }
-                    },
-                    outletId: true,
+    const result = await db.$transaction(async (tx) => {
+        const existingTransaction = await tx.transaction.findUnique({
+            where: { orderId },
+        })
+
+        if (!existingTransaction) throw new AppError(`Transaction for order ${orderId} not found`, 404)
+
+        // update transaction
+        const updatedTransaction = await tx.transaction.update({
+            where: { id: existingTransaction.id },
+            data: {
+                fee: data.fee || 0,
+                externalId: data.externalId,
+                status: mapMidtransStatusToTransactionStatus(),
+                paymentMethod: data.paymentMethod,
+                order: {
+                    update: {
+                        paymentStatus: data.status,
+                    }
                 }
             },
+            include: {
+                order: {
+                    select: {
+                        id: true,
+                        queueStatus: true,
+                        items: {
+                            select: {
+                                product: true,
+                                quantity: true
+                            }
+                        },
+                        outletId: true,
+                    }
+                },
+            }
+        })
+
+        if (data.status === "SETTLEMENT") {
+            let hasGoodsItems = false;
+            let hasServiceItems = false;
+
+            for (const item of updatedTransaction.order.items) {
+                if (item.product.type === "GOODS") {
+                    hasGoodsItems = true
+                    // update stock product
+                    await tx.product.update({
+                        where: { id: item.product.id },
+                        data: { quantity: { decrement: item.quantity } }
+                    })
+                } else if (item.product.type === "SERVICE") {
+                    hasServiceItems = true
+                }
+            }
+
+            let finalQueueStatus: typeof updatedTransaction.order.queueStatus;
+
+            if (hasGoodsItems && !hasServiceItems) {
+                finalQueueStatus = "READY_FOR_PICKUP"
+            } else if (hasGoodsItems && hasServiceItems) {
+                finalQueueStatus = "READY_FOR_PICKUP"
+            } else if (hasServiceItems && !hasGoodsItems) {
+                finalQueueStatus = "IN_QUEUE"
+            } else {
+                finalQueueStatus = "COMPLETED"
+            }
+
+            await tx.order.update({
+                where: { id: updatedTransaction.order.id },
+                data: { queueStatus: finalQueueStatus }
+            })
+        } else if (data.status === "EXPIRE" || data.status === "DENY") {
+            // todo: buat logika untuk update seperti sebelumnya dengan kondisi sesuai
+            await tx.order.update({
+                where: { id: updatedTransaction.order.id },
+                data: {
+                    paymentStatus: data.status,
+                    queueStatus: "FAILED_PROCESSING"
+                }
+            })
         }
+
+        return updatedTransaction
     })
 
-    if (data.status === "SETTLEMENT") {
-        for (const order of updatedTransaction.order.items) {
-            if (order.product.type === "GOODS") {
-                await db.stock.update({
-                    where: {
-                        productId_outletId: {
-                            productId: order.product.id,
-                            outletId: updatedTransaction.order.outletId
-                        }
-                    },
-                    data: {
-                        quantity: { decrement: order.quantity },
-                    }
-                })
-            }
-        }
-    }
-
-    return updatedTransaction
+    return result
 }

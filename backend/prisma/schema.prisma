@@ -117,13 +117,14 @@ model Business {
   outlets Outlet[]
 
   // Relasi: Satu bisnis bisa memiliki banyak jenis produk/jasa
-  products Product[]
+  // products Product[]
 
   // Relasi: Setiap bisnis memiliki satu dompet virtual
   wallet Wallet?
 
   // Menentukan siapa yang menanggung biaya Midtrans untuk transaksi QRIS/booking
   defaultTransactionFeeBearer FeeBearer @default(OWNER) // Defaultnya owner yang menanggung
+  Product                     Product[]
 
   @@index([ownerId])
 }
@@ -141,11 +142,9 @@ model Outlet {
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  // Relasi: Satu outlet memiliki banyak data stok
-  stocks Stock[]
-
+  products Product[]
   // Relasi: Banyak pesanan bisa dibuat di satu outlet
-  orders Order[]
+  orders   Order[]
 
   // Relasi: Banyak pengeluaran bisa dicatat per outlet
   expenses Expense[]
@@ -158,39 +157,21 @@ model Product {
   id          String      @id @default(uuid())
   name        String
   description String?
+  costPrice   Float       @default(0) // Harga Pokok Penjualan (HPP)
   price       Float // Harga Jual
   type        ProductType // Membedakan antara BARANG atau JASA
-
+  quantity    Int? // Jumlah stok saat ini
+  unit        String? // Satuan (misal: Pcs, Kg, Box)
   // Relasi: Setiap produk/jasa terhubung ke satu bisnis
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  // Relasi: Satu produk bisa ada di banyak data stok (di outlet berbeda)
-  stockEntries Stock[]
+  businessId  String
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   // Relasi: Satu produk bisa ada di banyak item pesanan
   orderItems OrderItem[]
+  Outlet     Outlet?     @relation(fields: [outletId], references: [id])
+  outletId   String?
 
   @@index([businessId])
-}
-
-// Tabel pivot untuk manajemen stok per produk per outlet
-model Stock {
-  id        String @id @default(uuid())
-  quantity  Int // Jumlah stok saat ini
-  unit      String // Satuan (misal: Pcs, Kg, Box)
-  costPrice Float // Harga Pokok Penjualan (HPP)
-
-  // Relasi: Stok ini untuk produk apa
-  productId String?
-  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  // Relasi: Stok ini berada di outlet mana
-  outletId String
-  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
-
-  // Memastikan satu produk hanya punya satu entri stok per outlet
-  @@unique([productId, outletId])
 }
 
 // Model untuk pesanan/booking yang dibuat oleh customer
