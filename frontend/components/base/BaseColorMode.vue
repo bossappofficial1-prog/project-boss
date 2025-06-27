@@ -34,6 +34,6 @@ const toggleTheme = () => {
     class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
     @click="toggleTheme"
   >
-    <Icon :name="isDark ? 'mdi:weather-night' : 'mdi:white-balance-sunny'" size="24" />
+    <Icon :name="isDark ? 'lucide:moon' : 'lucide:sun'" size="24" />
   </button>
 </template>

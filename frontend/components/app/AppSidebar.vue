@@ -23,11 +23,6 @@ const menuItems = [
     { to: '/umkm/reports', icon: 'mdi:chart-line', label: 'Laporan' },
     { to: '/umkm/settings', icon: 'mdi:cog', label: 'Pengaturan' }
 ]
-
-const handleLogout = () => {
-    auth.clearSession()
-    navigateTo('/home')
-}
 </script>
 
 <template>
@@ -106,13 +101,7 @@ const handleLogout = () => {
                 <!-- Actions -->
                 <div class="flex space-x-2">
                     <BaseColorMode />
-                    <button
-                        @click="handleLogout"
-                        class="flex-1 flex items-center justify-center gap-2 p-2 rounded-lg hover:bg-red-500/20 text-red-200 hover:text-red-100 transition-all duration-200"
-                    >
-                        <Icon name="mdi:logout" size="18" />
-                        <span class="text-sm font-medium">Keluar</span>
-                    </button>
+                    <BaseLogoutButton />
                 </div>
             </div>
         </div>

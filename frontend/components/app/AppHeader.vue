@@ -3,6 +3,12 @@ import { useAuthStore } from '@/stores/useAuthStore'
 
 const auth = useAuthStore()
 const showMobileMenu = ref(false)
+
+const showMenu = ref(false)
+
+function toggleMenu() {
+  showMenu.value = !showMenu.value
+}
 </script>
 
 <template>
@@ -11,23 +17,34 @@ const showMobileMenu = ref(false)
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
         <!-- Logo -->
-        <div class="flex items-center">
-          <NuxtLink to="/" class="flex items-center space-x-2">
-            
-            <NuxtImg src="/images/logo-blue-text.png" width="90" height="25" alt="Logo"/>
-
+        <div class="flex">
+          <div class="flex items-center">
+            <NuxtLink to="/" class="flex items-center space-x-2">
+              <NuxtImg src="/images/logo-blue-text.png" width="90" height="25" alt="Logo" />
+            </NuxtLink>
+          </div>
+          <NuxtLink to="/home" class="flex items-center space-x-2 px-3 py-2"
+            :class="$route.path === '/home' ? 'text-primary-500 border-b-2 border-primary-500' : 'text-gray-600'">
+            Home
           </NuxtLink>
+
+          <NuxtLink to="/outlets" class="flex items-center space-x-2 px-3 py-2"
+            :class="$route.path === '/outlets' ? 'text-primary-500 border-b-2 border-primary-500' : 'text-gray-600'">
+            Outlets
+          </NuxtLink>
+
         </div>
 
         <!-- Desktop Actions -->
         <div class="hidden md:flex items-center space-x-4">
           <template v-if="auth.isLoggedIn">
-            <div class="flex items-center space-x-3">
-              <div class="flex items-center space-x-2">
-                <img v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name"
-                  class="w-8 h-8 rounded-full object-cover" />
-                <div v-else class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
-                  <span class="text-white text-sm font-medium">
+            <div class="relative flex items-center h-16">
+              <!-- Trigger Profil -->
+              <div class="flex items-center space-x-3 cursor-pointer" @click="toggleMenu">
+                <NuxtImg v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name"
+                  class="w-10 h-10 rounded-full object-cover" />
+                <div v-else class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
+                  <span class="text-white font-medium">
                     {{ auth.user?.name?.charAt(0).toUpperCase() }}
                   </span>
                 </div>
@@ -35,8 +52,14 @@ const showMobileMenu = ref(false)
                   {{ auth.user?.name }}
                 </span>
               </div>
-              <BaseLogoutButton />
+
+              <!-- Dropdown Menu -->
+              <div v-if="showMenu"
+                class="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                <BaseLogoutButton />
+              </div>
             </div>
+
           </template>
 
           <template v-else>
@@ -59,8 +82,8 @@ const showMobileMenu = ref(false)
         <div class="md:hidden flex items-center space-x-2">
           <BaseColorMode />
           <button @click="showMobileMenu = !showMobileMenu"
-            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            <Icon :name="showMobileMenu ? 'mdi:close' : 'mdi:menu'" size="24" />
+            class="p-2 rounded-lg flex items-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <Icon :name="showMobileMenu ? 'lucide:circle-x' : 'lucide:menu'" size="24" />
           </button>
         </div>
       </div>
@@ -74,7 +97,7 @@ const showMobileMenu = ref(false)
         class="md:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div class="px-4 py-4 space-y-4">
           <div class="border-t border-gray-200 dark:border-gray-800 pt-4">
-            <template v-if="auth.isLoggedIn">
+            <div v-if="auth.isLoggedIn" class="flex item-center justify-between">
               <div class="flex items-center space-x-3 mb-4">
                 <img v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name"
                   class="w-10 h-10 rounded-full object-cover" />
@@ -88,7 +111,7 @@ const showMobileMenu = ref(false)
                 </span>
               </div>
               <BaseLogoutButton />
-            </template>
+            </div>
 
             <template v-else>
               <div class="flex flex-row justify-end items-center gap-3">

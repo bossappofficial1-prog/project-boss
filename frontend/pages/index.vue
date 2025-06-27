@@ -23,7 +23,7 @@
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <nuxt-link to="/home">
           <BaseButton size="lg" variant="secondary" class="text-lg px-8 py-4">
-            <Icon name="mdi:rocket-launch" class="mr-2" />
+            <Icon name="lucide:rocket" class="mr-2" />
             Mulai Sekarang
           </BaseButton>
         </nuxt-link>
