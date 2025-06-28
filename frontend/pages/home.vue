@@ -17,12 +17,6 @@ const { data: outletsRes, error, pending } = await useLazyFetch(`${config.public
 
 const outlets = computed(() => outletsRes.value?.data || [])
 
-const bjir = () => {
-  outlets.value.forEach(element => {
-    console.log("Bjir function called: ", element);
-  });
-}
-
 const stats = ref([
   { label: 'UMKM Terdaftar', value: '1,200+', icon: 'mdi:store' },
   { label: 'Transaksi Berhasil', value: '15,000+', icon: 'mdi:chart-line' },
@@ -32,9 +26,6 @@ const stats = ref([
 
 <template>
   <div class="min-h-screen">
-    <BaseButton @click="bjir" class="fixed top-4 right-4 z-50">
-      Cek Console
-    </BaseButton>
     <!-- Featured Businesses -->
     <section class="py-6 bg-white dark:bg-gray-900">
       <div class="max-w-7xl mx-auto px-4">

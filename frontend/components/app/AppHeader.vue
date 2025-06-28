@@ -17,10 +17,10 @@ function toggleMenu() {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
         <!-- Logo -->
-        <div class="flex">
+        <div class="flex gap-2">
           <div class="flex items-center">
-            <NuxtLink to="/" class="flex items-center space-x-2">
-              <NuxtImg src="/images/logo-blue-text.png" width="90" height="25" alt="Logo" />
+            <NuxtLink to="/" class="flex text-2xl items-center space-x-2">
+              <Icon name="boss:logo-blue" />
             </NuxtLink>
           </div>
           <NuxtLink to="/home" class="flex items-center space-x-2 px-3 py-2"
@@ -56,7 +56,7 @@ function toggleMenu() {
               <!-- Dropdown Menu -->
               <div v-if="showMenu"
                 class="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                <BaseLogoutButton />
+                <BaseLogout />
               </div>
             </div>
 
@@ -110,7 +110,7 @@ function toggleMenu() {
                   {{ auth.user?.name }}
                 </span>
               </div>
-              <BaseLogoutButton />
+              <BaseLogout />
             </div>
 
             <template v-else>
