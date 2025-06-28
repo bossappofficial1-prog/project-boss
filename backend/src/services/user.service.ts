@@ -37,7 +37,18 @@ export async function createUser(data: {
 
 export async function getUserById(id: string) {
     const user = await db.user.findFirst({
-        where: { id }
+        where: { id },
+        select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            avatar: true,
+            isVerified: true,
+            businesses: { select: { id: true, name: true } },
+            createdAt: true,
+            updatedAt: true
+        }
     })
 
     if (!user) throw new AppError('User not found', 404);

@@ -1,5 +1,24 @@
 import { db } from "../configs/database";
 import { AppError } from "../errors/api_errors";
+import { BusinessPayload } from "../types/business.types";
+
+export async function createBusinessService(userId: string, payload: BusinessPayload) {
+    const newBusiness = await db.business.create({
+        data: {
+            name: payload.name,
+            description: payload.description,
+            ownerId: userId,
+            wallet: {
+                create: { balance: 0 }
+            },
+            outlets: {
+                createMany: { data: payload.outlets }
+            }
+        }
+    })
+
+    return newBusiness
+}
 
 export async function getAllBusiness(page: number, limit: number, search?: string) {
     const take = page * limit // banyak data yang diambil

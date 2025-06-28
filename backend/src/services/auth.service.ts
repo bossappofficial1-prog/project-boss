@@ -17,6 +17,7 @@ import { deleteFile } from "../configs/multer";
 import path from "node:path";
 import logger from "../utils/logger.util";
 import { db } from "../configs/database";
+import { createBusinessService } from "./business.service";
 
 export async function registerService(data: {
     email: string,
@@ -190,38 +191,28 @@ export async function businessRegister(data: {
         phone: string,
     }]
 }) {
-    const newBusiness = await db.user.create({
-        data: {
-            name: data.name,
-            email: data.email,
-            password: data.password,
-            avatar: data.avatar,
-            role: "OWNER",
-            businesses: {
-                create: {
-                    name: data.business.name,
-                    description: data.business.description,
-                    outlets: {
-                        createMany: {
-                            data: data.outlets
-                        }
-                    }
-                }
+    const newBusiness = await db.$transaction(async () => {
+        const user = await db.user.create({
+            data: {
+                name: data.name,
+                email: data.email,
+                password: data.password,
+                avatar: data.avatar,
+                role: "OWNER",
             }
-        },
-        include: {
-            businesses: {
-                select: {
-                    name: true,
-                    description: true,
-                    outlets: { select: { name: true, phone: true, address: true } }
-                }
-            }
-        }
+        })
+
+        const business = await createBusinessService(user.id, {
+            description: data.business.description,
+            name: data.business.name,
+            outlets: data.outlets
+        })
+
+        return { ...user, business }
     })
 
     if (!newBusiness) throw new AppError("Gagal membuat business", 400);
 
-    const { businesses, ...restOfObject } = newBusiness
-    return { ...restOfObject, password: "_", business: businesses }
+    const { business, ...restOfObject } = newBusiness
+    return { ...restOfObject, password: "_", business: business }
 }

@@ -37,10 +37,12 @@ authRouter.post('/avatar',
     handleValidationErrors,
     updateAvatarController
 )
+
 authRouter.patch('/me',
     jwtCheckToken,
     updateProfileValidator,
     handleValidationErrors,
-    updateProfileController)
+    updateProfileController
+)
 
 export default authRouter
