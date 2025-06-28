@@ -39,8 +39,9 @@ export async function getProductOutletService(
             id: true,
             name: true,
             description: true,
-            price: true,
             quantity: true,
+            price: true,
+            image: true,
             type: true,
             unit: true,
         },
@@ -48,4 +49,19 @@ export async function getProductOutletService(
 
     const count = await db.product.count({ where: { outletId } })
     return { products, count };
+}
+
+export async function getProductByType(outletId: string, productType: ProductType) {
+    const outlet = await getOutletById(outletId)
+
+    const products = await db.product.findMany({
+        where: {
+            AND: [
+                { outletId: outlet.id },
+                { type: productType }
+            ]
+        }
+    })
+
+    return products
 }

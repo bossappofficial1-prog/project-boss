@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { handlerAnyError } from "../errors/api_errors";
 import { getAllBusiness, getBusinessDetailService, getBusinessProductService, getBusinessService } from "../services/business.service";
 import { ResponseUtil } from "../utils/response.util";
+import { getBusinessWalletService } from "../services/wallet.service";
 
 export async function getAllBusinessesController(req: Request, res: Response) {
     try {
@@ -20,10 +21,9 @@ export async function getAllBusinessesController(req: Request, res: Response) {
 export async function getBusinessProductController(req: Request, res: Response) {
     try {
         const { id } = req.params
-        const business = await getBusinessService(id)
         const products = await getBusinessProductService(id)
 
-        return ResponseUtil.success(res, { business, products })
+        return ResponseUtil.success(res, products)
     } catch (error) {
         return handlerAnyError(error, res)
     }
@@ -34,7 +34,18 @@ export async function getBusinessDetailController(req: Request, res: Response) {
         const { id } = req.params
         const business = await getBusinessDetailService(id)
 
-        return ResponseUtil.success(res, { business })
+        return ResponseUtil.success(res, business)
+    } catch (error) {
+        return handlerAnyError(error, res)
+    }
+}
+
+export async function getBusinessWalletController(req: Request, res: Response) {
+    try {
+        const user = req.user as any
+        const wallet = await getBusinessWalletService(user?.id!)
+
+        return ResponseUtil.success(res, wallet)
     } catch (error) {
         return handlerAnyError(error, res)
     }

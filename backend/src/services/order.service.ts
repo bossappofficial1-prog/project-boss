@@ -1,7 +1,9 @@
+import { ProductType } from "@prisma/client";
 import { config } from "../configs/config";
 import { db } from "../configs/database";
 import { FEES } from "../configs/midtrans";
 import { AppError } from "../errors/api_errors";
+import { getOutletById } from "./outlet.service";
 import { initiateMidtransPayment } from "./pay.service";
 import { getUserById } from "./user.service";
 
@@ -253,4 +255,43 @@ export async function getAllOrderService(page: number, limit: number, search?: s
     });
 
     return sortedOrders;
+}
+
+export async function getOrderOutlet(outletId: string, type: ProductType) {
+    const outlet = await getOutletById(outletId)
+
+    const orders = await db.order.findMany({
+        where: {
+            AND: [
+                { outletId },
+                { items: { some: { product: { type } } } }
+            ],
+        },
+
+        select: {
+            id: true,
+            totalAmount: true,
+            bookingDate: true,
+            paymentStatus: true,
+            transaction: {
+                select: {
+                    id: true,
+                    adminFee: true,
+                    feePaidBy: true,
+                    paidAt: true,
+                    amount: true
+                }
+            },
+            customer: {
+                select: {
+                    name: true,
+                    avatar: true
+                }
+            }
+        }
+    })
+
+    if (!orders) throw new AppError(`Tidak ditemukan order pada outlet ${outlet.name}`)
+
+    return orders
 }

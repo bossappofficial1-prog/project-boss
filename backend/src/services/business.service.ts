@@ -1,5 +1,24 @@
 import { db } from "../configs/database";
 import { AppError } from "../errors/api_errors";
+import { BusinessPayload } from "../types/business.types";
+
+export async function createBusinessService(userId: string, payload: BusinessPayload) {
+    const newBusiness = await db.business.create({
+        data: {
+            name: payload.name,
+            description: payload.description,
+            ownerId: userId,
+            wallet: {
+                create: { balance: 0 }
+            },
+            outlets: {
+                createMany: { data: payload.outlets }
+            }
+        }
+    })
+
+    return newBusiness
+}
 
 export async function getAllBusiness(page: number, limit: number, search?: string) {
     const take = page * limit // banyak data yang diambil
@@ -31,18 +50,31 @@ export async function getAllBusiness(page: number, limit: number, search?: strin
 }
 
 export async function getBusinessProductService(id: string) {
-    const products = await db.product.findMany({
+    const productRaw = await db.product.findMany({
         where: { businessId: id },
         select: {
             id: true,
             name: true,
             description: true,
             price: true,
-            type: true
+            type: true,
+            image: true,
+            unit: true,
+            Outlet: {
+                select: {
+                    id: true,
+                    name: true,
+                    address: true
+                }
+            }
         }
     })
 
-    if (!products || products.length === 0) throw new AppError("Bisnis belum ada produk atau jasa.", 404)
+    if (!productRaw || productRaw.length === 0) throw new AppError("Bisnis belum ada produk atau jasa.", 404)
+    const products = productRaw.map(item => {
+        const { Outlet, ...otherItems } = item
+        return { ...otherItems, outlet: Outlet }
+    })
 
     return products
 }

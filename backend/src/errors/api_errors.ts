@@ -22,6 +22,7 @@ export const handlerAnyError = (error: any, res: Response<ResponseApiType>) => {
         return ResponseUtil.error(res, error.message, error.statusCode, error.errors)
     }
 
+    console.log(error)
     logger.error("error",)
     return ResponseUtil.error(res)
 }

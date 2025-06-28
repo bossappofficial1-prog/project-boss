@@ -89,7 +89,7 @@ model User {
   updatedAt               DateTime  @updatedAt
 
   // Relasi: Satu user (owner) bisa memiliki banyak bisnis
-  businesses Business[]
+  businesses Business?
 
   // Relasi: Satu user (customer) bisa membuat banyak pesanan
   orders Order[]
@@ -110,7 +110,7 @@ model Business {
   bankAccount   String?
   accountHolder String?
 
-  ownerId String
+  ownerId String @unique
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   // Relasi: Satu bisnis bisa memiliki banyak outlet
@@ -136,6 +136,7 @@ model Outlet {
   address   String?
   phone     String?
   createdAt DateTime @default(now())
+  image     String?  @default("https://press-parts-outlet.com/cdn/shop/files/non-photoproductimage_9c33376d-caaf-4116-b20a-3162aedf74f4_512x512.png?v=1687762014")
   updatedAt DateTime @updatedAt
 
   // Relasi: Setiap outlet milik satu bisnis
@@ -165,11 +166,11 @@ model Product {
   // Relasi: Setiap produk/jasa terhubung ke satu bisnis
   businessId  String
   business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
+  image       String?     @default("https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png")
   // Relasi: Satu produk bisa ada di banyak item pesanan
-  orderItems OrderItem[]
-  Outlet     Outlet?     @relation(fields: [outletId], references: [id])
-  outletId   String?
+  orderItems  OrderItem[]
+  Outlet      Outlet?     @relation(fields: [outletId], references: [id])
+  outletId    String?
 
   @@index([businessId])
 }
