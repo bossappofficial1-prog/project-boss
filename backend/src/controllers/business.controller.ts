@@ -34,7 +34,7 @@ export async function getBusinessDetailController(req: Request, res: Response) {
         const { id } = req.params
         const business = await getBusinessDetailService(id)
 
-        return ResponseUtil.success(res, { business })
+        return ResponseUtil.success(res, business)
     } catch (error) {
         return handlerAnyError(error, res)
     }

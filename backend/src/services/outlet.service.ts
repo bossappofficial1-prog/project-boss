@@ -13,6 +13,16 @@ export async function getAllOutletService(page: number, limit: number, search?: 
                 { address: { contains: search, mode: "insensitive" } }
             ]
         } : {},
+        select: {
+            id: true,
+            name: true,
+            address: true,
+            phone: true,
+            image: true,
+            business: { select: { name: true } },
+            createdAt: true,
+            updatedAt: true
+        },
         orderBy: {
             orders: { _count: "desc" }
         },
@@ -20,7 +30,12 @@ export async function getAllOutletService(page: number, limit: number, search?: 
         skip
     })
 
-    return { outlets, count }
+    const outletMap = outlets.map((outlet) => {
+        const { business, ...others } = outlet
+        return { ...others, business_name: outlet.business.name }
+    })
+
+    return { outlets: outletMap, count }
 }
 
 export async function getOutletById(id: string) {
@@ -31,6 +46,7 @@ export async function getOutletById(id: string) {
             name: true,
             address: true,
             phone: true,
+            image: true,
             business: {
                 select: {
                     id: true,
