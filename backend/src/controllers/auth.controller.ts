@@ -12,7 +12,7 @@ import {
 } from "../services/auth.service";
 import { generateToken } from "../utils/jwt";
 import { ResponseUtil } from "../utils/response.util";
-import { getUserByEmail } from "../services/user.service";
+import { getUserByEmail, getUserById } from "../services/user.service";
 import { config } from "../configs/config";
 import { hashing } from "../utils/bcrypt";
 
@@ -80,7 +80,7 @@ export async function googleLoginController(req: Request, res: Response) {
 export async function getInfoUserLoginController(req: Request, res: Response) {
     try {
         let user = (req as any).user
-        user = await getUserByEmail(user.email)
+        user = await getUserById(user.id)
         return ResponseUtil.success(res, user, "Berhasil mendapatkan informasi user", 200)
     } catch (error) {
         return handlerAnyError(error, res)

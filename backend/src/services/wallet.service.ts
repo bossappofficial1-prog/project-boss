@@ -4,9 +4,9 @@ import { getUserById } from "./user.service";
 
 export async function getBusinessWalletService(userId: string) {
     const user = await getUserById(userId)
-    const businessId = user.businesses?.id
+    const businessId = user.business?.id
 
-    if (!user || !user.businesses) {
+    if (!user || !user.business) {
         throw new AppError("User tidak memiliki bisnis", 404)
     }
 

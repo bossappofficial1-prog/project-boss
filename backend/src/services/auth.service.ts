@@ -12,7 +12,6 @@ import { generateOtp } from "../utils/otp.utils";
 import { AppError } from "../errors/api_errors";
 import { config } from "../configs/config";
 import { generateToken } from "../utils/jwt";
-import fs from "node:fs";
 import { deleteFile } from "../configs/multer";
 import path from "node:path";
 import logger from "../utils/logger.util";

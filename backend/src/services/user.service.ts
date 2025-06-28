@@ -42,18 +42,30 @@ export async function getUserById(id: string) {
             id: true,
             email: true,
             name: true,
-            role: true,
             avatar: true,
             isVerified: true,
-            businesses: { select: { id: true, name: true } },
+            role: true,
+            businesses: {
+                select: {
+                    id: true, name: true,
+                    outlets: {
+                        select: {
+                            id: true,
+                            name: true,
+                            address: true
+                        }
+                    }
+                },
+            },
             createdAt: true,
             updatedAt: true
         }
     })
+    if (!user) throw new AppError("user not found", 404)
+    const { businesses, ...other } = user
+    const { outlets, ...business } = businesses!
 
-    if (!user) throw new AppError('User not found', 404);
-
-    return user
+    return { ...other, business, outlets }
 }
 
 export async function deleteUser(id: string) {
