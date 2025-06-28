@@ -13,12 +13,21 @@ export default defineNuxtConfig({
 
   modules: ["@nuxt/icon", "@nuxt/image", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt"],
 
+  ssr: false,
+
   icon: {
+    provider: 'server',
+    mode: "css",
+    cssLayer: "base",
     serverBundle: {
       collections: ['lucide']
     },
-    mode: "css",
-    cssLayer: "base",
+    customCollections: [
+      {
+        prefix: 'boss',
+        dir: './assets/icons'
+      },
+    ],
   },
 
   runtimeConfig: {
