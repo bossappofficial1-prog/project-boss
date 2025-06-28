@@ -9,6 +9,7 @@ export const config = {
     FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
     JWT_SECRET: process.env.JWT_SECRET || "rahasia-bro",
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     rate_limit: {
         WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
         MAX: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // limit each IP to 100 requests per windowMs

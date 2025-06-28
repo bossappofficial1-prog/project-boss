@@ -43,7 +43,7 @@ export async function getBusinessDetailController(req: Request, res: Response) {
 
 export async function getBusinessWalletController(req: Request, res: Response) {
     try {
-        const user = req.user
+        const user = req.user as any
         const wallet = await getBusinessWalletService(user?.id!)
 
         return ResponseUtil.success(res, wallet)

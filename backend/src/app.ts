@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import "./configs/pasport"
 import morgan from "morgan";
 import testRouter from "./routes/test.routes";
 import apiRouter from "./routes";
@@ -12,12 +12,13 @@ import { errorHandler, notFound } from "./middlewares/error.middleware";
 import helmet from 'helmet';
 import setupSwagger from "./utils/swagger";
 import path from "node:path";
+import passport from "passport";
 
 const app = express();
 
 // Mengaktifkan trusted proxy untuk deteksi IP yang benar di belakang proxy seperti Nginx atau Ngrok
 app.set('trust proxy', true);
-
+app.use(passport.initialize())
 // --- Middleware Keamanan ---
 // Helmet untuk mengatur berbagai header HTTP guna melindungi aplikasi dari kerentanan web yang umum.
 app.use(helmet({
@@ -51,6 +52,7 @@ app.use(cors({
 // --- Middleware Standar ---
 //Rate limiting untuk melindungi dari serangan brute-force dan penyalahgunaan
 app.use(generalLimiter);
+
 
 // Middleware pengurai body - Mengurai payload JSON dan URL-encoded
 app.use(express.json({ limit: '10mb' })); // Untuk body JSON
