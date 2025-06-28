@@ -21,10 +21,9 @@ export async function getAllBusinessesController(req: Request, res: Response) {
 export async function getBusinessProductController(req: Request, res: Response) {
     try {
         const { id } = req.params
-        const business = await getBusinessService(id)
         const products = await getBusinessProductService(id)
 
-        return ResponseUtil.success(res, { business, products })
+        return ResponseUtil.success(res, products)
     } catch (error) {
         return handlerAnyError(error, res)
     }
