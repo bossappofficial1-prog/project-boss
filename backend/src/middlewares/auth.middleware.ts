@@ -4,22 +4,34 @@ import { ResponseUtil } from "../utils/response.util";
 import { verify } from "jsonwebtoken";
 import { config } from "../configs/config";
 
+export interface User {
+    id: string;
+    email: string;
+    role: string;
+}
+
 export interface AuthRequest extends Request {
-    user?: {
-        id: string,
-        email: string,
-        role: string
-    }
+    user?: User;
 }
 
 declare global {
     namespace Express {
+        interface User {
+            id: string;
+            email: string;
+            role: string;
+        }
+        interface Outlet {
+            id: string;
+            name: string;
+            address: string | null;
+            phone: string | null;
+            createdAt: Date;
+            image: string | null;
+        }
         interface Request {
-            user?: {
-                id: string,
-                email: string,
-                role: string
-            };
+            user?: User;
+            outlet?: Outlet;
         }
     }
 }

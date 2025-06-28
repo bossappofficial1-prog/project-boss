@@ -61,3 +61,108 @@ export async function getOutletById(id: string) {
 
     return outlet
 }
+
+export async function getOutletDashboardService(outletId: string) {
+    const outlet = await getOutletById(outletId)
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+
+    // ambil banyak order hari ini
+    const totalOrderToday = await db.order.count({
+        where: {
+            outletId: outlet.id,
+            createdAt: {
+                gte: today
+            }
+        }
+    })
+
+    // ambil banya pendapatan hari ini
+    const incomeAgg = await db.order.aggregate({
+        where: {
+            outletId: outlet.id,
+            paymentStatus: "SETTLEMENT",
+            createdAt: { gte: today }
+        },
+        _sum: { totalAmount: true }
+    })
+
+    const totalIncomeToday = incomeAgg._sum.totalAmount ?? 0
+
+    // ambil banyak produk untuk outlet ini
+    const totalProducts = await db.product.count({
+        where: { outletId: outlet.id }
+    })
+
+    // ambil produk yang stoknya <= 0
+    const outOfStockProducts = await db.product.findMany({
+        where: {
+            outletId: outlet.id,
+            quantity: { lte: 0 },
+            type: "GOODS"
+        },
+        select: {
+            name: true,
+            quantity: true
+        }
+    })
+
+    // ambil banya pengeluaran bulan ini
+    const expenseAgg = await db.expense.aggregate({
+        where: {
+            outletId: outlet.id,
+            date: { gte: startOfMonth }
+        },
+        _sum: { amount: true }
+    })
+    const monthlyExpense = expenseAgg._sum.amount ?? 0
+
+    // jumlah order per status
+    const orderStatusRaw = await db.order.groupBy({
+        by: ["queueStatus"],
+        where: { outletId },
+        _count: true
+    });
+    const orderStatusSummary = orderStatusRaw.map(item => ({
+        queueStatus: item.queueStatus,
+        count: item._count
+    }))
+
+    // ambil 5 produk terlaris
+    const topProducts = await db.orderItem.groupBy({
+        by: ["productId"],
+        where: {
+            product: { outletId: outlet.id }
+        },
+        _sum: { quantity: true },
+        orderBy: { _sum: { quantity: "asc" } },
+        take: 5
+    })
+
+    const bestSellingProducts = await Promise.all(
+        topProducts.map(async item => {
+            const product = await db.product.findUnique({
+                where: { id: item.productId },
+                select: { name: true }
+            })
+
+            return {
+                name: product?.name ?? "Unknown Product",
+                sold: item._sum.quantity
+            }
+        })
+    )
+
+    return {
+        totalOrderToday,
+        totalIncomeToday,
+        totalProducts,
+        outOfStockProducts,
+        monthlyExpense,
+        orderStatusSummary,
+        bestSellingProducts
+    }
+}

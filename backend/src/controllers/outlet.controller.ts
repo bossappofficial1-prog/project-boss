@@ -1,6 +1,6 @@
-import { Request, Response } from "express";
+import { Request, response, Response } from "express";
 import { handlerAnyError } from "../errors/api_errors";
-import { getAllOutletService, getOutletById } from "../services/outlet.service";
+import { getAllOutletService, getOutletById, getOutletDashboardService } from "../services/outlet.service";
 import { ResponseUtil } from "../utils/response.util";
 import { getProductByType, getProductOutletService } from "../services/product.service";
 import { ProductType } from "@prisma/client";
@@ -102,6 +102,17 @@ export async function getOutletOderService(req: Request, res: Response) {
     const order = await getOrderOutlet(id, "SERVICE")
 
     return ResponseUtil.success(res, order)
+  } catch (error) {
+    return handlerAnyError(error, res)
+  }
+}
+
+export async function getOutletDashboard(req: Request, res: Response) {
+  try {
+    const { outletId } = req.params
+    const data = await getOutletDashboardService(outletId)
+
+    return ResponseUtil.success(res, data)
   } catch (error) {
     return handlerAnyError(error, res)
   }
