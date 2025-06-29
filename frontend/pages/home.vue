@@ -58,7 +58,7 @@ onMounted( async ()=>{
                   <Icon name="mdi:map-marker" size="16" class="mr-1" />
                   <span class="text-sm">{{ outlet.address }}</span>
                 </div>
-                <NuxtLink to="/outlets/{{ outlet.id }}">
+                <NuxtLink :to="`/outlets/${outlet.id}`">
                   <BaseButton size="sm" variant="outline">
                     Lihat Detail
                   </BaseButton>
