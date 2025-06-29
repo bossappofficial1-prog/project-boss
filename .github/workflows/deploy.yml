@@ -47,10 +47,18 @@ jobs:
           echo "
             if [ ! -d project-boss ]; then
               git clone https://${{ secrets.GITHUB_USERNAME }}:${{ secrets.ENV_GITHUB_PAT }}@github.com/PitokDf/project-boss.git || exit 1
+            else
+              cd project-boss
+              if [ -d .git ]; then
+                git pull origin ${{ github.ref_name }} || exit 1
+              else
+                echo '❌ project-boss exists but is not a git repository.'
+                exit 1
+              fi
+              cd ..
             fi
 
             cd project-boss
-            git pull origin ${{ github.ref_name }} || exit 1
 
             mkdir -p backend
 
