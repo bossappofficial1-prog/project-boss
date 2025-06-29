@@ -52,7 +52,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
             cd project-boss
-            git clone https://:${{secrets.ENV_GITHUB_PAT}}@github.com/PitokDf/project-boss.git || exit 1
+            git clone https://${{ secrets.GITHUB_USERNAME }}:${{secrets.ENV_GITHUB_PAT}}@github.com/PitokDf/project-boss.git || exit 1
             
             echo "BASE_URL=${{ secrets.ENV_BASE_URL }}" > ./backend/.env.production
             echo "PORT=${{ secrets.ENV_PORT }}" >> ./backend/.env.production
