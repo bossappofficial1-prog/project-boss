@@ -23,19 +23,13 @@ jobs:
         working-directory: ./backend
         run: |
           npm install
-        #   npm run lint
-        #   npm run test
+          # npm run lint
+          # npm run test
 
-      #   - name: Lint & Test Frontend
-      #     working-directory: ./frontend
-      #     run: |
-      #       npm install
-      #   npm run lint
-      #   npm run test
       - name: Build Docker Images
         run: |
           docker build -t boss-backend ./backend
-        #   docker build -t boss-frontend ./frontend
+          # docker build -t boss-frontend ./frontend
 
   deploy:
     needs: lint-test-build
@@ -50,37 +44,42 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
+          echo "
+            if [ ! -d project-boss ]; then
+              git clone https://${{ secrets.GITHUB_USERNAME }}:${{ secrets.ENV_GITHUB_PAT }}@github.com/PitokDf/project-boss.git || exit 1
+            fi
+
             cd project-boss
-            git clone https://github.com/PitokDf/project-boss.git || exit 1
-            cd project-boss
-            
-            echo "BASE_URL=${{ secrets.ENV_BASE_URL }}" > ./backend/.env.production
-            echo "PORT=${{ secrets.ENV_PORT }}" >> ./backend/.env.production
-            echo "JWT_SECRET=${{ secrets.ENV_JWT_SECRET }}" >> ./backend/.env.production
-            echo "FRONTEND_URL=${{ secrets.ENV_FRONTEND_URL }}" >> ./backend/.env.production
-            echo "DATABASE_URL=${{ secrets.ENV_DATABASE_URL }}" >> ./backend/.env.production
+            git pull origin ${{ github.ref_name }} || exit 1
 
-            echo "MIDTRANS_MERCHANT_ID=${{ secrets.ENV_MIDTRANS_MERCHANT_ID }}" >> ./backend/.env.production
-            echo "MIDTRANS_SERVER_KEY=${{ secrets.ENV_MIDTRANS_SERVER_KEY }}" >> ./backend/.env.production
-            echo "MIDTRANS_CLIENT_KEY=${{ secrets.ENV_MIDTRANS_CLIENT_KEY }}" >> ./backend/.env.production
-            echo "MIDTRANS_NOTIFICATION_CALLBACK_URL=${{ secrets.ENV_MIDTRANS_NOTIFICATION_CALLBACK_URL }}" >> ./backend/.env.production
-            echo "MIDTRANS_EXPIRE_UNIT=${{ secrets.ENV_MIDTRANS_EXPIRE_UNIT }}" >> ./backend/.env.production
-            echo "MIDTRANS_EXPIRE_DURATION=${{ secrets.ENV_MIDTRANS_EXPIRE_DURATION }}" >> ./backend/.env.production
+            mkdir -p backend
 
-            echo "RATE_LIMIT_WINDOW_MS=${{ secrets.ENV_RATE_LIMIT_WINDOW_MS }}" >> ./backend/.env.production
-            echo "RATE_LIMIT_MAX_REQUESTS=${{ secrets.ENV_RATE_LIMIT_MAX_REQUESTS }}" >> ./backend/.env.production
+            echo \"BASE_URL=${{ secrets.ENV_BASE_URL }}\" > ./backend/.env.production
+            echo \"PORT=${{ secrets.ENV_PORT }}\" >> ./backend/.env.production
+            echo \"JWT_SECRET=${{ secrets.ENV_JWT_SECRET }}\" >> ./backend/.env.production
+            echo \"FRONTEND_URL=${{ secrets.ENV_FRONTEND_URL }}\" >> ./backend/.env.production
+            echo \"DATABASE_URL=${{ secrets.ENV_DATABASE_URL }}\" >> ./backend/.env.production
 
-            echo "GOOGLE_CLIENT_ID=${{ secrets.ENV_GOOGLE_CLIENT_ID }}" >> ./backend/.env.production
-            echo "GOOGLE_CLIENT_SECRET=${{ secrets.ENV_GOOGLE_CLIENT_SECRET }}" >> ./backend/.env.production
+            echo \"MIDTRANS_MERCHANT_ID=${{ secrets.ENV_MIDTRANS_MERCHANT_ID }}\" >> ./backend/.env.production
+            echo \"MIDTRANS_SERVER_KEY=${{ secrets.ENV_MIDTRANS_SERVER_KEY }}\" >> ./backend/.env.production
+            echo \"MIDTRANS_CLIENT_KEY=${{ secrets.ENV_MIDTRANS_CLIENT_KEY }}\" >> ./backend/.env.production
+            echo \"MIDTRANS_NOTIFICATION_CALLBACK_URL=${{ secrets.ENV_MIDTRANS_NOTIFICATION_CALLBACK_URL }}\" >> ./backend/.env.production
+            echo \"MIDTRANS_EXPIRE_UNIT=${{ secrets.ENV_MIDTRANS_EXPIRE_UNIT }}\" >> ./backend/.env.production
+            echo \"MIDTRANS_EXPIRE_DURATION=${{ secrets.ENV_MIDTRANS_EXPIRE_DURATION }}\" >> ./backend/.env.production
+
+            echo \"RATE_LIMIT_WINDOW_MS=${{ secrets.ENV_RATE_LIMIT_WINDOW_MS }}\" >> ./backend/.env.production
+            echo \"RATE_LIMIT_MAX_REQUESTS=${{ secrets.ENV_RATE_LIMIT_MAX_REQUESTS }}\" >> ./backend/.env.production
+
+            echo \"GOOGLE_CLIENT_ID=${{ secrets.ENV_GOOGLE_CLIENT_ID }}\" >> ./backend/.env.production
+            echo \"GOOGLE_CLIENT_SECRET=${{ secrets.ENV_GOOGLE_CLIENT_SECRET }}\" >> ./backend/.env.production
 
             docker compose down || true
             docker compose up -d --build || {
-                echo "❌ DEPLOY FAILED. Rolling back..."
-                docker compose up -d
-                exit 1
-                }
-            EOF
+              echo \"❌ DEPLOY FAILED. Rolling back...\"
+              docker compose up -d
+              exit 1
+            }
+          " | ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
 
       - name: Notify Telegram
         if: always()
