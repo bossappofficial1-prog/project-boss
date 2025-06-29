@@ -14,6 +14,34 @@
             Pilih outlet untuk memulai mengelola bisnis Anda
           </p>
         </div>
+        <div class="flex flex-col gap-3">
+        <BaseCard
+            v-for="outlet in outlets"
+            :key="outlet.id"
+            hover
+            clickable
+            padding="none"
+            class="overflow-hidden group"
+          >
+          <NuxtImg v-if="outlet.image" :src="outlet.image" :alt="outlet.name"
+              class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
+            <div v-else
+              class="w-full h-24 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 text-sm">
+              Tidak ada gambar
+            </div>
+            <div class="p-6">
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ outlet.business.name }}</h3>
+              <p class="text-gray-600 dark:text-gray-400 mb-4">{{ outlet.name }}</p>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center text-gray-500 dark:text-gray-400">
+                  <Icon name="mdi:map-marker" size="16" class="mr-1" />
+                  <span class="text-sm">{{ outlet.address }}</span>
+                </div>
+                <BaseButton @click="setOutlet(outlet)" size="sm" variant="outline">Lihat</BaseButton>
+              </div>
+            </div>
+          </BaseCard>
+          </div>
       </BaseCard>
     </div>
 
@@ -165,6 +193,22 @@ console.log('Auth Store:', auth);
 
 const outletId = computed(() => auth.outletFokus?.id || 'Tidak ada ID outlet')
 const outletName = computed(() => auth.outletFokus?.name || 'Belum pilih outlet')
+
+// Fetch data
+const { data: outletsRes, error, pending, refresh } = await useLazyFetch(`/api/outlets`, {
+  query: {
+    limit: 3,
+  },
+})
+
+const outlets = computed(() => outletsRes.value?.data || [])
+
+const setOutlet = (outlet)=>{
+  auth.setOutletFokus({
+    id:outlet.id,
+    name:outlet.name
+  })
+}
 
 const handleBackToOutletSelection = () => {
   auth.setOutletFokus(null)

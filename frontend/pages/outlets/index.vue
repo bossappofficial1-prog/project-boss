@@ -1,30 +1,30 @@
 <script setup>
+import { useApiFetch } from "@/composables/useApiFetch"
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
 
-// Query param state
 const limit = ref(parseInt(route.query.limit) || 6)
 const page = ref(parseInt(route.query.page) || 1)
 const search = ref(route.query.search || '')
 
-// Fetch data
-const { data: outletsRes, error, pending, refresh } = await useLazyFetch(`/api/outlets`, {
+// Panggil ke backend via useApiFetch
+const { data: outletsRes, error, pending, refresh, execute } = useApiFetch('/outlets', {
   query: {
     limit,
     page,
     search
   },
-  watch: [limit, page, search]
+  watch: [limit, page, search],
+  lazy: true
 })
 
 const outlets = computed(() => outletsRes.value?.data || [])
 const pagination = computed(() => outletsRes.value?.pagination || {})
 
-// Update URL & refresh data
 function updateQuery() {
-  router.push({
+  router.replace({
     path: '/outlets',
     query: {
       limit: limit.value,
@@ -34,6 +34,11 @@ function updateQuery() {
   })
   refresh()
 }
+
+// Jalankan pertama kali
+onMounted(() => {
+  execute()
+})
 </script>
 
 <template>
@@ -56,37 +61,36 @@ function updateQuery() {
           </div>
         </div>
 
-        <!-- Loading -->
         <div v-if="pending" class="flex justify-center items-center space-x-2 text-primary-700">
           <Icon name="line-md:loading-alt-loop" class="h-8 w-8" />
-          <span>Memuat data...</span>
+          <span>Sedang memuat data...</span>
         </div>
-
-        <!-- Error -->
-        <div v-else-if="error" class="text-center text-red-700">
-          {{ error.message }}
-        </div>
-
-        <!-- Data -->
+        <div v-else-if="error" class="text-center text-red-700">Terjadi kesalahan: {{ error.message }}</div>
         <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <BaseCard
-            v-for="outlet in outlets"
-            :key="outlet.id"
-            hover
-            clickable
-            padding="none"
-            class="overflow-hidden group"
-          >
+          <BaseCard v-for="outlet in outlets" :key="outlet.id" hover clickable padding="none"
+            class="overflow-hidden group">
+            <NuxtImg v-if="outlet.image" :src="outlet.image" :alt="outlet.name"
+              class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
+            <div v-else
+              class="w-full h-48 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 text-sm">
+              Tidak ada gambar
+            </div>
+
             <div class="p-6">
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ outlet.business.name }}</h3>
-              <p class="text-gray-600 dark:text-gray-400 mb-4">{{ outlet.name }}</p>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ outlet.business_name }}</h3>
+              <p class="text-gray-600 dark:text-gray-400 mb-4">
+                {{ outlet.name }}
+              </p>
+
               <div class="flex items-center justify-between">
                 <div class="flex items-center text-gray-500 dark:text-gray-400">
                   <Icon name="mdi:map-marker" size="16" class="mr-1" />
                   <span class="text-sm">{{ outlet.address }}</span>
                 </div>
-                <NuxtLink :to="`/outlets/${outlet.id}`">
-                  <BaseButton size="sm" variant="outline">Lihat</BaseButton>
+                <NuxtLink to="/outlets/{{ outlet.id }}">
+                  <BaseButton size="sm" variant="outline">
+                    Lihat Detail
+                  </BaseButton>
                 </NuxtLink>
               </div>
             </div>

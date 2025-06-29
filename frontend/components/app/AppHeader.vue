@@ -42,8 +42,8 @@ function toggleMenu() {
               <!-- Trigger Profil -->
               <div class="flex items-center space-x-3 cursor-pointer" @click="toggleMenu">
                 <NuxtImg v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name"
-                  class="w-10 h-10 rounded-full object-cover" />
-                <div v-else class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
+                  class="w-8 h-8 rounded-full object-cover" />
+                <div v-else class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
                   <span class="text-white font-medium">
                     {{ auth.user?.name?.charAt(0).toUpperCase() }}
                   </span>

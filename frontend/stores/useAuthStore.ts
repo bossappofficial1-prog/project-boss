@@ -15,9 +15,9 @@ export const useAuthStore = defineStore('auth', {
       name: string
     },
     outletOptions: [
-      { id: '1', name: 'Outlet Pusat' },
-      { id: '2', name: 'Outlet Cabang A' },
-      { id: '3', name: 'Outlet Cabang B' }
+      { id: 'outlet-1', name: 'Cabang Taplau' },
+      { id: 'outlet-2', name: 'Outlet Pusat' },
+      { id: 'outlet-3', name: 'Cabang Andalas' }
     ]
   }),
 
