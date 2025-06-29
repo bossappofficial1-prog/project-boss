@@ -1,5 +1,4 @@
 import { NextFunction, Request, response, Response } from "express";
-import { handlerAnyError } from "../errors/api_errors";
 import { getAllOutletService, getOutletById, getOutletDashboardService } from "../services/outlet.service";
 import { ResponseUtil } from "../utils/response.util";
 import { createProductService, getProductByType, getProductOutletService } from "../services/product.service";

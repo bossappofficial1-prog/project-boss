@@ -1,8 +1,9 @@
 import { Request, Response } from "express"
-import { AppError, handlerAnyError } from "../errors/api_errors"
+import { AppError } from "../errors/api_errors"
 import { ResponseUtil } from "../utils/response.util"
 import { validateMidtransSignature } from "../configs/midtrans"
 import { updateTransactionService } from "../services/transaction.service"
+import { asyncHandler } from "../middlewares/error.middleware"
 
 export const VALID_MIDTRANS_STATUSES = [
     "AUTHORIZE",
@@ -51,22 +52,20 @@ export function standardizeMidtransStatus(status: string) {
     return (VALID_MIDTRANS_STATUSES as readonly string[]).includes(uppercaseStatus) ? uppercaseStatus : "UNKNOWN"
 }
 
-export async function MidtransNotifikasiController(req: Request, res: Response) {
-    try {
-        const midtransReqBody = req.body as MidtransNotifikasi
 
-        const is_valid = validateMidtransSignature(midtransReqBody)
+export const MidtransNotifikasiController = asyncHandler(async (req: Request, res: Response) => {
 
-        if (!is_valid) throw new AppError("Signature not valid", 400);
+    const midtransReqBody = req.body as MidtransNotifikasi
 
-        await updateTransactionService(midtransReqBody.order_id, {
-            externalId: midtransReqBody.transaction_id,
-            paymentMethod: midtransReqBody.payment_type,
-            status: standardizeMidtransStatus(midtransReqBody.transaction_status) as any,
-        })
+    const is_valid = validateMidtransSignature(midtransReqBody)
 
-        return ResponseUtil.success(res, null, "success", 200)
-    } catch (error) {
-        return handlerAnyError(error, res)
-    }
-}
+    if (!is_valid) throw new AppError("Signature not valid", 400);
+
+    await updateTransactionService(midtransReqBody.order_id, {
+        externalId: midtransReqBody.transaction_id,
+        paymentMethod: midtransReqBody.payment_type,
+        status: standardizeMidtransStatus(midtransReqBody.transaction_status) as any,
+    })
+
+    return ResponseUtil.success(res, null, "success", 200)
+})

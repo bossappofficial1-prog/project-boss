@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { handlerAnyError } from "../errors/api_errors";
 import {
     businessRegister,
     googleLoginService,
