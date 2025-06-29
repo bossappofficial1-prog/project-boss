@@ -16,9 +16,6 @@ COPY . .
 
 RUN npm run build
 
-RUN mkdir -p dist/src/templates && \
-    cp src/templates/*.html dist/src/templates/
-
-EXPOSE 2222
+EXPOSE 4444
 
 CMD [ "sh", "-c", "node dist/src/server.js" ]
