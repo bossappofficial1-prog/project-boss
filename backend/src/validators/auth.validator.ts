@@ -8,7 +8,8 @@ export const registerValidator = [
             const check = await checkIfEmailExists(email)
             if (check) throw new Error('Email already exists');
             return true
-        }),
+        })
+        .normalizeEmail(),
     body('name').notEmpty().withMessage('Name is required'),
     body('password').notEmpty().withMessage('Password is required')
 ]

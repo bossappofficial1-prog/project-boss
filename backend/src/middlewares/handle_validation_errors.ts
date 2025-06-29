@@ -19,8 +19,7 @@ export async function handleValidationErrors(req: Request, res: Response<Respons
 
             await deleteFile(folder, req.file.filename)
         }
-
-        logger.error("Validation required")
+        logger.error(`Error: Validation required when accessing ${req.baseUrl}${req.path}`);
         return ResponseUtil.error(res, 'Validation required', 400, errors.array())
     }
 

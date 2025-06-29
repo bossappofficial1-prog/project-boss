@@ -11,9 +11,10 @@ const logger = winston.createLogger({
             format: 'YYYY-MM-DD HH:mm:ss'
         }),
         winston.format.errors({ stack: true }),
+        winston.format.splat(),
         winston.format.json()
     ),
-    defaultMeta: { service: 'BOSS API' },
+    defaultMeta: { service: 'boss-api' },
     transports: [
         new winston.transports.File({
             filename: path.join(LOG_DIR, 'error.log'),

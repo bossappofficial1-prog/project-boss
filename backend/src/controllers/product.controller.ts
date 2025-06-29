@@ -2,8 +2,9 @@ import { NextFunction, Request, Response } from "express";
 import { updateProductService } from "../services/product.service";
 import { ResponseUtil } from "../utils/response.util";
 import { config } from "../configs/config";
+import { asyncHandler } from "../middlewares/error.middleware";
 
-export async function updateProductController(req: Request, res: Response, next: NextFunction) {
+export const updateProductController = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { outletId, productId } = req.params
         const { costPrice,
@@ -12,13 +13,11 @@ export async function updateProductController(req: Request, res: Response, next:
             price,
             quantity,
             type,
-            unit, } = req.body
+            unit
+        } = req.body
 
         let image = undefined
-        const priceNumber = price ? parseInt(price, 0) : undefined
-        const costPriceNumber = costPrice ? parseInt(costPrice, 0) : undefined
-        const quantityNumber = quantity ? parseInt(quantity, 0) : undefined
-        
+
         if (req.file) {
             image = `${config.BASE_URL}/products/${req.file.filename}`
         }
@@ -38,4 +37,4 @@ export async function updateProductController(req: Request, res: Response, next:
     } catch (error) {
         return next(error)
     }
-}
+})

@@ -46,6 +46,7 @@ export async function getUserById(id: string) {
             avatar: true,
             isVerified: true,
             role: true,
+            businesses: { select: { id: true, name: true } },
             createdAt: true,
             updatedAt: true
         }

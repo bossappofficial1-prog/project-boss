@@ -36,7 +36,7 @@ export const errorHandler = (
         statusCode = err.statusCode!;
     }
 
-    logger.error(message, { statusCode })
+    logger.error(`Error: ${err.message}, Stack: ${err.stack}`);
 
     ResponseUtil.error(res, message, statusCode);
 }
