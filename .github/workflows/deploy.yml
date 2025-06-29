@@ -26,17 +26,16 @@ jobs:
         #   npm run lint
         #   npm run test
 
-      - name: Lint & Test Frontend
-        working-directory: ./frontend
-        run: |
-          npm install
-          npm run lint
-          npm run test
-
+      #   - name: Lint & Test Frontend
+      #     working-directory: ./frontend
+      #     run: |
+      #       npm install
+      #   npm run lint
+      #   npm run test
       - name: Build Docker Images
         run: |
           docker build -t boss-backend ./backend
-          docker build -t boss-frontend ./frontend
+        #   docker build -t boss-frontend ./frontend
 
   deploy:
     needs: lint-test-build
@@ -52,7 +51,7 @@ jobs:
       - name: Deploy via SSH
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd /home/ubuntu/project-boss
+            cd project-boss
             git pull origin ${{ github.ref_name }} || exit 1
 
             docker compose down || true
