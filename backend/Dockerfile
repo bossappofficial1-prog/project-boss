@@ -6,7 +6,7 @@ COPY package*.json ./
 
 RUN npm install -g npm@latest && npm install
 
-COPY .env.production .env
+# COPY .env.production .env
 
 COPY prisma ./prisma
 

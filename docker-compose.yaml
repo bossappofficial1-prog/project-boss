@@ -1,0 +1,40 @@
+services:
+  postgres:
+    container_name: "boss_db_container"
+    image: postgres:15.12-alpine3.21
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bossapp_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: bossapp_user
+      POSTGRES_PASSWORD: bossapp_pass
+      POSTGRES_DB: boss_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    container_name: "boss-backend"
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bossapp.rule=Host(`api.bossapp.id`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.bossapp.entrypoints=websecure"
+      - "traefik.http.routers.bossapp.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.bossapp.loadbalancer.server.port=4444"
+    networks:
+      - traefik-net
+    depends_on:
+      - postgres
+    env_file:
+      - ./backend/.env.production
+
+volumes:
+  postgres_data:
+
+networks:
+  traefik-net:
+    external: true
