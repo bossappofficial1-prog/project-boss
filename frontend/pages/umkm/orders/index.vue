@@ -20,31 +20,48 @@
       <template #thead>
         <tr>
           <BaseTableHeader>#</BaseTableHeader>
-          <BaseTableHeader>ID</BaseTableHeader>
-          <BaseTableHeader>Nama Customer</BaseTableHeader>
-          <BaseTableHeader>Jumlah</BaseTableHeader>
-          <BaseTableHeader>Status</BaseTableHeader>
+          <BaseTableHeader>ID Pesanan</BaseTableHeader>
+          <BaseTableHeader>Customer</BaseTableHeader>
+          <BaseTableHeader>Tanggal</BaseTableHeader>
+          <BaseTableHeader>Total</BaseTableHeader>
+          <BaseTableHeader>Status Antrian</BaseTableHeader>
+          <BaseTableHeader>Status Pembayaran</BaseTableHeader>
         </tr>
       </template>
 
       <BaseTableRow v-for="(item, idx) in paginatedData" :key="item.id">
-        <td class="p-3">{{ startNumber + idx }}</td>
-        <td class="p-3">{{ item.id }}</td>
-        <td class="p-3">{{ item.customer }}</td>
-        <td class="p-3">Rp {{ item.amount.toLocaleString() }}</td>
-        <td class="p-3">
-          <span
-            :class="[
-              'px-2 py-1 rounded text-xs',
-              item.status === 'PAID' ? 'bg-green-100 text-green-600' :
-              item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-600' :
-              'bg-red-100 text-red-600'
-            ]"
-          >
-            {{ item.status }}
-          </span>
-        </td>
-      </BaseTableRow>
+  <td class="p-3">{{ startNumber + idx }}</td>
+  <td class="p-3">{{ item.id }}</td>
+  <td class="p-3">{{ item.customer.name }}</td>
+  <td class="p-3">{{ new Date(item.createdAt).toLocaleString() }}</td>
+  <td class="p-3">Rp {{ item.totalAmount.toLocaleString() }}</td>
+  <td class="p-3">
+    <span
+      :class="[
+        'px-2 py-1 rounded text-xs',
+        item.queueStatus === 'COMPLETED' ? 'bg-green-100 text-green-600' :
+        item.queueStatus === 'ON_PROGRESS' ? 'bg-blue-100 text-blue-600' :
+        item.queueStatus === 'AWAITING_PAYMENT' ? 'bg-yellow-100 text-yellow-600' :
+        'bg-gray-100 text-gray-600'
+      ]"
+    >
+      {{ item.queueStatus }}
+    </span>
+  </td>
+  <td class="p-3">
+    <span
+      :class="[
+        'px-2 py-1 rounded text-xs',
+        item.paymentStatus === 'PAID' ? 'bg-green-100 text-green-600' :
+        item.paymentStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-600' :
+        'bg-red-100 text-red-600'
+      ]"
+    >
+      {{ item.paymentStatus }}
+    </span>
+  </td>
+</BaseTableRow>
+
 
       <template #footer>
         <BasePagination
@@ -60,17 +77,13 @@
 
 <script setup>
 const transactions = ref([
-  { id: 'TRX001', customer: 'Budi', amount: 150000, status: 'PAID' },
-  { id: 'TRX002', customer: 'Sari', amount: 250000, status: 'PENDING' },
-  { id: 'TRX003', customer: 'Andi', amount: 180000, status: 'FAILED' },
-  { id: 'TRX004', customer: 'Dina', amount: 300000, status: 'PAID' },
-  { id: 'TRX005', customer: 'Rina', amount: 210000, status: 'PAID' },
-  { id: 'TRX006', customer: 'Agus', amount: 170000, status: 'PENDING' },
-  { id: 'TRX007', customer: 'Wulan', amount: 260000, status: 'PAID' },
-  { id: 'TRX008', customer: 'Rudi', amount: 200000, status: 'FAILED' },
-  { id: 'TRX009', customer: 'Lisa', amount: 275000, status: 'PAID' },
-  { id: 'TRX010', customer: 'Adit', amount: 225000, status: 'PENDING' },
+  { id: 'ORD001', customer: { name: 'Budi' }, createdAt: '2024-06-29T12:00:00', totalAmount: 150000, queueStatus: 'AWAITING_PAYMENT', paymentStatus: 'PENDING' },
+  { id: 'ORD002', customer: { name: 'Sari' }, createdAt: '2024-06-29T13:30:00', totalAmount: 250000, queueStatus: 'ON_PROGRESS', paymentStatus: 'PAID' },
+  { id: 'ORD003', customer: { name: 'Andi' }, createdAt: '2024-06-29T14:00:00', totalAmount: 180000, queueStatus: 'COMPLETED', paymentStatus: 'PAID' },
+  { id: 'ORD004', customer: { name: 'Dina' }, createdAt: '2024-06-29T14:30:00', totalAmount: 300000, queueStatus: 'ON_PROGRESS', paymentStatus: 'PENDING' },
+  { id: 'ORD005', customer: { name: 'Rina' }, createdAt: '2024-06-29T15:00:00', totalAmount: 210000, queueStatus: 'AWAITING_PAYMENT', paymentStatus: 'FAILED' },
 ])
+
 
 const searchTerm = ref('')
 const currentPage = ref(1)
@@ -79,11 +92,11 @@ const perPage = 5
 // Filter data berdasarkan search
 const filteredData = computed(() =>
   transactions.value.filter(item =>
-    Object.values(item).some(value =>
-      String(value).toLowerCase().includes(searchTerm.value.toLowerCase())
-    )
+    item.id.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
+    item.customer.name.toLowerCase().includes(searchTerm.value.toLowerCase())
   )
 )
+
 
 // Hitung total halaman
 const totalPages = computed(() =>

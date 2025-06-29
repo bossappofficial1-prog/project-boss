@@ -1,6 +1,4 @@
 <script setup>
-import { useAuthStore } from '@/stores/useAuthStore'
-
 defineProps({
     show: Boolean
 })
@@ -16,11 +14,14 @@ watch(selectedOutletId, (newId) => {
 })
 
 const menuItems = [
-    { to: '/umkm', icon: 'mdi:view-dashboard', label: 'Dashboard' },
-    { to: '/umkm/products', icon: 'mdi:package-variant', label: 'Produk & Layanan' },
-    { to: '/umkm/orders', icon: 'mdi:clipboard-list', label: 'Pesanan' },
-    { to: '/umkm/queue', icon: 'mdi:account-group', label: 'Antrian' },
-    { to: '/umkm/reports', icon: 'mdi:chart-line', label: 'Laporan' },
+    { to: '/umkm', icon: 'lucide:layout-dashboard', label: 'Dashboard' },
+    { to: '/umkm/products', icon: 'lucide:package', label: 'Produk & Layanan' },
+    { to: '/umkm/stocks', icon: 'lucide:package-plus', label: 'Stok Produk' },
+    { to: '/umkm/orders', icon: 'lucide:layout-list', label: 'Pesanan' },
+    { to: '/umkm/queue', icon: 'lucide:list-ordered', label: 'Antrian' },
+    { to: '/umkm/reports', icon: 'lucide:clipboard-list', label: 'Laporan' },
+    { to: '/umkm/transaction', icon: 'lucide:circle-dolar-sign', label: 'Pengeluaran' },
+    { to: '/umkm/expense', icon: 'lucide:history', label: 'Riwayat transaksi' },
 ]
 
 const showProfileMenu = ref(false)
