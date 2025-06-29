@@ -6,6 +6,7 @@ import { useAuthStore } from '~/stores/useAuthStore'
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
+const googleApi = `${useRuntimeConfig().public.apiBaseUrl}/auth/google`
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -121,16 +122,18 @@ definePageMeta({
 
         <!-- Social Login -->
         <div class="space-y-3">
-          <BaseButton
-            class="w-full"
-            variant="outline"
-            size="lg"
-            full-width
-            :disabled="isLoading"
-          >
-            <Icon name="mdi:google" class="mr-2" />
-            Masuk dengan Google
-          </BaseButton>
+          <a :href="googleApi">
+            <BaseButton
+              class="w-full"
+              variant="outline"
+              size="lg"
+              full-width
+              :disabled="isLoading"
+            >
+              <Icon name="mdi:google" class="mr-2" />
+              Masuk dengan Google
+            </BaseButton>
+          </a>
         </div>
 
         <!-- Footer -->

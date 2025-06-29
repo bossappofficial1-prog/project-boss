@@ -2,7 +2,7 @@
   <div>
     <AppHeader />
 
-    <main>
+    <main class="min-h-screen">
       <slot />
     </main>
 

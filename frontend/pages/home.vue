@@ -1,19 +1,9 @@
 <script setup>
-const config = useRuntimeConfig()
-
-// const { data: outletsRes, error, pending } = await useLazyFetch(`/api/outlets`, {
-//   query: {
-//     limit: 3
-//   }
-// })
-const { data: outletsRes, error, pending } = await useLazyFetch(`${config.public.apiBaseUrl}/outlets`, {
-  headers: {
-    'ngrok-skip-browser-warning': 'true'
-  },
+const { data: outletsRes, error, pending, execute } = await useApiFetch('/outlets', {
   query: {
     limit: 3
   }
-})
+}, true)
 
 const outlets = computed(() => outletsRes.value?.data || [])
 
@@ -22,6 +12,10 @@ const stats = ref([
   { label: 'Transaksi Berhasil', value: '15,000+', icon: 'mdi:chart-line' },
   { label: 'Pengguna Aktif', value: '8,500+', icon: 'mdi:account-group' }
 ])
+
+onMounted( async ()=>{
+  await execute()
+})
 </script>
 
 <template>
@@ -31,10 +25,10 @@ const stats = ref([
       <div class="max-w-7xl mx-auto px-4">
         <div class="text-center mb-12">
           <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            UMKM Unggulan
+            Outlet Unggulan
           </h2>
           <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Temukan UMKM terbaik yang telah dipercaya oleh ribuan pelanggan
+            Temukan Outlet terbaik yang telah dipercaya oleh ribuan pelanggan
           </p>
         </div>
 
@@ -43,7 +37,7 @@ const stats = ref([
           <span>Sedang memuat data...</span>
         </div>
         <div v-else-if="error" class="text-center text-red-700">Terjadi kesalahan: {{ error.message }}</div>
-        <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div v-else class="grid md:grid-cols-3 gap-8">
           <BaseCard v-for="outlet in outlets" :key="outlet.id" hover clickable padding="none"
             class="overflow-hidden group">
             <NuxtImg v-if="outlet.image" :src="outlet.image" :alt="outlet.name"
@@ -77,7 +71,7 @@ const stats = ref([
         <div class="text-center mt-12">
           <NuxtLink to="/outlets">
             <BaseButton size="lg" variant="primary">
-              Lihat Semua UMKM
+              Lihat Semua Outlet
               <Icon name="material-symbols:arrow-forward-ios-rounded" class="ml-2" />
             </BaseButton>
           </NuxtLink>
