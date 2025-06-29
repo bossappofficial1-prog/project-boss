@@ -10,7 +10,7 @@
 
     <div class="relative max-w-7xl mx-auto px-4 py-20 sm:py-32 flex flex-col items-center justify-center min-h-screen text-center">
       <!-- Logo -->
-      <NuxtImg src="/images/logo-white-text-hd.png" width="360" height="100" alt="Logo"
+      <NuxtImg src="/images/logo-white-text.svg" width="360" height="100" alt="Logo"
         class="mb-8" />
 
       <!-- Deskripsi -->

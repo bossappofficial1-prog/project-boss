@@ -15,82 +15,63 @@
       />
     </div>
 
-    <!-- Tabel Transaksi -->
     <BaseTable>
-      <template #thead>
-        <tr>
-          <BaseTableHeader>#</BaseTableHeader>
-          <BaseTableHeader>ID</BaseTableHeader>
-          <BaseTableHeader>Nama Customer</BaseTableHeader>
-          <BaseTableHeader>Jumlah</BaseTableHeader>
-          <BaseTableHeader>Status</BaseTableHeader>
-        </tr>
-      </template>
+  <template #thead>
+    <tr>
+      <BaseTableHeader>#</BaseTableHeader>
+      <BaseTableHeader>Tanggal</BaseTableHeader>
+      <BaseTableHeader>Jumlah Transaksi</BaseTableHeader>
+      <BaseTableHeader>Total Pendapatan</BaseTableHeader>
+      <BaseTableHeader>Total Pengeluaran</BaseTableHeader>
+      <BaseTableHeader>Laba Bersih</BaseTableHeader>
+    </tr>
+  </template>
 
-      <BaseTableRow v-for="(item, idx) in paginatedData" :key="item.id">
-        <td class="p-3">{{ startNumber + idx }}</td>
-        <td class="p-3">{{ item.id }}</td>
-        <td class="p-3">{{ item.customer }}</td>
-        <td class="p-3">Rp {{ item.amount.toLocaleString() }}</td>
-        <td class="p-3">
-          <span
-            :class="[
-              'px-2 py-1 rounded text-xs',
-              item.status === 'PAID' ? 'bg-green-100 text-green-600' :
-              item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-600' :
-              'bg-red-100 text-red-600'
-            ]"
-          >
-            {{ item.status }}
-          </span>
-        </td>
-      </BaseTableRow>
+  <BaseTableRow v-for="(item, idx) in paginatedData" :key="item.date">
+    <td class="p-3">{{ startNumber + idx }}</td>
+    <td class="p-3">{{ item.date }}</td>
+    <td class="p-3">{{ item.totalTransaction }}</td>
+    <td class="p-3">Rp {{ item.totalIncome.toLocaleString() }}</td>
+    <td class="p-3">Rp {{ item.totalExpense.toLocaleString() }}</td>
+    <td class="p-3">Rp {{ (item.totalIncome - item.totalExpense).toLocaleString() }}</td>
+  </BaseTableRow>
 
-      <template #footer>
-        <BasePagination
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          @previous="prevPage"
-          @next="nextPage"
-        />
-      </template>
-    </BaseTable>
+  <template #footer>
+    <BasePagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      @previous="prevPage"
+      @next="nextPage"
+    />
+  </template>
+</BaseTable>
+
   </div>
 </template>
 
 <script setup>
-const transactions = ref([
-  { id: 'TRX001', customer: 'Budi', amount: 150000, status: 'PAID' },
-  { id: 'TRX002', customer: 'Sari', amount: 250000, status: 'PENDING' },
-  { id: 'TRX003', customer: 'Andi', amount: 180000, status: 'FAILED' },
-  { id: 'TRX004', customer: 'Dina', amount: 300000, status: 'PAID' },
-  { id: 'TRX005', customer: 'Rina', amount: 210000, status: 'PAID' },
-  { id: 'TRX006', customer: 'Agus', amount: 170000, status: 'PENDING' },
-  { id: 'TRX007', customer: 'Wulan', amount: 260000, status: 'PAID' },
-  { id: 'TRX008', customer: 'Rudi', amount: 200000, status: 'FAILED' },
-  { id: 'TRX009', customer: 'Lisa', amount: 275000, status: 'PAID' },
-  { id: 'TRX010', customer: 'Adit', amount: 225000, status: 'PENDING' },
+const reports = ref([
+  { date: '2024-06-25', totalTransaction: 12, totalIncome: 2200000, totalExpense: 500000 },
+  { date: '2024-06-26', totalTransaction: 8, totalIncome: 1800000, totalExpense: 350000 },
+  { date: '2024-06-27', totalTransaction: 15, totalIncome: 2500000, totalExpense: 400000 },
+  { date: '2024-06-28', totalTransaction: 10, totalIncome: 2000000, totalExpense: 450000 },
+  { date: '2024-06-29', totalTransaction: 18, totalIncome: 3000000, totalExpense: 600000 },
 ])
 
 const searchTerm = ref('')
 const currentPage = ref(1)
 const perPage = 5
 
-// Filter data berdasarkan search
 const filteredData = computed(() =>
-  transactions.value.filter(item =>
-    Object.values(item).some(value =>
-      String(value).toLowerCase().includes(searchTerm.value.toLowerCase())
-    )
+  reports.value.filter(item =>
+    item.date.includes(searchTerm.value)
   )
 )
 
-// Hitung total halaman
 const totalPages = computed(() =>
   Math.ceil(filteredData.value.length / perPage)
 )
 
-// Data per halaman
 const paginatedData = computed(() =>
   filteredData.value.slice(
     (currentPage.value - 1) * perPage,

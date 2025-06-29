@@ -15,6 +15,9 @@
           </p>
         </div>
         <div class="flex flex-col gap-3">
+          <BaseButton>
+          Tambah Outlet
+          </BaseButton>
         <BaseCard
             v-for="outlet in outlets"
             :key="outlet.id"
