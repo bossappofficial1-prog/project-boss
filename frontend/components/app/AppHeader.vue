@@ -99,9 +99,9 @@ function toggleMenu() {
           <div class="border-t border-gray-200 dark:border-gray-800 pt-4">
             <div v-if="auth.isLoggedIn" class="flex item-center justify-between">
               <div class="flex items-center space-x-3 mb-4">
-                <img v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name"
-                  class="w-10 h-10 rounded-full object-cover" />
-                <div v-else class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
+                <NuxtImg v-if="auth.user?.avatar" :src="auth.user.avatar" :alt="auth.user.name"
+                  class="w-8 h-8 rounded-full object-cover" />
+                <div v-else class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
                   <span class="text-white font-medium">
                     {{ auth.user?.name?.charAt(0).toUpperCase() }}
                   </span>

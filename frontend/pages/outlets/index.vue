@@ -35,7 +35,6 @@ function updateQuery() {
   refresh()
 }
 
-// Jalankan pertama kali
 onMounted(() => {
   execute()
 })
@@ -77,9 +76,12 @@ onMounted(() => {
             </div>
 
             <div class="p-6">
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ outlet.business_name }}</h3>
-              <p class="text-gray-600 dark:text-gray-400 mb-4">
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">{{ outlet.business_name }}</h3>
+              <p class="text-primary-600 dark:text-primary-400 mb-1">
                 {{ outlet.name }}
+              </p>
+              <p class="text-gray-600 text-sm dark:text-gray-400 mb-4">
+                {{ outlet.product_count }} Produk / layanan
               </p>
 
               <div class="flex items-center justify-between">
@@ -87,7 +89,7 @@ onMounted(() => {
                   <Icon name="mdi:map-marker" size="16" class="mr-1" />
                   <span class="text-sm">{{ outlet.address }}</span>
                 </div>
-                <NuxtLink to="/outlets/{{ outlet.id }}">
+                <NuxtLink :to="`/outlets/${outlet.id}`">
                   <BaseButton size="sm" variant="outline">
                     Lihat Detail
                   </BaseButton>
@@ -97,34 +99,34 @@ onMounted(() => {
           </BaseCard>
         </div>
 
-        <!-- Pagination -->
         <div v-if="pagination.totalPages > 1" class="flex justify-center mt-8 space-x-2">
-          <BaseButton
-            :disabled="page === 1"
-            @click="page--; updateQuery()"
-            variant="outline"
-            size="sm"
-          >
-          <Icon name="material-symbols:arrow-back-ios-rounded" />
-          </BaseButton>
-          <BaseButton
-            v-for="n in pagination.totalPages"
-            :key="n"
-            :variant="page === n ? 'primary' : 'outline'"
-            size="sm"
-            @click="page = n; updateQuery()"
-          >
-            {{ n }}
-          </BaseButton>
-          <BaseButton
-            :disabled="page === pagination.totalPages"
-            @click="page++; updateQuery()"
-            variant="outline"
-            size="sm"
-          >
-          <Icon name="material-symbols:arrow-forward-ios-rounded" />
-          </BaseButton>
-        </div>
+  <button
+    class="px-3 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+    :disabled="page === 1"
+    @click="page--; updateQuery()"
+  >
+    <Icon name="lucide:chevron-left" />
+  </button>
+
+  <button
+    v-for="n in pagination.totalPages"
+    :key="n"
+    class="px-3 py-1 border rounded"
+    :class="page === n ? 'bg-primary-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'"
+    @click="page = n; updateQuery()"
+  >
+    {{ n }}
+  </button>
+
+  <button
+    class="px-3 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+    :disabled="page === pagination.totalPages"
+    @click="page++; updateQuery()"
+  >
+    <Icon name="lucide:chevron-right" />
+  </button>
+</div>
+
       </div>
     </section>
   </div>
