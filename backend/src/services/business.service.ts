@@ -20,6 +20,14 @@ export async function createBusinessService(userId: string, payload: BusinessPay
     return newBusiness
 }
 
+export async function getBusinessByIdService(businessId: string) {
+    const business = await db.business.findUnique({
+        where: { id: businessId }
+    })
+
+    return business
+}
+
 export async function getAllBusiness(page: number, limit: number, search?: string) {
     const take = page * limit // banyak data yang diambil
     const skip = (page - 1) * limit

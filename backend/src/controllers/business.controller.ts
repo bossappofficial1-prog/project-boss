@@ -1,8 +1,10 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { handlerAnyError } from "../errors/api_errors";
 import { getAllBusiness, getBusinessDetailService, getBusinessProductService, getBusinessService } from "../services/business.service";
 import { ResponseUtil } from "../utils/response.util";
 import { getBusinessWalletService } from "../services/wallet.service";
+import { createOutletService } from "../services/outlet.service";
+import { config } from "../configs/config";
 
 export async function getAllBusinessesController(req: Request, res: Response) {
     try {
@@ -48,5 +50,26 @@ export async function getBusinessWalletController(req: Request, res: Response) {
         return ResponseUtil.success(res, wallet)
     } catch (error) {
         return handlerAnyError(error, res)
+    }
+}
+
+export async function createBusinessOutletController(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { businessId } = req.params;
+        const file = req.file
+        const { address, name, phone } = req.body
+
+        const image = `${config.BASE_URL}/outlets/${file?.filename}`
+
+        const newOutlet = await createOutletService(businessId, {
+            address,
+            image,
+            name,
+            phone
+        })
+
+        return ResponseUtil.success(res, newOutlet, 'success', 201)
+    } catch (error) {
+        return next(error)
     }
 }

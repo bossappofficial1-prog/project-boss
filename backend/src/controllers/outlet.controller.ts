@@ -1,8 +1,8 @@
-import { Request, response, Response } from "express";
+import { NextFunction, Request, response, Response } from "express";
 import { handlerAnyError } from "../errors/api_errors";
 import { getAllOutletService, getOutletById, getOutletDashboardService } from "../services/outlet.service";
 import { ResponseUtil } from "../utils/response.util";
-import { getProductByType, getProductOutletService } from "../services/product.service";
+import { createProductService, getProductByType, getProductOutletService } from "../services/product.service";
 import { ProductType } from "@prisma/client";
 import { isValidEnumValue } from "../utils/enum";
 import { getOrderOutlet } from "../services/order.service";
@@ -115,5 +115,40 @@ export async function getOutletDashboard(req: Request, res: Response) {
     return ResponseUtil.success(res, data)
   } catch (error) {
     return handlerAnyError(error, res)
+  }
+}
+
+export async function createProductFoOutlet(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { outletId } = req.params
+    const image = req.file?.filename
+    const {
+      name,
+      price,
+      type,
+      costPrice,
+      description,
+      quantity,
+      unit
+    } = req.body
+
+    const priceNumber = parseInt(price, 0)
+    const costPriceNumber = parseInt(costPrice, 0)
+    const quantityNumber = parseInt(quantity, 0)
+
+    const newProduct = await createProductService(outletId, {
+      image,
+      name,
+      price: priceNumber,
+      type,
+      costPrice: costPriceNumber,
+      description,
+      quantity: quantityNumber,
+      unit
+    })
+
+    return ResponseUtil.success(res, newProduct, 'success', 201)
+  } catch (error) {
+    return next(error)
   }
 }

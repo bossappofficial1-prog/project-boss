@@ -36,6 +36,7 @@ export async function createUser(data: {
 }
 
 export async function getUserById(id: string) {
+    // Ambil data user tanpa businesses dulu
     const user = await db.user.findFirst({
         where: { id },
         select: {
@@ -45,28 +46,45 @@ export async function getUserById(id: string) {
             avatar: true,
             isVerified: true,
             role: true,
-            businesses: {
-                select: {
-                    id: true, name: true,
-                    outlets: {
-                        select: {
-                            id: true,
-                            name: true,
-                            address: true
-                        }
-                    }
-                },
-            },
             createdAt: true,
             updatedAt: true
         }
-    })
-    if (!user) throw new AppError("user not found", 404)
-    const { businesses, ...other } = user
-    const { outlets, ...business } = businesses!
+    });
 
-    return { ...other, business, outlets }
+    if (!user) throw new AppError("user not found", 404);
+
+    // Jika bukan OWNER, langsung return user
+    if (user.role !== "OWNER") {
+        return { ...user };
+    }
+
+    // Jika OWNER, ambil businesses dan outlets-nya
+    const businesses = await db.business.findMany({
+        where: { ownerId: id },
+        select: {
+            id: true,
+            name: true,
+            outlets: {
+                select: {
+                    id: true,
+                    name: true,
+                    address: true
+                }
+            }
+        }
+    });
+
+    // Anggap satu user hanya punya satu business (sesuai kode awal)
+    const business = businesses[0] ?? null;
+    const outlets = business?.outlets ?? [];
+
+    return {
+        ...user,
+        business,
+        outlets
+    };
 }
+
 
 export async function deleteUser(id: string) {
     await getUserById(id)

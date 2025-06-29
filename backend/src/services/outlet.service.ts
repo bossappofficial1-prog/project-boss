@@ -1,16 +1,34 @@
 import { db } from "../configs/database";
 import { AppError } from "../errors/api_errors";
+import { getBusinessByIdService } from "./business.service";
 
 export async function getAllOutletService(page: number, limit: number, search?: string) {
     const take = page * limit // banyak data yang diambil
     const skip = (page - 1) * limit
 
-    const count = await db.outlet.count()
+    const whereCondition: any = search ? {
+        OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { address: { contains: search, mode: "insensitive" } },
+            {
+                business: {
+                    name: { contains: search, mode: "insensitive" }
+                }
+            }
+        ]
+    } : {};
+
+    const count = await db.outlet.count({ where: whereCondition! })
     const outlets = await db.outlet.findMany({
         where: search ? {
             OR: [
                 { name: { contains: search, mode: "insensitive" } },
-                { address: { contains: search, mode: "insensitive" } }
+                { address: { contains: search, mode: "insensitive" } },
+                {
+                    business: {
+                        name: { contains: search, mode: "insensitive" }
+                    }
+                }
             ]
         } : {},
         select: {
@@ -21,7 +39,8 @@ export async function getAllOutletService(page: number, limit: number, search?: 
             image: true,
             business: { select: { name: true } },
             createdAt: true,
-            updatedAt: true
+            updatedAt: true,
+            _count: { select: { products: true } }
         },
         orderBy: {
             orders: { _count: "desc" }
@@ -31,8 +50,8 @@ export async function getAllOutletService(page: number, limit: number, search?: 
     })
 
     const outletMap = outlets.map((outlet) => {
-        const { business, ...others } = outlet
-        return { ...others, business_name: outlet.business.name }
+        const { business, _count, ...others } = outlet
+        return { ...others, product_count: _count.products, business_name: outlet.business.name }
     })
 
     return { outlets: outletMap, count }
@@ -138,7 +157,7 @@ export async function getOutletDashboardService(outletId: string) {
             product: { outletId: outlet.id }
         },
         _sum: { quantity: true },
-        orderBy: { _sum: { quantity: "asc" } },
+        orderBy: { _sum: { quantity: "desc" } },
         take: 5
     })
 
@@ -165,4 +184,27 @@ export async function getOutletDashboardService(outletId: string) {
         orderStatusSummary,
         bestSellingProducts
     }
+}
+
+export async function createOutletService(businessId: string, data: {
+    name: string,
+    address: string,
+    image: string,
+    phone: string,
+}) {
+    const business = await getBusinessByIdService(businessId)
+
+    if (!business) throw new AppError(`Business id: ${businessId} not found`);
+
+    const newOutlet = await db.outlet.create({
+        data: {
+            name: data.name,
+            address: data.address,
+            image: data.image,
+            phone: data.phone,
+            businessId,
+        }
+    })
+
+    return newOutlet
 }
