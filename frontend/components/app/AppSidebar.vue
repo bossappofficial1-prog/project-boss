@@ -20,7 +20,7 @@ const menuItems = [
     { to: '/umkm/orders', icon: 'lucide:layout-list', label: 'Pesanan' },
     { to: '/umkm/queue', icon: 'lucide:list-ordered', label: 'Antrian' },
     { to: '/umkm/reports', icon: 'lucide:clipboard-list', label: 'Laporan' },
-    { to: '/umkm/transaction', icon: 'lucide:circle-dolar-sign', label: 'Pengeluaran' },
+    { to: '/umkm/transaction', icon: 'lucide:circle-dollar-sign', label: 'Pengeluaran' },
     { to: '/umkm/expense', icon: 'lucide:history', label: 'Riwayat transaksi' },
 ]
 
