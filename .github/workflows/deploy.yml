@@ -50,7 +50,7 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
             cd project-boss
             git clone https://github.com/PitokDf/project-boss.git || exit 1
             cd project-boss
@@ -80,7 +80,7 @@ jobs:
                 docker compose up -d
                 exit 1
                 }
-            'EOF'
+            EOF
 
       - name: Notify Telegram
         if: always()
