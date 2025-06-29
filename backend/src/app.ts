@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import "./configs/pasport"
 import morgan from "morgan";
-import testRouter from "./routes/test.routes";
 import apiRouter from "./routes";
 import { config } from "./configs/config";
 import { generalLimiter } from "./middlewares/rate_limit.middleware";
@@ -106,7 +105,6 @@ app.use('/health', (req, res) => {
 setupSwagger(app);
 
 // Rute API
-app.use("/api", testRouter); // Rute API utama (jika testRouter ditujukan untuk API publik)
 app.use('/api/v1', apiRouter); // Rute API versi
 
 // --- Middleware Penanganan Kesalahan ---
