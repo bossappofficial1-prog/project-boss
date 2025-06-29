@@ -9,7 +9,6 @@ import logger from "./utils/logger.util";
 import compression from 'compression';
 import { errorHandler, notFound } from "./middlewares/error.middleware";
 import helmet from 'helmet';
-import setupSwagger from "./utils/swagger";
 import path from "node:path";
 import passport from "passport";
 
@@ -100,9 +99,6 @@ app.use('/health', (req, res) => {
         version: process.env.npm_package_version || '1.0.0'
     });
 });
-
-// Menyiapkan dokumentasi Swagger
-setupSwagger(app);
 
 // Rute API
 app.use('/api/v1', apiRouter); // Rute API versi
