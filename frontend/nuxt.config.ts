@@ -35,8 +35,4 @@ export default defineNuxtConfig({
       apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL,
     },
   },
-
-  nitro: {
-    preset: 'node-server'
-  }
 });
