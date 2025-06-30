@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from '#app'
 import { useAuthStore } from '~/stores/useAuthStore'
 
+// --- Existing script setup - No changes to functionality ---
 const name = ref('')
 const email = ref('')
 const password = ref('')
@@ -16,7 +17,7 @@ async function handleRegister() {
 
   isLoading.value = true
   try {
-    // Simulasi proses API register
+    // Simulate API registration process
     await new Promise(resolve => setTimeout(resolve, 1500))
 
     const newUser = {
@@ -44,46 +45,91 @@ definePageMeta({
 </script>
 
 <template>
-  <div class="min-h-screen flex">
-    <!-- Left Side - Form -->
-    <div class="flex-1 flex items-center justify-center p-8 bg-white dark:bg-gray-900">
-      <div class="w-full max-w-md">
+  <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
+    
+    <!-- Back Button -->
+    <div class="absolute top-4 left-4 z-10">
+      <NuxtLink to="/home" class="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-700 shadow backdrop-blur-sm">
+        <Icon name="mdi:arrow-left" class="mr-1" />
+        Kembali
+      </NuxtLink>
+    </div>
+    
+    <!-- Color Mode Toggle -->
+    <div class="absolute top-4 right-4 z-10">
+      <BaseColorMode />
+    </div>
+    
+    <!-- Main Card Container -->
+    <div class="flex w-full max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+      
+      <!-- Left Side - Branding -->
+      <div class="hidden md:flex flex-col justify-center items-center w-1/2 bg-primary-600 text-white p-12 text-center">
+        <Icon name="mdi:store-plus" size="100" class="mb-6 opacity-80" />
+        <h1 class="text-3xl font-bold mb-3">
+          Bangun Bisnis Anda
+        </h1>
+        <p class="text-primary-100">
+          Buat akun gratis untuk mulai kelola outlet, produk, transaksi, dan laporan usaha Anda.
+        </p>
+      </div>
+
+      <!-- Right Side - Form -->
+      <div class="w-full md:w-1/2 p-8 sm:p-12">
         <!-- Header -->
-        <div class="text-center mb-8">
-          <div class="flex items-center justify-center mb-6">
-            <Icon name="mdi:bag-personal" class="w-12 h-12 text-primary-600" />
-          </div>
+        <div class="text-center md:text-left mb-8">
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Daftar Akun Baru
+            Akun Baru
           </h1>
           <p class="text-gray-600 dark:text-gray-400">
-            Mulai kelola bisnis UMKM Anda dengan BOSS
+            Selamat datang! Silakan isi data Anda.
           </p>
         </div>
 
         <!-- Form -->
-        <form @submit.prevent="handleRegister" class="space-y-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nama Lengkap</label>
-            <BaseInput v-model="name" placeholder="Nama Anda" required :disabled="isLoading" />
+        <form @submit.prevent="handleRegister" class="space-y-5">
+          <!-- Name Input -->
+          <div class="relative">
+            <!-- <Icon name="mdi:account-outline" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /> -->
+            <BaseInput 
+              v-model="name" 
+              placeholder="Nama Lengkap Anda" 
+              required 
+              :disabled="isLoading" 
+              input-class="pl-10"
+            />
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
-            <BaseInput v-model="email" type="email" placeholder="Email aktif Anda" required :disabled="isLoading" />
+          <!-- Email Input -->
+          <div class="relative">
+            <!-- <Icon name="mdi:email-outline" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /> -->
+            <BaseInput 
+              v-model="email" 
+              type="email" 
+              placeholder="Email aktif Anda" 
+              required 
+              :disabled="isLoading" 
+              input-class="pl-10"
+            />
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
-            <BasePasswordInput v-model="password" placeholder="Password minimal 6 karakter" required :disabled="isLoading" />
+          <!-- Password Input -->
+          <div class="relative">
+            <BasePasswordInput 
+              v-model="password" 
+              placeholder="Password minimal 6 karakter" 
+              required 
+              :disabled="isLoading"
+              input-class="pl-10"
+            />
           </div>
 
+          <!-- Submit Button -->
           <BaseButton
             class="w-full"
             type="submit"
             variant="primary"
             size="lg"
-            full-width
             :loading="isLoading"
             :disabled="!name || !email || !password"
           >
@@ -95,33 +141,10 @@ definePageMeta({
         <div class="mt-8 text-center">
           <p class="text-sm text-gray-600 dark:text-gray-400">
             Sudah punya akun?
-            <NuxtLink to="/login" class="text-primary-600 hover:text-primary-500 font-medium">Masuk sekarang</NuxtLink>
+            <NuxtLink to="/login" class="text-primary-600 hover:text-primary-500 font-medium">Masuk di sini</NuxtLink>
           </p>
         </div>
       </div>
-    </div>
-
-    <!-- Right Side -->
-    <div class="hidden lg:flex flex-1 bg-gradient-to-br from-primary-600 to-primary-800 items-center justify-center p-12">
-      <div class="text-center text-white">
-        <div class="w-64 h-64 mx-auto mb-8 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-sm">
-          <Icon name="mdi:store-plus" size="120" class="text-white/80" />
-        </div>
-        <h2 class="text-3xl font-bold mb-4">Bangun Bisnis Anda</h2>
-        <p class="text-xl text-primary-100 max-w-md">
-          Buat akun gratis untuk mulai kelola outlet, produk, transaksi, dan laporan usaha Anda
-        </p>
-      </div>
-    </div>
-
-    <div class="absolute top-4 right-4">
-      <BaseColorMode />
-    </div>
-    
-    <div class="absolute top-4 left-4">
-      <NuxtLink to="/" class="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 shadow">
-        <Icon name="mdi:arrow-left" class="mr-2" />
-      </NuxtLink>
     </div>
   </div>
 </template>
