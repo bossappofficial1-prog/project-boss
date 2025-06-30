@@ -1,32 +1,19 @@
-name: Enhanced CI/CD for Project-Boss with Zero-Downtime Deployment
+name: CI/CD for Project-Boss Monorepo
 
 on:
   push:
     branches:
-      - main
-  workflow_dispatch: # Allows manual trigger
-
-env:
-  DOCKER_BUILDKIT: 1
-  COMPOSE_DOCKER_CLI_BUILD: 1
+      - main # Trigger workflow setiap ada push ke branch 'main'
 
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
-    outputs:
-      backend_digest: ${{ steps.build_backend.outputs.digest }}
-      frontend_digest: ${{ steps.build_frontend.outputs.digest }}
-      timestamp: ${{ steps.timestamp.outputs.timestamp }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Generate timestamp
-        id: timestamp
-        run: echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+        uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -41,13 +28,9 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/project-boss-backend:latest
-            ${{ secrets.DOCKER_USERNAME }}/project-boss-backend:${{ steps.timestamp.outputs.timestamp }}
-            ${{ secrets.DOCKER_USERNAME }}/project-boss-backend:${{ github.sha }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/project-boss-backend:latest
           cache-from: type=gha,scope=backend-cache
           cache-to: type=gha,mode=max,scope=backend-cache
-          platforms: linux/amd64,linux/arm64
 
       - name: Build and push frontend image
         id: build_frontend
@@ -56,30 +39,16 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/project-boss-frontend:latest
-            ${{ secrets.DOCKER_USERNAME }}/project-boss-frontend:${{ steps.timestamp.outputs.timestamp }}
-            ${{ secrets.DOCKER_USERNAME }}/project-boss-frontend:${{ github.sha }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/project-boss-frontend:latest
           cache-from: type=gha,scope=frontend-cache
           cache-to: type=gha,mode=max,scope=frontend-cache
-          platforms: linux/amd64,linux/arm64
-
-      - name: Image security scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ secrets.DOCKER_USERNAME }}/project-boss-backend:latest
-          format: "sarif"
-          output: "trivy-results.sarif"
-        continue-on-error: true
 
   deploy:
     runs-on: ubuntu-latest
     needs: build_and_push
-    environment:
-      name: production
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout code # Pastikan kode di-checkout di job deploy juga untuk akses file
+        uses: actions/checkout@v3
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -91,10 +60,11 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Create enhanced deployment template
+      # --- MEMBUAT FILE .ENV.DEPLOY DI RUNNER ---
+      - name: Create production .env.deploy file on runner
         run: |
-          cat << 'EOF' > .env.template
-          # Blue-Green Deployment Environment Variables
+          cat << 'EOF' > .env.deploy
+          # File ini akan diisi dengan nilai dari GitHub Secrets di VPS oleh envsubst
           BASE_URL=${BASE_URL}
           DB_DATABASE=${DB_DATABASE}
           DB_USER=${DB_USER}
@@ -120,327 +90,106 @@ jobs:
           SMTP_PASS=${SMTP_PASS}
           SMTP_USER=${SMTP_USER}
           NUXT_PUBLIC_API_BASE=https://${BACKEND_DOMAIN}/api/v1
-
-          # Deployment specific
-          DEPLOYMENT_TIMESTAMP=${DEPLOYMENT_TIMESTAMP}
-          GIT_COMMIT=${GIT_COMMIT}
-          DEPLOYMENT_ID=${DEPLOYMENT_ID}
           EOF
+        # Catatan: Variabel di atas akan diisi oleh GitHub Actions Runner sebagai environment variable
+        #        sebelum skrip ini dijalankan, sehingga 'envsubst' di deploy_script.sh bisa bekerja.
 
-      - name: Create blue-green deployment script
-        run: |
-          cat << 'SCRIPT_EOF' > deploy_script.sh
-          #!/bin/bash
-          set -euo pipefail # Exit on error, undefined vars, pipe failures
-
-          # Colors for output
-          RED='\033[0;31m'
-          GREEN='\033[0;32m'
-          YELLOW='\033[1;33m'
-          BLUE='\033[0;34m'
-          NC='\033[0m' # No Color
-
-          log() {
-              echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
-          }
-
-          success() {
-              echo -e "${GREEN}[SUCCESS]${NC} $1"
-          }
-
-          warning() {
-              echo -e "${YELLOW}[WARNING]${NC} $1"
-          }
-
-          error() {
-              echo -e "${RED}[ERROR]${NC} $1"
-          }
-
-          # Configuration
-          DEPLOY_PATH="${DEPLOY_PATH:-/opt/project-boss}"
-          BACKUP_PATH="${DEPLOY_PATH}/backups"
-          CURRENT_DEPLOYMENT_FILE="${DEPLOY_PATH}/.current_deployment"
-          MAX_ROLLBACK_ATTEMPTS=3
-          HEALTH_CHECK_TIMEOUT=120
-          HEALTH_CHECK_INTERVAL=5
-
-          log "🚀 Starting Blue-Green Deployment for Project-Boss"
-          log "📁 Deployment Path: $DEPLOY_PATH"
-
-          # Ensure deployment directory exists
-          mkdir -p "$DEPLOY_PATH" "$BACKUP_PATH"
-          cd "$DEPLOY_PATH"
-
-          # Determine current and new deployment slots
-          if [[ -f "$CURRENT_DEPLOYMENT_FILE" ]]; then
-              CURRENT_SLOT=$(cat "$CURRENT_DEPLOYMENT_FILE")
-              log "📖 Current deployment slot: $CURRENT_SLOT"
-          else
-              CURRENT_SLOT=""
-              log "📝 No current deployment found, this is the first deployment"
-          fi
-
-          # Toggle between blue and green
-          if [[ "$CURRENT_SLOT" == "blue" ]]; then
-              NEW_SLOT="green"
-              OLD_SLOT="blue"
-          else
-              NEW_SLOT="blue"
-              OLD_SLOT="green"
-          fi
-
-          log "🎯 Deploying to: $NEW_SLOT slot"
-          log "🔄 Current slot: ${OLD_SLOT:-none}"
-
-          # Create environment file
-          log "📋 Creating environment configuration..."
-          if ! command -v envsubst &> /dev/null; then
-              error "envsubst not found. Installing gettext..."
-              sudo apt-get update && sudo apt-get install -y gettext
-          fi
-
-          envsubst < "${DEPLOY_PATH}/.env.template" > ".env.${NEW_SLOT}"
-          chmod 600 ".env.${NEW_SLOT}"
-          success "Environment file created for $NEW_SLOT slot"
-
-          # Docker login
-          log "🔐 Logging into Docker Hub..."
-          echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-          success "Docker login successful"
-
-          # Create new deployment compose files
-          log "📄 Setting up compose files for $NEW_SLOT deployment..."
-
-          # Create slot-specific compose file
-          cat << COMPOSE_EOF > "docker-compose.${NEW_SLOT}.yml"
-          version: '3.8'
-
-          services:
-            backend-${NEW_SLOT}:
-              extends:
-                file: docker-compose.yml
-                service: backend
-              container_name: project-boss-backend-${NEW_SLOT}
-              env_file: .env.${NEW_SLOT}
-              ports:
-                - "300${NEW_SLOT == 'blue' ? '1' : '2'}:3000"
-              networks:
-                - project-boss-${NEW_SLOT}
-              labels:
-                - "traefik.enable=true"
-                - "traefik.http.routers.backend-${NEW_SLOT}.rule=Host(\`\${BACKEND_DOMAIN}\`)"
-                - "traefik.http.routers.backend-${NEW_SLOT}.tls=true"
-                - "traefik.http.routers.backend-${NEW_SLOT}.tls.certresolver=letsencrypt"
-                - "traefik.http.services.backend-${NEW_SLOT}.loadbalancer.server.port=3000"
-                - "deployment.slot=${NEW_SLOT}"
-                - "deployment.timestamp=\${DEPLOYMENT_TIMESTAMP}"
-            
-            frontend-${NEW_SLOT}:
-              extends:
-                file: docker-compose.yml
-                service: frontend
-              container_name: project-boss-frontend-${NEW_SLOT}
-              env_file: .env.${NEW_SLOT}
-              ports:
-                - "800${NEW_SLOT == 'blue' ? '1' : '2'}:3000"
-              networks:
-                - project-boss-${NEW_SLOT}
-              labels:
-                - "traefik.enable=true"
-                - "traefik.http.routers.frontend-${NEW_SLOT}.rule=Host(\`\${FRONTEND_DOMAIN}\`)"
-                - "traefik.http.routers.frontend-${NEW_SLOT}.tls=true"
-                - "traefik.http.routers.frontend-${NEW_SLOT}.tls.certresolver=letsencrypt"
-                - "traefik.http.services.frontend-${NEW_SLOT}.loadbalancer.server.port=3000"
-                - "deployment.slot=${NEW_SLOT}"
-                - "deployment.timestamp=\${DEPLOYMENT_TIMESTAMP}"
-            
-            db-${NEW_SLOT}:
-              extends:
-                file: docker-compose.yml
-                service: db
-              container_name: project-boss-db-${NEW_SLOT}
-              env_file: .env.${NEW_SLOT}
-              ports:
-                - "543${NEW_SLOT == 'blue' ? '1' : '2'}:5432"
-              networks:
-                - project-boss-${NEW_SLOT}
-              volumes:
-                - db-data-${NEW_SLOT}:/var/lib/postgresql/data
-
-          networks:
-            project-boss-${NEW_SLOT}:
-              name: project-boss-${NEW_SLOT}
-
-          volumes:
-            db-data-${NEW_SLOT}:
-              name: project-boss-db-data-${NEW_SLOT}
-          COMPOSE_EOF
-
-          # Pull latest images
-          log "📥 Pulling latest Docker images..."
-          docker compose -f docker-compose.yml -f "docker-compose.${NEW_SLOT}.yml" pull
-          success "Images pulled successfully"
-
-          # Run database migrations in a temporary container
-          log "🗃️ Running database migrations..."
-          docker compose -f docker-compose.yml -f "docker-compose.${NEW_SLOT}.yml" \
-            run --rm "backend-${NEW_SLOT}" npx prisma migrate deploy
-          success "Database migrations completed"
-
-          # Start new deployment
-          log "🎬 Starting $NEW_SLOT deployment..."
-          docker compose -f docker-compose.yml -f "docker-compose.${NEW_SLOT}.yml" \
-            up -d --remove-orphans
-          success "$NEW_SLOT deployment started"
-
-          # Health check function
-          health_check() {
-              local slot=$1
-              local port=$2
-              local max_attempts=$((HEALTH_CHECK_TIMEOUT / HEALTH_CHECK_INTERVAL))
-              local attempt=1
-              
-              log "🏥 Starting health check for $slot deployment on port $port..."
-              
-              while [[ $attempt -le $max_attempts ]]; do
-                  if curl -f -s "http://localhost:$port/health" > /dev/null 2>&1; then
-                      success "Health check passed for $slot deployment (attempt $attempt)"
-                      return 0
-                  fi
-                  
-                  log "⏳ Health check attempt $attempt/$max_attempts failed, retrying in ${HEALTH_CHECK_INTERVAL}s..."
-                  sleep $HEALTH_CHECK_INTERVAL
-                  ((attempt++))
-              done
-              
-              error "Health check failed for $slot deployment after $max_attempts attempts"
-              return 1
-          }
-
-          # Perform health checks
-          BACKEND_PORT=$([[ "$NEW_SLOT" == "blue" ]] && echo "3001" || echo "3002")
-          FRONTEND_PORT=$([[ "$NEW_SLOT" == "blue" ]] && echo "8001" || echo "8002")
-
-          if health_check "$NEW_SLOT backend" "$BACKEND_PORT" && 
-             health_check "$NEW_SLOT frontend" "$FRONTEND_PORT"; then
-              success "All health checks passed for $NEW_SLOT deployment"
-          else
-              error "Health checks failed for $NEW_SLOT deployment"
-              
-              log "🔄 Rolling back $NEW_SLOT deployment..."
-              docker compose -f docker-compose.yml -f "docker-compose.${NEW_SLOT}.yml" down
-              error "Deployment failed and rolled back"
-              exit 1
-          fi
-
-          # Switch traffic (update load balancer configuration)
-          log "🔀 Switching traffic to $NEW_SLOT deployment..."
-
-          # Update Traefik labels to route traffic to new deployment
-          docker compose -f docker-compose.yml -f "docker-compose.${NEW_SLOT}.yml" \
-            up -d --no-deps --force-recreate "backend-${NEW_SLOT}" "frontend-${NEW_SLOT}"
-
-          # Wait a moment for traffic to stabilize
-          sleep 10
-
-          # Final health check after traffic switch
-          if health_check "$NEW_SLOT post-switch" "$BACKEND_PORT"; then
-              success "Traffic successfully switched to $NEW_SLOT deployment"
-              
-              # Update current deployment marker
-              echo "$NEW_SLOT" > "$CURRENT_DEPLOYMENT_FILE"
-              
-              # Create deployment backup info
-              cat << BACKUP_EOF > "$BACKUP_PATH/deployment-${DEPLOYMENT_TIMESTAMP}.info"
-          Deployment Information:
-          - Timestamp: $DEPLOYMENT_TIMESTAMP
-          - Git Commit: $GIT_COMMIT
-          - Slot: $NEW_SLOT
-          - Status: SUCCESS
-          - Backend Image: \${DOCKER_USERNAME}/project-boss-backend:$GIT_COMMIT
-          - Frontend Image: \${DOCKER_USERNAME}/project-boss-frontend:$GIT_COMMIT
-          BACKUP_EOF
-              
-              success "Deployment information saved"
-              
-              # Clean up old deployment if it exists
-              if [[ -n "$OLD_SLOT" ]] && [[ "$OLD_SLOT" != "$NEW_SLOT" ]]; then
-                  log "🧹 Cleaning up old $OLD_SLOT deployment..."
-                  docker compose -f docker-compose.yml -f "docker-compose.${OLD_SLOT}.yml" down || true
-                  warning "Old $OLD_SLOT deployment cleaned up"
-              fi
-              
-          else
-              error "Post-switch health check failed"
-              
-              # Attempt to rollback
-              if [[ -n "$OLD_SLOT" ]]; then
-                  warning "🔄 Attempting to rollback to $OLD_SLOT..."
-                  docker compose -f docker-compose.yml -f "docker-compose.${OLD_SLOT}.yml" up -d
-                  echo "$OLD_SLOT" > "$CURRENT_DEPLOYMENT_FILE"
-                  warning "Rolled back to $OLD_SLOT deployment"
-              fi
-              exit 1
-          fi
-
-          # Clean up old images
-          log "🧹 Cleaning up unused Docker images..."
-          docker image prune -f
-
-          # Clean up old backups (keep last 10)
-          log "📁 Cleaning up old deployment backups..."
-          find "$BACKUP_PATH" -name "deployment-*.info" -type f | sort -r | tail -n +11 | xargs -r rm
-
-          success "🎉 Blue-Green deployment completed successfully!"
-          log "✅ Current active deployment: $NEW_SLOT"
-          log "📊 Deployment stats:"
-          docker compose -f docker-compose.yml -f "docker-compose.${NEW_SLOT}.yml" ps
-          SCRIPT_EOF
-
-          chmod +x deploy_script.sh
-
-      - name: Transfer deployment files to VPS
+      # --- MEMBUAT DAN MENTRANSFER deploy_script.sh & FILE COMPOSE KE VPS ---
+      - name: Create and transfer deployment files to VPS
         env:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          # Ensure deployment directory exists
+          # Pastikan direktori deployment ada di VPS
           ssh ${VPS_USER}@${VPS_HOST} "mkdir -p ${DEPLOY_PATH}"
 
-          # Transfer all necessary files
+          # --- Konten deploy_script.sh ---
+          cat << 'SCRIPT_EOF' > deploy_script.sh
+          #!/bin/bash
+          set -e # Keluar jika ada perintah yang gagal
+
+          echo "=== Memulai Proses Deployment ==="
+          echo "Lokasi Deployment: $DEPLOY_PATH"
+
+          # Pindah ke direktori deployment
+          if [ ! -d "$DEPLOY_PATH" ]; then
+              echo "ERROR: Direktori deployment $DEPLOY_PATH tidak ditemukan."
+              exit 1
+          fi
+          cd "$DEPLOY_PATH" || { echo "ERROR: Gagal berpindah ke direktori $DEPLOY_PATH"; exit 1; }
+
+          echo "=== Memuat dan membuat file .env ==="
+          # Memastikan envsubst terinstal
+          if ! command -v envsubst &> /dev/null; then
+              echo "ERROR: 'envsubst' (bagian dari gettext) tidak ditemukan di VPS Anda. Harap instal dengan 'sudo apt-get install gettext'."
+              exit 1
+          fi
+
+          # Menggunakan envsubst untuk mengisi nilai dari variabel lingkungan
+          # ke dalam file .env.deploy dan menyimpannya sebagai .env
+          envsubst < .env.deploy > .env.tmp && mv .env.tmp .env
+          chmod 644 .env
+          echo "File .env berhasil dibuat dan diisi."
+
+          echo "=== Login ke Docker Hub ==="
+          # Menggunakan file sementara untuk password demi mengatasi isu TTY
+          printf "%s" "$DOCKER_PASSWORD" > docker_password_file.txt
+          chmod 600 docker_password_file.txt # Hanya pemilik yang bisa membaca/menulis
+          cat docker_password_file.txt | docker login --username "$DOCKER_USERNAME" --password-stdin
+          rm docker_password_file.txt # Hapus file password setelah digunakan
+
+          if [ $? -ne 0 ]; then
+              echo "ERROR: Login Docker gagal. Membatalkan deployment."
+              exit 1
+          fi
+          echo "Login Docker berhasil."
+
+          echo "=== Menghentikan container yang ada (jika ada) ==="
+          # Gunakan --remove-orphans untuk menghapus container lama.
+          # Gunakan --rmi all untuk menghapus image yang tidak terpakai oleh Compose ini.
+          # Gunakan || true agar perintah ini tidak menghentikan skrip jika terjadi error (misal jaringan masih terhubung)
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml down --remove-orphans --rmi all || true
+
+          echo "=== Menarik image Docker terbaru ==="
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml pull backend frontend
+
+          echo "=== Menjalankan migrasi database Prisma ==="
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm backend npx prisma migrate deploy
+
+          echo "=== Memulai layanan Docker Compose ==="
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+
+          echo "=== Memverifikasi deployment ==="
+          sleep 10 # Beri waktu agar container sempat booting
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+
+          echo "=== Membersihkan image lama ==="
+          docker image prune -f
+
+          echo "=== Deployment selesai dengan sukses ==="
+          SCRIPT_EOF
+
+          # Berikan izin eksekusi pada skrip di runner sebelum transfer
+          chmod +x deploy_script.sh
+
+          # Salin semua file yang diperlukan ke VPS
           scp deploy_script.sh ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
-          scp .env.template ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
-          scp docker-compose.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
+          scp .env.deploy ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
+          scp docker-compose.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/ 
           scp docker-compose.prod.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
 
-          echo "✅ All deployment files transferred successfully"
-          # Tambahkan jeda singkat untuk memastikan semua file selesai disalin
-          sleep 5
+          echo "Semua file deployment berhasil ditransfer."
 
-      - name: Verify files on VPS
+      # --- MENGEKSEKUSI SKRIP DEPLOYMENT DI VPS ---
+      - name: Execute Deployment Script on VPS
         env:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-        run: |
-          echo "🔍 Verifying .env.template on VPS..."
-          ssh -o StrictHostKeyChecking=no ${VPS_USER}@${VPS_HOST} "
-            cd ${DEPLOY_PATH} && \
-            ls -la .env.template && echo '.env.template found and accessible' || { echo 'Error: .env.template not found or accessible'; exit 1; }
-          "
-          echo "✅ Verification complete."
-
-      - name: Execute Blue-Green Deployment
-        env:
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          DEPLOYMENT_TIMESTAMP: ${{ needs.build_and_push.outputs.timestamp }}
-          GIT_COMMIT: ${{ github.sha }}
-          DEPLOYMENT_ID: ${{ github.run_id }}
-          # All secrets for environment substitution
           BASE_URL: ${{ secrets.BASE_URL }}
+          # Semua secrets ini akan diekspor sebagai environment variable ke sesi SSH.
+          # deploy_script.sh akan langsung membacanya dari environment.
           DB_DATABASE: ${{ secrets.DB_DATABASE }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -464,128 +213,41 @@ jobs:
           SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
+
         run: |
-          echo "🚀 Executing blue-green deployment on VPS..."
+          echo "Menghubungkan ke VPS untuk menjalankan skrip deployment..."
+          # Jalankan skrip deploy_script.sh di VPS, pastikan env vars diekspor
+          # Menggunakan -t untuk alokasi TTY, yang dapat membantu Docker login
+          ssh -t ${VPS_USER}@${VPS_HOST} "export DEPLOY_PATH='${DEPLOY_PATH}' && \
+            export DB_DATABASE='${DB_DATABASE}' && \
+            export BASE_URL='${BASE_URL}' && \
+            export DB_USER='${DB_USER}' && \
+            export DB_PASSWORD='${DB_PASSWORD}' && \
+            export DOCKER_USERNAME='${DOCKER_USERNAME}' && \
+            export DOCKER_PASSWORD='${DOCKER_PASSWORD}' && \
+            export BACKEND_DOMAIN='${BACKEND_DOMAIN}' && \
+            export FRONTEND_DOMAIN='${FRONTEND_DOMAIN}' && \
+            export JWT_SECRET='${JWT_SECRET}' && \
+            export RATE_LIMIT_WINDOW_MS='${RATE_LIMIT_WINDOW_MS}' && \
+            export RATE_LIMIT_MAX_REQUESTS='${RATE_LIMIT_MAX_REQUESTS}' && \
+            export GOOGLE_CLIENT_ID='${GOOGLE_CLIENT_ID}' && \
+            export GOOGLE_CLIENT_SECRET='${GOOGLE_CLIENT_SECRET}' && \
+            export MIDTRANS_MERCHANT_ID='${MIDTRANS_MERCHANT_ID}' && \
+            export MIDTRANS_SERVER_KEY='${MIDTRANS_SERVER_KEY}' && \
+            export MIDTRANS_CLIENT_KEY='${MIDTRANS_CLIENT_KEY}' && \
+            export MIDTRANS_NOTIFICATION_CALLBACK_URL='${MIDTRANS_NOTIFICATION_CALLBACK_URL}' && \
+            export MIDTRANS_EXPIRE_UNIT='${MIDTRANS_EXPIRE_UNIT}' && \
+            export MIDTRANS_EXPIRE_DURATION='${MIDTRANS_EXPIRE_DURATION}' && \
+            export SMTP_HOST='${SMTP_HOST}' && \
+            export SMTP_PORT='${SMTP_PORT}' && \
+            export SMTP_SECURE='${SMTP_SECURE}' && \
+            export SMTP_PASS='${SMTP_PASS}' && \
+            export SMTP_USER='${SMTP_USER}' && \
+            chmod +x ${DEPLOY_PATH}/deploy_script.sh && \
+            ${DEPLOY_PATH}/deploy_script.sh"
+          echo "Proses deployment di VPS dipicu."
 
-          # Execute deployment with all environment variables
-          ssh -o StrictHostKeyChecking=no ${VPS_USER}@${VPS_HOST} "
-            export DEPLOY_PATH='${DEPLOY_PATH}'
-            export DEPLOYMENT_TIMESTAMP='${DEPLOYMENT_TIMESTAMP}'
-            export GIT_COMMIT='${GIT_COMMIT}'
-            export DEPLOYMENT_ID='${DEPLOYMENT_ID}'
-            export BASE_URL='${BASE_URL}'
-            export DB_DATABASE='${DB_DATABASE}'
-            export DB_USER='${DB_USER}'
-            export DB_PASSWORD='${DB_PASSWORD}'
-            export DOCKER_USERNAME='${DOCKER_USERNAME}'
-            export DOCKER_PASSWORD='${DOCKER_PASSWORD}'
-            export BACKEND_DOMAIN='${BACKEND_DOMAIN}'
-            export FRONTEND_DOMAIN='${FRONTEND_DOMAIN}'
-            export JWT_SECRET='${JWT_SECRET}'
-            export RATE_LIMIT_WINDOW_MS='${RATE_LIMIT_WINDOW_MS}'
-            export RATE_LIMIT_MAX_REQUESTS='${RATE_LIMIT_MAX_REQUESTS}'
-            export GOOGLE_CLIENT_ID='${GOOGLE_CLIENT_ID}'
-            export GOOGLE_CLIENT_SECRET='${GOOGLE_CLIENT_SECRET}'
-            export MIDTRANS_MERCHANT_ID='${MIDTRANS_MERCHANT_ID}'
-            export MIDTRANS_SERVER_KEY='${MIDTRANS_SERVER_KEY}'
-            export MIDTRANS_CLIENT_KEY='${MIDTRANS_CLIENT_KEY}'
-            export MIDTRANS_NOTIFICATION_CALLBACK_URL='${MIDTRANS_NOTIFICATION_CALLBACK_URL}'
-            export MIDTRANS_EXPIRE_UNIT='${MIDTRANS_EXPIRE_UNIT}'
-            export MIDTRANS_EXPIRE_DURATION='${MIDTRANS_EXPIRE_DURATION}'
-            export SMTP_HOST='${SMTP_HOST}'
-            export SMTP_PORT='${SMTP_PORT}'
-            export SMTP_SECURE='${SMTP_SECURE}'
-            export SMTP_PASS='${SMTP_PASS}'
-            export SMTP_USER='${SMTP_USER}'
-            
-            cd ${DEPLOY_PATH} && chmod +x deploy_script.sh && ./deploy_script.sh
-          "
-
-          echo "✅ Blue-green deployment completed!"
-
-      - name: Post-deployment verification
-        env:
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          BACKEND_DOMAIN: ${{ secrets.BACKEND_DOMAIN }}
-          FRONTEND_DOMAIN: ${{ secrets.FRONTEND_DOMAIN }}
-        run: |
-          echo "🔍 Performing post-deployment verification..."
-
-          # Test endpoints
-          curl -f "https://${BACKEND_DOMAIN}/health" && echo "✅ Backend health check passed"
-          curl -f "https://${FRONTEND_DOMAIN}" && echo "✅ Frontend accessibility confirmed"
-
-          # Get deployment status from VPS
-          ssh ${VPS_USER}@${VPS_HOST} "
-            cd ${DEPLOY_PATH}
-            echo '📊 Current deployment status:'
-            cat .current_deployment 2>/dev/null || echo 'No deployment marker found'
-            echo '🐳 Running containers:'
-            docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep project-boss
-          "
-
-      - name: Cleanup local files
+      # --- CLEANUP LOKAL ---
+      - name: Cleanup local deployment files
         if: always()
-        run: |
-          rm -f deploy_script.sh .env.template
-          echo "🧹 Local cleanup completed"
-
-      - name: Notify deployment status
-        if: always()
-        env:
-          DEPLOYMENT_STATUS: ${{ job.status }}
-          GIT_COMMIT: ${{ github.sha }}
-          DEPLOYMENT_TIMESTAMP: ${{ needs.build_and_push.outputs.timestamp }}
-        run: |
-          if [[ "$DEPLOYMENT_STATUS" == "success" ]]; then
-            echo "🎉 Deployment SUCCESS notification"
-            echo "✅ Commit: $GIT_COMMIT"
-            echo "📅 Timestamp: $DEPLOYMENT_TIMESTAMP"
-            echo "🔗 Deployment completed with zero downtime!"
-          else
-            echo "❌ Deployment FAILED notification"
-            echo "💥 Commit: $GIT_COMMIT"
-            echo "📅 Timestamp: $DEPLOYMENT_TIMESTAMP"
-            echo "🔄 Automatic rollback should have been triggered"
-          fi
-
-  # Optional: Rollback job that can be triggered manually
-  rollback:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-    environment: production
-    steps:
-      - name: Rollback to previous deployment
-        env:
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-        run: |
-          echo "🔄 Initiating manual rollback..."
-          ssh ${VPS_USER}@${VPS_HOST} "
-            cd ${DEPLOY_PATH}
-            
-            # Get current deployment
-            CURRENT=\$(cat .current_deployment 2>/dev/null || echo '')
-            
-            if [[ \$CURRENT == 'blue' ]]; then
-              ROLLBACK_TO='green'
-            else
-              ROLLBACK_TO='blue'
-            fi
-            
-            echo '🔄 Rolling back from \$CURRENT to \$ROLLBACK_TO'
-            
-            # Start the previous deployment
-            docker compose -f docker-compose.yml -f docker-compose.\$ROLLBACK_TO.yml up -d
-            
-            # Update current deployment marker
-            echo \$ROLLBACK_TO > .current_deployment
-            
-            # Stop the failed deployment
-            docker compose -f docker-compose.yml -f docker-compose.\$CURRENT.yml down
-            
-            echo '✅ Rollback completed to \$ROLLBACK_TO deployment'
-          "
+        run: rm -f deploy_script.sh .env.deploy
