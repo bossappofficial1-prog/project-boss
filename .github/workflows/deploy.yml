@@ -65,6 +65,7 @@ jobs:
         run: |
           cat << 'EOF' > .env.deploy
           # File ini akan diisi dengan nilai dari GitHub Secrets di VPS oleh envsubst
+          BASE_URL=${BASE_URL}
           DB_DATABASE=${DB_DATABASE}
           DB_USER=${DB_USER}
           DB_PASSWORD=${DB_PASSWORD}
@@ -186,6 +187,7 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          BASE_URL: ${{ secrets.BASE_URL }}
           # Semua secrets ini akan diekspor sebagai environment variable ke sesi SSH.
           # deploy_script.sh akan langsung membacanya dari environment.
           DB_DATABASE: ${{ secrets.DB_DATABASE }}
