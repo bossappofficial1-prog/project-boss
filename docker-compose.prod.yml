@@ -59,7 +59,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     environment:
-      # Ubah ke domain backend yang bisa diakses dari browser
       NUXT_PUBLIC_API_BASE: https://${BACKEND_DOMAIN}
       NUXT_HOST: 0.0.0.0
       NUXT_PORT: 3000
