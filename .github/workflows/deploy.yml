@@ -3,7 +3,7 @@ name: CI/CD for Project-Boss Monorepo
 on:
   push:
     branches:
-      - main # Trigger workflow setiap ada push ke branch 'main'
+      - main
 
 jobs:
   build_and_push:
@@ -25,10 +25,10 @@ jobs:
         id: build_backend
         uses: docker/build-push-action@v5
         with:
-          context: ./backend # Path ke Dockerfile backend
+          context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/project-boss-backend:latest # Tag image Anda
+          tags: ${{ secrets.DOCKER_USERNAME }}/project-boss-backend:latest
           cache-from: type=gha,scope=backend-cache
           cache-to: type=gha,mode=max,scope=backend-cache
 
@@ -36,17 +36,16 @@ jobs:
         id: build_frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend # Path ke Dockerfile frontend
+          context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/project-boss-frontend:latest # Tag image Anda
+          tags: ${{ secrets.DOCKER_USERNAME }}/project-boss-frontend:latest
           cache-from: type=gha,scope=frontend-cache
           cache-to: type=gha,mode=max,scope=frontend-cache
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build_and_push # Job ini akan berjalan setelah 'build_and_push' selesai
-    # environment: production # Opsional: untuk mengontrol deployment ke lingkungan produksi
+    needs: build_and_push
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -67,11 +66,9 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          # Buat direktori deployment di VPS jika belum ada
           ssh ${VPS_USER}@${VPS_HOST} "mkdir -p ${DEPLOY_PATH}"
-          # Salin file docker-compose.yaml dan docker-compose.prod.yaml ke VPS
-          scp docker-compose.yaml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
-          scp docker-compose.prod.yaml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
+          scp docker-compose.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
+          scp docker-compose.prod.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
           echo "Docker Compose files transferred."
 
       - name: Deploy Docker Compose to VPS
@@ -86,23 +83,17 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           BACKEND_DOMAIN: ${{ secrets.BACKEND_DOMAIN }}
           FRONTEND_DOMAIN: ${{ secrets.FRONTEND_DOMAIN }}
-
-          # Variabel Umum/Bersama
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           RATE_LIMIT_WINDOW_MS: ${{ secrets.RATE_LIMIT_WINDOW_MS }}
           RATE_LIMIT_MAX_REQUESTS: ${{ secrets.RATE_LIMIT_MAX_REQUESTS }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-
-          # Variabel Midtrans
           MIDTRANS_MERCHANT_ID: ${{ secrets.MIDTRANS_MERCHANT_ID }}
           MIDTRANS_SERVER_KEY: ${{ secrets.MIDTRANS_SERVER_KEY }}
           MIDTRANS_CLIENT_KEY: ${{ secrets.MIDTRANS_CLIENT_KEY }}
-          MIDTRANS_NOTIFICATION_CALLBACK_URL: ${{ secrets.MIDTRANS_NOTIFICATION_CALLBACK_URL }}
+          MIDTRANS_NOTIFICATION_CALLBACK_URL: ${{ secrets.MIDTRANS_NOTIFICATION_CALLBACK_CALLBACK_URL }}
           MIDTRANS_EXPIRE_UNIT: ${{ secrets.MIDTRANS_EXPIRE_UNIT }}
           MIDTRANS_EXPIRE_DURATION: ${{ secrets.MIDTRANS_EXPIRE_DURATION }}
-
-          # Variabel SMTP (untuk produksi)
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
@@ -111,14 +102,18 @@ jobs:
 
         run: |
           echo "Connecting to VPS and deploying via Docker Compose..."
-          ssh ${VPS_USER}@${VPS_HOST} << 'EOF'
+          # Perubahan di baris ini:
+          ssh -t ${VPS_USER}@${VPS_HOST} << 'EOF'
             cd ${DEPLOY_PATH}
 
-            # Login ke Docker Hub di VPS Anda
             echo "Logging into Docker Hub..."
             echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
+            # Pemeriksaan status login
+            if [ $? -ne 0 ]; then
+                echo "Docker login failed. Aborting deployment."
+                exit 1
+            fi
 
-            # Buat atau update file .env di VPS dari GitHub Secrets
             echo "Creating/updating .env file on VPS..."
             cat << EOT_ENV | tee .env > /dev/null
             # --- Variabel Database ---
@@ -132,7 +127,7 @@ jobs:
 
             # --- Variabel Umum/Bersama ---
             JWT_SECRET=${JWT_SECRET}
-            NODE_ENV=production # Pastikan NODE_ENV diatur ke production di VPS
+            NODE_ENV=production
 
             # --- Rate Limit configuration (untuk backend) ---
             RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
@@ -159,19 +154,18 @@ jobs:
 
             NUXT_PUBLIC_API_BASE=https://${BACKEND_DOMAIN}/api/v1
 
-            EOT_ENV
+          EOT_ENV
+            
+            chmod 644 .env
 
-            # Pull image terbaru
             echo "Pulling latest Docker images..."
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull backend frontend
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull backend frontend
 
-            # Jalankan migrasi database Prisma
             echo "Running Prisma migrations..."
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml run --rm backend npx prisma migrate deploy
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm backend npx prisma migrate deploy
 
-            # Jalankan container Docker Compose
             echo "Starting Docker Compose services..."
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d --remove-orphans
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
 
             echo "Cleaning up old Docker images..."
             docker image prune -f
