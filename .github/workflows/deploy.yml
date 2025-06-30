@@ -67,8 +67,8 @@ jobs:
           # Buat direktori deployment di VPS jika belum ada
           ssh ${VPS_USER}@${VPS_HOST} "mkdir -p ${DEPLOY_PATH}"
           # Salin file docker-compose.yml dan docker-compose.prod.yml ke VPS
-          scp docker-compose.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
-          scp docker-compose.prod.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
+          scp docker-compose.yaml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
+          scp docker-compose.prod.yaml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
           echo "Docker Compose files transferred."
 
       - name: Deploy Docker Compose to VPS
