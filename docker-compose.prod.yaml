@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ${{ secrets.DOCKER_USERNAME }}/project-boss-backend:latest # Menggunakan image yang sudah di-push
+    image: ${DOCKER_USERNAME}/project-boss-backend:latest # Menggunakan image yang sudah di-push
     build: # Pertahankan bagian build agar `docker compose pull` tetap bisa fallback ke build jika image tidak ditemukan
       context: ./backend
       dockerfile: Dockerfile
@@ -42,7 +42,7 @@ services:
       - "traefik.http.services.backend.loadbalancer.server.port=4444"
 
   frontend:
-    image: ${{ secrets.DOCKER_USERNAME }}/project-boss-frontend:latest # Menggunakan image yang sudah di-push
+    image: ${DOCKER_USERNAME}/project-boss-frontend:latest # Menggunakan image yang sudah di-push
     build:
       context: ./frontend
       dockerfile: Dockerfile
