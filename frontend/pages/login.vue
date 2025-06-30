@@ -6,20 +6,15 @@ import { useAuthStore } from '~/stores/useAuthStore'
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
-const googleApi = `${useRuntimeConfig().public.apiBaseUrl}/auth/google`
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 async function handleLogin() {
-  if (!email.value || !password.value) {
-    return
-  }
+  if (!email.value || !password.value) return
 
   isLoading.value = true
-
   try {
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500))
 
     const userData = {
@@ -33,11 +28,7 @@ async function handleLogin() {
     authStore.setUser(userData)
     authStore.setToken('fake-jwt-token')
 
-    if (authStore.user.role === 'OWNER') {
-      router.push('/umkm')
-    } else {
-      router.push('/home')
-    }
+    router.push('/umkm')
   } catch (error) {
     console.error('Login failed:', error)
   } finally {
@@ -51,56 +42,69 @@ definePageMeta({
 </script>
 
 <template>
-  <div class="min-h-screen flex">
-    <!-- Left Side - Form -->
-    <div class="flex-1 flex items-center justify-center p-8 bg-white dark:bg-gray-900">
-      <div class="w-full max-w-md">
+  <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
+
+    <!-- Back Button -->
+    <div class="absolute top-4 left-4 z-10">
+      <NuxtLink to="/home" class="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-700 shadow backdrop-blur-sm">
+        <Icon name="mdi:arrow-left" class="mr-1" />
+        Kembali
+      </NuxtLink>
+    </div>
+
+    <!-- Color Mode Toggle -->
+    <div class="absolute top-4 right-4 z-10">
+      <BaseColorMode />
+    </div>
+
+    <!-- Main Card Container -->
+    <div class="flex w-full max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+
+      <!-- Left Side - Branding -->
+      <div class="hidden md:flex flex-col justify-center items-center w-1/2 bg-primary-600 text-white p-12 text-center">
+        <Icon name="mdi:bag-personal" size="100" class="mb-6 opacity-80" />
+        <h1 class="text-3xl font-bold mb-3">
+          Selamat Datang Kembali
+        </h1>
+        <p class="text-primary-100">
+          Login untuk mengelola outlet, produk, transaksi, dan laporan UMKM Anda dengan mudah.
+        </p>
+      </div>
+
+      <!-- Right Side - Form -->
+      <div class="w-full md:w-1/2 p-8 sm:p-12 flex flex-col justify-center">
         <!-- Header -->
-        <div class="text-center mb-8">
-          <div class="flex items-center justify-center mb-6">
-            <Icon name="mdi:bag-personal" class="w-12 h-12 text-primary-600" />
-          </div>
+        <div class="text-center md:text-left mb-8">
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Selamat Datang Kembali
+            Masuk Akun
           </h1>
           <p class="text-gray-600 dark:text-gray-400">
-            Masuk ke akun BOSS Anda untuk melanjutkan
+            Silakan masukkan email dan password Anda untuk melanjutkan.
           </p>
         </div>
 
         <!-- Form -->
-        <form @submit.prevent="handleLogin" class="space-y-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email
-            </label>
-            <BaseInput
-              v-model="email"
-              type="email"
-              placeholder="Masukkan email Anda"
-              required
-              :disabled="isLoading"
-            />
-          </div>
+        <form @submit.prevent="handleLogin" class="space-y-5">
+          <BaseInput 
+            v-model="email"
+            type="email"
+            placeholder="Email aktif Anda"
+            required
+            :disabled="isLoading"
+          />
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Password
-            </label>
-            <BasePasswordInput
-              v-model="password"
-              placeholder="Masukkan password Anda"
-              required
-              :disabled="isLoading"
-            />
-          </div>
+          <BasePasswordInput
+            v-model="password"
+            placeholder="Password Anda"
+            required
+            :disabled="isLoading"
+          />
 
           <BaseButton
-          class="w-full"
+            class="w-full"
             type="submit"
             variant="primary"
             size="lg"
-            full-width
             :loading="isLoading"
             :disabled="!email || !password"
           >
@@ -108,70 +112,14 @@ definePageMeta({
           </BaseButton>
         </form>
 
-        <!-- Divider -->
-        <div class="mt-8 mb-6">
-          <div class="relative">
-            <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
-            </div>
-            <div class="relative flex justify-center text-sm">
-              <span class="px-2 bg-white dark:bg-gray-900 text-gray-500">Atau</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Social Login -->
-        <div class="space-y-3">
-          <a :href="googleApi">
-            <BaseButton
-              class="w-full"
-              variant="outline"
-              size="lg"
-              full-width
-              :disabled="isLoading"
-            >
-              <Icon name="mdi:google" class="mr-2" />
-              Masuk dengan Google
-            </BaseButton>
-          </a>
-        </div>
-
         <!-- Footer -->
         <div class="mt-8 text-center">
           <p class="text-sm text-gray-600 dark:text-gray-400">
             Belum punya akun?
-            <NuxtLink
-              to="/register"
-              class="text-primary-600 hover:text-primary-500 font-medium"
-            >
-              Daftar sekarang
-            </NuxtLink>
+            <NuxtLink to="/register" class="text-primary-600 hover:text-primary-500 font-medium">Daftar sekarang</NuxtLink>
           </p>
         </div>
       </div>
-    </div>
-
-    <!-- Right Side - Image/Illustration -->
-    <div class="hidden lg:flex flex-1 bg-gradient-to-br from-primary-600 to-primary-800 items-center justify-center p-12">
-      <div class="text-center text-white">
-        <div class="w-64 h-64 mx-auto mb-8 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-sm">
-          <Icon name="mdi:chart-line" size="120" class="text-white/80" />
-        </div>
-        <h2 class="text-3xl font-bold mb-4">
-          Kelola Bisnis dengan Mudah
-        </h2>
-        <p class="text-xl text-primary-100 max-w-md">
-          Platform terpadu untuk mengelola UMKM, menerima pembayaran, dan mengembangkan bisnis Anda
-        </p>
-      </div>
-    </div>
-
-    <div class="absolute top-4 right-4">
-      <BaseColorMode />
-    </div>
-
-    <div class="absolute top-4 left-4">
-      <BaseBack />
     </div>
   </div>
 </template>
