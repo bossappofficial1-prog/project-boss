@@ -107,7 +107,7 @@ jobs:
             cd ${DEPLOY_PATH}
 
             echo "Logging into Docker Hub..."
-            echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
+            printf "%s" "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
             # Pemeriksaan status login
             if [ $? -ne 0 ]; then
                 echo "Docker login failed. Aborting deployment."
@@ -115,6 +115,7 @@ jobs:
             fi
 
             echo "Creating/updating .env file on VPS..."
+            
             cat << EOT_ENV | tee .env > /dev/null
             # --- Variabel Database ---
             DB_DATABASE=${DB_DATABASE}
