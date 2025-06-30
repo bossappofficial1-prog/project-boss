@@ -25,13 +25,16 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       SMTP_USER: ${SMTP_USER}
 
+    networks:
+      - traefik-network
+
     labels: # Label Traefik untuk produksi
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${BACKEND_DOMAIN}`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls=true"
+      # - "traefik.http.routers.backend.tls=true"
       - "traefik.http.routers.backend.tls.certresolver=mytlschallenge"
-      - "traefik.http.middlewares.security-headers.headers.SSLRedirect=true"
+      # - "traefik.http.middlewares.security-headers.headers.SSLRedirect=true"
       - "traefik.http.middlewares.security-headers.headers.STSSeconds=315360000"
       - "traefik.http.middlewares.security-headers.headers.browserXSSFilter=true"
       - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
@@ -52,13 +55,17 @@ services:
       NUXT_PORT: 3000
       FRONTEND_DOMAIN: ${FRONTEND_DOMAIN} # Diambil dari .env di VPS
       NODE_ENV: production
+
+    networks:
+      - traefik-network
+
     labels: # Label Traefik untuk produksi
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_DOMAIN}`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls=true"
+      # - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=mytlschallenge"
-      - "traefik.http.middlewares.security-headers.headers.SSLRedirect=true"
+      # - "traefik.http.middlewares.security-headers.headers.SSLRedirect=true"
       - "traefik.http.middlewares.security-headers.headers.STSSeconds=315360000"
       - "traefik.http.middlewares.security-headers.headers.browserXSSFilter=true"
       - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
@@ -77,3 +84,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+
+networks:
+  traefik-network:
+    external: true
