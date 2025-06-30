@@ -5,3 +5,5 @@ logs
 dist
 public/*
 !public/info.txt
+tmp/*
+!tmp/info.txt

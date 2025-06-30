@@ -1,119 +1,123 @@
-import { Request, response, Response } from "express";
-import { handlerAnyError } from "../errors/api_errors";
+import { NextFunction, Request, response, Response } from "express";
 import { getAllOutletService, getOutletById, getOutletDashboardService } from "../services/outlet.service";
 import { ResponseUtil } from "../utils/response.util";
-import { getProductByType, getProductOutletService } from "../services/product.service";
+import { createProductService, getProductByType, getProductOutletService } from "../services/product.service";
 import { ProductType } from "@prisma/client";
 import { isValidEnumValue } from "../utils/enum";
 import { getOrderOutlet } from "../services/order.service";
+import { asyncHandler } from "../middlewares/error.middleware";
 
-export async function getAllOutletController(req: Request, res: Response) {
-  try {
-    const { page, limit, search } = req.query;
-    const pageNumber = Number(page) > 0 ? Number(page) : 1;
-    const limitNumber = Number(limit) > 0 ? Number(limit) : 12;
-    const searchTerm = typeof search === "string" ? search : "";
+// GET ALL OUTLETS
+export const getAllOutletController = asyncHandler(async (req: Request, res: Response) => {
+  const { page, limit, search } = req.query;
+  const pageNumber = Number(page) > 0 ? Number(page) : 1;
+  const limitNumber = Number(limit) > 0 ? Number(limit) : 12;
+  const searchTerm = typeof search === "string" ? search : "";
 
-    const data = await getAllOutletService(
-      pageNumber,
-      limitNumber,
-      searchTerm
-    );
+  const data = await getAllOutletService(pageNumber, limitNumber, searchTerm);
 
-    return ResponseUtil.paginated(
-      res,
-      data.outlets,
-      pageNumber,
-      limitNumber,
-      data.count,
-      "berhasil mendapatkan data."
-    );
-  } catch (error) {
-    return handlerAnyError(error, res);
+  return ResponseUtil.paginated(
+    res,
+    data.outlets,
+    pageNumber,
+    limitNumber,
+    data.count,
+    "berhasil mendapatkan data."
+  );
+});
+
+// GET OUTLET BY ID
+export const getOutletByIdController = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const outlet = await getOutletById(id);
+
+  return ResponseUtil.success(res, outlet, "Berhasil mendapatkan data", 200);
+});
+
+// GET PRODUCTS IN OUTLET (with pagination & search)
+export const getOutletProductController = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { page, limit, search } = req.query;
+
+  const pageNumber = Number(page) > 0 ? Number(page) : 1;
+  const limitNumber = Number(limit) > 0 ? Number(limit) : 10;
+  const searchTerm = typeof search === "string" ? search : "";
+
+  const data = await getProductOutletService(id, {
+    limit: limitNumber,
+    page: pageNumber,
+    search: searchTerm
+  });
+
+  return ResponseUtil.paginated(res, data.products, pageNumber, limitNumber, data.count);
+});
+
+// GET PRODUCT GOODS BY OUTLET
+export const getOutletProductGoods = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params
+  const type = req.query.type
+
+  if (!isValidEnumValue(Object.values(ProductType), type)) {
+    return ResponseUtil.error(res, "Invalid product type", 400)
   }
-}
 
-export async function getOutletByIdController(req: Request, res: Response) {
-  try {
-    const { id } = req.params;
-    const outlet = await getOutletById(id);
+  const products = await getProductByType(id, "GOODS")
+  return ResponseUtil.success(res, products)
+})
 
-    return ResponseUtil.success(res, outlet, "Berhasil mendapatkan data", 200);
-  } catch (error) {
-    return handlerAnyError(error, res);
-  }
-}
+// GET ORDER GOODS BY OUTLET
+export const getOutletOderGoods = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params
+  const order = await getOrderOutlet(id, "GOODS")
 
-export async function getOutletProductController(req: Request, res: Response) {
-  try {
-    const { id } = req.params
-    const { page, limit, search } = req.query
-    const pageNumber = Number(page) > 0 ? Number(page) : 1
-    const limitNumber = Number(limit) > 0 ? Number(limit) : 10
-    const searchTerm = typeof search === "string" ? search : ''
+  return ResponseUtil.success(res, order)
+})
 
-    const data = await getProductOutletService(id, {
-      limit: limitNumber,
-      page: pageNumber,
-      search: searchTerm
-    })
+// GET ORDER SERVICES BY OUTLET
+export const getOutletOderService = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params
+  const order = await getOrderOutlet(id, "SERVICE")
 
-    return ResponseUtil.paginated(res, data.products, pageNumber, limitNumber, data.count)
-  } catch (error) {
-    return handlerAnyError(error, res)
-  }
-}
+  return ResponseUtil.success(res, order)
+})
 
-export async function getOutletProductGoods(req: Request, res: Response) {
-  try {
-    const { id } = req.params
-    const type = req.query.type
-    const t = Object.values(ProductType)
+// GET DASHBOARD DATA BY OUTLET
+export const getOutletDashboard = asyncHandler(async (req: Request, res: Response) => {
+  const { outletId } = req.params
+  const data = await getOutletDashboardService(outletId)
 
-    console.log(t);
+  return ResponseUtil.success(res, data)
+})
 
-    if (!isValidEnumValue(Object.values(ProductType), type)) {
-      return ResponseUtil.error(res, "Invalid product type", 400);
-    }
-    const products = await getProductByType(id, "GOODS")
+// CREATE PRODUCT FOR OUTLET
+export const createProductFoOutlet = asyncHandler(async (req: Request, res: Response) => {
+  const { outletId } = req.params
+  const image = req.file?.filename
 
-    return ResponseUtil.success(res, products)
-  } catch (error) {
-    return handlerAnyError(error, res)
-  }
-}
+  const {
+    name,
+    price,
+    type,
+    costPrice,
+    description,
+    quantity,
+    unit
+  } = req.body
 
-export async function getOutletOderGoods(req: Request, res: Response) {
-  try {
-    const { id } = req.params
+  const priceNumber = parseInt(price, 10)
+  const costPriceNumber = parseInt(costPrice, 10)
+  const quantityNumber = parseInt(quantity, 10)
 
-    const order = await getOrderOutlet(id, "GOODS")
+  const newProduct = await createProductService(outletId, {
+    image,
+    name,
+    price: priceNumber,
+    type,
+    costPrice: costPriceNumber,
+    description,
+    quantity: quantityNumber,
+    unit
+  })
 
-    return ResponseUtil.success(res, order)
-  } catch (error) {
-    return handlerAnyError(error, res)
-  }
-}
-
-export async function getOutletOderService(req: Request, res: Response) {
-  try {
-    const { id } = req.params
-
-    const order = await getOrderOutlet(id, "SERVICE")
-
-    return ResponseUtil.success(res, order)
-  } catch (error) {
-    return handlerAnyError(error, res)
-  }
-}
-
-export async function getOutletDashboard(req: Request, res: Response) {
-  try {
-    const { outletId } = req.params
-    const data = await getOutletDashboardService(outletId)
-
-    return ResponseUtil.success(res, data)
-  } catch (error) {
-    return handlerAnyError(error, res)
-  }
-}
+  return ResponseUtil.success(res, newProduct, 'success', 201)
+})

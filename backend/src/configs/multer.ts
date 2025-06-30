@@ -1,10 +1,7 @@
 import path from "node:path"
 import fs from 'fs'
 import multer from "multer"
-import { Request, response, Response } from "express"
 import logger from "../utils/logger.util"
-import { ResponseUtil } from "../utils/response.util"
-import { AppError } from "../errors/api_errors"
 
 export const createMulterStorage = (folderName: string) => {
     const uploadPath = path.join(__dirname, `../../public/${folderName}`)

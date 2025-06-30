@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express"
 import logger from "../utils/logger.util";
 import { ResponseUtil } from "../utils/response.util";
+import { AppError } from "../errors/api_errors";
 
 export interface CustomError extends Error {
     statusCode?: number,
@@ -29,6 +30,13 @@ export const errorHandler = (
         message = 'Token expired';
         statusCode = 401;
     }
+
+    if (err instanceof AppError) {
+        message = err.message;
+        statusCode = err.statusCode!;
+    }
+
+    logger.error(`Error: ${err.message}, Stack: ${err.stack}`);
 
     ResponseUtil.error(res, message, statusCode);
 }
