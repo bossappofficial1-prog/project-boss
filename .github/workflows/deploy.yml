@@ -78,8 +78,13 @@ jobs:
           set -e  # Exit on any error
 
           echo "=== Starting Deployment Process ==="
+          echo "Deploy Path: $DEPLOY_PATH"
 
           # Navigate to deployment directory
+          if [ ! -d "$DEPLOY_PATH" ]; then
+              echo "ERROR: Deploy path $DEPLOY_PATH does not exist"
+              exit 1
+          fi
           cd "$DEPLOY_PATH"
 
           echo "=== Logging into Docker Hub ==="
@@ -163,67 +168,51 @@ jobs:
 
           chmod +x deploy_script.sh
 
+      - name: Create environment file
+        run: |
+          cat << EOF > .env.deploy
+          DEPLOY_PATH=${{ secrets.DEPLOY_PATH }}
+          DB_DATABASE=${{ secrets.DB_DATABASE }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
+          BACKEND_DOMAIN=${{ secrets.BACKEND_DOMAIN }}
+          FRONTEND_DOMAIN=${{ secrets.FRONTEND_DOMAIN }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          RATE_LIMIT_WINDOW_MS=${{ secrets.RATE_LIMIT_WINDOW_MS }}
+          RATE_LIMIT_MAX_REQUESTS=${{ secrets.RATE_LIMIT_MAX_REQUESTS }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          MIDTRANS_MERCHANT_ID=${{ secrets.MIDTRANS_MERCHANT_ID }}
+          MIDTRANS_SERVER_KEY=${{ secrets.MIDTRANS_SERVER_KEY }}
+          MIDTRANS_CLIENT_KEY=${{ secrets.MIDTRANS_CLIENT_KEY }}
+          MIDTRANS_NOTIFICATION_CALLBACK_URL=${{ secrets.MIDTRANS_NOTIFICATION_CALLBACK_URL }}
+          MIDTRANS_EXPIRE_UNIT=${{ secrets.MIDTRANS_EXPIRE_UNIT }}
+          MIDTRANS_EXPIRE_DURATION=${{ secrets.MIDTRANS_EXPIRE_DURATION }}
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_PORT=${{ secrets.SMTP_PORT }}
+          SMTP_SECURE=${{ secrets.SMTP_SECURE }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          EOF
+
       - name: Deploy to VPS
         env:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          DB_DATABASE: ${{ secrets.DB_DATABASE }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          BACKEND_DOMAIN: ${{ secrets.BACKEND_DOMAIN }}
-          FRONTEND_DOMAIN: ${{ secrets.FRONTEND_DOMAIN }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          RATE_LIMIT_WINDOW_MS: ${{ secrets.RATE_LIMIT_WINDOW_MS }}
-          RATE_LIMIT_MAX_REQUESTS: ${{ secrets.RATE_LIMIT_MAX_REQUESTS }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          MIDTRANS_MERCHANT_ID: ${{ secrets.MIDTRANS_MERCHANT_ID }}
-          MIDTRANS_SERVER_KEY: ${{ secrets.MIDTRANS_SERVER_KEY }}
-          MIDTRANS_CLIENT_KEY: ${{ secrets.MIDTRANS_CLIENT_KEY }}
-          MIDTRANS_NOTIFICATION_CALLBACK_URL: ${{ secrets.MIDTRANS_NOTIFICATION_CALLBACK_URL }}
-          MIDTRANS_EXPIRE_UNIT: ${{ secrets.MIDTRANS_EXPIRE_UNIT }}
-          MIDTRANS_EXPIRE_DURATION: ${{ secrets.MIDTRANS_EXPIRE_DURATION }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
         run: |
-          # Transfer deployment script to VPS
+          # Ensure deployment directory exists on VPS
+          ssh ${VPS_USER}@${VPS_HOST} "mkdir -p ${DEPLOY_PATH}"
+
+          # Transfer files to VPS
+          scp .env.deploy ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
           scp deploy_script.sh ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
 
-          # Execute deployment script on VPS with all environment variables
-          ssh ${VPS_USER}@${VPS_HOST} \
-            "export DEPLOY_PATH='${DEPLOY_PATH}' && \
-             export DB_DATABASE='${DB_DATABASE}' && \
-             export DB_USER='${DB_USER}' && \
-             export DB_PASSWORD='${DB_PASSWORD}' && \
-             export DOCKER_USERNAME='${DOCKER_USERNAME}' && \
-             export DOCKER_PASSWORD='${DOCKER_PASSWORD}' && \
-             export BACKEND_DOMAIN='${BACKEND_DOMAIN}' && \
-             export FRONTEND_DOMAIN='${FRONTEND_DOMAIN}' && \
-             export JWT_SECRET='${JWT_SECRET}' && \
-             export RATE_LIMIT_WINDOW_MS='${RATE_LIMIT_WINDOW_MS}' && \
-             export RATE_LIMIT_MAX_REQUESTS='${RATE_LIMIT_MAX_REQUESTS}' && \
-             export GOOGLE_CLIENT_ID='${GOOGLE_CLIENT_ID}' && \
-             export GOOGLE_CLIENT_SECRET='${GOOGLE_CLIENT_SECRET}' && \
-             export MIDTRANS_MERCHANT_ID='${MIDTRANS_MERCHANT_ID}' && \
-             export MIDTRANS_SERVER_KEY='${MIDTRANS_SERVER_KEY}' && \
-             export MIDTRANS_CLIENT_KEY='${MIDTRANS_CLIENT_KEY}' && \
-             export MIDTRANS_NOTIFICATION_CALLBACK_URL='${MIDTRANS_NOTIFICATION_CALLBACK_URL}' && \
-             export MIDTRANS_EXPIRE_UNIT='${MIDTRANS_EXPIRE_UNIT}' && \
-             export MIDTRANS_EXPIRE_DURATION='${MIDTRANS_EXPIRE_DURATION}' && \
-             export SMTP_HOST='${SMTP_HOST}' && \
-             export SMTP_PORT='${SMTP_PORT}' && \
-             export SMTP_SECURE='${SMTP_SECURE}' && \
-             export SMTP_PASS='${SMTP_PASS}' && \
-             export SMTP_USER='${SMTP_USER}' && \
-             cd ${DEPLOY_PATH} && \
-             ./deploy_script.sh"
+          # Execute deployment script on VPS
+          ssh ${VPS_USER}@${VPS_HOST} "cd ${DEPLOY_PATH} && source .env.deploy && chmod +x deploy_script.sh && ./deploy_script.sh"
 
-      - name: Cleanup deployment script
+      - name: Cleanup deployment files
         if: always()
-        run: rm -f deploy_script.sh
+        run: rm -f deploy_script.sh .env.deploy
