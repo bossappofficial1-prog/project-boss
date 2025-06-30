@@ -55,5 +55,5 @@ volumes:
 networks:
   default:
     driver: bridge
-  traefik-net:
+  traefik-network:
     external: true
