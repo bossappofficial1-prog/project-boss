@@ -76,7 +76,6 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          # Variabel lingkungan untuk Docker Compose di VPS (dari GitHub Secrets)
           DB_DATABASE: ${{ secrets.DB_DATABASE }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -84,6 +83,28 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           BACKEND_DOMAIN: ${{ secrets.BACKEND_DOMAIN }}
           FRONTEND_DOMAIN: ${{ secrets.FRONTEND_DOMAIN }}
+
+          # Variabel Umum/Bersama
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          RATE_LIMIT_WINDOW_MS: ${{ secrets.RATE_LIMIT_WINDOW_MS }}
+          RATE_LIMIT_MAX_REQUESTS: ${{ secrets.RATE_LIMIT_MAX_REQUESTS }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+
+          # Variabel Midtrans
+          MIDTRANS_MERCHANT_ID: ${{ secrets.MIDTRANS_MERCHANT_ID }}
+          MIDTRANS_SERVER_KEY: ${{ secrets.MIDTRANS_SERVER_KEY }}
+          MIDTRANS_CLIENT_KEY: ${{ secrets.MIDTRANS_CLIENT_KEY }}
+          MIDTRANS_NOTIFICATION_CALLBACK_URL: ${{ secrets.MIDTRANS_NOTIFICATION_CALLBACK_URL }}
+          MIDTRANS_EXPIRE_UNIT: ${{ secrets.MIDTRANS_EXPIRE_UNIT }}
+          MIDTRANS_EXPIRE_DURATION: ${{ secrets.MIDTRANS_EXPIRE_DURATION }}
+
+          # Variabel SMTP (untuk produksi)
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
 
         run: |
           echo "Connecting to VPS and deploying via Docker Compose..."
@@ -97,12 +118,44 @@ jobs:
             # Buat atau update file .env di VPS dari GitHub Secrets
             echo "Creating/updating .env file on VPS..."
             cat << EOT_ENV > .env
+            # --- Variabel Database ---
             DB_DATABASE=${DB_DATABASE}
             DB_USER=${DB_USER}
             DB_PASSWORD=${DB_PASSWORD}
+
+            # --- Domain Aplikasi ---
             BACKEND_DOMAIN=${BACKEND_DOMAIN}
             FRONTEND_DOMAIN=${FRONTEND_DOMAIN}
-            # Tambahkan variabel lingkungan spesifik produksi lainnya di sini
+
+            # --- Variabel Umum/Bersama ---
+            JWT_SECRET=${JWT_SECRET}
+            NODE_ENV=production # Pastikan NODE_ENV diatur ke production di VPS
+
+            # --- Rate Limit configuration (untuk backend) ---
+            RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
+            RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
+
+            # --- Google configuration (untuk backend) ---
+            GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+            GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+
+            # --- Midtrans configuration (untuk backend) ---
+            MIDTRANS_MERCHANT_ID=${MIDTRANS_MERCHANT_ID}
+            MIDTRANS_SERVER_KEY=${MIDTRANS_SERVER_KEY}
+            MIDTRANS_CLIENT_KEY=${MIDTRANS_CLIENT_KEY}
+            MIDTRANS_NOTIFICATION_CALLBACK_URL=${MIDTRANS_NOTIFICATION_CALLBACK_URL}
+            MIDTRANS_EXPIRE_UNIT=${MIDTRANS_EXPIRE_UNIT}
+            MIDTRANS_EXPIRE_DURATION=${MIDTRANS_EXPIRE_DURATION}
+
+            # --- SMTP Configuration (untuk backend) ---
+            SMTP_HOST=${SMTP_HOST}
+            SMTP_PORT=${SMTP_PORT}
+            SMTP_SECURE=${SMTP_SECURE}
+            SMTP_PASS=${SMTP_PASS}
+            SMTP_USER=${SMTP_USER}
+
+            NUXT_PUBLIC_API_BASE=https://${BACKEND_DOMAIN}/api/v1
+
             EOT_ENV
 
             # Pull image terbaru

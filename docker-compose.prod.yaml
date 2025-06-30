@@ -5,8 +5,26 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      NODE_ENV: production
-      BACKEND_DOMAIN: ${BACKEND_DOMAIN} # Diambil dari .env di VPS
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_DATABASE}?schema=public
+      PORT: 4444
+      NODE_ENV: development
+      JWT_SECRET: ${JWT_SECRET}
+      MIDTRANS_MERCHANT_ID: ${MIDTRANS_MERCHANT_ID}
+      MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY}
+      MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
+      MIDTRANS_NOTIFICATION_CALLBACK_URL: ${MIDTRANS_NOTIFICATION_CALLBACK_URL}
+      MIDTRANS_EXPIRE_UNIT: ${MIDTRANS_EXPIRE_UNIT}
+      MIDTRANS_EXPIRE_DURATION: ${MIDTRANS_EXPIRE_DURATION}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_SECURE: ${SMTP_SECURE}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_USER: ${SMTP_USER}
+
     labels: # Label Traefik untuk produksi
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${BACKEND_DOMAIN}`)"
@@ -25,7 +43,7 @@ services:
 
   frontend:
     image: ${{ secrets.DOCKER_USERNAME }}/project-boss-frontend:latest # Menggunakan image yang sudah di-push
-    build: # Pertahankan bagian build
+    build:
       context: ./frontend
       dockerfile: Dockerfile
     environment:
