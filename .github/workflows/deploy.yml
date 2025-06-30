@@ -175,8 +175,8 @@ jobs:
           # Salin semua file yang diperlukan ke VPS
           scp deploy_script.sh ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
           scp .env.deploy ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
-          scp docker-compose.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/ # <-- Pastikan pakai .yml
-          scp docker-compose.prod.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/ # <-- Pastikan pakai .yml
+          scp docker-compose.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/ 
+          scp docker-compose.prod.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
 
           echo "Semua file deployment berhasil ditransfer."
 
