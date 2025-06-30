@@ -1,0 +1,50 @@
+services:
+  backend:
+    image: ${{ secrets.DOCKER_USERNAME }}/project-boss-backend:latest # Menggunakan image yang sudah di-push
+    build: # Pertahankan bagian build agar `docker compose pull` tetap bisa fallback ke build jika image tidak ditemukan
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      BACKEND_DOMAIN: ${BACKEND_DOMAIN} # Diambil dari .env di VPS
+    labels: # Label Traefik untuk produksi
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${BACKEND_DOMAIN}`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.security-headers.headers.SSLRedirect=true"
+      - "traefik.http.middlewares.security-headers.headers.STSSeconds=315360000"
+      - "traefik.http.middlewares.security-headers.headers.browserXSSFilter=true"
+      - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.security-headers.headers.STSIncludeSubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.STSPreload=true"
+      - "traefik.http.routers.backend.middlewares=security-headers@docker"
+      - "traefik.http.services.backend.loadbalancer.server.port=4444"
+
+  frontend:
+    image: ${{ secrets.DOCKER_USERNAME }}/project-boss-frontend:latest # Menggunakan image yang sudah di-push
+    build: # Pertahankan bagian build
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      NUXT_PUBLIC_API_BASE: http://backend:4444
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 3000
+      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN} # Diambil dari .env di VPS
+    labels: # Label Traefik untuk produksi
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_DOMAIN}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=mytlschallenge"
+      - "traefik.http.middlewares.security-headers.headers.SSLRedirect=true"
+      - "traefik.http.middlewares.security-headers.headers.STSSeconds=315360000"
+      - "traefik.http.middlewares.security-headers.headers.browserXSSFilter=true"
+      - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.security-headers.headers.STSIncludeSubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.STSPreload=true"
+      - "traefik.http.routers.frontend.middlewares=security-headers@docker"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
