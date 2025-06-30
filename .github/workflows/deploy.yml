@@ -120,7 +120,7 @@ jobs:
 
             # Buat atau update file .env di VPS dari GitHub Secrets
             echo "Creating/updating .env file on VPS..."
-            cat << EOT_ENV > .env
+            cat << EOT_ENV | tee .env > /dev/null
             # --- Variabel Database ---
             DB_DATABASE=${DB_DATABASE}
             DB_USER=${DB_USER}
