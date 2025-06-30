@@ -31,7 +31,7 @@ services:
         condition: service_healthy
     networks:
       - default
-      - traefik-net
+      - traefik-network
 
   frontend:
     build:
@@ -47,6 +47,7 @@ services:
       - backend
     networks:
       - default
+      - traefik-network
 
 volumes:
   db_data:

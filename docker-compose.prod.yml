@@ -4,6 +4,8 @@ services:
     build: # Pertahankan bagian build agar `docker compose pull` tetap bisa fallback ke build jika image tidak ditemukan
       context: ./backend
       dockerfile: Dockerfile
+    networks:
+      - traefik-network
     environment:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_DATABASE}?schema=public
       PORT: 4444
@@ -46,6 +48,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    networks:
+      - traefik-network
     environment:
       NUXT_PUBLIC_API_BASE: http://backend:4444
       NUXT_HOST: 0.0.0.0
