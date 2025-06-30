@@ -27,9 +27,9 @@ COPY --from=builder /app/backend/prisma ./prisma
 
 # --- PERUBAHAN UTAMA DI SINI ---
 # Instal dependensi OpenSSL yang dibutuhkan oleh Prisma Engine di Alpine
-RUN apk add --no-cache openssl1.1-compat libstdc++
+# RUN apk add --no-cache openssl1.1-compat libstdc++
 # Jika openssl1.1-compat tidak ditemukan atau tidak berfungsi, coba:
-# RUN apk add --no-cache openssl libstdc++
+RUN apk add --no-cache openssl libstdc++
 
 # Pastikan Prisma CLI terinstal sebagai dependency production
 RUN npm install prisma --omit=dev --no-fund --no-audit --ignore-scripts
