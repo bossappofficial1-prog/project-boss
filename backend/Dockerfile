@@ -32,7 +32,7 @@ COPY --from=builder /app/backend/prisma ./prisma
 # Install Prisma binary for runtime (if not already in node_modules from builder)
 # This step ensures Prisma Engines are present in the final image for `prisma migrate deploy`
 # The --omit=dev prevents dev dependencies, and --skip-generate prevents regenerating client again.
-RUN npm install prisma --omit=dev --no-fund --no-audit --ignore-scripts && npx prisma generate --skip-generate
+RUN npm install prisma --omit=dev --no-fund --no-audit --ignore-scripts
 
 # Expose the application port
 EXPOSE 4444
