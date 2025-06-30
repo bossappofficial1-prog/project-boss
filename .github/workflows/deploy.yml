@@ -199,7 +199,7 @@ jobs:
               sudo apt-get update && sudo apt-get install -y gettext
           fi
 
-          envsubst < .env.template > ".env.${NEW_SLOT}"
+          envsubst < ./.env.template > ".env.${NEW_SLOT}"
           chmod 600 ".env.${NEW_SLOT}"
           success "Environment file created for $NEW_SLOT slot"
 
