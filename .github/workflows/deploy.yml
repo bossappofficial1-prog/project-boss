@@ -107,7 +107,16 @@ jobs:
             cd ${DEPLOY_PATH}
 
             echo "Logging into Docker Hub..."
-            printf "%s" "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
+            # Simpan password ke file sementara yang aman
+            echo "${DOCKER_PASSWORD}" > docker_password_file.txt
+            chmod 600 docker_password_file.txt # Pastikan hanya pemilik yang bisa membaca/menulis
+
+            # Login menggunakan file sebagai stdin
+            cat docker_password_file.txt | docker login --username ${DOCKER_USERNAME} --password-stdin
+
+            # Hapus file password sementara untuk keamanan
+            rm docker_password_file.txt
+
             # Pemeriksaan status login
             if [ $? -ne 0 ]; then
                 echo "Docker login failed. Aborting deployment."
@@ -115,7 +124,7 @@ jobs:
             fi
 
             echo "Creating/updating .env file on VPS..."
-            
+
             cat << EOT_ENV | tee .env > /dev/null
             # --- Variabel Database ---
             DB_DATABASE=${DB_DATABASE}
