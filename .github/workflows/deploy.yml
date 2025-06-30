@@ -415,6 +415,21 @@ jobs:
           scp docker-compose.prod.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
 
           echo "✅ All deployment files transferred successfully"
+          # Tambahkan jeda singkat untuk memastikan semua file selesai disalin
+          sleep 5
+
+      - name: Verify files on VPS
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          echo "🔍 Verifying .env.template on VPS..."
+          ssh -o StrictHostKeyChecking=no ${VPS_USER}@${VPS_HOST} "
+            cd ${DEPLOY_PATH} && \
+            ls -la .env.template && echo '.env.template found and accessible' || { echo 'Error: .env.template not found or accessible'; exit 1; }
+          "
+          echo "✅ Verification complete."
 
       - name: Execute Blue-Green Deployment
         env:
