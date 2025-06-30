@@ -60,54 +60,53 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      # --- LANKAH BARU: MEMBUAT DAN MENTRANSFER FILE .ENV.DEPLOY ---
+      # --- MEMBUAT FILE .ENV.DEPLOY DI RUNNER ---
       - name: Create production .env.deploy file on runner
         run: |
           cat << 'EOF' > .env.deploy
-          # File ini akan diisi dengan nilai dari GitHub Secrets di VPS
-          DB_DATABASE=${{ secrets.DB_DATABASE }}
-          DB_USER=${{ secrets.DB_USER }}
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
-          BACKEND_DOMAIN=${{ secrets.BACKEND_DOMAIN }}
-          FRONTEND_DOMAIN=${{ secrets.FRONTEND_DOMAIN }}
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          RATE_LIMIT_WINDOW_MS=${{ secrets.RATE_LIMIT_WINDOW_MS }}
-          RATE_LIMIT_MAX_REQUESTS=${{ secrets.RATE_LIMIT_MAX_REQUESTS }}
-          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-          MIDTRANS_MERCHANT_ID=${{ secrets.MIDTRANS_MERCHANT_ID }}
-          MIDTRANS_SERVER_KEY=${{ secrets.MIDTRANS_SERVER_KEY }}
-          MIDTRANS_CLIENT_KEY=${{ secrets.MIDTRANS_CLIENT_KEY }}
-          MIDTRANS_NOTIFICATION_CALLBACK_URL=${{ secrets.MIDTRANS_NOTIFICATION_CALLBACK_URL }}
-          MIDTRANS_EXPIRE_UNIT=${{ secrets.MIDTRANS_EXPIRE_UNIT }}
-          MIDTRANS_EXPIRE_DURATION=${{ secrets.MIDTRANS_EXPIRE_DURATION }}
-          SMTP_HOST=${{ secrets.SMTP_HOST }}
-          SMTP_PORT=${{ secrets.SMTP_PORT }}
-          SMTP_SECURE=${{ secrets.SMTP_SECURE }}
-          SMTP_PASS=${{ secrets.SMTP_PASS }}
-          SMTP_USER=${{ secrets.SMTP_USER }}
+          # File ini akan diisi dengan nilai dari GitHub Secrets di VPS oleh envsubst
+          DB_DATABASE=${DB_DATABASE}
+          DB_USER=${DB_USER}
+          DB_PASSWORD=${DB_PASSWORD}
+          DOCKER_USERNAME=${DOCKER_USERNAME}
+          DOCKER_PASSWORD=${DOCKER_PASSWORD}
+          BACKEND_DOMAIN=${BACKEND_DOMAIN}
+          FRONTEND_DOMAIN=${FRONTEND_DOMAIN}
+          JWT_SECRET=${JWT_SECRET}
+          RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
+          RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
+          GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+          GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+          MIDTRANS_MERCHANT_ID=${MIDTRANS_MERCHANT_ID}
+          MIDTRANS_SERVER_KEY=${MIDTRANS_SERVER_KEY}
+          MIDTRANS_CLIENT_KEY=${MIDTRANS_CLIENT_KEY}
+          MIDTRANS_NOTIFICATION_CALLBACK_URL=${MIDTRANS_NOTIFICATION_CALLBACK_URL}
+          MIDTRANS_EXPIRE_UNIT=${MIDTRANS_EXPIRE_UNIT}
+          MIDTRANS_EXPIRE_DURATION=${MIDTRANS_EXPIRE_DURATION}
+          SMTP_HOST=${SMTP_HOST}
+          SMTP_PORT=${SMTP_PORT}
+          SMTP_SECURE=${SMTP_SECURE}
+          SMTP_PASS=${SMTP_PASS}
+          SMTP_USER=${SMTP_USER}
+          NUXT_PUBLIC_API_BASE=https://${BACKEND_DOMAIN}/api/v1
           EOF
-        # Catatan: File ini akan memiliki sintaks ${{secrets...}} di dalamnya.
-        # envsubst di deploy_script.sh akan menggantikannya dengan nilai sebenarnya di VPS.
+        # Catatan: Variabel di atas akan diisi oleh GitHub Actions Runner sebagai environment variable
+        #        sebelum skrip ini dijalankan, sehingga 'envsubst' di deploy_script.sh bisa bekerja.
 
-      # --- LANKAH BARU: MEMBUAT DAN MENTRANSFER deploy_script.sh ---
-      # Skrip deployment yang akan dijalankan di VPS
-      - name: Create and transfer deploy_script.sh to VPS
+      # --- MEMBUAT DAN MENTRANSFER deploy_script.sh & FILE COMPOSE KE VPS ---
+      - name: Create and transfer deployment files to VPS
         env:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }} # DEPLOY_PATH akan diekspor dan digunakan di dalam skrip
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          # Konten deploy_script.sh
+          # Pastikan direktori deployment ada di VPS
+          ssh ${VPS_USER}@${VPS_HOST} "mkdir -p ${DEPLOY_PATH}"
+
+          # --- Konten deploy_script.sh ---
           cat << 'SCRIPT_EOF' > deploy_script.sh
           #!/bin/bash
-          set -e  # Keluar jika ada perintah yang gagal
-
-          # Ini akan diatur oleh GitHub Actions saat eksekusi SSH
-          # SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-          # DEPLOY_PATH="${SCRIPT_DIR}" # Gunakan DEPLOY_PATH yang diekspor dari GA
+          set -e # Keluar jika ada perintah yang gagal
 
           echo "=== Memulai Proses Deployment ==="
           echo "Lokasi Deployment: $DEPLOY_PATH"
@@ -119,28 +118,23 @@ jobs:
           fi
           cd "$DEPLOY_PATH" || { echo "ERROR: Gagal berpindah ke direktori $DEPLOY_PATH"; exit 1; }
 
-          echo "=== Memuat file .env.deploy ==="
-          # Muat variabel lingkungan dari .env.deploy
-          # Perintah 'export' di depan variabel penting agar tersedia di sub-proses seperti docker login
-          # Catatan: Variabel-variabel ini sudah diekspor dari shell Github Actions runner
-          #          ke dalam sesi SSH, dan kemudian sourced oleh deploy_script.sh
-          #          Menggunakan `set -a` di sini akan mengekspornya lagi dari .env.deploy
-          #          set -a tidak diperlukan lagi karena variabel sudah di-export di ssh command
-          #          Namun, kita perlu memastikan envsubst yang berjalan di VPS sudah ada.
-
-          # Jalankan envsubst untuk mengisi nilai dari .env.deploy ke .env
+          echo "=== Memuat dan membuat file .env ==="
+          # Memastikan envsubst terinstal
           if ! command -v envsubst &> /dev/null; then
-              echo "ERROR: envsubst tidak ditemukan. Silakan instal 'gettext' di VPS Anda (sudo apt-get install gettext)."
+              echo "ERROR: 'envsubst' (bagian dari gettext) tidak ditemukan di VPS Anda. Harap instal dengan 'sudo apt-get install gettext'."
               exit 1
           fi
+
+          # Menggunakan envsubst untuk mengisi nilai dari variabel lingkungan
+          # ke dalam file .env.deploy dan menyimpannya sebagai .env
           envsubst < .env.deploy > .env.tmp && mv .env.tmp .env
           chmod 644 .env
           echo "File .env berhasil dibuat dan diisi."
 
           echo "=== Login ke Docker Hub ==="
           # Menggunakan file sementara untuk password demi mengatasi isu TTY
-          echo "$DOCKER_PASSWORD" > docker_password_file.txt
-          chmod 600 docker_password_file.txt
+          printf "%s" "$DOCKER_PASSWORD" > docker_password_file.txt
+          chmod 600 docker_password_file.txt # Hanya pemilik yang bisa membaca/menulis
           cat docker_password_file.txt | docker login --username "$DOCKER_USERNAME" --password-stdin
           rm docker_password_file.txt # Hapus file password setelah digunakan
 
@@ -151,21 +145,23 @@ jobs:
           echo "Login Docker berhasil."
 
           echo "=== Menghentikan container yang ada (jika ada) ==="
-          # Gunakan || true agar perintah ini tidak menghentikan skrip jika container tidak ada
-          docker compose -f docker-compose.yaml -f docker-compose.prod.yaml down || true
+          # Gunakan --remove-orphans untuk menghapus container lama.
+          # Gunakan --rmi all untuk menghapus image yang tidak terpakai oleh Compose ini.
+          # Gunakan || true agar perintah ini tidak menghentikan skrip jika terjadi error (misal jaringan masih terhubung)
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml down --remove-orphans --rmi all || true
 
           echo "=== Menarik image Docker terbaru ==="
-          docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull backend frontend
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml pull backend frontend
 
           echo "=== Menjalankan migrasi database Prisma ==="
-          docker compose -f docker-compose.yaml -f docker-compose.prod.yaml run --rm backend npx prisma migrate deploy
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm backend npx prisma migrate deploy
 
           echo "=== Memulai layanan Docker Compose ==="
-          docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d --remove-orphans
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
 
           echo "=== Memverifikasi deployment ==="
           sleep 10 # Beri waktu agar container sempat booting
-          docker compose -f docker-compose.yaml -f docker-compose.prod.yaml ps
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
 
           echo "=== Membersihkan image lama ==="
           docker image prune -f
@@ -176,30 +172,15 @@ jobs:
           # Berikan izin eksekusi pada skrip di runner sebelum transfer
           chmod +x deploy_script.sh
 
-          # Salin deploy_script.sh yang baru dibuat ke VPS
+          # Salin semua file yang diperlukan ke VPS
           scp deploy_script.sh ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
-
-          echo "deploy_script.sh berhasil ditransfer."
-
-      - name: Transfer Docker Compose files to VPS
-        env:
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-        run: |
-          # Pastikan direktori deployment di VPS sudah ada (seharusnya sudah dibuat di langkah sebelumnya)
-          # ssh ${VPS_USER}@${VPS_HOST} "mkdir -p ${DEPLOY_PATH}" # Tidak perlu lagi, sudah di langkah create script
-
-          # Salin file docker-compose.yaml dan docker-compose.prod.yaml ke VPS
-          scp docker-compose.yaml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
-          scp docker-compose.prod.yaml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
-
-          # Salin file .env.deploy yang sudah dibuat di langkah sebelumnya ke VPS
           scp .env.deploy ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/
+          scp docker-compose.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/ # <-- Pastikan pakai .yml
+          scp docker-compose.prod.yml ${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/ # <-- Pastikan pakai .yml
 
-          echo "File-file Docker Compose dan .env.deploy berhasil ditransfer."
+          echo "Semua file deployment berhasil ditransfer."
 
-      # --- LANKAH BARU: MENGEKSEKUSI SKRIP DEPLOYMENT DI VPS ---
+      # --- MENGEKSEKUSI SKRIP DEPLOYMENT DI VPS ---
       - name: Execute Deployment Script on VPS
         env:
           VPS_USER: ${{ secrets.VPS_USER }}
@@ -263,7 +244,7 @@ jobs:
             ${DEPLOY_PATH}/deploy_script.sh"
           echo "Proses deployment di VPS dipicu."
 
-      # --- LANKAH BARU: CLEANUP LOKAL ---
+      # --- CLEANUP LOKAL ---
       - name: Cleanup local deployment files
         if: always()
         run: rm -f deploy_script.sh .env.deploy
