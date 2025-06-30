@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: project-boss-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: project-boss-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_DATABASE}?schema=public
+      PORT: 4444
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - default
+      - traefik-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: project-boss-frontend
+    restart: always
+    environment:
+      NUXT_PUBLIC_API_BASE: http://backend:4444
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 3000
+    depends_on:
+      - backend
+    networks:
+      - default
+
+volumes:
+  db_data:
+
+networks:
+  default:
+    driver: bridge
+  traefik-net:
+    external: true

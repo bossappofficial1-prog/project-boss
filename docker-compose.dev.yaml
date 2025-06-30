@@ -1,0 +1,20 @@
+services:
+  backend:
+    volumes:
+      - ./backend:/app/backend # Bind mount source code untuk hot-reloading
+      - /app/backend/node_modules # Mencegah host mount menimpa node_modules
+    ports:
+      - "4444:4444" # Expose port ke host untuk akses langsung dari localhost
+    environment:
+      NODE_ENV: development
+
+  frontend:
+    volumes:
+      - ./frontend:/app/frontend # Bind mount source code untuk hot-reloading
+      - /app/frontend/node_modules
+    ports:
+      - "3000:3000" # Expose port ke host
+    environment:
+      NUXT_PUBLIC_API_BASE_URL: http://localhost:4444 # Arahkan ke host lokal atau container backend
+      NODE_ENV: development
+    # command: npm run dev # Uncomment jika Anda ingin Docker Compose menjalankan dev server Nuxt

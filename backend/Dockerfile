@@ -1,24 +1,41 @@
-FROM node:lts-alpine3.22
+# --- Multi-stage build for smaller production image ---
 
-WORKDIR /app
+# Stage 1: Build and compile
+FROM node:20-alpine AS builder
 
+WORKDIR /app/backend
+
+# Copy package.json and install dependencies (leveraging Docker cache)
 COPY package*.json ./
+RUN npm install
 
-RUN npm install -g npm@latest && npm install
-
-COPY .env.production .env
-
-COPY prisma ./prisma
-
-RUN npx prisma generate
-
+# Copy all application code
 COPY . .
 
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Build TypeScript application
 RUN npm run build
 
-RUN mkdir -p dist/src/templates && \
-    cp src/templates/*.html dist/src/templates/
+# Stage 2: Production runtime
+FROM node:20-alpine AS runner
 
-EXPOSE 2222
+WORKDIR /app/backend
 
-CMD [ "sh", "-c", "node dist/src/server.js" ]
+# Copy only necessary files from the builder stage
+COPY --from=builder /app/backend/package*.json ./
+COPY --from=builder /app/backend/node_modules ./node_modules
+COPY --from=builder /app/backend/dist ./dist
+COPY --from=builder /app/backend/prisma ./prisma
+
+# Install Prisma binary for runtime (if not already in node_modules from builder)
+# This step ensures Prisma Engines are present in the final image for `prisma migrate deploy`
+# The --omit=dev prevents dev dependencies, and --skip-generate prevents regenerating client again.
+RUN npm install prisma --omit=dev --no-fund --no-audit --ignore-scripts
+
+# Expose the application port
+EXPOSE 4444
+
+# Command to run the application
+CMD ["npm", "start"]
