@@ -47,6 +47,8 @@ services:
 
   frontend:
     image: ${DOCKER_USERNAME}/project-boss-frontend:latest # Menggunakan image yang sudah di-push
+    ports:
+      - "8080:3000"
     build:
       context: ./frontend
       dockerfile: Dockerfile
