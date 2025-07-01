@@ -4,6 +4,8 @@ services:
     build: # Pertahankan bagian build agar `docker compose pull` tetap bisa fallback ke build jika image tidak ditemukan
       context: ./backend
       dockerfile: Dockerfile
+    ports:
+      - "4444:4444"
     environment:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_DATABASE}?schema=public
       PORT: 4444
@@ -48,7 +50,7 @@ services:
   frontend:
     image: ${DOCKER_USERNAME}/project-boss-frontend:latest # Menggunakan image yang sudah di-push
     ports:
-      - "8080:3000"
+      - "3000:3000"
     build:
       context: ./frontend
       dockerfile: Dockerfile
