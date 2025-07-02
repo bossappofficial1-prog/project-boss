@@ -89,13 +89,13 @@ Selamat datang di **Project Boss** — backend modern untuk manajemen bisnis UMK
 
 ---
 
-## 📖 Dokumentasi API
+## Dokumentasi API
 
 API Dokumentasi siap diakses di: [`BOSS API Documentation`](https://documenter.getpostman.com/view/41481931/2sB2xChUg3)
 
 ---
 
-## ⚡ Script Penting (NPM)
+## Script Penting (NPM)
 
 | Script                | Fungsi                         |
 | --------------------- | ------------------------------ |
@@ -113,7 +113,7 @@ API Dokumentasi siap diakses di: [`BOSS API Documentation`](https://documenter.g
 
 ---
 
-## 🧪 Pengetesan Profesional
+## Pengetesan Profesional
 
 Project siap untuk pengujian profesional menggunakan **Jest** (unit & integration test) dan **Supertest** (API endpoint test).
 
@@ -149,7 +149,7 @@ Project siap untuk pengujian profesional menggunakan **Jest** (unit & integratio
 
 ---
 
-## ⚠️ Tips Penting
+## Tips Penting
 
 - Pastikan file `.env` sudah diisi dengan benar.
 - Untuk production, menggunakan database & credential Midtrans yang aman.
@@ -157,6 +157,6 @@ Project siap untuk pengujian profesional menggunakan **Jest** (unit & integratio
 
 ---
 
-## 📄 Lisensi
+## Lisensi
 
 MIT
