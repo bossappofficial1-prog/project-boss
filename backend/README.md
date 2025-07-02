@@ -1,24 +1,24 @@
-# 🚀 Project Boss Backend
+# Project Boss Backend
 
 Selamat datang di **Project Boss** — backend modern untuk manajemen bisnis UMKM. Dirancang agar scalable, mudah dikembangkan, dan siap produksi.
 
 ---
 
-## ✨ Fitur Utama
+## Fitur Utama
 
 - Multi-bisnis & multi-outlet dalam satu akun
 - Manajemen produk & stok (barang & jasa)
 - Transaksi & pembayaran digital (Midtrans: QRIS, e-wallet, dsb)
 - Dompet virtual & penarikan dana
 - Upload gambar (Cloudinary & Multer)
-- Autentikasi modern (Passport.js, Google OAuth, JWT)
-- API dokumentasi (Swagger UI)
+- Autentikasi modern (JWT)
+- API dokumentasi (Postman)
 - Keamanan & logging (Helmet, CORS, Compression, Winston, Morgan)
 - Siap Docker: deploy di mana saja
 
 ---
 
-## 🛠️ Stack Teknologi
+## Stack Teknologi
 
 | Stack                   | Keterangan          |
 | ----------------------- | ------------------- |
@@ -26,29 +26,29 @@ Selamat datang di **Project Boss** — backend modern untuk manajemen bisnis UMK
 | TypeScript              | Bahasa utama        |
 | Express.js              | Web framework       |
 | Prisma ORM              | Database PostgreSQL |
-| Passport.js             | Autentikasi & OAuth |
 | Midtrans                | Pembayaran digital  |
 | Cloudinary              | Penyimpanan gambar  |
 | Multer                  | Upload file         |
-| Swagger                 | Dokumentasi API     |
+| PostMan                 | Dokumentasi API     |
 | Docker                  | Containerization    |
 | Winston/Morgan          | Logging             |
 | Helmet/CORS/Compression | Security & Optimasi |
 
 ---
 
-## 📁 Struktur Folder
+## Struktur Folder
 
 ```
 ├── src/        # Kode utama (controller, routes, middleware, dsb)
 ├── prisma/     # Skema & migrasi database
 ├── public/     # File statis (gambar, dsb)
 ├── logs/       # Log aplikasi
+├── tests/      # File untuk testing tiap fiture
 ```
 
 ---
 
-## 🚦 Cara Cepat Menjalankan (Development)
+## Cara Cepat Menjalankan (Development)
 
 1. **Install dependencies**
    ```bash
@@ -76,7 +76,7 @@ Selamat datang di **Project Boss** — backend modern untuk manajemen bisnis UMK
 
 ---
 
-## 🐳 Jalankan dengan Docker
+## Jalankan dengan Docker
 
 1. **Build image**
    ```bash
