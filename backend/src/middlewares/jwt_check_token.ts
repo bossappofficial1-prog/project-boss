@@ -4,7 +4,7 @@ import { verify } from "jsonwebtoken";
 export const jwtCheckToken = (req: Request, res: Response, next: NextFunction) => {
     const token = req.headers.authorization?.split("Bearer ")[1];
 
-    if (!token) return res.status(401).json({ message: "Token dibutuhkan." });
+    if (!token) { return res.status(401).json({ message: "Token dibutuhkan." }); };
 
     const JWT_SECRET = process.env.JWT_SECRET || "123456";
 
@@ -15,6 +15,7 @@ export const jwtCheckToken = (req: Request, res: Response, next: NextFunction) =
             console.log(err);
 
             return res.status(401).json({ message: "Token invalid atau sudah kadaluarsa." })
+
         }
         (req as any).user = decode
 

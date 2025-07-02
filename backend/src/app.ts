@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import "./configs/pasport"
 import morgan from "morgan";
 import apiRouter from "./routes";
 import { config } from "./configs/config";
@@ -10,13 +9,11 @@ import compression from 'compression';
 import { errorHandler, notFound } from "./middlewares/error.middleware";
 import helmet from 'helmet';
 import path from "node:path";
-import passport from "passport";
 
 const app = express();
 
 // Mengaktifkan trusted proxy untuk deteksi IP yang benar di belakang proxy seperti Nginx atau Ngrok
 app.set('trust proxy', true);
-app.use(passport.initialize())
 // --- Middleware Keamanan ---
 // Helmet untuk mengatur berbagai header HTTP guna melindungi aplikasi dari kerentanan web yang umum.
 app.use(helmet({
@@ -86,7 +83,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 // --- Rute (Routes) ---
 // Rute dasar
 app.get('/', (req, res) => {
-    return res.status(200).json({ message: 'Selamat datang di BOSS API v1' });
+    res.status(200).json({ message: 'Selamat datang di BOSS API v1' });
 });
 
 // Endpoint pemeriksaan kesehatan (Health check)

@@ -48,19 +48,6 @@ export const resendOtpController = asyncHandler(async (req: Request, res: Respon
     return ResponseUtil.success(res, null, 'Berhasil mengirim ulang kode OTP')
 })
 
-// GOOGLE LOGIN
-export const googleLoginController = asyncHandler(async (req: Request, res: Response) => {
-    const { token } = req.body
-
-    if (!token) {
-        return ResponseUtil.error(res, 'Token is required', 400)
-    }
-
-    const accessToken = await googleLoginService(token)
-
-    return ResponseUtil.success(res, { token: accessToken })
-})
-
 // GET INFO USER
 export const getInfoUserLoginController = asyncHandler(async (req: Request, res: Response) => {
     let user = (req as any).user
