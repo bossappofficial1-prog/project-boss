@@ -12,8 +12,6 @@ import path from "node:path";
 
 const app = express();
 
-// Mengaktifkan trusted proxy untuk deteksi IP yang benar di belakang proxy seperti Nginx atau Ngrok
-app.set('trust proxy', true);
 // --- Middleware Keamanan ---
 // Helmet untuk mengatur berbagai header HTTP guna melindungi aplikasi dari kerentanan web yang umum.
 app.use(helmet({

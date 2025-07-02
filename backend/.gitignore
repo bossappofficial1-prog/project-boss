@@ -1,9 +1,34 @@
-node_modules
-# Keep environment variables out of version control
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Environment variables
 .env
-logs
-dist
+.env.local
+.env.*.local
+
+# Log files
+logs/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temporary files & assets (kecuali yang diizinkan)
 public/*
 !public/info.txt
 tmp/*
 !tmp/info.txt
+
+# Editor & IDE directories
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
