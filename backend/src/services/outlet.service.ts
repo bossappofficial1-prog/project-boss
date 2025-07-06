@@ -71,6 +71,7 @@ export async function getOutletById(id: string) {
                     id: true,
                     name: true,
                     description: true,
+                    ownerId: true
                 }
             }
         }

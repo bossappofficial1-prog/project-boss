@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { config } from "./config";
 import { AppError } from '../errors/api_errors';
+import MidtransClient, { CoreApi, CoreApiChargeRequest, RefundRequest, Snap, SnapTransactionRequest, SnapTransactionResponse, TransactionStatusResponse } from 'midtrans-client';
 
 export const midtransConfig = {
     isProduction: config.NODE_ENV === "production",
@@ -69,3 +70,69 @@ export function validateMidtransSignature(body: any) {
     return true
 }
 
+export class Midtrans {
+    private snap: Snap;
+    private core: CoreApi;
+
+    constructor() {
+        this.snap = new (MidtransClient).Snap({
+            isProduction: midtransConfig.isProduction,
+            serverKey: midtransConfig.serverKey!,
+            clientKey: midtransConfig.clientKey,
+        });
+        this.core = new (MidtransClient).CoreApi({
+            isProduction: midtransConfig.isProduction,
+            serverKey: midtransConfig.serverKey!,
+            clientKey: midtransConfig.clientKey,
+        });
+    }
+
+    public async createTransactionSnap(parameter: SnapTransactionRequest): Promise<SnapTransactionResponse> {
+        try {
+            const transaction = await this.snap.createTransaction(parameter);
+            return transaction;
+        } catch (error) {
+            throw new AppError("Failed to create Midtrans transaction", 500);
+        }
+    }
+
+    public async createTransactionCore(params: CoreApiChargeRequest): Promise<TransactionStatusResponse> {
+        try {
+            const transaction = await this.core.charge(params);
+            return transaction;
+        } catch (error) {
+            throw new AppError("Failed to create Midtrans transaction", 500);
+        }
+    }
+
+    public async refundTransaction(orderId: string, params: RefundRequest): Promise<TransactionStatusResponse> {
+        try {
+            const refundParams: any = {};
+            if (params.amount) refundParams.amount = params.amount;
+            if (params.reason) refundParams.reason = params.reason;
+            const response = await this.core.transaction.refund(orderId, refundParams);
+            return response;
+        } catch (error) {
+            throw new AppError("Failed to refund Midtrans transaction", 500);
+        }
+    }
+
+    public async getTransactionStatus(orderId: string): Promise<any> {
+        try {
+            const status = await this.core.transaction.status(orderId);
+            return status;
+        } catch (error) {
+            throw new AppError("Failed to get Midtrans transaction status", 500);
+        }
+    }
+
+    public async cancelTransaction(orderId: string): Promise<any> {
+        try {
+            const response = await this.core.transaction.cancel(orderId);
+            return response;
+        } catch (error) {
+            throw new AppError("Failed to cancel Midtrans transaction", 500);
+        }
+    }
+
+}

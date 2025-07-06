@@ -59,7 +59,7 @@ export async function getAllBusiness(page: number, limit: number, search?: strin
 
 export async function getBusinessProductService(id: string) {
     const productRaw = await db.product.findMany({
-        where: { businessId: id },
+        // where: { businessId: id },
         select: {
             id: true,
             name: true,
@@ -68,7 +68,7 @@ export async function getBusinessProductService(id: string) {
             type: true,
             image: true,
             unit: true,
-            Outlet: {
+            outlet: {
                 select: {
                     id: true,
                     name: true,
@@ -80,8 +80,8 @@ export async function getBusinessProductService(id: string) {
 
     if (!productRaw || productRaw.length === 0) throw new AppError("Bisnis belum ada produk atau jasa.", 404)
     const products = productRaw.map(item => {
-        const { Outlet, ...otherItems } = item
-        return { ...otherItems, outlet: Outlet }
+        const { outlet, ...otherItems } = item
+        return { ...otherItems, outlet: outlet }
     })
 
     return products

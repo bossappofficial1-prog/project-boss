@@ -7,10 +7,8 @@ import {
     getBusinessWalletController
 } from "../controllers/business.controller";
 import { jwtCheckToken } from "../middlewares/jwt_check_token";
-import { authorizeOutletAccess } from "../middlewares/authorize_outlet_access";
 import { createOutletValidator } from "../validators/outlet.validator";
 import { handleValidationErrors } from "../middlewares/handle_validation_errors";
-import { formDataParser } from "../middlewares/form_data_parse";
 import { createUploader } from "../configs/multer";
 
 const businessRouter = Router()

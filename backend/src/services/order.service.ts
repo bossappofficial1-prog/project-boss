@@ -6,6 +6,8 @@ import { AppError } from "../errors/api_errors";
 import { getOutletById } from "./outlet.service";
 import { initiateMidtransPayment } from "./pay.service";
 import { getUserById } from "./user.service";
+import { generateTransactionCode } from "../utils/code_generator";
+import { getProductById } from "./product.service";
 
 interface OrderItemInput {
     productId: string;
@@ -111,12 +113,14 @@ export async function createOrderService(order: {
 
         const createOrder = await tx.order.create({
             data: {
+                id: generateTransactionCode({ name: outlet.name }, { upperCase: true }),
                 customerId: order.customerId,
                 outletId: order.outletId,
                 totalAmount: totalAmount, // Store the base total amount without fees
                 bookingDate: order.bookingDate,
                 paymentStatus: 'PENDING',
                 queueStatus: 'AWAITING_PAYMENT',
+                customerType: `REGISTERED`,
                 items: {
                     createMany: {
                         data: validatedItems.map((item) => ({
@@ -294,4 +298,29 @@ export async function getOrderOutlet(outletId: string, type: ProductType) {
     if (!orders) throw new AppError(`Tidak ditemukan order pada outlet ${outlet.name}`)
 
     return orders
+}
+
+export async function createOrderProductService(outletId: string,
+    items: { productId: string, quantity: number }[],
+    customerInfo: {
+        name: string,
+        email: string,
+        phone: string
+    },
+    bookingDate?: string,
+    bookingSlotId?: string
+) {
+    const outlet = await getOutletById(outletId)
+
+    if (!outlet) throw new AppError("Outlet tidak ditemukan", 404);
+
+    let totalAmount = 0
+    const validatedItems = []
+
+    for (const item of items) {
+        const product = await getProductById(item.productId)
+
+        if (!product) throw new AppError(`Product ${item.productId} tidak ditemukan`, 404);
+
+    }
 }

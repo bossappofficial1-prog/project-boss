@@ -91,7 +91,7 @@ export async function createProductService(outletId: string, data: CreateProduct
             description: data.description,
             quantity: data.quantity,
             unit: data.unit,
-            businessId: outlet.business.id,
+            // businessId: outlet.business.id,
             outletId
         }
     })

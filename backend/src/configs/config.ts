@@ -18,6 +18,18 @@ export const config = {
         API_SECRET: process.env.CLOUDINARY_API_SECRET
     },
 
+    redis: {
+        REDIS_HOST: process.env.REDIS_HOST,
+        REDIS_PORT: process.env.REDIS_PORT,
+        REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+        REDIS_DB: process.env.REDIS_DB
+    } as const,
+
+    // rabbit env
+    rabbitmq: {
+        RABBITMQ_URL: process.env.RABBITMQ_URL
+    } as const,
+
     // rate limit configuration
     rate_limit: {
         WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes

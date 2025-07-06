@@ -4,14 +4,16 @@ import businessRouter from "./business.routes"
 import outletRouter from "./outlet.routes"
 import { MidtransNotifikasiController } from "../controllers/midtrans.controller"
 import cloudinary_upload from "../middlewares/cloudinary_uploads"
+import productRouter from "./product.routes"
 
 const apiRouter = Router()
 
 apiRouter.use('/auth', authRouter)
 apiRouter.use('/businesses', businessRouter)
 apiRouter.use('/outlets', outletRouter)
+apiRouter.use('/products', productRouter)
 apiRouter.post("/midtrans-notification", MidtransNotifikasiController)
-apiRouter.post('/upload', cloudinary_upload.single('file'), (req, res) => {
+apiRouter.post('/uploads/:id', cloudinary_upload.single('file'), (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
