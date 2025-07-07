@@ -54,7 +54,8 @@
         "prisma": "^5.20.0",
         "swagger-jsdoc": "^6.2.8",
         "swagger-ui-express": "^5.0.1",
-        "winston": "^3.17.0"
+        "winston": "^3.17.0",
+        "zod": "^3.25.74"
     },
     "devDependencies": {
         "@types/amqplib": "^0.10.7",

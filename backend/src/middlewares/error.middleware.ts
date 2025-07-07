@@ -5,7 +5,8 @@ import { AppError } from "../errors/api_errors";
 
 export interface CustomError extends Error {
     statusCode?: number,
-    isOperational?: boolean
+    isOperational?: boolean,
+    errors: any
 }
 
 export const errorHandler = (
@@ -15,6 +16,7 @@ export const errorHandler = (
     next: NextFunction): void => {
     let statusCode = err.statusCode || 500;
     let message = err.message || 'Internal server error'
+    let errors: any
 
     if (err.message.startsWith("File type")) {
         message = err.message;
@@ -35,10 +37,25 @@ export const errorHandler = (
         message = err.message;
         statusCode = err.statusCode!;
     }
-
+    if (err.name === 'ZodError') {
+        message = 'Data input tidak valid.'
+        statusCode = 400;
+        errors = err.errors.map((err: any) => ({
+            path: err.path.join('.'),
+            message: err.message,
+        }))
+        // // Tangani error validasi dari Zod
+        // res.status(400).json({
+        //     message: 'Data input tidak valid.',
+        //     errors: err.errors.map((err: any) => ({
+        //         path: err.path.join('.'),
+        //         message: err.message,
+        //     })),
+        // });
+    }
     logger.error(`Error: ${err.message}, Stack: ${err.stack}`);
 
-    ResponseUtil.error(res, message, statusCode);
+    ResponseUtil.error(res, message, statusCode, errors);
 }
 
 export const notFound = (req: Request, res: Response, next: NextFunction): void => {

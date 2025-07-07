@@ -1,3 +1,4 @@
+import z from "zod";
 import { checkIfEmailExists } from "../services/user.service";
 import { body } from "express-validator";
 
@@ -87,3 +88,12 @@ export const validateBusinessRegister = [
         .notEmpty().withMessage('Nomor telepon outlet wajib diisi')
         .isMobilePhone('id-ID').withMessage('Nomor telepon tidak valid'),
 ];
+
+
+export const testSchema = z.object({
+    aaaa: z.string({
+        required_error: "Name wajib diisi"
+    }).nonempty("Nama tidak boleh kosong")
+})
+
+export type TestInput = z.infer<typeof testSchema>;
