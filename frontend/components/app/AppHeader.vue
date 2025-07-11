@@ -20,7 +20,7 @@ function toggleMenu() {
         <div class="flex gap-2">
           <div class="flex items-center">
             <NuxtLink to="/" class="flex text-2xl items-center space-x-2">
-              <Icon name="boss:logo-blue" />
+              <Icon name="boss:logo-red-text" />
             </NuxtLink>
           </div>
           <NuxtLink to="/home" class="flex items-center space-x-2 px-3 py-2"
