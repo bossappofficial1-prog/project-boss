@@ -26,7 +26,8 @@ const footerLinks = [
           <!-- Company Info -->
           <div class="space-y-4 content-center justify-center">
             <div class="flex justify-center">
-              <Icon name="boss:logo-red-text" width="90" height="25" alt="Logo"/>
+              <Icon name="boss:logo-color-v" class="dark:hidden" width="90" height="25" alt="Logo"/>
+              <Icon name="boss:logo-text-white" class="hidden dark:block" width="90" height="25" alt="Logo"/>
             </div>
 
             <div class="flex space-x-3">

@@ -144,7 +144,7 @@ const bank = [
         <!-- Header Section -->
         <div class="text-center mb-8">
           <div class="flex items-center justify-center mb-6">
-            <Icon name="boss:logo-blue-text" class="w-48 h-24 text-primary-600" />
+            <Icon name="boss:logo-text-color" class="w-48 h-24 text-primary-600" />
           </div>
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Daftar Akun Bisnis

@@ -43,7 +43,7 @@ function toggleProfileMenu() {
                 <div class="flex items-center space-x-3">
                     <RouterLink to="/home">
                         <div class="text-white rounded-lg flex items-center justify-center">
-                            <Icon name="boss:logo-white-text" size="50" />
+                            <Icon name="boss:logo-text-white" size="50" />
                         </div>
                     </RouterLink>
                 </div>
