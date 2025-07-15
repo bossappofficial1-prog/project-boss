@@ -24,15 +24,6 @@ function toggleMenu() {
               <Icon name="boss:logo-text-white" class="hidden dark:block"/>
             </NuxtLink>
           </div>
-          <NuxtLink to="/home" class="flex items-center space-x-2 px-3 py-2"
-            :class="$route.path === '/home' ? 'text-primary-500 border-b-2 border-primary-500' : 'text-gray-600'">
-            Home
-          </NuxtLink>
-
-          <NuxtLink to="/outlets" class="flex items-center space-x-2 px-3 py-2"
-            :class="$route.path === '/outlets' ? 'text-primary-500 border-b-2 border-primary-500' : 'text-gray-600'">
-            Outlets
-          </NuxtLink>
 
         </div>
 
