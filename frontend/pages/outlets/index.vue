@@ -1,5 +1,5 @@
 <script setup>
-import { useApiFetch } from "@/composables/useApiFetch"
+import { useApi } from "@/composables/useApi"
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -9,8 +9,8 @@ const limit = ref(parseInt(route.query.limit) || 6)
 const page = ref(parseInt(route.query.page) || 1)
 const search = ref(route.query.search || '')
 
-// Panggil ke backend via useApiFetch
-const { data: outletsRes, error, pending, refresh, execute } = useApiFetch('/outlets', {
+// Panggil ke backend via useApi
+const { data: outletsRes, error, pending, refresh, execute } = useApi('/outlets', {
   query: {
     limit,
     page,

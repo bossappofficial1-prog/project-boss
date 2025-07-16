@@ -1,5 +1,5 @@
 <script setup>
-const { data: outletsRes, error, pending, execute } = await useApiFetch('/outlets', {
+const { data: outletsRes, error, pending, execute } = await useApi('/outlets', {
   query: {
     limit: 3
   }

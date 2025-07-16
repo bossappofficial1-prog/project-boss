@@ -5,13 +5,13 @@ import { useCartStore } from '@/stores/useCartStore'
 const route = useRoute()
 const outletId = route.params.id
 
-const { data: outletRes, error:errorO, pending:pendingO, execute: executeOutlet } = useApiFetch(`/outlets/${outletId}`)
-const { data: productRes, error:errorP, pending:pendingP, execute: executeProduct } = useApiFetch(`/outlets/${outletId}/products`, {
+const { data: outletRes, error:errorO, pending:pendingO, execute: executeOutlet } = useApi(`/outlets/${outletId}`)
+const { data: productRes, error:errorP, pending:pendingP, execute: executeProduct } = useApi(`/outlets/${outletId}/products`, {
   query:{
     search:"GOODS"
   }
 }, true)
-const { data: serviceRes, error:errorS, pending:pendingS, execute: executeService } = useApiFetch(`/outlets/${outletId}/products`, {
+const { data: serviceRes, error:errorS, pending:pendingS, execute: executeService } = useApi(`/outlets/${outletId}/products`, {
   query:{
     search:"SERVICE"
   }

@@ -10,7 +10,7 @@ onMounted(async () => {
   try {
     authStore.setToken(token)
 
-    const { data, error, execute } = useApiFetch('/auth/me', {}, true)
+    const { data, error, execute } = useApi('/auth/me', {}, true)
 
     await execute()
 
@@ -28,7 +28,6 @@ onMounted(async () => {
       case 'OWNER':
         router.push('/umkm')
         break
-      case 'CUSTOMER':
       case 'ADMIN':
         router.push('/home')
         break

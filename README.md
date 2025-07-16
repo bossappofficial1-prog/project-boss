@@ -12,7 +12,7 @@ BOSS adalah sistem informasi, kasir, dan semi-ecommerce berbasis web. Proyek ini
     - Manajemen antrian pelanggan.
     - Laporan penjualan dan performa bisnis.
 - **Pelanggan**
-    - Dashbaord minimalis untuk pelanggan.
+    - Halaman minimalis untuk pelanggan.
     - Laman home yang menampilkan umkm dan layanan mereka.
     - Pemesanan antrian untuk layanan.
     - Pembayaran produk ataupun antrian melalui Midtrans.
@@ -25,7 +25,7 @@ BOSS adalah sistem informasi, kasir, dan semi-ecommerce berbasis web. Proyek ini
 
 - **Frontend**
   - **Nuxt.js**: Framework Vue.js untuk aplikasi web yang cepat dan SEO-friendly.
-  - **Nuxt UI**: Pustaka UI berbasis Tailwind CSS untuk komponen modern.
+  - **Tailwind**: Framework CSS utility-first untuk styling.
   - **Nuxt/icon**: Ikon kustom untuk antarmuka pengguna.
   - **Nuxt/image**: Optimasi gambar untuk performa lebih baik.
 - **Backend**
@@ -35,7 +35,7 @@ BOSS adalah sistem informasi, kasir, dan semi-ecommerce berbasis web. Proyek ini
   - **JWT**: Autentikasi berbasis token untuk keamanan API.
   - **RabbitMQ**: Sistem antrian untuk pemrosesan pesan asinkron.
   - **Redis**: Cache untuk meningkatkan performa aplikasi.
-- **Integrasi Pembayaran**: Menggunakan SDK resmi misalnya Midtrans untuk menangani transaksi.
+  - **Midtrans**: SDK untuk menangani transaksi.
 
 ## Prasyarat
 

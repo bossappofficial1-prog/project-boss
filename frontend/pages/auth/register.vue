@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from '#app'
-import { useAuthStore } from '~/stores/useAuthStore'
+import { useAuthStore } from '~/stores/auth'
 
 // --- Existing script setup - No changes to functionality ---
 const name = ref('')

@@ -1,16 +1,30 @@
-export const useApiFetch = (path: string, options = {}, isLazy = false) => {
+import type { ApiResponse } from "~/types"
+
+export function useApi<T>(
+  endpoint: string,
+  options: {
+    method?: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    query?: Record<string, any>,
+    body?: any,
+    lazy?: boolean
+  } = {}
+) {
   const config = useRuntimeConfig()
   const auth = useAuthStore()
   const token = auth.token
-  
-  // console.log(`Fetching ${config.public.apiBaseUrl}${path} with token ${token}`)
 
-  return useFetch(`${config.public.apiBaseUrl}${path}`, {
-    headers: {
-      'ngrok-skip-browser-warning': 'true',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
-    lazy: isLazy,
-    ...options
+  const headers: HeadersInit = {
+    'ngrok-skip-browser-warning': 'true',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+
+  // masih dummy
+  // const backend = config.public.backendUrl
+  return useFetch<ApiResponse<T>>(`${endpoint}`, {
+    method: options.method ?? 'GET',
+    query: options.query,
+    body: options.body,
+    headers,
+    lazy: options.lazy ?? false,
   })
 }
