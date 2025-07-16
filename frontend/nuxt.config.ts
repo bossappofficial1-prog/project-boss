@@ -30,6 +30,20 @@ export default defineNuxtConfig({
     ],
   },
 
+  app: {
+    head: {
+      title: 'BOSS',
+      meta: [
+        { name: 'author', content: 'BOSS Team' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: 'BOSS - Business One Stop System' }
+      ],
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/images/logo-color.svg' }
+      ]
+    }
+  },
+
   runtimeConfig: {
     public: {
       apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL,

@@ -18,8 +18,10 @@ export function useApi<T>(
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 
-  // masih dummy
+  // console.log("useApi called with endpoint:", endpoint, "and options:", options);
+  
   // const backend = config.public.backendUrl
+  // masih dummy
   return useFetch<ApiResponse<T>>(`${endpoint}`, {
     method: options.method ?? 'GET',
     query: options.query,

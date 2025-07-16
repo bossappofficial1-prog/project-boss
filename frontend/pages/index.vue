@@ -10,10 +10,14 @@
 
     <div class="relative max-w-7xl mx-auto px-4 py-20 sm:py-32 flex flex-col items-center justify-center min-h-screen text-center">
       <!-- Logo -->
-      <NuxtImg src="/images/logo-white-text.svg" width="360" height="100" alt="Logo"
-        class="mb-8" />
+      <NuxtImg
+        src="/images/logo-white-text.svg"
+        width="360"
+        height="100"
+        alt="Logo"
+        class="mb-8 w-48 sm:w-72 md:w-[360px] h-auto mx-auto"
+      />
 
-      <!-- Deskripsi -->
       <p class="text-xl sm:text-2xl text-primary-100 mb-8 max-w-3xl leading-relaxed">
         Platform digital yang membantu UMKM mengelola bisnis, menerima pembayaran, dan berkembang bersama teknologi
         modern

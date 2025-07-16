@@ -1,20 +1,63 @@
-<script setup>
-const { data: outletsRes, error, pending, execute } = await useApi('/outlets', {
-  query: {
-    limit: 3
-  }
-}, true)
+<script setup lang="ts">
+import type { Outlet } from '~/types'
 
-const outlets = computed(() => outletsRes.value?.data || [])
+interface HomeData {
+  umkm: number
+  total_transaction: number
+  total_membership: number
+}
+interface StatItem {
+  label: string
+  value: string
+  icon: string
+}
 
-const stats = ref([
-  { label: 'UMKM Terdaftar', value: '1,200+', icon: 'mdi:store' },
-  { label: 'Transaksi Berhasil', value: '15,000+', icon: 'mdi:chart-line' },
-  { label: 'Pengguna Aktif', value: '8,500+', icon: 'mdi:account-group' }
+const {
+  data: outletsResponse,
+  error: outletError,
+  pending: outletPending,
+  execute: outletExecute
+} = await useApi<Outlet[]>('/api/outlets', {
+  query: { limit: 3 },
+  lazy: true
+})
+
+const outlets = computed(() => outletsResponse.value?.data || [])
+
+const {
+  data: homeResponse,
+  error: homeError,
+  pending: homePending,
+  execute: homeExecute
+} = await useApi<HomeData>('/api/home', {lazy: true},)
+
+function formatNumber(num: number): string {
+  if (num >= 1_000_000) return (num / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M+'
+  if (num >= 1_000) return (num / 1_000).toFixed(1).replace(/\.0$/, '') + 'K+'
+  return num.toString()
+}
+
+const stats = ref<StatItem[]>([
+  { label: 'UMKM Terdaftar', value: '0', icon: 'lucide:store' },
+  { label: 'Transaksi', value: '0', icon: 'lucide:chart-line' },
+  { label: 'Total Membership', value: '0', icon: 'lucide:users' }
 ])
 
-onMounted( async ()=>{
-  await execute()
+watch(
+  () => homeResponse.value?.data,
+  (val) => {
+    if (!val) return
+    stats.value = [
+      { label: 'UMKM Terdaftar', value: formatNumber(val.umkm), icon: 'lucide:store' },
+      { label: 'Transaksi', value: formatNumber(val.total_transaction), icon: 'lucide:chart-line' },
+      { label: 'Total Membership', value: formatNumber(val.total_membership), icon: 'lucide:users' }
+    ]
+  }
+)
+
+onMounted(async () => {
+  await outletExecute()
+  await homeExecute()
 })
 </script>
 
@@ -32,11 +75,11 @@ onMounted( async ()=>{
           </p>
         </div>
 
-        <div v-if="pending" class="flex justify-center items-center space-x-2 text-primary-700">
+        <div v-if="outletPending" class="flex justify-center items-center space-x-2 text-primary-700">
           <Icon name="line-md:loading-alt-loop" class="h-8 w-8" />
           <span>Sedang memuat data...</span>
         </div>
-        <div v-else-if="error" class="text-center text-red-700">Terjadi kesalahan: {{ error.message }}</div>
+        <div v-else-if="outletError" class="text-center text-red-700">Terjadi kesalahan: {{ outletError.message }}</div>
         <div v-else class="grid md:grid-cols-3 gap-8">
           <BaseCard v-for="outlet in outlets" :key="outlet.id" hover clickable padding="none"
             class="overflow-hidden group">
@@ -48,7 +91,7 @@ onMounted( async ()=>{
             </div>
 
             <div class="p-6">
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ outlet.business_name }}</h3>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ outlet.business?.name }}</h3>
               <p class="text-gray-600 dark:text-gray-400 mb-4">
                 {{ outlet.name }}
               </p>
@@ -80,7 +123,12 @@ onMounted( async ()=>{
     </section>
 
     <!-- Stats Section -->
-    <section class="py-16 bg-white dark:bg-gray-900">
+    <div v-if="homePending" class="flex justify-center items-center space-x-2 text-primary-700">
+      <Icon name="line-md:loading-alt-loop" class="h-8 w-8" />
+      <span>Sedang memuat data...</span>
+    </div>
+    <div v-else-if="homeError" class="text-center text-red-700">Terjadi kesalahan: {{ homeError.message }}</div>
+    <section v-else class="py-16 bg-white dark:bg-gray-900">
       <div class="max-w-7xl mx-auto px-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div v-for="stat in stats" :key="stat.label" class="text-center group">

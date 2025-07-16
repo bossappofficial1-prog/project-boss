@@ -55,12 +55,12 @@ function toggleMenu() {
           </template>
 
           <template v-else>
-            <NuxtLink to="/login">
+            <NuxtLink to="/auth/login">
               <BaseButton variant="outline">
                 Masuk
               </BaseButton>
             </NuxtLink>
-            <NuxtLink to="/register">
+            <NuxtLink to="/auth/register">
               <BaseButton>
                 Daftar
               </BaseButton>
@@ -107,12 +107,12 @@ function toggleMenu() {
 
             <template v-else>
               <div class="flex flex-row justify-end items-center gap-3">
-                <NuxtLink to="/login" @click="showMobileMenu = false">
+                <NuxtLink to="/auth/login" @click="showMobileMenu = false">
                   <BaseButton variant="outline">
                     Masuk
                   </BaseButton>
                 </NuxtLink>
-                <NuxtLink to="/register" @click="showMobileMenu = false">
+                <NuxtLink to="/auth/register" @click="showMobileMenu = false">
                   <BaseButton>
                     Daftar
                   </BaseButton>
