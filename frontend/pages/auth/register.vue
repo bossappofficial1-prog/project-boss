@@ -141,7 +141,7 @@ definePageMeta({
         <div class="mt-8 text-center">
           <p class="text-sm text-gray-600 dark:text-gray-400">
             Sudah punya akun?
-            <NuxtLink to="/login" class="text-primary-600 hover:text-primary-500 font-medium">Masuk di sini</NuxtLink>
+            <NuxtLink to="/auth/login" class="text-primary-600 hover:text-primary-500 font-medium">Masuk di sini</NuxtLink>
           </p>
         </div>
       </div>

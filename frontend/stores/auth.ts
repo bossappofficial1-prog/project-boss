@@ -57,6 +57,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // jika logout dengan endpoint 
     async logout() {
       this.isLoading = true
       try {
@@ -103,7 +104,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    setSelectedOutlet(outlet: Outlet) {
+    setSelectedOutlet(outlet: Outlet | null) {
       this.selectedOutlet = outlet
     },
 

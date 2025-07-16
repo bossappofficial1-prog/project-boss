@@ -29,19 +29,6 @@ export default defineEventHandler(async (event) => {
     }
   ]
 
-  const user = {
-    id: '1',
-    email,
-    name: 'John Doe',
-    avatar: null,
-    password: 'hashed_password',
-    role: 'OWNER',
-    isVerified: true,
-    phone: '+6281234567890',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-
   const business = {
     id: '1',
     name: 'Acme Corp',
@@ -50,20 +37,33 @@ export default defineEventHandler(async (event) => {
     updatedAt: new Date(),
     bankName: 'Bank Central Asia',
     bankAccount: '1234567890',
-    accountHolder: 'John Doe',
-    ownerId: user.id,
+    accountHolder: 'Ujang Knalpot',
+    ownerId: "1",
     defaultTransactionFeeBearer: 'OWNER',
-    owner: user,
     outlets: outlets,
     wallet: undefined,
     memberships: []
   }
 
+  const user = {
+    id: '1',
+    email,
+    name: 'Ujang Knalpot',
+    avatar: null,
+    password: 'hashed_password',
+    role: 'OWNER',
+    isVerified: true,
+    phone: '+6281234567890',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    business: business
+  }
+
   await new Promise(resolve => setTimeout(resolve, 2000))
 
   return {
-    token: 'dummy-jwt-token-123',
-    user,
-    business
+    'token': 'dummy-jwt-token-123',
+    'user': user,
+    'outlets': outlets
   }
 })

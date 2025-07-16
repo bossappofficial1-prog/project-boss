@@ -1,13 +1,11 @@
-<script setup>
-import { ref } from 'vue'
-import { useRouter } from '#app'
+<script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
+import type { LoginForm } from '~/types'
 
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
 
-const router = useRouter()
 const authStore = useAuthStore()
 
 async function handleLogin() {
@@ -15,20 +13,7 @@ async function handleLogin() {
 
   isLoading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    const userData = {
-      id: 1,
-      email: email.value,
-      name: 'John Doe',
-      avatar: null,
-      role: 'OWNER',
-    }
-
-    authStore.setUser(userData)
-    authStore.setToken('fake-jwt-token')
-
-    router.push('/umkm')
+    authStore.login({ email: email.value, password: password.value } as LoginForm)
   } catch (error) {
     console.error('Login failed:', error)
   } finally {
@@ -116,7 +101,7 @@ definePageMeta({
         <div class="mt-8 text-center">
           <p class="text-sm text-gray-600 dark:text-gray-400">
             Belum punya akun?
-            <NuxtLink to="/register" class="text-primary-600 hover:text-primary-500 font-medium">Daftar sekarang</NuxtLink>
+            <NuxtLink to="/auth/register" class="text-primary-600 hover:text-primary-500 font-medium">Daftar sekarang</NuxtLink>
           </p>
         </div>
       </div>
