@@ -25,7 +25,8 @@ export const useAuthStore = defineStore('auth', {
     isOwner: (state): boolean => state.user?.role === 'OWNER',
     isAdmin: (state): boolean => state.user?.role === 'ADMIN',
     hasSelectedOutlet: (state): boolean => !!state.selectedOutlet,
-    canAccessOwnerFeatures: (state): boolean => !!state.token && !!state.user && state.user.role === 'OWNER' && state.user.isVerified
+    canAccessOwnerFeatures: (state): boolean => !!state.token && !!state.user && state.user.role === 'OWNER' && state.user.isVerified,
+    hasBusinessProfile: (state): boolean => !!state.user?.businesses
   },
 
   actions: {
@@ -117,7 +118,12 @@ export const useAuthStore = defineStore('auth', {
 
     async navigateAfterLogin() {
       if (this.isOwner) {
-        await navigateTo('/umkm')
+        // Cek apakah owner sudah punya bisnis
+        if (!this.hasBusinessProfile) {
+          await navigateTo('/umkm/account?setup=true')
+        } else {
+          await navigateTo('/umkm')
+        }
       // admin aplikasi 
       // } else if (this.isAdmin) {
         // await navigateTo('/') 

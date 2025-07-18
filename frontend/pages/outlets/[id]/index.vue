@@ -1,6 +1,6 @@
 <script setup>
 import { useRoute } from 'vue-router'
-import { useCartStore } from '@/stores/useCartStore'
+import { useCartStore } from '~/stores/cart'
 
 const route = useRoute()
 const outletId = route.params.id
