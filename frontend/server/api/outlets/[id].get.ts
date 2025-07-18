@@ -1,4 +1,4 @@
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const outletId = getRouterParam(event, 'id')
 
   // Dummy business (1 bisnis)
@@ -56,11 +56,11 @@ export default defineEventHandler((event) => {
     products: dummyProducts
   }
 
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
   return {
     success: true,
     message: 'Berhasil mengambil detail outlet',
     data: outletDetail,
-    timestamp: new Date().toISOString(),
-    path: `/api/outlets/${outletId}`
   }
 })
