@@ -3,8 +3,8 @@ import type { Outlet } from '~/types'
 
 interface HomeData {
   umkm: number
-  total_transaction: number
-  total_membership: number
+  transactions: number
+  memberships: number
 }
 interface StatItem {
   label: string
@@ -54,8 +54,8 @@ watch(
     if (!val) return
     stats.value = [
       { label: 'UMKM Terdaftar', value: formatNumber(val.umkm), icon: 'lucide:store' },
-      { label: 'Transaksi', value: formatNumber(val.total_transaction), icon: 'lucide:chart-line' },
-      { label: 'Total Membership', value: formatNumber(val.total_membership), icon: 'lucide:users' }
+      { label: 'Transaksi', value: formatNumber(val.transactions), icon: 'lucide:chart-line' },
+      { label: 'Total Membership', value: formatNumber(val.memberships), icon: 'lucide:users' }
     ]
   }
 )

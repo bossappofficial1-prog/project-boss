@@ -5,8 +5,8 @@ export default defineEventHandler(async () => {
     success: true, 
     data: {
     'umkm' : 239,
-    'total_transaction' : 1234231,
-    'total_membership' : 123313123,
+    'transactions' : 1234231,
+    'memberships' : 123313123,
     }
   }
 })
