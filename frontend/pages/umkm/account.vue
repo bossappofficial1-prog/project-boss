@@ -29,8 +29,8 @@ const feeOptions = [
 
 // Load existing business data if available
 onMounted(async () => {
-  if (auth.user?.businesses && !isSetupMode.value) {
-    const business = auth.user.businesses
+  if (auth.user?.business && !isSetupMode.value) {
+    const business = auth.user.business
     form.value = {
       name: business.name || '',
       description: business.description || '',
@@ -69,8 +69,8 @@ const submitForm = async () => {
   isLoading.value = true
   
   try {
-    const endpoint = auth.user?.businesses ? '/api/business/update' : '/api/business/create'
-    const method = auth.user?.businesses ? 'PUT' : 'POST'
+    const endpoint = auth.user?.business ? '/api/business/update' : '/api/business/create'
+    const method = auth.user?.business ? 'PUT' : 'POST'
     
     const { data, error } = await useApi<{ business: any }>(endpoint, {
       method,
@@ -87,7 +87,7 @@ const submitForm = async () => {
     }
     
     // Update user data in store
-    await auth.updateProfile({ businesses: data.value?.data?.business })
+    await auth.updateProfile({ business: data.value?.data?.business })
     
     // Show success message
     const toast = useToast()
@@ -111,12 +111,12 @@ const submitForm = async () => {
 
 const pageTitle = computed(() => {
   if (isSetupMode.value) return 'Setup Profil Bisnis'
-  return auth.user?.businesses ? 'Edit Profil Bisnis' : 'Buat Profil Bisnis'
+  return auth.user?.business ? 'Edit Profil Bisnis' : 'Buat Profil Bisnis'
 })
 
 const buttonText = computed(() => {
   if (isSetupMode.value) return 'Selesaikan Setup'
-  return auth.user?.businesses ? 'Perbarui Profil' : 'Buat Profil'
+  return auth.user?.business ? 'Perbarui Profil' : 'Buat Profil'
 })
 </script>
 

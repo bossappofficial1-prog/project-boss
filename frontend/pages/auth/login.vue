@@ -95,7 +95,7 @@ const submitForm = async () => {
           <div>
             <h3 class="font-medium text-green-900 dark:text-green-100">Registrasi Berhasil!</h3>
             <p class="text-green-700 dark:text-green-300 text-sm mt-1">
-              Akun Anda berhasil dibuat. Silakan masuk untuk melanjutkan.
+             Periksa email untuk konfirmasi email anda sebelum login!
             </p>
           </div>
         </div>

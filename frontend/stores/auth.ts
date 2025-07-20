@@ -1,10 +1,11 @@
 // stores/auth.ts
 import { defineStore } from 'pinia'
-import type { User, Outlet, Role, LoginForm } from '~/types'
+import type { User, Outlet, Role, LoginForm, Business } from '~/types'
 
 interface AuthState {
   token: string | null
   user: User | null
+  business: Business | null
   selectedOutlet: Outlet | null
   availableOutlets: Outlet[]
   isLoading: boolean
@@ -14,6 +15,7 @@ export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     token: null,
     user: null,
+    business: null,
     selectedOutlet: null,
     availableOutlets: [],
     isLoading: false
@@ -26,31 +28,30 @@ export const useAuthStore = defineStore('auth', {
     isAdmin: (state): boolean => state.user?.role === 'ADMIN',
     hasSelectedOutlet: (state): boolean => !!state.selectedOutlet,
     canAccessOwnerFeatures: (state): boolean => !!state.token && !!state.user && state.user.role === 'OWNER' && state.user.isVerified,
-    hasBusinessProfile: (state): boolean => !!state.user?.businesses
+    hasBusinessProfile: (state): boolean => !!state.business
   },
 
   actions: {
     async login(credentials: LoginForm) {
       this.isLoading = true
       try {
+        // Login hanya untuk mendapatkan token
         const response = await $fetch<{
+          success: boolean
           token: string
-          user: User
-          outlets?: Outlet[]
         }>('/api/auth/login', {
           method: 'POST',
           body: credentials
         })
         
-        this.token = response.token
-        this.user = response.user
-        
-        if (response.outlets?.length) {
-          this.availableOutlets = response.outlets
-          if (response.outlets.length === 1) {
-            this.selectedOutlet = response.outlets[0]
-          }
+        if (!response.success || !response.token) {
+          throw new Error('Login failed')
         }
+        
+        this.token = response.token
+        
+        // Setelah login, ambil data user dari /me
+        await this.fetchUserData()
         
         await this.navigateAfterLogin()
       } finally {
@@ -58,7 +59,6 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // jika logout dengan endpoint 
     async logout() {
       this.isLoading = true
       try {
@@ -80,13 +80,20 @@ export const useAuthStore = defineStore('auth', {
     async updateProfile(data: Partial<User>) {
       this.isLoading = true
       try {
-        const response = await $fetch<{ user: User }>('/api/user/profile', {
+        const response = await useApi<{ success: boolean }>('/api/user/profile', {
           method: 'PUT',
           body: data,
-          headers: { Authorization: `Bearer ${this.token}` }
         })
         
-        this.user = response.user
+        if (response.data.value?.success) {
+          // Setelah update berhasil, ambil data user terbaru dari /me
+          await this.fetchUserData()
+        } else {
+          throw new Error('Gagal update profile')
+        }
+      } catch (error) {
+        console.error("Gagal update profile:", error)
+        throw error
       } finally {
         this.isLoading = false
       }
@@ -112,6 +119,7 @@ export const useAuthStore = defineStore('auth', {
     clearSession() {
       this.token = null
       this.user = null
+      this.business = null
       this.selectedOutlet = null
       this.availableOutlets = []
     },
@@ -120,13 +128,13 @@ export const useAuthStore = defineStore('auth', {
       if (this.isOwner) {
         // Cek apakah owner sudah punya bisnis
         if (!this.hasBusinessProfile) {
+          console.log("User:", this.user)
+          console.log("Business Profile:", this.hasBusinessProfile)
+          
           await navigateTo('/umkm/account?setup=true')
         } else {
           await navigateTo('/umkm')
         }
-      // admin aplikasi 
-      // } else if (this.isAdmin) {
-        // await navigateTo('/') 
       } else {
         await navigateTo('/home')
       }
@@ -135,10 +143,8 @@ export const useAuthStore = defineStore('auth', {
     async initAuth() {
       if (this.token && this.user) {
         try {
-          // Verify token masih valid
-          await $fetch('/api/auth/verify', {
-            headers: { Authorization: `Bearer ${this.token}` }
-          })
+          // Verify token dan ambil data user terbaru
+          await this.fetchUserData()
           
           // Fetch outlets untuk owner
           if (this.isOwner) {
@@ -148,6 +154,38 @@ export const useAuthStore = defineStore('auth', {
           console.error('Auth verification failed:', error)
           this.clearSession()
         }
+      }
+    },
+
+    async fetchUserData() {
+      if (!this.token) return
+      
+      try {
+        const response = await $fetch<{ 
+          success: boolean
+          data: User 
+        }>('/api/auth/me', {
+          headers: { Authorization: `Bearer ${this.token}` }
+        })
+        
+        if (response.success && response.data) {
+          this.user = response.data
+          
+          // Set business dari user data
+          if (response.data.business) {
+            this.business = response.data.business
+            
+            // Set outlets dari business
+            if (response.data.business.outlets?.length) {
+              this.availableOutlets = response.data.business.outlets
+              if (response.data.business.outlets.length === 1) {
+                this.selectedOutlet = response.data.business.outlets[0]
+              }
+            }
+          }
+        }
+      } catch (error) {
+        throw error
       }
     }
   },

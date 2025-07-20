@@ -101,7 +101,7 @@ export interface User {
   createdAt: Date
   updatedAt: Date
   // Relations
-  businesses?: Business
+  business?: Business
   orders?: Order[]
   memberships?: Membership[]
 }
