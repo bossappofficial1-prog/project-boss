@@ -1,10 +1,27 @@
 import z from "zod";
 
-export const registerBusinessSchema = z.object({
-    name: z.string({ required_error: "Nama Harus diisi" })
-        .nonempty("Nama tidak boleh kosong")
-        .trim(),
-    // email: z.string().email("Email tidak valid").
-})
+export const loginSchema = z.object({
+    email: z
+        .string()
+        .nonempty({ message: "Email tidak boleh kosong" })
+        .email({ message: "Email tidak valid" })
+        .transform(str => str.toLowerCase()),
+    password: z
+        .string()
+        .nonempty({ message: "Password tidak boleh kosong" }),
+});
 
-export type RegisterBusinessInput = z.infer<typeof registerBusinessSchema>
+export type LoginInput = z.infer<typeof loginSchema>;
+
+export const verifySchema = z.object({
+    email: z
+        .string()
+        .nonempty({ message: "Email tidak boleh kosong" })
+        .email({ message: "Email tidak valid" })
+        .transform(str => str.toLowerCase()),
+    code: z
+        .string()
+        .nonempty({ message: "Kode verifikasi tidak boleh kosong" }),
+});
+
+export type VerifyInput = z.infer<typeof verifySchema>;

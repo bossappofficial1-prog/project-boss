@@ -1,3 +1,0 @@
-file TS interface/type alias global:  
-• RequestWithUser,  
-• DTO (Data Transfer Object) definitions

@@ -1,166 +1,145 @@
-# Project Boss Backend
+# Express + TypeScript + Prisma Boilerplate
 
-Backend modern untuk manajemen bisnis UMKM. Dirancang scalable, mudah dikembangkan, dan siap produksi.
+Template backend siap pakai menggunakan **Express.js**, **TypeScript**, dan **Prisma ORM**. Cocok untuk membangun REST API modern, aman, dan scalable.
 
 ---
 
 ## Fitur Utama
 
-- Multi-bisnis & multi-outlet dalam satu akun
-- Manajemen produk & stok (barang & jasa)
-- Transaksi & pembayaran digital (Midtrans: QRIS, e-wallet, dsb)
-- Dompet virtual & penarikan dana
-- Upload gambar (Cloudinary & Multer)
-- Autentikasi JWT
-- Dokumentasi API (Postman)
-- Keamanan & logging (Helmet, CORS, Compression, Winston, Morgan)
-- Siap Docker: deploy di mana saja
-
----
-
-## Stack Teknologi
-
-| Stack                   | Keterangan          |
-| ----------------------- | ------------------- |
-| Node.js                 | Runtime JS/TS       |
-| TypeScript              | Bahasa utama        |
-| Express.js              | Web framework       |
-| Prisma ORM              | Database PostgreSQL |
-| RabbitMq                | Message Broker      |
-| Redis                   | Caching Data        |
-| Midtrans                | Pembayaran digital  |
-| Cloudinary              | Penyimpanan gambar  |
-| Multer                  | Upload file         |
-| Postman                 | Dokumentasi API     |
-| Docker                  | Containerization    |
-| Winston/Morgan          | Logging             |
-| Helmet/CORS/Compression | Security & Optimasi |
+- **TypeScript**: Kode lebih aman & maintainable
+- **Prisma ORM**: Query database PostgreSQL dengan mudah
+- **Express 5**: Framework web minimalis & powerful
+- **Rate Limiting**: Perlindungan dari brute-force
+- **JWT Auth**: Siap untuk implementasi autentikasi
+- **Winston Logger**: Logging harian otomatis
+- **Testing**: Sudah terintegrasi dengan Jest & Supertest
+- **Dockerized**: Siap deploy dengan Docker
 
 ---
 
 ## Struktur Folder
 
 ```
-├── src/        # Kode utama (controller, routes, middleware, dsb)
-├── prisma/     # Skema & migrasi database
-├── public/     # File statis (gambar, dsb)
-├── logs/       # Log aplikasi
-├── tests/      # File untuk testing tiap fitur
+├── src/
+│   ├── app.ts           # Inisialisasi express & middleware
+│   ├── index.ts         # Entry point server
+│   ├── config/          # Konfigurasi environment & prisma
+│   ├── constants/       # Konstanta global (status, message, dsb)
+│   ├── controller/      # Handler request
+│   ├── errors/          # Custom error
+│   ├── middleware/      # Middleware (logging, rate-limit, error)
+│   ├── repositories/    # Query ke database
+│   ├── routes/          # Routing API
+│   ├── schemas/         # Validasi skema request/response (zod)
+│   ├── service/         # Bisnis logic
+│   ├── types/           # TypeScript types
+│   └── utils/           # Helper utilities
+├── prisma/              # Schema & migration database
+├── tests/               # Testing
+├── logs/                # File log aplikasi
 ```
 
 ---
 
-## Cara Menjalankan (Development)
+## Script yang Tersedia
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
-2. **Siapkan environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env sesuai kebutuhan (DATABASE_URL, MIDTRANS, CLOUDINARY, dsb)
-   ```
-3. **Migrasi & generate Prisma Client**
-   ```bash
-   npm run db:migrate
-   npm run db:generate
-   ```
-4. **(Opsional) Seed data awal**
-   ```bash
-   npm run db:seed
-   ```
-5. **Jalankan server development**
-   ```bash
-   npm run dev
-   # Akses di http://localhost:4444
-   ```
+| Script            | Perintah                | Deskripsi                                   |
+| ----------------- | ----------------------- | ------------------------------------------- |
+| Start Development | `npm run dev`           | Menjalankan server dalam mode development   |
+| Build             | `npm run build`         | Build project TypeScript ke JavaScript      |
+| Start Production  | `npm start`             | Menjalankan server hasil build (production) |
+| Test              | `npm test`              | Menjalankan seluruh unit test               |
+| Test Watch        | `npm run test:watch`    | Menjalankan test dengan mode watch          |
+| Test Coverage     | `npm run test:coverage` | Menampilkan laporan coverage test           |
+| DB Migrate        | `npm run db:migrate`    | Menjalankan migrasi database Prisma         |
+| DB Generate       | `npm run db:generate`   | Generate client Prisma                      |
+| DB Seed           | `npm run db:seed`       | Mengisi database dengan data awal (seeding) |
+| DB Studio         | `npm run db:studio`     | Membuka Prisma Studio (GUI database)        |
+| DB Reset          | `npm run db:reset`      | Reset database dan migrasi ulang            |
+| DB Prepare        | `npm run db:prepare`    | Generate ulang Prisma client                |
+
+## Quick Start
+
+### 1. Clone & Install
+
+```sh
+git clone https://github.com/PitoDf/express-app-useable
+cd express-app-useable # bisa ganti nama folder sesuai dengan kebutuhan
+npm install
+```
+
+or install via npm module
+
+```sh
+npx install-express-pitok create <nama-projek>
+```
+
+### 2. Konfigurasi Environment
+
+Salin `.env.example` ke `.env` dan sesuaikan:
+
+```sh
+cp .env.example .env
+```
+
+### 3. Setup Database
+
+- Pastikan PostgreSQL berjalan.
+- Edit `DATABASE_URL` di `.env` sesuai database Anda.
+
+### 4. Migrasi & Seed Database
+
+```sh
+npm run db:migrate
+npm run db:seed
+```
+
+### 5. Jalankan Server
+
+```sh
+npm run dev
+```
+
+Server berjalan di: [http://localhost:6789](http://localhost:1234)
+
+---
+
+## Testing
+
+Jalankan semua test:
+
+```sh
+npm test
+```
 
 ---
 
 ## Jalankan dengan Docker
 
-1. **Build image**
-   ```bash
-   docker build -t project-boss-backend .
-   ```
-2. **Run container**
-   ```bash
-   docker run -p 4444:4444 --env-file .env project-boss-backend
-   ```
-
----
-
-## Dokumentasi API
-
-API dokumentasi tersedia di: [BOSS API Documentation](https://documenter.getpostman.com/view/41481931/2sB2xChUg3)
-
----
-
-## Script Penting (NPM)
-
-| Script                | Fungsi                         |
-| --------------------- | ------------------------------ |
-| npm run dev           | Jalankan server development    |
-| npm run build         | Build TypeScript ke dist/      |
-| npm start             | Jalankan server production     |
-| npm test              | Jalankan semua test Jest       |
-| npm run test:watch    | Test mode watch                |
-| npm run test:coverage | Laporan coverage               |
-| npm run db:migrate    | Migrasi database (Prisma)      |
-| npm run db:generate   | Generate Prisma Client         |
-| npm run db:seed       | Seed data awal                 |
-| npm run db:studio     | Buka Prisma Studio             |
-| npm run db:reset      | Reset database & migrasi ulang |
-
----
-
-## Pengetesan
-
-Project siap diuji dengan **Jest** (unit & integration test) dan **Supertest** (API endpoint test).
-
-### Contoh Test API
-
-```ts
-// tests/auth.e2e.test.ts
-import request from "supertest";
-import app from "../src/app";
-
-describe("Auth API", () => {
-  it("should return 401 for invalid login", async () => {
-    const res = await request(app)
-      .post("/api/auth/login")
-      .send({ email: "wrong@mail.com", password: "salah" });
-    expect(res.statusCode).toBe(401);
-  });
-});
-```
-
-Jalankan semua test:
-
-```bash
-npm test
-# atau
-npx jest
-```
-
-Coverage report:
-
-```bash
-npx jest --coverage
+```sh
+docker build -t my-express-app .
+docker run -p 1234:4444 --env-file .env my-express-app
 ```
 
 ---
 
-## Tips
+## Tools & Library
 
-- Pastikan file `.env` sudah diisi dengan benar.
-- Untuk production, gunakan database & credential Midtrans yang aman.
-- Upload gambar langsung ke Cloudinary.
-- Gunakan `npm run db:studio` untuk eksplorasi database.
+- [Express](https://expressjs.com/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Prisma](https://www.prisma.io/)
+- [Jest](https://jestjs.io/)
+- [Supertest](https://github.com/visionmedia/supertest)
+- [Winston](https://github.com/winstonjs/winston)
+- [Helmet](https://helmetjs.github.io/)
+- [express-rate-limit](https://github.com/nfriedly/express-rate-limit)
 
 ---
 
-## Lisensi
+## Author
 
-MIT
+Pito Desri Pauzi
+
+---
+
+##

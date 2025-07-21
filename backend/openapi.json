@@ -1,0 +1,954 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "BOSS API - Business One Stop System",
+        "description": "Dokumentasi API lengkap untuk backend BOSS. API ini menangani semua aspek operasional bisnis, mulai dari manajemen outlet, produk, pesanan, hingga laporan keuangan.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:1234/api/v1",
+            "description": "Server Pengembangan Lokal"
+        }
+    ],
+    "components": {
+        "schemas": {
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "OWNER"
+                        ]
+                    }
+                }
+            },
+            "Business": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "ownerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "Outlet": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "address": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "businessId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "Product": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "price": {
+                        "type": "number"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "GOODS",
+                            "SERVICE"
+                        ]
+                    },
+                    "quantity": {
+                        "type": "number"
+                    },
+                    "outletId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "Order": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "totalAmount": {
+                        "type": "number"
+                    },
+                    "orderStatus": {
+                        "type": "string"
+                    },
+                    "paymentStatus": {
+                        "type": "string"
+                    },
+                    "outletId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "Expense": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "outletId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "email",
+                    "password"
+                ]
+            },
+            "RegisterRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "email",
+                    "password"
+                ]
+            },
+            "CreateOrderRequest": {
+                "type": "object",
+                "properties": {
+                    "outletId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "productId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "quantity": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "productId",
+                                "quantity"
+                            ]
+                        }
+                    },
+                    "guestCustomer": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            "phone": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "name",
+                            "phone"
+                        ]
+                    }
+                },
+                "required": [
+                    "outletId",
+                    "items",
+                    "guestCustomer"
+                ]
+            },
+            "CreateOutletRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "address": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "businessId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "name",
+                    "businessId"
+                ]
+            },
+            "CreateProductRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "price": {
+                        "type": "number"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "GOODS",
+                            "SERVICE"
+                        ]
+                    },
+                    "quantity": {
+                        "type": "number"
+                    },
+                    "outletId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "name",
+                    "price",
+                    "type",
+                    "outletId"
+                ]
+            },
+            "CreateExpenseRequest": {
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "outletId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "description",
+                    "amount",
+                    "date",
+                    "outletId"
+                ]
+            },
+            "UpdateOrderStatusRequest": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "status"
+                ]
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    },
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Autentikasi dan manajemen pengguna"
+        },
+        {
+            "name": "Business & Outlets",
+            "description": "Manajemen bisnis dan outlet"
+        },
+        {
+            "name": "Products",
+            "description": "Manajemen produk dan layanan"
+        },
+        {
+            "name": "Orders",
+            "description": "Manajemen pesanan dan antrian"
+        },
+        {
+            "name": "Expenses",
+            "description": "Manajemen pengeluaran"
+        },
+        {
+            "name": "Reports",
+            "description": "Laporan keuangan dan penjualan"
+        },
+        {
+            "name": "Payments",
+            "description": "Webhook pembayaran"
+        }
+    ],
+    "paths": {
+        "/auth/register": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Registrasi Pengguna Baru",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pengguna berhasil dibuat"
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login Pengguna",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login berhasil, token JWT diberikan"
+                    }
+                }
+            }
+        },
+        "/users/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Dapatkan Profil Pengguna Saat Ini",
+                "responses": {
+                    "200": {
+                        "description": "Profil pengguna",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/outlets": {
+            "post": {
+                "tags": [
+                    "Business & Outlets"
+                ],
+                "summary": "Buat Outlet Baru",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateOutletRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Outlet berhasil dibuat"
+                    }
+                }
+            }
+        },
+        "/outlets/{id}": {
+            "put": {
+                "tags": [
+                    "Business & Outlets"
+                ],
+                "summary": "Perbarui Outlet",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateOutletRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Outlet berhasil diperbarui"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Business & Outlets"
+                ],
+                "summary": "Hapus Outlet",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Outlet berhasil dihapus"
+                    }
+                }
+            }
+        },
+        "/outlets/business/{businessId}": {
+            "get": {
+                "tags": [
+                    "Business & Outlets"
+                ],
+                "summary": "Dapatkan Semua Outlet Berdasarkan Bisnis",
+                "parameters": [
+                    {
+                        "name": "businessId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar outlet",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Outlet"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products": {
+            "post": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Buat Produk Baru",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateProductRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Produk berhasil dibuat"
+                    }
+                }
+            }
+        },
+        "/products/{id}": {
+            "put": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Perbarui Produk",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateProductRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Produk berhasil diperbarui"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Hapus Produk",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Produk berhasil dihapus"
+                    }
+                }
+            }
+        },
+        "/products/outlet/{outletId}": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Dapatkan Semua Produk Berdasarkan Outlet",
+                "parameters": [
+                    {
+                        "name": "outletId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar produk",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Product"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/orders": {
+            "post": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Buat Pesanan Baru",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateOrderRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pesanan berhasil dibuat, URL pembayaran diberikan"
+                    }
+                }
+            }
+        },
+        "/orders/outlet/{outletId}": {
+            "get": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Dapatkan Semua Pesanan Berdasarkan Outlet",
+                "parameters": [
+                    {
+                        "name": "outletId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar pesanan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Order"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{id}/complete": {
+            "post": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Selesaikan Pesanan Layanan (Admin)",
+                "description": "Digunakan oleh admin/owner untuk menandai pesanan layanan telah selesai dan memajukan antrian.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pesanan selesai, antrian diperbarui"
+                    }
+                }
+            }
+        },
+        "/orders/{id}/status": {
+            "patch": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Perbarui Status Pesanan (Admin)",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateOrderStatusRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status pesanan diperbarui"
+                    }
+                }
+            }
+        },
+        "/expenses": {
+            "post": {
+                "tags": [
+                    "Expenses"
+                ],
+                "summary": "Buat Pengeluaran Baru",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateExpenseRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pengeluaran berhasil dibuat"
+                    }
+                }
+            }
+        },
+        "/expenses/{id}": {
+            "put": {
+                "tags": [
+                    "Expenses"
+                ],
+                "summary": "Perbarui Pengeluaran",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateExpenseRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pengeluaran berhasil diperbarui"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Expenses"
+                ],
+                "summary": "Hapus Pengeluaran",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Pengeluaran berhasil dihapus"
+                    }
+                }
+            }
+        },
+        "/expenses/outlet/{outletId}": {
+            "get": {
+                "tags": [
+                    "Expenses"
+                ],
+                "summary": "Dapatkan Semua Pengeluaran Berdasarkan Outlet",
+                "parameters": [
+                    {
+                        "name": "outletId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar pengeluaran",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Expense"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reports/financial-summary": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Dapatkan Laporan Ringkasan Keuangan",
+                "parameters": [
+                    {
+                        "name": "outletId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ringkasan keuangan dan penjualan"
+                    }
+                }
+            }
+        },
+        "/payments/notification/webhooks/midtrans": {
+            "post": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Webhook Notifikasi Midtrans",
+                "security": [],
+                "description": "Endpoint ini menerima notifikasi status pembayaran dari Midtrans.",
+                "responses": {
+                    "200": {
+                        "description": "Notifikasi diterima"
+                    }
+                }
+            }
+        }
+    }
+}

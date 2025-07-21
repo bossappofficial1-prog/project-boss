@@ -1,0 +1,41 @@
+import { BookingSlot } from "@prisma/client";
+import { db } from "../config/prisma";
+import { CreateBookingSlotInput, UpdateBookingSlotInput } from "../schemas/booking.schema";
+
+export class BookingRepository {
+    static async create(data: CreateBookingSlotInput): Promise<BookingSlot> {
+        return db.bookingSlot.create({
+            data: {
+                ...data,
+                date: new Date(data.date),
+                startTime: new Date(data.startTime),
+                endTime: new Date(data.endTime),
+            },
+        });
+    }
+
+    static async findById(id: string): Promise<BookingSlot | null> {
+        return db.bookingSlot.findUnique({
+            where: { id },
+        });
+    }
+
+    static async findByProductId(productId: string): Promise<BookingSlot[]> {
+        return db.bookingSlot.findMany({
+            where: { productId },
+        });
+    }
+
+    static async update(id: string, data: UpdateBookingSlotInput): Promise<BookingSlot> {
+        return db.bookingSlot.update({
+            where: { id },
+            data,
+        });
+    }
+
+    static async delete(id: string): Promise<BookingSlot> {
+        return db.bookingSlot.delete({
+            where: { id },
+        });
+    }
+}

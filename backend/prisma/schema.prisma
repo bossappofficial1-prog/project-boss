@@ -1,8 +1,5 @@
 // This is your Prisma schema file,
-// learn more about it in the docs: https://pris.lyd/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// learn more about it in the docs: https://pris.ly/prisma-schema
 
 generator client {
   provider      = "prisma-client-js"
@@ -14,13 +11,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// =============================================
-// ENUMS - Untuk memastikan konsistensi data
-// =============================================
+// === ENUMS ===
 
-enum Role {
-  OWNER // Pemilik UMKM
-  CUSTOMER // Pelanggan biasa
+enum UserRole {
+  OWNER // Pemilik UMKM yang bisa login
 }
 
 enum ProductType {
@@ -28,39 +22,22 @@ enum ProductType {
   SERVICE // Layanan jasa
 }
 
-enum OrderPaymentStatus {
-  AUTHORIZE
-  CAPTURE
-  SETTLEMENT
-  DENY
-  PENDING
-  CANCEL
-  REFUND
-  PARTIAL_REFUND
-  CHARGEBACK
-  PARTIAL_CHARGEBACK
-  EXPIRE
-  FAILURE
+// Status pembayaran yang lebih sederhana untuk internal aplikasi
+enum PaymentStatus {
+  PENDING // Menunggu pembayaran
+  SUCCESS // Pembayaran berhasil
+  FAILED // Pembayaran gagal
+  REFUNDED // Dana dikembalikan
+  EXPIRED // Waktu pembayaran habis
 }
 
-enum OrderQueueStatus {
-  CREATED // Pesanan baru dibuat, belum diproses lebih lanjut
-  AWAITING_PAYMENT // Pesanan menunggu konfirmasi pembayaran
-  IN_QUEUE // Pembayaran berhasil, pesanan jasa masuk antrian
-  READY_FOR_PICKUP // Pembayaran berhasil, barang fisik siap diambil
-  IN_PROGRESS // Jasa sedang dikerjakan atau barang sedang disiapkan
-  COMPLETED // Jasa/barang selesai diproses/diambil
-  CANCELLED // Pesanan dibatalkan (misal oleh customer)
-  REFUNDED // Pesanan direfund
-  FAILED_PROCESSING // Gagal diproses setelah pembayaran
-  UNKNOWN
-}
-
-enum TransactionStatus {
-  CREATED
-  PENDING
-  SUCCESS
-  FAILED
+// Status alur pesanan secara keseluruhan
+enum OrderStatus {
+  AWAITING_PAYMENT // Menunggu pembayaran dikonfirmasi
+  PROCESSING // Pesanan sedang diproses (bisa masuk antrian Redis/RabbitMQ)
+  READY // Siap diambil (untuk barang) atau siap dimulai (untuk jasa)
+  COMPLETED // Pesanan selesai
+  CANCELLED // Pesanan dibatalkan
 }
 
 enum WithdrawalStatus {
@@ -69,58 +46,51 @@ enum WithdrawalStatus {
   REJECTED
 }
 
-// === Enum untuk Siapa yang Menanggung Biaya ===
 enum FeeBearer {
   CUSTOMER
   OWNER
 }
 
-// === Enum untuk Status Layanan ===
 enum ServiceStatus {
   ACTIVE
   INACTIVE
 }
 
-// === Enum untuk Tipe Member ===
 enum MemberType {
   REGULAR
   VIP
   PREMIUM
 }
 
-// === Enum untuk Status Booking Slot ===
 enum BookingSlotStatus {
   AVAILABLE
   BOOKED
   BLOCKED // Untuk maintenance atau libur
 }
 
-// === Enum untuk Tipe Customer ===
 enum CustomerType {
-  REGISTERED // User yang sudah register
   GUEST // Customer tanpa register
 }
 
-// Model untuk pengguna, baik Owner maupun Customer
+// === MODELS ===
+
+// Model untuk pengguna (hanya Owner/UMKM)
 model User {
   id                      String    @id @default(uuid())
   email                   String    @unique
   name                    String
   avatar                  String?
   password                String // Akan disimpan dalam bentuk hash
-  role                    Role      @default(CUSTOMER)
+  role                    UserRole  @default(OWNER)
   isVerified              Boolean   @default(false)
   verificationCode        String?
   verificationCodeExpires DateTime?
-  phone                   String? // Tambahan untuk notifikasi WA
+  phone                   String? // Penting untuk notifikasi WA
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
-  // Relasi: Satu user (owner) bisa memiliki banyak bisnis
-  businesses Business?
-
-  // Relasi: Satu user (customer) bisa membuat banyak pesanan
-  orders Order[]
+  // Relasi: Satu user (owner) memiliki satu bisnis
+  business Business?
 
   // Relasi: Customer bisa jadi member di berbagai bisnis
   memberships Membership[]
@@ -253,12 +223,13 @@ model GuestCustomer {
   id    String  @id @default(uuid())
   name  String
   email String?
-  phone String?
+  phone String? // Penting untuk notifikasi WA dan data booking
 
   // Relasi: Satu guest customer bisa punya banyak order
   orders Order[]
 
-  createdAt DateTime @default(now())
+  createdAt  DateTime     @default(now())
+  Membership Membership[]
 
   @@index([email])
   @@index([phone])
@@ -267,26 +238,30 @@ model GuestCustomer {
 // Model untuk pesanan/booking yang dibuat oleh customer
 model Order {
   id          String    @id @default(uuid())
-  totalAmount Int
+  totalAmount Float // Menggunakan Float untuk nilai uang
   bookingDate DateTime? // Digunakan khusus untuk booking jasa
 
-  // Tipe customer (registered atau guest)
-  customerType CustomerType
+  // Tipe customer (hanya GUEST sesuai MoM)
+  customerType CustomerType @default(GUEST)
 
-  paymentStatus OrderPaymentStatus @default(PENDING)
-  queueStatus   OrderQueueStatus   @default(AWAITING_PAYMENT)
+  // Status pembayaran dari payment gateway
+  paymentStatus PaymentStatus @default(PENDING)
 
-  midtransTransactionToken   String? @unique
-  midtransRedirectUrl        String?
-  midtransTransactionDetails Json?
+  // Menandakan apakah pengingat pembayaran sudah dikirim
+  paymentReminderSent Boolean @default(false)
 
-  // Relasi: Pesanan dibuat oleh registered customer (nullable)
-  customerId String?
-  customer   User?   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  // Status alur pesanan secara keseluruhan
+  orderStatus OrderStatus @default(AWAITING_PAYMENT)
 
-  // Relasi: Pesanan dibuat oleh guest customer (nullable)
-  guestCustomerId String?
-  guestCustomer   GuestCustomer? @relation(fields: [guestCustomerId], references: [id], onDelete: Restrict)
+  midtransTransactionToken String?   @unique
+  midtransRedirectUrl      String?
+  bookingFee               Float     @default(0)
+  platformFee              Float     @default(0)
+  chargedTo                FeeBearer @default(CUSTOMER)
+
+  // Relasi: Pesanan dibuat oleh guest customer
+  guestCustomerId String
+  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Restrict)
 
   // Relasi: Pesanan dibuat di outlet mana
   outletId String
@@ -304,7 +279,6 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([customerId])
   @@index([guestCustomerId])
   @@index([outletId])
   @@index([bookingDate])
@@ -330,17 +304,21 @@ model OrderItem {
 
 // Model untuk mencatat setiap transaksi pembayaran
 model Transaction {
-  id            String            @id @default(uuid())
+  id            String        @id @default(uuid())
   amount        Float
-  paymentMethod String? // misal: "midtrans_qris", "midtrans_gopay"
-  status        TransactionStatus @default(PENDING)
-  externalId    String?           @unique // ID dari payment gateway (Midtrans)
-  fee           Float // Biaya admin yang dikenakan
-  adminFee      Float             @default(0)
-  feePaidBy     String? // CUSTOMER / OWNER
-  paidAt        DateTime?
+  paymentMethod String? // misal: "qris", "gopay"
+  status        PaymentStatus @default(PENDING)
 
-  // Relasi: Transaksi ini untuk membayar pesanan mana
+  // ID transaksi dari payment gateway (misal: Midtrans transaction_id atau token)
+  externalId String @unique
+
+  // URL untuk melakukan pembayaran (misal: Midtrans Snap redirect_url)
+  paymentUrl String?
+
+  // Waktu kedaluwarsa pembayaran dari payment gateway
+  expiresAt DateTime?
+
+  // Relasi: Transaksi ini milik pesanan mana
   orderId String @unique
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -366,8 +344,8 @@ model Wallet {
 model Withdrawal {
   id              String           @id @default(uuid())
   amount          Float
-  applicationFee  Float
-  bankTransferFee Float
+  applicationFee  Float            @default(0)
+  bankTransferFee Float            @default(0)
   status          WithdrawalStatus @default(PENDING)
   notes           String?
 
@@ -381,20 +359,20 @@ model Withdrawal {
   @@index([walletId])
 }
 
-// Model untuk mencatat pengeluaran manual per outlet
+// Model untuk mencatat pengeluaran
 model Expense {
   id          String   @id @default(uuid())
   description String
   amount      Float
   date        DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relasi: Pengeluaran ini terjadi di outlet mana
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-
-  @@index([outletId])
+  @@map("expenses")
 }
 
 // Model untuk membership/keanggotaan customer di suatu bisnis
@@ -406,9 +384,9 @@ model Membership {
   isActive           Boolean    @default(true)
   notes              String?
 
-  // Relasi: Member ini milik customer mana
-  customerId String
-  customer   User   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  // Relasi: Member ini milik guest customer mana
+  guestCustomerId String
+  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
 
   // Relasi: Member ini di bisnis mana
   businessId String
@@ -416,8 +394,10 @@ model Membership {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    String?
 
-  @@unique([customerId, businessId])
+  @@unique([guestCustomerId, businessId])
   @@index([businessId])
   @@index([memberCode])
 }

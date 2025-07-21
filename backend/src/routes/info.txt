@@ -1,3 +1,0 @@
-definisi endpoint & mapping ke controller:  
-router.get(‘/users’, userController.list)  
-router.post(‘/login’, authController.login)  
