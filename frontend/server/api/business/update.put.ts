@@ -9,14 +9,6 @@ export default defineEventHandler(async (event) => {
     errors.name = 'Nama bisnis harus diisi'
   }
 
-  if (!body.accountHolder || !body.accountHolder.trim()) {
-    errors.accountHolder = 'Nama pemilik rekening harus diisi'
-  }
-
-  if (body.bankAccount && body.bankAccount.length < 10) {
-    errors.bankAccount = 'Nomor rekening minimal 10 digit'
-  }
-
   if (Object.keys(errors).length > 0) {
     return sendError(event, createError({
       statusCode: 400,

@@ -4,6 +4,8 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
   devtools: { enabled: true },
+  ssr: false,
+  debug: true,
 
   css: ["~/assets/css/main.css"],
 
@@ -12,8 +14,6 @@ export default defineNuxtConfig({
   },
 
   modules: ["@nuxt/icon", "@nuxt/image", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt", 'nuxt-toast'],
-
-  ssr: false,
 
   icon: {
     provider: 'server',

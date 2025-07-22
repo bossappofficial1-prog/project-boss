@@ -68,7 +68,6 @@
       </div>
     </BaseCard>
 
-    <!-- Business Profile Section -->
     <BaseCard v-if="auth.user?.business">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">
@@ -272,7 +271,7 @@ import type { Outlet } from '~/types'
 
 definePageMeta({
   layout: 'umkm',
-  middleware: ["auth", 'owner']
+  middleware: ["auth", 'owner', 'business-required']
 })
 
 const auth = useAuthStore()

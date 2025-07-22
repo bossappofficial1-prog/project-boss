@@ -88,6 +88,7 @@ import { useAuthStore } from '~/stores/auth'
 
 // State dari auth store
 const auth = useAuthStore()
+const router = useRouter()
 const form = ref({
   name: auth.user?.name ?? '',
   email: auth.user?.email ?? '',
@@ -131,7 +132,8 @@ async function onSubmit() {
     }
     
     await auth.updateProfile(form.value)
-    reset()
+    router.push("/umkm")
+    
   } catch (error) {
     console.error('Error:', error)
     alert('Gagal memperbarui profil.')

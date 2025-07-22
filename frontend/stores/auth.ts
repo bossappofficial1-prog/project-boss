@@ -35,7 +35,6 @@ export const useAuthStore = defineStore('auth', {
     async login(credentials: LoginForm) {
       this.isLoading = true
       try {
-        // Login hanya untuk mendapatkan token
         const response = await $fetch<{
           success: boolean
           token: string
@@ -50,7 +49,6 @@ export const useAuthStore = defineStore('auth', {
         
         this.token = response.token
         
-        // Setelah login, ambil data user dari /me
         await this.fetchUserData()
         
         await this.navigateAfterLogin()
@@ -86,7 +84,6 @@ export const useAuthStore = defineStore('auth', {
         })
         
         if (response.data.value?.success) {
-          // Setelah update berhasil, ambil data user terbaru dari /me
           await this.fetchUserData()
         } else {
           throw new Error('Gagal update profile')
@@ -96,19 +93,6 @@ export const useAuthStore = defineStore('auth', {
         throw error
       } finally {
         this.isLoading = false
-      }
-    },
-
-    async fetchOutlets() {
-      if (!this.isOwner) return
-      
-      try {
-        const outlets = await $fetch<Outlet[]>('/api/outlets', {
-          headers: { Authorization: `Bearer ${this.token}` }
-        })
-        this.availableOutlets = outlets
-      } catch (error) {
-        console.error('Failed to fetch outlets:', error)
       }
     },
 
@@ -126,7 +110,6 @@ export const useAuthStore = defineStore('auth', {
 
     async navigateAfterLogin() {
       if (this.isOwner) {
-        // Cek apakah owner sudah punya bisnis
         if (!this.hasBusinessProfile) {
           console.log("User:", this.user)
           console.log("Business Profile:", this.hasBusinessProfile)
@@ -143,13 +126,8 @@ export const useAuthStore = defineStore('auth', {
     async initAuth() {
       if (this.token && this.user) {
         try {
-          // Verify token dan ambil data user terbaru
           await this.fetchUserData()
           
-          // Fetch outlets untuk owner
-          if (this.isOwner) {
-            await this.fetchOutlets()
-          }
         } catch (error) {
           console.error('Auth verification failed:', error)
           this.clearSession()
@@ -164,25 +142,16 @@ export const useAuthStore = defineStore('auth', {
         const response = await $fetch<{ 
           success: boolean
           data: User 
+          business: Business
+          outlets: Outlet[]
         }>('/api/auth/me', {
           headers: { Authorization: `Bearer ${this.token}` }
         })
         
         if (response.success && response.data) {
           this.user = response.data
-          
-          // Set business dari user data
-          if (response.data.business) {
-            this.business = response.data.business
-            
-            // Set outlets dari business
-            if (response.data.business.outlets?.length) {
-              this.availableOutlets = response.data.business.outlets
-              if (response.data.business.outlets.length === 1) {
-                this.selectedOutlet = response.data.business.outlets[0]
-              }
-            }
-          }
+          this.business = response.business
+          this.availableOutlets = response.outlets
         }
       } catch (error) {
         throw error

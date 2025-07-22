@@ -87,7 +87,7 @@ const submitForm = async () => {
     }
     
     // Update user data in store
-    await auth.updateProfile({ business: data.value?.data?.business })
+    // await auth.updateProfile({ business: data.value?.data?.business })
     
     // Show success message
     const toast = useToast()

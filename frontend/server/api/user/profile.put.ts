@@ -2,16 +2,16 @@
 export default defineEventHandler(async (event) => {
   const authHeader = getHeader(event, 'authorization')
   
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-  }
+  // if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  //   throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  // }
 
-  const token = authHeader.replace('Bearer ', '')
+  // const token = authHeader.replace('Bearer ', '')
   
   // Dummy token validation
-  if (token !== 'dummy-jwt-token-123') {
-    throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
-  }
+  // if (token !== 'dummy-jwt-token-123') {
+  //   throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
+  // }
 
   // Handle both FormData and JSON body
   let updateData: any = {}
