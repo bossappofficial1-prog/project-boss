@@ -1,30 +1,53 @@
+import { defineEventHandler, readBody } from 'h3'
+import { v4 as uuidv4 } from 'uuid'
+import type { BusinessForm, Business } from '~/types'
+import { dummyBusiness, setDummyBusiness } from '~/server/dummy/business'
+
 export default defineEventHandler(async (event) => {
-  await new Promise(resolve => setTimeout(resolve, 2000))
+  const body = await readBody<BusinessForm>(event)
 
-  const body = await readBody(event)
-
-  const errors: Record<string, string> = {}
-
-  if (!body.name || !body.name.trim()) {
-    errors.name = 'Nama bisnis harus diisi'
+  // Simulate API validation
+  if (!body.name) {
+    setResponseStatus(event, 400)
+    return {
+      success: false,
+      message: 'Nama bisnis harus diisi',
+      errors: ['name: Nama bisnis harus diisi']
+    }
   }
 
-  if (Object.keys(errors).length > 0) {
-    return sendError(event, createError({
-      statusCode: 400,
-      statusMessage: 'Validasi gagal',
-      data: { message: 'Data tidak valid', errors }
-    }))
+  // Simulate business creation
+  const newBusiness: Business = {
+    id: uuidv4(),
+    name: body.name,
+    description: body.description || undefined,
+    bankName: body.bankName || undefined,
+    bankAccount: body.bankAccount || undefined,
+    accountHolder: body.accountHolder || undefined,
+    defaultTransactionFeeBearer: body.defaultTransactionFeeBearer,
+    ownerId: 'dummy-owner-id', // Placeholder
+    createdAt: new Date(),
+    updatedAt: new Date(),
   }
+
+  // In a real application, you would save this to a database.
+  // For dummy, we'll just return it and assume it's "created".
+  if (dummyBusiness) {
+    setResponseStatus(event, 409)
+    return {
+      success: false,
+      message: 'Bisnis sudah ada. Gunakan endpoint update untuk memperbarui.',
+      errors: []
+    }
+  }
+
+  setDummyBusiness(newBusiness)
 
   return {
-    status: 'success',
+    success: true,
+    message: 'Profil bisnis berhasil dibuat',
     data: {
-      business: {
-        id: 'dummy-id-123',
-        ...body,
-        createdAt: new Date().toISOString()
-      }
+      business: newBusiness
     }
   }
 })

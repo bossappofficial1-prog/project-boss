@@ -1,31 +1,46 @@
+import { defineEventHandler, readBody } from 'h3'
+import { FeeBearer, type BusinessForm, type Business } from '~/types'
+import { dummyBusiness, setDummyBusiness } from '~/server/dummy/business'
+
 export default defineEventHandler(async (event) => {
-  await new Promise(resolve => setTimeout(resolve, 2000)) // delay 2 detik
+  const body = await readBody<BusinessForm>(event)
 
-  const body = await readBody(event)
-
-  const errors: Record<string, string> = {}
-
-  if (!body.name || !body.name.trim()) {
-    errors.name = 'Nama bisnis harus diisi'
+  // Simulate API validation
+  if (!body.name) {
+    setResponseStatus(event, 400)
+    return {
+      success: false,
+      message: 'Nama bisnis harus diisi',
+      errors: ['name: Nama bisnis harus diisi']
+    }
   }
 
-  if (Object.keys(errors).length > 0) {
-    return sendError(event, createError({
-      statusCode: 400,
-      statusMessage: 'Validasi gagal',
-      data: { message: 'Data tidak valid', errors }
-    }))
+  // Simulate business update
+  if (!dummyBusiness) {
+    setResponseStatus(event, 404)
+    return {
+      success: false,
+      message: 'Bisnis tidak ditemukan',
+      errors: []
+    }
   }
 
-  // Dummy response update
+  setDummyBusiness({
+    ...dummyBusiness,
+    name: body.name,
+    description: body.description || dummyBusiness.description || undefined,
+    bankName: body.bankName || dummyBusiness.bankName || undefined,
+    bankAccount: body.bankAccount || dummyBusiness.bankAccount || undefined,
+    accountHolder: body.accountHolder || dummyBusiness.accountHolder || undefined,
+    defaultTransactionFeeBearer: body.defaultTransactionFeeBearer || dummyBusiness.defaultTransactionFeeBearer,
+    updatedAt: new Date(),
+  })
+
   return {
-    status: 'success',
+    success: true,
+    message: 'Profil bisnis berhasil diperbarui',
     data: {
-      business: {
-        id: 'dummy-id-123',
-        ...body,
-        updatedAt: new Date().toISOString()
-      }
+      business: dummyBusiness
     }
   }
 })

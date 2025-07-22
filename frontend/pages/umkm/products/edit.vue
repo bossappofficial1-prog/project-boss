@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ProductType, ServiceStatus, FeeBearer, type ProductForm } from '~/types'
+import { ProductType, ServiceStatus, FeeBearer, type ProductForm, type Product } from '~/types'
 
 definePageMeta({
   layout: 'blank',
@@ -7,7 +7,9 @@ definePageMeta({
 })
 
 const auth = useAuthStore()
+const route = useRoute()
 const isLoading = ref(false)
+const productId = route.params.id as string
 
 const form = ref<ProductForm>({
   name: '',
@@ -39,6 +41,52 @@ const feeBearerOptions = [
   { value: FeeBearer.CUSTOMER, label: 'Pelanggan' },
   { value: FeeBearer.OWNER, label: 'Pemilik Bisnis' }
 ]
+
+// Load existing product data
+onMounted(async () => {
+  if (productId) {
+    isLoading.value = true
+    try {
+      const { data, error } = await useApi<{ product: Product }>(`/api/products/${productId}`)
+      if (error.value) {
+        console.error('Failed to fetch product:', error.value)
+        const toast = useToast()
+        toast.error({
+          title: 'Error!',
+          message: 'Gagal memuat data produk.'
+        })
+        await navigateTo('/umkm/products')
+        return
+      }
+      if (data.value?.data?.product) {
+        const product = data.value.data.product
+        form.value = {
+          name: product.name || '',
+          description: product.description || '',
+          costPrice: product.costPrice || 0,
+          price: product.price || 0,
+          type: product.type || ProductType.GOODS,
+          quantity: product.quantity || 0,
+          unit: product.unit || '',
+          status: product.status || ServiceStatus.ACTIVE,
+          transactionFeeBearer: product.transactionFeeBearer || FeeBearer.CUSTOMER,
+          serviceDurationMinutes: product.serviceDurationMinutes || 0,
+          image: product.image || ''
+        }
+      }
+    } catch (error) {
+      console.error('Product fetch error:', error)
+      const toast = useToast()
+      toast.error({
+        title: 'Error!',
+        message: 'Terjadi kesalahan saat memuat data produk.'
+      })
+      await navigateTo('/umkm/products')
+    } finally {
+      isLoading.value = false
+    }
+  }
+})
 
 const validateForm = (): boolean => {
   errors.value = {}
@@ -73,8 +121,8 @@ const submitForm = async () => {
   isLoading.value = true
   
   try {
-    const endpoint = '/api/products/create'
-    const method = 'POST'
+    const endpoint = `/api/products/update/${productId}`
+    const method = 'PUT'
     
     const { data, error } = await useApi<{ product: any }>(endpoint, {
       method,
@@ -93,7 +141,7 @@ const submitForm = async () => {
     const toast = useToast()
     toast.success({
       title: 'Berhasil!',
-      message: 'Produk berhasil dibuat'
+      message: 'Produk berhasil diperbarui'
     })
     
     await navigateTo('/umkm/products')
@@ -105,9 +153,9 @@ const submitForm = async () => {
   }
 }
 
-const pageTitle = computed(() => 'Tambah Produk Baru')
+const pageTitle = computed(() => 'Edit Produk')
 
-const buttonText = computed(() => 'Tambah Produk')
+const buttonText = computed(() => 'Perbarui Produk')
 </script>
 
 <template>
@@ -124,7 +172,7 @@ const buttonText = computed(() => 'Tambah Produk')
             {{ pageTitle }}
           </h1>
           <p class="text-gray-600 dark:text-gray-400">
-            Tambahkan informasi produk baru Anda
+            Kelola informasi produk Anda
           </p>
         </div>
       </div>

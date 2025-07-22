@@ -7,9 +7,7 @@ definePageMeta({
 })
 
 const auth = useAuthStore()
-const route = useRoute()
 const isLoading = ref(false)
-const isSetupMode = ref(route.query.setup === 'true')
 
 const form = ref<BusinessForm>({
   name: '',
@@ -26,21 +24,6 @@ const feeOptions = [
   { value: 'CUSTOMER', label: 'Pelanggan menanggung biaya transaksi' },
   { value: 'OWNER', label: 'Saya yang menanggung biaya transaksi' }
 ]
-
-// Load existing business data if available
-onMounted(async () => {
-  if (auth.user?.business && !isSetupMode.value) {
-    const business = auth.user.business
-    form.value = {
-      name: business.name || '',
-      description: business.description || '',
-      bankName: business.bankName || '',
-      bankAccount: business.bankAccount || '',
-      accountHolder: business.accountHolder || '',
-      defaultTransactionFeeBearer: business.defaultTransactionFeeBearer || 'CUSTOMER'
-    }
-  }
-})
 
 const validateForm = (): boolean => {
   errors.value = {}
@@ -59,8 +42,8 @@ const submitForm = async () => {
   isLoading.value = true
   
   try {
-    const endpoint = auth.user?.business ? '/api/business/update' : '/api/business/create'
-    const method = auth.user?.business ? 'PUT' : 'POST'
+    const endpoint = '/api/business/create'
+    const method = 'POST'
     
     const { data, error } = await useApi<{ business: any }>(endpoint, {
       method,
@@ -79,7 +62,7 @@ const submitForm = async () => {
     const toast = useToast()
     toast.success({
       title: 'Berhasil!',
-      message: isSetupMode.value ? 'Profil bisnis berhasil dibuat' : 'Profil bisnis berhasil diperbarui'
+      message: 'Profil bisnis berhasil dibuat'
     })
     
     await navigateTo('/umkm')
@@ -91,15 +74,9 @@ const submitForm = async () => {
   }
 }
 
-const pageTitle = computed(() => {
-  if (isSetupMode.value) return 'Setup Profil Bisnis'
-  return auth.user?.business ? 'Edit Profil Bisnis' : 'Buat Profil Bisnis'
-})
+const pageTitle = computed(() => 'Buat Profil Bisnis')
 
-const buttonText = computed(() => {
-  if (isSetupMode.value) return 'Selesaikan Setup'
-  return auth.user?.business ? 'Perbarui Profil' : 'Buat Profil'
-})
+const buttonText = computed(() => 'Buat Profil')
 </script>
 
 <template>
@@ -115,12 +92,12 @@ const buttonText = computed(() => {
             {{ pageTitle }}
           </h1>
           <p class="text-gray-600 dark:text-gray-400">
-            {{ isSetupMode ? 'Lengkapi informasi bisnis Anda untuk memulai' : 'Kelola informasi bisnis Anda' }}
+            Lengkapi informasi bisnis Anda untuk memulai
           </p>
         </div>
       </div>
       
-      <div v-if="isSetupMode" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
         <div class="flex items-start space-x-3">
           <Icon name="lucide:info" size="20" class="text-blue-500 mt-0.5" />
           <div>
@@ -284,15 +261,6 @@ const buttonText = computed(() => {
 
         <!-- Submit Button -->
         <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <button
-            v-if="!isSetupMode"
-            type="button"
-            @click="$router.back()"
-            class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            Batal
-          </button>
-          
           <button
             type="submit"
             :disabled="isLoading"

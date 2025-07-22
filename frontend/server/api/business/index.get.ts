@@ -1,16 +1,12 @@
 import { defineEventHandler } from 'h3'
-import { dummyOutlets } from '~/server/dummy/outlets'
+import { dummyBusiness } from '~/server/dummy/business'
 
 export default defineEventHandler(async (event) => {
-  const outletId = event.context.params?.id as string
-
-  const outlet = dummyOutlets.find(o => o.id === outletId)
-
-  if (!outlet) {
+  if (!dummyBusiness) {
     setResponseStatus(event, 404)
     return {
       success: false,
-      message: 'Outlet tidak ditemukan',
+      message: 'Bisnis tidak ditemukan',
       errors: []
     }
   }
@@ -18,7 +14,7 @@ export default defineEventHandler(async (event) => {
   return {
     success: true,
     data: {
-      outlet
+      business: dummyBusiness
     }
   }
 })

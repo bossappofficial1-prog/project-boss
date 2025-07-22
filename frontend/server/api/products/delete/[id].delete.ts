@@ -1,12 +1,13 @@
 import { defineEventHandler } from 'h3'
-import { dummyProducts } from '~/server/dummy/products'
+import { dummyProducts, deleteDummyProduct } from '~/server/dummy/products'
 
 export default defineEventHandler(async (event) => {
   const productId = event.context.params?.id as string
 
-  const product = dummyProducts.find(p => p.id === productId)
+  const initialLength = dummyProducts.length
+  deleteDummyProduct(productId)
 
-  if (!product) {
+  if (dummyProducts.length === initialLength) {
     setResponseStatus(event, 404)
     return {
       success: false,
@@ -17,8 +18,6 @@ export default defineEventHandler(async (event) => {
 
   return {
     success: true,
-    data: {
-      product
-    }
+    message: 'Produk berhasil dihapus'
   }
 })

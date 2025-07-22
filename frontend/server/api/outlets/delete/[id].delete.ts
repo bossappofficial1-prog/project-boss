@@ -1,12 +1,13 @@
 import { defineEventHandler } from 'h3'
-import { dummyOutlets } from '~/server/dummy/outlets'
+import { dummyOutlets, deleteDummyOutlet } from '~/server/dummy/outlets'
 
 export default defineEventHandler(async (event) => {
   const outletId = event.context.params?.id as string
 
-  const outlet = dummyOutlets.find(o => o.id === outletId)
+  const initialLength = dummyOutlets.length
+  deleteDummyOutlet(outletId)
 
-  if (!outlet) {
+  if (dummyOutlets.length === initialLength) {
     setResponseStatus(event, 404)
     return {
       success: false,
@@ -17,8 +18,6 @@ export default defineEventHandler(async (event) => {
 
   return {
     success: true,
-    data: {
-      outlet
-    }
+    message: 'Outlet berhasil dihapus'
   }
 })
