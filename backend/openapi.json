@@ -7,50 +7,226 @@
     },
     "servers": [
         {
-            "url": "http://localhost:1234/api/v1",
+            "url": "http://localhost:6789/api/v1",
             "description": "Server Pengembangan Lokal"
+        },
+        {
+            "url": "https://api.boss-system.com/api/v1",
+            "description": "Server Produksi"
         }
     ],
     "components": {
         "schemas": {
+            "ApiResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Indikator apakah request berhasil atau tidak"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Pesan respon dari server"
+                    },
+                    "data": {
+                        "description": "Data yang dikembalikan (jika ada)"
+                    },
+                    "errors": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
+                        "description": "Detail error (jika ada)"
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Timestamp saat response dibuat"
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Path endpoint yang dipanggil"
+                    }
+                },
+                "required": ["success", "message", "timestamp", "path"]
+            },
+            "SuccessResponse": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "success": {
+                                "type": "boolean",
+                                "example": true
+                            },
+                            "message": {
+                                "type": "string",
+                                "example": "Success"
+                            }
+                        }
+                    }
+                ]
+            },
+            "ErrorResponse": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "success": {
+                                "type": "boolean",
+                                "example": false
+                            },
+                            "data": {
+                                "nullable": true,
+                                "example": null
+                            }
+                        }
+                    }
+                ]
+            },
+            "ValidationErrorResponse": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "example": "Validation failed"
+                            },
+                            "errors": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "field": {
+                                            "type": "string",
+                                            "example": "email"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Email is required"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
             "User": {
                 "type": "object",
                 "properties": {
                     "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
                     },
                     "name": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "John Doe"
                     },
                     "email": {
                         "type": "string",
-                        "format": "email"
+                        "format": "email",
+                        "example": "john@example.com"
                     },
                     "role": {
                         "type": "string",
-                        "enum": [
-                            "OWNER"
-                        ]
+                        "enum": ["OWNER"],
+                        "example": "OWNER"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
                     }
                 }
+            },
+            "AuthResponse": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "data": {
+                                "type": "object",
+                                "properties": {
+                                    "user": {
+                                        "$ref": "#/components/schemas/User"
+                                    },
+                                    "token": {
+                                        "type": "string",
+                                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
             },
             "Business": {
                 "type": "object",
                 "properties": {
                     "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
                     },
                     "name": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "Warung Makan Bahagia"
                     },
                     "description": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "Warung makan dengan cita rasa rumahan"
                     },
                     "ownerId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    "bankName": {
+                        "type": "string",
+                        "example": "BCA"
+                    },
+                    "bankAccount": {
+                        "type": "string",
+                        "example": "1234567890"
+                    },
+                    "accountHolder": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "defaultTransactionFeeBearer": {
+                        "type": "string",
+                        "enum": ["OWNER", "CUSTOMER"],
+                        "example": "OWNER"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
                     }
                 }
             },
@@ -59,20 +235,39 @@
                 "properties": {
                     "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
                     },
                     "name": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "Cabang Utama"
                     },
                     "address": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "Jl. Merdeka No. 123, Jakarta"
                     },
                     "phone": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "+62812345678"
+                    },
+                    "image": {
+                        "type": "string",
+                        "example": "https://example.com/outlet-image.jpg"
                     },
                     "businessId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
                     }
                 }
             },
@@ -81,27 +276,120 @@
                 "properties": {
                     "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
                     },
                     "name": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "Nasi Gudeg"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Nasi gudeg dengan ayam dan telur"
+                    },
+                    "costPrice": {
+                        "type": "number",
+                        "example": 8000,
+                        "description": "Harga Pokok Penjualan (HPP)"
                     },
                     "price": {
-                        "type": "number"
+                        "type": "number",
+                        "example": 15000,
+                        "description": "Harga Jual"
                     },
                     "type": {
                         "type": "string",
-                        "enum": [
-                            "GOODS",
-                            "SERVICE"
-                        ]
+                        "enum": ["GOODS", "SERVICE"],
+                        "example": "GOODS"
                     },
                     "quantity": {
-                        "type": "number"
+                        "type": "number",
+                        "example": 50,
+                        "description": "Stok tersedia (untuk GOODS)"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "example": "porsi",
+                        "description": "Satuan produk"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["ACTIVE", "INACTIVE"],
+                        "example": "ACTIVE"
+                    },
+                    "transactionFeeBearer": {
+                        "type": "string",
+                        "enum": ["OWNER", "CUSTOMER"],
+                        "example": "OWNER"
+                    },
+                    "serviceDurationMinutes": {
+                        "type": "number",
+                        "example": 30,
+                        "description": "Durasi layanan dalam menit (untuk SERVICE)"
+                    },
+                    "image": {
+                        "type": "string",
+                        "example": "https://example.com/product-image.jpg"
                     },
                     "outletId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
+                    }
+                }
+            },
+            "OrderItem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    "productId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "example": 2
+                    },
+                    "price": {
+                        "type": "number",
+                        "example": 15000,
+                        "description": "Harga saat pemesanan"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/Product"
+                    }
+                }
+            },
+            "GuestCustomer": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Jane Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "jane@example.com"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "example": "+62812345678"
                     }
                 }
             },
@@ -109,45 +397,268 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "ORD-20240115-001"
                     },
                     "totalAmount": {
-                        "type": "number"
+                        "type": "number",
+                        "example": 30000,
+                        "description": "Total amount sebelum fees"
+                    },
+                    "finalAmount": {
+                        "type": "number",
+                        "example": 30300,
+                        "description": "Total amount setelah fees"
+                    },
+                    "midtransFee": {
+                        "type": "number",
+                        "example": 300,
+                        "description": "Fee Midtrans"
+                    },
+                    "platformFee": {
+                        "type": "number",
+                        "example": 0,
+                        "description": "Fee platform/booking"
+                    },
+                    "bookingFee": {
+                        "type": "number",
+                        "example": 0,
+                        "description": "Fee booking untuk layanan"
                     },
                     "orderStatus": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": ["PENDING", "PROCESSING", "READY", "COMPLETED", "CANCELLED"],
+                        "example": "PENDING"
                     },
                     "paymentStatus": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": ["PENDING", "PAID", "FAILED", "CANCELLED", "REFUNDED"],
+                        "example": "PENDING"
+                    },
+                    "chargedTo": {
+                        "type": "string",
+                        "enum": ["OWNER", "CUSTOMER"],
+                        "example": "OWNER",
+                        "description": "Siapa yang menanggung fee"
+                    },
+                    "midtransTransactionToken": {
+                        "type": "string",
+                        "example": "abc123-def456-ghi789"
+                    },
+                    "midtransRedirectUrl": {
+                        "type": "string",
+                        "example": "https://app.sandbox.midtrans.com/snap/v2/vtweb/abc123"
+                    },
+                    "paymentUrl": {
+                        "type": "string",
+                        "example": "https://app.sandbox.midtrans.com/snap/v2/vtweb/abc123"
+                    },
+                    "paymentUrlExpiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T11:30:00Z"
+                    },
+                    "paymentReminderSent": {
+                        "type": "boolean",
+                        "example": false
                     },
                     "outletId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItem"
+                        }
+                    },
+                    "guestCustomer": {
+                        "$ref": "#/components/schemas/GuestCustomer"
+                    },
+                    "outlet": {
+                        "$ref": "#/components/schemas/Outlet"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
                     }
                 }
+            },
+            "CreateOrderResponse": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "example": "Order created successfully"
+                            },
+                            "data": {
+                                "type": "object",
+                                "properties": {
+                                    "order": {
+                                        "$ref": "#/components/schemas/Order"
+                                    },
+                                    "paymentUrl": {
+                                        "type": "string",
+                                        "example": "https://app.sandbox.midtrans.com/snap/v2/vtweb/abc123",
+                                        "description": "URL untuk melakukan pembayaran"
+                                    },
+                                    "expiresAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2024-01-15T11:30:00Z",
+                                        "description": "Waktu kadaluarsa pembayaran"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
             },
             "Expense": {
                 "type": "object",
                 "properties": {
                     "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
                     },
                     "description": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "Pembelian bahan baku"
                     },
                     "amount": {
-                        "type": "number"
+                        "type": "number",
+                        "example": 150000,
+                        "description": "Jumlah pengeluaran"
                     },
                     "date": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
+                    },
+                    "category": {
+                        "type": "string",
+                        "example": "BAHAN_BAKU"
                     },
                     "outletId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    "outlet": {
+                        "$ref": "#/components/schemas/Outlet"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
                     }
                 }
+            },
+            "FinancialSummary": {
+                "type": "object",
+                "properties": {
+                    "totalRevenue": {
+                        "type": "number",
+                        "example": 1500000,
+                        "description": "Total pendapatan"
+                    },
+                    "totalExpenses": {
+                        "type": "number",
+                        "example": 800000,
+                        "description": "Total pengeluaran"
+                    },
+                    "netProfit": {
+                        "type": "number",
+                        "example": 700000,
+                        "description": "Keuntungan bersih"
+                    },
+                    "totalOrders": {
+                        "type": "number",
+                        "example": 125,
+                        "description": "Total pesanan"
+                    },
+                    "completedOrders": {
+                        "type": "number",
+                        "example": 120,
+                        "description": "Pesanan selesai"
+                    },
+                    "averageOrderValue": {
+                        "type": "number",
+                        "example": 12500,
+                        "description": "Rata-rata nilai pesanan"
+                    },
+                    "period": {
+                        "type": "object",
+                        "properties": {
+                            "startDate": {
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2024-01-01T00:00:00Z"
+                            },
+                            "endDate": {
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2024-01-31T23:59:59Z"
+                            }
+                        }
+                    },
+                    "topProducts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "product": {
+                                    "$ref": "#/components/schemas/Product"
+                                },
+                                "totalSold": {
+                                    "type": "number",
+                                    "example": 45
+                                },
+                                "totalRevenue": {
+                                    "type": "number",
+                                    "example": 675000
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "FinancialReportResponse": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/SuccessResponse"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "example": "Financial report generated successfully"
+                            },
+                            "data": {
+                                "$ref": "#/components/schemas/FinancialSummary"
+                            }
+                        }
+                    }
+                ]
             },
             "LoginRequest": {
                 "type": "object",
@@ -190,7 +701,14 @@
                 "properties": {
                     "outletId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": ["qris", "online"],
+                        "example": "qris",
+                        "description": "Metode pembayaran yang dipilih"
                     },
                     "items": {
                         "type": "array",
@@ -199,43 +717,42 @@
                             "properties": {
                                 "productId": {
                                     "type": "string",
-                                    "format": "uuid"
+                                    "format": "uuid",
+                                    "example": "123e4567-e89b-12d3-a456-426614174000"
                                 },
                                 "quantity": {
-                                    "type": "number"
+                                    "type": "number",
+                                    "minimum": 1,
+                                    "example": 2
                                 }
                             },
-                            "required": [
-                                "productId",
-                                "quantity"
-                            ]
-                        }
+                            "required": ["productId", "quantity"]
+                        },
+                        "minItems": 1
                     },
                     "guestCustomer": {
                         "type": "object",
                         "properties": {
                             "name": {
-                                "type": "string"
+                                "type": "string",
+                                "example": "Jane Doe",
+                                "minLength": 2
                             },
                             "email": {
                                 "type": "string",
-                                "format": "email"
+                                "format": "email",
+                                "example": "jane@example.com"
                             },
                             "phone": {
-                                "type": "string"
+                                "type": "string",
+                                "example": "+62812345678",
+                                "pattern": "^\\+?[1-9]\\d{1,14}$"
                             }
                         },
-                        "required": [
-                            "name",
-                            "phone"
-                        ]
+                        "required": ["name", "phone"]
                     }
                 },
-                "required": [
-                    "outletId",
-                    "items",
-                    "guestCustomer"
-                ]
+                "required": ["outletId", "paymentMethod", "items", "guestCustomer"]
             },
             "CreateOutletRequest": {
                 "type": "object",
@@ -319,12 +836,13 @@
                 "type": "object",
                 "properties": {
                     "status": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": ["PENDING", "PROCESSING", "READY", "COMPLETED", "CANCELLED"],
+                        "example": "READY",
+                        "description": "Status baru untuk pesanan"
                     }
                 },
-                "required": [
-                    "status"
-                ]
+                "required": ["status"]
             }
         },
         "securitySchemes": {
@@ -373,10 +891,9 @@
     "paths": {
         "/auth/register": {
             "post": {
-                "tags": [
-                    "Auth"
-                ],
+                "tags": ["Auth"],
                 "summary": "Registrasi Pengguna Baru",
+                "description": "Mendaftarkan pengguna baru sebagai owner bisnis",
                 "security": [],
                 "requestBody": {
                     "required": true,
@@ -384,23 +901,90 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/RegisterRequest"
+                            },
+                            "example": {
+                                "name": "John Doe",
+                                "email": "john@example.com",
+                                "password": "password123"
                             }
                         }
                     }
                 },
                 "responses": {
                     "201": {
-                        "description": "Pengguna berhasil dibuat"
+                        "description": "Pengguna berhasil dibuat",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthResponse"
+                                },
+                                "example": {
+                                    "success": true,
+                                    "message": "User registered successfully",
+                                    "data": {
+                                        "user": {
+                                            "id": "123e4567-e89b-12d3-a456-426614174000",
+                                            "name": "John Doe",
+                                            "email": "john@example.com",
+                                            "role": "OWNER",
+                                            "createdAt": "2024-01-15T10:30:00Z",
+                                            "updatedAt": "2024-01-15T10:30:00Z"
+                                        }
+                                    },
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/auth/register"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Validation failed",
+                                    "data": null,
+                                    "errors": [
+                                        {
+                                            "field": "email",
+                                            "message": "Email already exists"
+                                        }
+                                    ],
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/auth/register"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Internal server error",
+                                    "data": null,
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/auth/register"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/auth/login": {
             "post": {
-                "tags": [
-                    "Auth"
-                ],
+                "tags": ["Auth"],
                 "summary": "Login Pengguna",
+                "description": "Melakukan autentikasi pengguna dan mendapatkan JWT token",
                 "security": [],
                 "requestBody": {
                     "required": true,
@@ -408,30 +992,150 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/LoginRequest"
+                            },
+                            "example": {
+                                "email": "john@example.com",
+                                "password": "password123"
                             }
                         }
                     }
                 },
                 "responses": {
                     "200": {
-                        "description": "Login berhasil, token JWT diberikan"
+                        "description": "Login berhasil, token JWT diberikan",
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "HTTP-only cookie berisi JWT token",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessResponse"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "user": {
+                                                            "$ref": "#/components/schemas/User"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "example": {
+                                    "success": true,
+                                    "message": "Login successful",
+                                    "data": {
+                                        "user": {
+                                            "id": "123e4567-e89b-12d3-a456-426614174000",
+                                            "name": "John Doe",
+                                            "email": "john@example.com",
+                                            "role": "OWNER"
+                                        }
+                                    },
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/auth/login"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Email or password is incorrect",
+                                    "data": null,
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/auth/login"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/users/me": {
             "get": {
-                "tags": [
-                    "Auth"
-                ],
+                "tags": ["Auth"],
                 "summary": "Dapatkan Profil Pengguna Saat Ini",
+                "description": "Mengambil informasi profil pengguna yang sedang login",
                 "responses": {
                     "200": {
-                        "description": "Profil pengguna",
+                        "description": "Profil pengguna berhasil diambil",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/User"
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessResponse"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/User"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "example": {
+                                    "success": true,
+                                    "message": "Success",
+                                    "data": {
+                                        "id": "123e4567-e89b-12d3-a456-426614174000",
+                                        "name": "John Doe",
+                                        "email": "john@example.com",
+                                        "role": "OWNER",
+                                        "createdAt": "2024-01-15T10:30:00Z",
+                                        "updatedAt": "2024-01-15T10:30:00Z"
+                                    },
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/users/me"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Token not provided or invalid",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Anda belum login, silakan login terlebih dahulu",
+                                    "data": null,
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/users/me"
                                 }
                             }
                         }
@@ -667,10 +1371,9 @@
         },
         "/orders": {
             "post": {
-                "tags": [
-                    "Orders"
-                ],
+                "tags": ["Orders"],
                 "summary": "Buat Pesanan Baru",
+                "description": "Membuat pesanan baru dan menghasilkan URL pembayaran Midtrans",
                 "security": [],
                 "requestBody": {
                     "required": true,
@@ -678,23 +1381,114 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/CreateOrderRequest"
+                            },
+                            "example": {
+                                "outletId": "123e4567-e89b-12d3-a456-426614174000",
+                                "paymentMethod": "qris",
+                                "items": [
+                                    {
+                                        "productId": "123e4567-e89b-12d3-a456-426614174001",
+                                        "quantity": 2
+                                    },
+                                    {
+                                        "productId": "123e4567-e89b-12d3-a456-426614174002",
+                                        "quantity": 1
+                                    }
+                                ],
+                                "guestCustomer": {
+                                    "name": "Jane Doe",
+                                    "email": "jane@example.com",
+                                    "phone": "+62812345678"
+                                }
                             }
                         }
                     }
                 },
                 "responses": {
                     "201": {
-                        "description": "Pesanan berhasil dibuat, URL pembayaran diberikan"
+                        "description": "Pesanan berhasil dibuat, URL pembayaran diberikan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreateOrderResponse"
+                                },
+                                "example": {
+                                    "success": true,
+                                    "message": "Order created successfully",
+                                    "data": {
+                                        "order": {
+                                            "id": "ORD-20240115-001",
+                                            "totalAmount": 30000,
+                                            "finalAmount": 30300,
+                                            "midtransFee": 300,
+                                            "platformFee": 0,
+                                            "orderStatus": "PENDING",
+                                            "paymentStatus": "PENDING",
+                                            "chargedTo": "OWNER",
+                                            "outletId": "123e4567-e89b-12d3-a456-426614174000",
+                                            "createdAt": "2024-01-15T10:30:00Z"
+                                        },
+                                        "paymentUrl": "https://app.sandbox.midtrans.com/snap/v2/vtweb/abc123",
+                                        "expiresAt": "2024-01-15T11:30:00Z"
+                                    },
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/orders"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Stok produk Nasi Gudeg tidak mencukupi",
+                                    "data": null,
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/orders"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Product or Outlet not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Produk dengan ID 123e4567-e89b-12d3-a456-426614174001 tidak ditemukan",
+                                    "data": null,
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/orders"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/orders/outlet/{outletId}": {
             "get": {
-                "tags": [
-                    "Orders"
-                ],
+                "tags": ["Orders"],
                 "summary": "Dapatkan Semua Pesanan Berdasarkan Outlet",
+                "description": "Mengambil daftar pesanan untuk outlet tertentu dengan pagination",
                 "parameters": [
                     {
                         "name": "outletId",
@@ -703,19 +1497,105 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid"
-                        }
+                        },
+                        "example": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        },
+                        "description": "Halaman yang diinginkan"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        },
+                        "description": "Jumlah item per halaman"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": ["PENDING", "PROCESSING", "READY", "COMPLETED", "CANCELLED"]
+                        },
+                        "description": "Filter berdasarkan status pesanan"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Daftar pesanan",
+                        "description": "Daftar pesanan berhasil diambil",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Order"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessResponse"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "orders": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/components/schemas/Order"
+                                                            }
+                                                        },
+                                                        "pagination": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "page": {
+                                                                    "type": "integer",
+                                                                    "example": 1
+                                                                },
+                                                                "limit": {
+                                                                    "type": "integer",
+                                                                    "example": 10
+                                                                },
+                                                                "total": {
+                                                                    "type": "integer",
+                                                                    "example": 45
+                                                                },
+                                                                "totalPages": {
+                                                                    "type": "integer",
+                                                                    "example": 5
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Outlet not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
                                 }
                             }
                         }
@@ -725,11 +1605,9 @@
         },
         "/orders/{id}/complete": {
             "post": {
-                "tags": [
-                    "Orders"
-                ],
+                "tags": ["Orders"],
                 "summary": "Selesaikan Pesanan Layanan (Admin)",
-                "description": "Digunakan oleh admin/owner untuk menandai pesanan layanan telah selesai dan memajukan antrian.",
+                "description": "Digunakan oleh admin/owner untuk menandai pesanan layanan telah selesai dan memajukan antrian. Akan mengirim notifikasi update posisi antrian ke pelanggan lain.",
                 "parameters": [
                     {
                         "name": "id",
@@ -737,22 +1615,105 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "example": "ORD-20240115-001",
+                        "description": "ID pesanan yang akan diselesaikan"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Pesanan selesai, antrian diperbarui"
+                        "description": "Pesanan berhasil diselesaikan, antrian diperbarui",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessResponse"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "Order completed successfully"
+                                                },
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "order": {
+                                                            "$ref": "#/components/schemas/Order"
+                                                        },
+                                                        "queueUpdated": {
+                                                            "type": "boolean",
+                                                            "example": true,
+                                                            "description": "Apakah antrian diperbarui"
+                                                        },
+                                                        "notificationsSent": {
+                                                            "type": "number",
+                                                            "example": 3,
+                                                            "description": "Jumlah notifikasi yang dikirim"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Order cannot be completed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Order is not in PROCESSING status",
+                                    "data": null,
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/orders/ORD-20240115-001/complete"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Order not found",
+                                    "data": null,
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/orders/ORD-20240115-001/complete"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/orders/{id}/status": {
             "patch": {
-                "tags": [
-                    "Orders"
-                ],
+                "tags": ["Orders"],
                 "summary": "Perbarui Status Pesanan (Admin)",
+                "description": "Memperbarui status pesanan dan mengirim notifikasi kepada pelanggan",
                 "parameters": [
                     {
                         "name": "id",
@@ -760,7 +1721,9 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "example": "ORD-20240115-001",
+                        "description": "ID pesanan yang akan diperbarui"
                     }
                 ],
                 "requestBody": {
@@ -769,13 +1732,92 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/UpdateOrderStatusRequest"
+                            },
+                            "example": {
+                                "status": "READY"
                             }
                         }
                     }
                 },
                 "responses": {
                     "200": {
-                        "description": "Status pesanan diperbarui"
+                        "description": "Status pesanan berhasil diperbarui",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessResponse"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "Order status updated successfully"
+                                                },
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "order": {
+                                                            "$ref": "#/components/schemas/Order"
+                                                        },
+                                                        "notificationSent": {
+                                                            "type": "boolean",
+                                                            "example": true,
+                                                            "description": "Apakah notifikasi dikirim ke pelanggan"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Validation failed",
+                                    "data": null,
+                                    "errors": [
+                                        {
+                                            "field": "status",
+                                            "message": "Status must be one of: PENDING, PROCESSING, READY, COMPLETED, CANCELLED"
+                                        }
+                                    ],
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/orders/ORD-20240115-001/status"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -895,10 +1937,9 @@
         },
         "/reports/financial-summary": {
             "get": {
-                "tags": [
-                    "Reports"
-                ],
+                "tags": ["Reports"],
                 "summary": "Dapatkan Laporan Ringkasan Keuangan",
+                "description": "Mengambil laporan keuangan lengkap termasuk pendapatan, pengeluaran, dan analisis penjualan",
                 "parameters": [
                     {
                         "name": "outletId",
@@ -907,7 +1948,9 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid"
-                        }
+                        },
+                        "example": "123e4567-e89b-12d3-a456-426614174000",
+                        "description": "ID outlet untuk laporan"
                     },
                     {
                         "name": "startDate",
@@ -916,7 +1959,9 @@
                         "schema": {
                             "type": "string",
                             "format": "date-time"
-                        }
+                        },
+                        "example": "2024-01-01T00:00:00Z",
+                        "description": "Tanggal mulai periode laporan"
                     },
                     {
                         "name": "endDate",
@@ -925,27 +1970,244 @@
                         "schema": {
                             "type": "string",
                             "format": "date-time"
-                        }
+                        },
+                        "example": "2024-01-31T23:59:59Z",
+                        "description": "Tanggal akhir periode laporan"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Ringkasan keuangan dan penjualan"
+                        "description": "Laporan keuangan berhasil dihasilkan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FinancialReportResponse"
+                                },
+                                "example": {
+                                    "success": true,
+                                    "message": "Financial report generated successfully",
+                                    "data": {
+                                        "totalRevenue": 1500000,
+                                        "totalExpenses": 800000,
+                                        "netProfit": 700000,
+                                        "totalOrders": 125,
+                                        "completedOrders": 120,
+                                        "averageOrderValue": 12500,
+                                        "period": {
+                                            "startDate": "2024-01-01T00:00:00Z",
+                                            "endDate": "2024-01-31T23:59:59Z"
+                                        },
+                                        "topProducts": [
+                                            {
+                                                "product": {
+                                                    "id": "123e4567-e89b-12d3-a456-426614174001",
+                                                    "name": "Nasi Gudeg",
+                                                    "price": 15000
+                                                },
+                                                "totalSold": 45,
+                                                "totalRevenue": 675000
+                                            }
+                                        ]
+                                    },
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/reports/financial-summary"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid date range",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "End date must be after start date",
+                                    "data": null,
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/reports/financial-summary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Outlet not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/payments/notification/webhooks/midtrans": {
             "post": {
-                "tags": [
-                    "Payments"
-                ],
+                "tags": ["Payments"],
                 "summary": "Webhook Notifikasi Midtrans",
+                "description": "Endpoint untuk menerima notifikasi status pembayaran dari Midtrans. Endpoint ini akan secara otomatis memperbarui status pesanan berdasarkan status pembayaran.",
                 "security": [],
-                "description": "Endpoint ini menerima notifikasi status pembayaran dari Midtrans.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "transaction_time": {
+                                        "type": "string",
+                                        "example": "2024-01-15 10:30:00"
+                                    },
+                                    "transaction_status": {
+                                        "type": "string",
+                                        "enum": ["capture", "settlement", "pending", "deny", "cancel", "expire", "failure"],
+                                        "example": "settlement"
+                                    },
+                                    "transaction_id": {
+                                        "type": "string",
+                                        "example": "abc123-def456-ghi789"
+                                    },
+                                    "status_message": {
+                                        "type": "string",
+                                        "example": "Success, transaction is found"
+                                    },
+                                    "status_code": {
+                                        "type": "string",
+                                        "example": "200"
+                                    },
+                                    "signature_key": {
+                                        "type": "string",
+                                        "example": "signature_hash_from_midtrans"
+                                    },
+                                    "settlement_time": {
+                                        "type": "string",
+                                        "example": "2024-01-15 10:31:00"
+                                    },
+                                    "payment_type": {
+                                        "type": "string",
+                                        "example": "qris"
+                                    },
+                                    "order_id": {
+                                        "type": "string",
+                                        "example": "ORD-20240115-001"
+                                    },
+                                    "merchant_id": {
+                                        "type": "string",
+                                        "example": "G123456789"
+                                    },
+                                    "gross_amount": {
+                                        "type": "string",
+                                        "example": "30300.00"
+                                    },
+                                    "fraud_status": {
+                                        "type": "string",
+                                        "example": "accept"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "example": "IDR"
+                                    }
+                                },
+                                "required": ["order_id", "transaction_status", "gross_amount"]
+                            },
+                            "example": {
+                                "transaction_time": "2024-01-15 10:30:00",
+                                "transaction_status": "settlement",
+                                "transaction_id": "abc123-def456-ghi789",
+                                "status_message": "Success, transaction is found",
+                                "status_code": "200",
+                                "signature_key": "signature_hash_from_midtrans",
+                                "settlement_time": "2024-01-15 10:31:00",
+                                "payment_type": "qris",
+                                "order_id": "ORD-20240115-001",
+                                "merchant_id": "G123456789",
+                                "gross_amount": "30300.00",
+                                "fraud_status": "accept",
+                                "currency": "IDR"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
-                        "description": "Notifikasi diterima"
+                        "description": "Notifikasi berhasil diproses",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "success": true,
+                                    "message": "Payment notification processed successfully",
+                                    "data": {
+                                        "orderId": "ORD-20240115-001",
+                                        "transactionStatus": "settlement",
+                                        "orderStatus": "PROCESSING",
+                                        "paymentStatus": "PAID"
+                                    },
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/payments/notification/webhooks/midtrans"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid signature or malformed data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Invalid signature key",
+                                    "data": null,
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/payments/notification/webhooks/midtrans"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Order not found",
+                                    "data": null,
+                                    "timestamp": "2024-01-15T10:30:00Z",
+                                    "path": "/api/v1/payments/notification/webhooks/midtrans"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }

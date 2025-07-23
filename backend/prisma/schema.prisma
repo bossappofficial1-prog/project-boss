@@ -72,6 +72,17 @@ enum CustomerType {
   GUEST // Customer tanpa register
 }
 
+enum PromoType {
+  PERCENTAGE // Diskon dalam bentuk persen, misal: 10%
+  FIXED_AMOUNT // Potongan harga tetap, misal: Rp 20.000
+}
+
+enum PromoStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
 // === MODELS ===
 
 // Model untuk pengguna (hanya Owner/UMKM)
@@ -126,6 +137,12 @@ model Business {
 
   // Relasi: Satu bisnis bisa memiliki banyak member
   memberships Membership[]
+
+  // Relasi: Satu bisnis bisa memiliki banyak promo
+  promos Promo[]
+
+  // Relasi: Satu bisnis bisa memiliki banyak withdrawal
+  withdrawals Withdrawal[]
 
   @@index([ownerId])
 }
@@ -253,11 +270,18 @@ model Order {
   // Status alur pesanan secara keseluruhan
   orderStatus OrderStatus @default(AWAITING_PAYMENT)
 
-  midtransTransactionToken String?   @unique
+  midtransTransactionToken String? @unique
   midtransRedirectUrl      String?
-  bookingFee               Float     @default(0)
-  platformFee              Float     @default(0)
-  chargedTo                FeeBearer @default(CUSTOMER)
+
+  // Fee structure sesuai diagram
+  midtransFee Float     @default(0) // 0.7% dari subtotal
+  appFee      Float     @default(0) // 2% dari subtotal
+  chargedTo   FeeBearer @default(CUSTOMER)
+
+  // Info promo yang digunakan
+  promoId        String?
+  promo          Promo?  @relation(fields: [promoId], references: [id], onDelete: SetNull)
+  discountAmount Float   @default(0)
 
   // Relasi: Pesanan dibuat oleh guest customer
   guestCustomerId String
@@ -334,29 +358,29 @@ model Wallet {
   businessId String   @unique
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  // Relasi: Satu dompet bisa memiliki banyak riwayat penarikan
-  withdrawals Withdrawal[]
-
   updatedAt DateTime @updatedAt
 }
 
 // Model untuk mencatat riwayat penarikan dana oleh owner
 model Withdrawal {
   id              String           @id @default(uuid())
-  amount          Float
-  applicationFee  Float            @default(0)
-  bankTransferFee Float            @default(0)
+  requestedAmount Float // Amount yang diminta untuk ditarik
+  midtransFee     Float            @default(4000) // Fee Midtrans Rp 4.000
+  appFee          Float // 2% dari requested amount
+  finalAmount     Float // Amount setelah dipotong fee
   status          WithdrawalStatus @default(PENDING)
   notes           String?
 
-  // Relasi: Penarikan ini berasal dari dompet mana
-  walletId String
-  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  // Relasi: Penarikan ini untuk bisnis mana (langsung ke business)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+  updatedAt   DateTime  @updatedAt
 
-  @@index([walletId])
+  @@index([businessId])
+  @@index([status])
 }
 
 // Model untuk mencatat pengeluaran
@@ -373,6 +397,38 @@ model Expense {
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
   @@map("expenses")
+}
+
+// Model untuk Promo/Diskon
+model Promo {
+  id          String      @id @default(uuid())
+  code        String // Kode unik promo, misal: "HEMAT20K"
+  description String?
+  type        PromoType
+  value       Float // Nilai diskon (bisa persen atau nominal)
+  status      PromoStatus @default(ACTIVE)
+
+  // Batasan penggunaan
+  maxUses   Int? // Maksimal berapa kali promo bisa digunakan secara total
+  timesUsed Int  @default(0)
+
+  // Syarat & Ketentuan
+  minPurchaseAmount Float? // Minimal pembelian untuk bisa menggunakan promo
+  validFrom         DateTime @default(now())
+  validUntil        DateTime
+
+  // Relasi: Promo ini milik bisnis mana
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Relasi: Promo ini digunakan di order mana saja
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, code]) // Kode promo harus unik per bisnis
+  @@index([businessId])
 }
 
 // Model untuk membership/keanggotaan customer di suatu bisnis

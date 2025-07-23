@@ -5,7 +5,9 @@ import { BookingRepository } from "../repositories/booking.repository";
 import { CreateBookingSlotInput, UpdateBookingSlotInput } from "../schemas/booking.schema";
 import { getProductByIdService } from "./product.service";
 import { createMidtransTransactionService } from './payment.service';
+import { getOrderByIdService } from './order.service';
 import { db } from '../config/prisma';
+import { config } from '../config';
 
 export async function createBookingSlotService(data: CreateBookingSlotInput) {
     const product = await getProductByIdService(data.productId);
@@ -19,7 +21,33 @@ export async function createBookingSlotService(data: CreateBookingSlotInput) {
 export async function createBookingAndMidtransTransactionService(data: CreateBookingSlotInput, orderId: string) {
     const bookingSlot = await createBookingSlotService(data);
 
-    const midtransTransaction = await createMidtransTransactionService(orderId);
+    // Get order details untuk menghitung fees
+    const order = await getOrderByIdService(orderId);
+
+    // Hitung fees sesuai struktur baru
+    const midtransFee = Math.round(order.totalAmount * 0.007); // 0.7%
+    const appFee = Math.round(order.totalAmount * 0.02); // 2%
+
+    // Tentukan payment method - untuk booking biasanya QRIS
+    const paymentMethod: 'online' | 'qris' = 'qris';
+
+    // Gunakan chargedTo dari order yang sudah ada
+    const chargedTo = order.chargedTo.toLowerCase() as 'customer' | 'owner';
+
+    // Total amount yang akan ditagih ke customer (termasuk fees jika ditanggung customer)
+    let finalAmount = order.totalAmount;
+    if (chargedTo === 'customer') {
+        finalAmount += midtransFee + appFee;
+    }
+
+    const midtransTransaction = await createMidtransTransactionService(
+        orderId,
+        finalAmount,
+        midtransFee,
+        appFee,
+        paymentMethod,
+        chargedTo
+    );
 
     await db.order.update({
         where: { id: orderId },

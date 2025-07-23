@@ -15,9 +15,15 @@
     "db:studio": "npx prisma studio",
     "db:reset": "npx prisma migrate reset --force",
     "db:prepare": "npx prisma generate",
+    "workers": "ts-node-dev --respawn -r dotenv/config src/workers/worker-manager.ts",
+    "worker:notification": "ts-node-dev --respawn -r dotenv/config src/workers/notification.worker.ts",
+    "worker:service": "ts-node-dev --respawn -r dotenv/config src/workers/service-order.worker.ts",
     "queue": "ts-node-dev --respawn -r dotenv/config src/queue.worker.ts",
     "worker": "ts-node-dev --respawn -r dotenv/config src/worker.ts",
-    "reminder": "ts-node-dev src/payment.reminder.worker.ts"
+    "reminder": "ts-node-dev src/payment.reminder.worker.ts",
+    "docs:install": "npm install --no-save redoc-cli@^0.13.21",
+    "docs:generate": "redoc-cli build openapi.json --output docs/index.html --title 'BOSS API Documentation'",
+    "docs:serve": "redoc-cli serve openapi.json --watch --port 8080"
   },
   "prisma": {
     "seed": "ts-node prisma/db/seed.ts"
@@ -61,7 +67,6 @@
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.7",
-    "@types/bcryptjs": "^3.0.0",
     "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.9",
     "@types/express": "^5.0.3",

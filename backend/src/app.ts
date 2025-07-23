@@ -10,6 +10,10 @@ import { errorHandler, notFound } from "./middleware/error.middleware"
 import { App } from "./constants/app"
 import apiRouter from "./routes/index.routes"
 import morgan from "morgan"
+
+// Import rute promo
+import promoRouter from './routes/promo.route';
+
 const app = express()
 
 // Helmet untuk mengatur berbagai header HTTP guna melindungi aplikasi dari kerentanan web yang umum.
@@ -61,6 +65,7 @@ app.get("/", (req, res) => {
 })
 
 app.use(App.API_PREFIX, apiRouter)
+app.use(`${App.API_PREFIX}/promos`, promoRouter); // Daftarkan rute promo
 
 app.use(notFound)
 app.use(errorHandler)

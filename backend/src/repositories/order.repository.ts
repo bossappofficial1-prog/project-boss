@@ -4,7 +4,7 @@ import { CreateOrderInput } from "../schemas/order.schema";
 import { generateOrderCode } from "../utils";
 
 export class OrderRepository {
-    static async create(data: CreateOrderInput, outlet: any, totalAmount: number, bookingFee: number, feeBearer: FeeBearer, productDetails: (Product & { orderQuantity: number })[]): Promise<Order> {
+    static async create(data: CreateOrderInput, outlet: any, totalAmount: number, midtransFee: number, appFee: number, feeBearer: FeeBearer, productDetails: (Product & { orderQuantity: number })[]): Promise<Order> {
         const { guestCustomer, outletId, items, bookingDate } = data;
 
         return db.$transaction(async (tx) => {
@@ -36,7 +36,8 @@ export class OrderRepository {
                     guestCustomerId: customer.id,
                     outletId,
                     totalAmount,
-                    bookingFee: bookingFee,
+                    midtransFee: midtransFee,
+                    appFee: appFee,
                     chargedTo: feeBearer,
                     bookingDate: bookingDate ? new Date(bookingDate) : null,
                 },

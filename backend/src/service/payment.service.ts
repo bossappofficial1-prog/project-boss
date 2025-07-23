@@ -4,13 +4,14 @@ import { db } from '../config/prisma';
 import { PaymentStatus, Order, OrderItem, Product, GuestCustomer, FeeBearer } from '@prisma/client';
 import { NotificationService } from './notification.service';
 import { getRabbitMQChannel } from '../config/rabbitmq';
+import { messagePublisher } from './message-publisher.service';
 
 type OrderWithDetails = Order & {
     items: (OrderItem & { product: Product })[];
     guestCustomer: GuestCustomer;
 };
 
-export async function createMidtransTransactionService(orderId: string, finalAmount: number, midtransFee: number, platformFee: number, paymentMethod: 'online' | 'qris', chargedTo: 'customer' | 'owner') {
+export async function createMidtransTransactionService(orderId: string, finalAmount: number, midtransFee: number, appFee: number, paymentMethod: 'online' | 'qris', chargedTo: 'customer' | 'owner') {
     const order = await getOrderByIdService(orderId) as OrderWithDetails;
     if (!order) {
         throw new Error('Order not found');
@@ -27,18 +28,18 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
     if (midtransFee > 0) {
         itemDetails.push({
             id: 'midtrans_fee',
-            name: 'Biaya Layanan', // Nama yang lebih umum
+            name: 'Biaya Admin Midtrans (0.7%)',
             price: midtransFee,
             quantity: 1,
         });
     }
 
-    // Tambahkan biaya platform (booking fee) sebagai item terpisah jika ada
-    if (platformFee > 0) {
+    // Tambahkan biaya aplikasi sebagai item terpisah jika ada
+    if (appFee > 0) {
         itemDetails.push({
-            id: 'platform_fee',
-            name: 'Biaya Booking',
-            price: platformFee,
+            id: 'app_fee',
+            name: 'Biaya Admin Aplikasi (2%)',
+            price: appFee,
             quantity: 1,
         });
     }
@@ -171,14 +172,11 @@ export async function handleMidtransNotificationService(notification: any) {
             // Di sini Anda bisa menambahkan notifikasi khusus untuk janji temu jika perlu
             // Contoh: NotificationService.sendAppointmentConfirmation(order as any);
         }
-        // Logika 2: Pesanan ini adalah ANTRIAN LANGSUNG
+        // Logika 2: Pesanan mengandung layanan (SERVICE), masuk ke antrian
         else if (order.items.some(item => item.product.type === 'SERVICE')) {
             orderStatus = 'PROCESSING'; // Status untuk yang sedang mengantri
 
-            const channel = getRabbitMQChannel();
-            const queue = 'service_order_queue';
-            await channel.assertQueue(queue, { durable: true });
-            channel.sendToQueue(queue, Buffer.from(JSON.stringify({ orderId: order.id })), { persistent: true });
+            await messagePublisher.publishServiceOrderProcessing(order.id);
         }
         // Logika 3: Pesanan ini hanya berisi produk GOODS (tidak ada layanan)
         else {

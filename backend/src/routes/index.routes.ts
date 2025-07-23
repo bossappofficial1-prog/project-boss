@@ -12,6 +12,7 @@ import homeRouter from "./home.route";
 import outletRouter from "./outlet.route";
 import expenseRouter from "./expense.route";
 import reportRouter from "./report.route";
+import { withdrawalRouter } from "./withdrawal.route";
 
 const apiRouter = Router()
 
@@ -28,5 +29,6 @@ apiRouter.use('/outlets', outletRouter)
 apiRouter.use('/home', homeRouter)
 apiRouter.use('/expenses', expenseRouter)
 apiRouter.use('/reports', reportRouter)
+apiRouter.use('/withdrawals', withdrawalRouter)
 
 export default apiRouter
