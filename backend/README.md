@@ -149,8 +149,8 @@ npm run db:seed
 npm run dev
 ```
 
-Server berjalan di: [http://localhost:3000](http://localhost:3000)
-API Base URL: [http://localhost:3000/api](http://localhost:3000/api)
+Server berjalan di: [http://localhost:3000](http://localhost:1234)
+API Base URL: [http://localhost:3000/api](http://localhost:1234/api/v1)
 
 ---
 
@@ -275,14 +275,14 @@ npm run test:coverage
 
 ### API Testing dengan Postman
 
-1. Import collection dari `BOSS-API-Postman-Collection-Fixed.json`
-2. Set environment variable `base_url` ke `http://localhost:3000/api`
+1. Kunjingi [API Dokumentasi](https://documenter.getpostman.com/view/41481931/2sB34midWB)
+2. Set environment variable `base_url` ke `http://localhost:1234/api/c1`
 3. Jalankan test flow: Register → Login → Create Business → Create Outlet → Create Product → Create Order
 4. Token akan otomatis tersimpan setelah login untuk endpoint yang memerlukan authentication
 
 ---
 
-## � Fee Structure Detail
+## Fee Structure Detail
 
 ### Midtrans Fee (0.7%)
 
@@ -306,7 +306,7 @@ npm run test:coverage
 
 **Syarat Withdrawal:**
 
-- Minimum 100 transaksi yang telah selesai (COMPLETED)
+- Minimum 100.000 saldo
 - Dana yang bisa ditarik adalah revenue bersih setelah dipotong fee
 
 **Biaya Withdrawal:**
@@ -343,7 +343,7 @@ npm run test:coverage
 
 ---
 
-## �📝 License
+## 📝 License
 
 MIT License - lihat file [LICENSE](LICENSE) untuk detail lengkap.
 
@@ -363,7 +363,7 @@ npm test
 
 ```sh
 docker build -t boss-backend .
-docker run -p 3000:3000 --env-file .env boss-backend
+docker run -p 1234:1234 --env-file .env boss-backend
 ```
 
 ---
@@ -391,21 +391,5 @@ docker run -p 3000:3000 --env-file .env boss-backend
 
 - Backend Developer & System Architect
 - Specialized in Node.js, TypeScript, and Microservices
-
----
-
-## Contributing
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## Support
-
-Jika ada pertanyaan atau masalah, silakan buat issue di repository ini atau hubungi maintainer.
 
 ---

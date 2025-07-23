@@ -2,8 +2,8 @@ import { z } from "zod";
 
 export const createOutletSchema = z.object({
     name: z.string().nonempty({ message: "Nama outlet tidak boleh kosong" }),
-    address: z.string().optional(),
-    phone: z.string().optional(),
+    address: z.string(),
+    phone: z.string(),
     image: z.string().url().optional(),
     businessId: z.string().nonempty({ message: "ID Bisnis tidak boleh kosong" }),
 });

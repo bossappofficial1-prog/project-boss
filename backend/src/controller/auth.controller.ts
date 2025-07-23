@@ -36,7 +36,7 @@ export const getMeController = asyncHandler(async (req: Request, res: Response) 
 
     const { password, ...userWithoutPassword } = user.userWithoutBusiness
 
-    return ResponseUtil.success(res, { user: userWithoutPassword, outlets: user.outlets, business: user.business });
+    return ResponseUtil.success(res, { user: userWithoutPassword, outlets: user?.outlets ?? null, business: user?.business ?? null });
 });
 
 export const logoutController = asyncHandler(async (req: Request, res: Response) => {

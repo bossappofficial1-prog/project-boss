@@ -34,14 +34,17 @@ export async function loginService(data: LoginInput) {
 }
 
 export async function getMeService(userId: string) {
-    console.log(userId);
-
     const user = await getUserByIdService(userId);
     if (!user) {
         throw new AppError("Pengguna tidak ditemukan.", HttpStatus.NOT_FOUND);
     }
 
     const { business, ...userWithoutBusiness } = user
+
+    if (!business) {
+        return { userWithoutBusiness, outlets: [], business: null }
+    }
+
     const { outlets, ...businessWithoutOutlets } = business
 
     return { userWithoutBusiness, outlets, business: businessWithoutOutlets };
