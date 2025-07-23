@@ -1,5 +1,5 @@
 <script setup>
-import { useAuthStore } from '@/stores/useAuthStore'
+import { useAuthStore } from '~/stores/auth'
 
 const auth = useAuthStore()
 const showMobileMenu = ref(false)
@@ -20,18 +20,10 @@ function toggleMenu() {
         <div class="flex gap-2">
           <div class="flex items-center">
             <NuxtLink to="/" class="flex text-2xl items-center space-x-2">
-              <Icon name="boss:logo-blue" />
+              <Icon name="boss:logo-color-v" class="dark:hidden" />
+              <Icon name="boss:logo-text-white" class="hidden dark:block"/>
             </NuxtLink>
           </div>
-          <NuxtLink to="/home" class="flex items-center space-x-2 px-3 py-2"
-            :class="$route.path === '/home' ? 'text-primary-500 border-b-2 border-primary-500' : 'text-gray-600'">
-            Home
-          </NuxtLink>
-
-          <NuxtLink to="/outlets" class="flex items-center space-x-2 px-3 py-2"
-            :class="$route.path === '/outlets' ? 'text-primary-500 border-b-2 border-primary-500' : 'text-gray-600'">
-            Outlets
-          </NuxtLink>
 
         </div>
 
@@ -63,12 +55,12 @@ function toggleMenu() {
           </template>
 
           <template v-else>
-            <NuxtLink to="/login">
+            <NuxtLink to="/auth/login">
               <BaseButton variant="outline">
                 Masuk
               </BaseButton>
             </NuxtLink>
-            <NuxtLink to="/register">
+            <NuxtLink to="/auth/register">
               <BaseButton>
                 Daftar
               </BaseButton>
@@ -115,12 +107,12 @@ function toggleMenu() {
 
             <template v-else>
               <div class="flex flex-row justify-end items-center gap-3">
-                <NuxtLink to="/login" @click="showMobileMenu = false">
+                <NuxtLink to="/auth/login" @click="showMobileMenu = false">
                   <BaseButton variant="outline">
                     Masuk
                   </BaseButton>
                 </NuxtLink>
-                <NuxtLink to="/register" @click="showMobileMenu = false">
+                <NuxtLink to="/auth/register" @click="showMobileMenu = false">
                   <BaseButton>
                     Daftar
                   </BaseButton>

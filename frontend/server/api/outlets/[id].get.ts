@@ -1,66 +1,24 @@
-export default defineEventHandler((event) => {
-  const outletId = getRouterParam(event, 'id')
+import { defineEventHandler } from 'h3'
+import { dummyOutlets } from '~/server/dummy/outlets'
 
-  // Dummy business (1 bisnis)
-  const dummyBusiness = {
-    id: 'business-1',
-    name: 'Kopi Sedap',
-    description: 'Kedai kopi lokal Padang',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    bankName: 'BCA',
-    bankAccount: '1234567890',
-    accountHolder: 'Budi Owner'
-  }
+export default defineEventHandler(async (event) => {
+  const outletId = event.context.params?.id as string
 
-  // Dummy products milik outlet
-  const dummyProducts = [
-    {
-      id: 'product-1',
-      name: 'Kopi Hitam',
-      description: 'Kopi hitam tanpa gula',
-      price: 15000,
-      type: 'BARANG',
-      stock: 50,
-      unit: 'gelas'
-    },
-    {
-      id: 'product-2',
-      name: 'Teh Tarik',
-      description: 'Teh susu tarik khas',
-      price: 12000,
-      type: 'BARANG',
-      stock: 30,
-      unit: 'gelas'
-    },
-    {
-      id: 'product-3',
-      name: 'Voucher Internet',
-      description: 'Layanan voucher wifi 1 jam',
-      price: 5000,
-      type: 'JASA',
-      stock: 100,
-      unit: 'kode'
+  const outlet = dummyOutlets.find(o => o.id === outletId)
+
+  if (!outlet) {
+    setResponseStatus(event, 404)
+    return {
+      success: false,
+      message: 'Outlet tidak ditemukan',
+      errors: []
     }
-  ]
-
-  // Dummy outlet detail
-  const outletDetail = {
-    id: outletId,
-    name: 'Cabang Taplau',
-    address: 'Pantai Taplau, Padang',
-    phone: '081234567890',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    business: dummyBusiness,
-    products: dummyProducts
   }
 
   return {
     success: true,
-    message: 'Berhasil mengambil detail outlet',
-    data: outletDetail,
-    timestamp: new Date().toISOString(),
-    path: `/api/outlets/${outletId}`
+    data: {
+      outlet
+    }
   }
 })

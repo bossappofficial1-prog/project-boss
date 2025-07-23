@@ -4,6 +4,8 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
   devtools: { enabled: true },
+  ssr: false,
+  debug: true,
 
   css: ["~/assets/css/main.css"],
 
@@ -11,9 +13,7 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
 
-  modules: ["@nuxt/icon", "@nuxt/image", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt"],
-
-  ssr: false,
+  modules: ["@nuxt/icon", "@nuxt/image", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt", 'nuxt-toast'],
 
   icon: {
     provider: 'server',
@@ -28,6 +28,20 @@ export default defineNuxtConfig({
         dir: './assets/icons'
       },
     ],
+  },
+
+  app: {
+    head: {
+      title: 'BOSS',
+      meta: [
+        { name: 'author', content: 'BOSS Team' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: 'BOSS - Business One Stop System' }
+      ],
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/images/logo-color.svg' }
+      ]
+    }
   },
 
   runtimeConfig: {
