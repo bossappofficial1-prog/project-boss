@@ -7,7 +7,8 @@ import {
     getAllBusinessesService,
     getBusinessByIdService,
     getBusinessByOwnerIdService,
-    updateBusinessService
+    updateBusinessService,
+    updateBankAccountService
 } from "../service/business.service";
 
 export const getAllBusinessesController = asyncHandler(async (req: Request, res: Response) => {
@@ -34,10 +35,16 @@ export const getMyBusinessController = asyncHandler(async (req: Request, res: Re
     return ResponseUtil.success(res, business);
 });
 
-export const updateMyBusinessController = asyncHandler(async (req: Request, res: Response) => {
+export const updateBusinessController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const payload = req.body;
     const ownerId = req.user!.id;
     const business = await updateBusinessService(id, payload, ownerId);
-    return ResponseUtil.success(res, business);
+    ResponseUtil.success(res, business, HttpStatus.OK, "Bisnis berhasil diperbarui");
+});
+
+export const updateBankAccountController = asyncHandler(async (req: Request, res: Response) => {
+    const { bankName, bankAccount, accountHolder } = req.body;
+    const business = await updateBankAccountService(req.params.id, req.user?.id!, { bankName, bankAccount, accountHolder });
+    ResponseUtil.success(res, business, HttpStatus.OK, "Informasi rekening bank berhasil diperbarui.");
 });

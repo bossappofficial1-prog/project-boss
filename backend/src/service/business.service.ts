@@ -41,3 +41,13 @@ export async function updateBusinessService(id: string, data: UpdateBusinessInpu
     const updatedBusiness = await BusinessRepository.update(id, data);
     return updatedBusiness;
 }
+
+export async function updateBankAccountService(businessId: string, ownerId: string, data: { bankName: string; bankAccount: string; accountHolder: string; }) {
+    const business = await BusinessRepository.findByOwnerId(ownerId);
+
+    if (!business || business.id !== businessId) {
+        throw new AppError('You are not authorized to update this business', HttpStatus.FORBIDDEN);
+    }
+
+    return BusinessRepository.update(businessId, data);
+}

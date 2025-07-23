@@ -6,7 +6,8 @@ import {
     calculateWithdrawalAmount,
     requestWithdrawal,
     processWithdrawal,
-    getWithdrawalHistory
+    getWithdrawalHistory,
+    handleMidtransPayoutWebhook
 } from '../service/withdrawal.service';
 
 export const getWithdrawalCalculationController = asyncHandler(async (req: Request, res: Response) => {
@@ -33,4 +34,10 @@ export const getWithdrawalHistoryController = asyncHandler(async (req: Request, 
     const businessId = req.params.businessId;
     const history = await getWithdrawalHistory(businessId);
     return ResponseUtil.success(res, history, HttpStatus.OK);
+});
+
+export const midtransPayoutWebhookController = asyncHandler(async (req: Request, res: Response) => {
+    // Disarankan untuk memvalidasi notifikasi ini menggunakan signature key dari Midtrans
+    await handleMidtransPayoutWebhook(req.body);
+    ResponseUtil.success(res, { message: 'Webhook received' }, HttpStatus.OK);
 });

@@ -42,6 +42,7 @@ enum OrderStatus {
 
 enum WithdrawalStatus {
   PENDING
+  PROCESSING
   COMPLETED
   REJECTED
 }
@@ -363,13 +364,14 @@ model Wallet {
 
 // Model untuk mencatat riwayat penarikan dana oleh owner
 model Withdrawal {
-  id              String           @id @default(uuid())
-  requestedAmount Float // Amount yang diminta untuk ditarik
-  midtransFee     Float            @default(4000) // Fee Midtrans Rp 4.000
-  appFee          Float // 2% dari requested amount
-  finalAmount     Float // Amount setelah dipotong fee
-  status          WithdrawalStatus @default(PENDING)
-  notes           String?
+  id                String           @id @default(uuid())
+  requestedAmount   Float // Amount yang diminta untuk ditarik
+  midtransFee       Float            @default(4000) // Fee Midtrans Rp 4.000
+  appFee            Float // 2% dari requested amount
+  finalAmount       Float // Amount setelah dipotong fee
+  status            WithdrawalStatus @default(PENDING)
+  notes             String?
+  midtransReference String?          @unique
 
   // Relasi: Penarikan ini untuk bisnis mana (langsung ke business)
   businessId String

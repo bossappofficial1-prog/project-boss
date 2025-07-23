@@ -4,10 +4,14 @@ import {
     getWithdrawalCalculationController,
     requestWithdrawalController,
     processWithdrawalController,
-    getWithdrawalHistoryController
+    getWithdrawalHistoryController,
+    midtransPayoutWebhookController
 } from '../controller/withdrawal.controller';
 
 const withdrawalRouter = Router();
+
+// Webhook dari Midtrans tidak memerlukan auth
+withdrawalRouter.post('/webhooks/midtrans-payout', midtransPayoutWebhookController);
 
 // Semua endpoint withdrawal memerlukan authentication
 withdrawalRouter.use(protect);
