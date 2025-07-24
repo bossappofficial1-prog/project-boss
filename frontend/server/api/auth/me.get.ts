@@ -14,10 +14,9 @@ export default defineEventHandler(async (event) => {
     // Dummy user & business data
     const user = {
         id: '1',
-        email: 'john.doe@email.com',
-        name: 'John Doe',
+        email: 'test@email.com',
+        name: 'Ujang',
         avatar: null,
-        password: 'hashed_password',
         role: 'OWNER',
         isVerified: true,
         phone: '+6281234567890',
@@ -60,7 +59,6 @@ export default defineEventHandler(async (event) => {
         ownerId: user.id,
         defaultTransactionFeeBearer: 'OWNER',
         owner: user,
-        outlets: outlets,
         wallet: undefined,
         memberships: []
     }
@@ -68,5 +66,7 @@ export default defineEventHandler(async (event) => {
     return {
         "success": true,
         "data": user,
+        "business": business,
+        "outlets": outlets
     }
 })

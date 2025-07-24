@@ -1,31 +1,24 @@
+import { defineEventHandler } from 'h3'
+import { dummyProducts } from '~/server/dummy/products'
+
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
+  const productId = event.context.params?.id as string
 
-  const token = getHeader(event, "authorization")?.replace("Bearer ", "");
+  const product = dummyProducts.find(p => p.id === productId)
 
-  if (!token) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
+  if (!product) {
+    setResponseStatus(event, 404)
+    return {
+      success: false,
+      message: 'Produk tidak ditemukan',
+      errors: []
+    }
   }
 
-  const product = {
-    id: id,
-    name: "Nasi Goreng",
-    description: "Nasi goreng spesial dengan telur",
-    costPrice: 8000,
-    price: 15000,
-    type: "GOODS",
-    quantity: 50,
-    unit: "porsi",
-    status: "ACTIVE",
-    transactionFeeBearer: "CUSTOMER",
-    serviceDurationMinutes: null,
-    outletId: "1",
-    image: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-
-  return { success: true, data: product };
-});
+  return {
+    success: true,
+    data: {
+      product
+    }
+  }
+})

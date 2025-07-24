@@ -1,3 +1,0 @@
-definisi custom Error class & error handler.  
-Misal: NotFoundError, ValidationError,  
-atau middleware catchError.ts

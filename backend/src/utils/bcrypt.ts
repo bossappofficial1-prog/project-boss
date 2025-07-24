@@ -1,24 +1,11 @@
-import { compare, hash } from "bcryptjs"
+import bcrypt from 'bcryptjs';
 
-const saltAround = 10;
+export const BcryptUtil = {
+    async hash(password: string): Promise<string> {
+        return await bcrypt.hash(password, 10);
+    },
 
-export async function hashing(text: string): Promise<string | null> {
-    try {
-        const hashed = hash(text, saltAround)
-        return hashed;
-    } catch (error: any) {
-        console.log(`gagal hashing password: ${error.message}`);
-        return null;
+    async compare(password: string, hash: string): Promise<boolean> {
+        return await bcrypt.compare(password, hash);
     }
-}
-
-export async function verifyHash(text: string, hashedText: string): Promise<boolean> {
-    try {
-        const match = await compare(text, hashedText);
-        return match ? true : false;
-
-    } catch (error: any) {
-        console.log(`gagal verifikasi password: ${error.message}`);
-        return false
-    }
-}
+};

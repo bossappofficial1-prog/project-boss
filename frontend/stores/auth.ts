@@ -1,10 +1,11 @@
 // stores/auth.ts
 import { defineStore } from 'pinia'
-import type { User, Outlet, Role, LoginForm } from '~/types'
+import type { User, Outlet, Role, LoginForm, Business } from '~/types'
 
 interface AuthState {
   token: string | null
   user: User | null
+  business: Business | null
   selectedOutlet: Outlet | null
   availableOutlets: Outlet[]
   isLoading: boolean
@@ -14,6 +15,7 @@ export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     token: null,
     user: null,
+    business: null,
     selectedOutlet: null,
     availableOutlets: [],
     isLoading: false
@@ -25,7 +27,8 @@ export const useAuthStore = defineStore('auth', {
     isOwner: (state): boolean => state.user?.role === 'OWNER',
     isAdmin: (state): boolean => state.user?.role === 'ADMIN',
     hasSelectedOutlet: (state): boolean => !!state.selectedOutlet,
-    canAccessOwnerFeatures: (state): boolean => !!state.token && !!state.user && state.user.role === 'OWNER' && state.user.isVerified
+    canAccessOwnerFeatures: (state): boolean => !!state.token && !!state.user && state.user.role === 'OWNER' && state.user.isVerified,
+    hasBusinessProfile: (state): boolean => !!state.business
   },
 
   actions: {
@@ -33,23 +36,20 @@ export const useAuthStore = defineStore('auth', {
       this.isLoading = true
       try {
         const response = await $fetch<{
+          success: boolean
           token: string
-          user: User
-          outlets?: Outlet[]
         }>('/api/auth/login', {
           method: 'POST',
           body: credentials
         })
         
-        this.token = response.token
-        this.user = response.user
-        
-        if (response.outlets?.length) {
-          this.availableOutlets = response.outlets
-          if (response.outlets.length === 1) {
-            this.selectedOutlet = response.outlets[0]
-          }
+        if (!response.success || !response.token) {
+          throw new Error('Login failed')
         }
+        
+        this.token = response.token
+        
+        await this.fetchUserData()
         
         await this.navigateAfterLogin()
       } finally {
@@ -57,7 +57,6 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // jika logout dengan endpoint 
     async logout() {
       this.isLoading = true
       try {
@@ -79,28 +78,21 @@ export const useAuthStore = defineStore('auth', {
     async updateProfile(data: Partial<User>) {
       this.isLoading = true
       try {
-        const response = await $fetch<{ user: User }>('/api/user/profile', {
+        const response = await useApi<{ success: boolean }>('/api/user/profile', {
           method: 'PUT',
           body: data,
-          headers: { Authorization: `Bearer ${this.token}` }
         })
         
-        this.user = response.user
+        if (response.data.value?.success) {
+          await this.fetchUserData()
+        } else {
+          throw new Error('Gagal update profile')
+        }
+      } catch (error) {
+        console.error("Gagal update profile:", error)
+        throw error
       } finally {
         this.isLoading = false
-      }
-    },
-
-    async fetchOutlets() {
-      if (!this.isOwner) return
-      
-      try {
-        const outlets = await $fetch<Outlet[]>('/api/outlets', {
-          headers: { Authorization: `Bearer ${this.token}` }
-        })
-        this.availableOutlets = outlets
-      } catch (error) {
-        console.error('Failed to fetch outlets:', error)
       }
     },
 
@@ -111,16 +103,21 @@ export const useAuthStore = defineStore('auth', {
     clearSession() {
       this.token = null
       this.user = null
+      this.business = null
       this.selectedOutlet = null
       this.availableOutlets = []
     },
 
     async navigateAfterLogin() {
       if (this.isOwner) {
-        await navigateTo('/umkm')
-      // admin aplikasi 
-      // } else if (this.isAdmin) {
-        // await navigateTo('/') 
+        if (!this.hasBusinessProfile) {
+          console.log("User:", this.user)
+          console.log("Business Profile:", this.hasBusinessProfile)
+          
+          await navigateTo('/umkm/account?setup=true')
+        } else {
+          await navigateTo('/umkm')
+        }
       } else {
         await navigateTo('/home')
       }
@@ -129,19 +126,35 @@ export const useAuthStore = defineStore('auth', {
     async initAuth() {
       if (this.token && this.user) {
         try {
-          // Verify token masih valid
-          await $fetch('/api/auth/verify', {
-            headers: { Authorization: `Bearer ${this.token}` }
-          })
+          await this.fetchUserData()
           
-          // Fetch outlets untuk owner
-          if (this.isOwner) {
-            await this.fetchOutlets()
-          }
         } catch (error) {
           console.error('Auth verification failed:', error)
           this.clearSession()
         }
+      }
+    },
+
+    async fetchUserData() {
+      if (!this.token) return
+      
+      try {
+        const response = await $fetch<{ 
+          success: boolean
+          data: User 
+          business: Business
+          outlets: Outlet[]
+        }>('/api/auth/me', {
+          headers: { Authorization: `Bearer ${this.token}` }
+        })
+        
+        if (response.success && response.data) {
+          this.user = response.data
+          this.business = response.business
+          this.availableOutlets = response.outlets
+        }
+      } catch (error) {
+        throw error
       }
     }
   },

@@ -1,12 +1,8 @@
 export default defineEventHandler(async (event) => {
-  const { email, name, password, confirmPassword, phone } = await readBody(event)
+  const { email, name, password, phone } = await readBody(event)
   
   if (!email || !name || !password) {
     throw createError({ statusCode: 400, statusMessage: 'Required fields missing' })
-  }
-  
-  if (password !== confirmPassword) {
-    throw createError({ statusCode: 400, statusMessage: 'Passwords do not match' })
   }
   
   const user = {
