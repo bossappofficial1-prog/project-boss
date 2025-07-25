@@ -22,6 +22,23 @@ export class OutletRepository {
         });
     }
 
+    static async findByIdWithProducts(id: string): Promise<any | null> {
+        return db.outlet.findUnique({
+            where: { id },
+            include: {
+                business: true,
+                products: {
+                    where: {
+                        status: 'ACTIVE',
+                    },
+                    orderBy: {
+                        name: 'asc',
+                    },
+                },
+            },
+        });
+    }
+
     static async findByBusinessId(businessId: string): Promise<Outlet[]> {
         return db.outlet.findMany({
             where: { businessId },

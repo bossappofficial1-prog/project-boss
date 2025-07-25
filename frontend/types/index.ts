@@ -84,6 +84,15 @@ export enum CustomerType {
 }
 
 // =============================================
+// API RESPONSE TYPES
+// =============================================
+
+export interface OrderResponse {
+  paymentUrl: string
+  orderId: string
+}
+
+// =============================================
 // BASE TYPES (WITH OPTIONAL RELATIONS)
 // =============================================
 
@@ -408,4 +417,14 @@ export interface TopProduct {
   name: string
   totalSold: number
   revenue: number
+}
+
+// =============================================
+// GLOBAL/WINDOW TYPES
+// =============================================
+
+declare global {
+  interface Window {
+    snap: any;
+  }
 }

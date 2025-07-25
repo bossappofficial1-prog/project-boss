@@ -5,15 +5,18 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
   devtools: { enabled: true },
   ssr: false,
-  debug: true,
+  debug: false,
 
-  css: ["~/assets/css/main.css"],
+  css: [
+    "~/assets/css/main.css",
+    "@fortawesome/fontawesome-free/css/all.css"
+  ],
 
   vite: {
     plugins: [tailwindcss()],
   },
 
-  modules: ["@nuxt/icon", "@nuxt/image", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt", 'nuxt-toast'],
+  modules: ["@nuxt/icon", "@nuxt/image", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt", 'nuxt-toast', '@nuxt/ui'],
 
   icon: {
     provider: 'server',
@@ -40,6 +43,9 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/images/logo-color.svg' }
+      ],
+      script: [
+        { src: 'https://app.sandbox.midtrans.com/snap/snap.js', 'data-client-key': process.env.NUXT_PUBLIC_MIDTRANS_CLIENT_KEY }
       ]
     }
   },

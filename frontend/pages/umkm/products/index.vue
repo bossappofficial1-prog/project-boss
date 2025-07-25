@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import type { Product } from '~/types'
+import { useDebounceFn } from '@vueuse/core'
 
 definePageMeta({
   layout: 'umkm',
@@ -8,115 +9,104 @@ definePageMeta({
 })
 
 const auth = useAuthStore()
-const isLoading = ref(false)
-const products = ref<Product[]>([])
+const toast = useToast()
+const searchQuery = ref('')
 
-const fetchProducts = async () => {
-  isLoading.value = true
-  try {
-    const { data, error } = await useApi<{ products: Product[] }>(`/api/products/outlet/${auth.selectedOutlet?.id}`)
-    if (error.value) {
-      console.error('Failed to fetch products:', error.value)
-      const toast = useToast()
-      toast.error({
-        title: 'Error!',
-        message: 'Gagal memuat daftar produk.'
-      })
-      return
-    }
-    products.value = data.value?.data?.products || []
-  } catch (error) {
-    console.error('Products fetch error:', error)
-    const toast = useToast()
-    toast.error({
-      title: 'Error!',
-      message: 'Terjadi kesalahan saat memuat daftar produk.'
-    })
-  } finally {
-    isLoading.value = false
+// Reactive endpoint that depends on the selected outlet
+const apiEndpoint = computed(() => {
+  if (!auth.selectedOutlet?.id) return null
+  return `/api/v1/products/outlet/${auth.selectedOutlet.id}`
+})
+
+const { data, pending, error, execute, refresh } = useApi<{ products: Product[] }>(apiEndpoint, {
+  query: { q: searchQuery },
+  lazy: true,
+  immediate: false,
+})
+
+const products = computed(() => data.value?.data?.products || [])
+
+const fetchProducts = () => {
+  if (apiEndpoint.value) {
+    execute()
   }
 }
 
-onMounted(() => {
-  if (auth.selectedOutlet?.id) {
-    fetchProducts()
-  }
-})
+const debouncedFetchProducts = useDebounceFn(fetchProducts, 500)
 
-watch(() => auth.selectedOutlet?.id, (newId, oldId) => {
-  if (newId && newId !== oldId) {
-    fetchProducts()
+onMounted(fetchProducts)
+
+watch(searchQuery, debouncedFetchProducts)
+
+watch(() => auth.selectedOutlet?.id, (newId) => {
+  if (newId) {
+    // Use nextTick to ensure computed `apiEndpoint` is updated before fetching
+    nextTick(fetchProducts)
   }
 })
 
 const deleteProduct = async (productId: string) => {
   if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return
 
-  isLoading.value = true
-  try {
-    const { error } = await useApi(`/api/products/delete/${productId}`, {
-      method: 'DELETE'
-    })
+  const { error: deleteError } = await useApi(`/api/v1/products/delete/${productId}`, {
+    method: 'DELETE'
+  })
 
-    if (error.value) {
-      const toast = useToast()
-      toast.error({
-        title: 'Error!',
-        message: error.value.data?.message || 'Gagal menghapus produk.'
-      })
-      return
-    }
-
-    const toast = useToast()
-    toast.success({
-      title: 'Berhasil!',
-      message: 'Produk berhasil dihapus.'
+  if (deleteError.value) {
+    return toast.error({
+      title: 'Gagal Menghapus',
+      message: deleteError.value.data?.message || 'Gagal menghapus produk.'
     })
-    fetchProducts() // Refresh the list
-  } catch (error) {
-    console.error('Delete product error:', error)
-    const toast = useToast()
-    toast.error({
-      title: 'Error!',
-      message: 'Terjadi kesalahan saat menghapus produk.'
-    })
-  } finally {
-    isLoading.value = false
   }
+
+  toast.success({
+    title: 'Berhasil!',
+    message: 'Produk berhasil dihapus.'
+  })
+  refresh() // Re-fetch the product list
 }
 </script>
 
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Daftar Produk</h1>
-      <NuxtLink to="/umkm/products/create">
-        <BaseButton>
-          <Icon name="mdi:plus" size="16" class="mr-2" />
-          Tambah Produk
-        </BaseButton>
-      </NuxtLink>
-    </div>
-
-    <BaseCard>
-      <div v-if="isLoading" class="p-4 text-center">
-        <Icon name="lucide:loader-2" size="32" class="animate-spin text-primary-500" />
-        <p class="text-gray-500 mt-2">Memuat produk...</p>
-      </div>
-      <div v-else-if="products.length === 0" class="text-center py-12">
-        <Icon name="mdi:package-variant-closed" size="64" class="text-gray-400 mx-auto mb-4" />
-        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-          Belum ada produk
-        </h3>
-        <p class="text-gray-500 dark:text-gray-400 mb-4">
-          Tambahkan produk pertama Anda untuk mulai menjual
-        </p>
+      <div class="flex items-center gap-4">
+        <div class="relative w-full md:w-64">
+          <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input v-model="searchQuery" type="text" placeholder="Cari produk..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+        </div>
         <NuxtLink to="/umkm/products/create">
           <BaseButton>
             <Icon name="mdi:plus" size="16" class="mr-2" />
             Tambah Produk
           </BaseButton>
         </NuxtLink>
+      </div>
+    </div>
+
+    <BaseCard>
+      <div v-if="pending">
+        <BaseLoading />
+      </div>
+      <div v-else-if="error">
+        <BaseErrorState :error="error" @retry="refresh" />
+      </div>
+      <div v-else-if="products.length === 0">
+        <BaseEmptyState v-if="searchQuery" title="Produk Tidak Ditemukan"
+          message="Tidak ada produk yang cocok dengan pencarian Anda." icon="mdi:magnify-close" />
+        <BaseEmptyState v-else title="Belum Ada Produk" message="Tambahkan produk pertama Anda untuk mulai menjual."
+          icon="mdi:package-variant-closed">
+          <template #action>
+            <NuxtLink to="/umkm/products/create">
+              <BaseButton>
+                <Icon name="mdi:plus" size="16" class="mr-2" />
+                Tambah Produk
+              </BaseButton>
+            </NuxtLink>
+          </template>
+        </BaseEmptyState>
       </div>
       <BaseTable v-else>
         <template #thead>

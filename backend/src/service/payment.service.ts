@@ -28,7 +28,7 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
     if (midtransFee > 0) {
         itemDetails.push({
             id: 'midtrans_fee',
-            name: 'Biaya Admin Midtrans (0.7%)',
+            name: 'Biaya Admin Midtrans (1%)',
             price: midtransFee,
             quantity: 1,
         });
@@ -38,7 +38,7 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
     if (appFee > 0) {
         itemDetails.push({
             id: 'app_fee',
-            name: 'Biaya Admin Aplikasi (2%)',
+            name: 'Biaya Admin Aplikasi (3%)',
             price: appFee,
             quantity: 1,
         });
@@ -53,7 +53,7 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
     const parameter = {
         transaction_details: {
             order_id: order.id,
-            gross_amount: calculatedGrossAmount, // Gunakan hasil perhitungan yang pasti
+            gross_amount: calculatedGrossAmount,
         },
         customer_details: {
             first_name: order.guestCustomer.name,

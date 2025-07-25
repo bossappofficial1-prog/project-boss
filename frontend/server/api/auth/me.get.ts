@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
     return {
         "success": true,
         "data": user,
-        "business": business,
+        // "business": business,
         "outlets": outlets
     }
 })

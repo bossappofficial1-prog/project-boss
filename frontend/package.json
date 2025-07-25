@@ -10,18 +10,25 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.0.0",
     "@iconify-json/lucide": "^1.2.53",
     "@nuxt/icon": "^1.14.0",
     "@nuxt/image": "^1.10.0",
+    "@nuxt/ui": "^3.2.0",
     "@pinia/nuxt": "^0.11.1",
     "@tailwindcss/vite": "^4.1.10",
+    "@vueuse/core": "^13.5.0",
     "izitoast": "^1.4.0",
     "nuxt": "^3.17.5",
     "nuxt-toast": "^1.1.4",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.3.0",
     "tailwindcss": "^4.1.10",
+    "v-calendar": "^3.1.2",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@iconify-json/mdi": "^1.2.3"
   }
 }
