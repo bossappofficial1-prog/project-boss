@@ -16,7 +16,7 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
 }
 
 export async function getOutletByIdService(id: string) {
-    const outlet = await OutletRepository.findById(id);
+    const outlet = await OutletRepository.findByIdWithProducts(id);
     if (!outlet) {
         throw new AppError(`Outlet dengan id ${id} tidak tersedia.`, HttpStatus.NOT_FOUND);
     }

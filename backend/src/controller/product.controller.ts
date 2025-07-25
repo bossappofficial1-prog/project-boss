@@ -52,7 +52,8 @@ export const getProductByIdController = asyncHandler(async (req: Request, res: R
 
 export const getProductsByOutletIdController = asyncHandler(async (req: Request, res: Response) => {
     const { outletId } = req.params;
-    const products = await getProductsByOutletIdService(outletId);
+    const { q } = req.query;
+    const products = await getProductsByOutletIdService(outletId, q as string);
     return ResponseUtil.success(res, products);
 });
 

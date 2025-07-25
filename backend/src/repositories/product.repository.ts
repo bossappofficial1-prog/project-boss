@@ -22,9 +22,21 @@ export class ProductRepository {
         });
     }
 
-    static async findByOutletId(outletId: string): Promise<Product[]> {
+    static async findByOutletId(outletId: string, q?: string): Promise<Product[]> {
+        const whereClause: any = { outletId };
+
+        if (q) {
+            whereClause.name = {
+                contains: q,
+                mode: 'insensitive',
+            };
+        }
+
         return db.product.findMany({
-            where: { outletId },
+            where: whereClause,
+            orderBy: {
+                createdAt: 'desc',
+            },
         });
     }
 

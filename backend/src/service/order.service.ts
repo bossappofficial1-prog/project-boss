@@ -13,17 +13,24 @@ import { createMidtransTransactionService } from './payment.service';
 import { getOutletByIdService } from "./outlet.service";
 import { getBusinessByIdService } from "./business.service"; // Impor service bisnis
 
-export async function createOrderService(data: CreateOrderInput) {
-    const { items, outletId } = data;
+async function createOrderInDbService(data: CreateOrderInput) {
+    const { items, outletId, bookingSlotId } = data;
 
-    // 1. Dapatkan detail outlet dan bisnis
+    if (bookingSlotId) {
+        const slot = await db.bookingSlot.findUnique({ where: { id: bookingSlotId } });
+        if (!slot) {
+            throw new AppError("Booking slot tidak ditemukan.", HttpStatus.NOT_FOUND);
+        }
+        if (slot.status !== 'AVAILABLE') {
+            throw new AppError("Booking slot sudah tidak tersedia.", HttpStatus.BAD_REQUEST);
+        }
+    }
+
     const outlet = await getOutletByIdService(outletId);
     const business = await getBusinessByIdService(outlet.businessId);
 
-    // 2. Validasi produk dan hitung subtotal
     let subTotal = 0;
     const productDetails: (Product & { orderQuantity: number })[] = [];
-    let hasServiceProduct = false;
 
     for (const item of items) {
         const product = await ProductRepository.findById(item.productId);
@@ -33,34 +40,28 @@ export async function createOrderService(data: CreateOrderInput) {
         if (product.type === 'GOODS' && (!product.quantity || product.quantity < item.quantity)) {
             throw new AppError(`Stok produk ${product.name} tidak mencukupi`, HttpStatus.BAD_REQUEST);
         }
-        if (product.type === 'SERVICE') {
-            hasServiceProduct = true;
-        }
         subTotal += product.price * item.quantity;
         productDetails.push({ ...product, orderQuantity: item.quantity });
     }
 
-    // 3. Hitung biaya-biaya sesuai struktur baru
-    // Biaya Admin Midtrans: 0.7% dari subtotal
-    const midtransFee = Math.round(subTotal * 0.007);
-
-    // Biaya Admin Aplikasi: 2% dari subtotal
-    const appFee = Math.round(subTotal * 0.02);
-
-    // Tentukan siapa yang menanggung biaya
+    const midtransFee = Math.round(subTotal * 0.01); // 1% midtrans fee
+    const appFee = Math.round(subTotal * 0.03); // 3% platform fee
     const feeBearer = business.defaultTransactionFeeBearer;
     let totalAmount = subTotal;
 
-    // Jika customer yang menanggung fee, tambahkan ke total
     if (feeBearer === 'CUSTOMER') {
         totalAmount += midtransFee + appFee;
     }
 
-    // 4. Buat pesanan dalam satu transaksi atomik
     const order = await OrderRepository.create(data, outlet, totalAmount, midtransFee, appFee, feeBearer, productDetails);
 
-    // 5. Update harga per item
     await db.$transaction(async (tx) => {
+        if (bookingSlotId) {
+            await tx.bookingSlot.update({
+                where: { id: bookingSlotId },
+                data: { status: 'BOOKED', orderId: order.id },
+            });
+        }
         for (const product of productDetails) {
             await tx.orderItem.updateMany({
                 where: { orderId: order.id, productId: product.id },
@@ -69,17 +70,11 @@ export async function createOrderService(data: CreateOrderInput) {
         }
     });
 
-    // Emit a real-time event to the dashboard
     const io = getSocketIO();
-    io.emit('new_order', await OrderRepository.findById(order.id));
+    io.to(business.id).emit('new_order', await OrderRepository.findById(order.id));
 
-    return {
-        order,
-        midtransFee,
-        appFee,
-        feeBearer,
-        totalAmount,
-    };
+
+    return { order, midtransFee, appFee, feeBearer, totalAmount };
 }
 
 export async function getOrderByIdService(id: string) {
@@ -118,29 +113,23 @@ export async function refundOrderService(orderId: string) {
     });
 }
 
-export async function createOrderAndMidtransTransactionService(data: CreateOrderInput, paymentMethod: 'online' | 'qris') {
-    // Panggil service yang sudah di-refactor
-    const { order, midtransFee, appFee, feeBearer, totalAmount } = await createOrderService(data);
+export async function createOrderAndMidtransTransactionService(data: CreateOrderInput) {
+    const { paymentMethod } = data;
+    const { order, midtransFee, appFee, feeBearer, totalAmount } = await createOrderInDbService(data);
 
     const chargeTo = feeBearer.toLowerCase() as 'customer' | 'owner';
 
-    // Total fee yang akan ditambahkan jika customer yang menanggung
-    const totalFee = (chargeTo === 'customer') ? midtransFee + appFee : 0;
-
     const midtransTransaction = await createMidtransTransactionService(order.id, totalAmount, midtransFee, appFee, paymentMethod, chargeTo);
 
-    await db.order.update({
+    const updatedOrder = await db.order.update({
         where: { id: order.id },
         data: {
             midtransTransactionToken: midtransTransaction.token,
             midtransRedirectUrl: midtransTransaction.redirect_url,
-            midtransFee: midtransFee,
-            appFee: appFee,
-            chargedTo: chargeTo.toUpperCase() as any,
         },
     });
 
-    return { order, midtransTransaction };
+    return { order: updatedOrder, midtransTransaction };
 }
 
 export async function updateOrderStatusService(orderId: string, status: OrderStatus) {

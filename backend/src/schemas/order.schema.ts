@@ -10,11 +10,12 @@ export const createOrderSchema = z.object({
     guestCustomer: z.object({
         name: z.string().nonempty({ message: "Nama tidak boleh kosong" }),
         phone: z.string().nonempty({ message: "Nomor telepon tidak boleh kosong" }),
-        email: z.string().email({ message: "Email tidak valid" }).optional(),
     }),
     outletId: z.string().nonempty({ message: "ID Outlet tidak boleh kosong" }),
     items: z.array(orderItemSchema).min(1, { message: "Pesanan harus memiliki minimal 1 item" }),
-    bookingDate: z.string().datetime().optional(), // Untuk booking jasa
+    bookingDate: z.string().datetime().optional(),
+    paymentMethod: z.enum(["qris", "online"]).default("online"),
+    bookingSlotId: z.string().optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

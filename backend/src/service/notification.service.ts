@@ -53,7 +53,7 @@ Terima kasih!`;
         const details = this.formatOrderDetails(order);
         const message = `✅ *Pembayaran Berhasil*
 
-Terima kasih, *${order.guestCustomer.name}*! Pembayaran untuk pesanan Anda telah kami terima.
+Terima kasih, *${order.guestCustomer.name.trim()}*! Pembayaran untuk pesanan Anda telah kami terima.
 
 ${details}`;
 
@@ -89,7 +89,7 @@ Status pesanan Anda \`#${orderId}\` telah diperbarui menjadi: *${status}*.`;
 
         let message = `⏳ *Pengingat Pembayaran*
 
-Hai *${order.guestCustomer.name}*, pesanan Anda masih menunggu penyelesaian pembayaran.
+Hai *${order.guestCustomer.name.trim()}*, pesanan Anda masih menunggu penyelesaian pembayaran.
 
 ${details}`;
 

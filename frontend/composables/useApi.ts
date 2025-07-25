@@ -7,7 +7,8 @@ export function useApi<T>(
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE',
     query?: Record<string, any>,
     body?: any,
-    lazy?: boolean
+    lazy?: boolean,
+    immediate?: boolean
   } = {}
 ) {
   const config = useRuntimeConfig()
@@ -19,15 +20,13 @@ export function useApi<T>(
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 
-  // console.log("useApi called with endpoint:", endpoint, "and options:", options);
-  
-  // const backend = config.public.backendUrl
-  // masih dummy
-  return useFetch<ApiResponse<T>>(`${endpoint}`, {
+  return useFetch<ApiResponse<T>>(endpoint, {
+    baseURL: config.public.apiBaseUrl,
     method: options.method ?? 'GET',
     query: options.query,
     body: options.body,
     headers,
     lazy: options.lazy ?? false,
+    immediate: options.immediate ?? true,
   })
 }

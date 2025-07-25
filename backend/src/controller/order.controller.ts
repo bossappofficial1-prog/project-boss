@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
 import { ResponseUtil } from "../utils/response";
 import { HttpStatus } from "../constants/http-status";
-import { createOrderService, getOrderByIdService, refundOrderService, createOrderAndMidtransTransactionService, updateOrderStatusService, completeServiceOrderService } from "../service/order.service";
+import { getOrderByIdService, refundOrderService, createOrderAndMidtransTransactionService, updateOrderStatusService, completeServiceOrderService } from "../service/order.service";
 import { ReceiptService } from "../service/receipt.service";
 
 export const updateOrderStatusController = asyncHandler(async (req: Request, res: Response) => {
@@ -29,14 +29,13 @@ export const getOrderReceiptController = asyncHandler(async (req: Request, res: 
 
 export const createOrderController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body;
-    const { paymentMethod } = payload; // paymentMethod masih dari payload
-    const { order, midtransTransaction } = await createOrderAndMidtransTransactionService(payload, paymentMethod || 'online');
+    const { order, midtransTransaction } = await createOrderAndMidtransTransactionService(payload);
     return ResponseUtil.success(res, {
         orderId: order.id,
         totalAmount: order.totalAmount,
         midtransTransactionToken: midtransTransaction.token,
         midtransRedirectUrl: midtransTransaction.redirect_url,
-    }, HttpStatus.CREATED);
+    });
 });
 
 export const completeOrderController = asyncHandler(async (req: Request, res: Response) => {

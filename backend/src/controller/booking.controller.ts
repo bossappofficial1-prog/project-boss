@@ -1,44 +1,42 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
 import { ResponseUtil } from "../utils/response";
-import { HttpStatus } from "../constants/http-status";
 import {
     createBookingSlotService,
     deleteBookingSlotService,
     getBookingSlotByIdService,
     getBookingSlotsByProductIdService,
-    updateBookingSlotService,
-    createBookingAndMidtransTransactionService
+    updateBookingSlotService
 } from "../service/booking.service";
+import { CreateBookingSlotInput, UpdateBookingSlotInput } from "../schemas/booking.schema";
 
 export const createBookingSlotController = asyncHandler(async (req: Request, res: Response) => {
-    const payload = req.body;
-    const { orderId } = req.params; // Assuming orderId is passed as a param for booking
-    const { bookingSlot, midtransTransaction } = await createBookingAndMidtransTransactionService(payload, orderId);
-    return ResponseUtil.success(res, { bookingSlot, midtransTransaction }, HttpStatus.CREATED);
+    const payload: CreateBookingSlotInput = req.body;
+    const bookingSlot = await createBookingSlotService(payload);
+    return ResponseUtil.success(res, bookingSlot);
 });
 
 export const getBookingSlotByIdController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const bookingSlot = await getBookingSlotByIdService(id);
-    return ResponseUtil.success(res, bookingSlot);
+    const slot = await getBookingSlotByIdService(id);
+    return ResponseUtil.success(res, slot);
 });
 
 export const getBookingSlotsByProductIdController = asyncHandler(async (req: Request, res: Response) => {
     const { productId } = req.params;
-    const bookingSlots = await getBookingSlotsByProductIdService(productId);
-    return ResponseUtil.success(res, bookingSlots);
+    const slots = await getBookingSlotsByProductIdService(productId);
+    return ResponseUtil.success(res, slots);
 });
 
 export const updateBookingSlotController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const payload = req.body;
+    const payload: UpdateBookingSlotInput = req.body;
     const bookingSlot = await updateBookingSlotService(id, payload);
     return ResponseUtil.success(res, bookingSlot);
 });
 
 export const deleteBookingSlotController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const bookingSlot = await deleteBookingSlotService(id);
-    return ResponseUtil.success(res, bookingSlot);
+    await deleteBookingSlotService(id);
+    return ResponseUtil.success(res, { message: "Booking slot deleted successfully." });
 });

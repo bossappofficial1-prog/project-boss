@@ -1,53 +1,116 @@
 <script setup>
-const footerLinks = [
+const currentYear = new Date().getFullYear()
+
+// Minimalis - tidak perlu banyak links
+// Menyimpan legal links saja
+
+const legalLinks = [
+  { name: 'Syarat & Ketentuan', href: '/terms' },
+  { name: 'Kebijakan Privasi', href: '/privacy' },
+  { name: 'Cookies', href: '/cookies' }
+]
+
+const socialLinks = [
   {
-    icon: 'lucide:mail',
-    label: 'Email',
-    link: 'mailto:halo@boss.id'
+    name: 'Facebook',
+    icon: 'lucide:facebook',
+    href: 'https://facebook.com/boss',
+    color: 'hover:text-blue-600'
   },
   {
-    icon: 'lucide:phone',
-    label: 'Telepon',
-    link: 'tel:+6281234567890'
+    name: 'Twitter',
+    icon: 'lucide:twitter',
+    href: 'https://twitter.com/boss',
+    color: 'hover:text-blue-400'
   },
   {
-    icon: 'lucide:map-pin',
-    label: 'Alamat',
-    link: 'https://goo.gl/maps/yourlocation'
+    name: 'Instagram',
+    icon: 'lucide:instagram',
+    href: 'https://instagram.com/boss',
+    color: 'hover:text-pink-600'
+  },
+  {
+    name: 'LinkedIn',
+    icon: 'lucide:linkedin',
+    href: 'https://linkedin.com/company/boss',
+    color: 'hover:text-blue-700'
+  },
+  {
+    name: 'YouTube',
+    icon: 'lucide:youtube',
+    href: 'https://youtube.com/boss',
+    color: 'hover:text-red-600'
   }
 ]
 </script>
 
 <template>
-  <footer class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 md:px-6">
+  <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
     <div class="max-w-7xl mx-auto px-4 py-12">
-      <div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-          <!-- Company Info -->
-          <div class="space-y-4 content-center justify-center">
-            <div class="flex justify-center">
-              <Icon name="boss:logo-color-v" class="dark:hidden"/>
-              <Icon name="boss:logo-text-white" class="hidden dark:block"/>
-            </div>
+      <!-- Logo Center Top -->
+      <div class="flex justify-center mb-10">
+        <Icon name="boss:logo-color-v" class="dark:hidden h-14 w-auto" />
+        <Icon name="boss:logo-text-white" class="hidden dark:block h-14 w-auto" />
+      </div>
 
-            <div class="flex space-x-3">
-              <a
-                v-for="item in footerLinks"
-                :key="item.label"
-                :href="item.link"
-                target="_blank"
-                rel="noopener"
-                class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition"
-                :title="item.label"
-              >
-                <Icon :name="item.icon" class="w-5 h-5 text-gray-600 dark:text-gray-300" />
-              </a>
-            </div>
+      <!-- Main Footer Content - Minimalist -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Left: Contact Info -->
+        <div class="space-y-4">
+          <div class="flex items-center space-x-3 text-gray-600 dark:text-gray-400">
+            <Icon name="lucide:mail" size="18" class="text-primary-600 dark:text-primary-400" />
+            <a href="mailto:halo@boss.id"
+              class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200">
+              halo@boss.id
+            </a>
+          </div>
+          <div class="flex items-center space-x-3 text-gray-600 dark:text-gray-400">
+            <Icon name="lucide:phone" size="18" class="text-primary-600 dark:text-primary-400" />
+            <a href="tel:+6281234567890"
+              class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200">
+              +62 812-3456-7890
+            </a>
+          </div>
+          <div class="flex items-start space-x-3 text-gray-600 dark:text-gray-400">
+            <Icon name="lucide:map-pin" size="18" class="text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
+            <span>
+              Jl. Teknologi No. 123<br>
+              Jakarta Selatan, Indonesia
+            </span>
           </div>
 
-          <div class="text-sm text-gray-600 dark:text-gray-400">
-            © 2025 BOSS. All rights reserved.
+          <!-- Social Media -->
+          <div class="flex space-x-3 pt-2">
+            <a v-for="social in socialLinks" :key="social.name" :href="social.href" target="_blank"
+              rel="noopener noreferrer"
+              class="p-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-all duration-200 hover:scale-110"
+              :class="social.color" :title="social.name">
+              <Icon :name="social.icon" size="18" />
+            </a>
           </div>
+        </div>
+
+        <!-- Right: Description -->
+        <div class="space-y-4 md:text-right">
+          <p class="text-gray-600 dark:text-gray-400 leading-relaxed md:ml-auto md:max-w-md">
+            Platform digital terdepan yang membantu UMKM Indonesia mengelola bisnis,
+            menerima pembayaran, dan berkembang dengan teknologi modern.
+          </p>
+
+          <!-- Simple Links -->
+          <div class="flex flex-wrap gap-x-6 gap-y-2 md:justify-end pt-2">
+            <NuxtLink v-for="link in legalLinks" :key="link.name" :to="link.href"
+              class="text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200">
+              {{ link.name }}
+            </NuxtLink>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Copyright -->
+      <div class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700 text-center">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          © {{ currentYear }} BOSS. All rights reserved. Made with ❤️ in Indonesia.
         </div>
       </div>
     </div>
