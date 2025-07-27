@@ -110,7 +110,7 @@ const socialLinks = [
       <!-- Bottom Copyright -->
       <div class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700 text-center">
         <div class="text-sm text-gray-600 dark:text-gray-400">
-          © {{ currentYear }} BOSS
+          © {{ currentYear }} BOSS. All rights reserved. Made with ❤️ in Indonesia.
         </div>
       </div>
     </div>

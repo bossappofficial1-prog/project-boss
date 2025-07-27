@@ -38,12 +38,8 @@ export default defineNuxtConfig({
       title: 'BOSS',
       meta: [
         { name: 'author', content: 'BOSS Team' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-        { name: 'description', content: 'BOSS - Business One Stop System' },
-        { name: 'mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-        { name: 'theme-color', content: '#dc2626' }
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: 'BOSS - Business One Stop System' }
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/images/logo-color.svg' }
@@ -56,11 +52,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:6789',
-      midtransClientKey: process.env.NUXT_PUBLIC_MIDTRANS_CLIENT_KEY,
-      appName: process.env.NUXT_PUBLIC_APP_NAME || 'BOSS',
-      appVersion: process.env.NUXT_PUBLIC_APP_VERSION || '1.0.0',
-      baseUrl: process.env.NUXT_PUBLIC_BASE_URL || 'http://localhost:3000',
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL,
     },
   },
 });
