@@ -1,9 +1,22 @@
 import { db } from '../config/prisma';
 import { AppError } from '../errors/app-error';
 import { HttpStatus } from '../constants/http-status';
-import { snap, coreApi } from '../config/midtrans'; // Gunakan client midtrans yang ada
+import { snap, coreApi } from '../config/midtrans';
 import { config } from '../config';
 import { WithdrawalStatus } from '@prisma/client';
+import axios from 'axios';
+
+if (!process.env.XENDIT_SECRET_KEY) {
+    throw new Error('XENDIT_SECRET_KEY is not defined in environment variables');
+}
+
+const xenditApi = axios.create({
+    baseURL: 'https://api.xendit.co',
+    headers: {
+        Authorization: `Basic ${Buffer.from(process.env.XENDIT_SECRET_KEY + ':').toString('base64')}`,
+        'Content-Type': 'application/json',
+    },
+});
 
 export async function calculateWithdrawalAmount(businessId: string) {
     // Hitung total dana yang bisa ditarik
@@ -244,5 +257,147 @@ export async function getWithdrawalHistory(businessId: string) {
     return await db.withdrawal.findMany({
         where: { businessId },
         orderBy: { createdAt: 'desc' }
+    });
+}
+
+export async function processWithdrawalWithXendit(withdrawalId: string) {
+    const withdrawal = await db.withdrawal.findUnique({
+        where: { id: withdrawalId },
+        include: {
+            business: true
+        }
+    });
+
+    if (!withdrawal) {
+        throw new AppError('Withdrawal request not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (withdrawal.status !== 'PENDING') {
+        throw new AppError(`Cannot process withdrawal with status ${withdrawal.status}`, HttpStatus.BAD_REQUEST);
+    }
+
+    const { business } = withdrawal;
+    if (!business.bankAccount || !business.bankName || !business.accountHolder) {
+        throw new AppError('Business bank account information is incomplete. Please update it in your business settings.', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+        // Create payout using Xendit
+        const { data: payoutResponse } = await xenditApi.post('/v2/disbursements', {
+            reference_id: `withdrawal-${withdrawalId}`,
+            amount: withdrawal.finalAmount,
+            currency: 'IDR',
+            channel_code: `ID_${mapBankNameToXenditCode(business.bankName)}`,
+            channel_properties: {
+                account_holder_name: business.accountHolder,
+                account_number: business.bankAccount
+            },
+            description: `Withdrawal for ${business.name}`
+        });
+
+        // Update withdrawal status
+        await db.withdrawal.update({
+            where: { id: withdrawalId },
+            data: {
+                status: (payoutResponse.status === 'PENDING' ? 'PROCESSING' : 'PENDING') as WithdrawalStatus,
+                processedAt: new Date(),
+                notes: `Xendit Payout ID: ${payoutResponse.id}`
+            }
+        });
+
+        return payoutResponse;
+    } catch (error: any) {
+        console.error('Xendit Payout Error:', error.message);
+        await db.withdrawal.update({
+            where: { id: withdrawalId },
+            data: {
+                status: 'REJECTED',
+                notes: `Xendit Payout Failed: ${error.message}`
+            }
+        });
+        throw new AppError('Failed to process payout with Xendit', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+
+// Helper function to map bank names to Xendit channel codes
+function mapBankNameToXenditCode(bankName: string): string {
+    const bankCodeMap: Record<string, string> = {
+        'BCA': 'BCA',
+        'BNI': 'BNI',
+        'BRI': 'BRI',
+        'MANDIRI': 'MANDIRI',
+        'PERMATA': 'PERMATA',
+        // Add more bank mappings as needed
+    };
+
+    const code = bankCodeMap[bankName.toUpperCase()];
+    if (!code) {
+        throw new AppError(`Unsupported bank: ${bankName}`, HttpStatus.BAD_REQUEST);
+    }
+    return code;
+}
+
+// Webhook handler for Xendit payout status updates
+export async function handleXenditPayoutWebhook(payload: any, callbackToken?: string) {
+    // Validate Xendit callback token
+    const webhookToken = process.env.XENDIT_WEBHOOK_TOKEN;
+    if (!webhookToken || callbackToken !== webhookToken) {
+        console.error('Invalid webhook token received');
+        throw new AppError('Invalid webhook signature', HttpStatus.UNAUTHORIZED);
+    }
+
+    // Validate webhook payload
+    if (!payload.event || !payload.data) {
+        console.warn('Invalid webhook payload received:', payload);
+        return;
+    }
+
+    const { event, data } = payload;
+    const { reference_id, status, id: xenditPayoutId } = data;
+
+    // Log webhook event
+    console.log(`Received Xendit webhook event: ${event}`, {
+        reference_id,
+        status,
+        xenditPayoutId
+    });
+
+    if (!reference_id?.startsWith('withdrawal-')) {
+        console.log('Not our withdrawal reference:', reference_id);
+        return; // Not our withdrawal
+    }
+
+    const withdrawalId = reference_id.replace('withdrawal-', '');
+    const withdrawal = await db.withdrawal.findUnique({
+        where: { id: withdrawalId }
+    });
+
+    if (!withdrawal) {
+        console.warn(`Webhook received for unknown withdrawal: ${withdrawalId}`);
+        return;
+    }
+
+    // Map Xendit status to our status
+    let newStatus: WithdrawalStatus;
+    switch (status?.toUpperCase()) {
+        case 'SUCCEEDED':
+            newStatus = 'COMPLETED';
+            break;
+        case 'FAILED':
+            newStatus = 'REJECTED';
+            break;
+        case 'PENDING':
+            newStatus = 'PROCESSING' as WithdrawalStatus;
+            break;
+        default:
+            newStatus = withdrawal.status;
+    }
+
+    return db.withdrawal.update({
+        where: { id: withdrawalId },
+        data: {
+            status: newStatus,
+            notes: `Updated via Xendit webhook. Xendit status: ${status}`
+        }
     });
 }

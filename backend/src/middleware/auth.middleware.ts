@@ -34,6 +34,7 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
     req.user = user;
     next();
 });
+
 export const authorize = (...roles: UserRole[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
         if (!req.user || !roles.includes(req.user.role)) {

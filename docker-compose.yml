@@ -49,6 +49,22 @@ services:
       - default
       - traefik-network
 
+  consumer:
+    build:
+      context: .
+      dockerfile: consumer/Dockerfile
+    container_name: project-boss-consumer
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_DATABASE}?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - default
+
 volumes:
   db_data:
 

@@ -15,6 +15,166 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
     return outlet;
 }
 
+interface Location {
+    latitude: number;
+    longitude: number;
+}
+
+function calculateDistance(point1: Location, point2: Location): number {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = toRadian(point2.latitude - point1.latitude);
+    const dLon = toRadian(point2.longitude - point1.longitude);
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadian(point1.latitude)) * Math.cos(toRadian(point2.latitude)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in kilometers
+}
+
+function toRadian(degree: number): number {
+    return degree * Math.PI / 180;
+}
+
+export async function findNearbyOutletsService(
+    latitude: number,
+    longitude: number,
+    radiusKm: number = 5,
+    page: number = 1,
+    limit: number = 10
+) {
+    // Validate coordinates
+    if (latitude < -90 || latitude > 90) {
+        throw new AppError('Invalid latitude. Must be between -90 and 90', HttpStatus.BAD_REQUEST);
+    }
+    if (longitude < -180 || longitude > 180) {
+        throw new AppError('Invalid longitude. Must be between -180 and 180', HttpStatus.BAD_REQUEST);
+    }
+    if (radiusKm <= 0) {
+        throw new AppError('Radius must be greater than 0', HttpStatus.BAD_REQUEST);
+    }
+    if (page < 1) {
+        throw new AppError('Page must be greater than 0', HttpStatus.BAD_REQUEST);
+    }
+    if (limit < 1) {
+        throw new AppError('Limit must be greater than 0', HttpStatus.BAD_REQUEST);
+    }
+
+    // Calculate bounding box for initial filtering
+    const latRadian = latitude * Math.PI / 180;
+    const degLatKm = 110.574; // Approximate degrees per km at the equator
+    const degLongKm = 111.320 * Math.cos(latRadian); // Adjust for latitude
+
+    const latDiff = radiusKm / degLatKm;
+    const longDiff = radiusKm / degLongKm;
+
+    // First, get outlets within the bounding box (rough filter)
+    const outlets = await db.outlet.findMany({
+        where: {
+            AND: [
+                { latitude: { gte: latitude - latDiff } },
+                { latitude: { lte: latitude + latDiff } },
+                { longitude: { gte: longitude - longDiff } },
+                { longitude: { lte: longitude + longDiff } }
+            ]
+        },
+        include: {
+            business: {
+                select: {
+                    name: true,
+                    description: true
+                }
+            },
+            products: {
+                where: {
+                    status: 'ACTIVE',
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    type: true,
+                    image: true,
+                    status: true
+                }
+            },
+            _count: {
+                select: {
+                    orders: true,
+                    products: true
+                }
+            }
+        }
+    });
+
+    // Calculate exact distances and filter
+    const outletsWithDistance = outlets
+        .map(outlet => {
+            if (!outlet.latitude || !outlet.longitude) return null;
+
+            const distance = calculateDistance(
+                { latitude, longitude },
+                { latitude: outlet.latitude, longitude: outlet.longitude }
+            );
+
+            // Only include outlets within the exact radius
+            if (distance > radiusKm) return null;
+
+            return {
+                ...outlet,
+                distance: Number(distance.toFixed(2)) // Round to 2 decimal places
+            };
+        })
+        .filter((outlet): outlet is NonNullable<typeof outlet> => outlet !== null)
+        .sort((a, b) => {
+            // Sort by distance first, then by number of orders
+            if (Math.abs(a.distance - b.distance) < 0.1) { // If distances are similar (within 100m)
+                return (b._count?.orders || 0) - (a._count?.orders || 0); // Sort by popularity
+            }
+            return a.distance - b.distance;
+        });
+
+    // Apply pagination
+    const skip = (page - 1) * limit;
+    const paginatedOutlets = outletsWithDistance.slice(skip, skip + limit);
+
+    return {
+        outlets: paginatedOutlets,
+        total: outletsWithDistance.length,
+        page,
+        limit,
+        totalPages: Math.ceil(outletsWithDistance.length / limit)
+    };
+}
+
+export async function updateOutletLocationService(outletId: string, ownerId: string, latitude: number, longitude: number) {
+    // Check ownership
+    const outlet = await OutletRepository.findById(outletId);
+    if (!outlet) {
+        throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    const business = await getBusinessByOwnerIdService(ownerId);
+    if (outlet.businessId !== business.id) {
+        throw new AppError("Anda tidak berhak mengupdate outlet ini.", HttpStatus.FORBIDDEN);
+    }
+
+    // Validate coordinates
+    if (latitude < -90 || latitude > 90) {
+        throw new AppError('Invalid latitude. Must be between -90 and 90', HttpStatus.BAD_REQUEST);
+    }
+    if (longitude < -180 || longitude > 180) {
+        throw new AppError('Invalid longitude. Must be between -180 and 180', HttpStatus.BAD_REQUEST);
+    }
+
+    return db.outlet.update({
+        where: { id: outletId },
+        data: { latitude, longitude }
+    });
+}
+
 export async function getOutletByIdService(id: string) {
     const outlet = await OutletRepository.findByIdWithProducts(id);
     if (!outlet) {

@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-gray-50 py-12">
+    <div class="min-h-screen bg-gray-50 py-12 pb-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Progress Steps -->
             <div class="max-w-4xl mx-auto mb-12">
@@ -132,9 +132,11 @@
             </div>
         </div>
     </div>
+    <AppBottomNav />
 </template>
 
 <script setup>
+import AppBottomNav from '@/components/app/AppBottomNav.vue'
 import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { useApi } from '@/composables/useApi'

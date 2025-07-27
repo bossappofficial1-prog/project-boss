@@ -49,5 +49,8 @@ export async function updateBankAccountService(businessId: string, ownerId: stri
         throw new AppError('You are not authorized to update this business', HttpStatus.FORBIDDEN);
     }
 
-    return BusinessRepository.update(businessId, data);
+    return BusinessRepository.update(businessId, {
+        ...data,
+        defaultTransactionFeeBearer: business?.defaultTransactionFeeBearer ?? "CUSTOMER"
+    });
 }

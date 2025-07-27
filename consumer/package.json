@@ -1,0 +1,29 @@
+{
+    "name": "boss-consumer",
+    "version": "1.0.0",
+    "main": "dist/src/worker-manager.js",
+    "scripts": {
+        "dev": "ts-node-dev --respawn --transpile-only -r dotenv/config --watch .env src/worker-manager.ts",
+        "build": "tsc",
+        "start": "node dist/src/worker-manager.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "dependencies": {
+        "amqplib": "^0.10.8",
+        "axios": "^1.10.0",
+        "dotenv": "^17.0.1",
+        "twilio": "^5.7.3",
+        "winston": "^3.17.0",
+        "winston-daily-rotate-file": "^5.0.0"
+    },
+    "devDependencies": {
+        "@types/amqplib": "^0.10.7",
+        "@types/axios": "^0.14.0",
+        "@types/node": "^24.0.10",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.8.3"
+    },
+    "author": "Pito Desri Pauzi",
+    "license": "MIT",
+    "description": "Consumer workers for BOSS project"
+}

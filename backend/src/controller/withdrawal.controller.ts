@@ -2,12 +2,14 @@ import { Request, Response } from 'express';
 import { ResponseUtil } from '../utils';
 import { HttpStatus } from '../constants/http-status';
 import { asyncHandler } from '../middleware/error.middleware';
+import { AppError } from '../errors/app-error';
 import {
     calculateWithdrawalAmount,
     requestWithdrawal,
     processWithdrawal,
     getWithdrawalHistory,
-    handleMidtransPayoutWebhook
+    handleMidtransPayoutWebhook,
+    handleXenditPayoutWebhook
 } from '../service/withdrawal.service';
 
 export const getWithdrawalCalculationController = asyncHandler(async (req: Request, res: Response) => {
@@ -34,6 +36,17 @@ export const getWithdrawalHistoryController = asyncHandler(async (req: Request, 
     const businessId = req.params.businessId;
     const history = await getWithdrawalHistory(businessId);
     return ResponseUtil.success(res, history, HttpStatus.OK);
+});
+
+export const xenditPayoutWebhookController = asyncHandler(async (req: Request, res: Response) => {
+    const callbackToken = req.headers['x-callback-token'];
+
+    if (!callbackToken || typeof callbackToken !== 'string') {
+        throw new AppError('Missing webhook signature', HttpStatus.UNAUTHORIZED);
+    }
+
+    await handleXenditPayoutWebhook(req.body, callbackToken);
+    return ResponseUtil.success(res, { message: 'Webhook processed successfully' }, HttpStatus.OK);
 });
 
 export const midtransPayoutWebhookController = asyncHandler(async (req: Request, res: Response) => {

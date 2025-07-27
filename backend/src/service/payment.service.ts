@@ -2,8 +2,6 @@ import { snap, coreApi } from '../config/midtrans';
 import { getOrderByIdService } from './order.service';
 import { db } from '../config/prisma';
 import { PaymentStatus, Order, OrderItem, Product, GuestCustomer, FeeBearer } from '@prisma/client';
-import { NotificationService } from './notification.service';
-import { getRabbitMQChannel } from '../config/rabbitmq';
 import { messagePublisher } from './message-publisher.service';
 
 type OrderWithDetails = Order & {
@@ -183,8 +181,9 @@ export async function handleMidtransNotificationService(notification: any) {
             orderStatus = 'READY'; // Langsung siap diambil/dikirim
         }
 
-        // Kirim notifikasi konfirmasi umum setelah semua logika selesai
-        NotificationService.sendOrderConfirmation(order as any);
+        // Terbitkan event bahwa status pesanan telah diperbarui.
+        // Consumer akan menangani pengiriman notifikasi konfirmasi.
+        await messagePublisher.publishOrderStatusUpdate(order.id, orderStatus);
 
     } else if (paymentStatus === PaymentStatus.FAILED) {
         orderStatus = 'CANCELLED';

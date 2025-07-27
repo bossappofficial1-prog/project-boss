@@ -35,7 +35,7 @@ export const QUEUE_NAMES = {
     PAYMENT_REMINDER: 'payment_reminder_queue'
 } as const;
 
-class MessagePublisher {
+class MessagePublisherService {
     private async ensureQueue(queueName: string) {
         try {
             const channel = getRabbitMQChannel();
@@ -103,19 +103,12 @@ class MessagePublisher {
         });
     }
 
-    async publishServiceOrderRecheck(orderId: string) {
-        await this.publish(QUEUE_NAMES.SERVICE_ORDER, {
-            type: 'SERVICE_ORDER_RECHECK',
-            payload: { orderId, trigger: 're-check' }
-        });
-    }
-
-    async publishPaymentReminder(orderId: string, expiresAt: Date) {
-        await this.publish(QUEUE_NAMES.PAYMENT_REMINDER, {
-            type: 'PAYMENT_REMINDER',
-            payload: { orderId, expiresAt }
+    async publishOrderStatusUpdate(orderId: string, status: string) {
+        await this.publish(QUEUE_NAMES.NOTIFICATION, {
+            type: 'ORDER_STATUS_UPDATE',
+            payload: { orderId, status }
         });
     }
 }
 
-export const messagePublisher = new MessagePublisher();
+export const messagePublisher = new MessagePublisherService();

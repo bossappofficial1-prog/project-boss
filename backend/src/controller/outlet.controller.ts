@@ -9,8 +9,39 @@ import {
     getOutletByIdService,
     getOutletsByBusinessIdService,
     getFeaturedOutletsService,
-    updateOutletService
+    updateOutletService,
+    findNearbyOutletsService,
+    updateOutletLocationService
 } from "../service/outlet.service";
+
+export const findNearbyOutletsController = asyncHandler(async (req: Request, res: Response) => {
+    const { latitude, longitude, radius, page, limit } = req.query;
+
+    const outlets = await findNearbyOutletsService(
+        parseFloat(latitude as string),
+        parseFloat(longitude as string),
+        radius ? parseFloat(radius as string) : undefined,
+        page ? parseInt(page as string) : undefined,
+        limit ? parseInt(limit as string) : undefined
+    );
+
+    return ResponseUtil.success(res, outlets, HttpStatus.OK);
+});
+
+export const updateOutletLocationController = asyncHandler(async (req: Request, res: Response) => {
+    const { outletId } = req.params;
+    const { latitude, longitude } = req.body;
+    const ownerId = req.user!.id;
+
+    const outlet = await updateOutletLocationService(
+        outletId,
+        ownerId,
+        parseFloat(latitude),
+        parseFloat(longitude)
+    );
+
+    return ResponseUtil.success(res, outlet, HttpStatus.OK);
+});
 
 export const createOutletController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body;

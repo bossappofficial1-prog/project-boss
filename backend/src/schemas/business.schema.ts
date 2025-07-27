@@ -6,6 +6,7 @@ export const createBusinessSchema = z.object({
     bankName: z.string(),
     bankAccount: z.string(),
     accountHolder: z.string(),
+    defaultTransactionFeeBearer: z.enum(["CUSTOMER", "OWNER"]).default("CUSTOMER")
 });
 
 export type CreateBusinessInput = z.infer<typeof createBusinessSchema>;
@@ -16,6 +17,7 @@ export const updateBusinessSchema = z.object({
     bankName: z.string().optional(),
     bankAccount: z.string().optional(),
     accountHolder: z.string().optional(),
+    defaultTransactionFeeBearer: z.enum(["CUSTOMER", "OWNER"]).default("CUSTOMER"),
 }).refine(data => Object.keys(data).length > 0, {
     message: "Minimal satu field harus diisi untuk update",
 });

@@ -15,12 +15,6 @@
     "db:studio": "npx prisma studio",
     "db:reset": "npx prisma migrate reset --force",
     "db:prepare": "npx prisma generate",
-    "workers": "ts-node-dev --respawn -r dotenv/config src/workers/worker-manager.ts",
-    "worker:notification": "ts-node-dev --respawn -r dotenv/config src/workers/notification.worker.ts",
-    "worker:service": "ts-node-dev --respawn -r dotenv/config src/workers/service-order.worker.ts",
-    "queue": "ts-node-dev --respawn -r dotenv/config src/queue.worker.ts",
-    "worker": "ts-node-dev --respawn -r dotenv/config src/worker.ts",
-    "reminder": "ts-node-dev src/payment.reminder.worker.ts",
     "docs:install": "npm install --no-save redoc-cli@^0.13.21",
     "docs:generate": "redoc-cli build openapi.json --output docs/index.html --title 'BOSS API Documentation'",
     "docs:serve": "redoc-cli serve openapi.json --watch --port 8080"
@@ -62,6 +56,7 @@
     "twilio": "^5.7.3",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
+    "xendit-node": "^7.0.0",
     "xlsx": "^0.18.5",
     "zod": "^3.25.74"
   },

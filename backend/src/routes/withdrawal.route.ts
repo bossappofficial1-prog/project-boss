@@ -5,13 +5,15 @@ import {
     requestWithdrawalController,
     processWithdrawalController,
     getWithdrawalHistoryController,
-    midtransPayoutWebhookController
+    midtransPayoutWebhookController,
+    xenditPayoutWebhookController
 } from '../controller/withdrawal.controller';
 
 const withdrawalRouter = Router();
 
-// Webhook dari Midtrans tidak memerlukan auth
+// Webhook endpoints tidak memerlukan auth
 withdrawalRouter.post('/webhooks/midtrans-payout', midtransPayoutWebhookController);
+withdrawalRouter.post('/webhooks/xendit-payout', xenditPayoutWebhookController);
 
 // Semua endpoint withdrawal memerlukan authentication
 withdrawalRouter.use(protect);

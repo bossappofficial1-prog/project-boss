@@ -150,14 +150,16 @@ model Business {
 
 // Model untuk cabang/outlet dari sebuah bisnis
 model Outlet {
-  id        String   @id @default(uuid())
-  name      String
-  address   String?
-  phone     String?
-  createdAt DateTime @default(now())
-  image     String?  @default("https://press-parts-outlet.com/cdn/shop/files/non-photoproductimage_9c33376d-caaf-4116-b20a-3162aedf74f4_512x512.png?v=1687762014")
-  updatedAt DateTime @updatedAt
-
+  id         String   @id @default(uuid())
+  name       String
+  address    String?
+  phone      String?
+  createdAt  DateTime @default(now())
+  image      String?  @default("https://press-parts-outlet.com/cdn/shop/files/non-photoproductimage_9c33376d-caaf-4116-b20a-3162aedf74f4_512x512.png?v=1687762014")
+  updatedAt  DateTime @updatedAt
+  latitude   Float?
+  longitude  Float?
+  isOpen     Boolean  @default(false)
   // Relasi: Setiap outlet milik satu bisnis
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)

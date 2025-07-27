@@ -13,6 +13,8 @@ import morgan from "morgan"
 
 // Import rute promo
 import promoRouter from './routes/promo.route';
+// Import rute internal
+import internalApiRouter from './routes/internal-api.route';
 
 const app = express()
 
@@ -66,6 +68,7 @@ app.get("/", (req, res) => {
 
 app.use(App.API_PREFIX, apiRouter)
 app.use(`${App.API_PREFIX}/promos`, promoRouter); // Daftarkan rute promo
+app.use(`${App.API_PREFIX}/internal`, internalApiRouter); // Daftarkan rute internal
 
 app.use(notFound)
 app.use(errorHandler)

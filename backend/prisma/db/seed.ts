@@ -1,5 +1,5 @@
 import { PrismaClient, ProductType, UserRole } from '@prisma/client';
-import { BcryptUtil } from '../../src/utils';
+import { BcryptUtil, generateOutletCode } from '../../src/utils';
 
 const prisma = new PrismaClient();
 
@@ -44,6 +44,11 @@ async function main() {
             bankName: 'BCA',
             bankAccount: '1234567890',
             accountHolder: 'John Doe',
+            wallet: {
+                create: {
+                    balance: 0
+                }
+            }
         },
     });
     console.log(`🏢 Business created: ${business.name}`);
@@ -51,19 +56,27 @@ async function main() {
     // 4. Buat beberapa Outlet
     const outlet1 = await prisma.outlet.create({
         data: {
+            id: generateOutletCode("Kopi Kenangan Jiwa", 16),
             name: 'Kopi Kenangan Jiwa - Cabang Sudirman',
             address: 'Jl. Jenderal Sudirman No. 1, Jakarta',
             phone: '081234567890',
+            isOpen: true,
             businessId: business.id,
+            latitude: -6.224073878466322,
+            longitude: 106.80863730039984
         },
     });
 
     const outlet2 = await prisma.outlet.create({
         data: {
+            id: generateOutletCode("Kopi Jiwa", 16),
             name: 'Kopi Kenangan Jiwa - Cabang Thamrin',
             address: 'Jl. M.H. Thamrin No. 2, Jakarta',
             phone: '081234567891',
+            isOpen: true,
             businessId: business.id,
+            latitude: -6.193857396341259,
+            longitude: 106.82308775619935
         },
     });
     console.log(`🏪 Outlets created: ${outlet1.name}, ${outlet2.name}`);
@@ -74,7 +87,7 @@ async function main() {
         data: [
             { name: 'Kopi Susu Gula Aren', price: 18000, type: ProductType.GOODS, quantity: 100, outletId: outlet1.id },
             { name: 'Croissant Coklat', price: 22000, type: ProductType.GOODS, quantity: 50, outletId: outlet1.id },
-            { name: 'Jasa Barista 1 Jam', price: 150000, type: ProductType.SERVICE, quantity: 5, outletId: outlet1.id },
+            { name: 'Jasa Barista 1 Jam', price: 150000, type: ProductType.SERVICE, outletId: outlet1.id },
         ],
     });
 
