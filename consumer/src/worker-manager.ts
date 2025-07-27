@@ -1,12 +1,13 @@
 import { notificationWorker } from './notification.worker';
 import { serviceOrderWorker } from './service-order.worker';
+import { emailWorker } from './email.worker'; // Impor worker baru
 import logger from './utils/logger'; // Menggunakan logger baru
 
 class WorkerManager {
     private workers = {
         notification: notificationWorker,
-        serviceOrder: serviceOrderWorker
-        // Di sini kita bisa menambahkan paymentReminderWorker jika ingin dikelola bersama
+        serviceOrder: serviceOrderWorker,
+        email: emailWorker, // Daftarkan worker baru
     };
 
     async startAll() {
@@ -19,7 +20,8 @@ class WorkerManager {
         try {
             await Promise.all([
                 this.workers.notification.start(),
-                this.workers.serviceOrder.start()
+                this.workers.serviceOrder.start(),
+                this.workers.email.start(), // Jalankan worker baru
             ]);
 
             logger.info('All workers started successfully', {

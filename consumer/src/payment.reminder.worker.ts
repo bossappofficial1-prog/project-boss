@@ -1,7 +1,7 @@
 import apiClient from './lib/api-client';
 import logger from './utils/logger';
 import { config } from './config';
-import NotificationService from './services/notification-service';
+import { NotificationService } from './service/notification.service';
 
 const CHECK_INTERVAL_MS = 60 * 1000; // Jalankan setiap 1 menit
 

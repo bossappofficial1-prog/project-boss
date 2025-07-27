@@ -25,7 +25,7 @@ export async function getUserByEmailService(email: string, ignoreUserId?: string
 }
 
 import { CodeGeneratorUtil, DateUtil } from "../utils";
-import { EmailService } from "./email.service";
+import { messagePublisher } from "./message-publisher.service";
 
 export async function createUserService(data: CreateUserInput) {
     data.password = (await BcryptUtil.hash(data.password))!
@@ -39,13 +39,8 @@ export async function createUserService(data: CreateUserInput) {
         verificationCodeExpires,
     });
 
-    // Send verification email
-    const sendEmail = await EmailService.sendEmail({
-        to: user.email,
-        subject: 'Verifikasi Akun Anda',
-        text: `Kode verifikasi Anda adalah: ${verificationCode}`,
-        html: `<p>Kode verifikasi Anda adalah: <strong>${verificationCode}</strong></p>`,
-    });
+    // Terbitkan event untuk mengirim email verifikasi
+    await messagePublisher.publishSendVerificationEmail(user.email, verificationCode);
 
     return { ...user, password: '[REDACTED]' }
 }
