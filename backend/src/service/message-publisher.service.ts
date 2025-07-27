@@ -78,6 +78,13 @@ class MessagePublisherService {
         });
     }
 
+    async publishServiceOrderRecheck(orderId: string) {
+        await this.publish(EXCHANGE_NAMES.SERVICE_ORDER, '', {
+            type: 'SERVICE_ORDER_RECHECK',
+            payload: { orderId }
+        });
+    }
+
     async publishOrderStatusUpdate(orderId: string, status: string) {
         await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
             type: 'ORDER_STATUS_UPDATE',
