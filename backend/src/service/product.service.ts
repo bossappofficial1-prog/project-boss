@@ -34,7 +34,7 @@ export async function getProductByIdService(id: string) {
 
 export async function getProductsByOutletIdService(outletId: string, q?: string) {
     const products = await ProductRepository.findByOutletId(outletId, q);
-    return { products };
+    return products;
 }
 
 export async function updateProductService(id: string, data: UpdateProductInput) {
