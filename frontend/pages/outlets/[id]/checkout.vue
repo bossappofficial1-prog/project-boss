@@ -1,142 +1,224 @@
 <template>
-    <div class="min-h-screen bg-gray-50 py-12 pb-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Progress Steps -->
-            <div class="max-w-4xl mx-auto mb-12">
-                <div class="flex items-center justify-center space-x-4">
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center">
-                            <i class="fas fa-shopping-cart text-sm"></i>
-                        </div>
-                        <div class="ml-2 text-sm font-medium text-indigo-600">Keranjang</div>
-                    </div>
-                    <div class="w-16 h-0.5 bg-indigo-600"></div>
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center">
-                            <i class="fas fa-credit-card text-sm"></i>
-                        </div>
-                        <div class="ml-2 text-sm font-medium text-indigo-600">Pembayaran</div>
-                    </div>
-                    <div class="w-16 h-0.5 bg-gray-200"></div>
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center">
-                            <i class="fas fa-check text-sm"></i>
-                        </div>
-                        <div class="ml-2 text-sm font-medium text-gray-400">Selesai</div>
-                    </div>
-                </div>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <div class="max-w-4xl mx-auto px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <button 
+              @click="$router.back()" 
+              class="w-10 h-10 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg flex items-center justify-center transition-colors duration-200"
+            >
+              <Icon name="lucide:arrow-left" class="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            </button>
+            <div>
+              <h1 class="text-xl font-bold text-gray-900 dark:text-white">Checkout</h1>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Selesaikan pembayaran Anda</p>
             </div>
-
-            <div class="max-w-4xl mx-auto">
-                <div class="bg-white shadow-sm rounded-xl overflow-hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-gray-200">
-                        <!-- Order Summary -->
-                        <div class="p-6 md:col-span-3 space-y-6">
-                            <div class="flow-root">
-                                <h2 class="text-lg font-medium text-gray-900 mb-6">Ringkasan Pesanan</h2>
-                                <ul class="divide-y divide-gray-200">
-                                    <li v-for="item in cartStore.items" :key="item.product.id" class="py-4 flex">
-                                        <div class="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
-                                            <img :src="item.product.image || '/images/default-product.png'"
-                                                :alt="item.product.name" class="w-full h-full object-cover">
-                                        </div>
-                                        <div class="ml-4 flex-1">
-                                            <div class="flex justify-between">
-                                                <h3 class="text-sm font-medium text-gray-900">{{ item.product.name }}
-                                                </h3>
-                                                <p class="text-sm font-medium text-gray-900">
-                                                    {{ new Intl.NumberFormat('id-ID', {
-                                                        style: 'currency', currency:
-                                                            'IDR'
-                                                    }).format(item.product.price * item.quantity) }}
-                                                </p>
-                                            </div>
-                                            <p class="mt-1 text-sm text-gray-500">Qty: {{ item.quantity }}</p>
-                                        </div>
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <!-- Price Summary -->
-                            <div class="border rounded-xl bg-gray-50/50 p-4">
-                                <h3 class="text-sm font-medium text-gray-900 mb-4">Rincian Pembayaran</h3>
-                                <div class="space-y-3">
-                                    <div class="flex justify-between text-sm">
-                                        <p class="text-gray-500">Subtotal Produk</p>
-                                        <p class="font-medium text-gray-900">
-                                            {{ formatPrice(subtotal) }}
-                                        </p>
-                                    </div>
-                                    <div class="flex justify-between text-sm">
-                                        <div class="flex items-center">
-                                            <p class="text-gray-500">Biaya Platform (3%)</p>
-                                            <i class="fas fa-info-circle text-gray-400 ml-1 cursor-help"
-                                                title="Biaya layanan platform untuk pengembangan sistem"></i>
-                                        </div>
-                                        <p class="font-medium text-gray-900">
-                                            {{ formatPrice(platformFee) }}
-                                        </p>
-                                    </div>
-                                    <div class="flex justify-between text-sm">
-                                        <div class="flex items-center">
-                                            <p class="text-gray-500">Biaya Payment Gateway (1%)</p>
-                                            <i class="fas fa-info-circle text-gray-400 ml-1 cursor-help"
-                                                title="Biaya transaksi payment gateway"></i>
-                                        </div>
-                                        <p class="font-medium text-gray-900">
-                                            {{ formatPrice(paymentFee) }}
-                                        </p>
-                                    </div>
-                                    <div class="pt-3 border-t border-gray-200">
-                                        <div class="flex justify-between text-base font-medium">
-                                            <p class="text-gray-900">Total Pembayaran</p>
-                                            <p class="text-indigo-600">{{ formatPrice(total) }}</p>
-                                        </div>
-                                        <p class="mt-1 text-xs text-gray-500 text-right">Sudah termasuk semua biaya</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Form Guest Info & Tombol Bayar -->
-                        <div class="p-6 md:col-span-2 flex flex-col justify-center">
-                            <form @submit.prevent="handlePayment" class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Pemesan</label>
-                                    <input v-model="guestName" type="text" required placeholder="Nama lengkap"
-                                        class="w-full px-4 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500" />
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp</label>
-                                    <input v-model="guestPhone" type="tel" required placeholder="08xxxxxxxxxx"
-                                        class="w-full px-4 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500" />
-                                </div>
-                                <button type="submit" :disabled="isProcessing"
-                                    class="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-xl text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
-                                    <i class="fas fa-lock mr-2"></i>
-                                    {{ isProcessing ? 'Memproses...' : 'Bayar Sekarang' }}
-                                </button>
-                            </form>
-                            <p class="mt-4 text-sm text-center text-gray-500 flex items-center justify-center">
-                                <i class="fas fa-shield-alt text-indigo-600 mr-2"></i>
-                                Pembayaran aman & terenkripsi
-                            </p>
-                            <div v-if="paymentInstruction"
-                                class="mt-6 p-4 border rounded-xl bg-green-50 text-green-800">
-                                <h4 class="font-semibold mb-2">Instruksi Pembayaran</h4>
-                                <div v-html="paymentInstruction"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+          </div>
+          
+          <!-- Progress Indicator -->
+          <div class="hidden sm:flex items-center gap-2 text-sm">
+            <div class="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <div class="w-6 h-6 bg-red-600 dark:bg-red-500 rounded-full flex items-center justify-center">
+                <Icon name="lucide:shopping-cart" class="h-3 w-3 text-white" />
+              </div>
+              <span class="font-medium">Pembayaran</span>
             </div>
+            <div class="w-8 h-px bg-gray-300 dark:bg-gray-600"></div>
+            <div class="flex items-center gap-2 text-gray-400 dark:text-gray-500">
+              <div class="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                <Icon name="lucide:check" class="h-3 w-3" />
+              </div>
+              <span>Selesai</span>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
-    <AppBottomNav />
+
+    <div class="max-w-4xl mx-auto px-6 py-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Order Summary -->
+        <div class="lg:col-span-2">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Icon name="lucide:package" class="h-5 w-5 text-red-600 dark:text-red-400" />
+                Ringkasan Pesanan
+              </h2>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {{ cartStore.totalItems }} item{{ cartStore.totalItems > 1 ? 's' : '' }} dalam pesanan
+              </p>
+            </div>
+            
+            <div class="p-6">
+              <div class="space-y-4">
+                <div
+                  v-for="item in cartStore.items"
+                  :key="item.product.id"
+                  class="flex gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                >
+                  <!-- Product Image -->
+                  <div class="flex-shrink-0">
+                    <div class="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-lg overflow-hidden">
+                      <img
+                        v-if="item.product.image"
+                        :src="item.product.image"
+                        :alt="item.product.name"
+                        class="w-full h-full object-cover"
+                      />
+                      <div v-else class="w-full h-full flex items-center justify-center">
+                        <Icon name="lucide:image" class="h-6 w-6 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Product Details -->
+                  <div class="flex-1">
+                    <div class="flex justify-between items-start">
+                      <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white text-sm">
+                          {{ item.product.name }}
+                        </h3>
+                        <p v-if="item.product.description" class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                          {{ item.product.description }}
+                        </p>
+                        <div class="flex items-center gap-4 mt-2">
+                          <span class="text-sm text-gray-500 dark:text-gray-400">
+                            Qty: {{ item.quantity }}
+                          </span>
+                          <span v-if="item.bookingSlotId" class="text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-md">
+                            Booking Service
+                          </span>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <div class="font-semibold text-gray-900 dark:text-white">
+                          {{ formatPrice(item.product.price * item.quantity) }}
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                          {{ formatPrice(item.product.price) }} × {{ item.quantity }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Form & Summary -->
+        <div class="space-y-6">
+          <!-- Customer Information -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Icon name="lucide:user" class="h-5 w-5 text-red-600 dark:text-red-400" />
+              Informasi Pemesan
+            </h3>
+            
+            <form @submit.prevent="handlePayment" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nama Lengkap
+                </label>
+                <input
+                  v-model="guestName"
+                  type="text"
+                  required
+                  placeholder="Masukkan nama lengkap"
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
+                />
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nomor WhatsApp
+                </label>
+                <input
+                  v-model="guestPhone"
+                  type="tel"
+                  required
+                  placeholder="08xxxxxxxxxx"
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
+                />
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Notifikasi pesanan akan dikirim ke nomor ini
+                </p>
+              </div>
+
+              <!-- Payment Summary -->
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-6">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-3">Rincian Pembayaran</h4>
+                <div class="space-y-2">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
+                    <span class="text-gray-900 dark:text-white font-medium">{{ formatPrice(subtotal) }}</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <div class="flex items-center gap-1">
+                      <span class="text-gray-600 dark:text-gray-400">Biaya Platform (3%)</span>
+                      <Icon name="lucide:info" class="h-3 w-3 text-gray-400" />
+                    </div>
+                    <span class="text-gray-900 dark:text-white font-medium">{{ formatPrice(platformFee) }}</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <div class="flex items-center gap-1">
+                      <span class="text-gray-600 dark:text-gray-400">Biaya Payment (1%)</span>
+                      <Icon name="lucide:info" class="h-3 w-3 text-gray-400" />
+                    </div>
+                    <span class="text-gray-900 dark:text-white font-medium">{{ formatPrice(paymentFee) }}</span>
+                  </div>
+                  <div class="border-t border-gray-200 dark:border-gray-700 pt-2">
+                    <div class="flex justify-between">
+                      <span class="font-semibold text-gray-900 dark:text-white">Total</span>
+                      <span class="font-bold text-red-600 dark:text-red-400 text-lg">{{ formatPrice(total) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Payment Button -->
+              <button
+                type="submit"
+                :disabled="isProcessing || !guestName || !guestPhone"
+                class="w-full py-4 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+              >
+                <Icon v-if="isProcessing" name="lucide:loader-2" class="h-5 w-5 animate-spin" />
+                <Icon v-else name="lucide:credit-card" class="h-5 w-5" />
+                {{ isProcessing ? 'Memproses...' : 'Bayar Sekarang' }}
+              </button>
+            </form>
+
+            <!-- Security Badge -->
+            <div class="mt-4 text-center">
+              <div class="inline-flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
+                <Icon name="lucide:shield-check" class="h-4 w-4 text-green-500" />
+                <span>SSL Encrypted - Pembayaran Aman</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Instructions -->
+          <div v-if="paymentInstruction" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center flex-shrink-0">
+                <Icon name="lucide:check-circle" class="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div class="flex-1">
+                <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">Instruksi Pembayaran</h4>
+                <div class="text-green-800 dark:text-green-200 text-sm prose prose-sm max-w-none" v-html="paymentInstruction"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
-<script setup>
-import AppBottomNav from '@/components/app/AppBottomNav.vue'
+<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { useApi } from '@/composables/useApi'
@@ -156,67 +238,93 @@ const platformFee = computed(() => Math.round(subtotal.value * 0.03)) // 3% plat
 const paymentFee = computed(() => Math.round(subtotal.value * 0.01)) // 1% payment gateway fee
 const total = computed(() => subtotal.value + platformFee.value + paymentFee.value)
 
-function formatPrice(amount) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(amount)
+function formatPrice(amount: number): string {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount)
 }
 
 async function handlePayment() {
-    if (!guestName.value || !guestPhone.value) {
-        alert('Nama dan nomor WhatsApp wajib diisi')
-        return
+  if (!guestName.value || !guestPhone.value) {
+    alert('Nama dan nomor WhatsApp wajib diisi')
+    return
+  }
+  
+  try {
+    isProcessing.value = true
+
+    const { data, error } = await useApi('/api/v1/orders', {
+      method: 'POST',
+      body: {
+        outletId: route.params.id,
+        items: cartStore.items.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          bookingSlotId: item.bookingSlotId
+        })),
+        guestCustomer: {
+          name: guestName.value,
+          email: '', // opsional, bisa tambahkan input jika perlu
+          phone: guestPhone.value
+        }
+      }
+    })
+
+    if (error.value) {
+      throw new Error(error.value.message || 'Terjadi kesalahan saat memproses pembayaran')
     }
-    try {
-        isProcessing.value = true
 
-        const { data, error } = await useApi('/api/v1/orders', {
-            method: 'POST',
-            body: {
-                outletId: route.params.id,
-                items: cartStore.items.map(item => ({
-                    productId: item.product.id,
-                    quantity: item.quantity
-                })),
-                guestCustomer: {
-                    name: guestName.value,
-                    email: '', // opsional, bisa tambahkan input jika perlu
-                    phone: guestPhone.value
-                }
-            }
-        })
-
-        if (error.value) {
-            throw new Error(error.value.message || 'Terjadi kesalahan saat memproses pembayaran')
-        }
-
-        if (!data.value?.success) {
-            throw new Error(data.value?.message || 'Terjadi kesalahan saat memproses pembayaran')
-        }
-
-        // Asumsikan backend mengembalikan instruksi pembayaran custom (misal: VA, QR, atau instruksi manual)
-        const { paymentInstruction: instruksi, paymentInfo } = data.value.data || {}
-        if (instruksi) {
-            paymentInstruction.value = instruksi
-        } else if (paymentInfo) {
-            // fallback: render info pembayaran (misal: nomor VA, QR, dsb)
-            paymentInstruction.value = `<pre>${JSON.stringify(paymentInfo, null, 2)}</pre>`
-        } else {
-            paymentInstruction.value = 'Pesanan berhasil dibuat. Silakan cek WhatsApp Anda untuk instruksi pembayaran.'
-        }
-        cartStore.clearCart()
-    } catch (error) {
-        alert(error.message)
-    } finally {
-        isProcessing.value = false
+    if (!data.value?.success) {
+      throw new Error(data.value?.message || 'Terjadi kesalahan saat memproses pembayaran')
     }
+
+    // Asumsikan backend mengembalikan instruksi pembayaran custom
+    const responseData = data.value.data as any || {}
+    const { paymentInstruction: instruksi, paymentInfo } = responseData
+    if (instruksi) {
+      paymentInstruction.value = instruksi
+    } else if (paymentInfo) {
+      // fallback: render info pembayaran
+      paymentInstruction.value = `<pre>${JSON.stringify(paymentInfo, null, 2)}</pre>`
+    } else {
+      paymentInstruction.value = 'Pesanan berhasil dibuat. Silakan cek WhatsApp Anda untuk instruksi pembayaran.'
+    }
+    
+    cartStore.clearCart()
+  } catch (error: any) {
+    alert(error.message)
+  } finally {
+    isProcessing.value = false
+  }
 }
 
 // Redirect if cart is empty
 if (cartStore.isEmpty) {
-    router.push(`/outlets/${route.params.id}`)
+  router.push(`/outlets/${route.params.id}`)
 }
 </script>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.prose {
+  max-width: none;
+}
+
+.prose pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+}
+</style>
