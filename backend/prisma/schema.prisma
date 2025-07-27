@@ -38,6 +38,7 @@ enum OrderStatus {
   READY // Siap diambil (untuk barang) atau siap dimulai (untuk jasa)
   COMPLETED // Pesanan selesai
   CANCELLED // Pesanan dibatalkan
+  CONFIRMED // Tambahkan status baru di sini
 }
 
 enum WithdrawalStatus {

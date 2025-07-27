@@ -3,7 +3,8 @@ import {
     getExpiringTransactions,
     markReminderSent,
     getOrderDetails,
-    getOutletQueue
+    getOutletQueue,
+    updatePaymentStatus, // Impor controller baru
 } from '../controller/internal-api.controller';
 
 const router = Router();
@@ -19,5 +20,8 @@ router.get('/order/:orderId', getOrderDetails);
 
 // Endpoint untuk mendapatkan antrian outlet
 router.get('/outlet-queue/:outletId', getOutletQueue);
+
+// Endpoint untuk consumer memperbarui status pembayaran
+router.post('/orders/update-payment-status', updatePaymentStatus);
 
 export default router;

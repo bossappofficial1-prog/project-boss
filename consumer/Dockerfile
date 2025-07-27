@@ -21,26 +21,33 @@ RUN npx prisma generate --schema=./backend/prisma/schema.prisma
 RUN npm --prefix backend run build
 RUN npm --prefix consumer run build
 
+# --- Multi-stage build for smaller production image ---
+# Stage 1: Build and compile
+FROM node:20-alpine AS consumer_builder
+
+WORKDIR /app/consumer
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
 # Stage 2: Production runtime
-FROM node:20-alpine AS runner
+FROM node:20-alpine AS consumer_runner
 
-WORKDIR /app
+WORKDIR /app/consumer
 
-# Copy necessary files from builder
-COPY --from=builder /app/backend/package*.json ./backend/
-COPY --from=builder /app/backend/node_modules ./backend/node_modules
-COPY --from=builder /app/backend/dist ./backend/dist
-COPY --from=builder /app/backend/prisma ./backend/prisma
+# Copy only necessary files from the builder stage
+COPY --from=consumer_builder /app/consumer/package*.json ./
+COPY --from=consumer_builder /app/consumer/node_modules ./node_modules
+COPY --from=consumer_builder /app/consumer/dist ./dist
 
-COPY --from=builder /app/consumer/package*.json ./consumer/
-COPY --from=builder /app/consumer/node_modules ./consumer/node_modules
-COPY --from=builder /app/consumer/dist ./consumer/dist
-
-# Install production dependencies for consumer
-RUN cd consumer && npm install --omit=dev --no-fund --no-audit
-
-# Install OpenSSL for Prisma
+# Install OpenSSL for libraries that might need it (like Prisma's engine in the future)
 RUN apk add --no-cache openssl libstdc++ ca-certificates
 
-EXPOSE 4445
-CMD ["npm", "start", "--prefix", "consumer"]
+# No need to install dev dependencies in production
+# RUN npm install --omit=dev --no-fund --no-audit
+
+CMD ["npm", "start"]

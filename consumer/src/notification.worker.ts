@@ -13,7 +13,7 @@ interface OrderNotificationEvent {
     };
 }
 
-interface OrderDetails {
+export interface OrderDetails {
     id: string;
     orderStatus: string;
     guestCustomer: {
@@ -138,9 +138,9 @@ class NotificationWorker {
         const { orderId, status } = event.payload;
 
         try {
-            // 1. Panggil API backend HANYA untuk mendapatkan detail pesanan
-            const response = await apiClient.get<OrderDetails>(`/internal/order/${orderId}`);
-            const order = response.data;
+            // 1. Panggil API backend untuk mendapatkan detail pesanan
+            const response = await apiClient.get(`/internal/order/${orderId}`);
+            const order: any = response.data.data;
 
             if (!order.guestCustomer.phone) {
                 logger.warn('Order does not have a phone number, skipping notification', {
@@ -150,23 +150,29 @@ class NotificationWorker {
                 return;
             }
 
-            // 2. Panggil NotificationService LOKAL untuk mengirim notifikasi
+            // await NotificationService.send
             await NotificationService.sendOrderStatusUpdate(
                 order.guestCustomer.phone,
-                order.id,
-                order.orderStatus,
+                order,
+                status,
             );
 
-            logger.info(`Successfully sent status update for order ${orderId}`, {
+            logger.info(`Successfully sent status update for order ${orderId} to status ${status}`, {
                 component: 'NotificationWorker',
                 orderId,
             });
 
         } catch (error: any) {
+            // ULTIMATE DEBUGGING: Cetak objek error mentah ke konsol
+            console.log("RAW ERROR OBJECT IN CATCH BLOCK:", error);
+
+            // Tambahkan logging yang lebih detail di sini
             logger.error(`Failed to handle order status update for order ${orderId}`, {
                 component: 'NotificationWorker',
                 orderId,
-                error: error.response?.data || error.message,
+                errorMessage: error.message,
+                // Jika error berasal dari Axios, log detail responsnya
+                axiosError: error.response ? JSON.stringify(error.response.data, null, 2) : 'Not an Axios error',
             });
             // Melempar error akan menyebabkan pesan di-nack dan mungkin di-requeue
             throw error;

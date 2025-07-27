@@ -1,6 +1,7 @@
 import { notificationWorker } from './notification.worker';
 import { serviceOrderWorker } from './service-order.worker';
 import { emailWorker } from './email.worker'; // Impor worker baru
+import { paymentWorker } from './payment.worker'; // Impor worker baru
 import logger from './utils/logger'; // Menggunakan logger baru
 
 class WorkerManager {
@@ -8,6 +9,7 @@ class WorkerManager {
         notification: notificationWorker,
         serviceOrder: serviceOrderWorker,
         email: emailWorker, // Daftarkan worker baru
+        payment: paymentWorker, // Daftarkan worker baru
     };
 
     async startAll() {
@@ -22,6 +24,7 @@ class WorkerManager {
                 this.workers.notification.start(),
                 this.workers.serviceOrder.start(),
                 this.workers.email.start(), // Jalankan worker baru
+                this.workers.payment.start(), // Jalankan worker baru
             ]);
 
             logger.info('All workers started successfully', {

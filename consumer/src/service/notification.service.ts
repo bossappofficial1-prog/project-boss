@@ -50,10 +50,12 @@ Terima kasih!`;
         await this.sendWhatsAppMessage(phone, message);
     }
 
-    public static async sendOrderStatusUpdate(phone: string, orderId: string, status: string) {
-        const message = `🔔 *Update Status Pesanan*
+    public static async sendOrderStatusUpdate(phone: string, order: OrderWithDetails, status: string) {
+        let message = `🔔 *Update Status Pesanan*
 
-Status pesanan Anda \`#${orderId}\` telah diperbarui menjadi: *${status}*.`;
+Status pesanan Anda \`#${order.id}\` telah diperbarui menjadi: *${status}*.`;
+
+        message += `\n\n${this.formatOrderDetails(order)}`;
         await this.sendWhatsAppMessage(phone, message);
     }
 

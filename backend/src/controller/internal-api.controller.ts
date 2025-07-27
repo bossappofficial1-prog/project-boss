@@ -5,6 +5,7 @@ import { OrderRepository } from '../repositories/order.repository';
 import { getOrderByIdService } from '../service/order.service';
 import { asyncHandler } from '../middleware/error.middleware';
 import { ResponseUtil } from '../utils/response';
+import { handlePaymentSuccess, handlePaymentFailure } from '../service/payment-update.service';
 
 const REMINDER_BEFORE_EXPIRY_MS = 3 * 60 * 1000; // 3 menit
 
@@ -59,7 +60,9 @@ export const markReminderSent = asyncHandler(
 export const getOrderDetails = asyncHandler(
     async (req: Request, res: Response) => {
         const { orderId } = req.params;
+
         const order = await getOrderByIdService(orderId);
+
         if (!order) {
             throw new Error('Order not found');
         }
@@ -76,5 +79,21 @@ export const getOutletQueue = asyncHandler(
             orderBy: { createdAt: 'asc' },
         });
         return ResponseUtil.success(res, queue);
+    },
+);
+
+export const updatePaymentStatus = asyncHandler(
+    async (req: Request, res: Response) => {
+        console.log(req.body);
+
+        const { orderId, paymentStatus } = req.body;
+
+        if (paymentStatus === 'SUCCESS') {
+            await handlePaymentSuccess(orderId);
+        } else if (paymentStatus === 'FAILED') {
+            await handlePaymentFailure(orderId);
+        }
+
+        return ResponseUtil.success(res, { message: `Payment status for order ${orderId} updated.` });
     },
 );

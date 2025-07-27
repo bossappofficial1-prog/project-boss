@@ -12,15 +12,17 @@ type OrderNotificationEvent = BaseEvent<'ORDER_STATUS_UPDATE', { orderId: string
 type ServiceOrderEvent = BaseEvent<'SERVICE_ORDER_PROCESSING' | 'SERVICE_ORDER_RECHECK', { orderId: string; trigger?: string }>;
 type PaymentReminderEvent = BaseEvent<'PAYMENT_REMINDER', { orderId: string; expiresAt: Date }>;
 type VerificationEmailEvent = BaseEvent<'SEND_VERIFICATION_EMAIL', { to: string; code: string }>;
+type PaymentWebhookEvent = BaseEvent<'PAYMENT_WEBHOOK_RECEIVED', { source: 'midtrans' | 'xendit', payload: any }>;
 
 // Union type for all queue events, now including the email event
-export type QueueEvent = OrderNotificationEvent | ServiceOrderEvent | PaymentReminderEvent | VerificationEmailEvent;
+export type QueueEvent = OrderNotificationEvent | ServiceOrderEvent | PaymentReminderEvent | VerificationEmailEvent | PaymentWebhookEvent;
 
 // Exchange names as constants
 export const EXCHANGE_NAMES = {
     NOTIFICATION: 'notification_exchange',
     SERVICE_ORDER: 'service_order_exchange',
     EMAIL: 'email_exchange',
+    PAYMENT_WEBHOOK: 'payment_webhook_exchange',
 } as const;
 
 class MessagePublisherService {
@@ -87,6 +89,13 @@ class MessagePublisherService {
         await this.publish(EXCHANGE_NAMES.EMAIL, '', {
             type: 'SEND_VERIFICATION_EMAIL',
             payload: { to, code }
+        });
+    }
+
+    async publishPaymentWebhookReceived(payload: any, source: 'midtrans' | 'xendit') {
+        await this.publish(EXCHANGE_NAMES.PAYMENT_WEBHOOK, '', {
+            type: 'PAYMENT_WEBHOOK_RECEIVED',
+            payload: { source, payload }
         });
     }
 }

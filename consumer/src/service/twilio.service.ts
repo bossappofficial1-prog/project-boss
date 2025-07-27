@@ -13,8 +13,14 @@ export class TwilioService {
                 body
             });
             logger.info(`WhatsApp message sent to ${to}`, { component: 'TwilioService' });
-        } catch (error) {
-            logger.error(`Failed to send WhatsApp message to ${to}`, { component: 'TwilioService', error });
+        } catch (error: any) {
+            // Log pesan error utama untuk visibilitas yang lebih baik
+            logger.error(`Failed to send WhatsApp message to ${to}. Error: ${error.message}`, {
+                component: 'TwilioService',
+                // Log seluruh objek error sebagai JSON untuk detail lengkap
+                twilioError: JSON.stringify(error, null, 2)
+            });
+
             // Melempar error agar pemanggil (NotificationService) tahu bahwa pengiriman gagal
             // dan mekanisme retry dapat diaktifkan.
             throw error;

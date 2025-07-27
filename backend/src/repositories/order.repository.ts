@@ -65,8 +65,12 @@ export class OrderRepository {
         return db.order.findUnique({
             where: { id },
             include: {
-                items: { include: { product: true } },
-                guestCustomer: true,
+                items: {
+                    include: {
+                        product: true,
+                    },
+                },
+                guestCustomer: true, // <-- SELALU SERTAKAN INI
                 outlet: true,
                 bookingSlot: true,
             },
