@@ -1,6 +1,11 @@
 Mantap — clear sekali sekarang, Icikbos. Saya bikinkan langsung panduan teknis frontend-nya buat rekan developer lain, sesuai kondisi real yang kamu jelaskan.
 
 ---
+## testing
+```bash
+npx playwright test
+```
+
 
 ## 📑 **Panduan Teknis Frontend Project BOSS (Nuxt 3 + Tailwind)**
 

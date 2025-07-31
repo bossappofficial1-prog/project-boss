@@ -93,12 +93,9 @@ const submitForm = async () => {
   isLoading.value = true
   
   try {
-    const { data, error } = await useApi<{ message: string }>('/api/auth/register', {
+    const { data, error } = await useApi<{ message: string }>('/auth/register', {
       method: 'POST',
-      body: {
-        ...form.value,
-        role: 'OWNER'
-      }
+      body: (({ confirmPassword, ...rest }) => rest)(form.value)
     })
     
     if (error.value) {

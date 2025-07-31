@@ -17,7 +17,7 @@ interface StatItem {
 
 const searchQuery = ref('');
 
-const { data, pending, error, execute } = useApi<HomeData>('/api/v1/home', {
+const { data, pending, error, execute } = useApi<HomeData>('/home', {
   query: { search: searchQuery },
   lazy: true,
   immediate: false

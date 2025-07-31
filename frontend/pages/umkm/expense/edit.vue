@@ -29,9 +29,10 @@ onMounted(async () => {
       if (error.value) {
         console.error('Failed to fetch expense:', error.value)
         const toast = useToast()
-        toast.error({
+        toast.add({
           title: 'Error!',
-          message: 'Gagal memuat data pengeluaran.'
+          description: 'Gagal memuat data pengeluaran.',
+          color: 'error'
         })
         await navigateTo('/umkm/expense')
         return
@@ -48,9 +49,10 @@ onMounted(async () => {
     } catch (error) {
       console.error('Expense fetch error:', error)
       const toast = useToast()
-      toast.error({
+      toast.add({
         title: 'Error!',
-        message: 'Terjadi kesalahan saat memuat data pengeluaran.'
+        description: 'Terjadi kesalahan saat memuat data pengeluaran.',
+        color: 'error'
       })
       await navigateTo('/umkm/expense')
     } finally {
@@ -105,9 +107,10 @@ const submitForm = async () => {
     }
     
     const toast = useToast()
-    toast.success({
+    toast.add({
       title: 'Berhasil!',
-      message: 'Pengeluaran berhasil diperbarui'
+      description: 'Pengeluaran berhasil diperbarui',
+      color: 'success'
     })
     
     await navigateTo('/umkm/expense')

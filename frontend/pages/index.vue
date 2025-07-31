@@ -1,8 +1,8 @@
 <template>
-  <main class="min-h-screen" aria-label="Halaman utama BOSS">
+  <main class="h-screen" aria-label="Halaman utama BOSS">
     <!-- Hero Section -->
     <section
-      class="relative min-h-screen bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white overflow-hidden flex items-center justify-center"
+      class="relative h-screen bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white overflow-hidden flex items-center justify-center"
       aria-labelledby="hero-heading">
       <div class="absolute inset-0 bg-black/10" aria-hidden="true"></div>
       <!-- Floating animation elements -->

@@ -18,9 +18,10 @@ const fetchExpenses = async () => {
     if (error.value) {
       console.error('Failed to fetch expenses:', error.value)
       const toast = useToast()
-      toast.error({
+      toast.add({
         title: 'Error!',
-        message: 'Gagal memuat daftar pengeluaran.'
+        description: 'Gagal memuat daftar pengeluaran.',
+        color: 'error'
       })
       return
     }
@@ -28,9 +29,10 @@ const fetchExpenses = async () => {
   } catch (error) {
     console.error('Expenses fetch error:', error)
     const toast = useToast()
-    toast.error({
+    toast.add({
       title: 'Error!',
-      message: 'Terjadi kesalahan saat memuat daftar pengeluaran.'
+      description: 'Terjadi kesalahan saat memuat daftar pengeluaran.',
+      color: 'error'
     })
   } finally {
     isLoading.value = false
@@ -60,25 +62,28 @@ const deleteExpense = async (expenseId: string) => {
 
     if (error.value) {
       const toast = useToast()
-      toast.error({
+      toast.add({
         title: 'Error!',
-        message: error.value.data?.message || 'Gagal menghapus pengeluaran.'
+        description: error.value.data?.message || 'Gagal menghapus pengeluaran.',
+        color: 'error'
       })
       return
     }
 
     const toast = useToast()
-    toast.success({
+    toast.add({
       title: 'Berhasil!',
-      message: 'Pengeluaran berhasil dihapus.'
+      description: 'Pengeluaran berhasil dihapus.',
+      color: 'success'
     })
     fetchExpenses() // Refresh the list
   } catch (error) {
     console.error('Delete expense error:', error)
     const toast = useToast()
-    toast.error({
+    toast.add({
       title: 'Error!',
-      message: 'Terjadi kesalahan saat menghapus pengeluaran.'
+      description: 'Terjadi kesalahan saat menghapus pengeluaran.',
+      color: 'error'
     })
   } finally {
     isLoading.value = false

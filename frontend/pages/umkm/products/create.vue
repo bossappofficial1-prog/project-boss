@@ -91,9 +91,10 @@ const submitForm = async () => {
     }
     
     const toast = useToast()
-    toast.success({
+    toast.add({
       title: 'Berhasil!',
-      message: 'Produk berhasil dibuat'
+      description: 'Produk berhasil dibuat',
+      color: 'success'
     })
     
     await navigateTo('/umkm/products')

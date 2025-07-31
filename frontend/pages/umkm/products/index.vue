@@ -12,36 +12,47 @@ const auth = useAuthStore()
 const toast = useToast()
 const searchQuery = ref('')
 
-// Reactive endpoint that depends on the selected outlet
-const apiEndpoint = computed(() => {
-  if (!auth.selectedOutlet?.id) return null
-  return `/api/v1/products/outlet/${auth.selectedOutlet.id}`
-})
-
-const { data, pending, error, execute, refresh } = useApi<{ products: Product[] }>(apiEndpoint, {
-  query: { q: searchQuery },
-  lazy: true,
-  immediate: false,
-})
-
-const products = computed(() => data.value?.data?.products || [])
-
-const fetchProducts = () => {
-  if (apiEndpoint.value) {
-    execute()
+// Refactored to use useAsyncData for proper reactivity, as the custom useApi
+// composable does not seem to handle reactive URLs correctly.
+const { data, pending, error, refresh } = useAsyncData(
+  'products-list',
+  () => {
+    const outletId = auth.selectedOutlet?.id
+    if (!outletId) {
+      // If no outlet is selected, we don't fetch.
+      // Returning a promise that resolves to the expected structure prevents errors.
+      return Promise.resolve({ data: { products: [] } })
+    }
+    // Use the globally available $fetch helper from Nuxt
+    return $fetch(`/api/v1/products/outlet/${outletId}`, {
+      params: { q: searchQuery.value },
+    })
+  },
+  {
+    // Automatically re-fetch when the selected outlet changes.
+    watch: [() => auth.selectedOutlet?.id],
+    lazy: true, // Don't block navigation
+    immediate: false, // We will call refresh() manually
+    // Transform the response to directly get the products array.
+    transform: (response: any) => response.data?.products || [],
   }
-}
+)
 
-const debouncedFetchProducts = useDebounceFn(fetchProducts, 500)
+// The products are now directly the result of the transformed data.
+const products = computed(() => data.value || [])
 
-onMounted(fetchProducts)
+// Debounce the refresh function from useAsyncData to avoid excessive API calls on search.
+const debouncedRefresh = useDebounceFn(refresh, 500)
 
-watch(searchQuery, debouncedFetchProducts)
+// Wrap the debounced call in an arrow function to match the WatchCallback signature.
+watch(searchQuery, () => {
+  debouncedRefresh()
+})
 
-watch(() => auth.selectedOutlet?.id, (newId) => {
-  if (newId) {
-    // Use nextTick to ensure computed `apiEndpoint` is updated before fetching
-    nextTick(fetchProducts)
+onMounted(() => {
+  // Initial fetch if an outlet is already selected when the component mounts.
+  if (auth.selectedOutlet?.id) {
+    refresh()
   }
 })
 
@@ -53,15 +64,17 @@ const deleteProduct = async (productId: string) => {
   })
 
   if (deleteError.value) {
-    return toast.error({
+    return toast.add({
       title: 'Gagal Menghapus',
-      message: deleteError.value.data?.message || 'Gagal menghapus produk.'
+      description: deleteError.value.data?.message || 'Gagal menghapus produk.',
+      color: 'error'
     })
   }
 
-  toast.success({
+  toast.add({
     title: 'Berhasil!',
-    message: 'Produk berhasil dihapus.'
+    description: 'Produk berhasil dihapus.',
+    color: 'success'
   })
   refresh() // Re-fetch the product list
 }

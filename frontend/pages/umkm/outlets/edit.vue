@@ -30,9 +30,10 @@ onMounted(async () => {
         console.error('Failed to fetch outlet:', error.value)
         // Handle error, e.g., redirect or show a message
         const toast = useToast()
-        toast.error({
+        toast.add({
           title: 'Error!',
-          message: 'Gagal memuat data outlet.'
+          description: 'Gagal memuat data outlet.',
+          color: 'error'
         })
         await navigateTo('/umkm/outlets')
         return
@@ -49,9 +50,10 @@ onMounted(async () => {
     } catch (error) {
       console.error('Outlet fetch error:', error)
       const toast = useToast()
-      toast.error({
+      toast.add({
         title: 'Error!',
-        message: 'Terjadi kesalahan saat memuat data outlet.'
+        description: 'Terjadi kesalahan saat memuat data outlet.',
+        color: 'error'
       })
       await navigateTo('/umkm/outlets')
     } finally {
@@ -95,9 +97,10 @@ const submitForm = async () => {
     }
     
     const toast = useToast()
-    toast.success({
+    toast.add({
       title: 'Berhasil!',
-      message: 'Outlet berhasil diperbarui'
+      description: 'Outlet berhasil diperbarui',
+      color: 'success'
     })
     
     await navigateTo('/umkm')

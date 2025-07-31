@@ -34,16 +34,21 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(credentials: LoginForm) {
       this.isLoading = true
+      const config = useRuntimeConfig()
+      const baseURL = config.public.apiBaseUrl
+      console.log(`fetching ${baseURL}`);
+      
       try {
         const response = await $fetch<{
           success: boolean
           token: string
-        }>('/api/auth/login', {
+        }>('/auth/login', {
+          baseURL,
           method: 'POST',
           body: credentials
         })
         
-        if (!response.success || !response.token) {
+        if (!response.token) {
           throw new Error('Login failed')
         }
         
@@ -59,9 +64,12 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       this.isLoading = true
+      const config = useRuntimeConfig()
+      const baseURL = config.public.apiBaseUrl
       try {
         if (this.token) {
-          await $fetch('/api/auth/logout', {
+          await $fetch('/auth/logout', {
+            baseURL,
             method: 'POST',
             headers: { Authorization: `Bearer ${this.token}` }
           })
@@ -77,8 +85,10 @@ export const useAuthStore = defineStore('auth', {
 
     async updateProfile(data: Partial<User>) {
       this.isLoading = true
+      const config = useRuntimeConfig()
+      const baseURL = config.public.apiBaseUrl
       try {
-        const response = await useApi<{ success: boolean }>('/api/user/profile', {
+        const response = await useApi<{ success: boolean }>('/user/profile', {
           method: 'PUT',
           body: data,
         })
@@ -138,13 +148,16 @@ export const useAuthStore = defineStore('auth', {
     async fetchUserData() {
       if (!this.token) return
       
+      const config = useRuntimeConfig()
+      const baseURL = config.public.apiBaseUrl
       try {
         const response = await $fetch<{ 
           success: boolean
           data: User 
           business: Business
           outlets: Outlet[]
-        }>('/api/auth/me', {
+        }>('/auth/me', {
+          baseURL,
           headers: { Authorization: `Bearer ${this.token}` }
         })
         

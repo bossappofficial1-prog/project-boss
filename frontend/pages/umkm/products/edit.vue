@@ -51,9 +51,10 @@ onMounted(async () => {
       if (error.value) {
         console.error('Failed to fetch product:', error.value)
         const toast = useToast()
-        toast.error({
+        toast.add({
           title: 'Error!',
-          message: 'Gagal memuat data produk.'
+          description: 'Gagal memuat data produk.',
+          color: 'error'
         })
         await navigateTo('/umkm/products')
         return
@@ -77,9 +78,10 @@ onMounted(async () => {
     } catch (error) {
       console.error('Product fetch error:', error)
       const toast = useToast()
-      toast.error({
+      toast.add({
         title: 'Error!',
-        message: 'Terjadi kesalahan saat memuat data produk.'
+        description: 'Terjadi kesalahan saat memuat data produk.',
+        color: 'error'
       })
       await navigateTo('/umkm/products')
     } finally {
@@ -139,9 +141,10 @@ const submitForm = async () => {
     }
     
     const toast = useToast()
-    toast.success({
+    toast.add({
       title: 'Berhasil!',
-      message: 'Produk berhasil diperbarui'
+      description: 'Produk berhasil diperbarui',
+      color: 'success'
     })
     
     await navigateTo('/umkm/products')

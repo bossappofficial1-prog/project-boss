@@ -77,9 +77,10 @@ const submitForm = async () => {
     }
     
     const toast = useToast()
-    toast.success({
+    toast.add({
       title: 'Berhasil!',
-      message: isSetupMode.value ? 'Profil bisnis berhasil dibuat' : 'Profil bisnis berhasil diperbarui'
+      description: isSetupMode.value ? 'Profil bisnis berhasil dibuat' : 'Profil bisnis berhasil diperbarui',
+      color: 'success'
     })
     
     await navigateTo('/umkm')
