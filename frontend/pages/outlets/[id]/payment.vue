@@ -40,7 +40,8 @@ const total = computed(() => subtotal.value + adminFee.value)
 
 async function handleCheckout() {
     if (!customerName.value || !customerPhone.value) {
-        return toast.error({ title: 'Data Tidak Lengkap', message: 'Nama dan nomor telepon wajib diisi.' })
+        toast.add({ title: 'Data Tidak Lengkap', description: 'Nama dan nomor telepon wajib diisi.', color: 'error' })
+        return
     }
 
     isSubmitting.value = true
@@ -71,27 +72,27 @@ async function handleCheckout() {
         const transactionToken = data.value?.data?.midtransTransactionToken
         if (transactionToken) {
             window.snap.pay(transactionToken, {
-                onSuccess: function (result) {
-                    toast.success({ title: 'Pembayaran Berhasil', message: 'Terima kasih atas pembayaran Anda.' })
+                onSuccess: function () {
+                    toast.add({ title: 'Pembayaran Berhasil', description: 'Terima kasih atas pembayaran Anda.', color:'success' })
                     cartStore.clearCart()
                     router.push(`/`) // Redirect to a success page or home
                 },
-                onPending: function (result) {
-                    toast.info({ title: 'Menunggu Pembayaran', message: 'Selesaikan pembayaran Anda.' })
+                onPending: function () {
+                    toast.add({ title: 'Menunggu Pembayaran', description: 'Selesaikan pembayaran Anda.', color:'info' })
                 },
-                onError: function (result) {
-                    toast.error({ title: 'Pembayaran Gagal', message: 'Silakan coba lagi.' })
+                onError: function () {
+                    toast.add({ title: 'Pembayaran Gagal', description: 'Silakan coba lagi.', color:'error' })
                 },
                 onClose: function () {
-                    toast.info({ title: 'Pembayaran Dibatalkan', message: 'Anda menutup popup pembayaran.' })
+                    toast.add({ title: 'Pembayaran Dibatalkan', description: 'Anda menutup popup pembayaran.', color:'info' })
                 }
             })
         } else {
-            toast.error({ title: 'Gagal', message: 'Gagal memulai sesi pembayaran. Silakan coba lagi.' })
+            toast.add({ title: 'Gagal', description: 'Gagal memulai sesi pembayaran. Silakan coba lagi.', color:'error' })
         }
     } catch (e: any) {
         const message = e.data?.errors?.[0]?.message || e.data?.message || 'Terjadi kesalahan saat membuat pesanan.'
-        toast.error({ title: 'Checkout Gagal', message })
+        toast.add({ title: 'Checkout Gagal', description:message, color:'error' })
     } finally {
         isSubmitting.value = false
     }
@@ -120,7 +121,7 @@ async function handleCheckout() {
                                 item.product.name }}</p>
                             <p v-if="item.bookingSlotId" class="text-xs text-gray-500 pl-5">
                                 <Icon name="lucide:calendar-check" class="inline-block mr-1" />
-                                Jadwal: {{ item.bookingSlotId }} <!-- Placeholder, needs formatting -->
+                                Jadwal: {{ new Date(item.bookingSlotId).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) }}
                             </p>
                         </div>
                         <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Rp{{ (item.product.price *

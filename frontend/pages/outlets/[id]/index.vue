@@ -8,7 +8,7 @@ const cartStore = useCartStore()
 const toast = useToast()
 const outletId = route.params.id as string
 
-const { data, pending, error, refresh } = useApi<Outlet>(`/api/v1/outlets/${outletId}`)
+const { data, pending, error, refresh } = useApi<Outlet>(`/outlets/${outletId}`)
 
 const outlet = computed(() => data.value?.data)
 const products = computed(() => outlet.value?.products?.filter(p => p.type === 'GOODS') || [])
@@ -47,12 +47,12 @@ async function fetchAvailableSlots() {
   if (!selectedService.value) return
   isLoadingSlots.value = true
   try {
-    const { data: slotsResponse } = await useApi<BookingSlot[]>(`/api/v1/booking/product/${selectedService.value.id}`, {
+    const { data: slotsResponse } = await useApi<BookingSlot[]>(`/booking/product/${selectedService.value.id}`, {
       query: { date: selectedDate.value.toISOString().split('T')[0] }
     })
     availableSlots.value = slotsResponse.value?.data || []
   } catch (e) {
-    toast.error({ title: 'Gagal Memuat Slot', message: 'Tidak dapat mengambil jadwal yang tersedia.' })
+    toast.add({ title: 'Gagal Memuat Slot', description: 'Tidak dapat mengambil jadwal yang tersedia.', color: 'error' })
   } finally {
     isLoadingSlots.value = false
   }
@@ -63,7 +63,7 @@ watch(selectedDate, fetchAvailableSlots)
 function selectBookingSlot(slot: BookingSlot) {
   if (selectedService.value) {
     cartStore.addItem(selectedService.value, 1, slot.id)
-    toast.success({ title: 'Layanan Dipesan', message: `${selectedService.value.name} telah ditambahkan.` })
+    toast.add({ title: 'Layanan Dipesan', description: `${selectedService.value.name} telah ditambahkan.`, color: 'success' })
     selectedService.value = null
   }
 }
@@ -97,7 +97,7 @@ function shareOutlet() {
     })
   } else {
     navigator.clipboard.writeText(window.location.href)
-    toast.success({ title: 'Link Disalin', message: 'Link outlet berhasil disalin ke clipboard' })
+    toast.add({ title: 'Link Disalin', description: 'Link outlet berhasil disalin ke clipboard', color:'success' })
   }
 }
 </script>

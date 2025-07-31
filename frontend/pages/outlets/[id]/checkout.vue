@@ -249,7 +249,7 @@ async function handlePayment() {
     try {
         isProcessing.value = true
 
-        const { data, error } = await useApi('/api/v1/orders', {
+        const { data, error } = await useApi('/orders', {
             method: 'POST',
             body: {
                 outletId: route.params.id,
