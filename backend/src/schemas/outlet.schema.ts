@@ -2,12 +2,13 @@ import { z } from "zod";
 
 export const createOutletSchema = z.object({
     name: z.string().nonempty({ message: "Nama outlet tidak boleh kosong" }),
-    address: z.string(),
-    phone: z.string(),
+    address: z.string().optional(),
+    phone: z.string().optional(),
     image: z.string().url().optional(),
     businessId: z.string().nonempty({ message: "ID Bisnis tidak boleh kosong" }),
     latitude: z.number().min(-90).max(90).optional(),
     longitude: z.number().min(-180).max(180).optional(),
+    isOpen: z.boolean().optional().default(false),
 });
 
 export type CreateOutletInput = z.infer<typeof createOutletSchema>;
@@ -19,6 +20,7 @@ export const updateOutletSchema = z.object({
     image: z.string().url().optional(),
     latitude: z.number().min(-90).max(90).optional(),
     longitude: z.number().min(-180).max(180).optional(),
+    isOpen: z.boolean().optional(),
 }).refine(data => Object.keys(data).length > 0, {
     message: "Minimal satu field harus diisi untuk update",
 });

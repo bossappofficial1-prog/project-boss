@@ -4,8 +4,9 @@ import {
     markReminderSent,
     getOrderDetails,
     getOutletQueue,
-    updatePaymentStatus, // Impor controller baru
+    updatePaymentStatus,
 } from '../controller/internal-api.controller';
+import { sendQueueNotification } from '../controller/queue-notification.controller';
 
 const router = Router();
 
@@ -23,5 +24,8 @@ router.get('/outlet-queue/:outletId', getOutletQueue);
 
 // Endpoint untuk consumer memperbarui status pembayaran
 router.post('/orders/update-payment-status', updatePaymentStatus);
+
+// Endpoint untuk mengirim notifikasi posisi antrian
+router.post('/send-queue-notification', sendQueueNotification);
 
 export default router;

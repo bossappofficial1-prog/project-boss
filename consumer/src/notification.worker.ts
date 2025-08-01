@@ -5,13 +5,28 @@ import amqplib from 'amqplib';
 import { NotificationService } from './service/notification.service'; // Import service lokal
 
 // Definisikan tipe data yang diharapkan dari message queue dan API
-interface OrderNotificationEvent {
+interface BaseNotificationEvent {
+    type: string;
+    data: any;
+}
+
+interface OrderNotificationEvent extends BaseNotificationEvent {
     type: 'ORDER_STATUS_UPDATE';
-    payload: {
+    data: {
         orderId: string;
         status: string;
     };
 }
+
+interface QueuePositionEvent extends BaseNotificationEvent {
+    type: 'queue_position';
+    data: {
+        phone: string;
+        position: number;
+    };
+}
+
+type NotificationEvent = OrderNotificationEvent | QueuePositionEvent;
 
 export interface OrderDetails {
     id: string;
@@ -99,34 +114,57 @@ class NotificationWorker {
     }
 
     private async processMessage(msg: amqplib.ConsumeMessage) {
-        let messageData: any;
+        const content = msg.content.toString();
+        let messageData: NotificationEvent | any;
+
         try {
-            messageData = JSON.parse(msg.content.toString());
+            messageData = JSON.parse(content);
+
             logger.info('Processing notification message', {
                 component: 'NotificationWorker',
-                messageId: messageData.id,
+                messageType: messageData.type,
+                content: content,
             });
 
-            if (messageData.type === 'ORDER_STATUS_UPDATE') {
-                await this.handleOrderStatusUpdate(messageData);
-            } else {
-                logger.warn('Unknown message type', {
-                    component: 'NotificationWorker',
-                    messageType: messageData.type,
-                });
+            switch (messageData.type) {
+                case 'ORDER_STATUS_UPDATE':
+                    await this.handleOrderStatusUpdate(messageData as OrderNotificationEvent);
+                    break;
+                case 'queue_position':
+                    await this.handleQueuePosition(messageData as QueuePositionEvent);
+                    break;
+                default:
+                    logger.warn('Unknown message type', {
+                        component: 'NotificationWorker',
+                        messageType: messageData.type,
+                        content: content,
+                    });
             }
 
             this.channel?.ack(msg);
         } catch (error: any) {
+            logger.error('Error processing message', {
+                component: 'NotificationWorker',
+                error: error.message,
+                content: content,
+                stack: error.stack
+            });
+
             const headers = msg.properties.headers || {};
             const retryCount = (headers['x-retry-count'] || 0) + 1;
             const MAX_RETRIES = 5;
 
             if (retryCount > MAX_RETRIES) {
-                logger.error(`Max retries exceeded for message ${messageData?.id}. Sending to DLQ.`, { component: 'NotificationWorker' });
+                logger.error(`Max retries (${MAX_RETRIES}) exceeded for message. Sending to DLQ.`, {
+                    component: 'NotificationWorker',
+                    content: content
+                });
                 this.channel?.nack(msg, false, false);
             } else {
-                logger.warn(`Retrying message ${messageData?.id}. Attempt: ${retryCount}`, { component: 'NotificationWorker' });
+                logger.warn(`Retrying message. Attempt: ${retryCount}/${MAX_RETRIES}`, {
+                    component: 'NotificationWorker',
+                    content: content
+                });
                 headers['x-retry-count'] = retryCount;
                 this.channel?.publish(EXCHANGE_NAMES.NOTIFICATION_RETRY, '', msg.content, { headers });
                 this.channel?.ack(msg);
@@ -135,7 +173,7 @@ class NotificationWorker {
     }
 
     private async handleOrderStatusUpdate(event: OrderNotificationEvent) {
-        const { orderId, status } = event.payload;
+        const { orderId, status } = event.data;
 
         try {
             // 1. Panggil API backend untuk mendapatkan detail pesanan
@@ -163,18 +201,36 @@ class NotificationWorker {
             });
 
         } catch (error: any) {
-            // ULTIMATE DEBUGGING: Cetak objek error mentah ke konsol
-            console.log("RAW ERROR OBJECT IN CATCH BLOCK:", error);
-
             // Tambahkan logging yang lebih detail di sini
             logger.error(`Failed to handle order status update for order ${orderId}`, {
                 component: 'NotificationWorker',
                 orderId,
                 errorMessage: error.message,
-                // Jika error berasal dari Axios, log detail responsnya
                 axiosError: error.response ? JSON.stringify(error.response.data, null, 2) : 'Not an Axios error',
             });
-            // Melempar error akan menyebabkan pesan di-nack dan mungkin di-requeue
+            throw error;
+        }
+    }
+
+    private async handleQueuePosition(event: QueuePositionEvent) {
+        const { phone, position } = event.data;
+
+        try {
+            await NotificationService.sendQueueNotification(phone, position);
+
+            logger.info('Successfully sent queue position notification', {
+                component: 'NotificationWorker',
+                phone,
+                position,
+            });
+        } catch (error: any) {
+            logger.error('Failed to send queue position notification', {
+                component: 'NotificationWorker',
+                phone,
+                position,
+                errorMessage: error.message,
+                axiosError: error.response ? JSON.stringify(error.response.data, null, 2) : 'Not an Axios error',
+            });
             throw error;
         }
     }
