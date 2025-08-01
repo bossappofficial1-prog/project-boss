@@ -5,7 +5,7 @@ import { ReportService } from '../service/report.service';
 import { z } from 'zod';
 
 const summaryQuerySchema = z.object({
-    outletId: z.string().uuid('ID outlet tidak valid'),
+    outletId: z.string(),
     startDate: z.string().datetime('Format tanggal awal tidak valid'),
     endDate: z.string().datetime('Format tanggal akhir tidak valid'),
 });

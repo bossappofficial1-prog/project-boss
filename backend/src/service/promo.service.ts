@@ -2,11 +2,14 @@ import { db } from '../config/prisma';
 import { AppError } from '../errors/app-error';
 import { HttpStatus } from '../constants/http-status';
 import { Promo } from '@prisma/client';
+import { getBusinessByIdService } from './business.service';
 
 /**
  * Create a new promo for a business
  */
 export async function createPromo(data: Omit<Promo, 'id' | 'createdAt' | 'updatedAt' | 'timesUsed'>) {
+    await getBusinessByIdService(data.businessId)
+
     const existingPromo = await db.promo.findUnique({
         where: { businessId_code: { businessId: data.businessId, code: data.code } },
     });

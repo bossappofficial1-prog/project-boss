@@ -145,12 +145,12 @@ class ServiceOrderWorker {
         const { orderId } = event.payload;
 
         // 1. Dapatkan detail pesanan untuk mengetahui outletId
-        const orderResponse = await apiClient.get<OrderInQueue>(`/internal/order/${orderId}`);
-        const order = orderResponse.data;
+        const orderResponse = await apiClient.get(`/internal/order/${orderId}`);
+        const order: OrderInQueue = orderResponse.data.data;
 
         // 2. Dapatkan seluruh antrian untuk outlet tersebut
-        const queueResponse = await apiClient.get<OrderInQueue[]>(`/internal/outlet-queue/${order.outletId}`);
-        const queue = queueResponse.data;
+        const queueResponse = await apiClient.get(`/internal/outlet-queue/${order.outletId}`);
+        const queue: OrderInQueue[] = queueResponse.data.data;
 
         const orderIndex = queue.findIndex(o => o.id === orderId);
         if (orderIndex !== -1 && order.guestCustomer.phone) {
@@ -171,12 +171,12 @@ class ServiceOrderWorker {
         const { orderId } = event.payload;
 
         // 1. Dapatkan detail pesanan yang selesai untuk mengetahui outletId
-        const completedOrderResponse = await apiClient.get<OrderInQueue>(`/internal/order/${orderId}`);
-        const completedOrder = completedOrderResponse.data;
+        const completedOrderResponse = await apiClient.get(`/internal/order/${orderId}`);
+        const completedOrder: OrderInQueue = completedOrderResponse.data.data;
 
         // 2. Dapatkan sisa antrian untuk outlet tersebut
-        const queueResponse = await apiClient.get<OrderInQueue[]>(`/internal/outlet-queue/${completedOrder.outletId}`);
-        const pendingOrders = queueResponse.data;
+        const queueResponse = await apiClient.get(`/internal/outlet-queue/${completedOrder.outletId}`);
+        const pendingOrders: OrderInQueue[] = queueResponse.data.data;
 
         logger.info(`Rechecking queue for outlet ${completedOrder.outletId}. ${pendingOrders.length} orders pending.`, {
             component: 'ServiceOrderWorker',

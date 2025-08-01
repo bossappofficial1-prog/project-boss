@@ -135,20 +135,78 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
 export async function updateOrderStatusService(orderId: string, status: OrderStatus) {
     const order = await getOrderByIdService(orderId);
 
+    if (!order) {
+        throw new Error('Order not found');
+    }
+
     if (status === 'COMPLETED' && order?.bookingSlot) {
         await db.bookingSlot.update({
-            where: { id: order?.bookingSlot.id },
+            where: { id: order.bookingSlot.id },
             data: { status: 'AVAILABLE' },
         });
     }
 
-    const updatedOrder = await db.order?.update({
+    // Update pesanan dengan include data yang diperlukan
+    const updatedOrder = await db.order.update({
         where: { id: orderId },
         data: { orderStatus: status },
+        include: {
+            items: {
+                include: {
+                    product: true
+                }
+            },
+            outlet: true,
+            guestCustomer: true
+        }
     });
 
     // Kirim notifikasi status update melalui message publisher
-    await messagePublisher.publishOrderNotification(updatedOrder?.id!, updatedOrder?.orderStatus!);
+    await messagePublisher.publishOrderNotification(updatedOrder.id, updatedOrder.orderStatus);
+
+    // Jika status diubah menjadi COMPLETED dan ini adalah pesanan layanan
+    if (status === 'COMPLETED' && updatedOrder.items.some(item => item.product.type === 'SERVICE')) {
+        // Dapatkan antrian untuk outlet yang sama
+        const queuedOrders = await db.order.findMany({
+            where: {
+                outletId: updatedOrder.outletId,
+                orderStatus: OrderStatus.READY,
+                items: {
+                    some: {
+                        product: {
+                            type: 'SERVICE'
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'asc'
+            },
+            include: {
+                guestCustomer: true
+            }
+        });
+
+        // Update posisi antrian untuk semua pesanan yang tersisa
+        for (let i = 0; i < queuedOrders.length; i++) {
+            const queuedOrder = queuedOrders[i];
+            if (queuedOrder.guestCustomer?.phone) {
+                const channel = getRabbitMQChannel();
+                await channel.publish(
+                    'notification_exchange',
+                    '',
+                    Buffer.from(JSON.stringify({
+                        type: 'queue_position',
+                        data: {
+                            phone: queuedOrder.guestCustomer.phone,
+                            position: i + 1,
+                        }
+                    })),
+                    { persistent: true }
+                );
+            }
+        }
+    }
 
     return updatedOrder;
 }
@@ -158,7 +216,10 @@ export async function completeServiceOrderService(orderId: string) {
     const completedOrder = await db.order.update({
         where: { id: orderId },
         data: { orderStatus: OrderStatus.COMPLETED },
-        include: { items: { include: { product: true } } }
+        include: {
+            items: { include: { product: true } },
+            outlet: true
+        }
     });
 
     // 2. Periksa apakah pesanan yang selesai adalah pesanan layanan
@@ -166,7 +227,50 @@ export async function completeServiceOrderService(orderId: string) {
 
     // 3. Jika ya, picu ulang pengecekan antrian untuk outlet tersebut
     if (hasServiceProduct) {
+        // Dapatkan daftar pesanan dalam antrian untuk outlet ini
+        const queuedOrders = await db.order.findMany({
+            where: {
+                outletId: completedOrder.outletId,
+                orderStatus: OrderStatus.READY,
+                items: {
+                    some: {
+                        product: {
+                            type: 'SERVICE'
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'asc'
+            },
+            include: {
+                guestCustomer: true
+            }
+        });
+
+        // Publish message untuk mengecek ulang antrian
         await messagePublisher.publishServiceOrderRecheck(completedOrder.id);
+
+        // Kirim notifikasi ke pesanan berikutnya dalam antrian jika ada
+        if (queuedOrders.length > 0) {
+            const nextOrder = queuedOrders[0];
+            if (nextOrder.guestCustomer?.phone) {
+                // Kirim notifikasi bahwa giliran mereka sudah dekat
+                const channel = getRabbitMQChannel();
+                await channel.publish(
+                    'notification_exchange',
+                    '',
+                    Buffer.from(JSON.stringify({
+                        type: 'queue_position',
+                        data: {
+                            phone: nextOrder.guestCustomer.phone,
+                            position: 1,
+                        }
+                    })),
+                    { persistent: true }
+                );
+            }
+        }
     }
 
     return completedOrder;

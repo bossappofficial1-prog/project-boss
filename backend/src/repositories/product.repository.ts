@@ -9,7 +9,7 @@ export class ProductRepository {
         });
     }
 
-    static async findById(id: string): Promise<Product | null> {
+    static async findById(id: string) {
         return db.product.findUnique({
             where: { id },
             include: {
@@ -18,6 +18,15 @@ export class ProductRepository {
                         status: 'AVAILABLE',
                     },
                 },
+                outlet: {
+                    select: {
+                        business: {
+                            select: {
+                                defaultTransactionFeeBearer: true,
+                            }
+                        }
+                    }
+                }
             },
         });
     }

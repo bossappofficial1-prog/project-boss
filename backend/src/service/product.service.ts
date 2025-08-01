@@ -27,9 +27,10 @@ export async function getProductByIdService(id: string) {
     if (!product) {
         throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-
     await redis.set(cacheKey, JSON.stringify(product), 'EX', 3600);
-    return product;
+    const { outlet, ...productWithoutOutlet } = product
+
+    return { ...productWithoutOutlet, defaultTransactionFeeBearer: outlet.business.defaultTransactionFeeBearer };
 }
 
 export async function getProductsByOutletIdService(outletId: string, q?: string) {
