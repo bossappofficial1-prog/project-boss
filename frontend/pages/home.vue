@@ -40,11 +40,11 @@ function formatNumber(num: number = 0): string {
 }
 
 const stats = computed<StatItem[]>(() => {
-  const homeData = data.value?.data
+  const homeData = data.value
   return [
-    { label: 'UMKM Terdaftar', value: formatNumber(homeData?.umkm), icon: 'lucide:store' },
-    { label: 'Transaksi', value: formatNumber(homeData?.transactions), icon: 'lucide:chart-line' },
-    { label: 'Total Membership', value: formatNumber(homeData?.memberships), icon: 'lucide:users' }
+    { label: 'UMKM Terdaftar', value: formatNumber(homeData?.data?.umkm), icon: 'lucide:store' },
+    { label: 'Transaksi', value: formatNumber(homeData?.data?.transactions), icon: 'lucide:chart-line' },
+    { label: 'Total Membership', value: formatNumber(homeData?.data?.memberships), icon: 'lucide:users' }
   ]
 })
 

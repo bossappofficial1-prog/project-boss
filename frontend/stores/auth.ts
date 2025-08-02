@@ -8,6 +8,7 @@ interface AuthState {
   selectedOutlet: Outlet | null
   availableOutlets: Outlet[]
   isLoading: boolean
+  token: string | null
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -16,11 +17,12 @@ export const useAuthStore = defineStore('auth', {
     business: null,
     selectedOutlet: null,
     availableOutlets: [],
-    isLoading: false
+    isLoading: false,
+    token: null
   }),
 
   getters: {
-    isAuthenticated: (state): boolean => !!state.user,
+    isAuthenticated: (state): boolean => !!state.user && !!state.token,
     userRole: (state): Role | null => state.user?.role || null,
     isOwner: (state): boolean => state.user?.role === 'OWNER',
     isAdmin: (state): boolean => state.user?.role === 'ADMIN',
@@ -46,6 +48,10 @@ export const useAuthStore = defineStore('auth', {
           body: credentials
         })
 
+        if (response.success && response.token) {
+          this.token = response.token
+        }
+
         await this.fetchUserData()
 
         await this.navigateAfterLogin()
@@ -64,6 +70,9 @@ export const useAuthStore = defineStore('auth', {
         await $fetch('/auth/logout', {
           baseURL,
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.token}`
+          }
         })
       } catch (error) {
         console.error('Logout error:', error)
@@ -106,6 +115,7 @@ export const useAuthStore = defineStore('auth', {
       this.business = null
       this.selectedOutlet = null
       this.availableOutlets = []
+      this.token = null
     },
 
     async navigateAfterLogin() {
@@ -125,7 +135,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async initAuth() {
-      if (!this.user) {
+      if (this.token && !this.user) {
         try {
           await this.fetchUserData()
         } catch (error) {
@@ -136,6 +146,8 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async fetchUserData() {
+      if (!this.token) return
+
       const config = useRuntimeConfig()
       const baseURL = config.public.apiBaseUrl
       console.log(`fetching ${baseURL}/auth/me...`);
@@ -150,6 +162,9 @@ export const useAuthStore = defineStore('auth', {
           }
         }>('/auth/me', {
           baseURL,
+          headers: {
+            'Authorization': `Bearer ${this.token}`
+          }
         })
 
         if (response.success && response.data) {
@@ -165,5 +180,19 @@ export const useAuthStore = defineStore('auth', {
     }
   },
 
-  persist: true
+  persist: {
+    storage: {
+      getItem: (key: string) => {
+        if (process.client) {
+          return localStorage.getItem(key)
+        }
+        return null
+      },
+      setItem: (key: string, value: string) => {
+        if (process.client) {
+          localStorage.setItem(key, value)
+        }
+      },
+    }
+  }
 })
