@@ -97,7 +97,7 @@ function shareOutlet() {
     })
   } else {
     navigator.clipboard.writeText(window.location.href)
-    toast.add({ title: 'Link Disalin', description: 'Link outlet berhasil disalin ke clipboard', color:'success' })
+    toast.add({ title: 'Link Disalin', description: 'Link outlet berhasil disalin ke clipboard', color: 'success' })
   }
 }
 </script>
@@ -500,7 +500,8 @@ function shareOutlet() {
                             <div class="font-bold text-gray-900 dark:text-white">
                               {{ new Date(slot.startTime).toLocaleTimeString('id-ID', {
                                 hour: '2-digit', minute:
-                              '2-digit' }) }}
+                                  '2-digit'
+                              }) }}
                             </div>
                             <div class="text-xs text-gray-500 mt-1">Tersedia</div>
                           </button>
@@ -521,6 +522,9 @@ function shareOutlet() {
         </div>
       </div>
     </div>
+
+    <!-- Cart Component -->
+    <AppCart />
   </div>
 </template>
 

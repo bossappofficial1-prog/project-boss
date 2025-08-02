@@ -32,7 +32,11 @@ export const useCartStore = defineStore('cart', {
       }
       this.outletId = product.outletId
 
-      const existingItem = this.items.find(item => item.product.id === product.id)
+      const existingItem = this.items.find(item =>
+        item.product.id === product.id &&
+        item.bookingSlotId === bookingSlotId
+      )
+
       if (existingItem) {
         existingItem.quantity += quantity
       } else {

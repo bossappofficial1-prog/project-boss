@@ -63,7 +63,11 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/svg+xml', href: '/images/logo-color.svg' }
       ],
       script: [
-        { src: 'https://app.sandbox.midtrans.com/snap/snap.js', 'data-client-key': process.env.NUXT_PUBLIC_MIDTRANS_CLIENT_KEY }
+        {
+          src: 'https://app.sandbox.midtrans.com/snap/snap.js',
+          'data-client-key': process.env.NUXT_PUBLIC_MIDTRANS_CLIENT_KEY,
+          defer: true
+        }
       ]
     }
   },

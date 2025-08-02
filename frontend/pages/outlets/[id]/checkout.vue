@@ -142,7 +142,7 @@
                                     <div class="flex justify-between text-sm">
                                         <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
                                         <span class="text-gray-900 dark:text-white font-medium">{{ formatPrice(subtotal)
-                                            }}</span>
+                                        }}</span>
                                     </div>
                                     <div class="flex justify-between text-sm">
                                         <div class="flex items-center gap-1">
@@ -219,6 +219,7 @@ import { useApi } from '@/composables/useApi'
 const cartStore = useCartStore()
 const router = useRouter()
 const route = useRoute()
+const toast = useToast()
 
 const isProcessing = ref(false)
 const guestName = ref('')
@@ -242,53 +243,102 @@ function formatPrice(amount: number): string {
 
 async function handlePayment() {
     if (!guestName.value || !guestPhone.value) {
-        alert('Nama dan nomor WhatsApp wajib diisi')
+        toast.add({
+            title: 'Peringatan',
+            description: 'Nama dan nomor WhatsApp wajib diisi',
+            color: 'warning'
+        })
         return
     }
 
     try {
         isProcessing.value = true
 
+        // Prepare order data according to the API specification
+        const orderData = {
+            guestCustomer: {
+                name: guestName.value,
+                phone: guestPhone.value
+            },
+            outletId: route.params.id,
+            items: cartStore.items.map(item => ({
+                productId: item.product.id,
+                quantity: item.quantity
+            })),
+            paymentMethod: "online"
+        }
+
         const { data, error } = await useApi('/orders', {
             method: 'POST',
-            body: {
-                outletId: route.params.id,
-                items: cartStore.items.map(item => ({
-                    productId: item.product.id,
-                    quantity: item.quantity,
-                    bookingSlotId: item.bookingSlotId
-                })),
-                guestCustomer: {
-                    name: guestName.value,
-                    email: '', // opsional, bisa tambahkan input jika perlu
-                    phone: guestPhone.value
-                }
-            }
+            body: orderData
         })
 
         if (error.value) {
-            throw new Error(error.value.message || 'Terjadi kesalahan saat memproses pembayaran')
+            throw new Error(error.value.data?.message || 'Terjadi kesalahan saat memproses pembayaran')
         }
 
         if (!data.value?.success) {
             throw new Error(data.value?.message || 'Terjadi kesalahan saat memproses pembayaran')
         }
 
-        // Asumsikan backend mengembalikan instruksi pembayaran custom
-        const responseData = data.value.data as any || {}
-        const { paymentInstruction: instruksi, paymentInfo } = responseData
-        if (instruksi) {
-            paymentInstruction.value = instruksi
-        } else if (paymentInfo) {
-            // fallback: render info pembayaran
-            paymentInstruction.value = `<pre>${JSON.stringify(paymentInfo, null, 2)}</pre>`
+        const responseData = data.value.data as any
+        const { orderId, totalAmount, midtransTransactionToken, midtransRedirectUrl } = responseData
+
+        // Use Midtrans Snap popup
+        if (midtransTransactionToken && window.snap) {
+            window.snap.pay(midtransTransactionToken, {
+                onSuccess: (result: any) => {
+                    console.log('Payment success:', result)
+                    toast.add({
+                        title: 'Pembayaran Berhasil!',
+                        description: `Pesanan ${orderId} telah berhasil dibayar`,
+                        color: 'success'
+                    })
+                    cartStore.clearCart()
+                    router.push(`/outlets/${route.params.id}/payment?order_id=${orderId}&status=success&total_amount=${totalAmount}`)
+                },
+                onPending: (result: any) => {
+                    console.log('Payment pending:', result)
+                    toast.add({
+                        title: 'Pembayaran Tertunda',
+                        description: 'Pembayaran Anda sedang diproses',
+                        color: 'warning'
+                    })
+                    cartStore.clearCart()
+                    router.push(`/outlets/${route.params.id}/payment?order_id=${orderId}&status=pending&total_amount=${totalAmount}`)
+                },
+                onError: (result: any) => {
+                    console.log('Payment error:', result)
+                    toast.add({
+                        title: 'Pembayaran Gagal',
+                        description: 'Terjadi kesalahan saat memproses pembayaran',
+                        color: 'error'
+                    })
+                    router.push(`/outlets/${route.params.id}/payment?order_id=${orderId}&status=failed&total_amount=${totalAmount}`)
+                },
+                onClose: () => {
+                    console.log('Payment popup closed')
+                    toast.add({
+                        title: 'Pembayaran Dibatalkan',
+                        description: 'Anda dapat mencoba lagi nanti',
+                        color: 'neutral'
+                    })
+                }
+            })
+        } else if (midtransRedirectUrl) {
+            // Fallback: redirect to Midtrans payment page
+            window.open(midtransRedirectUrl, '_blank')
         } else {
-            paymentInstruction.value = 'Pesanan berhasil dibuat. Silakan cek WhatsApp Anda untuk instruksi pembayaran.'
+            throw new Error('Token pembayaran tidak tersedia')
         }
 
-        cartStore.clearCart()
     } catch (error: any) {
-        alert(error.message)
+        console.error('Payment error:', error)
+        toast.add({
+            title: 'Error',
+            description: error.message || 'Terjadi kesalahan yang tidak terduga',
+            color: 'error'
+        })
     } finally {
         isProcessing.value = false
     }
