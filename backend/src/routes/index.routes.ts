@@ -15,6 +15,8 @@ import reportRouter from "./report.route";
 import { withdrawalRouter } from "./withdrawal.route";
 import staffRouter from "./staff.route";
 import operatingHoursRouter from "./operating-hours.route";
+import uploadRouter from "./upload.route";
+import securityRouter from "./security.route";
 
 const apiRouter = Router()
 
@@ -34,5 +36,7 @@ apiRouter.use('/reports', reportRouter)
 apiRouter.use('/withdrawals', withdrawalRouter)
 apiRouter.use('/staff', staffRouter)
 apiRouter.use('/operating-hours', operatingHoursRouter)
+apiRouter.use('/upload', uploadRouter)
+apiRouter.use('/security', securityRouter)
 
 export default apiRouter

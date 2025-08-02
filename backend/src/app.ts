@@ -10,6 +10,7 @@ import { errorHandler, notFound } from "./middleware/error.middleware"
 import { App } from "./constants/app"
 import apiRouter from "./routes/index.routes"
 import morgan from "morgan"
+import path from "path"
 
 // Import rute promo
 import promoRouter from './routes/promo.route';
@@ -59,6 +60,9 @@ app.use(requestLogger)
 if (config.NODE_ENV === "development") {
     app.use(morgan('dev')); // Output ringkas dengan warna berdasarkan status respons untuk development
 }
+
+// Serve static files (uploaded images)
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.get("/", (req, res) => {
     res.status(200).json({

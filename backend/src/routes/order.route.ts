@@ -4,11 +4,23 @@ import { validateSchema } from "../middleware/zod.middleware";
 import { createOrderSchema, updateOrderStatusSchema } from "../schemas/order.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
+import { orderCreationLimiter, orderManagementLimiter } from "../middleware/order-rate-limit.middleware";
+import { validateGuestCustomer, validateBusinessHours, validateOrderFrequency } from "../middleware/guest-validation.middleware";
 
 const orderRouter = Router();
 
-// Rute publik untuk membuat pesanan
-orderRouter.post("/", validateSchema(createOrderSchema), createOrderController);
+// SECURITY FIX: Add comprehensive validation for public guest order creation
+orderRouter.post("/", 
+    orderCreationLimiter,
+    validateGuestCustomer,
+    validateBusinessHours,
+    validateOrderFrequency,
+    validateSchema(createOrderSchema), 
+    createOrderController
+);
+
+// SECURITY FIX: Add rate limiting for owner order management
+orderRouter.use(orderManagementLimiter);
 
 // Rute yang dilindungi untuk melihat detail pesanan
 orderRouter.get("/:id", protect, authorize(UserRole.OWNER), getOrderByIdController);

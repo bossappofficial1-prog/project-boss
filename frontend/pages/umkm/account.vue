@@ -2,7 +2,7 @@
 import type { Business, BusinessForm, FeeBearer } from '~/types'
 
 definePageMeta({
-  layout: 'blank',
+  layout: 'umkm',
   middleware: ['auth', 'owner']
 })
 
@@ -10,6 +10,7 @@ const auth = useAuthStore()
 const route = useRoute()
 const isLoading = ref(false)
 const isSetupMode = ref(route.query.setup === 'true')
+const activeTab = ref('profile')
 
 const form = ref<BusinessForm>({
   name: '',
@@ -20,11 +21,23 @@ const form = ref<BusinessForm>({
   defaultTransactionFeeBearer: 'CUSTOMER' as FeeBearer
 })
 
+const userForm = ref({
+  name: auth.user?.name || '',
+  email: auth.user?.email || '',
+  phone: auth.user?.phone || ''
+})
+
 const errors = ref<Record<string, string>>({})
 
 const feeOptions = [
   { value: 'CUSTOMER', label: 'Pelanggan menanggung biaya transaksi' },
   { value: 'OWNER', label: 'Saya yang menanggung biaya transaksi' }
+]
+
+const tabs = [
+  { id: 'profile', label: 'Profil Pengguna', icon: 'lucide:user' },
+  { id: 'business', label: 'Profil Bisnis', icon: 'lucide:building' },
+  { id: 'security', label: 'Keamanan', icon: 'lucide:shield' }
 ]
 
 // Load existing business data if available
@@ -44,29 +57,48 @@ onMounted(async () => {
 
 const validateForm = (): boolean => {
   errors.value = {}
-  
-  if (!form.value.name.trim()) {
+
+  if (!form.value.name?.trim()) {
     errors.value.name = 'Nama bisnis harus diisi'
     return false
   }
-  
+
+  if (!form.value.bankName?.trim()) {
+    errors.value.bankName = 'Nama bank harus diisi'
+    return false
+  }
+
+  if (!form.value.bankAccount?.trim()) {
+    errors.value.bankAccount = 'Nomor rekening harus diisi'
+    return false
+  }
+
+  if (!form.value.accountHolder?.trim()) {
+    errors.value.accountHolder = 'Nama pemilik rekening harus diisi'
+    return false
+  }
+
   return true
 }
 
 const submitForm = async () => {
   if (!validateForm()) return
-  
+
   isLoading.value = true
-  
+  errors.value = {}
+
   try {
-    const endpoint = '/api/umkm/profile'
-    const method = 'PUT'
-    
-    const { data, error } = await useApi<Business>(endpoint, {
+    const endpoint = auth.user?.business
+      ? `/business/${auth.user.business.id}`
+      : '/business'
+
+    const method = auth.user?.business ? 'PUT' : 'POST'
+
+    const { data, error } = await useApi(endpoint, {
       method,
       body: form.value
     })
-    
+
     if (error.value) {
       if (error.value.data?.message) {
         errors.value.submit = error.value.data.message
@@ -75,242 +107,298 @@ const submitForm = async () => {
       }
       return
     }
-    
+
     // Update auth store with new business data
     if (data.value?.data && auth.user) {
-      auth.user.business = data.value.data
+      auth.user.business = data.value.data as any
     }
-    
+
     const toast = useToast()
     toast.add({
       title: 'Berhasil!',
-      description: isSetupMode.value ? 'Profil bisnis berhasil dibuat' : 'Profil bisnis berhasil diperbarui',
-      color: 'success'
-    })
-    
-    await navigateTo('/umkm')
-  } catch (error) {
-    console.error('Business form error:', error)
-    errors.value.submit = 'Terjadi kesalahan saat menyimpan data bisnis'
+      description: isSetupMode.value ? 'Profil bisnis berhasil dibuat' : 'Profil bisnis berhasil diperbarui'
+    } as any)
+
+    if (isSetupMode.value) {
+      await navigateTo('/umkm/outlets/create?setup=true')
+    } else {
+      await navigateTo('/umkm')
+    }
+  } catch (e: any) {
+    errors.value.submit = e.message || 'Terjadi kesalahan yang tidak terduga'
   } finally {
     isLoading.value = false
   }
 }
-
-const pageTitle = computed(() => {
-  if (isSetupMode.value) return 'Setup Profil Bisnis'
-  return auth.user?.business ? 'Edit Profil Bisnis' : 'Buat Profil Bisnis'
-})
-
-const buttonText = computed(() => {
-  if (isSetupMode.value) return 'Selesaikan Setup'
-  return auth.user?.business ? 'Perbarui Profil' : 'Buat Profil'
-})
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
-    <div class="mb-8">
-      <div class="flex items-center space-x-3 mb-4">
-        <div class="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
-          <Icon name="lucide:building-2" size="24" class="text-white" />
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-            {{ pageTitle }}
-          </h1>
-          <p class="text-gray-600 dark:text-gray-400">
-            {{ isSetupMode ? 'Lengkapi informasi bisnis Anda untuk memulai' : 'Kelola informasi bisnis Anda' }}
-          </p>
-        </div>
-      </div>
-      
-      <div v-if="isSetupMode" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-        <div class="flex items-start space-x-3">
-          <Icon name="lucide:info" size="20" class="text-blue-500 mt-0.5" />
-          <div>
-            <h3 class="font-medium text-blue-900 dark:text-blue-100">Selamat Datang!</h3>
-            <p class="text-blue-700 dark:text-blue-300 text-sm mt-1">
-              Untuk memulai menggunakan platform, silakan lengkapi informasi bisnis Anda terlebih dahulu.
-            </p>
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="py-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Pengaturan Akun</h1>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Kelola profil dan pengaturan akun Anda
+              </p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span class="text-sm text-green-600 dark:text-green-400 font-medium">Aktif</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Form -->
-    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <form @submit.prevent="submitForm" class="space-y-6">
-        <!-- Basic Information -->
-        <div>
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Informasi Dasar
-          </h2>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nama Bisnis *
-              </label>
-              <input
-                v-model="form.name"
-                type="text"
-                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-                placeholder="Masukkan nama bisnis Anda"
-                :class="{ 'border-red-500': errors.name }"
-              />
-              <p v-if="errors.name" class="text-red-500 text-sm mt-1">{{ errors.name }}</p>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Sidebar Navigation -->
+        <div class="lg:col-span-1">
+          <nav class="space-y-2">
+            <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="[
+              'w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200',
+              activeTab === tab.id
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border-l-4 border-primary-500'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+            ]">
+              <Icon :name="tab.icon" size="20" class="mr-3" />
+              <span class="font-medium">{{ tab.label }}</span>
+            </button>
+          </nav>
+
+          <!-- Profile Summary Card -->
+          <BaseCard class="mt-6 p-4">
+            <div class="text-center">
+              <div
+                class="w-16 h-16 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Icon name="lucide:user" size="24" class="text-primary-600 dark:text-primary-400" />
+              </div>
+              <h3 class="font-semibold text-gray-900 dark:text-white">{{ auth.user?.name }}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ auth.user?.email }}</p>
+              <div
+                class="mt-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300">
+                <Icon name="lucide:check-circle" size="12" class="mr-1" />
+                Terverifikasi
+              </div>
             </div>
-            
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Deskripsi Bisnis
-              </label>
-              <textarea
-                v-model="form.description"
-                rows="3"
-                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-                placeholder="Ceritakan tentang bisnis Anda..."
-              ></textarea>
-              <p class="text-gray-500 text-sm mt-1">
-                Deskripsi akan membantu pelanggan memahami bisnis Anda
-              </p>
-            </div>
-          </div>
+          </BaseCard>
         </div>
 
-        <!-- Bank Information -->
-        <div>
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Informasi Bank
-          </h2>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nama Bank
-              </label>
-              <select
-                v-model="form.bankName"
-                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-              >
-                <option value="">Pilih Bank</option>
-                <option value="BCA">BCA</option>
-                <option value="BNI">BNI</option>
-                <option value="BRI">BRI</option>
-                <option value="Mandiri">Mandiri</option>
-                <option value="CIMB Niaga">CIMB Niaga</option>
-                <option value="Danamon">Danamon</option>
-                <option value="Permata">Permata</option>
-                <option value="BTN">BTN</option>
-                <option value="BSI">BSI</option>
-                <option value="Lainnya">Lainnya</option>
-              </select>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nomor Rekening
-              </label>
-              <input
-                v-model="form.bankAccount"
-                type="text"
-                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-                placeholder="1234567890"
-                :class="{ 'border-red-500': errors.bankAccount }"
-              />
-              <p v-if="errors.bankAccount" class="text-red-500 text-sm mt-1">{{ errors.bankAccount }}</p>
-            </div>
-            
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nama Pemilik Rekening *
-              </label>
-              <input
-                v-model="form.accountHolder"
-                type="text"
-                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-                placeholder="Nama sesuai dengan rekening bank"
-                :class="{ 'border-red-500': errors.accountHolder }"
-              />
-              <p v-if="errors.accountHolder" class="text-red-500 text-sm mt-1">{{ errors.accountHolder }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Transaction Fee Settings -->
-        <div>
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Pengaturan Biaya Transaksi
-          </h2>
-          
-          <div class="space-y-3">
-            <div
-              v-for="option in feeOptions"
-              :key="option.value"
-              class="flex items-center space-x-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-              @click="form.defaultTransactionFeeBearer = option.value as FeeBearer"
-            >
-              <input
-                :id="option.value"
-                v-model="form.defaultTransactionFeeBearer"
-                :value="option.value"
-                type="radio"
-                class="w-4 h-4 text-primary-500 focus:ring-primary-500"
-              />
-              <label :for="option.value" class="flex-1 cursor-pointer">
-                <div class="font-medium text-gray-900 dark:text-white">
-                  {{ option.label }}
+        <!-- Main Content -->
+        <div class="lg:col-span-3">
+          <!-- Profile Tab -->
+          <div v-if="activeTab === 'profile'" class="space-y-6">
+            <BaseCard class="p-6">
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Profil Pengguna</h2>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Informasi pribadi Anda</p>
                 </div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">
-                  {{ option.value === 'CUSTOMER' ? 'Biaya transaksi akan ditambahkan ke total pembayaran pelanggan' : 'Biaya transaksi akan dipotong dari penghasilan Anda' }}
+                <BaseButton variant="outline" size="sm">
+                  <Icon name="lucide:edit" size="16" class="mr-2" />
+                  Edit Profil
+                </BaseButton>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Nama Lengkap
+                  </label>
+                  <BaseInput v-model="userForm.name" placeholder="Masukkan nama lengkap" />
                 </div>
-              </label>
-            </div>
-          </div>
-          
-          <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-            <div class="flex items-start space-x-2">
-              <Icon name="lucide:alert-triangle" size="16" class="text-yellow-500 mt-0.5" />
-              <p class="text-yellow-700 dark:text-yellow-300 text-sm">
-                Pengaturan ini akan menjadi default untuk semua produk. Anda dapat mengubahnya per produk nanti.
-              </p>
-            </div>
-          </div>
-        </div>
 
-        <!-- Error Message -->
-        <div v-if="errors.submit" class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-          <div class="flex items-start space-x-2">
-            <Icon name="lucide:alert-circle" size="16" class="text-red-500 mt-0.5" />
-            <p class="text-red-600 dark:text-red-400 text-sm">{{ errors.submit }}</p>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email
+                  </label>
+                  <BaseInput v-model="userForm.email" type="email" placeholder="Masukkan email" />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Nomor Telepon
+                  </label>
+                  <BaseInput v-model="userForm.phone" placeholder="Masukkan nomor telepon" />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Status Verifikasi
+                  </label>
+                  <div class="flex items-center space-x-2">
+                    <Icon name="lucide:check-circle" size="16" class="text-green-500" />
+                    <span class="text-sm text-green-600 dark:text-green-400">Email Terverifikasi</span>
+                  </div>
+                </div>
+              </div>
+            </BaseCard>
+          </div>
+
+          <!-- Business Tab -->
+          <div v-if="activeTab === 'business'" class="space-y-6">
+            <BaseCard class="p-6">
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Profil Bisnis</h2>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Informasi tentang bisnis Anda</p>
+                </div>
+                <BaseButton variant="outline" size="sm">
+                  <Icon name="lucide:edit" size="16" class="mr-2" />
+                  Edit Bisnis
+                </BaseButton>
+              </div>
+
+              <form @submit.prevent="submitForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Nama Bisnis *
+                    </label>
+                    <BaseInput v-model="form.name" placeholder="Masukkan nama bisnis" :error="errors.name" />
+                  </div>
+
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Deskripsi Bisnis
+                    </label>
+                    <textarea v-model="form.description" rows="4"
+                      class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-colors"
+                      placeholder="Ceritakan tentang bisnis Anda..."></textarea>
+                  </div>
+                </div>
+
+                <!-- Bank Information -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+                    Informasi Bank
+                  </h3>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Nama Bank *
+                      </label>
+                      <BaseInput v-model="form.bankName" placeholder="Contoh: Bank BNI" :error="errors.bankName" />
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Nomor Rekening *
+                      </label>
+                      <BaseInput v-model="form.bankAccount" placeholder="Masukkan nomor rekening"
+                        :error="errors.bankAccount" />
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Nama Pemilik Rekening *
+                      </label>
+                      <BaseInput v-model="form.accountHolder" placeholder="Sesuai dengan KTP"
+                        :error="errors.accountHolder" />
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Penanggung Biaya Transaksi
+                      </label>
+                      <BaseSelect v-model="form.defaultTransactionFeeBearer" :options="feeOptions" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <BaseButton variant="outline" type="button">
+                    Batal
+                  </BaseButton>
+                  <BaseButton type="submit" :loading="isLoading">
+                    {{ isSetupMode ? 'Buat Profil Bisnis' : 'Simpan Perubahan' }}
+                  </BaseButton>
+                </div>
+              </form>
+            </BaseCard>
+          </div>
+
+          <!-- Security Tab -->
+          <div v-if="activeTab === 'security'" class="space-y-6">
+            <BaseCard class="p-6">
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Keamanan Akun</h2>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Kelola password dan keamanan akun</p>
+                </div>
+              </div>
+
+              <div class="space-y-6">
+                <div
+                  class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <div class="flex items-start">
+                    <Icon name="lucide:shield-alert" size="20"
+                      class="text-yellow-600 dark:text-yellow-400 mt-0.5 mr-3" />
+                    <div>
+                      <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                        Keamanan Akun
+                      </h3>
+                      <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                        Pastikan akun Anda aman dengan menggunakan password yang kuat dan aktifkan autentikasi dua
+                        faktor.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                  <div
+                    class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div class="flex items-center">
+                      <Icon name="lucide:key" size="20" class="text-gray-400 mr-3" />
+                      <div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">Password</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Terakhir diubah 30 hari yang lalu</p>
+                      </div>
+                    </div>
+                    <BaseButton variant="outline" size="sm">
+                      Ubah Password
+                    </BaseButton>
+                  </div>
+
+                  <div
+                    class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div class="flex items-center">
+                      <Icon name="lucide:smartphone" size="20" class="text-gray-400 mr-3" />
+                      <div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">Autentikasi Dua Faktor</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Belum diaktifkan</p>
+                      </div>
+                    </div>
+                    <BaseButton variant="outline" size="sm">
+                      Aktifkan
+                    </BaseButton>
+                  </div>
+
+                  <div
+                    class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div class="flex items-center">
+                      <Icon name="lucide:monitor" size="20" class="text-gray-400 mr-3" />
+                      <div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">Perangkat Login</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Kelola perangkat yang terhubung</p>
+                      </div>
+                    </div>
+                    <BaseButton variant="outline" size="sm">
+                      Kelola
+                    </BaseButton>
+                  </div>
+                </div>
+              </div>
+            </BaseCard>
           </div>
         </div>
-
-        <!-- Submit Button -->
-        <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <button
-            v-if="!isSetupMode"
-            type="button"
-            @click="$router.back()"
-            class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            Batal
-          </button>
-          
-          <button
-            type="submit"
-            :disabled="isLoading"
-            class="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-          >
-            <span v-if="isLoading">
-              <Icon name="lucide:loader-2" size="20" class="animate-spin" />
-            </span>
-            <span>{{ buttonText }}</span>
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
 </template>

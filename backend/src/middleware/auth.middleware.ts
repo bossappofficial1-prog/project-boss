@@ -14,7 +14,13 @@ interface JwtPayload {
 import { redis } from "../config/redis";
 
 export const protect = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies.token;
+    // Get token from Authorization header
+    const authHeader = req.headers.authorization;
+    let token: string | undefined;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    }
 
     if (!token) {
         return next(new AppError(Messages.NOT_LOGGED_IN, HttpStatus.UNAUTHORIZED));

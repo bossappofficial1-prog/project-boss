@@ -12,10 +12,12 @@ import { CreateOrderInput } from "../schemas/order.schema";
 import { createMidtransTransactionService } from './payment.service';
 import { getOutletByIdService } from "./outlet.service";
 import { getBusinessByIdService } from "./business.service"; // Impor service bisnis
+import { generateOrderCode } from "../utils";
 
 async function createOrderInDbService(data: CreateOrderInput) {
     const { items, outletId, bookingSlotId } = data;
 
+    // Validasi booking slot jika ada
     if (bookingSlotId) {
         const slot = await db.bookingSlot.findUnique({ where: { id: bookingSlotId } });
         if (!slot) {
@@ -29,59 +31,204 @@ async function createOrderInDbService(data: CreateOrderInput) {
     const outlet = await getOutletByIdService(outletId);
     const business = await getBusinessByIdService(outlet.businessId);
 
-    let subTotal = 0;
-    const productDetails: (Product & { orderQuantity: number })[] = [];
+    // SECURITY FIX: Use transaction for atomic stock check and order creation
+    return await db.$transaction(async (tx) => {
+        let subTotal = 0;
+        const productDetails: (Product & { orderQuantity: number })[] = [];
 
-    for (const item of items) {
-        const product = await ProductRepository.findById(item.productId);
-        if (!product) {
-            throw new AppError(`Produk dengan ID ${item.productId} tidak ditemukan`, HttpStatus.NOT_FOUND);
+        // SECURITY FIX: Check stock and reserve it atomically
+        for (const item of items) {
+            const product = await tx.product.findUnique({
+                where: { id: item.productId },
+                select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    type: true,
+                    quantity: true,
+                    outletId: true,
+                    status: true
+                }
+            });
+
+            if (!product) {
+                throw new AppError(`Produk dengan ID ${item.productId} tidak ditemukan`, HttpStatus.NOT_FOUND);
+            }
+
+            // SECURITY FIX: Validate product belongs to the outlet
+            if (product.outletId !== outletId) {
+                throw new AppError(`Produk ${product.name} tidak tersedia di outlet ini`, HttpStatus.BAD_REQUEST);
+            }
+
+            // SECURITY FIX: Check if product is active
+            if (product.status !== 'ACTIVE') {
+                throw new AppError(`Produk ${product.name} tidak aktif`, HttpStatus.BAD_REQUEST);
+            }
+
+            // SECURITY FIX: Validate quantity limits
+            if (item.quantity <= 0 || item.quantity > 1000) {
+                throw new AppError(`Quantity tidak valid untuk produk ${product.name}`, HttpStatus.BAD_REQUEST);
+            }
+
+            // SECURITY FIX: Atomic stock check and decrement
+            if (product.type === 'GOODS') {
+                if (!product.quantity || product.quantity < item.quantity) {
+                    throw new AppError(`Stok produk ${product.name} tidak mencukupi. Tersedia: ${product.quantity}`, HttpStatus.BAD_REQUEST);
+                }
+
+                // Immediately decrement stock to prevent race conditions
+                await tx.product.update({
+                    where: { id: product.id },
+                    data: { quantity: { decrement: item.quantity } },
+                });
+            }
+
+            subTotal += product.price * item.quantity;
+            productDetails.push({
+                ...product,
+                orderQuantity: item.quantity,
+                quantity: product.quantity || 0,
+                costPrice: 0,
+                description: null,
+                unit: null,
+                transactionFeeBearer: null,
+                serviceDurationMinutes: null,
+                image: null,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
         }
-        if (product.type === 'GOODS' && (!product.quantity || product.quantity < item.quantity)) {
-            throw new AppError(`Stok produk ${product.name} tidak mencukupi`, HttpStatus.BAD_REQUEST);
+
+        // SECURITY FIX: Validate minimum and maximum order amount
+        if (subTotal < 1000) { // Minimum 1000 rupiah
+            throw new AppError("Minimum order adalah Rp 1.000", HttpStatus.BAD_REQUEST);
         }
-        subTotal += product.price * item.quantity;
-        productDetails.push({ ...product, orderQuantity: item.quantity });
-    }
+        if (subTotal > 50000000) { // Maximum 50 juta rupiah
+            throw new AppError("Maximum order adalah Rp 50.000.000", HttpStatus.BAD_REQUEST);
+        }
 
-    const midtransFee = Math.round(subTotal * 0.01); // 1% midtrans fee
-    const appFee = Math.round(subTotal * 0.03); // 3% platform fee
-    const feeBearer = business.defaultTransactionFeeBearer;
-    let totalAmount = subTotal;
+        // SECURITY: Additional validation for suspicious order patterns
+        const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+        if (totalItems > 100) {
+            throw new AppError("Terlalu banyak item dalam satu pesanan", HttpStatus.BAD_REQUEST);
+        }
 
-    if (feeBearer === 'CUSTOMER') {
-        totalAmount += midtransFee + appFee;
-    }
+        // SECURITY: Check if order value is suspicious (too high per item)
+        const averageItemPrice = subTotal / totalItems;
+        if (averageItemPrice > 1000000) { // Average > 1 juta per item
+            console.warn(`[SUSPICIOUS ORDER] High average item price: ${averageItemPrice} for phone: ${data.guestCustomer.phone.slice(-4)}`);
+        }
 
-    const order = await OrderRepository.create(data, outlet, totalAmount, midtransFee, appFee, feeBearer, productDetails);
+        const midtransFee = Math.round(subTotal * 0.01); // 1% midtrans fee
+        const appFee = Math.round(subTotal * 0.03); // 3% platform fee
+        const feeBearer = business.defaultTransactionFeeBearer;
+        let totalAmount = subTotal;
 
-    await db.$transaction(async (tx) => {
+        if (feeBearer === 'CUSTOMER') {
+            totalAmount += midtransFee + appFee;
+        }
+
+        // SECURITY: Log high-value orders for monitoring
+        if (totalAmount > 5000000) { // Orders above 5 million
+            console.warn(`[HIGH VALUE ORDER] Amount: ${totalAmount} for phone: ${data.guestCustomer.phone.slice(-4)}`);
+        }
+
+        // SECURITY: Create guest customer with sanitized data
+        let customer = await tx.guestCustomer.findFirst({
+            where: { phone: data.guestCustomer.phone },
+        });
+
+        if (!customer) {
+            // SECURITY: Sanitize and validate guest customer data
+            const sanitizedGuestData = {
+                name: data.guestCustomer.name.trim().replace(/\s+/g, ' '), // Normalize whitespace
+                phone: data.guestCustomer.phone.replace(/[^\d+]/g, ''), // Keep only digits and +
+            };
+
+            // SECURITY: Additional validation
+            if (sanitizedGuestData.name.length < 2 || sanitizedGuestData.name.length > 100) {
+                throw new AppError("Nama tidak valid", HttpStatus.BAD_REQUEST);
+            }
+
+            if (sanitizedGuestData.phone.length < 10 || sanitizedGuestData.phone.length > 15) {
+                throw new AppError("Nomor telepon tidak valid", HttpStatus.BAD_REQUEST);
+            }
+
+            customer = await tx.guestCustomer.create({
+                data: sanitizedGuestData,
+            });
+
+            // SECURITY: Log new guest customer creation
+            console.log(`[NEW GUEST] Created guest customer with phone ending: ${sanitizedGuestData.phone.slice(-4)}`);
+        } else {
+            // SECURITY: Log returning guest customer
+            console.log(`[RETURNING GUEST] Found existing customer with phone ending: ${customer.phone?.slice(-4) || 'unknown'}`);
+        }
+
+        // Create order
+        const order = await tx.order.create({
+            data: {
+                id: generateOrderCode({ name: outlet.name, maxLength: 12 }, { randomLength: 6 }),
+                guestCustomerId: customer.id,
+                outletId,
+                totalAmount,
+                midtransFee: midtransFee,
+                appFee: appFee,
+                chargedTo: feeBearer,
+                bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
+            },
+        });
+
+        // Create order items
+        await tx.orderItem.createMany({
+            data: items.map((item) => ({
+                orderId: order.id,
+                productId: item.productId,
+                quantity: item.quantity,
+                priceAtTimeOfOrder: productDetails.find(p => p.id === item.productId)?.price || 0,
+            })),
+        });
+
+        // Update booking slot if exists
         if (bookingSlotId) {
             await tx.bookingSlot.update({
                 where: { id: bookingSlotId },
                 data: { status: 'BOOKED', orderId: order.id },
             });
         }
-        for (const product of productDetails) {
-            await tx.orderItem.updateMany({
-                where: { orderId: order.id, productId: product.id },
-                data: { priceAtTimeOfOrder: product.price },
-            });
-        }
+
+        const io = getSocketIO();
+        io.to(business.id).emit('new_order', await tx.order.findUnique({
+            where: { id: order.id },
+            include: {
+                items: {
+                    include: { product: true }
+                },
+                guestCustomer: true,
+                outlet: true
+            }
+        }));
+
+        return { order, midtransFee, appFee, feeBearer, totalAmount };
     });
-
-    const io = getSocketIO();
-    io.to(business.id).emit('new_order', await OrderRepository.findById(order.id));
-
-
-    return { order, midtransFee, appFee, feeBearer, totalAmount };
 }
 
-export async function getOrderByIdService(id: string) {
+export async function getOrderByIdService(id: string, ownerId?: string) {
     const order = await OrderRepository.findById(id);
     if (!order) {
         throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+
+    // SECURITY FIX: Validate ownership if ownerId is provided
+    if (ownerId) {
+        const outlet = await getOutletByIdService(order.outletId);
+        const business = await getBusinessByIdService(outlet.businessId);
+
+        if (business.ownerId !== ownerId) {
+            throw new AppError("Anda tidak berhak mengakses pesanan ini.", HttpStatus.FORBIDDEN);
+        }
+    }
+
     return order;
 }
 

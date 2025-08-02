@@ -5,16 +5,10 @@ import { HttpStatus } from "../constants/http-status";
 import { getOrderByIdService, refundOrderService, createOrderAndMidtransTransactionService, updateOrderStatusService, completeServiceOrderService } from "../service/order.service";
 import { ReceiptService } from "../service/receipt.service";
 
-export const updateOrderStatusController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    const order = await updateOrderStatusService(id, status);
-    return ResponseUtil.success(res, order);
-});
-
 export const getOrderReceiptController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const order = await getOrderByIdService(id);
+    const ownerId = req.user!.id;
+    const order = await getOrderByIdService(id, ownerId);
 
     if (!order) {
         throw new Error("Order not found");
@@ -27,9 +21,29 @@ export const getOrderReceiptController = asyncHandler(async (req: Request, res: 
     res.send(pdfBuffer);
 });
 
+export const updateOrderStatusController = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const ownerId = req.user!.id;
+    
+    // Validate ownership before update
+    await getOrderByIdService(id, ownerId);
+    
+    const order = await updateOrderStatusService(id, status);
+    return ResponseUtil.success(res, order);
+});
+
 export const createOrderController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body;
+    
+    // SECURITY: Log guest order creation for monitoring
+    console.log(`[GUEST ORDER] Creating order for phone: ${payload.guestCustomer?.phone?.slice(-4)} at outlet: ${payload.outletId}`);
+    
     const { order, midtransTransaction } = await createOrderAndMidtransTransactionService(payload);
+    
+    // SECURITY: Log successful order creation
+    console.log(`[GUEST ORDER SUCCESS] Order ${order.id} created successfully for amount: ${order.totalAmount}`);
+    
     return ResponseUtil.success(res, {
         orderId: order.id,
         totalAmount: order.totalAmount,
@@ -40,18 +54,29 @@ export const createOrderController = asyncHandler(async (req: Request, res: Resp
 
 export const completeOrderController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
+    const ownerId = req.user!.id;
+    
+    // Validate ownership before complete
+    await getOrderByIdService(id, ownerId);
+    
     const order = await completeServiceOrderService(id);
     ResponseUtil.success(res, order);
 });
 
 export const getOrderByIdController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const order = await getOrderByIdService(id);
+    const ownerId = req.user!.id;
+    const order = await getOrderByIdService(id, ownerId);
     return ResponseUtil.success(res, order);
 });
 
 export const refundOrderController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
+    const ownerId = req.user!.id;
+    
+    // Validate ownership before refund
+    await getOrderByIdService(id, ownerId);
+    
     const order = await refundOrderService(id);
     return ResponseUtil.success(res, order);
 });

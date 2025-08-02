@@ -18,6 +18,20 @@ export default defineNuxtConfig({
 
   modules: ["@nuxt/icon", "@nuxt/image", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt", '@nuxt/ui'],
 
+  image: {
+    domains: ['localhost', 'images.unsplash.com'],
+    alias: {
+      localhost: 'http://localhost:1234'
+    },
+    screens: {
+      sm: 320,
+      md: 640,
+      lg: 1024,
+      xl: 1280,
+      xxl: 1536
+    }
+  },
+
   icon: {
     provider: 'server',
     mode: "css",

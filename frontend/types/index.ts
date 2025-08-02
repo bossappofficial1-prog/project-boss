@@ -142,6 +142,8 @@ export interface Outlet {
   updatedAt: Date
   image?: string
   businessId: string
+  latitude?: number
+  longitude?: number
   // Relations
   business?: Business
   products?: Product[]
@@ -340,6 +342,9 @@ export interface OutletForm {
   address?: string
   phone?: string
   image?: string
+  latitude?: number
+  longitude?: number
+  businessId: string
 }
 
 export interface ProductForm {

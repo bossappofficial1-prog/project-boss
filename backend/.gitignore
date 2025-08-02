@@ -25,6 +25,8 @@ public/*
 tmp/*
 !tmp/info.txt
 
+uploads/
+
 # Editor & IDE directories
 .vscode/
 .idea/
