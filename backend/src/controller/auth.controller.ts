@@ -23,11 +23,16 @@ export const loginController = asyncHandler(async (req: Request, res: Response) 
     res.cookie("token", result.token, {
         httpOnly: true,
         secure: config.isProduction,
-        sameSite: 'strict',
+        sameSite: 'lax',
+        domain: config.isProduction ? '.yourdomain.com' : 'localhost',
         maxAge: 24 * 60 * 60 * 1000, // 1 day
+        path: '/'
     });
 
-    return ResponseUtil.success(res, { user: result.user });
+    return ResponseUtil.success(res, {
+        user: result.user,
+        token: result.token
+    });
 });
 
 

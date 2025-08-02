@@ -13,6 +13,8 @@ import outletRouter from "./outlet.route";
 import expenseRouter from "./expense.route";
 import reportRouter from "./report.route";
 import { withdrawalRouter } from "./withdrawal.route";
+import staffRouter from "./staff.route";
+import operatingHoursRouter from "./operating-hours.route";
 
 const apiRouter = Router()
 
@@ -30,5 +32,7 @@ apiRouter.use('/home', homeRouter)
 apiRouter.use('/expenses', expenseRouter)
 apiRouter.use('/reports', reportRouter)
 apiRouter.use('/withdrawals', withdrawalRouter)
+apiRouter.use('/staff', staffRouter)
+apiRouter.use('/operating-hours', operatingHoursRouter)
 
 export default apiRouter

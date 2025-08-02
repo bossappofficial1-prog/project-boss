@@ -55,8 +55,8 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
         },
         customer_details: {
             first_name: order.guestCustomer.name,
-            email: order.guestCustomer.email,
             phone: order.guestCustomer.phone,
+            email: 'noreply@bossin.id', // Default email untuk Midtrans
         },
         item_details: itemDetails,
         expiry: {

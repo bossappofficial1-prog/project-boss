@@ -175,11 +175,63 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
     });
 }
 
-export async function getOutletByIdService(id: string) {
-    const outlet = await OutletRepository.findByIdWithProducts(id);
+export async function getOutletByIdService(id: string, date?: Date) {
+    const today = date || new Date();
+    const dayOfWeek = today.getDay();
+
+    const outlet = await db.outlet.findUnique({
+        where: { id },
+        include: {
+            products: {
+                where: {
+                    type: 'SERVICE',
+                    status: 'ACTIVE'
+                },
+                include: {
+                    capacity: true,
+                    bookingSlots: {
+                        where: {
+                            date: {
+                                equals: today
+                            },
+                            status: 'AVAILABLE'
+                        },
+                        orderBy: {
+                            startTime: 'asc'
+                        }
+                    }
+                }
+            },
+            operatingHours: {
+                where: {
+                    dayOfWeek,
+                    isOpen: true
+                }
+            },
+            business: {
+                select: {
+                    defaultTransactionFeeBearer: true
+                }
+            }
+        }
+    });
+
     if (!outlet) {
-        throw new AppError(`Outlet dengan id ${id} tidak tersedia.`, HttpStatus.NOT_FOUND);
+        throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+
+    // Hanya tampilkan slot yang dalam jam operasional
+    const operatingHours = outlet.operatingHours[0];
+    if (operatingHours) {
+        outlet.products = outlet.products.map(product => ({
+            ...product,
+            bookingSlots: product.bookingSlots.filter(slot =>
+                slot.startTime >= operatingHours.openTime &&
+                slot.endTime <= operatingHours.closeTime
+            )
+        }));
+    }
+
     return outlet;
 }
 export async function getAllOutletService() {

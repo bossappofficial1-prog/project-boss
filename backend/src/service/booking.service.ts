@@ -8,6 +8,8 @@ import { createMidtransTransactionService } from './payment.service';
 import { getOrderByIdService } from './order.service';
 import { db } from '../config/prisma';
 import { config } from '../config';
+import { Prisma, PrismaClient, OutletOperatingHours } from "@prisma/client";
+import { add, set } from "date-fns";
 
 export async function createBookingSlotService(data: CreateBookingSlotInput) {
     const product = await getProductByIdService(data.productId);
@@ -88,4 +90,68 @@ export async function deleteBookingSlotService(id: string) {
     await getBookingSlotByIdService(id);
     const bookingSlot = await BookingRepository.delete(id);
     return bookingSlot;
+}
+
+type GenerateSlotsParams = {
+    productId: string;
+    operatingHours: OutletOperatingHours[];
+    serviceDurationMinutes: number;
+    daysToGenerate: number;
+};
+
+/**
+ * Generates default booking slots for a service product based on outlet operating hours.
+ * @param prisma - Prisma client instance.
+ * @param params - Parameters for slot generation.
+ */
+export async function generateDefaultBookingSlots(
+    prisma: Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">,
+    { productId, operatingHours, serviceDurationMinutes, daysToGenerate }: GenerateSlotsParams
+) {
+    const slotsToCreate: Prisma.BookingSlotCreateManyInput[] = [];
+    const today = new Date();
+
+    for (let i = 0; i < daysToGenerate; i++) {
+        const currentDate = add(today, { days: i });
+        const dayOfWeek = currentDate.getDay();
+
+        const workHours = operatingHours.find(h => h.dayOfWeek === dayOfWeek && h.isOpen);
+
+        if (workHours) {
+            let currentTime = set(currentDate, {
+                hours: workHours.openTime.getHours(),
+                minutes: workHours.openTime.getMinutes(),
+                seconds: 0,
+                milliseconds: 0,
+            });
+
+            const closeTime = set(currentDate, {
+                hours: workHours.closeTime.getHours(),
+                minutes: workHours.closeTime.getMinutes(),
+                seconds: 0,
+                milliseconds: 0,
+            });
+
+            while (add(currentTime, { minutes: serviceDurationMinutes }) <= closeTime) {
+                const slotEndTime = add(currentTime, { minutes: serviceDurationMinutes });
+
+                slotsToCreate.push({
+                    productId: productId,
+                    date: currentDate,
+                    startTime: currentTime,
+                    endTime: slotEndTime,
+                    status: 'AVAILABLE',
+                });
+
+                currentTime = slotEndTime;
+            }
+        }
+    }
+
+    if (slotsToCreate.length > 0) {
+        await prisma.bookingSlot.createMany({
+            data: slotsToCreate,
+            skipDuplicates: true,
+        });
+    }
 }

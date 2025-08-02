@@ -18,6 +18,12 @@ export class OutletRepository {
             where: { id },
             include: {
                 business: true,
+                operatingHours: true,
+                staff: {
+                    where: {
+                        status: 'ACTIVE'
+                    }
+                }
             },
         });
     }

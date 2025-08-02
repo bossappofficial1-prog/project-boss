@@ -70,6 +70,84 @@ enum BookingSlotStatus {
   BLOCKED // Untuk maintenance atau libur
 }
 
+enum StaffStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+}
+
+enum StaffRole {
+  SERVICE // Staff yang menangani layanan/jasa
+  CASHIER // Kasir
+  ADMIN // Admin outlet
+  INVENTORY // Staff gudang/inventory
+  OTHER // Peran lainnya
+}
+
+// === MODELS ===
+
+// Model untuk jam operasional outlet
+model OutletOperatingHours {
+  id        String   @id @default(uuid())
+  dayOfWeek Int // 0-6 (Minggu-Sabtu)
+  openTime  DateTime
+  closeTime DateTime
+  isOpen    Boolean  @default(true)
+
+  // Relasi ke outlet
+  outletId String
+  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([outletId, dayOfWeek])
+  @@index([outletId])
+}
+
+// Model untuk kapasitas layanan
+model ServiceCapacity {
+  id          String @id @default(uuid())
+  maxParallel Int    @default(1) // Berapa banyak service bisa dilakukan bersamaan
+
+  // Relasi ke produk
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+}
+
+// Model untuk staff/karyawan outlet
+model Staff {
+  id     String      @id @default(uuid())
+  name   String
+  phone  String?
+  status StaffStatus @default(ACTIVE)
+  role   StaffRole   @default(OTHER)
+
+  // Informasi tambahan
+  email   String? @unique
+  address String?
+  notes   String?
+
+  // Relasi ke outlet
+  outletId String
+  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  // Relasi ke booking slots yang ditangani (khusus staff SERVICE)
+  bookings BookingSlot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([outletId])
+}
+
+// === MODELS ===
+
 enum CustomerType {
   GUEST // Customer tanpa register
 }
@@ -174,6 +252,10 @@ model Outlet {
   // Relasi: Banyak pengeluaran bisa dicatat per outlet
   expenses Expense[]
 
+  // Relasi baru untuk booking features
+  operatingHours OutletOperatingHours[]
+  staff          Staff[]
+
   @@index([businessId])
 }
 
@@ -209,6 +291,9 @@ model Product {
   // Relasi: Satu produk service bisa punya banyak booking slot
   bookingSlots BookingSlot[]
 
+  // Relasi: Satu produk service memiliki satu kapasitas
+  capacity ServiceCapacity?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -231,12 +316,17 @@ model BookingSlot {
   orderId String? @unique
   order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
+  // Relasi: Slot ini ditangani oleh staff mana
+  staffId String?
+  staff   Staff?  @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([productId, startTime, endTime]) // Tidak boleh ada slot yang sama
   @@index([productId])
   @@index([date])
+  @@index([staffId])
 }
 
 // Model untuk menyimpan data customer guest (tanpa register)

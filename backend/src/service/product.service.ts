@@ -7,11 +7,50 @@ import { AppError } from "../errors/app-error";
 import { ProductRepository } from "../repositories/product.repository";
 import { CreateProductInput, UpdateProductInput, createProductSchema } from "../schemas/product.schema";
 import { getOutletByIdService } from './outlet.service';
+import { generateDefaultBookingSlots } from './booking.service';
 
 export async function createProductService(data: CreateProductInput) {
-    await getOutletByIdService(data.outletId)
+    await getOutletByIdService(data.outletId);
 
-    const product = await ProductRepository.create(data);
+    // Buat produk
+    const product = await db.$transaction(async (prisma) => {
+        const createdProduct = await prisma.product.create({
+            data: {
+                ...data,
+                // Jika tipe SERVICE, buat slot default
+                ...(data.type === 'SERVICE' && data.serviceDurationMinutes && {
+                    capacity: {
+                        create: {
+                            maxParallel: 1
+                        }
+                    }
+                })
+            },
+            include: {
+                capacity: true
+            }
+        });
+
+        // Jika service, generate slot untuk 30 hari ke depan
+        if (data.type === 'SERVICE' && data.serviceDurationMinutes) {
+            const outlet = await prisma.outlet.findUnique({
+                where: { id: data.outletId },
+                include: { operatingHours: true }
+            });
+
+            if (outlet?.operatingHours) {
+                await generateDefaultBookingSlots(prisma, {
+                    productId: createdProduct.id,
+                    operatingHours: outlet.operatingHours,
+                    serviceDurationMinutes: data.serviceDurationMinutes,
+                    daysToGenerate: 30
+                });
+            }
+        }
+
+        return createdProduct;
+    });
+
     return product;
 }
 
