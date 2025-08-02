@@ -294,7 +294,6 @@ const formatDateTime = (dateString: string): string => {
               class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <td class="py-4 px-6">
                 <div class="font-medium text-gray-900 dark:text-white">{{ expense.description }}</div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">ID: {{ expense.id }}</div>
               </td>
               <td class="py-4 px-6">
                 <div class="font-semibold text-gray-900 dark:text-white">{{ formatCurrency(expense.amount) }}</div>
