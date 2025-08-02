@@ -73,7 +73,7 @@
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">
           Profil Bisnis
         </h2>
-        <NuxtLink to="/umkm/account/edit">
+        <NuxtLink to="/umkm/account">
           <BaseButton size="sm" variant="outline">
           <Icon name="mdi:pencil" size="16" class="mr-2" />
           Edit Bisnis
@@ -217,61 +217,12 @@
       </div>
     </BaseCard>
 
-    <!-- Quick Actions -->
+    <!-- Dashboard Section -->
     <BaseCard v-if="auth.selectedOutlet">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-        Aksi Cepat - {{ auth.selectedOutlet.name }}
+        Dashboard - {{ auth.selectedOutlet.name }}
       </h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <NuxtLink 
-          to="/umkm/products"
-          class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 transition-colors group"
-        >
-          <Icon name="mdi:package-variant" size="24" class="text-gray-400 group-hover:text-primary-500 mb-2" />
-          <span class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-primary-500">
-            Kelola Produk
-          </span>
-        </NuxtLink>
-
-        <NuxtLink 
-          to="/umkm/orders"
-          class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 transition-colors group"
-        >
-          <Icon name="mdi:clipboard-list" size="24" class="text-gray-400 group-hover:text-primary-500 mb-2" />
-          <span class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-primary-500">
-            Kelola Pesanan
-          </span>
-        </NuxtLink>
-
-        <NuxtLink 
-          to="/umkm/queue"
-          class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 transition-colors group"
-        >
-          <Icon name="mdi:account-group" size="24" class="text-gray-400 group-hover:text-primary-500 mb-2" />
-          <span class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-primary-500">
-            Kelola Antrian
-          </span>
-        </NuxtLink>
-
-        <NuxtLink 
-          to="/umkm/reports"
-          class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 transition-colors group"
-        >
-          <Icon name="mdi:chart-line" size="24" class="text-gray-400 group-hover:text-primary-500 mb-2" />
-          <span class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-primary-500">
-            Lihat Laporan
-          </span>
-        </NuxtLink>
-        <NuxtLink
-          to="/umkm/expense"
-          class="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 transition-colors group"
-        >
-          <Icon name="mdi:cash-minus" size="24" class="text-gray-400 group-hover:text-primary-500 mb-2" />
-          <span class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-primary-500">
-            Kelola Pengeluaran
-          </span>
-        </NuxtLink>
-      </div>
+      <UmkmDashboard />
     </BaseCard>
   </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BusinessForm, FeeBearer } from '~/types'
+import type { Business, BusinessForm, FeeBearer } from '~/types'
 
 definePageMeta({
   layout: 'blank',
@@ -59,10 +59,10 @@ const submitForm = async () => {
   isLoading.value = true
   
   try {
-    const endpoint = auth.user?.business ? '/api/business/update' : '/api/business/create'
-    const method = auth.user?.business ? 'PUT' : 'POST'
+    const endpoint = '/api/umkm/profile'
+    const method = 'PUT'
     
-    const { data, error } = await useApi<{ business: any }>(endpoint, {
+    const { data, error } = await useApi<Business>(endpoint, {
       method,
       body: form.value
     })
@@ -74,6 +74,11 @@ const submitForm = async () => {
         errors.value.submit = 'Terjadi kesalahan saat menyimpan data bisnis'
       }
       return
+    }
+    
+    // Update auth store with new business data
+    if (data.value?.data && auth.user) {
+      auth.user.business = data.value.data
     }
     
     const toast = useToast()

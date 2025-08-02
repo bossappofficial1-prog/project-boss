@@ -73,7 +73,7 @@ const submitForm = async () => {
   isLoading.value = true
   
   try {
-    const endpoint = '/api/products/create'
+    const endpoint = '/products'
     const method = 'POST'
     
     const { data, error } = await useApi<{ product: any }>(endpoint, {

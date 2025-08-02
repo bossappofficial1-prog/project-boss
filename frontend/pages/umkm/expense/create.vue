@@ -43,7 +43,7 @@ const submitForm = async () => {
   isLoading.value = true
   
   try {
-    const endpoint = '/api/expenses/create'
+    const endpoint = '/expenses'
     const method = 'POST'
     
     const { data, error } = await useApi<{ expense: any }>(endpoint, {

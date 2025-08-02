@@ -23,6 +23,7 @@ const menuItems = [
   { to: '/umkm/reports', icon: 'lucide:clipboard-list', label: 'Laporan' },
   { to: '/umkm/transaction', icon: 'lucide:circle-dollar-sign', label: 'Pengeluaran' },
   { to: '/umkm/expense', icon: 'lucide:history', label: 'Riwayat transaksi' },
+  { to: '/umkm/withdrawal', icon: 'lucide:landmark', label: 'Penarikan Dana' },
 ]
 </script>
 

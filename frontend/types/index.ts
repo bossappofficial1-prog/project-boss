@@ -371,6 +371,12 @@ export interface OrderForm {
   }
 }
 
+export interface GuestCustomerForm {
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
 export interface BookingSlotForm {
   productId: string
   date: Date
@@ -397,13 +403,18 @@ export interface MembershipForm {
 // DASHBOARD TYPES
 // =============================================
 
-export interface DashboardStats {
-  totalRevenue: number
-  totalOrders: number
-  totalProducts: number
-  totalCustomers: number
-  revenueGrowth: number
-  orderGrowth: number
+export interface DashboardSummary {
+  totalProducts: number;
+  totalServices: number;
+  totalOrders: number;
+  totalRevenue: number;
+}
+
+export interface OrderStats {
+  [date: string]: {
+    totalOrders: number;
+    totalRevenue: number;
+  };
 }
 
 export interface RevenueChart {

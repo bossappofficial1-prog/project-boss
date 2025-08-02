@@ -41,15 +41,20 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await $fetch<{
           success: boolean
-          token: string
+          data: {
+            token: string
+          }
         }>('/auth/login', {
           baseURL,
           method: 'POST',
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+          },
           body: credentials
         })
 
-        if (response.success && response.token) {
-          this.token = response.token
+        if (response.success && response.data.token) {
+          this.token = response.data.token
         }
 
         await this.fetchUserData()
@@ -62,22 +67,23 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       this.isLoading = true
-      const config = useRuntimeConfig()
-      const baseURL = config.public.apiBaseUrl
-      console.log(`fetching ${baseURL}/auth/logout...`);
+      // const config = useRuntimeConfig()
+      // const baseURL = config.public.apiBaseUrl
+      // console.log(`fetching ${baseURL}/auth/logout...`);
 
       try {
-        await $fetch('/auth/logout', {
-          baseURL,
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        // await $fetch('/auth/logout', {
+        //   baseURL,
+        //   method: 'POST',
+        //   headers: {
+        //     'Authorization': `Bearer ${this.token}`,
+        //     'ngrok-skip-browser-warning': 'true',
+        //   }
+        // })
+        this.clearSession()
       } catch (error) {
         console.error('Logout error:', error)
       } finally {
-        this.clearSession()
         this.isLoading = false
         await navigateTo('/auth/login')
       }
@@ -163,6 +169,7 @@ export const useAuthStore = defineStore('auth', {
         }>('/auth/me', {
           baseURL,
           headers: {
+            'ngrok-skip-browser-warning': 'true',
             'Authorization': `Bearer ${this.token}`
           }
         })

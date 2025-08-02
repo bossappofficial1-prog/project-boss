@@ -8,6 +8,30 @@ definePageMeta({
 
 const auth = useAuthStore()
 const isLoading = ref(false)
+const imageFile = ref<File | null>(null)
+const imageUrlPreview = ref<string | null>(null)
+
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
+    // check file size
+    if (file.size > 2 * 1024 * 1024) {
+      errors.value.image = 'Ukuran gambar tidak boleh lebih dari 2MB.'
+      return
+    }
+    
+    imageFile.value = file
+    form.value.image = '' // Clear previous image URL if a new file is selected
+    errors.value.image = '' // Clear previous error
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      imageUrlPreview.value = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+}
 
 const form = ref<OutletForm>({
   name: '',
@@ -31,18 +55,53 @@ const validateForm = (): boolean => {
 
 const submitForm = async () => {
   if (!validateForm()) return
-  
+
   isLoading.value = true
-  
+  errors.value = {}
+
+  let finalImageUrl = form.value.image
+
+  if (imageFile.value) {
+    const formData = new FormData()
+    formData.append('image', imageFile.value)
+
+    try {
+      const { data: uploadData, error: uploadError } = await useApi<{
+        url: string
+      }>('/upload/image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (uploadError.value || !uploadData.value?.data?.url) {
+        errors.value.image = 'Gagal mengunggah gambar.'
+        isLoading.value = false
+        return
+      }
+      finalImageUrl = uploadData.value.data.url
+    } catch (e) {
+      console.error('Image upload error', e)
+      errors.value.image = 'Terjadi kesalahan saat mengunggah gambar.'
+      isLoading.value = false
+      return
+    }
+  }
+
   try {
-    const endpoint = '/api/outlets/create'
+    const endpoint = '/outlets'
     const method = 'POST'
-    
+
+    const payload = {
+      ...form.value,
+      image: finalImageUrl,
+      businessId: auth.business?.id
+    }
+
     const { data, error } = await useApi<{ outlet: any }>(endpoint, {
       method,
-      body: form.value
+      body: payload
     })
-    
+
     if (error.value) {
       if (error.value.data?.message) {
         errors.value.submit = error.value.data.message
@@ -51,14 +110,14 @@ const submitForm = async () => {
       }
       return
     }
-    
+
     const toast = useToast()
     toast.add({
       title: 'Berhasil!',
       description: 'Outlet berhasil dibuat',
       color: 'success'
     })
-    
+
     await navigateTo('/umkm')
   } catch (error) {
     console.error('Outlet form error:', error)
@@ -143,14 +202,37 @@ const buttonText = computed(() => 'Tambah Outlet')
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                URL Gambar Outlet
+                Gambar Outlet
               </label>
-              <input
-                v-model="form.image"
-                type="text"
-                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-                placeholder="URL gambar outlet (opsional)"
-              />
+              <div class="mt-2">
+                <div class="flex items-center gap-x-3">
+                  <img v-if="imageUrlPreview" :src="imageUrlPreview" alt="Preview" class="h-24 w-24 rounded-lg object-cover">
+                  <img v-else-if="form.image" :src="form.image" alt="Current Image" class="h-24 w-24 rounded-lg object-cover">
+                  <div v-else class="h-24 w-24 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                    <Icon name="lucide:image" class="w-10 h-10 text-gray-400" />
+                  </div>
+                  <div>
+                    <label
+                      for="file-upload"
+                      class="cursor-pointer rounded-md bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <span>Pilih Gambar</span>
+                      <input
+                        id="file-upload"
+                        name="file-upload"
+                        type="file"
+                        class="sr-only"
+                        accept="image/*"
+                        @change="handleFileChange"
+                      >
+                    </label>
+                    <p class="text-xs leading-5 text-gray-600 dark:text-gray-400 mt-1">
+                      PNG, JPG, GIF up to 2MB.
+                    </p>
+                  </div>
+                </div>
+                <p v-if="errors.image" class="text-red-500 text-sm mt-1">{{ errors.image }}</p>
+              </div>
             </div>
           </div>
         </div>

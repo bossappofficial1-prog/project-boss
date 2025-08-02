@@ -4,7 +4,7 @@ import type { ApiResponse } from "~/types"
 export function useApi<T>(
   endpoint: string,
   options: {
-    method?: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
     query?: Record<string, any>,
     body?: any,
     lazy?: boolean,
@@ -17,7 +17,13 @@ export function useApi<T>(
 
   const headers: HeadersInit = {
     'ngrok-skip-browser-warning': 'true',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  }
+
+  // If the body is FormData, don't set the Content-Type header.
+  // The browser will automatically set it with the correct boundary.
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json'
   }
 
   return useFetch<ApiResponse<T>>(endpoint, {
@@ -27,6 +33,6 @@ export function useApi<T>(
     body: options.body,
     headers,
     lazy: options.lazy ?? false,
-    immediate: options.immediate ?? true,
+    immediate: options.immediate ?? true
   })
 }

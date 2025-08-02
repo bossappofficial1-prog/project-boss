@@ -8,7 +8,7 @@
     <!-- Filter & Search -->
     <div class="flex justify-between items-center">
       <input
-        v-model="searchTerm"
+        v-model="searchQuery"
         type="text"
         placeholder="Cari transaksi..."
         class="border p-2 rounded w-64"
@@ -19,9 +19,8 @@
     <BaseTable>
       <template #thead>
         <tr>
-          <BaseTableHeader>#</BaseTableHeader>
-          <BaseTableHeader>ID</BaseTableHeader>
-          <BaseTableHeader>Customer</BaseTableHeader>
+          <BaseTableHeader>ID Transaksi</BaseTableHeader>
+          <BaseTableHeader>ID Pesanan</BaseTableHeader>
           <BaseTableHeader>Tanggal</BaseTableHeader>
           <BaseTableHeader>Jumlah</BaseTableHeader>
           <BaseTableHeader>Metode</BaseTableHeader>
@@ -30,27 +29,36 @@
         </tr>
       </template>
 
-      <BaseTableRow v-for="(item, idx) in paginatedData" :key="item.id">
-        <td class="p-3">{{ startNumber + idx }}</td>
-        <td class="p-3">{{ item.id }}</td>
-        <td class="p-3">{{ item.customer }}</td>
-        <td class="p-3">{{ new Date(item.createdAt).toLocaleString() }}</td>
-        <td class="p-3">Rp {{ item.amount.toLocaleString() }}</td>
-        <td class="p-3">{{ item.method }}</td>
-        <td class="p-3">
-          <span
-            :class="[
-              'px-2 py-1 rounded text-xs',
-              item.status === 'PAID' ? 'bg-green-100 text-green-600' :
-              item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-600' :
-              'bg-red-100 text-red-600'
-            ]"
-          >
-            {{ item.status }}
-          </span>
+      <tr v-if="pending">
+        <td colspan="7" class="text-center p-4">
+          <BaseLoading />
         </td>
-        <td class="p-3 space-x-2">
-          <button class="text-blue-600 hover:underline">Detail</button>
+      </tr>
+      <tr v-else-if="error">
+        <td colspan="7" class="text-center p-4">
+          <BaseErrorState :error="error" @retry="refresh" />
+        </td>
+      </tr>
+      <tr v-else-if="transactions.length === 0">
+        <td colspan="7" class="text-center p-4">
+          <BaseEmptyState title="Belum Ada Transaksi" message="Belum ada transaksi yang tercatat." icon="mdi:cash-multiple" />
+        </td>
+      </tr>
+      <BaseTableRow v-else v-for="transaction in transactions" :key="transaction.id">
+        <td class="p-3">{{ transaction.id }}</td>
+        <td class="p-3">{{ transaction.orderId }}</td>
+        <td class="p-3">{{ new Date(transaction.createdAt).toLocaleString() }}</td>
+        <td class="p-3">Rp {{ transaction.amount.toLocaleString() }}</td>
+        <td class="p-3">{{ transaction.paymentMethod }}</td>
+        <td class="p-3">
+          <BaseBadge :variant="getStatusVariant(transaction.status)">
+            {{ transaction.status }}
+          </BaseBadge>
+        </td>
+        <td class="p-3">
+          <NuxtLink :to="`/umkm/orders/${transaction.orderId}`">
+            <BaseButton size="sm" variant="outline">Lihat Pesanan</BaseButton>
+          </NuxtLink>
         </td>
       </BaseTableRow>
 
@@ -66,73 +74,66 @@
   </div>
 </template>
 
-<script setup>
-const transactions = ref([
-  {
-    id: 'TRX001',
-    customer: 'Budi',
-    createdAt: '2024-06-29T10:00:00',
-    amount: 150000,
-    method: 'QRIS',
-    status: 'PAID'
-  },
-  {
-    id: 'TRX002',
-    customer: 'Sari',
-    createdAt: '2024-06-29T11:30:00',
-    amount: 250000,
-    method: 'Gopay',
-    status: 'PENDING'
-  },
-  {
-    id: 'TRX003',
-    customer: 'Andi',
-    createdAt: '2024-06-29T12:45:00',
-    amount: 180000,
-    method: 'QRIS',
-    status: 'PAID'
-  },
-  {
-    id: 'TRX004',
-    customer: 'Dina',
-    createdAt: '2024-06-29T14:00:00',
-    amount: 300000,
-    method: 'QRIS',
-    status: 'FAILED'
-  },
-  {
-    id: 'TRX005',
-    customer: 'Rina',
-    createdAt: '2024-06-29T15:00:00',
-    amount: 210000,
-    method: 'Bank Transfer',
-    status: 'PAID'
-  }
-])
+<script setup lang="ts">
+import { useAuthStore } from '~/stores/auth'
+import type { Transaction } from '~/types'
+import { useDebounceFn } from '@vueuse/core'
 
-const searchTerm = ref('')
+definePageMeta({
+  layout: 'umkm',
+  middleware: ["auth", 'owner', 'business-required']
+})
+
+const auth = useAuthStore()
+const searchQuery = ref('')
 const currentPage = ref(1)
-const perPage = 5
+const perPage = 10
 
-const filteredData = computed(() =>
-  transactions.value.filter(item =>
-    item.id.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-    item.customer.toLowerCase().includes(searchTerm.value.toLowerCase())
-  )
+const { data, pending, error, refresh } = useAsyncData(
+  'transactions-list',
+  () => {
+    const outletId = auth.selectedOutlet?.id
+    if (!outletId) {
+      return Promise.resolve({ data: { transactions: [], total: 0 } })
+    }
+    return $fetch(`/api/v1/transactions/outlet/${outletId}`, {
+      params: {
+        q: searchQuery.value,
+        page: currentPage.value,
+        limit: perPage
+      },
+    })
+  },
+  {
+    watch: [() => auth.selectedOutlet?.id, currentPage],
+    lazy: true,
+    immediate: false,
+    transform: (response: any) => {
+      return {
+        transactions: response.data?.transactions || [],
+        total: response.data?.total || 0
+      }
+    },
+  }
 )
 
-const totalPages = computed(() =>
-  Math.ceil(filteredData.value.length / perPage)
-)
+const transactions = computed(() => data.value?.transactions || [])
+const totalTransactions = computed(() => data.value?.total || 0)
 
-const paginatedData = computed(() =>
-  filteredData.value.slice(
-    (currentPage.value - 1) * perPage,
-    currentPage.value * perPage
-  )
-)
+const totalPages = computed(() => Math.ceil(totalTransactions.value / perPage))
 
-const startNumber = computed(() => (currentPage.value - 1) * perPage + 1)
+const debouncedRefresh = useDebounceFn(refresh, 500)
+
+watch(searchQuery, () => {
+  currentPage.value = 1
+  debouncedRefresh()
+})
+
+onMounted(() => {
+  if (auth.selectedOutlet?.id) {
+    refresh()
+  }
+})
 
 function prevPage() {
   if (currentPage.value > 1) currentPage.value--
@@ -142,7 +143,16 @@ function nextPage() {
   if (currentPage.value < totalPages.value) currentPage.value++
 }
 
-definePageMeta({
-  layout: 'umkm'
-})
+function getStatusVariant(status: string) {
+  switch (status) {
+    case 'SUCCESS':
+      return 'success'
+    case 'PENDING':
+      return 'warning'
+    case 'FAILED':
+      return 'error'
+    default:
+      return 'gray'
+  }
+}
 </script>
