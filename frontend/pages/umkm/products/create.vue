@@ -19,6 +19,7 @@ const form = ref<ProductForm>({
   unit: '',
   status: ServiceStatus.ACTIVE, // Default to ACTIVE
   transactionFeeBearer: FeeBearer.CUSTOMER, // Default to CUSTOMER
+  outletId: auth.selectedOutlet?.id!,
   serviceDurationMinutes: 0,
   image: ''
 })
