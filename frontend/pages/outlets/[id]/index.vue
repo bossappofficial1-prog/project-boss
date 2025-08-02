@@ -11,8 +11,9 @@ const outletId = route.params.id as string
 const { data, pending, error, refresh } = useApi<Outlet>(`/outlets/${outletId}`)
 
 const outlet = computed(() => data.value?.data)
-const products = computed(() => outlet.value?.products?.filter(p => p.type === 'GOODS') || [])
-const services = computed(() => outlet.value?.products?.filter(p => p.type === 'SERVICE') || [])
+const { data: dataProduct, pending: pendingProduct, error: errorProduct, refresh: refreshProduct } = useApi<Product[]>(`/products/outlet/${outletId}`)
+const products = computed(() => dataProduct.value?.data?.filter(p => p.type === 'GOODS') || [])
+const services = computed(() => dataProduct.value?.data?.filter(p => p.type === 'SERVICE') || [])
 const activeTab = ref<'produk' | 'layanan'>('produk')
 
 // --- Booking State ---
@@ -317,7 +318,31 @@ function shareOutlet() {
 
           <!-- Products Tab -->
           <div v-if="activeTab === 'produk'">
-            <div v-if="!products.length" class="text-center py-20">
+            <!-- Loading State for Products -->
+            <div v-if="pendingProduct" class="text-center py-20">
+              <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center animate-pulse mx-auto mb-4">
+                <Icon name="lucide:package" class="h-8 w-8 text-white" />
+              </div>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Memuat produk...</h3>
+              <p class="text-gray-600 dark:text-gray-400">Mohon tunggu sebentar</p>
+            </div>
+
+            <!-- Error State for Products -->
+            <div v-else-if="errorProduct" class="text-center py-20">
+              <div class="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icon name="lucide:alert-circle" class="h-8 w-8 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Gagal memuat produk</h3>
+              <p class="text-gray-600 dark:text-gray-400 mb-6">Terjadi kesalahan saat mengambil data produk</p>
+              <button @click="refreshProduct()"
+                class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-medium transition-colors">
+                <Icon name="lucide:refresh-cw" class="h-4 w-4 mr-2" />
+                Coba Lagi
+              </button>
+            </div>
+
+            <!-- Empty State for Products -->
+            <div v-else-if="!products.length" class="text-center py-20">
               <div
                 class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Icon name="lucide:package" class="h-10 w-10 text-gray-400" />
@@ -328,6 +353,7 @@ function shareOutlet() {
               </p>
             </div>
 
+            <!-- Products Grid -->
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div v-for="product in products" :key="product.id"
                 class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:border-red-300 dark:hover:border-red-600 transition-all duration-300">
@@ -397,7 +423,31 @@ function shareOutlet() {
 
           <!-- Services Tab -->
           <div v-if="activeTab === 'layanan'">
-            <div v-if="!services.length" class="text-center py-20">
+            <!-- Loading State for Services -->
+            <div v-if="pendingProduct" class="text-center py-20">
+              <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center animate-pulse mx-auto mb-4">
+                <Icon name="lucide:wrench" class="h-8 w-8 text-white" />
+              </div>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Memuat layanan...</h3>
+              <p class="text-gray-600 dark:text-gray-400">Mohon tunggu sebentar</p>
+            </div>
+
+            <!-- Error State for Services -->
+            <div v-else-if="errorProduct" class="text-center py-20">
+              <div class="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icon name="lucide:alert-circle" class="h-8 w-8 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Gagal memuat layanan</h3>
+              <p class="text-gray-600 dark:text-gray-400 mb-6">Terjadi kesalahan saat mengambil data layanan</p>
+              <button @click="refreshProduct()"
+                class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-medium transition-colors">
+                <Icon name="lucide:refresh-cw" class="h-4 w-4 mr-2" />
+                Coba Lagi
+              </button>
+            </div>
+
+            <!-- Empty State for Services -->
+            <div v-else-if="!services.length" class="text-center py-20">
               <div
                 class="w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Icon name="lucide:wrench" class="h-10 w-10 text-red-600 dark:text-red-400" />
@@ -408,6 +458,7 @@ function shareOutlet() {
               </p>
             </div>
 
+            <!-- Services List -->
             <div v-else class="space-y-6">
               <div v-for="service in services" :key="service.id"
                 class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">

@@ -356,6 +356,7 @@ export interface ProductForm {
   quantity?: number
   unit?: string
   status: ServiceStatus
+  outletId: string
   transactionFeeBearer?: FeeBearer
   serviceDurationMinutes?: number
   image?: string
