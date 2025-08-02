@@ -20,11 +20,11 @@
         </div>
 
         <h1 id="hero-heading"
-          class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight animate-fade-in-up">
-          <span class="block">Solusi Digital untuk</span>
+          class="text-xl sm:text-4xl md:text-3xl lg:text-4xl font-bold mb-6 leading-tight animate-fade-in-up">
+          <span class="block">SOLUSI DIGITAL UNTUK</span>
           <span
-            class="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300 mt-2 animate-pulse">
-            UMKM Modern
+            class="text-5xl block text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300 mt-2 animate-pulse">
+            UMKM MODERN
           </span>
         </h1>
 

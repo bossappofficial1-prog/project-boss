@@ -263,6 +263,7 @@ async function handlePayment() {
                     email: '', // opsional, bisa tambahkan input jika perlu
                     phone: guestPhone.value
                 }
+                //paymentMethod belum
             }
         })
 
