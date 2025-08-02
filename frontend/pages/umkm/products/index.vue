@@ -14,32 +14,11 @@ const searchQuery = ref('')
 
 // Refactored to use useAsyncData for proper reactivity, as the custom useApi
 // composable does not seem to handle reactive URLs correctly.
-const { data, pending, error, refresh } = useAsyncData(
-  'products-list',
-  () => {
-    const outletId = auth.selectedOutlet?.id
-    if (!outletId) {
-      // If no outlet is selected, we don't fetch.
-      // Returning a promise that resolves to the expected structure prevents errors.
-      return Promise.resolve({ data: { products: [] } })
-    }
-    // Use the globally available $fetch helper from Nuxt
-    return $fetch(`/api/v1/products/outlet/${outletId}`, {
-      params: { q: searchQuery.value },
-    })
-  },
-  {
-    // Automatically re-fetch when the selected outlet changes.
-    watch: [() => auth.selectedOutlet?.id],
-    lazy: true, // Don't block navigation
-    immediate: false, // We will call refresh() manually
-    // Transform the response to directly get the products array.
-    transform: (response: any) => response.data?.products || [],
-  }
+const { data, pending, error, refresh } = useApi<Product[]>(`/products/outlet/${auth.selectedOutlet?.id}` 
 )
 
 // The products are now directly the result of the transformed data.
-const products = computed(() => data.value || [])
+const products = computed(() => data.value?.data || [])
 
 // Debounce the refresh function from useAsyncData to avoid excessive API calls on search.
 const debouncedRefresh = useDebounceFn(refresh, 500)
