@@ -5,9 +5,9 @@
 - heading "Selamat Datang Kembali" [level=1]
 - paragraph: Masuk ke akun Anda untuk melanjutkan
 - text: Email
-- textbox "contoh@email.com": test@example.com
+- textbox "contoh@email.com": john@coffeeshop.com
 - text: Password
-- textbox "Masukkan password": password
+- textbox "Masukkan password": password123
 - paragraph: Email atau password salah
 - button "Masuk"
 - paragraph:
@@ -20,7 +20,7 @@
 - button "Close"
 - button "Toggle Nuxt DevTools":
   - img
-- text: 301 ms
+- text: 129 ms
 - button "Toggle Component Inspector":
   - img
 ```

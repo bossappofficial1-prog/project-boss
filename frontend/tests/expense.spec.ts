@@ -4,8 +4,8 @@ test.describe('Expense Management', () => {
   test.beforeEach(async ({ page }) => {
     // Log in before each test
     await page.goto('/auth/login');
-    await page.getByPlaceholder('contoh@email.com').fill('test@example.com');
-    await page.getByPlaceholder('Masukkan password').fill('password');
+    await page.getByPlaceholder('contoh@email.com').fill('john@coffeeshop.com');
+    await page.getByPlaceholder('Masukkan password').fill('password123');
     await page.getByRole('button', { name: 'Masuk' }).click();
     await page.waitForURL('/umkm/products');
   });

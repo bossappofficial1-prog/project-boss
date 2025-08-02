@@ -3,7 +3,6 @@ import { defineStore } from 'pinia'
 import type { User, Outlet, Role, LoginForm, Business } from '~/types'
 
 interface AuthState {
-  token: string | null
   user: User | null
   business: Business | null
   selectedOutlet: Outlet | null
@@ -13,7 +12,6 @@ interface AuthState {
 
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
-    token: null,
     user: null,
     business: null,
     selectedOutlet: null,
@@ -22,12 +20,12 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   getters: {
-    isAuthenticated: (state): boolean => !!state.token && !!state.user,
+    isAuthenticated: (state): boolean => !!state.user,
     userRole: (state): Role | null => state.user?.role || null,
     isOwner: (state): boolean => state.user?.role === 'OWNER',
     isAdmin: (state): boolean => state.user?.role === 'ADMIN',
     hasSelectedOutlet: (state): boolean => !!state.selectedOutlet,
-    canAccessOwnerFeatures: (state): boolean => !!state.token && !!state.user && state.user.role === 'OWNER' && state.user.isVerified,
+    canAccessOwnerFeatures: (state): boolean => !!state.user && state.user.role === 'OWNER' && state.user.isVerified,
     hasBusinessProfile: (state): boolean => !!state.business
   },
 
@@ -36,8 +34,8 @@ export const useAuthStore = defineStore('auth', {
       this.isLoading = true
       const config = useRuntimeConfig()
       const baseURL = config.public.apiBaseUrl
-      console.log(`fetching ${baseURL}`);
-      
+      console.log(`fetching ${baseURL}/auth/login...`);
+
       try {
         const response = await $fetch<{
           success: boolean
@@ -47,15 +45,9 @@ export const useAuthStore = defineStore('auth', {
           method: 'POST',
           body: credentials
         })
-        
-        if (!response.token) {
-          throw new Error('Login failed')
-        }
-        
-        this.token = response.token
-        
+
         await this.fetchUserData()
-        
+
         await this.navigateAfterLogin()
       } finally {
         this.isLoading = false
@@ -66,14 +58,13 @@ export const useAuthStore = defineStore('auth', {
       this.isLoading = true
       const config = useRuntimeConfig()
       const baseURL = config.public.apiBaseUrl
+      console.log(`fetching ${baseURL}/auth/logout...`);
+
       try {
-        if (this.token) {
-          await $fetch('/auth/logout', {
-            baseURL,
-            method: 'POST',
-            headers: { Authorization: `Bearer ${this.token}` }
-          })
-        }
+        await $fetch('/auth/logout', {
+          baseURL,
+          method: 'POST',
+        })
       } catch (error) {
         console.error('Logout error:', error)
       } finally {
@@ -92,7 +83,7 @@ export const useAuthStore = defineStore('auth', {
           method: 'PUT',
           body: data,
         })
-        
+
         if (response.data.value?.success) {
           await this.fetchUserData()
         } else {
@@ -111,7 +102,6 @@ export const useAuthStore = defineStore('auth', {
     },
 
     clearSession() {
-      this.token = null
       this.user = null
       this.business = null
       this.selectedOutlet = null
@@ -119,11 +109,12 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async navigateAfterLogin() {
+      console.log(`navigating after login`);
+
       if (this.isOwner) {
         if (!this.hasBusinessProfile) {
           console.log("User:", this.user)
           console.log("Business Profile:", this.hasBusinessProfile)
-          
           await navigateTo('/umkm/account?setup=true')
         } else {
           await navigateTo('/umkm')
@@ -134,10 +125,9 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async initAuth() {
-      if (this.token && this.user) {
+      if (!this.user) {
         try {
           await this.fetchUserData()
-          
         } catch (error) {
           console.error('Auth verification failed:', error)
           this.clearSession()
@@ -146,27 +136,30 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async fetchUserData() {
-      if (!this.token) return
-      
       const config = useRuntimeConfig()
       const baseURL = config.public.apiBaseUrl
+      console.log(`fetching ${baseURL}/auth/me...`);
+
       try {
-        const response = await $fetch<{ 
+        const response = await $fetch<{
           success: boolean
-          data: User 
-          business: Business
-          outlets: Outlet[]
+          data: {
+            user: User
+            business: Business
+            outlets: Outlet[]
+          }
         }>('/auth/me', {
           baseURL,
-          headers: { Authorization: `Bearer ${this.token}` }
         })
-        
+
         if (response.success && response.data) {
-          this.user = response.data
-          this.business = response.business
-          this.availableOutlets = response.outlets
+          this.user = response.data.user
+          this.business = response.data.business
+          this.availableOutlets = response.data.outlets
         }
       } catch (error) {
+        this.clearSession()
+        console.error("Failed to fetch user data:", error)
         throw error
       }
     }

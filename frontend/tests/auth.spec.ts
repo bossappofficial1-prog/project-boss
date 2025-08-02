@@ -5,8 +5,8 @@ test('should allow a user to log in', async ({ page }) => {
   await page.goto('/auth/login');
 
   // Fill in the email and password
-  await page.getByPlaceholder('contoh@email.com').fill('test@example.com');
-  await page.getByPlaceholder('Masukkan password').fill('password');
+  await page.getByPlaceholder('contoh@email.com').fill('john@coffeeshop.com');
+  await page.getByPlaceholder('Masukkan password').fill('password123');
 
   // Click the login button
   await page.getByRole('button', { name: 'Masuk' }).click();
