@@ -168,7 +168,7 @@ const submitForm = async () => {
       }
 
       // Extract URL from the response structure
-      imageUrl = uploadData.value?.data?.url || ''
+      imageUrl = (uploadData.value?.data as any).url || ''
     }
 
     const { data, error } = await useApi('/outlets', {

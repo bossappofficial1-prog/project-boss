@@ -203,6 +203,7 @@ import { useApi } from '@/composables/useApi'
 const cartStore = useCartStore()
 const router = useRouter()
 const route = useRoute()
+const toast = useToast()
 
 const isProcessing = ref(false)
 const guestName = ref('')
@@ -225,34 +226,37 @@ function formatPrice(amount: number): string {
 
 async function handlePayment() {
     if (!guestName.value || !guestPhone.value) {
-        alert('Nama dan nomor WhatsApp wajib diisi')
+        toast.add({
+            title: 'Peringatan',
+            description: 'Nama dan nomor WhatsApp wajib diisi',
+            color: 'warning'
+        })
         return
     }
 
     isProcessing.value = true
-
+    // Prepare order data according to the API specification
     try {
+        const orderData = {
+            guestCustomer: {
+                name: guestName.value,
+                phone: guestPhone.value
+            },
+            outletId: route.params.id,
+            items: cartStore.items.map(item => ({
+                productId: item.product.id,
+                quantity: item.quantity
+            })),
+            paymentMethod: "online"
+        }
+
         const { data, error } = await useApi('/orders', {
             method: 'POST',
-            body: {
-                outletId: route.params.id,
-                items: cartStore.items.map(item => ({
-                    productId: item.product.id,
-                    quantity: item.quantity,
-                    bookingSlotId: item.bookingSlotId
-                })),
-                guestCustomer: {
-                    name: guestName.value,
-                    email: '', // opsional, bisa tambahkan input jika perlu
-                    phone: guestPhone.value
-                },
-                paymentMethod: "online"
-            }
+            body: orderData
         })
 
         if (error.value) {
-            // Use error.value.data.message for more specific error from backend
-            throw new Error(error.value.data?.message || error.value.message || 'Terjadi kesalahan saat memproses pembayaran')
+            throw new Error(error.value.data?.message || 'Terjadi kesalahan saat memproses pembayaran')
         }
 
         if (!data.value?.success) {
@@ -260,33 +264,65 @@ async function handlePayment() {
         }
 
         const responseData = data.value.data as any
-        const { midtransTransactionToken, orderId } = responseData
+        const { orderId, totalAmount, midtransTransactionToken, midtransRedirectUrl } = responseData
 
-        if (midtransTransactionToken) {
+        // Use Midtrans Snap popup
+        if (midtransTransactionToken && window.snap) {
             window.snap.pay(midtransTransactionToken, {
-                onSuccess: function () {
+                onSuccess: (result: any) => {
+                    console.log('Payment success:', result)
+                    toast.add({
+                        title: 'Pembayaran Berhasil!',
+                        description: `Pesanan ${orderId} telah berhasil dibayar`,
+                        color: 'success'
+                    })
                     cartStore.clearCart()
-                    // Redirect to a confirmation page
-                    router.push(`/outlets/${route.params.id}/payment?order_id=${orderId}&status=success`)
+                    router.push(`/outlets/${route.params.id}/payment?order_id=${orderId}&status=success&total_amount=${totalAmount}`)
                 },
-                onPending: function () {
-                    // Redirect to a confirmation page
-                    router.push(`/outlets/${route.params.id}/payment?order_id=${orderId}&status=pending`)
+                onPending: (result: any) => {
+                    console.log('Payment pending:', result)
+                    toast.add({
+                        title: 'Pembayaran Tertunda',
+                        description: 'Pembayaran Anda sedang diproses',
+                        color: 'warning'
+                    })
+                    cartStore.clearCart()
+                    router.push(`/outlets/${route.params.id}/payment?order_id=${orderId}&status=pending&total_amount=${totalAmount}`)
                 },
-                onError: function () {
-                    isProcessing.value = false
-                    alert('Pembayaran gagal. Silakan coba lagi.')
+                onError: (result: any) => {
+                    console.log('Payment error:', result)
+                    toast.add({
+                        title: 'Pembayaran Gagal',
+                        description: 'Terjadi kesalahan saat memproses pembayaran',
+                        color: 'error'
+                    })
+                    router.push(`/outlets/${route.params.id}/payment?order_id=${orderId}&status=failed&total_amount=${totalAmount}`)
                 },
-                onClose: function () {
-                    isProcessing.value = false
+                onClose: () => {
+                    console.log('Payment popup closed')
+                    toast.add({
+                        title: 'Pembayaran Dibatalkan',
+                        description: 'Anda dapat mencoba lagi nanti',
+                        color: 'neutral'
+                    })
                 }
-            });
+            })
+        } else if (midtransRedirectUrl) {
+            // Fallback: redirect to Midtrans payment page
+            window.open(midtransRedirectUrl, '_blank')
         } else {
-            throw new Error('Gagal memulai sesi pembayaran. Token tidak ditemukan.')
+            throw new Error('Token pembayaran tidak tersedia')
         }
-    } catch (e: any) {
+
+    } catch (error: any) {
+        console.error('Payment error:', error)
+        toast.add({
+            title: 'Error',
+            description: error.message || 'Terjadi kesalahan yang tidak terduga',
+            color: 'error'
+        })
+    } finally {
         isProcessing.value = false
-        alert(e.message)
     }
 }
 
