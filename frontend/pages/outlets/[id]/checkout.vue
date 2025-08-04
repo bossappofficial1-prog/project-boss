@@ -189,22 +189,6 @@
                         </div>
                     </div>
 
-                    <!-- Payment Instructions -->
-                    <div v-if="paymentInstruction"
-                        class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
-                        <div class="flex items-start gap-3">
-                            <div
-                                class="w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center flex-shrink-0">
-                                <Icon name="lucide:check-circle" class="h-5 w-5 text-green-600 dark:text-green-400" />
-                            </div>
-                            <div class="flex-1">
-                                <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">Instruksi Pembayaran
-                                </h4>
-                                <div class="text-green-800 dark:text-green-200 text-sm prose prose-sm max-w-none"
-                                    v-html="paymentInstruction"></div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -223,7 +207,6 @@ const route = useRoute()
 const isProcessing = ref(false)
 const guestName = ref('')
 const guestPhone = ref('')
-const paymentInstruction = ref('')
 
 // Perhitungan biaya
 const subtotal = computed(() => cartStore.totalPrice)
@@ -246,9 +229,9 @@ async function handlePayment() {
         return
     }
 
-    try {
-        isProcessing.value = true
+    isProcessing.value = true
 
+    try {
         const { data, error } = await useApi('/orders', {
             method: 'POST',
             body: {
@@ -262,36 +245,48 @@ async function handlePayment() {
                     name: guestName.value,
                     email: '', // opsional, bisa tambahkan input jika perlu
                     phone: guestPhone.value
-                }
-                //paymentMethod belum
+                },
+                paymentMethod: "online"
             }
         })
 
         if (error.value) {
-            throw new Error(error.value.message || 'Terjadi kesalahan saat memproses pembayaran')
+            // Use error.value.data.message for more specific error from backend
+            throw new Error(error.value.data?.message || error.value.message || 'Terjadi kesalahan saat memproses pembayaran')
         }
 
         if (!data.value?.success) {
             throw new Error(data.value?.message || 'Terjadi kesalahan saat memproses pembayaran')
         }
 
-        // Asumsikan backend mengembalikan instruksi pembayaran custom
-        const responseData = data.value.data as any || {}
-        const { paymentInstruction: instruksi, paymentInfo } = responseData
-        if (instruksi) {
-            paymentInstruction.value = instruksi
-        } else if (paymentInfo) {
-            // fallback: render info pembayaran
-            paymentInstruction.value = `<pre>${JSON.stringify(paymentInfo, null, 2)}</pre>`
-        } else {
-            paymentInstruction.value = 'Pesanan berhasil dibuat. Silakan cek WhatsApp Anda untuk instruksi pembayaran.'
-        }
+        const responseData = data.value.data as any
+        const { midtransTransactionToken, orderId } = responseData
 
-        cartStore.clearCart()
-    } catch (error: any) {
-        alert(error.message)
-    } finally {
+        if (midtransTransactionToken) {
+            window.snap.pay(midtransTransactionToken, {
+                onSuccess: function () {
+                    cartStore.clearCart()
+                    // Redirect to a confirmation page
+                    router.push(`/outlets/${route.params.id}/payment?order_id=${orderId}&status=success`)
+                },
+                onPending: function () {
+                    // Redirect to a confirmation page
+                    router.push(`/outlets/${route.params.id}/payment?order_id=${orderId}&status=pending`)
+                },
+                onError: function () {
+                    isProcessing.value = false
+                    alert('Pembayaran gagal. Silakan coba lagi.')
+                },
+                onClose: function () {
+                    isProcessing.value = false
+                }
+            });
+        } else {
+            throw new Error('Gagal memulai sesi pembayaran. Token tidak ditemukan.')
+        }
+    } catch (e: any) {
         isProcessing.value = false
+        alert(e.message)
     }
 }
 

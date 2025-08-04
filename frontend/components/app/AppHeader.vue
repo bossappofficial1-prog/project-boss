@@ -1,10 +1,7 @@
 <script setup>
 import { useAuthStore } from '~/stores/auth'
-import { useCartStore } from '~/stores/cart'
 
 const auth = useAuthStore()
-const cart = useCartStore()
-const cartState = useCartState()
 const showMobileMenu = ref(false)
 const showMenu = ref(false)
 
@@ -37,18 +34,18 @@ function toggleMenu() {
 
         <!-- Navigation Menu (Desktop) -->
         <nav class="hidden lg:flex items-center space-x-2">
-          <NuxtLink to="/home"
+          <NuxtLink to="/home" active-class="hidden"
             class="px-6 py-3 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 font-semibold transition-all duration-300 relative group rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20">
             <span class="relative z-10">Beranda</span>
             <span
               class="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-red-500 to-red-600 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
           </NuxtLink>
-          <NuxtLink to="/outlets"
+          <!-- <NuxtLink to="/outlets"
             class="px-6 py-3 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 font-semibold transition-all duration-300 relative group rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20">
             <span class="relative z-10">Outlet</span>
             <span
               class="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-red-500 to-red-600 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-          </NuxtLink>
+          </NuxtLink> -->
         </nav>
 
         <!-- Desktop Actions -->

@@ -15,6 +15,7 @@ const { data: dataProduct, pending: pendingProduct, error: errorProduct, refresh
 const products = computed(() => dataProduct.value?.data?.filter(p => p.type === 'GOODS') || [])
 const services = computed(() => dataProduct.value?.data?.filter(p => p.type === 'SERVICE') || [])
 const activeTab = ref<'produk' | 'layanan'>('produk')
+const searchQuery = ref('')
 
 // --- Booking State ---
 const selectedService = ref<Product | null>(null)
@@ -101,6 +102,24 @@ function shareOutlet() {
     toast.add({ title: 'Link Disalin', description: 'Link outlet berhasil disalin ke clipboard', color:'success' })
   }
 }
+
+const filteredProducts = computed(() => {
+  if (!searchQuery.value) {
+    return products.value
+  }
+  return products.value.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
+})
+
+const filteredServices = computed(() => {
+  if (!searchQuery.value) {
+    return services.value
+  }
+  return services.value.filter(s =>
+    s.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
+})
 </script>
 
 <template>
@@ -291,7 +310,7 @@ function shareOutlet() {
                   </div>
                   <div>
                     <div class="text-lg">Produk</div>
-                    <div class="text-sm opacity-75">({{ products.length }} item)</div>
+                    <div class="text-sm opacity-75">({{ filteredProducts.length }} item)</div>
                   </div>
                 </button>
 
@@ -309,10 +328,25 @@ function shareOutlet() {
                   </div>
                   <div>
                     <div class="text-lg">Layanan</div>
-                    <div class="text-sm opacity-75">({{ services.length }} item)</div>
+                    <div class="text-sm opacity-75">({{ filteredServices.length }} item)</div>
                   </div>
                 </button>
               </div>
+            </div>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="mb-8">
+            <div class="relative">
+              <UInput
+                v-model="searchQuery"
+                icon="lucide:search"
+                size="lg"
+                color="primary"
+                :trailing="false"
+                placeholder="Cari produk atau layanan..."
+                class="w-full"
+              />
             </div>
           </div>
 
@@ -342,20 +376,22 @@ function shareOutlet() {
             </div>
 
             <!-- Empty State for Products -->
-            <div v-else-if="!products.length" class="text-center py-20">
+            <div v-else-if="!filteredProducts.length" class="text-center py-20">
               <div
                 class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Icon name="lucide:package" class="h-10 w-10 text-gray-400" />
+                <Icon name="lucide:search-x" class="h-10 w-10 text-gray-400" />
               </div>
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Belum Ada Produk</h3>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                {{ searchQuery ? 'Produk Tidak Ditemukan' : 'Belum Ada Produk' }}
+              </h3>
               <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                Outlet ini sedang menyiapkan produk-produk terbaik untuk Anda
+                {{ searchQuery ? `Tidak ada produk yang cocok dengan pencarian "${searchQuery}".` : 'Outlet ini sedang menyiapkan produk-produk terbaik untuk Anda' }}
               </p>
             </div>
 
             <!-- Products Grid -->
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div v-for="product in products" :key="product.id"
+              <div v-for="product in filteredProducts" :key="product.id"
                 class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:border-red-300 dark:hover:border-red-600 transition-all duration-300">
                 <!-- Product Image -->
                 <div class="relative h-48 bg-gray-100 dark:bg-gray-700">
@@ -447,20 +483,22 @@ function shareOutlet() {
             </div>
 
             <!-- Empty State for Services -->
-            <div v-else-if="!services.length" class="text-center py-20">
+            <div v-else-if="!filteredServices.length" class="text-center py-20">
               <div
-                class="w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Icon name="lucide:wrench" class="h-10 w-10 text-red-600 dark:text-red-400" />
+                class="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Icon name="lucide:search-x" class="h-10 w-10 text-gray-400" />
               </div>
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Belum Ada Layanan</h3>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                {{ searchQuery ? 'Layanan Tidak Ditemukan' : 'Belum Ada Layanan' }}
+              </h3>
               <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                Outlet ini sedang menyiapkan berbagai layanan menarik untuk Anda
+                {{ searchQuery ? `Tidak ada layanan yang cocok dengan pencarian "${searchQuery}".` : 'Outlet ini sedang menyiapkan berbagai layanan menarik untuk Anda' }}
               </p>
             </div>
 
             <!-- Services List -->
             <div v-else class="space-y-6">
-              <div v-for="service in services" :key="service.id"
+              <div v-for="service in filteredServices" :key="service.id"
                 class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <!-- Service Header -->
                 <div class="p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
