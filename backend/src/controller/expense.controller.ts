@@ -11,7 +11,14 @@ export const createExpenseController = asyncHandler(async (req: Request, res: Re
 
 export const getExpensesByOutletController = asyncHandler(async (req: Request, res: Response) => {
     const { outletId } = req.params;
-    const expenses = await ExpenseService.getExpensesByOutlet(outletId);
+    const { startDate, endDate } = req.query;
+
+    const expenses = await ExpenseService.getExpensesByOutlet(
+        outletId,
+        startDate as string,
+        endDate as string
+    );
+
     ResponseUtil.success(res, expenses);
 });
 

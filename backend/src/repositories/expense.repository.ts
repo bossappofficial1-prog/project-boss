@@ -18,9 +18,17 @@ export class ExpenseRepository {
         return db.expense.findUnique({ where: { id } });
     }
 
-    static async findByOutletId(outletId: string) {
+    static async findByOutletId(outletId: string, startDate?: Date, endDate?: Date) {
         return db.expense.findMany({
-            where: { outletId },
+            where: {
+                outletId,
+                ...(startDate && endDate && {
+                    date: {
+                        gte: startDate,
+                        lte: endDate
+                    }
+                })
+            },
             orderBy: { date: 'desc' },
         });
     }
