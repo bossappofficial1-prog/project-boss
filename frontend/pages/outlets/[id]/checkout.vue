@@ -270,7 +270,19 @@ async function handlePayment() {
 
         const { data, error } = await useApi('/orders', {
             method: 'POST',
-            body: orderData
+            body: {
+                outletId: route.params.id,
+                items: cartStore.items.map(item => ({
+                    productId: item.product.id,
+                    quantity: item.quantity,
+                    bookingSlotId: item.bookingSlotId
+                })),
+                guestCustomer: {
+                    name: guestName.value,
+                    email: '', // opsional, bisa tambahkan input jika perlu
+                    phone: guestPhone.value
+                }
+            }
         })
 
         if (error.value) {
