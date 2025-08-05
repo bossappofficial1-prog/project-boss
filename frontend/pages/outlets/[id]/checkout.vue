@@ -142,7 +142,7 @@
                                     <div class="flex justify-between text-sm">
                                         <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
                                         <span class="text-gray-900 dark:text-white font-medium">{{ formatPrice(subtotal)
-                                        }}</span>
+                                            }}</span>
                                     </div>
                                     <div class="flex justify-between text-sm">
                                         <div class="flex items-center gap-1">
@@ -189,22 +189,6 @@
                         </div>
                     </div>
 
-                    <!-- Payment Instructions -->
-                    <div v-if="paymentInstruction"
-                        class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
-                        <div class="flex items-start gap-3">
-                            <div
-                                class="w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center flex-shrink-0">
-                                <Icon name="lucide:check-circle" class="h-5 w-5 text-green-600 dark:text-green-400" />
-                            </div>
-                            <div class="flex-1">
-                                <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">Instruksi Pembayaran
-                                </h4>
-                                <div class="text-green-800 dark:text-green-200 text-sm prose prose-sm max-w-none"
-                                    v-html="paymentInstruction"></div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -224,7 +208,6 @@ const toast = useToast()
 const isProcessing = ref(false)
 const guestName = ref('')
 const guestPhone = ref('')
-const paymentInstruction = ref('')
 
 // Perhitungan biaya
 const subtotal = computed(() => cartStore.totalPrice)
@@ -251,10 +234,9 @@ async function handlePayment() {
         return
     }
 
+    isProcessing.value = true
+    // Prepare order data according to the API specification
     try {
-        isProcessing.value = true
-
-        // Prepare order data according to the API specification
         const orderData = {
             guestCustomer: {
                 name: guestName.value,
@@ -270,19 +252,7 @@ async function handlePayment() {
 
         const { data, error } = await useApi('/orders', {
             method: 'POST',
-            body: {
-                outletId: route.params.id,
-                items: cartStore.items.map(item => ({
-                    productId: item.product.id,
-                    quantity: item.quantity,
-                    bookingSlotId: item.bookingSlotId
-                })),
-                guestCustomer: {
-                    name: guestName.value,
-                    email: '', // opsional, bisa tambahkan input jika perlu
-                    phone: guestPhone.value
-                }
-            }
+            body: orderData
         })
 
         if (error.value) {
