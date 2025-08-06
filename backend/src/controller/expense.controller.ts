@@ -19,7 +19,7 @@ export const getExpensesByOutletController = asyncHandler(async (req: Request, r
         endDate as string
     );
 
-    ResponseUtil.success(res, expenses);
+    ResponseUtil.success(res, expenses.data);
 });
 
 export const updateExpenseController = asyncHandler(async (req: Request, res: Response) => {

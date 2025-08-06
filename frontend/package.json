@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.0",
+    "@heroicons/vue": "^2.2.0",
     "@iconify-json/lucide": "^1.2.53",
     "@nuxt/icon": "^1.14.0",
     "@nuxt/image": "^1.10.0",
@@ -22,8 +23,8 @@
     "@tailwindcss/vite": "^4.1.10",
     "@types/leaflet": "^1.9.20",
     "@vueuse/core": "^13.6.0",
-    "leaflet": "^1.9.4",
     "chart.js": "^4.5.0",
+    "leaflet": "^1.9.4",
     "nuxt": "^3.17.5",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.3.0",
