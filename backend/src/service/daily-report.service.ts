@@ -46,7 +46,17 @@ export class DailyReportService {
             },
         });
 
-        // Create a map for easy expense lookup
+        // Create maps for revenue and expense lookups
+        const revenueMap = new Map(
+            dailyRevenue.map(rev => [
+                rev.createdAt.toISOString().split('T')[0],
+                {
+                    jumlahTransaksi: rev._count.id,
+                    totalPendapatan: rev._sum.totalAmount || 0
+                }
+            ])
+        );
+
         const expenseMap = new Map(
             dailyExpenses.map(exp => [
                 exp.date.toISOString().split('T')[0],
@@ -54,18 +64,25 @@ export class DailyReportService {
             ])
         );
 
+        // Generate all dates in the range
+        const dates: string[] = [];
+        const tempDate = new Date(actualStartDate);
+        while (tempDate <= actualEndDate) {
+            dates.push(tempDate.toISOString().split('T')[0]);
+            tempDate.setDate(tempDate.getDate() + 1);
+        }
+
         // Combine and format the data
-        const report = dailyRevenue.map(rev => {
-            const date = rev.createdAt.toISOString().split('T')[0];
-            const totalPendapatan = rev._sum.totalAmount || 0;
+        const report = dates.map(date => {
+            const revenue = revenueMap.get(date) || { jumlahTransaksi: 0, totalPendapatan: 0 };
             const totalPengeluaran = expenseMap.get(date) || 0;
 
             return {
                 tanggal: date,
-                jumlahTransaksi: rev._count.id,
-                totalPendapatan,
+                jumlahTransaksi: revenue.jumlahTransaksi,
+                totalPendapatan: revenue.totalPendapatan,
                 totalPengeluaran,
-                labaBersih: totalPendapatan - totalPengeluaran
+                labaBersih: revenue.totalPendapatan - totalPengeluaran
             };
         });
 

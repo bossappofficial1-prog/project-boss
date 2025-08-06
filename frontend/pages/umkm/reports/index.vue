@@ -14,7 +14,7 @@
       :show-refresh="true" @search="handleSearch" @sort="handleSort" @filter="handleFilter" @export="handleExport"
       @refresh="handleRefresh">
       <!-- Custom slot untuk kolom tanggal -->
-      <template #date="{ value }">
+      <template #tanggal="{ value }">
         <div class="flex items-center">
           <CalendarIcon class="w-4 h-4 text-gray-400 mr-2" />
           <span class="font-medium">{{ formatDate(value) }}</span>
@@ -136,40 +136,44 @@ const { data: reportData, pending, error, refresh } = await useApi(`/reports/dai
 
 // Watch for changes in API response
 watch(reportData, (newData) => {
-  if (newData && newData.value?.data) {
-    reports.value = newData.value.data
+  console.log(newData.data);
+
+  if (newData && newData.data) {
+    console.log(newData.data);
+
+    reports.value = newData.data.daily
   }
 }, { immediate: true })
 
 // Konfigurasi kolom tabel
 const transactionColumns = ref([
   {
-    key: 'date',
+    key: 'tanggal',
     label: 'Tanggal',
     type: 'slot',
     sortable: true,
     searchable: true
   },
   {
-    key: 'totalTransaction',
+    key: 'jumlahTransaksi',
     label: 'Jumlah Transaksi',
     type: 'slot',
     sortable: true
   },
   {
-    key: 'totalIncome',
+    key: 'totalPendapatan',
     label: 'Total Pendapatan',
     type: 'slot',
     sortable: true
   },
   {
-    key: 'totalExpense',
+    key: 'totalPengeluaran',
     label: 'Total Pengeluaran',
     type: 'slot',
     sortable: true
   },
   {
-    key: 'netProfit',
+    key: 'labaBersih',
     label: 'Laba Bersih',
     type: 'slot',
     sortable: true
@@ -258,31 +262,9 @@ const handleRefresh = async () => {
   await refresh()
 }
 
-// Action handlers
-const addTransaction = () => {
-  console.log('Adding new transaction')
-  // Navigate to add transaction page atau buka modal
-}
-
 const viewTransaction = (transaction) => {
   console.log('Viewing transaction:', transaction)
   // Navigate to detail page atau buka modal
-}
-
-const editTransaction = (transaction) => {
-  console.log('Editing transaction:', transaction)
-  // Navigate to edit page atau buka modal
-}
-
-const deleteTransaction = (transaction) => {
-  console.log('Deleting transaction:', transaction)
-  // Show confirmation dialog
-  if (confirm(`Apakah Anda yakin ingin menghapus transaksi tanggal ${transaction.date}?`)) {
-    const index = reports.value.findIndex(item => item.id === transaction.id)
-    if (index > -1) {
-      reports.value.splice(index, 1)
-    }
-  }
 }
 
 definePageMeta({

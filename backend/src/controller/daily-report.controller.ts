@@ -31,5 +31,5 @@ export const getDailyReportController = asyncHandler(async (req: Request, res: R
         endDate ? new Date(`${endDate}T23:59:59.999Z`) : undefined // End of the day
     );
 
-    ResponseUtil.success(res, report);
+    ResponseUtil.success(res, { daily: report.data, summary: report.summary });
 });
