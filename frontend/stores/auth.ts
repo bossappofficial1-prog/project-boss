@@ -154,6 +154,7 @@ export const useAuthStore = defineStore('auth', {
     async fetchUserData() {
       if (!this.token) return
 
+      this.isLoading = true
       const config = useRuntimeConfig()
       const baseURL = config.public.apiBaseUrl
       console.log(`fetching ${baseURL}/auth/me...`);
@@ -183,6 +184,8 @@ export const useAuthStore = defineStore('auth', {
         this.clearSession()
         console.error("Failed to fetch user data:", error)
         throw error
+      } finally {
+        this.isLoading = false
       }
     }
   },

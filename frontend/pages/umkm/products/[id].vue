@@ -181,66 +181,28 @@ const form = reactive({
   stock: 0
 })
 
-// Simulate getting product data
-const getProductById = (id, outletId) => {
-  const allProducts = {
-    '1': {
-      id: '1',
-      name: 'Kopi Arabica Premium',
-      description: 'Kopi arabica berkualitas tinggi dengan cita rasa yang khas',
-      price: 75000,
-      type: 'BARANG',
-      unit: 'kg',
-      stock: { '1': 50, '2': 30, '3': 20 }
-    },
-    '2': {
-      id: '2',
-      name: 'Jasa Konsultasi Bisnis',
-      description: 'Layanan konsultasi untuk pengembangan bisnis UMKM',
-      price: 500000,
-      type: 'JASA',
-      unit: 'jam',
-      stock: { '1': 999, '2': 999, '3': 999 }
-    },
-    '3': {
-      id: '3',
-      name: 'Keripik Singkong',
-      description: 'Keripik singkong renyah dengan berbagai varian rasa',
-      price: 15000,
-      type: 'BARANG',
-      unit: 'pack',
-      stock: { '1': 100, '2': 75, '3': 50 }
-    }
-  }
-
-  const baseProduct = allProducts[id]
-  if (!baseProduct) return null
-
-  return {
-    ...baseProduct,
-    stock: baseProduct.stock[outletId] || 0
-  }
-}
-
 // Load product data
 const loadProduct = async () => {
   if (!auth.outletFokus?.id) return
 
   loading.value = true
-  
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 500))
-  
-  product.value = getProductById(productId, auth.outletFokus.id)
-  
-  if (product.value) {
-    // Initialize form with product data
-    form.name = product.value.name
-    form.type = product.value.type
-    form.description = product.value.description || ''
-    form.price = product.value.price
-    form.unit = product.value.unit || 'pcs'
-    form.stock = product.value.stock
+  const { data, error } = await useApi(`/products/${productId}`)
+
+  if (error.value) {
+    // Handle error, e.g., show a toast message
+    console.error('Error fetching product:', error.value)
+    product.value = null
+  } else {
+    product.value = data.value?.data
+    if (product.value) {
+      // Initialize form with product data
+      form.name = product.value.name
+      form.type = product.value.type
+      form.description = product.value.description || ''
+      form.price = product.value.price
+      form.unit = product.value.unit || 'pcs'
+      form.stock = product.value.quantity // Assuming API returns quantity
+    }
   }
   
   loading.value = false
@@ -258,15 +220,22 @@ const submitForm = async () => {
   isSubmitting.value = true
   
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Simulate updating product
-    console.log('Produk diperbarui:', {
-      id: productId,
-      ...form,
-      outletId: auth.outletFokus?.id,
-      updatedAt: new Date()
+    const { error } = await useApi(`/products/${productId}`, {
+      method: 'PATCH',
+      body: form,
+    })
+
+    if (error.value) {
+      console.error('Error updating product:', error.value)
+      alert('Terjadi kesalahan saat memperbarui produk')
+      return
+    }
+
+    const toast = useToast()
+    toast.add({
+      title: 'Berhasil!',
+      description: 'Produk berhasil diperbarui.',
+      color: 'success'
     })
 
     // Redirect to products list
