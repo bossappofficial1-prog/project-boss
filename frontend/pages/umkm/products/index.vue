@@ -13,9 +13,38 @@ const toast = useToast()
 const searchQuery = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 
-const downloadTemplate = () => {
-  // Based on user-provided curl command for a similar endpoint
-  window.open('http://localhost:1234/products/template/import', '_blank')
+
+const API_TEMPLATE_URL = 'http://localhost:1234/api/v1/products/template/import'
+const downloadTemplate = async () => {
+  try {
+    const response = await fetch(API_TEMPLATE_URL, {
+      method: 'GET',
+    })
+    if (!response.ok) throw new Error('Gagal mengunduh template')
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    // Coba ambil nama file dari header jika ada, fallback ke default
+    const disposition = response.headers.get('Content-Disposition')
+    let filename = 'template-produk.xlsx'
+    if (disposition && disposition.includes('filename=')) {
+      filename = disposition.split('filename=')[1].replace(/"/g, '')
+    }
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    }, 100)
+  } catch (err: any) {
+    toast.add({
+      title: 'Gagal Mengunduh',
+      description: err.message || 'Terjadi kesalahan saat mengunduh template.',
+      color: 'error',
+    })
+  }
 }
 
 const triggerFileInput = () => {
@@ -29,6 +58,7 @@ const handleFileUpload = async (event: Event) => {
 
   const formData = new FormData()
   formData.append('file', file)
+  formData.append('outletId', auth.selectedOutlet?.id!)
 
   const toastId = toast.add({ title: 'Mengunggah file...', description: 'Mohon tunggu...', color: 'info' })
 
@@ -64,7 +94,7 @@ const handleFileUpload = async (event: Event) => {
 
 // Refactored to use useAsyncData for proper reactivity, as the custom useApi
 // composable does not seem to handle reactive URLs correctly.
-const { data, pending, error, refresh } = useApi<Product[]>(`/products/outlet/${auth.selectedOutlet?.id}` 
+const { data, pending, error, refresh } = useApi<Product[]>(`/products/outlet/${auth.selectedOutlet?.id}`
 )
 
 // The products are now directly the result of the transformed data.

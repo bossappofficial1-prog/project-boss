@@ -295,7 +295,7 @@ async function checkPaymentStatus() {
     try {
         isLoading.value = true
 
-        const { data, error } = await useApi(`/orders/${orderId}/status`)
+        const { data, error } = await useApi(`/orders/${orderId}`)
 
         if (error.value) {
             throw new Error(error.value.data?.message || 'Gagal memeriksa status pembayaran')

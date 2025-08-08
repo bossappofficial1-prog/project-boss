@@ -13,7 +13,7 @@ export async function getAllUserService() {
 
 export async function getUserByIdService(userId: string) {
     const user = await UserRepository.findById(userId) as UserMe
-    if (!user) throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
 
     return { ...user, password: '[REDACTED]' }
 }

@@ -7,12 +7,12 @@ import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
 import { OrderRepository } from "../repositories/order.repository";
-import { ProductRepository } from "../repositories/product.repository";
 import { CreateOrderInput } from "../schemas/order.schema";
 import { createMidtransTransactionService } from './payment.service';
 import { getOutletByIdService } from "./outlet.service";
 import { getBusinessByIdService } from "./business.service"; // Impor service bisnis
 import { generateOrderCode } from "../utils";
+import { BookingRepository } from "../repositories/booking.repository";
 
 async function createOrderInDbService(data: CreateOrderInput) {
     const { items, outletId, bookingSlotId } = data;
@@ -21,10 +21,10 @@ async function createOrderInDbService(data: CreateOrderInput) {
     if (bookingSlotId) {
         const slot = await db.bookingSlot.findUnique({ where: { id: bookingSlotId } });
         if (!slot) {
-            throw new AppError("Booking slot tidak ditemukan.", HttpStatus.NOT_FOUND);
+            throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
         }
         if (slot.status !== 'AVAILABLE') {
-            throw new AppError("Booking slot sudah tidak tersedia.", HttpStatus.BAD_REQUEST);
+            throw new AppError(Messages.BOOKING_SLOT_UNAVAILABLE, HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -216,7 +216,7 @@ async function createOrderInDbService(data: CreateOrderInput) {
 export async function getOrderByIdService(id: string, ownerId?: string) {
     const order = await OrderRepository.findById(id);
     if (!order) {
-        throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
+        throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
     // SECURITY FIX: Validate ownership if ownerId is provided
@@ -262,6 +262,17 @@ export async function refundOrderService(orderId: string) {
 
 export async function createOrderAndMidtransTransactionService(data: CreateOrderInput) {
     const { paymentMethod } = data;
+
+    if (data.bookingSlotId) {
+        const slot = await BookingRepository.getSlots(data.bookingSlotId)
+
+        if (!slot) throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
+        if (slot.status === "BOOKED") throw new AppError(Messages.BOOKING_SLOT_ALREADY_BOOKED, HttpStatus.CONFLICT);
+
+        // Lock slot untuk mencegah race condition
+        await BookingRepository.update(slot.id, { status: "BOOKED" })
+    }
+
     const { order, midtransFee, appFee, feeBearer, totalAmount } = await createOrderInDbService(data);
 
     const chargeTo = feeBearer.toLowerCase() as 'customer' | 'owner';

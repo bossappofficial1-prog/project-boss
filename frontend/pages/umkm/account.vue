@@ -92,7 +92,7 @@ const submitForm = async () => {
       ? `/business/${auth.user.business.id}`
       : '/business'
 
-    const method = auth.user?.business ? 'PUT' : 'POST'
+    const method = auth.user?.business ? 'PATCH' : 'POST'
 
     const { data, error } = await useApi(endpoint, {
       method,

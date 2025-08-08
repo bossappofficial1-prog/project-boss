@@ -3,13 +3,11 @@ import { ResponseUtil } from '../utils';
 import { HttpStatus } from '../constants/http-status';
 import { asyncHandler } from '../middleware/error.middleware';
 import { AppError } from '../errors/app-error';
+import { db } from '../config/prisma';
 import {
     calculateWithdrawalAmount,
     requestWithdrawal,
-    processWithdrawal,
-    getWithdrawalHistory,
-    handleMidtransPayoutWebhook,
-    handleXenditPayoutWebhook
+    processWithdrawal
 } from '../service/withdrawal.service';
 
 export const getWithdrawalCalculationController = asyncHandler(async (req: Request, res: Response) => {
@@ -27,30 +25,25 @@ export const requestWithdrawalController = asyncHandler(async (req: Request, res
 
 export const processWithdrawalController = asyncHandler(async (req: Request, res: Response) => {
     const withdrawalId = req.params.id;
-    const { status } = req.body;
-    const withdrawal = await processWithdrawal(withdrawalId, status);
+    const { action, notes } = req.body as { action: 'APPROVE' | 'REJECT'; notes?: string };
+
+    if (!action || !['APPROVE', 'REJECT'].includes(action)) {
+        throw new AppError('Invalid action. Use APPROVE or REJECT', HttpStatus.BAD_REQUEST);
+    }
+
+    if (!req.user?.id) {
+        throw new AppError('Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+
+    const withdrawal = await processWithdrawal(withdrawalId, action, req.user.id, notes);
     return ResponseUtil.success(res, withdrawal, HttpStatus.OK);
 });
 
 export const getWithdrawalHistoryController = asyncHandler(async (req: Request, res: Response) => {
     const businessId = req.params.businessId;
-    const history = await getWithdrawalHistory(businessId);
+    const history = await db.withdrawal.findMany({
+        where: { businessId },
+        orderBy: { createdAt: 'desc' }
+    });
     return ResponseUtil.success(res, history, HttpStatus.OK);
-});
-
-export const xenditPayoutWebhookController = asyncHandler(async (req: Request, res: Response) => {
-    const callbackToken = req.headers['x-callback-token'];
-
-    if (!callbackToken || typeof callbackToken !== 'string') {
-        throw new AppError('Missing webhook signature', HttpStatus.UNAUTHORIZED);
-    }
-
-    await handleXenditPayoutWebhook(req.body, callbackToken);
-    return ResponseUtil.success(res, { message: 'Webhook processed successfully' }, HttpStatus.OK);
-});
-
-export const midtransPayoutWebhookController = asyncHandler(async (req: Request, res: Response) => {
-    // Disarankan untuk memvalidasi notifikasi ini menggunakan signature key dari Midtrans
-    await handleMidtransPayoutWebhook(req.body);
-    ResponseUtil.success(res, { message: 'Webhook received' }, HttpStatus.OK);
 });

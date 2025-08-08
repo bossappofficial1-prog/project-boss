@@ -49,7 +49,7 @@ async function fetchAvailableSlots() {
   if (!selectedService.value) return
   isLoadingSlots.value = true
   try {
-    const { data: slotsResponse } = await useApi<BookingSlot[]>(`/booking/product/${selectedService.value.id}`, {
+    const { data: slotsResponse } = await useApi<BookingSlot[]>(`/bookings/product/${selectedService.value.id}`, {
       query: { date: selectedDate.value.toISOString().split('T')[0] }
     })
     availableSlots.value = slotsResponse.value?.data || []

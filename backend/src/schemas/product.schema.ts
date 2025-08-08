@@ -14,6 +14,7 @@ export const createProductSchema = z.object({
     serviceDurationMinutes: z.number().int().min(0).optional(),
     outletId: z.string().nonempty({ message: "ID Outlet tidak boleh kosong" }),
     image: z.string().url({ message: "URL gambar tidak valid" }).optional(),
+    capacity: z.number().min(-1).optional()
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;

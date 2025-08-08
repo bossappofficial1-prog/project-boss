@@ -10,12 +10,12 @@ import { validateGuestCustomer, validateBusinessHours, validateOrderFrequency } 
 const orderRouter = Router();
 
 // SECURITY FIX: Add comprehensive validation for public guest order creation
-orderRouter.post("/", 
+orderRouter.post("/",
     orderCreationLimiter,
     validateGuestCustomer,
     validateBusinessHours,
     validateOrderFrequency,
-    validateSchema(createOrderSchema), 
+    validateSchema(createOrderSchema),
     createOrderController
 );
 
@@ -23,7 +23,7 @@ orderRouter.post("/",
 orderRouter.use(orderManagementLimiter);
 
 // Rute yang dilindungi untuk melihat detail pesanan
-orderRouter.get("/:id", protect, authorize(UserRole.OWNER), getOrderByIdController);
+orderRouter.get("/:id", getOrderByIdController);
 
 // Rute yang dilindungi untuk memproses refund
 orderRouter.post("/:id/refund", protect, authorize(UserRole.OWNER), refundOrderController);

@@ -15,6 +15,7 @@ datasource db {
 
 enum UserRole {
   OWNER // Pemilik UMKM yang bisa login
+  ADMIN // Admin platform yang memproses manual payout
 }
 
 enum ProductType {
@@ -185,6 +186,9 @@ model User {
 
   // Relasi: Customer bisa jadi member di berbagai bisnis
   memberships Membership[]
+
+  // Relasi: Admin memproses banyak withdrawal
+  withdrawalsProcessed Withdrawal[] @relation("UserProcessedWithdrawals")
 
   @@index([email])
 }
@@ -470,12 +474,17 @@ model Withdrawal {
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
 
+  // Admin yang memproses withdrawal (opsional)
+  processedById String?
+  processedBy   User?   @relation("UserProcessedWithdrawals", fields: [processedById], references: [id], onDelete: SetNull)
+
   createdAt   DateTime  @default(now())
   processedAt DateTime?
   updatedAt   DateTime  @updatedAt
 
   @@index([businessId])
   @@index([status])
+  @@index([processedById])
 }
 
 // Model untuk mencatat pengeluaran

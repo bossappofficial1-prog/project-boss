@@ -1,6 +1,7 @@
-import { Response, Request } from "express"
+import { Response } from "express"
 import { ApiResponse, PaginatedResponse } from "../types/response";
 import { HttpStatus } from "../constants/http-status";
+import { Messages } from "../constants/message";
 
 export class ResponseUtil {
     private static base<T>(
@@ -27,7 +28,7 @@ export class ResponseUtil {
         res: Response,
         data: T,
         statusCode: HttpStatus = HttpStatus.OK,
-        message = "Success"
+        message = Messages.SUCCESS
     ) {
         return this.base(res, true, message, data, statusCode)
     }
