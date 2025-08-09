@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth';
-import type { Order, OrderPaymentStatus } from '~/types';
+import { OrderPaymentStatus } from '~/types';
+import type { Order } from '~/types';
 
 definePageMeta({
   layout: 'umkm',
@@ -46,6 +47,21 @@ async function generateQris() {
     toast.add({ title: 'QRIS Berhasil Dibuat', color: 'success' });
   }
 }
+
+const tableColumns = [
+  { key: 'productName', label: 'Produk' },
+  { key: 'quantity', label: 'Jumlah' },
+  { key: 'priceAtTimeOfOrder', label: 'Harga Satuan', type: 'currency' },
+  { key: 'subtotal', label: 'Subtotal', type: 'currency' }
+];
+
+const tableData = computed(() => {
+  return order.value?.items?.map(item => ({
+    ...item,
+    productName: item.product?.name || 'Produk Dihapus',
+    subtotal: item.priceAtTimeOfOrder * item.quantity
+  })) || [];
+});
 </script>
 
 <template>
@@ -62,25 +78,14 @@ async function generateQris() {
     <div v-else-if="order" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2 space-y-6">
         <BaseCard>
-          <h2 class="text-lg font-semibold mb-4">Item Pesanan</h2>
-          <BaseTable>
-            <template #thead>
-              <tr>
-                <BaseTableHeader>Produk</BaseTableHeader>
-                <BaseTableHeader>Jumlah</BaseTableHeader>
-                <BaseTableHeader>Harga Satuan</BaseTableHeader>
-                <BaseTableHeader>Subtotal</BaseTableHeader>
-              </tr>
-            </template>
-            <tbody>
-              <BaseTableRow v-for="item in order.items" :key="item.id">
-                <td class="p-3">{{ item.product?.name || 'Produk Dihapus' }}</td>
-                <td class="p-3">{{ item.quantity }}</td>
-                <td class="p-3">{{ formatCurrency(item.priceAtTimeOfOrder) }}</td>
-                <td class="p-3">{{ formatCurrency(item.priceAtTimeOfOrder * item.quantity) }}</td>
-              </BaseTableRow>
-            </tbody>
-          </BaseTable>
+          <BaseTable2
+            :data="tableData"
+            :columns="tableColumns"
+            :searchable="false"
+            :paginated="false"
+            :show-header="false"
+            :show-footer="false"
+            />
         </BaseCard>
       </div>
       <div class="space-y-6">
