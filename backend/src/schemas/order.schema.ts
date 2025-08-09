@@ -50,7 +50,19 @@ export const createOrderSchema = z.object({
         message: "Tidak boleh ada produk yang duplikat dalam satu order",
         path: ["items"]
     }
-);
+)
+    .refine(
+        (data) => {
+            if (data.bookingSlotId && !data.bookingDate) {
+                return false;
+            }
+            return true;
+        },
+        {
+            message: "Booking slot harus punya tanggal booking",
+            path: ["bookingDate"]
+        }
+    );
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 

@@ -153,7 +153,7 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
     // Check ownership
     const outlet = await OutletRepository.findById(outletId);
     if (!outlet) {
-        throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
+        throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
     const business = await getBusinessByOwnerIdService(ownerId);
@@ -217,7 +217,7 @@ export async function getOutletByIdService(id: string, date?: Date) {
     });
 
     if (!outlet) {
-        throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
+        throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
     // Hanya tampilkan slot yang dalam jam operasional
@@ -237,7 +237,7 @@ export async function getOutletByIdService(id: string, date?: Date) {
 export async function getAllOutletService() {
     const outlet = await OutletRepository.getAll();
     if (!outlet) {
-        throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
+        throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return outlet;
 }

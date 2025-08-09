@@ -26,6 +26,15 @@ export class BookingRepository {
         });
     }
 
+    static async getSlots(slotId: string) {
+        const slot = await db.bookingSlot.findUnique({
+            where: { id: slotId },
+            include: { product: { include: { capacity: true } } }
+        })
+
+        return slot
+    }
+
     static async update(id: string, data: UpdateBookingSlotInput): Promise<BookingSlot> {
         return db.bookingSlot.update({
             where: { id },

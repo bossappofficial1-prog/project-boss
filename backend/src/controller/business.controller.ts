@@ -10,6 +10,7 @@ import {
     updateBusinessService,
     updateBankAccountService
 } from "../service/business.service";
+import { Messages } from "../constants/message";
 
 export const getAllBusinessesController = asyncHandler(async (req: Request, res: Response) => {
     const businesses = await getAllBusinessesService();
@@ -40,7 +41,7 @@ export const updateBusinessController = asyncHandler(async (req: Request, res: R
     const payload = req.body;
     const ownerId = req.user!.id;
     const business = await updateBusinessService(id, payload, ownerId);
-    ResponseUtil.success(res, business, HttpStatus.OK, "Bisnis berhasil diperbarui");
+    ResponseUtil.success(res, business, HttpStatus.OK, Messages.UPDATED);
 });
 
 export const updateBankAccountController = asyncHandler(async (req: Request, res: Response) => {

@@ -13,7 +13,7 @@ export async function createMembershipService(data: CreateMembershipInput) {
 export async function getMembershipByIdService(id: string) {
     const membership = await MembershipRepository.findById(id);
     if (!membership) {
-        throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
+        throw new AppError(Messages.MEMBERSHIP_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return membership;
 }

@@ -12,7 +12,7 @@ interface BaseNotificationEvent {
 
 interface OrderNotificationEvent extends BaseNotificationEvent {
     type: 'ORDER_STATUS_UPDATE';
-    data: {
+    payload: {
         orderId: string;
         status: string;
     };
@@ -143,6 +143,8 @@ class NotificationWorker {
 
             this.channel?.ack(msg);
         } catch (error: any) {
+            console.log(error);
+
             logger.error('Error processing message', {
                 component: 'NotificationWorker',
                 error: error.message,
@@ -173,7 +175,7 @@ class NotificationWorker {
     }
 
     private async handleOrderStatusUpdate(event: OrderNotificationEvent) {
-        const { orderId, status } = event.data;
+        const { orderId, status } = event.payload;
 
         try {
             // 1. Panggil API backend untuk mendapatkan detail pesanan

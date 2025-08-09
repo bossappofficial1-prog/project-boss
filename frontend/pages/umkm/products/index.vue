@@ -11,10 +11,90 @@ definePageMeta({
 const auth = useAuthStore()
 const toast = useToast()
 const searchQuery = ref('')
+const fileInput = ref<HTMLInputElement | null>(null)
+
+
+const API_TEMPLATE_URL = 'http://localhost:1234/api/v1/products/template/import'
+const downloadTemplate = async () => {
+  try {
+    const response = await fetch(API_TEMPLATE_URL, {
+      method: 'GET',
+    })
+    if (!response.ok) throw new Error('Gagal mengunduh template')
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    // Coba ambil nama file dari header jika ada, fallback ke default
+    const disposition = response.headers.get('Content-Disposition')
+    let filename = 'template-produk.xlsx'
+    if (disposition && disposition.includes('filename=')) {
+      filename = disposition.split('filename=')[1].replace(/"/g, '')
+    }
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    }, 100)
+  } catch (err: any) {
+    toast.add({
+      title: 'Gagal Mengunduh',
+      description: err.message || 'Terjadi kesalahan saat mengunduh template.',
+      color: 'error',
+    })
+  }
+}
+
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('outletId', auth.selectedOutlet?.id!)
+
+  const toastId = toast.add({ title: 'Mengunggah file...', description: 'Mohon tunggu...', color: 'info' })
+
+  try {
+    const { error: uploadError } = await useApi('/products/bulk', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (uploadError.value) {
+      throw uploadError.value
+    }
+
+    toast.update(toastId.id, {
+      title: 'Berhasil!',
+      description: 'Produk berhasil diimpor.',
+      color: 'success',
+    })
+    refresh() // Refresh product list
+  } catch (error: any) {
+    toast.update(toastId.id, {
+      title: 'Gagal Mengunggah',
+      description: error.data?.message || 'Terjadi kesalahan saat mengunggah file.',
+      color: 'error',
+    })
+  } finally {
+    // Reset file input to allow re-uploading the same file
+    if (fileInput.value) {
+      fileInput.value.value = ''
+    }
+  }
+}
 
 // Refactored to use useAsyncData for proper reactivity, as the custom useApi
 // composable does not seem to handle reactive URLs correctly.
-const { data, pending, error, refresh } = useApi<Product[]>(`/products/outlet/${auth.selectedOutlet?.id}` 
+const { data, pending, error, refresh } = useApi<Product[]>(`/products/outlet/${auth.selectedOutlet?.id}`
 )
 
 // The products are now directly the result of the transformed data.
@@ -38,7 +118,7 @@ onMounted(() => {
 const deleteProduct = async (productId: string) => {
   if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return
 
-  const { error: deleteError } = await useApi(`/api/v1/products/delete/${productId}`, {
+  const { error: deleteError } = await useApi(`/products/${productId}`, {
     method: 'DELETE'
   })
 
@@ -69,12 +149,25 @@ const deleteProduct = async (productId: string) => {
           <input v-model="searchQuery" type="text" placeholder="Cari produk..."
             class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
         </div>
-        <NuxtLink to="/umkm/products/create">
-          <BaseButton>
-            <Icon name="mdi:plus" size="16" class="mr-2" />
-            Tambah Produk
+
+        <div class="flex items-center gap-2">
+          <BaseButton variant="outline" @click="downloadTemplate">
+            <Icon name="mdi:download" size="16" class="mr-2" />
+            Template
           </BaseButton>
-        </NuxtLink>
+          <BaseButton @click="triggerFileInput">
+            <Icon name="mdi:upload" size="16" class="mr-2" />
+            Import
+          </BaseButton>
+          <input ref="fileInput" type="file" class="hidden" @change="handleFileUpload"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+          <NuxtLink to="/umkm/products/create">
+            <BaseButton>
+              <Icon name="mdi:plus" size="16" class="mr-2" />
+              Tambah Produk
+            </BaseButton>
+          </NuxtLink>
+        </div>
       </div>
     </div>
 
@@ -129,7 +222,7 @@ const deleteProduct = async (productId: string) => {
             </td>
             <td class="px-4 py-3">
               <div class="flex space-x-2">
-                <NuxtLink :to="`/umkm/products/${product.id}/edit`">
+                <NuxtLink :to="`/umkm/products/${product.id}`">
                   <BaseButton size="sm" variant="outline">Edit</BaseButton>
                 </NuxtLink>
                 <BaseButton size="sm" variant="error" @click="deleteProduct(product.id)">Hapus</BaseButton>

@@ -1,19 +1,15 @@
 import { Router } from 'express';
 import { protect } from '../middleware/auth.middleware';
+import { authorize } from '../middleware/auth.middleware';
+import { UserRole } from '@prisma/client';
 import {
     getWithdrawalCalculationController,
     requestWithdrawalController,
     processWithdrawalController,
-    getWithdrawalHistoryController,
-    midtransPayoutWebhookController,
-    xenditPayoutWebhookController
+    getWithdrawalHistoryController
 } from '../controller/withdrawal.controller';
 
 const withdrawalRouter = Router();
-
-// Webhook endpoints tidak memerlukan auth
-withdrawalRouter.post('/webhooks/midtrans-payout', midtransPayoutWebhookController);
-withdrawalRouter.post('/webhooks/xendit-payout', xenditPayoutWebhookController);
 
 // Semua endpoint withdrawal memerlukan authentication
 withdrawalRouter.use(protect);
@@ -25,7 +21,7 @@ withdrawalRouter.get('/business/:businessId/calculation', getWithdrawalCalculati
 withdrawalRouter.post('/business/:businessId/request', requestWithdrawalController);
 
 // PATCH /withdrawals/:id/process - Process withdrawal (admin only)
-withdrawalRouter.patch('/:id/process', processWithdrawalController);
+withdrawalRouter.patch('/:id/process', authorize(UserRole.ADMIN), processWithdrawalController);
 
 // GET /withdrawals/business/:businessId/history - Get withdrawal history
 withdrawalRouter.get('/business/:businessId/history', getWithdrawalHistoryController);

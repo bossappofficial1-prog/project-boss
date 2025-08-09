@@ -70,7 +70,7 @@ export async function createBookingAndMidtransTransactionService(data: CreateBoo
 export async function getBookingSlotByIdService(id: string) {
     const bookingSlot = await BookingRepository.findById(id);
     if (!bookingSlot) {
-        throw new AppError(Messages.NOT_FOUND, HttpStatus.NOT_FOUND);
+        throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return bookingSlot;
 }

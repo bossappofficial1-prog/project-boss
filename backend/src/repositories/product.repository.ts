@@ -4,8 +4,19 @@ import { CreateProductInput, UpdateProductInput } from "../schemas/product.schem
 
 export class ProductRepository {
     static async create(data: CreateProductInput): Promise<Product> {
+        // Destructure capacity and the rest of the fields
+        const { capacity, ...rest } = data as any;
         return db.product.create({
-            data,
+            data: {
+                ...rest,
+                ...(capacity !== undefined
+                    ? {
+                        serviceCapacity: {
+                            create: { value: capacity }
+                        }
+                    }
+                    : {}),
+            },
         });
     }
 
