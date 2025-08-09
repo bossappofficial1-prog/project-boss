@@ -17,7 +17,7 @@ const form = ref<ProductForm>({
   type: ProductType.GOODS, // Default to GOODS
   quantity: 0,
   unit: '',
-  status: ServiceStatus.ACTIVE, // Default to ACTIVE
+  status: ServiceStatus.INACTIVE, // Default belum aktifas
   transactionFeeBearer: FeeBearer.CUSTOMER, // Default to CUSTOMER
   outletId: auth.selectedOutlet?.id!,
   serviceDurationMinutes: 0,
@@ -29,11 +29,6 @@ const errors = ref<Record<string, string>>({})
 const productTypeOptions = [
   { value: ProductType.GOODS, label: 'Barang' },
   { value: ProductType.SERVICE, label: 'Jasa' }
-]
-
-const serviceStatusOptions = [
-  { value: ServiceStatus.ACTIVE, label: 'Aktif' },
-  { value: ServiceStatus.INACTIVE, label: 'Tidak Aktif' }
 ]
 
 const feeBearerOptions = [
@@ -108,8 +103,56 @@ const submitForm = async () => {
 }
 
 const pageTitle = computed(() => 'Tambah Produk Baru')
-
+ 
 const buttonText = computed(() => 'Tambah Produk')
+
+const handleFileChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files?.length) {
+    return
+  }
+
+  const file = input.files[0]
+  const formData = new FormData()
+  formData.append('image', file)
+
+  isLoading.value = true
+  try {
+    const { data, error } = await useApi<{ url: string }>('/upload/image', {
+      method: 'POST',
+      body: formData
+    })
+
+    if (error.value || !data.value) {
+      throw new Error('Gagal mengunggah gambar')
+    }
+
+    form.value.image = data.value.data!.url
+  } catch (e) {
+    console.error(e)
+    errors.value.image = 'Gagal mengunggah gambar'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const removeImage = async () => {
+  if (!form.value.image) return
+
+  isLoading.value = true
+  try {
+    await useApi('/upload/image', {
+      method: 'DELETE',
+      body: { url: form.value.image }
+    })
+    form.value.image = ''
+  } catch (e) {
+    console.error(e)
+    errors.value.image = 'Gagal menghapus gambar'
+  } finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -249,17 +292,6 @@ const buttonText = computed(() => 'Tambah Produk')
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status Produk *
-              </label>
-              <BaseSelect
-                v-model="form.status"
-                :options="serviceStatusOptions"
-                placeholder="Pilih status produk"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Penanggung Biaya Transaksi
               </label>
               <BaseSelect
@@ -271,14 +303,22 @@ const buttonText = computed(() => 'Tambah Produk')
 
             <div class="md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                URL Gambar Produk
+                Gambar Produk
               </label>
+              <div v-if="form.image" class="relative">
+                <img :src="form.image" alt="Preview Gambar" class="w-full h-auto rounded-lg mb-2" />
+                <button @click="removeImage" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1">
+                  <Icon name="lucide:x" size="16" />
+                </button>
+              </div>
               <input
-                v-model="form.image"
-                type="text"
+                v-else
+                type="file"
+                @change="handleFileChange"
                 class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-                placeholder="URL gambar produk (opsional)"
+                accept="image/*"
               />
+              <p v-if="errors.image" class="text-red-500 text-sm mt-1">{{ errors.image }}</p>
             </div>
           </div>
         </div>
