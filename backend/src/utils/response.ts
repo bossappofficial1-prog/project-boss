@@ -28,7 +28,7 @@ export class ResponseUtil {
         res: Response,
         data: T,
         statusCode: HttpStatus = HttpStatus.OK,
-        message = Messages.SUCCESS
+        message: any = Messages.SUCCESS
     ) {
         return this.base(res, true, message, data, statusCode)
     }
