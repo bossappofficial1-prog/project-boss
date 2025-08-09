@@ -1,81 +1,6 @@
-<template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Antrian</h1>
-    </div>
-
-    <!-- Filter & Search -->
-    <div class="flex justify-between items-center">
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="Cari antrian..."
-        class="border p-2 rounded w-64"
-      />
-    </div>
-
-    <!-- Tabel Antrian -->
-    <BaseTable>
-      <template #thead>
-        <tr>
-          <BaseTableHeader>ID Pesanan</BaseTableHeader>
-          <BaseTableHeader>Customer</BaseTableHeader>
-          <BaseTableHeader>Tanggal</BaseTableHeader>
-          <BaseTableHeader>Status Antrian</BaseTableHeader>
-          <BaseTableHeader>Aksi</BaseTableHeader>
-        </tr>
-      </template>
-
-      <tr v-if="pending">
-        <td colspan="5" class="text-center p-4">
-          <BaseLoading />
-        </td>
-      </tr>
-      <tr v-else-if="error">
-        <td colspan="5" class="text-center p-4">
-          <BaseErrorState :error="error" @retry="refresh" />
-        </td>
-      </tr>
-      <tr v-else-if="queues.length === 0">
-        <td colspan="5" class="text-center p-4">
-          <BaseEmptyState title="Antrian Kosong" message="Tidak ada antrian saat ini." icon="mdi:account-group-outline" />
-        </td>
-      </tr>
-      <BaseTableRow v-else v-for="queue in queues" :key="queue.id">
-        <td class="p-3">{{ queue.id }}</td>
-        <td class="p-3">{{ queue.customer?.name || queue.guestCustomer?.name || 'Guest' }}</td>
-        <td class="p-3">{{ new Date(queue.createdAt).toLocaleString() }}</td>
-        <td class="p-3">
-          <BaseBadge :variant="getQueueStatusVariant(queue.queueStatus)">
-            {{ queue.queueStatus }}
-          </BaseBadge>
-        </td>
-        <td class="p-3">
-          <div class="flex space-x-2">
-            <BaseButton v-if="queue.queueStatus === 'IN_QUEUE'" size="sm" @click="updateQueueStatus(queue.id, OrderQueueStatus.IN_PROGRESS)">Mulai Kerjakan</BaseButton>
-            <BaseButton v-if="queue.queueStatus === 'IN_PROGRESS'" size="sm" @click="updateQueueStatus(queue.id, OrderQueueStatus.COMPLETED)">Selesai</BaseButton>
-          </div>
-        </td>
-      </BaseTableRow>
-
-      <template #footer>
-        <BasePagination
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          @previous="prevPage"
-          @next="nextPage"
-        />
-      </template>
-    </BaseTable>
-
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
-import { OrderQueueStatus } from '~/types'
-import type { Order } from '~/types'
+import { OrderQueueStatus, type Order } from '~/types'
 import { useDebounceFn } from '@vueuse/core'
 
 definePageMeta({
@@ -86,64 +11,61 @@ definePageMeta({
 const auth = useAuthStore()
 const toast = useToast()
 const searchQuery = ref('')
-const currentPage = ref(1)
-const perPage = 10
 
+// API data fetching
 const { data, pending, error, refresh } = useAsyncData(
-  'queues-list',
-  () => {
+  'queues',
+  async () => {
     const outletId = auth.selectedOutlet?.id
-    if (!outletId) {
-      return Promise.resolve({ data: { orders: [], total: 0 } })
+    if (!outletId) return { orders: [] }
+
+    const params = new URLSearchParams()
+    params.append('status', OrderQueueStatus.IN_QUEUE)
+    params.append('status', OrderQueueStatus.IN_PROGRESS)
+    if (searchQuery.value) {
+      params.append('q', searchQuery.value)
     }
-    return $fetch(`/api/v1/orders/outlet/${outletId}`, {
-      params: {
-        q: searchQuery.value,
-        page: currentPage.value,
-        limit: perPage,
-        status: ['IN_QUEUE', 'IN_PROGRESS'] // Fetch only active queues
-      },
-    })
+    
+    // Using $fetch which is the foundation of useApi
+    const response = await $fetch<{ data: { orders: Order[] } }>(`/api/v1/orders/outlet/${outletId}?${params.toString()}`)
+    return response.data
   },
   {
-    watch: [() => auth.selectedOutlet?.id, currentPage],
-    lazy: true,
-    immediate: false,
-    transform: (response: any) => {
-      return {
-        orders: response.data?.orders || [],
-        total: response.data?.total || 0
-      }
-    },
+    watch: [searchQuery, () => auth.selectedOutlet?.id],
+    default: () => ({ orders: [] })
   }
 )
 
 const queues = computed(() => data.value?.orders || [])
-const totalQueues = computed(() => data.value?.total || 0)
 
-const totalPages = computed(() => Math.ceil(totalQueues.value / perPage))
+// Debounced search handler
+const handleSearch = useDebounceFn((term: string) => {
+  searchQuery.value = term
+  // The watch on useAsyncData will trigger the refresh automatically
+}, 500)
 
-const debouncedRefresh = useDebounceFn(refresh, 500)
+// Table configuration
+const tableColumns = ref([
+  { key: 'id', label: 'ID Pesanan', sortable: true },
+  { key: 'customerName', label: 'Customer', type: 'slot' },
+  { key: 'createdAt', label: 'Tanggal', type: 'date', sortable: true },
+  { key: 'queueStatus', label: 'Status Antrian', type: 'badge', badgeConfig: {
+      [OrderQueueStatus.IN_QUEUE]: 'bg-blue-100 text-blue-800',
+      [OrderQueueStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-800',
+      [OrderQueueStatus.COMPLETED]: 'bg-green-100 text-green-800',
+      [OrderQueueStatus.CANCELLED]: 'bg-red-100 text-red-800',
+    } 
+  },
+])
 
-watch(searchQuery, () => {
-  currentPage.value = 1
-  debouncedRefresh()
-})
-
-onMounted(() => {
-  if (auth.selectedOutlet?.id) {
-    refresh()
-  }
-})
-
-async function updateQueueStatus(orderId: string, status: OrderQueueStatus) {
-  const { error } = await useApi(`/api/v1/orders/${orderId}/status`, {
+const updateQueueStatus = async (orderId: string, status: OrderQueueStatus) => {
+  const { error: updateError } = await useApi(`/orders/${orderId}/status`, {
     method: 'PUT',
     body: { status }
   })
 
-  if (error.value) {
-    toast.add({ title: 'Gagal Memperbarui Status', description: error.value.data?.message || 'Terjadi kesalahan.', color: 'error' })
+  if (updateError.value) {
+    toast.add({ title: 'Gagal Memperbarui Status', description: updateError.value.data?.message || 'Terjadi kesalahan.', color: 'error' })
     return
   }
 
@@ -151,28 +73,60 @@ async function updateQueueStatus(orderId: string, status: OrderQueueStatus) {
   refresh()
 }
 
-function prevPage() {
-  if (currentPage.value > 1) currentPage.value--
-}
-
-function nextPage() {
-  if (currentPage.value < totalPages.value) currentPage.value++
-}
-
-function getQueueStatusVariant(status: string) {
-  switch (status) {
-    case 'COMPLETED':
-      return 'success'
-    case 'IN_PROGRESS':
-      return 'info'
-    case 'IN_QUEUE':
-      return 'primary'
-    case 'AWAITING_PAYMENT':
-      return 'warning'
-    case 'CANCELLED':
-      return 'error'
-    default:
-      return 'gray'
+const tableRowActions = ref([
+  {
+    key: 'start',
+    label: 'Mulai Kerjakan',
+    icon: 'lucide:play-circle',
+    variant: 'edit',
+    condition: (row: Order) => row.queueStatus === OrderQueueStatus.IN_QUEUE,
+    handler: (row: Order) => updateQueueStatus(row.id, OrderQueueStatus.IN_PROGRESS)
+  },
+  {
+    key: 'complete',
+    label: 'Selesaikan',
+    icon: 'lucide:check-circle',
+    variant: 'primary',
+    condition: (row: Order) => row.queueStatus === OrderQueueStatus.IN_PROGRESS,
+    handler: (row: Order) => updateQueueStatus(row.id, OrderQueueStatus.COMPLETED)
   }
-}
+])
+
+onMounted(() => {
+  if (auth.selectedOutlet?.id) {
+    refresh()
+  }
+})
 </script>
+
+<template>
+  <div>
+    <div v-if="pending && !queues.length">
+      <BaseLoading />
+    </div>
+    <div v-else-if="error">
+      <BaseErrorState :error="error" @retry="refresh" />
+    </div>
+    <div v-else>
+      <BaseTable2
+        :data="queues"
+        :columns="tableColumns"
+        :row-actions="tableRowActions"
+        title="Antrian"
+        subtitle="Kelola antrian pesanan yang sedang berlangsung."
+        :searchable="true"
+        :paginated="true"
+        :show-export="false"
+        @search="handleSearch"
+        @refresh="refresh"
+        search-placeholder="Cari berdasarkan ID pesanan atau nama customer..."
+        empty-message="Tidak ada antrian yang aktif saat ini."
+      >
+        <template #customerName="{ row }">
+          {{ (row as Order).customer?.name || (row as Order).guestCustomer?.name || 'Guest' }}
+        </template>
+        <!-- The badge for queueStatus is handled by the badgeConfig in tableColumns -->
+      </BaseTable2>
+    </div>
+  </div>
+</template>

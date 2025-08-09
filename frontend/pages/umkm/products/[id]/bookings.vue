@@ -51,6 +51,21 @@ const addBooking = async () => {
   newBooking.value = { date: '', startTime: '', endTime: '' }
   refreshBookings()
 }
+
+const deleteBooking = async (bookingId: string) => {
+  if (!confirm('Apakah Anda yakin ingin menghapus jadwal ini?')) return
+
+  const { error } = await useApi(`/bookings/${bookingId}`, {
+    method: 'DELETE'
+  })
+
+  if (error.value) {
+    return toast.add({ title: 'Gagal Menghapus Jadwal', description: error.value.data?.message || 'Terjadi kesalahan', color: 'error' })
+  }
+
+  toast.add({ title: 'Berhasil', description: 'Jadwal berhasil dihapus.', color: 'success' })
+  refreshBookings()
+}
 </script>
 
 <template>
@@ -96,9 +111,12 @@ const addBooking = async () => {
           <p>Belum ada jadwal yang ditambahkan untuk produk ini.</p>
         </div>
         <ul v-else class="space-y-2">
-          <li v-for="booking in bookings" :key="booking.id" class="p-4 border rounded-lg">
-            <p><strong>Tanggal:</strong> {{ new Date(booking.date).toLocaleDateString() }}</p>
-            <p><strong>Waktu:</strong> {{ new Date(booking.startTime).toLocaleTimeString() }} - {{ new Date(booking.endTime).toLocaleTimeString() }}</p>
+          <li v-for="booking in bookings" :key="booking.id" class="flex items-center justify-between p-4 border rounded-lg">
+            <div>
+              <p><strong>Tanggal:</strong> {{ new Date(booking.date).toLocaleDateString() }}</p>
+              <p><strong>Waktu:</strong> {{ new Date(booking.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }} - {{ new Date(booking.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
+            </div>
+            <UButton @click="deleteBooking(booking.id)" color="error" variant="soft" icon="i-heroicons-trash" />
           </li>
         </ul>
       </div>
