@@ -324,6 +324,21 @@ export interface ApiResponse<T> {
 }
 
 // =============================================
+// NOTIFICATIONS TYPES
+// =============================================
+
+export type NotificationItem =
+  | { type: 'NEW_ORDERS'; title: string; message: string; count: number; time: string }
+  | { type: 'LOW_STOCK'; title: string; message: string; count: number; threshold: number; time: string }
+  | { type: 'WEEKLY_REPORT'; title: string; message: string; time: string };
+
+export interface NotificationsResponse {
+  outletId: string
+  generatedAt: string
+  items: NotificationItem[]
+}
+
+// =============================================
 // FORM TYPES
 // =============================================
 

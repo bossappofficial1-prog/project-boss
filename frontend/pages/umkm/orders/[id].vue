@@ -11,13 +11,11 @@ definePageMeta({
 const route = useRoute();
 const orderId = route.params.id as string;
 
-const { data: order, pending, error, refresh } = useAsyncData(
-  `order-${orderId}`,
-  () => $fetch<{ data: Order }>(`/api/v1/orders/${orderId}`),
-  {
-    transform: (response) => response.data
-  }
-);
+const { data, pending, error, refresh } = useApi<Order>(`/orders/${orderId}`, {
+  method: 'GET',
+  immediate: true
+});
+const order = computed(() => data.value?.data as Order | undefined)
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('id-ID', {
@@ -78,14 +76,8 @@ const tableData = computed(() => {
     <div v-else-if="order" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2 space-y-6">
         <BaseCard>
-          <BaseTable2
-            :data="tableData"
-            :columns="tableColumns"
-            :searchable="false"
-            :paginated="false"
-            :show-header="false"
-            :show-footer="false"
-            />
+          <BaseTable2 :data="tableData" :columns="tableColumns" :searchable="false" :paginated="false"
+            :show-header="false" :show-footer="false" />
         </BaseCard>
       </div>
       <div class="space-y-6">
@@ -106,7 +98,7 @@ const tableData = computed(() => {
             </div>
           </div>
         </BaseCard>
-        
+
         <BaseCard v-if="order.paymentStatus === OrderPaymentStatus.PENDING">
           <h2 class="text-lg font-semibold mb-4">Pembayaran QRIS</h2>
           <div v-if="qrisImageUrl" class="text-center">

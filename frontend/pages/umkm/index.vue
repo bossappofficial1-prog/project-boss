@@ -1,5 +1,7 @@
 <template>
   <div class="space-y-6">
+    <NotificationsPanel v-if="auth.selectedOutlet" />
+
     <!-- User Profile Section -->
     <BaseCard>
       <div class="flex items-center justify-between mb-6">

@@ -18,6 +18,7 @@ import operatingHoursRouter from "./operating-hours.route";
 import uploadRouter from "./upload.route";
 import securityRouter from "./security.route";
 import queueMonitoringRouter from "./queue-monitoring.route";
+import notificationRouter from "./notification.route";
 
 const apiRouter = Router()
 
@@ -40,6 +41,6 @@ apiRouter.use('/operating-hours', operatingHoursRouter)
 apiRouter.use('/upload', uploadRouter)
 apiRouter.use('/security', securityRouter)
 apiRouter.use('/queue-monitoring', queueMonitoringRouter)
-apiRouter.use('/security', securityRouter)
+apiRouter.use('/notifications', notificationRouter)
 
 export default apiRouter
