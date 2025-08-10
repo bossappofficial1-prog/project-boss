@@ -144,11 +144,17 @@ export interface Outlet {
   businessId: string
   latitude?: number
   longitude?: number
+  isOpen?: boolean
+  distance?: number
   // Relations
   business?: Business
   products?: Product[]
   orders?: Order[]
   expenses?: Expense[]
+  _count?: {
+    orders: number
+    products: number
+  }
 }
 
 export interface Product {
