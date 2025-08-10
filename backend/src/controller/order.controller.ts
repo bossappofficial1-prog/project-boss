@@ -2,7 +2,12 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
 import { ResponseUtil } from "../utils/response";
 import { HttpStatus } from "../constants/http-status";
-import { getOrderByIdService, refundOrderService, createOrderAndMidtransTransactionService, updateOrderStatusService, completeServiceOrderService } from "../service/order.service";
+import {
+    getOrderByIdService, refundOrderService,
+    createOrderAndMidtransTransactionService,
+    updateOrderStatusService, completeServiceOrderService,
+    getGoodsOrdersByOutletService, getServiceQueueByOutletService
+} from "../service/order.service";
 import { ReceiptService } from "../service/receipt.service";
 
 export const getOrderReceiptController = asyncHandler(async (req: Request, res: Response) => {
@@ -79,4 +84,50 @@ export const refundOrderController = asyncHandler(async (req: Request, res: Resp
 
     const order = await refundOrderService(id);
     return ResponseUtil.success(res, order);
+});
+
+export const listGoodsOrdersByOutletController = asyncHandler(async (req: Request, res: Response) => {
+    const { outletId } = req.params;
+    const { status, page, limit } = req.query as any;
+    const ownerId = req.user!.id;
+
+    const result = await getGoodsOrdersByOutletService(
+        outletId,
+        ownerId,
+        {
+            status,
+            page: page ? parseInt(page) : undefined,
+            limit: limit ? parseInt(limit) : undefined
+        } as any
+    );
+    return ResponseUtil.paginated(
+        res,
+        result.data,
+        result.page,
+        result.limit,
+        result.total,
+        HttpStatus.OK);
+});
+
+export const listServiceQueueByOutletController = asyncHandler(async (req: Request, res: Response) => {
+    const { outletId } = req.params;
+    const { page, limit } = req.query as any;
+    const ownerId = req.user!.id;
+
+    const result = await getServiceQueueByOutletService(
+        outletId,
+        ownerId,
+        {
+            page: page ? parseInt(page) : undefined,
+            limit: limit ? parseInt(limit) : undefined
+        }
+    );
+    return ResponseUtil.paginated(
+        res,
+        result.data,
+        result.page,
+        result.limit,
+        result.total,
+        HttpStatus.OK
+    );
 });

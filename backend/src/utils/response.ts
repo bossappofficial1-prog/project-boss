@@ -84,7 +84,7 @@ export class ResponseUtil {
         page: number,
         limit: number,
         total: number,
-        message = 'Success'
+        message: any = 'Success'
     ): Response<PaginatedResponse<T>> {
         return this.base(res, true, message, data, HttpStatus.OK, undefined, {
             pagination: {

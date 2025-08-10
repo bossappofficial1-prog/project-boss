@@ -85,6 +85,14 @@ export class OutletRepository {
                 where: whereClause,
                 take: take,
                 skip: skip,
+                include: {
+                    business: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    }
+                }
             }),
             db.outlet.count({
                 where: whereClause,

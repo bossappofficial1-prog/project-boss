@@ -14,6 +14,108 @@ import { getBusinessByIdService } from "./business.service"; // Impor service bi
 import { generateOrderCode } from "../utils";
 import { BookingRepository } from "../repositories/booking.repository";
 
+// List goods orders by outlet with optional status filter and pagination
+export async function getGoodsOrdersByOutletService(
+    outletId: string,
+    ownerId: string,
+    options?: { status?: OrderStatus; page?: number; limit?: number }
+) {
+    const page = Math.max(1, options?.page || 1);
+    const limit = Math.min(100, Math.max(1, options?.limit || 20));
+    const skip = (page - 1) * limit;
+
+    // Ownership validation
+    const outlet = await getOutletByIdService(outletId);
+    const business = await getBusinessByIdService(outlet.businessId);
+    if (business.ownerId !== ownerId) {
+        throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+    }
+
+    const baseWhere = {
+        outletId,
+        ...(options?.status ? { orderStatus: options.status } : {}),
+        items: {
+            some: {
+                product: { type: 'GOODS' }
+            }
+        }
+    } as const;
+
+    const [total, orders] = await db.$transaction([
+        db.order.count({ where: baseWhere as any }),
+        db.order.findMany({
+            where: baseWhere as any,
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit,
+            include: {
+                items: { include: { product: true } },
+                guestCustomer: true
+            }
+        })
+    ]);
+
+    return {
+        data: orders,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+    };
+}
+
+// List service queue by outlet (READY orders with SERVICE items), ordered by createdAt asc and position
+export async function getServiceQueueByOutletService(
+    outletId: string,
+    ownerId: string,
+    options?: { page?: number; limit?: number }
+) {
+    const page = Math.max(1, options?.page || 1);
+    const limit = Math.min(100, Math.max(1, options?.limit || 50));
+    const skip = (page - 1) * limit;
+
+    // Ownership validation
+    const outlet = await getOutletByIdService(outletId);
+    const business = await getBusinessByIdService(outlet.businessId);
+    if (business.ownerId !== ownerId) {
+        throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+    }
+
+    const where = {
+        outletId,
+        orderStatus: OrderStatus.READY,
+        items: { some: { product: { type: 'SERVICE' } } }
+    } as const;
+
+    const [total, orders] = await db.$transaction([
+        db.order.count({ where: where as any }),
+        db.order.findMany({
+            where: where as any,
+            orderBy: { createdAt: 'asc' },
+            skip,
+            take: limit,
+            include: {
+                items: { include: { product: true } },
+                guestCustomer: true,
+                bookingSlot: true
+            }
+        })
+    ]);
+
+    const data = orders.map((o, idx) => ({
+        position: skip + idx + 1,
+        ...o
+    }));
+
+    return {
+        data,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+    };
+}
+
 async function createOrderInDbService(data: CreateOrderInput) {
     const { items, outletId, bookingSlotId } = data;
 

@@ -25,7 +25,7 @@ export const findNearbyOutletsController = asyncHandler(async (req: Request, res
         limit ? parseInt(limit as string) : undefined
     );
 
-    return ResponseUtil.success(res, outlets, HttpStatus.OK);
+    return ResponseUtil.paginated(res, outlets.outlets, outlets.page, outlets.limit, outlets.totalPages, HttpStatus.OK);
 });
 
 export const updateOutletLocationController = asyncHandler(async (req: Request, res: Response) => {

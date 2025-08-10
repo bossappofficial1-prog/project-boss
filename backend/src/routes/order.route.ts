@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController } from "../controller/order.controller";
+import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController } from "../controller/order.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOrderSchema, updateOrderStatusSchema } from "../schemas/order.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
@@ -36,5 +36,11 @@ orderRouter.patch("/:id/status", protect, authorize(UserRole.OWNER), validateSch
 
 // Rute yang dilindungi untuk menyelesaikan pesanan
 orderRouter.post("/:id/complete", protect, authorize(UserRole.OWNER), completeOrderController);
+
+// List pesanan barang berdasarkan outlet (owner only)
+orderRouter.get("/:outletId/goods", protect, authorize(UserRole.OWNER), listGoodsOrdersByOutletController);
+
+// List antrian layanan berdasarkan outlet (owner only)
+orderRouter.get("/:outletId/queue", protect, authorize(UserRole.OWNER), listServiceQueueByOutletController);
 
 export default orderRouter;

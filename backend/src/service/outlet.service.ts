@@ -87,19 +87,6 @@ export async function findNearbyOutletsService(
                     description: true
                 }
             },
-            products: {
-                where: {
-                    status: 'ACTIVE',
-                },
-                select: {
-                    id: true,
-                    name: true,
-                    price: true,
-                    type: true,
-                    image: true,
-                    status: true
-                }
-            },
             _count: {
                 select: {
                     orders: true,
@@ -294,6 +281,12 @@ export async function getAllOutletsService(
 export async function getFeaturedOutletsService() {
     const outlets = await db.outlet.findMany({
         include: {
+            business: {
+                select: {
+                    id: true,
+                    name: true
+                }
+            },
             _count: {
                 select: {
                     orders: true,
