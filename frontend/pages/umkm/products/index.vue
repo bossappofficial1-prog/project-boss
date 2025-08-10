@@ -13,8 +13,9 @@ const toast = useToast()
 const searchQuery = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 
-
-const API_TEMPLATE_URL = 'http://localhost:1234/api/v1/products/template/import'
+const config = useRuntimeConfig()
+const baseUrl = config.public.apiBaseUrl
+const API_TEMPLATE_URL = `${baseUrl}/products/template/import`
 const downloadTemplate = async () => {
   try {
     const response = await fetch(API_TEMPLATE_URL, {
@@ -94,11 +95,11 @@ const handleFileUpload = async (event: Event) => {
 
 // Refactored to use useAsyncData for proper reactivity, as the custom useApi
 // composable does not seem to handle reactive URLs correctly.
-const { data, pending, error, refresh } = useApi<Product[]>(`/products/outlet/${auth.selectedOutlet?.id}`
+const { data, pending, error, refresh } = useApi<{ products: Product[] }>(`/products/outlet/${auth.selectedOutlet?.id}`
 )
 
 // The products are now directly the result of the transformed data.
-const products = computed(() => data.value?.data || [])
+const products = computed(() => data.value?.data?.products || [])
 
 // Debounce the refresh function from useAsyncData to avoid excessive API calls on search.
 const debouncedRefresh = useDebounceFn(refresh, 500)
@@ -137,100 +138,132 @@ const deleteProduct = async (productId: string) => {
   })
   refresh() // Re-fetch the product list
 }
+
+const toggleProductStatus = async (product: Product) => {
+  const newStatus = product.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+
+  if (newStatus === 'ACTIVE') {
+    if (product.type === 'GOODS' && !product.quantity) {
+      return toast.add({
+        title: 'Gagal Mengaktifkan',
+        description: 'Produk barang harus memiliki kuantitas untuk diaktifkan.',
+        color: 'error'
+      })
+    }
+
+    if (product.type === 'SERVICE') {
+      const { data: bookingsData, error: bookingsError } = await useApi<{ bookings: any[] }>(`/bookings/product/${product.id}`)
+      if (bookingsError.value || !bookingsData.value?.data?.bookings || bookingsData.value.data.bookings.length === 0) {
+        return toast.add({
+          title: 'Gagal Mengaktifkan',
+          description: 'Produk jasa harus memiliki setidaknya satu jadwal untuk diaktifkan.',
+          color: 'error'
+        })
+      }
+    }
+  }
+
+  const { error } = await useApi(`/products/${product.id}`, {
+    method: 'PATCH',
+    body: { status: newStatus }
+  })
+
+  if (error.value) {
+    return toast.add({
+      title: 'Gagal',
+      description: `Gagal mengubah status produk menjadi ${newStatus}.`,
+      color: 'error'
+    })
+  }
+
+  toast.add({
+    title: 'Berhasil!',
+    description: `Status produk berhasil diubah menjadi ${newStatus}.`,
+    color: 'success'
+  })
+  refresh()
+}
+const tableColumns = ref([
+  { key: 'name', label: 'Nama Produk', sortable: true, searchable: true },
+  { key: 'type', label: 'Tipe', type: 'slot' },
+  { key: 'costPrice', label: 'Harga Modal', type: 'currency' },
+  { key: 'price', label: 'Harga Jual', type: 'currency' },
+  { key: 'stockDuration', label: 'Stok/Durasi', type: 'slot' },
+  { key: 'status', label: 'Status', type: 'badge', badgeConfig: { 'ACTIVE': 'bg-green-100 text-green-800', 'INACTIVE': 'bg-red-100 text-red-800' } },
+  { key: 'actions', label: 'Aktif/Nonaktif', type: 'slot' }
+])
+
+const tableActions = ref([
+  {
+    label: 'Import',
+    icon: 'mdi:upload',
+    handler: () => triggerFileInput()
+  },
+  {
+    label: 'Tambah Produk',
+    icon: 'mdi:plus',
+    variant: 'primary',
+    handler: () => navigateTo('/umkm/products/create')
+  }
+])
+
+const tableRowActions = ref([
+  {
+    key: 'edit',
+    label: 'Edit',
+    icon: 'lucide:pencil',
+    variant: 'edit',
+    handler: (row: Product) => navigateTo(`/umkm/products/${row.id}`)
+  },
+  {
+    key: 'delete',
+    label: 'Hapus',
+    icon: 'lucide:trash-2',
+    variant: 'delete',
+    handler: (row: Product) => deleteProduct(row.id)
+  },
+  {
+    key: 'manage-booking',
+    label: 'Kelola Jadwal',
+    icon: 'lucide:calendar',
+    variant: 'primary',
+    condition: (row: Product) => row.type === 'SERVICE',
+    handler: (row: Product) => navigateTo(`/umkm/products/${row.id}/bookings`)
+  }
+])
+
+const handleSearch = (term: string) => {
+  searchQuery.value = term
+}
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Daftar Produk</h1>
-      <div class="flex items-center gap-4">
-        <div class="relative w-full md:w-64">
-          <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input v-model="searchQuery" type="text" placeholder="Cari produk..."
-            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
-        </div>
-
-        <div class="flex items-center gap-2">
-          <BaseButton variant="outline" @click="downloadTemplate">
-            <Icon name="mdi:download" size="16" class="mr-2" />
-            Template
-          </BaseButton>
-          <BaseButton @click="triggerFileInput">
-            <Icon name="mdi:upload" size="16" class="mr-2" />
-            Import
-          </BaseButton>
-          <input ref="fileInput" type="file" class="hidden" @change="handleFileUpload"
-            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-          <NuxtLink to="/umkm/products/create">
-            <BaseButton>
-              <Icon name="mdi:plus" size="16" class="mr-2" />
-              Tambah Produk
-            </BaseButton>
-          </NuxtLink>
-        </div>
-      </div>
+  <div>
+    <div v-if="pending">
+      <BaseLoading />
     </div>
-
-    <BaseCard>
-      <div v-if="pending">
-        <BaseLoading />
-      </div>
-      <div v-else-if="error">
-        <BaseErrorState :error="error" @retry="refresh" />
-      </div>
-      <div v-else-if="products.length === 0">
-        <BaseEmptyState v-if="searchQuery" title="Produk Tidak Ditemukan"
-          message="Tidak ada produk yang cocok dengan pencarian Anda." icon="mdi:magnify-close" />
-        <BaseEmptyState v-else title="Belum Ada Produk" message="Tambahkan produk pertama Anda untuk mulai menjual."
-          icon="mdi:package-variant-closed">
-          <template #action>
-            <NuxtLink to="/umkm/products/create">
-              <BaseButton>
-                <Icon name="mdi:plus" size="16" class="mr-2" />
-                Tambah Produk
-              </BaseButton>
-            </NuxtLink>
-          </template>
-        </BaseEmptyState>
-      </div>
-      <BaseTable v-else>
-        <template #thead>
-          <thead>
-            <BaseTableHeader>Nama Produk</BaseTableHeader>
-            <BaseTableHeader>Tipe</BaseTableHeader>
-            <BaseTableHeader>Harga Modal</BaseTableHeader>
-            <BaseTableHeader>Harga Jual</BaseTableHeader>
-            <BaseTableHeader>Stok/Durasi</BaseTableHeader>
-            <BaseTableHeader>Status</BaseTableHeader>
-            <BaseTableHeader>Aksi</BaseTableHeader>
-          </thead>
+    <div v-else-if="error">
+      <BaseErrorState :error="error" @retry="refresh" />
+    </div>
+    <div v-else>
+      <BaseTable2 :data="products" :columns="tableColumns" :actions="tableActions" :row-actions="tableRowActions"
+        title="Daftar Produk" subtitle="Kelola semua produk Anda di satu tempat" :searchable="true"
+        :paginated="true" @search="handleSearch" @refresh="refresh" @export="downloadTemplate"
+        :show-export="true" :show-refresh="true" search-placeholder="Cari produk..."
+        empty-message="Tidak ada produk yang cocok dengan pencarian Anda.">
+        <template #type="{ row }">
+          {{ (row as Product).type === 'GOODS' ? 'Barang' : 'Jasa' }}
         </template>
-        <tbody>
-          <BaseTableRow v-for="product in products" :key="product.id">
-            <td class="px-4 py-3">{{ product.name }}</td>
-            <td class="px-4 py-3">{{ product.type === 'GOODS' ? 'Barang' : 'Jasa' }}</td>
-            <td class="px-4 py-3">Rp{{ product.costPrice.toLocaleString('id-ID') }}</td>
-            <td class="px-4 py-3">Rp{{ product.price.toLocaleString('id-ID') }}</td>
-            <td class="px-4 py-3">
-              <span v-if="product.type === 'GOODS'">{{ product.quantity }} {{ product.unit }}</span>
-              <span v-else>{{ product.serviceDurationMinutes }} menit</span>
-            </td>
-            <td class="px-4 py-3">
-              <BaseBadge :variant="product.status === 'ACTIVE' ? 'success' : 'gray'">
-                {{ product.status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif' }}
-              </BaseBadge>
-            </td>
-            <td class="px-4 py-3">
-              <div class="flex space-x-2">
-                <NuxtLink :to="`/umkm/products/${product.id}`">
-                  <BaseButton size="sm" variant="outline">Edit</BaseButton>
-                </NuxtLink>
-                <BaseButton size="sm" variant="error" @click="deleteProduct(product.id)">Hapus</BaseButton>
-              </div>
-            </td>
-          </BaseTableRow>
-        </tbody>
-      </BaseTable>
-    </BaseCard>
+        <template #stockDuration="{ row }">
+          <span v-if="(row as Product).type === 'GOODS'">{{ (row as Product).quantity }} {{ (row as Product).unit }}</span>
+          <span v-else>{{ (row as Product).serviceDurationMinutes }} menit</span>
+        </template>
+        <template #actions="{ row }">
+          <UToggle :model-value="(row as Product).status === 'ACTIVE'" @update:model-value="() => toggleProductStatus(row as Product)" />
+        </template>
+      </BaseTable2>
+      <input ref="fileInput" type="file" class="hidden" @change="handleFileUpload"
+        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+    </div>
   </div>
 </template>

@@ -188,6 +188,18 @@ export interface BookingSlot {
   order?: Order
 }
 
+export interface Booking {
+  id: string
+  date: Date
+  startTime: Date
+  endTime: Date
+  status: BookingSlotStatus
+  productId: string
+  orderId?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface GuestCustomer {
   id: string
   name: string
