@@ -22,6 +22,19 @@ interface Location {
     longitude: number;
 }
 
+const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: Date) => {
+    return operatingHours.some((oper) => {
+        const todayMinutes = today.getHours() * 60 + today.getMinutes(); // Total menit saat ini
+        const openMinutes = oper.openTime.getHours() * 60 + oper.openTime.getMinutes(); // Total menit waktu buka
+        const closeMinutes = oper.closeTime.getHours() * 60 + oper.closeTime.getMinutes(); // Total menit waktu tutup
+
+        Console.log(closeMinutes, openMinutes, todayMinutes, today.getDay(), oper.dayOfWeek);
+        Console.log(oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes);
+
+        return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
+    });
+}
+
 function calculateDistance(point1: Location, point2: Location): number {
     const R = 6371; // Radius of the Earth in kilometers
     const dLat = toRadian(point2.latitude - point1.latitude);
@@ -89,6 +102,7 @@ export async function findNearbyOutletsService(
                     description: true
                 }
             },
+            operatingHours: true,
             _count: {
                 select: {
                     orders: true,
@@ -125,9 +139,14 @@ export async function findNearbyOutletsService(
             return a.distance - b.distance;
         });
 
-    // Apply pagination
+    const today = new Date()
     const skip = (page - 1) * limit;
-    const paginatedOutlets = outletsWithDistance.slice(skip, skip + limit);
+    const paginatedOutlets = outletsWithDistance.slice(skip, skip + limit).map((outlet) => ({
+        ...outlet,
+        isOpen: outlet.operatingHours.length > 0
+            ? getIsOutletOpen(outlet.operatingHours, today)
+            : outlet.isOpen
+    }));
 
     return {
         outlets: paginatedOutlets,
@@ -161,19 +180,6 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
     return db.outlet.update({
         where: { id: outletId },
         data: { latitude, longitude }
-    });
-}
-
-const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: Date) => {
-    return operatingHours.some((oper) => {
-        const todayMinutes = today.getHours() * 60 + today.getMinutes(); // Total menit saat ini
-        const openMinutes = oper.openTime.getHours() * 60 + oper.openTime.getMinutes(); // Total menit waktu buka
-        const closeMinutes = oper.closeTime.getHours() * 60 + oper.closeTime.getMinutes(); // Total menit waktu tutup
-
-        Console.log(closeMinutes, openMinutes, todayMinutes, today.getDay(), oper.dayOfWeek);
-        Console.log(oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes);
-
-        return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
     });
 }
 

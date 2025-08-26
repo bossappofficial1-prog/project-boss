@@ -1,1187 +1,362 @@
-import { PrismaClient, ProductType, UserRole, OrderStatus, PaymentStatus, PromoType, PromoStatus, MemberType, BookingSlotStatus, ServiceStatus, WithdrawalStatus, FeeBearer } from '@prisma/client';
-import { BcryptUtil, generateOutletCode } from '../../src/utils';
+import { PrismaClient, ProductType, UserRole, ServiceStatus, FeeBearer } from '@prisma/client';
+import { BcryptUtil } from '../../src/utils';
 
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('🌱 Starting comprehensive database seeding...');
+    console.log('🌱 Starting simplified database seeding...');
 
-    // 1. Clean existing data in proper order to avoid foreign key constraints
+    // 1. Clean existing data
     console.log('🗑️ Cleaning existing data...');
-    await prisma.orderItem.deleteMany({});
-    await prisma.transaction.deleteMany({});
-    await prisma.bookingSlot.deleteMany({});
-    await prisma.order.deleteMany({});
-    await prisma.withdrawal.deleteMany({});
-    await prisma.expense.deleteMany({});
-    await prisma.membership.deleteMany({});
-    await prisma.promo.deleteMany({});
+    await prisma.outletOperatingHours.deleteMany({});
     await prisma.product.deleteMany({});
     await prisma.outlet.deleteMany({});
     await prisma.wallet.deleteMany({});
     await prisma.business.deleteMany({});
-    await prisma.guestCustomer.deleteMany({});
     await prisma.user.deleteMany({});
     console.log('✅ Old data cleaned.');
 
     // 2. Create Users (Owners)
     console.log('👥 Creating users...');
     const hashedPassword = await BcryptUtil.hash('password123');
-    
-    const owner1 = await prisma.user.create({
-        data: {
-            name: 'John Doe',
-            email: 'john@coffeeshop.com',
-            password: hashedPassword,
-            role: UserRole.OWNER,
-            isVerified: true,
-            phone: '+6281234567890',
-        },
-    });
 
-    const owner2 = await prisma.user.create({
-        data: {
-            name: 'Jane Smith',
-            email: 'jane@beautysalon.com',
-            password: hashedPassword,
-            role: UserRole.OWNER,
-            isVerified: true,
-            phone: '+6281234567891',
-        },
-    });
-
-    const owner3 = await prisma.user.create({
-        data: {
-            name: 'Mike Johnson',
-            email: 'mike@techservice.com',
-            password: hashedPassword,
-            role: UserRole.OWNER,
-            isVerified: false,
-            phone: '+6281234567892',
-            verificationCode: '123456',
-            verificationCodeExpires: new Date(Date.now() + 3600000), // 1 hour from now
-        },
-    });
+    const users = await Promise.all([
+        prisma.user.create({
+            data: {
+                name: 'Default Owner',
+                email: 'owner@example.com',
+                password: hashedPassword,
+                role: UserRole.OWNER,
+                isVerified: true,
+                phone: '+6281234567890',
+            },
+        }),
+        prisma.user.create({
+            data: {
+                name: 'John Coffee',
+                email: 'john@coffee.com',
+                password: hashedPassword,
+                role: UserRole.OWNER,
+                isVerified: true,
+                phone: '+6281234567891',
+            },
+        }),
+        prisma.user.create({
+            data: {
+                name: 'Sarah Food',
+                email: 'sarah@food.com',
+                password: hashedPassword,
+                role: UserRole.OWNER,
+                isVerified: true,
+                phone: '+6281234567892',
+            },
+        }),
+        prisma.user.create({
+            data: {
+                name: 'Lisa Beauty',
+                email: 'lisa@beauty.com',
+                password: hashedPassword,
+                role: UserRole.OWNER,
+                isVerified: true,
+                phone: '+6281234567893',
+            },
+        }),
+        prisma.user.create({
+            data: {
+                name: 'Mike Tech',
+                email: 'mike@tech.com',
+                password: hashedPassword,
+                role: UserRole.OWNER,
+                isVerified: true,
+                phone: '+6281234567894',
+            },
+        }),
+    ]);
     console.log('✅ Users created.');
 
-    // 3. Create Businesses with Wallets
-    console.log('🏢 Creating businesses...');
-    const business1 = await prisma.business.create({
-        data: {
-            name: 'Kopi Kenangan Jiwa',
-            description: 'Kedai kopi premium dengan cita rasa autentik Indonesia',
-            ownerId: owner1.id,
-            bankName: 'Bank BCA',
-            bankAccount: '1234567890',
-            accountHolder: 'John Doe',
-            defaultTransactionFeeBearer: FeeBearer.CUSTOMER,
-            wallet: {
-                create: {
-                    balance: 2500000, // Starting balance 2.5M
+    // 3. Create 5 Businesses with Wallets
+    console.log('🏢 Creating 5 businesses...');
+    const businesses = await Promise.all([
+        prisma.business.create({
+            data: {
+                name: 'Kopi Nusantara',
+                description: 'Kedai kopi dengan cita rasa lokal Indonesia',
+                ownerId: users[0].id,
+                bankName: 'Bank BCA',
+                bankAccount: '1234567890',
+                accountHolder: 'Default Owner',
+                defaultTransactionFeeBearer: FeeBearer.CUSTOMER,
+                wallet: {
+                    create: {
+                        balance: 2500000,
+                    }
                 }
-            }
-        },
-    });
-
-    const business2 = await prisma.business.create({
-        data: {
-            name: 'Bella Beauty Salon',
-            description: 'Salon kecantikan modern dengan layanan lengkap',
-            ownerId: owner2.id,
-            bankName: 'Bank Mandiri',
-            bankAccount: '9876543210',
-            accountHolder: 'Jane Smith',
-            defaultTransactionFeeBearer: FeeBearer.OWNER,
-            wallet: {
-                create: {
-                    balance: 1800000, // Starting balance 1.8M
+            },
+        }),
+        prisma.business.create({
+            data: {
+                name: 'Warung Makan Sederhana',
+                description: 'Warung makan dengan menu rumahan',
+                ownerId: users[1].id,
+                bankName: 'Bank Mandiri',
+                bankAccount: '9876543210',
+                accountHolder: 'John Coffee',
+                defaultTransactionFeeBearer: FeeBearer.OWNER,
+                wallet: {
+                    create: {
+                        balance: 1800000,
+                    }
                 }
-            }
-        },
-    });
-
-    const business3 = await prisma.business.create({
-        data: {
-            name: 'TechFix Solutions',
-            description: 'Layanan perbaikan dan konsultasi teknologi',
-            ownerId: owner3.id,
-            bankName: 'Bank BNI',
-            bankAccount: '5555666677',
-            accountHolder: 'Mike Johnson',
-            defaultTransactionFeeBearer: FeeBearer.CUSTOMER,
-            wallet: {
-                create: {
-                    balance: 750000, // Starting balance 750K
+            },
+        }),
+        prisma.business.create({
+            data: {
+                name: 'Salon Cantik',
+                description: 'Salon kecantikan modern',
+                ownerId: users[2].id,
+                bankName: 'Bank BNI',
+                bankAccount: '5555666677',
+                accountHolder: 'Sarah Food',
+                defaultTransactionFeeBearer: FeeBearer.CUSTOMER,
+                wallet: {
+                    create: {
+                        balance: 750000,
+                    }
                 }
-            }
-        },
-    });
-    console.log('✅ Businesses with wallets created.');
-
-    // 4. Create Outlets
-    console.log('🏪 Creating outlets...');
-    const outlets = await Promise.all([
-        // Coffee Shop Outlets
-        prisma.outlet.create({
-            data: {
-                id: generateOutletCode("Kopi Kenangan Jiwa Sudirman", 16),
-                name: 'Kopi Kenangan Jiwa - Sudirman',
-                address: 'Jl. Jenderal Sudirman No. 1, Jakarta Pusat',
-                phone: '+6281234560001',
-                isOpen: true,
-                businessId: business1.id,
-                latitude: -6.224073878466322,
-                longitude: 106.80863730039984,
-                image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb'
             },
         }),
-        prisma.outlet.create({
+        prisma.business.create({
             data: {
-                id: generateOutletCode("Kopi Kenangan Jiwa Thamrin", 16),
-                name: 'Kopi Kenangan Jiwa - Thamrin',
-                address: 'Jl. M.H. Thamrin No. 15, Jakarta Pusat',
-                phone: '+6281234560002',
-                isOpen: true,
-                businessId: business1.id,
-                latitude: -6.193857396341259,
-                longitude: 106.82308775619935,
-                image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24'
+                name: 'Toko Elektronik Maju',
+                description: 'Penjualan dan service elektronik',
+                ownerId: users[3].id,
+                bankName: 'Bank BRI',
+                bankAccount: '1111222233',
+                accountHolder: 'Lisa Beauty',
+                defaultTransactionFeeBearer: FeeBearer.CUSTOMER,
+                wallet: {
+                    create: {
+                        balance: 3000000,
+                    }
+                }
             },
         }),
-        // Beauty Salon Outlets
-        prisma.outlet.create({
+        prisma.business.create({
             data: {
-                id: generateOutletCode("Bella Beauty Kemang", 16),
-                name: 'Bella Beauty - Kemang',
-                address: 'Jl. Kemang Raya No. 25, Jakarta Selatan',
-                phone: '+6281234560003',
-                isOpen: true,
-                businessId: business2.id,
-                latitude: -6.266667,
-                longitude: 106.816667,
-                image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035'
-            },
-        }),
-        prisma.outlet.create({
-            data: {
-                id: generateOutletCode("Bella Beauty PIK", 16),
-                name: 'Bella Beauty - PIK',
-                address: 'Pantai Indah Kapuk, Jakarta Utara',
-                phone: '+6281234560004',
-                isOpen: false, // This one is closed
-                businessId: business2.id,
-                latitude: -6.118611,
-                longitude: 106.746111,
-                image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e'
-            },
-        }),
-        // Tech Service Outlet
-        prisma.outlet.create({
-            data: {
-                id: generateOutletCode("TechFix Kelapa Gading", 16),
-                name: 'TechFix - Kelapa Gading',
-                address: 'Mall Kelapa Gading 3, Lt. 2, Jakarta Utara',
-                phone: '+6281234560005',
-                isOpen: true,
-                businessId: business3.id,
-                latitude: -6.158889,
-                longitude: 106.908889,
-                image: 'https://images.unsplash.com/photo-1581092795442-6761a6b7b5bf'
+                name: 'Laundry Express',
+                description: 'Layanan laundry cepat dan bersih',
+                ownerId: users[4].id,
+                bankName: 'Bank Danamon',
+                bankAccount: '4444555566',
+                accountHolder: 'Mike Tech',
+                defaultTransactionFeeBearer: FeeBearer.OWNER,
+                wallet: {
+                    create: {
+                        balance: 1200000,
+                    }
+                }
             },
         }),
     ]);
-    console.log('✅ Outlets created.');
+    console.log('✅ 5 Businesses with wallets created.');
 
-    // 5. Create Products for each outlet
-    console.log('📦 Creating products...');
-    
-    // Coffee Shop Products
-    const coffeeProducts = await Promise.all([
-        // Outlet 1 - Sudirman
-        prisma.product.create({
-            data: {
-                name: 'Kopi Susu Gula Aren', 
-                description: 'Kopi susu dengan gula aren asli', 
-                costPrice: 8000, 
-                price: 18000, 
-                type: ProductType.GOODS, 
-                quantity: 100, 
-                unit: 'cup', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[0].id, 
-                image: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d'
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Americano', 
-                description: 'Kopi hitam klasik', 
-                costPrice: 5000, 
-                price: 15000, 
-                type: ProductType.GOODS, 
-                quantity: 150, 
-                unit: 'cup', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[0].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Cappuccino', 
-                description: 'Kopi dengan foam susu', 
-                costPrice: 7000, 
-                price: 20000, 
-                type: ProductType.GOODS, 
-                quantity: 80, 
-                unit: 'cup', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[0].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Croissant Coklat', 
-                description: 'Pastry renyah dengan filling coklat', 
-                costPrice: 8000, 
-                price: 22000, 
-                type: ProductType.GOODS, 
-                quantity: 50, 
-                unit: 'pcs', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[0].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Sandwich Club', 
-                description: 'Sandwich dengan ayam, sayur, dan saus', 
-                costPrice: 12000, 
-                price: 35000, 
-                type: ProductType.GOODS, 
-                quantity: 30, 
-                unit: 'pcs', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[0].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Jasa Barista Private', 
-                description: 'Pelatihan barista personal 2 jam', 
-                costPrice: 50000, 
-                price: 150000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 120, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[0].id
-            }
-        }),
-        
-        // Outlet 2 - Thamrin
-        prisma.product.create({
-            data: {
-                name: 'Espresso', 
-                description: 'Shot kopi murni', 
-                costPrice: 4000, 
-                price: 12000, 
-                type: ProductType.GOODS, 
-                quantity: 200, 
-                unit: 'shot', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[1].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Latte', 
-                description: 'Kopi susu dengan foam art', 
-                costPrice: 6000, 
-                price: 18000, 
-                type: ProductType.GOODS, 
-                quantity: 120, 
-                unit: 'cup', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[1].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Matcha Latte', 
-                description: 'Minuman matcha dengan susu', 
-                costPrice: 8000, 
-                price: 25000, 
-                type: ProductType.GOODS, 
-                quantity: 60, 
-                unit: 'cup', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[1].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Donat Gula', 
-                description: 'Donat klasik dengan gula halus', 
-                costPrice: 3000, 
-                price: 10000, 
-                type: ProductType.GOODS, 
-                quantity: 70, 
-                unit: 'pcs', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[1].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Muffin Blueberry', 
-                description: 'Muffin dengan blueberry segar', 
-                costPrice: 5000, 
-                price: 18000, 
-                type: ProductType.GOODS, 
-                quantity: 40, 
-                unit: 'pcs', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[1].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Coffee Cupping Session', 
-                description: 'Sesi degustasi kopi premium 1.5 jam', 
-                costPrice: 75000, 
-                price: 200000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 90, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[1].id
-            }
-        }),
-    ]);
+    // 4. Create Outlets (Jakarta Selatan locations)
+    console.log('🏪 Creating outlets in Jakarta Selatan...');
 
-    // Beauty Salon Products
-    const beautyProducts = await Promise.all([
-        // Outlet 3 - Kemang
-        prisma.product.create({
-            data: {
-                name: 'Hair Cut & Style', 
-                description: 'Potong rambut dengan styling', 
-                costPrice: 25000, 
-                price: 80000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 60, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[2].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Hair Coloring', 
-                description: 'Pewarnaan rambut profesional', 
-                costPrice: 50000, 
-                price: 200000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 180, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[2].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Facial Treatment', 
-                description: 'Perawatan wajah lengkap', 
-                costPrice: 30000, 
-                price: 120000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 90, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[2].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Manicure Pedicure', 
-                description: 'Perawatan kuku tangan dan kaki', 
-                costPrice: 20000, 
-                price: 75000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 75, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[2].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Hair Mask Treatment', 
-                description: 'Masker rambut untuk nutrisi extra', 
-                costPrice: 15000, 
-                price: 60000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 45, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[2].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Eyebrow Shaping', 
-                description: 'Pembentukan alis profesional', 
-                costPrice: 10000, 
-                price: 45000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 30, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[2].id
-            }
-        }),
-        
-        // Outlet 4 - PIK (Closed outlet)
-        prisma.product.create({
-            data: {
-                name: 'Premium Facial', 
-                description: 'Facial dengan produk premium', 
-                costPrice: 50000, 
-                price: 180000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 120, 
-                status: ServiceStatus.INACTIVE, 
-                outletId: outlets[3].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Hair Spa Package', 
-                description: 'Paket perawatan rambut lengkap', 
-                costPrice: 40000, 
-                price: 150000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 150, 
-                status: ServiceStatus.INACTIVE, 
-                outletId: outlets[3].id
-            }
-        }),
-    ]);
+    // Jakarta Selatan coordinates
+    const jakselLocations = [
+        { name: 'Kemang', lat: -6.2665, lng: 106.8167, address: 'Jl. Kemang Raya No. 25, Jakarta Selatan' },
+        { name: 'Senopati', lat: -6.2297, lng: 106.8197, address: 'Jl. Senopati No. 15, Jakarta Selatan' },
+        { name: 'Blok M', lat: -6.2443, lng: 106.7993, address: 'Jl. Blok M No. 10, Jakarta Selatan' },
+        { name: 'Cipete', lat: -6.2704, lng: 106.8058, address: 'Jl. Cipete Raya No. 35, Jakarta Selatan' },
+        { name: 'Fatmawati', lat: -6.2914, lng: 106.7997, address: 'Jl. Fatmawati No. 20, Jakarta Selatan' },
+        { name: 'Pondok Indah', lat: -6.2655, lng: 106.7808, address: 'Jl. Metro Pondok Indah No. 5, Jakarta Selatan' },
+        { name: 'Tebet', lat: -6.2271, lng: 106.8569, address: 'Jl. Tebet Timur No. 12, Jakarta Selatan' },
+        { name: 'Kuningan', lat: -6.2383, lng: 106.8311, address: 'Jl. Kuningan Barat No. 8, Jakarta Selatan' },
+    ];
 
-    // Tech Service Products
-    const techProducts = await Promise.all([
-        // Outlet 5 - Kelapa Gading
-        prisma.product.create({
-            data: {
-                name: 'Laptop Repair Service', 
-                description: 'Perbaikan laptop berbagai merk', 
-                costPrice: 25000, 
-                price: 100000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 240, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[4].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Smartphone Screen Replacement', 
-                description: 'Ganti layar smartphone', 
-                costPrice: 150000, 
-                price: 300000, 
-                type: ProductType.GOODS, 
-                quantity: 20, 
-                unit: 'pcs', 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[4].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Data Recovery Service', 
-                description: 'Pemulihan data yang hilang', 
-                costPrice: 50000, 
-                price: 200000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 180, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[4].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Virus Removal & Cleanup', 
-                description: 'Pembersihan virus dan optimasi sistem', 
-                costPrice: 15000, 
-                price: 75000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 120, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[4].id
-            }
-        }),
-        prisma.product.create({
-            data: {
-                name: 'Tech Consultation', 
-                description: 'Konsultasi teknologi 1 jam', 
-                costPrice: 25000, 
-                price: 100000, 
-                type: ProductType.SERVICE, 
-                serviceDurationMinutes: 60, 
-                status: ServiceStatus.ACTIVE, 
-                outletId: outlets[4].id
-            }
-        }),
-    ]);
+    // Outlet images based on business type
+    const outletImages = {
+        coffee: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1000',
+        food: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1000',
+        beauty: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1000',
+        electronics: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1000',
+        laundry: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?q=80&w=1000'
+    };
 
-    // Combine all products
-    const products = [...coffeeProducts, ...beautyProducts, ...techProducts];
-    console.log('✅ Products created.');
+    const outlets: any[] = [];
+    let locationIndex = 0;
+    const businessTypesForOutlets = ['coffee', 'food', 'beauty', 'electronics', 'laundry'];
 
-    // 6. Create Guest Customers
-    console.log('🙋 Creating guest customers...');
-    const guestCustomers = await Promise.all([
-        prisma.guestCustomer.create({
-            data: { name: 'Alice Johnson', email: 'alice.johnson@gmail.com', phone: '+6285611112222' }
-        }),
-        prisma.guestCustomer.create({
-            data: { name: 'Bob Smith', email: 'bob.smith@yahoo.com', phone: '+6285733334444' }
-        }),
-        prisma.guestCustomer.create({
-            data: { name: 'Charlie Brown', email: 'charlie.brown@outlook.com', phone: '+6285655556666' }
-        }),
-        prisma.guestCustomer.create({
-            data: { name: 'Diana Prince', email: 'diana.prince@gmail.com', phone: '+6285777788899' }
-        }),
-        prisma.guestCustomer.create({
-            data: { name: 'Edward Norton', email: 'edward.norton@hotmail.com', phone: '+6285999900011' }
-        }),
-        prisma.guestCustomer.create({
-            data: { name: 'Fiona Green', email: 'fiona.green@gmail.com', phone: '+6285111122334' }
-        }),
-    ]);
-    console.log('✅ Guest customers created.');
+    for (let i = 0; i < businesses.length; i++) {
+        const business = businesses[i];
+        const businessType = businessTypesForOutlets[i];
+        const outletsPerBusiness = Math.floor(Math.random() * 3) + 2; // 2-4 outlets per business
 
-    // 7. Create Promos
-    console.log('🎁 Creating promos...');
-    const currentDate = new Date();
-    const futureDate = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
-    const pastDate = new Date(currentDate.getTime() - 5 * 24 * 60 * 60 * 1000); // 5 days ago
+        for (let j = 0; j < outletsPerBusiness; j++) {
+            if (locationIndex >= jakselLocations.length) locationIndex = 0;
+            const location = jakselLocations[locationIndex];
 
-    const promos = await Promise.all([
-        // Business 1 - Coffee Shop Promos
-        prisma.promo.create({
-            data: {
-                code: 'WELCOME20',
-                description: 'Diskon 20% untuk pelanggan baru',
-                type: PromoType.PERCENTAGE,
-                value: 20,
-                status: PromoStatus.ACTIVE,
-                maxUses: 100,
-                timesUsed: 15,
-                minPurchaseAmount: 50000,
-                validFrom: currentDate,
-                validUntil: futureDate,
-                businessId: business1.id,
-            }
-        }),
-        prisma.promo.create({
-            data: {
-                code: 'HEMAT25K',
-                description: 'Potongan Rp 25.000 minimal pembelian Rp 100.000',
-                type: PromoType.FIXED_AMOUNT,
-                value: 25000,
-                status: PromoStatus.ACTIVE,
-                maxUses: 50,
-                timesUsed: 8,
-                minPurchaseAmount: 100000,
-                validFrom: currentDate,
-                validUntil: futureDate,
-                businessId: business1.id,
-            }
-        }),
-        prisma.promo.create({
-            data: {
-                code: 'EXPIRED10',
-                description: 'Promo sudah expired',
-                type: PromoType.PERCENTAGE,
-                value: 10,
-                status: PromoStatus.EXPIRED,
-                maxUses: 20,
-                timesUsed: 20,
-                minPurchaseAmount: 30000,
-                validFrom: pastDate,
-                validUntil: pastDate,
-                businessId: business1.id,
-            }
-        }),
-        // Business 2 - Beauty Salon Promos
-        prisma.promo.create({
-            data: {
-                code: 'BEAUTY15',
-                description: 'Diskon 15% untuk semua treatment',
-                type: PromoType.PERCENTAGE,
-                value: 15,
-                status: PromoStatus.ACTIVE,
-                maxUses: 30,
-                timesUsed: 5,
-                minPurchaseAmount: 80000,
-                validFrom: currentDate,
-                validUntil: futureDate,
-                businessId: business2.id,
-            }
-        }),
-        prisma.promo.create({
-            data: {
-                code: 'CANTIK50K',
-                description: 'Cashback Rp 50.000 minimal treatment Rp 200.000',
-                type: PromoType.FIXED_AMOUNT,
-                value: 50000,
-                status: PromoStatus.ACTIVE,
-                maxUses: 25,
-                timesUsed: 3,
-                minPurchaseAmount: 200000,
-                validFrom: currentDate,
-                validUntil: futureDate,
-                businessId: business2.id,
-            }
-        }),
-        // Business 3 - Tech Service Promos
-        prisma.promo.create({
-            data: {
-                code: 'TECHFIX30',
-                description: 'Diskon 30% untuk perbaikan pertama',
-                type: PromoType.PERCENTAGE,
-                value: 30,
-                status: PromoStatus.ACTIVE,
-                maxUses: 15,
-                timesUsed: 2,
-                minPurchaseAmount: 75000,
-                validFrom: currentDate,
-                validUntil: futureDate,
-                businessId: business3.id,
-            }
-        }),
-    ]);
-    console.log('✅ Promos created.');
+            const outlet = await prisma.outlet.create({
+                data: {
+                    name: `${business.name} - ${location.name}`,
+                    address: location.address,
+                    phone: `+62812345${String(60000 + outlets.length).padStart(5, '0')}`,
+                    isOpen: Math.random() > 0.2, // 80% chance outlet is open
+                    businessId: business.id,
+                    latitude: location.lat + (Math.random() - 0.5) * 0.01, // Small random offset
+                    longitude: location.lng + (Math.random() - 0.5) * 0.01,
+                    image: outletImages[businessType as keyof typeof outletImages]
+                },
+            });
 
-    // 8. Create Memberships
-    console.log('👑 Creating memberships...');
-    await prisma.membership.createMany({
-        data: [
-            // Business 1 memberships
-            {
-                memberCode: 'COFFEE001',
-                memberType: MemberType.VIP,
-                discountPercentage: 10,
-                isActive: true,
-                notes: 'Member VIP pertama',
-                guestCustomerId: guestCustomers[0].id,
-                businessId: business1.id,
-            },
-            {
-                memberCode: 'COFFEE002',
-                memberType: MemberType.REGULAR,
-                discountPercentage: 5,
-                isActive: true,
-                guestCustomerId: guestCustomers[1].id,
-                businessId: business1.id,
-            },
-            {
-                memberCode: 'COFFEE003',
-                memberType: MemberType.PREMIUM,
-                discountPercentage: 15,
-                isActive: true,
-                notes: 'Member premium dengan benefit khusus',
-                guestCustomerId: guestCustomers[2].id,
-                businessId: business1.id,
-            },
-            // Business 2 memberships
-            {
-                memberCode: 'BEAUTY001',
-                memberType: MemberType.VIP,
-                discountPercentage: 12,
-                isActive: true,
-                guestCustomerId: guestCustomers[3].id,
-                businessId: business2.id,
-            },
-            {
-                memberCode: 'BEAUTY002',
-                memberType: MemberType.REGULAR,
-                discountPercentage: 7,
-                isActive: false,
-                notes: 'Member tidak aktif sementara',
-                guestCustomerId: guestCustomers[4].id,
-                businessId: business2.id,
-            },
-            // Business 3 memberships
-            {
-                memberCode: 'TECH001',
-                memberType: MemberType.PREMIUM,
-                discountPercentage: 20,
-                isActive: true,
-                notes: 'Corporate member',
-                guestCustomerId: guestCustomers[5].id,
-                businessId: business3.id,
-            },
-        ],
-    });
-    console.log('✅ Memberships created.');
-
-    // 9. Create Orders with various statuses
-    console.log('🛒 Creating orders...');
-
-    // Coffee shop orders
-    const order1 = await prisma.order.create({
-        data: {
-            totalAmount: 53000,
-            paymentStatus: PaymentStatus.SUCCESS,
-            orderStatus: OrderStatus.COMPLETED,
-            midtransFee: 371, // 0.7% of 53000
-            appFee: 1060, // 2% of 53000
-            chargedTo: FeeBearer.CUSTOMER,
-            promoId: promos.find(p => p.code === 'WELCOME20')?.id,
-            discountAmount: 10600, // 20% discount applied
-            guestCustomerId: guestCustomers[0].id,
-            outletId: outlets[0].id,
-        },
-    });
-
-    const order2 = await prisma.order.create({
-        data: {
-            totalAmount: 75000,
-            paymentStatus: PaymentStatus.PENDING,
-            orderStatus: OrderStatus.AWAITING_PAYMENT,
-            midtransFee: 525,
-            appFee: 1500,
-            chargedTo: FeeBearer.CUSTOMER,
-            paymentReminderSent: false,
-            guestCustomerId: guestCustomers[1].id,
-            outletId: outlets[1].id,
-            midtransTransactionToken: 'snap-token-123456',
-            midtransRedirectUrl: 'https://app.sandbox.midtrans.com/snap/v2/vtweb/snap-token-123456',
-        },
-    });
-
-    const order3 = await prisma.order.create({
-        data: {
-            totalAmount: 150000,
-            bookingDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
-            paymentStatus: PaymentStatus.SUCCESS,
-            orderStatus: OrderStatus.CONFIRMED,
-            midtransFee: 1050,
-            appFee: 3000,
-            chargedTo: FeeBearer.OWNER,
-            guestCustomerId: guestCustomers[2].id,
-            outletId: outlets[0].id,
-        },
-    });
-
-    // Beauty salon orders
-    const order4 = await prisma.order.create({
-        data: {
-            totalAmount: 195000,
-            bookingDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // Tomorrow
-            paymentStatus: PaymentStatus.SUCCESS,
-            orderStatus: OrderStatus.PROCESSING,
-            midtransFee: 1365,
-            appFee: 3900,
-            chargedTo: FeeBearer.CUSTOMER,
-            promoId: promos.find(p => p.code === 'BEAUTY15')?.id,
-            discountAmount: 29250, // 15% discount
-            guestCustomerId: guestCustomers[3].id,
-            outletId: outlets[2].id,
-        },
-    });
-
-    const order5 = await prisma.order.create({
-        data: {
-            totalAmount: 120000,
-            paymentStatus: PaymentStatus.FAILED,
-            orderStatus: OrderStatus.CANCELLED,
-            midtransFee: 840,
-            appFee: 2400,
-            chargedTo: FeeBearer.CUSTOMER,
-            guestCustomerId: guestCustomers[4].id,
-            outletId: outlets[2].id,
-        },
-    });
-
-    // Tech service orders
-    const order6 = await prisma.order.create({
-        data: {
-            totalAmount: 175000,
-            paymentStatus: PaymentStatus.SUCCESS,
-            orderStatus: OrderStatus.READY,
-            midtransFee: 1225,
-            appFee: 3500,
-            chargedTo: FeeBearer.CUSTOMER,
-            promoId: promos.find(p => p.code === 'TECHFIX30')?.id,
-            discountAmount: 52500, // 30% discount
-            guestCustomerId: guestCustomers[5].id,
-            outletId: outlets[4].id,
-        },
-    });
-
-    const orders = [order1, order2, order3, order4, order5, order6];
-    console.log('✅ Orders created.');
-
-    // 10. Create Order Items
-    console.log('📝 Creating order items...');
-    await prisma.orderItem.createMany({
-        data: [
-            // Order 1 items (Coffee)
-            { orderId: order1.id, productId: coffeeProducts[0].id, quantity: 2, priceAtTimeOfOrder: 18000 },
-            { orderId: order1.id, productId: coffeeProducts[3].id, quantity: 1, priceAtTimeOfOrder: 22000 },
-            
-            // Order 2 items (Coffee)
-            { orderId: order2.id, productId: coffeeProducts[6].id, quantity: 1, priceAtTimeOfOrder: 12000 },
-            { orderId: order2.id, productId: coffeeProducts[7].id, quantity: 2, priceAtTimeOfOrder: 18000 },
-            { orderId: order2.id, productId: coffeeProducts[9].id, quantity: 3, priceAtTimeOfOrder: 10000 },
-            
-            // Order 3 items (Coffee service)
-            { orderId: order3.id, productId: coffeeProducts[5].id, quantity: 1, priceAtTimeOfOrder: 150000 },
-            
-            // Order 4 items (Beauty)
-            { orderId: order4.id, productId: beautyProducts[1].id, quantity: 1, priceAtTimeOfOrder: 200000 },
-            { orderId: order4.id, productId: beautyProducts[3].id, quantity: 1, priceAtTimeOfOrder: 75000 },
-            
-            // Order 5 items (Beauty)
-            { orderId: order5.id, productId: beautyProducts[2].id, quantity: 1, priceAtTimeOfOrder: 120000 },
-            
-            // Order 6 items (Tech)
-            { orderId: order6.id, productId: techProducts[0].id, quantity: 1, priceAtTimeOfOrder: 100000 },
-            { orderId: order6.id, productId: techProducts[3].id, quantity: 1, priceAtTimeOfOrder: 75000 },
-        ],
-    });
-    console.log('✅ Order items created.');
-
-    // 11. Create Transactions for completed orders
-    console.log('💳 Creating transactions...');
-    await prisma.transaction.createMany({
-        data: [
-            {
-                amount: 53000,
-                paymentMethod: 'qris',
-                status: PaymentStatus.SUCCESS,
-                externalId: 'midtrans-txn-001',
-                paymentUrl: null, // Already paid
-                expiresAt: null,
-                orderId: order1.id,
-            },
-            {
-                amount: 75000,
-                paymentMethod: 'gopay',
-                status: PaymentStatus.PENDING,
-                externalId: 'midtrans-txn-002',
-                paymentUrl: 'https://api.sandbox.midtrans.com/v2/gopay/123456/qr-code',
-                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
-                orderId: order2.id,
-            },
-            {
-                amount: 150000,
-                paymentMethod: 'bank_transfer',
-                status: PaymentStatus.SUCCESS,
-                externalId: 'midtrans-txn-003',
-                paymentUrl: null,
-                expiresAt: null,
-                orderId: order3.id,
-            },
-            {
-                amount: 195000,
-                paymentMethod: 'qris',
-                status: PaymentStatus.SUCCESS,
-                externalId: 'midtrans-txn-004',
-                paymentUrl: null,
-                expiresAt: null,
-                orderId: order4.id,
-            },
-            {
-                amount: 120000,
-                paymentMethod: 'credit_card',
-                status: PaymentStatus.FAILED,
-                externalId: 'midtrans-txn-005',
-                paymentUrl: null,
-                expiresAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // Expired 2 hours ago
-                orderId: order5.id,
-            },
-            {
-                amount: 175000,
-                paymentMethod: 'dana',
-                status: PaymentStatus.SUCCESS,
-                externalId: 'midtrans-txn-006',
-                paymentUrl: null,
-                expiresAt: null,
-                orderId: order6.id,
-            },
-        ],
-    });
-    console.log('✅ Transactions created.');
-
-    // 12. Create Booking Slots for service products
-    console.log('📅 Creating booking slots...');
-    const serviceProducts = products.filter(p => p.type === ProductType.SERVICE);
-    const today = new Date();
-    const bookingSlots = [];
-
-    for (const product of serviceProducts) {
-        // Create slots for next 7 days
-        for (let day = 0; day < 7; day++) {
-            const slotDate = new Date(today);
-            slotDate.setDate(today.getDate() + day);
-            slotDate.setHours(0, 0, 0, 0);
-
-            // Create multiple time slots per day (9 AM to 5 PM)
-            const timeSlots = [
-                { start: 9, end: 9 + (product.serviceDurationMinutes || 60) / 60 },
-                { start: 11, end: 11 + (product.serviceDurationMinutes || 60) / 60 },
-                { start: 13, end: 13 + (product.serviceDurationMinutes || 60) / 60 },
-                { start: 15, end: 15 + (product.serviceDurationMinutes || 60) / 60 },
-                { start: 17, end: 17 + (product.serviceDurationMinutes || 60) / 60 },
-            ];
-
-            for (const timeSlot of timeSlots) {
-                const startTime = new Date(slotDate);
-                startTime.setHours(timeSlot.start, 0, 0, 0);
-                
-                const endTime = new Date(slotDate);
-                endTime.setHours(Math.floor(timeSlot.end), (timeSlot.end % 1) * 60, 0, 0);
-
-                // Skip past time slots
-                if (startTime < new Date()) continue;
-
-                let status = BookingSlotStatus.AVAILABLE;
-                let orderId = null;
-
-                // Book some random slots
-                // if (Math.random() < 0.3) { // 30% chance of being booked
-                //     status = BookingSlotStatus.BOOKED;
-                //     // Find a suitable order (should be more sophisticated in real app)
-                //     const suitableOrder = orders.find(o => 
-                //         o.bookingDate && 
-                //         Math.abs(o.bookingDate.getTime() - startTime.getTime()) < 24 * 60 * 60 * 1000
-                //     );
-                //     if (suitableOrder) {
-                //         orderId = suitableOrder.id;
-                //     }
-                // } else if (Math.random() < 0.1) { // 10% chance of being blocked
-                //     status = BookingSlotStatus.BLOCKED;
-                // }
-
-                bookingSlots.push({
-                    date: slotDate,
-                    startTime,
-                    endTime,
-                    status,
-                    productId: product.id,
-                    orderId,
-                });
-            }
+            outlets.push(outlet);
+            locationIndex++;
         }
     }
+    console.log(`✅ ${outlets.length} outlets created in Jakarta Selatan.`);
 
-    await prisma.bookingSlot.createMany({
-        data: bookingSlots,
-    });
-    console.log('✅ Booking slots created.');
-
-    // 13. Create Expenses
-    console.log('💸 Creating expenses...');
-    const expenseData = [];
-    
+    // 5. Create Operating Hours for each outlet
+    console.log('⏰ Creating operating hours for outlets...');
     for (const outlet of outlets) {
-        // Create various expenses for each outlet
-        const baseExpenses = [
-            { description: 'Sewa tempat bulan ini', amount: 5000000 },
-            { description: 'Listrik dan air', amount: 800000 },
-            { description: 'Gaji karyawan', amount: 3500000 },
-            { description: 'Pembelian bahan baku', amount: 1200000 },
-            { description: 'Maintenance peralatan', amount: 350000 },
-        ];
+        // Create operating hours for Monday to Sunday (0-6)
+        const operatingHours = [];
+        for (let day = 0; day < 7; day++) {
+            const openHour = Math.floor(Math.random() * 3) + 7; // Open between 7-9 AM
+            const closeHour = Math.floor(Math.random() * 3) + 19; // Close between 7-9 PM
 
-        for (let i = 0; i < baseExpenses.length; i++) {
-            const expense = baseExpenses[i];
-            const expenseDate = new Date();
-            expenseDate.setDate(expenseDate.getDate() - Math.floor(Math.random() * 30)); // Random date within last 30 days
+            const openTime = new Date();
+            openTime.setHours(openHour, 0, 0, 0);
 
-            expenseData.push({
-                description: expense.description,
-                amount: expense.amount + (Math.random() - 0.5) * expense.amount * 0.2, // ±20% variation
-                date: expenseDate,
+            const closeTime = new Date();
+            closeTime.setHours(closeHour, 0, 0, 0);
+
+            operatingHours.push({
+                dayOfWeek: day,
+                openTime,
+                closeTime,
+                isOpen: day !== 0 || Math.random() > 0.3, // 70% chance open on Sunday
                 outletId: outlet.id,
             });
         }
+
+        await prisma.outletOperatingHours.createMany({
+            data: operatingHours,
+        });
     }
+    console.log('✅ Operating hours created for all outlets.');
 
-    await prisma.expense.createMany({
-        data: expenseData,
-    });
-    console.log('✅ Expenses created.');
+    // 6. Create Products for each outlet
+    console.log('📦 Creating products for outlets...');
 
-    // 14. Create Withdrawals
-    console.log('💰 Creating withdrawals...');
-    await prisma.withdrawal.createMany({
-        data: [
-            // Business 1 withdrawals
-            {
-                requestedAmount: 1000000,
-                midtransFee: 4000,
-                appFee: 20000, // 2% of 1M
-                finalAmount: 976000,
-                status: WithdrawalStatus.COMPLETED,
-                notes: 'Penarikan rutin mingguan',
-                midtransReference: 'WD-001-20240801',
-                businessId: business1.id,
-                processedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-            },
-            {
-                requestedAmount: 500000,
-                midtransFee: 4000,
-                appFee: 10000,
-                finalAmount: 486000,
-                status: WithdrawalStatus.PROCESSING,
-                notes: 'Untuk modal tambahan',
-                midtransReference: 'WD-002-20240802',
-                businessId: business1.id,
-            },
-            
-            // Business 2 withdrawals
-            {
-                requestedAmount: 750000,
-                midtransFee: 4000,
-                appFee: 15000,
-                finalAmount: 731000,
-                status: WithdrawalStatus.COMPLETED,
-                notes: 'Pembayaran supplier',
-                midtransReference: 'WD-003-20240730',
-                businessId: business2.id,
-                processedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-            },
-            {
-                requestedAmount: 300000,
-                midtransFee: 4000,
-                appFee: 6000,
-                finalAmount: 290000,
-                status: WithdrawalStatus.REJECTED,
-                notes: 'Saldo tidak mencukupi',
-                businessId: business2.id,
-            },
-            
-            // Business 3 withdrawals
-            {
-                requestedAmount: 200000,
-                midtransFee: 4000,
-                appFee: 4000,
-                finalAmount: 192000,
-                status: WithdrawalStatus.PENDING,
-                notes: 'Penariran pertama',
-                businessId: business3.id,
-            },
+    const productTemplates = {
+        coffee: [
+            { name: 'Americano', desc: 'Kopi hitam klasik', cost: 5000, price: 15000, type: ProductType.GOODS, unit: 'cup', image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?q=80&w=1000' },
+            { name: 'Cappuccino', desc: 'Kopi dengan foam susu', cost: 7000, price: 20000, type: ProductType.GOODS, unit: 'cup', image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?q=80&w=1000' },
+            { name: 'Latte', desc: 'Kopi susu dengan foam art', cost: 6000, price: 18000, type: ProductType.GOODS, unit: 'cup', image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=1000' },
+            { name: 'Espresso', desc: 'Shot kopi murni', cost: 4000, price: 12000, type: ProductType.GOODS, unit: 'shot', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=1000' },
+            { name: 'Coffee Consultation', desc: 'Konsultasi kopi 1 jam', cost: 25000, price: 100000, type: ProductType.SERVICE, duration: 60, image: 'https://images.unsplash.com/photo-1559496417-e7f25cb247f3?q=80&w=1000' },
         ],
-    });
-    console.log('✅ Withdrawals created.');
+        food: [
+            { name: 'Nasi Gudeg', desc: 'Nasi gudeg khas Yogya', cost: 8000, price: 25000, type: ProductType.GOODS, unit: 'porsi', image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=1000' },
+            { name: 'Ayam Goreng', desc: 'Ayam goreng krispy', cost: 12000, price: 30000, type: ProductType.GOODS, unit: 'potong', image: 'https://images.unsplash.com/photo-1562967914-608f82629710?q=80&w=1000' },
+            { name: 'Gado-gado', desc: 'Salad Indonesia dengan bumbu kacang', cost: 6000, price: 20000, type: ProductType.GOODS, unit: 'porsi', image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?q=80&w=1000' },
+            { name: 'Soto Ayam', desc: 'Sup ayam tradisional', cost: 7000, price: 22000, type: ProductType.GOODS, unit: 'mangkok', image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?q=80&w=1000' },
+            { name: 'Catering Service', desc: 'Layanan katering acara', cost: 50000, price: 200000, type: ProductType.SERVICE, duration: 240, image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000' },
+        ],
+        beauty: [
+            { name: 'Hair Cut', desc: 'Potong rambut profesional', cost: 15000, price: 50000, type: ProductType.SERVICE, duration: 45, image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?q=80&w=1000' },
+            { name: 'Hair Coloring', desc: 'Pewarnaan rambut', cost: 40000, price: 150000, type: ProductType.SERVICE, duration: 120, image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1000' },
+            { name: 'Facial Treatment', desc: 'Perawatan wajah', cost: 25000, price: 80000, type: ProductType.SERVICE, duration: 60, image: 'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?q=80&w=1000' },
+            { name: 'Manicure', desc: 'Perawatan kuku tangan', cost: 10000, price: 35000, type: ProductType.SERVICE, duration: 30, image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=1000' },
+            { name: 'Hair Vitamin', desc: 'Vitamin rambut botol', cost: 15000, price: 45000, type: ProductType.GOODS, unit: 'botol', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=1000' },
+        ],
+        electronics: [
+            { name: 'Smartphone Screen', desc: 'Layar smartphone replacement', cost: 150000, price: 300000, type: ProductType.GOODS, unit: 'pcs', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1000' },
+            { name: 'Laptop Charger', desc: 'Charger laptop universal', cost: 80000, price: 150000, type: ProductType.GOODS, unit: 'pcs', image: 'https://images.unsplash.com/photo-1625842268584-8f3296236761?q=80&w=1000' },
+            { name: 'Laptop Repair', desc: 'Service laptop rusak', cost: 50000, price: 200000, type: ProductType.SERVICE, duration: 180, image: 'https://images.unsplash.com/photo-1581092795442-6761a6b7b5bf?q=80&w=1000' },
+            { name: 'Data Recovery', desc: 'Pemulihan data hilang', cost: 30000, price: 150000, type: ProductType.SERVICE, duration: 120, image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1000' },
+            { name: 'Tech Consultation', desc: 'Konsultasi teknologi', cost: 25000, price: 100000, type: ProductType.SERVICE, duration: 60, image: 'https://images.unsplash.com/photo-1556741533-6e6a62bd8b49?q=80&w=1000' },
+        ],
+        laundry: [
+            { name: 'Cuci Kering', desc: 'Layanan cuci dan kering', cost: 2000, price: 8000, type: ProductType.SERVICE, duration: 180, image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?q=80&w=1000' },
+            { name: 'Cuci Setrika', desc: 'Cuci lengkap dengan setrika', cost: 3000, price: 12000, type: ProductType.SERVICE, duration: 240, image: 'https://images.unsplash.com/photo-1545173168-9f1947eebb7f?q=80&w=1000' },
+            { name: 'Dry Clean', desc: 'Dry cleaning khusus', cost: 8000, price: 25000, type: ProductType.SERVICE, duration: 300, image: 'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?q=80&w=1000' },
+            { name: 'Sepatu Cleaning', desc: 'Cuci sepatu premium', cost: 5000, price: 20000, type: ProductType.SERVICE, duration: 120, image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=1000' },
+            { name: 'Detergen Premium', desc: 'Detergen khusus', cost: 15000, price: 35000, type: ProductType.GOODS, unit: 'botol', image: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?q=80&w=1000' },
+        ],
+    };
 
-    // 15. Update promo usage counts based on orders
-    console.log('🔄 Updating promo usage counts...');
-    const welcomePromo = promos.find(p => p.code === 'WELCOME20');
-    const beautyPromo = promos.find(p => p.code === 'BEAUTY15');
-    const techPromo = promos.find(p => p.code === 'TECHFIX30');
+    const businessTypes = ['coffee', 'food', 'beauty', 'electronics', 'laundry'];
 
-    if (welcomePromo) {
-        await prisma.promo.update({
-            where: { id: welcomePromo.id },
-            data: { timesUsed: { increment: 1 } },
-        });
-    }
+    for (let i = 0; i < outlets.length; i++) {
+        const outlet = outlets[i];
+        const businessIndex = Math.floor(i / Math.ceil(outlets.length / businesses.length));
+        const businessType = businessTypes[businessIndex] || businessTypes[0];
+        const templates = productTemplates[businessType as keyof typeof productTemplates];
 
-    if (beautyPromo) {
-        await prisma.promo.update({
-            where: { id: beautyPromo.id },
-            data: { timesUsed: { increment: 1 } },
-        });
-    }
+        // Create 3-5 products per outlet
+        const productsToCreate = Math.floor(Math.random() * 3) + 3;
+        const selectedTemplates = templates.slice(0, productsToCreate);
 
-    if (techPromo) {
-        await prisma.promo.update({
-            where: { id: techPromo.id },
-            data: { timesUsed: { increment: 1 } },
-        });
-    }
-
-    // 16. Update product quantities based on completed orders
-    console.log('📦 Updating product stock...');
-    // Reduce stock for goods that have been sold
-    const completedOrderItems = await prisma.orderItem.findMany({
-        where: {
-            order: {
-                orderStatus: OrderStatus.COMPLETED,
-            },
-        },
-        include: {
-            product: true,
-        },
-    });
-
-    for (const item of completedOrderItems) {
-        if (item.product.type === ProductType.GOODS && item.product.quantity !== null) {
-            await prisma.product.update({
-                where: { id: item.productId },
+        for (const template of selectedTemplates) {
+            await prisma.product.create({
                 data: {
-                    quantity: Math.max(0, item.product.quantity - item.quantity),
+                    name: template.name,
+                    description: template.desc,
+                    costPrice: template.cost,
+                    price: template.price,
+                    type: template.type,
+                    quantity: template.type === ProductType.GOODS ? Math.floor(Math.random() * 100) + 20 : null,
+                    unit: template.unit || null,
+                    serviceDurationMinutes: template.duration || null,
+                    status: ServiceStatus.ACTIVE,
+                    outletId: outlet.id,
+                    image: template.image,
                 },
             });
         }
     }
+    console.log('✅ Products created for all outlets.');
 
-    // 17. Summary
+    // 7. Summary
     console.log('\n📊 SEEDING SUMMARY:');
     console.log('==================');
-    
+
     const counts = await Promise.all([
         prisma.user.count(),
         prisma.business.count(),
         prisma.outlet.count(),
         prisma.product.count(),
-        prisma.guestCustomer.count(),
-        prisma.order.count(),
-        prisma.orderItem.count(),
-        prisma.transaction.count(),
-        prisma.promo.count(),
-        prisma.membership.count(),
-        prisma.bookingSlot.count(),
-        prisma.expense.count(),
-        prisma.withdrawal.count(),
+        prisma.outletOperatingHours.count(),
         prisma.wallet.count(),
     ]);
 
-    console.log(`👥 Users (Owners): ${counts[0]}`);
+    console.log(`👥 Users: ${counts[0]}`);
     console.log(`🏢 Businesses: ${counts[1]}`);
     console.log(`🏪 Outlets: ${counts[2]}`);
     console.log(`📦 Products: ${counts[3]}`);
-    console.log(`🙋 Guest Customers: ${counts[4]}`);
-    console.log(`🛒 Orders: ${counts[5]}`);
-    console.log(`📝 Order Items: ${counts[6]}`);
-    console.log(`💳 Transactions: ${counts[7]}`);
-    console.log(`🎁 Promos: ${counts[8]}`);
-    console.log(`👑 Memberships: ${counts[9]}`);
-    console.log(`📅 Booking Slots: ${counts[10]}`);
-    console.log(`💸 Expenses: ${counts[11]}`);
-    console.log(`💰 Withdrawals: ${counts[12]}`);
-    console.log(`🏦 Wallets: ${counts[13]}`);
+    console.log(`⏰ Operating Hours: ${counts[4]}`);
+    console.log(`🏦 Wallets: ${counts[5]}`);
 
-    console.log('\n🎯 TEST SCENARIOS CREATED:');
-    console.log('=========================');
-    console.log('✅ 3 Different business types (Coffee, Beauty, Tech)');
-    console.log('✅ Multiple outlets per business');
+    console.log('\n🎯 FEATURES CREATED:');
+    console.log('===================');
+    console.log('✅ Default user account');
+    console.log('✅ 5 Different business types');
+    console.log('✅ Multiple outlets per business in Jakarta Selatan');
+    console.log('✅ Operating hours for each outlet (Mon-Sun)');
     console.log('✅ Both GOODS and SERVICE products');
-    console.log('✅ Orders with various statuses (PENDING, SUCCESS, FAILED, etc.)');
-    console.log('✅ Active and inactive promos');
-    console.log('✅ Different member types (REGULAR, VIP, PREMIUM)');
-    console.log('✅ Booking slots for service products');
-    console.log('✅ Expenses tracking per outlet');
-    console.log('✅ Withdrawal requests with different statuses');
-    console.log('✅ Complete order flow with transactions');
-    console.log('✅ Fee bearer variations (CUSTOMER vs OWNER)');
+    console.log('✅ Random product quantities and pricing');
 
     console.log('\n🔐 LOGIN CREDENTIALS:');
     console.log('====================');
-    console.log('📧 john@coffeeshop.com (Coffee Business) - password: password123');
-    console.log('📧 jane@beautysalon.com (Beauty Business) - password: password123');
-    console.log('📧 mike@techservice.com (Tech Business) - password: password123');
+    console.log('📧 owner@example.com - password: password123 (Kopi Nusantara)');
+    console.log('📧 john@coffee.com - password: password123 (Warung Makan Sederhana)');
+    console.log('📧 sarah@food.com - password: password123 (Salon Cantik)');
+    console.log('📧 lisa@beauty.com - password: password123 (Toko Elektronik Maju)');
+    console.log('📧 mike@tech.com - password: password123 (Laundry Express)');
 
-    console.log('\n✨ Database seeding completed successfully!');
+    console.log('\n✨ Simplified database seeding completed successfully!');
 }
 
 main()
