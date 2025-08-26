@@ -14,7 +14,7 @@ export function ImageRender(
             src={imgSrc}
             alt={alt}
             className={` ${className}`}
-            sizes={sizes ?? ""}
+            sizes={sizes || "(max-width: 768px) 100vw, 600px"}
             onError={() => setImgSrc("/assets/images/default-image.png")}
             loading="lazy"
         />
