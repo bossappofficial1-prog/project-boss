@@ -1,3 +1,4 @@
+import { OutletOperatingHours } from "@prisma/client";
 import { db } from "../config/prisma";
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
@@ -163,6 +164,19 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
     });
 }
 
+const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: Date) => {
+    return operatingHours.some((oper) => {
+        const todayMinutes = today.getHours() * 60 + today.getMinutes(); // Total menit saat ini
+        const openMinutes = oper.openTime.getHours() * 60 + oper.openTime.getMinutes(); // Total menit waktu buka
+        const closeMinutes = oper.closeTime.getHours() * 60 + oper.closeTime.getMinutes(); // Total menit waktu tutup
+
+        Console.log(closeMinutes, openMinutes, todayMinutes, today.getDay(), oper.dayOfWeek);
+        Console.log(oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes);
+
+        return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
+    });
+}
+
 export async function getOutletByIdService(id: string, date?: Date) {
     const today = date || new Date();
     const outletRaw = await OutletRepository.findById(id)
@@ -173,16 +187,7 @@ export async function getOutletByIdService(id: string, date?: Date) {
     const { isOpen, operatingHours, ...outlet } = outletRaw;
 
     const isOpenOutlet = operatingHours.length > 0
-        ? operatingHours.some((oper) => {
-            const todayMinutes = today.getHours() * 60 + today.getMinutes(); // Total menit saat ini
-            const openMinutes = oper.openTime.getHours() * 60 + oper.openTime.getMinutes(); // Total menit waktu buka
-            const closeMinutes = oper.closeTime.getHours() * 60 + oper.closeTime.getMinutes(); // Total menit waktu tutup
-
-            Console.log(closeMinutes, openMinutes, todayMinutes, today.getDay(), oper.dayOfWeek);
-            Console.log(oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes);
-
-            return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
-        })
+        ? getIsOutletOpen(operatingHours, today)
         : isOpen;
 
     return { ...outlet, operatingHours, isOpen: isOpenOutlet };
@@ -201,12 +206,22 @@ export async function getOutletsByBusinessIdService(
     take?: number,
     skip?: number
 ) {
-    const { outlets, total } = await OutletRepository.findManyWithPagination(
+    const { outlets: outletsRaw, total } = await OutletRepository.findManyWithPagination(
         businessId,
         search,
         take,
         skip
     );
+
+    const today = new Date()
+    const outlets = outletsRaw.map((outlet) => ({
+        ...outlet,
+        isOpen: outlet.operatingHours.length > 0
+            ? getIsOutletOpen(outlet.operatingHours, today)
+            : outlet.isOpen
+    }))
+
+    Console.log(outlets)
     return { outlets, total };
 }
 
@@ -235,16 +250,25 @@ export async function getAllOutletsService(
     take?: number,
     skip?: number
 ) {
-    const { outlets, total } = await OutletRepository.findManyWithPagination(
+    const { outlets: outletRaw, total } = await OutletRepository.findManyWithPagination(
         undefined,
         search,
         take,
         skip
     );
+
+    const today = new Date()
+    const outlets = outletRaw.map((outlet) => ({
+        ...outlet,
+        isOpen: outlet.operatingHours.length > 0
+            ? getIsOutletOpen(outlet.operatingHours, today)
+            : outlet.isOpen
+    }))
     return { outlets, total };
 }
 
 export async function getFeaturedOutletsService() {
+    const today = new Date()
     const outlets = await db.outlet.findMany({
         include: {
             business: {
@@ -253,6 +277,7 @@ export async function getFeaturedOutletsService() {
                     name: true
                 }
             },
+            operatingHours: true,
             _count: {
                 select: {
                     orders: true,
@@ -262,6 +287,11 @@ export async function getFeaturedOutletsService() {
     });
 
     const sortedOutlets = outlets.sort((a, b) => b._count.orders - a._count.orders);
-
-    return sortedOutlets.slice(0, 5); // Return top 5
+    const featuredOutlet = sortedOutlets.map((outlet) => ({
+        ...outlet,
+        isOpen: outlet.operatingHours.length > 0
+            ? getIsOutletOpen(outlet.operatingHours, today)
+            : outlet.isOpen
+    }))
+    return featuredOutlet.slice(0, 5);
 }

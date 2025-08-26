@@ -1,4 +1,4 @@
-import { Outlet } from "@prisma/client";
+import { Outlet, OutletOperatingHours } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 
@@ -70,7 +70,7 @@ export class OutletRepository {
         search?: string,
         take?: number,
         skip?: number
-    ): Promise<{ outlets: Outlet[], total: number }> {
+    ): Promise<{ outlets: Array<Outlet & { operatingHours: OutletOperatingHours[] }>, total: number }> {
         const whereClause: any = {
             ...(businessId && { businessId }),
             ...(search && {
@@ -104,7 +104,8 @@ export class OutletRepository {
                             id: true,
                             name: true
                         }
-                    }
+                    },
+                    operatingHours: true
                 }
             }),
             db.outlet.count({
