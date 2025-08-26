@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { Clock, RefreshCw, ArrowLeft, CheckCircle, XCircle, AlertCircle, Phone } from 'lucide-react'
+import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard'
 
 interface PaymentData {
     outlet: {
@@ -329,15 +330,7 @@ export default function PaymentPendingPage() {
                 </div>
 
                 {/* Information Box */}
-                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-2">Informasi Penting</h4>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• Pembayaran sudah diterima dan sedang diverifikasi</li>
-                        <li>• Proses verifikasi biasanya memakan waktu 1-10 menit</li>
-                        <li>• Anda akan mendapat notifikasi saat pembayaran terkonfirmasi</li>
-                        <li>• Jangan lakukan pembayaran ulang</li>
-                    </ul>
-                </div>
+                <ImportantInformationCard type='pending' />
 
                 {/* Help Text */}
                 <div className="mt-6 text-center">

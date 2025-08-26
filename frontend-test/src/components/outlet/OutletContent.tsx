@@ -16,10 +16,12 @@ import { Outlet } from "@/services/outlets";
 import { Product } from "@/services/product";
 import { EmptyState, ErrorState, LoadingState } from "../Base";
 import { OperatingHourType } from "@/types";
+import { useSearchParams } from "next/navigation";
+import { DAY_NAMES, LanguageType } from "@/constants";
 
-// Helper function to format operating hours
-const formatOperatingHours = (operatingHours: OperatingHourType[]) => {
-    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const formatOperatingHours = (operatingHours: OperatingHourType[], locale: LanguageType) => {
+    if (typeof window === "undefined") return
+    const dayNames = DAY_NAMES[locale]
 
     const sortedHours = [...operatingHours].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
 
@@ -41,11 +43,13 @@ const formatOperatingHours = (operatingHours: OperatingHourType[]) => {
 
 // Helper function to get current day status
 const getCurrentDayStatus = (operatingHours: OperatingHourType[]) => {
-    const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
+    if (typeof window === "undefined") return
+    const today = new Date().getDay();
     const todayHours = operatingHours.find(hour => hour.dayOfWeek === today);
+    const t = useTranslations("outletDetail")
 
     if (!todayHours || !todayHours.isOpen) {
-        return { isOpen: false, message: 'Tutup hari ini' };
+        return { isOpen: false, message: t("closedToday") };
     }
 
     const now = new Date();
@@ -59,46 +63,47 @@ const getCurrentDayStatus = (operatingHours: OperatingHourType[]) => {
     if (now >= openTime && now <= closeTime) {
         return {
             isOpen: true,
-            message: `Buka sampai ${closeTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+            message: `${t("openUntil")} ${closeTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`
         };
     } else if (now < openTime) {
         return {
             isOpen: false,
-            message: `Buka pukul ${openTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+            message: `${t("openingHours")} ${openTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`
         };
     } else {
-        return { isOpen: false, message: 'Tutup hari ini' };
+        return { isOpen: false, message: t("closedToday") };
     }
 };
 
-// Operating Hours Component
 const OperatingHoursTab = ({ operatingHours }: { operatingHours: OperatingHourType[] }) => {
-    const formattedHours = formatOperatingHours(operatingHours);
+    const locale = useSearchParams().get("locale") as LanguageType
+    const formattedHours = formatOperatingHours(operatingHours, locale);
     const currentStatus = getCurrentDayStatus(operatingHours);
     const today = new Date().getDay();
+    const t = useTranslations('outletDetail');
 
     return (
         <div className="space-y-4">
             <div className="bg-muted/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                     <Clock className="w-4 h-4" />
-                    <span className="font-medium">Status Sekarang</span>
+                    <span className="font-medium">{t("currentStatus")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <Badge
-                        variant={currentStatus.isOpen ? "default" : "secondary"}
-                        className={`${currentStatus.isOpen ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-500 text-white"}`}
+                        variant={currentStatus?.isOpen ? "default" : "secondary"}
+                        className={`${currentStatus?.isOpen ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-500 text-white"}`}
                     >
-                        {currentStatus.isOpen ? "Buka" : "Tutup"}
+                        {currentStatus?.isOpen ? t("open") : t("closed")}
                     </Badge>
-                    <span className="text-sm text-muted-foreground">{currentStatus.message}</span>
+                    <span className="text-sm text-muted-foreground">{currentStatus?.message}</span>
                 </div>
             </div>
 
             <div className="space-y-2">
-                <h3 className="font-medium text-sm text-muted-foreground">Jam Operasional</h3>
+                <h3 className="font-medium text-sm text-muted-foreground">{t("operatingHours")}</h3>
                 <div className="space-y-2">
-                    {formattedHours.map((hour) => (
+                    {formattedHours?.map((hour) => (
                         <div
                             key={hour.id}
                             className={`flex justify-between items-center p-3 rounded-lg border ${hour.dayOfWeek === today ? 'bg-primary/5 border-primary/20' : 'bg-background'
@@ -110,7 +115,7 @@ const OperatingHoursTab = ({ operatingHours }: { operatingHours: OperatingHourTy
                                 </span>
                                 {hour.dayOfWeek === today && (
                                     <Badge variant="outline" className="text-xs">
-                                        Hari ini
+                                        {t("today")}
                                     </Badge>
                                 )}
                             </div>
@@ -120,7 +125,7 @@ const OperatingHoursTab = ({ operatingHours }: { operatingHours: OperatingHourTy
                                         {hour.formattedOpenTime} - {hour.formattedCloseTime}
                                     </span>
                                 ) : (
-                                    <span className="text-sm text-muted-foreground">Tutup</span>
+                                    <span className="text-sm text-muted-foreground">{t("closed")}</span>
                                 )}
                             </div>
                         </div>
@@ -170,7 +175,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
     const handleWhatsAppChat = useCallback(() => {
         if (!outletQuery.data?.phone) return;
         const outlet = outletQuery.data;
-        const message = encodeURIComponent(`Halo, saya tertarik dengan outlet ${outlet.name}`);
+        const message = encodeURIComponent(`${t("whatsappMessage", { name: outlet.name })}`);
         const whatsappUrl = `https://wa.me/${(outlet.phone?.startsWith("+62") ? outlet.phone : "+62" + outlet.phone.slice(1)).replace(/\D/g, '')}?text=${message}`;
         window.open(whatsappUrl, '_blank');
     }, [outletQuery.data?.phone, outletQuery.data?.name]);
@@ -246,7 +251,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
     }
 
     if (!outletQuery.data) {
-        return <EmptyState title="Outlet tidak ditemukan" />;
+        return <EmptyState title={t("outletNotFound")} />;
     }
 
     const outlet = outletQuery.data!
@@ -272,7 +277,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
                             variant={outlet.isOpen ? "default" : "secondary"}
                             className={`${outlet.isOpen ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-500 text-white"}`}
                         >
-                            {outlet.isOpen ? "Buka Sekarang" : "Tutup"}
+                            {outlet.isOpen ? t("open") : t("closed")}
                         </Badge>
                     </div>
                     <a
@@ -298,15 +303,15 @@ export function OutletContent({ outletId }: { outletId: string }) {
                     <TabsList className="grid w-full grid-cols-3 h-12">
                         <TabsTrigger value="products" className="flex items-center gap-2">
                             <Package className="w-4 h-4" />
-                            <span className="text-xs sm:text-sm">Produk ({goods.length})</span>
+                            <span className="text-xs sm:text-sm">{t("products")} ({goods.length})</span>
                         </TabsTrigger>
                         <TabsTrigger value="services" className="flex items-center gap-2">
                             <Wrench className="w-4 h-4" />
-                            <span className="text-xs sm:text-sm">Layanan ({services.length})</span>
+                            <span className="text-xs sm:text-sm">{t("services")} ({services.length})</span>
                         </TabsTrigger>
                         <TabsTrigger value="hours" className="flex items-center gap-2">
                             <Clock className="w-4 h-4" />
-                            <span className="text-xs sm:text-sm">Jam Buka</span>
+                            <span className="text-xs sm:text-sm">{t("openingHours")}</span>
                         </TabsTrigger>
                     </TabsList>
                     <TabsContent value="products" className="mt-2 space-y-4">
@@ -318,8 +323,8 @@ export function OutletContent({ outletId }: { outletId: string }) {
                             </div>
                         ) : (
                             <EmptyState
-                                title="Tidak Ada Produk"
-                                description="Outlet ini belum menyediakan produk" />
+                                title={t("noProducts")}
+                                description={t("noProductsDescription")} />
                         )}
                     </TabsContent>
                     <TabsContent value="services" className="mt-2 space-y-4">
@@ -331,8 +336,8 @@ export function OutletContent({ outletId }: { outletId: string }) {
                             </div>
                         ) : (
                             <EmptyState
-                                title="Tidak ada layanan"
-                                description="Outlet ini belum menyediakan layanan."
+                                title={t("noServices")}
+                                description={t("noServicesDescription")}
                                 icon={<Wrench className="text-muted-foreground" />}
                             />
                         )}
@@ -342,8 +347,8 @@ export function OutletContent({ outletId }: { outletId: string }) {
                             <OperatingHoursTab operatingHours={outlet.operatingHours} />
                         ) : (
                             <EmptyState
-                                title="Jam operasional tidak tersedia"
-                                description="Informasi jam buka outlet ini belum tersedia."
+                                title={t("noOperatingHours")}
+                                description={t("noOperatingHoursDescription")}
                                 icon={<Clock className="text-muted-foreground" />}
                             />
                         )}

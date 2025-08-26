@@ -7,47 +7,44 @@ import { MapPin, Phone, Store, ExternalLink, MapPinned, Crown } from "lucide-rea
 import Link from "next/link";
 import { ImageRender } from "../shared/Image";
 import { BusinessType, OutletType } from "@/types";
+import { useTranslations } from "@/hooks/useI18n";
 
-// Tipe untuk props agar lebih rapi
 type OutletCardProps = {
     outlet: OutletType & Pick<BusinessType, "id" | "name"> & { _count: { orders: number }; distance: number };
     alignment?: "vertical" | "horizontal";
 };
 
-// ====================================================================
-// 1. Sub-Komponen yang Dapat Digunakan Kembali (Reusable Sub-components)
-// ====================================================================
-
-// Sub-komponen hanya untuk gambar dan badge di atasnya
-const OutletImage = ({ outlet, imageSize }: { outlet: OutletCardProps['outlet'], imageSize: string }) => (
-    <div className="w-full h-full relative overflow-hidden bg-muted">
-        {outlet.image ? (
-            <ImageRender
-                src={outlet.image}
-                alt={outlet.name}
-                className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${!outlet.isOpen ? "grayscale brightness-90" : ""}`}
-                sizes={imageSize}
-            />
-        ) : (
-            <div className="w-full h-full flex items-center justify-center">
-                <Store className="w-12 h-12 text-muted-foreground/50" />
-            </div>
-        )}
-        <div className="absolute top-2 right-2 flex gap-2">
-            {outlet._count?.orders > 0 && (
-                <Badge variant="secondary" className="text-xs px-1 bg-orange-50 text-orange-600 border-orange-200 font-medium flex items-center gap-1">
-                    <Crown className="w-3 h-3" />
-                </Badge>
+const OutletImage = ({ outlet, imageSize }: { outlet: OutletCardProps['outlet'], imageSize: string }) => {
+    const t = useTranslations("text")
+    return (
+        <div className="w-full h-full relative overflow-hidden bg-muted">
+            {outlet.image ? (
+                <ImageRender
+                    src={outlet.image}
+                    alt={outlet.name}
+                    className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${!outlet.isOpen ? "grayscale brightness-90" : ""}`}
+                    sizes={imageSize}
+                />
+            ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                    <Store className="w-12 h-12 text-muted-foreground/50" />
+                </div>
             )}
-            <Badge variant={outlet.isOpen ? "default" : "secondary"} className={`h-5 px-2 text-xs font-medium border-none backdrop-blur-sm ${outlet.isOpen ? "bg-green-500/90 text-white shadow-sm" : "bg-gray-700/90 text-white"}`}>
-                {outlet.isOpen ? "Buka" : "Tutup"}
-            </Badge>
+            <div className="absolute top-2 right-2 flex gap-2">
+                {outlet._count?.orders > 0 && (
+                    <Badge variant="secondary" className="text-xs px-1 bg-orange-50 text-orange-600 border-orange-200 font-medium flex items-center gap-1">
+                        <Crown className="w-3 h-3" />
+                    </Badge>
+                )}
+                <Badge variant={outlet.isOpen ? "default" : "secondary"} className={`h-5 px-2 text-xs font-medium border-none backdrop-blur-sm ${outlet.isOpen ? "bg-green-500/90 text-white shadow-sm" : "bg-gray-700/90 text-white"}`}>
+                    {outlet.isOpen ? t("open") : t("closed")}
+                </Badge>
+            </div>
+            {!outlet.isOpen && <div className="absolute inset-0 bg-black/20" />}
         </div>
-        {!outlet.isOpen && <div className="absolute inset-0 bg-black/20" />}
-    </div>
-);
+    )
+};
 
-// Sub-komponen untuk header (nama dan ikon link)
 const OutletHeader = ({ name }: { name: string }) => (
     <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold text-sm leading-tight text-foreground line-clamp-2">
@@ -57,7 +54,6 @@ const OutletHeader = ({ name }: { name: string }) => (
     </div>
 );
 
-// Sub-komponen untuk info (jarak, alamat, telepon)
 const OutletInfo = ({ outlet, mapsUrl, showPhone }: { outlet: OutletCardProps['outlet'], mapsUrl: string, showPhone: boolean }) => {
     const formattedDistance = outlet.distance > 0.999 ? `${outlet.distance.toFixed(1)} KM` : `${Math.round(outlet.distance * 1000)} M`;
 
@@ -117,10 +113,9 @@ export function OutletCard({ outlet, alignment = "vertical" }: OutletCardProps) 
         );
     }
 
-    // Default: Vertical Layout
     return (
         <Link href={`/outlet/${outlet.id}`} className="block h-full group">
-            <Card className="flex flex-col w-full h-full overflow-hidden border border-border/30 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-lg p-0">
+            <Card className="flex flex-col gap-2 w-full h-full overflow-hidden border border-border/30 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-lg p-0">
                 <div className="w-full h-40">
                     <OutletImage outlet={outlet} imageSize="(max-width: 768px) 100vw, 200px" />
                 </div>

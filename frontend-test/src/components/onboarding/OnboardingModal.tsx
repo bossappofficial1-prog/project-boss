@@ -22,21 +22,21 @@ export default function OnboardingModal({ open, onComplete, onClose }: Onboardin
 
     const steps = [
         {
-            title: trl("onboarding").step1.title,
-            description: trl("onboarding").step1.description,
+            title: trl("step1.title"),
+            description: trl("step1.description"),
             icon: Store,
             gradient: 'from-blue-500 to-purple-600'
         },
         {
-            title: trl("onboarding").step1.title,
-            description: trl("onboarding").step1.description,
+            title: trl("step2.title"),
+            description: trl("step2.description"),
             icon: MapPin,
             geoStep: true,
             gradient: 'from-green-500 to-teal-600'
         },
         {
-            title: trl("onboarding").step1.title,
-            description: trl("onboarding").step1.description,
+            title: trl("step3.title"),
+            description: trl("step3.description"),
             icon: ShoppingCart,
             gradient: 'from-orange-500 to-red-600'
         },
@@ -144,14 +144,14 @@ export default function OnboardingModal({ open, onComplete, onClose }: Onboardin
                                         className="w-full py-6 bg-red-700 hover:bg-red-800 text-white font-semibold rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2"
                                     >
                                         <MapPin />
-                                        {trl("onboarding").step2.allowLocation}
+                                        {trl("step2.allowLocation")}
                                     </Button>
                                     <Button
                                         onClick={() => setGeoGranted(false)}
                                         variant="ghost"
                                         className="w-full py-5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-all duration-200"
                                     >
-                                        {trl("onboarding").step2.skip}
+                                        {trl("step2.skip")}
                                     </Button>
                                 </div>
 
@@ -182,12 +182,12 @@ export default function OnboardingModal({ open, onComplete, onClose }: Onboardin
                         {currentStep === 0 ? (
                             <>
                                 <X size={16} />
-                                {trl("onboarding").actions.close}
+                                {trl("actions.close")}
                             </>
                         ) : (
                             <>
                                 <ArrowLeft size={16} />
-                                {trl("onboarding").actions.back}
+                                {trl("actions.back")}
                             </>
                         )}
                     </Button>
@@ -199,11 +199,11 @@ export default function OnboardingModal({ open, onComplete, onClose }: Onboardin
                         {currentStep === steps.length - 1 ? (
                             <>
                                 <Rocket size={16} />
-                                {trl("onboarding").actions.getStarted}
+                                {trl("actions.getStarted")}
                             </>
                         ) : (
                             <>
-                                {trl("onboarding").actions.next}
+                                {trl("actions.next")}
                                 <ArrowRight size={16} />
                             </>
                         )}

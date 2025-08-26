@@ -117,7 +117,7 @@ function NearbyOutletContent() {
                 className='mb-4'
             >
                 <SearchInput
-                    placeholder={t('searchPage.searchPlaceholder')}
+                    placeholder={t('searchPlaceholder')}
                 />
                 <SearchDropdown />
             </Search>

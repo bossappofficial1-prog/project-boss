@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { XCircle, ArrowLeft, RotateCcw, Home, Clock } from 'lucide-react'
+import { ErrorState, LoadingState } from '@/components/Base'
+import { formatCurrency, formatDateTime } from '@/lib/utils'
+import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard'
 
 interface PaymentData {
     outlet: {
@@ -89,52 +92,20 @@ export default function PaymentCancelledPage() {
         router.push('/')
     }
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(amount)
-    }
-
-    const formatDateTime = (timestamp: string) => {
-        return new Date(timestamp).toLocaleString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        })
-    }
-
-    if (!paymentData) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Memuat data...</p>
-                </div>
-            </div>
-        )
-    }
+    if (!paymentData) return <LoadingState message='Memuat data...' />;
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4">
-            <div className="max-w-md mx-auto">
-                {/* Header */}
-                <div className="mb-6 text-center">
-                    <div className="bg-orange-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                        <XCircle className="w-10 h-10 text-orange-600" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Pembayaran Dibatalkan</h1>
-                    <p className="text-gray-600">Transaksi Anda telah dibatalkan</p>
-                </div>
+        <>
+            {/* Header */}
+            <ErrorState
+                title='Pembayaran Dibatalkan'
+                message='Transaksi Anda telah dibatalkan'
+            />
 
+            <div className='space-y-4'>
                 {/* Auto Redirect Notice */}
-                <Card className="mb-6 border-orange-200 bg-orange-50">
-                    <CardContent className="pt-6">
+                <Card className="border-orange-200 bg-orange-50">
+                    <CardContent>
                         <div className="flex items-center justify-center space-x-2 text-orange-800">
                             <Clock className="w-5 h-5" />
                             <p className="text-sm font-medium">
@@ -145,8 +116,8 @@ export default function PaymentCancelledPage() {
                 </Card>
 
                 {/* Cancellation Information */}
-                <Card className="mb-6">
-                    <CardHeader className="pb-3">
+                <Card>
+                    <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
                             <XCircle className="w-5 h-5 text-orange-500" />
                             Informasi Pembatalan
@@ -165,7 +136,7 @@ export default function PaymentCancelledPage() {
                 </Card>
 
                 {/* Order Summary */}
-                <Card className="mb-6">
+                <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg">Ringkasan Pesanan</CardTitle>
                     </CardHeader>
@@ -207,7 +178,7 @@ export default function PaymentCancelledPage() {
                 </Card>
 
                 {/* Customer Info */}
-                <Card className="mb-6">
+                <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg">Informasi Pelanggan</CardTitle>
                     </CardHeader>
@@ -258,23 +229,15 @@ export default function PaymentCancelledPage() {
                 </div>
 
                 {/* Information Box */}
-                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-2">Informasi Penting</h4>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• Pesanan Anda belum diproses</li>
-                        <li>• Tidak ada biaya yang dikenakan</li>
-                        <li>• Anda dapat melanjutkan pembayaran kapan saja</li>
-                        <li>• Item dalam keranjang akan tersimpan selama 24 jam</li>
-                    </ul>
-                </div>
+                <ImportantInformationCard type='cancelled' />
 
                 {/* Help Text */}
-                <div className="mt-6 text-center">
+                <div className="text-center">
                     <p className="text-sm text-gray-500">
                         Butuh bantuan? Hubungi customer service kami
                     </p>
                 </div>
             </div>
-        </div>
+        </>
     )
 }

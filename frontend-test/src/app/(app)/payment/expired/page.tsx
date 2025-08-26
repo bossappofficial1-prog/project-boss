@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { Clock, RefreshCw, ArrowLeft, Home, AlertCircle, Timer } from 'lucide-react'
+import { formatCurrency, formatDateTime } from '@/lib/utils'
+import { ErrorState, LoadingState } from '@/components/Base'
+import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard'
 
 interface PaymentData {
     outlet: {
@@ -93,26 +96,6 @@ export default function PaymentExpiredPage() {
         router.push('/')
     }
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(amount)
-    }
-
-    const formatDateTime = (timestamp: string) => {
-        return new Date(timestamp).toLocaleString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        })
-    }
-
     const calculateExpiredDuration = () => {
         if (!paymentData) return '0 menit'
 
@@ -124,31 +107,20 @@ export default function PaymentExpiredPage() {
         return `${minutes} menit`
     }
 
-    if (!paymentData) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Memuat data...</p>
-                </div>
-            </div>
-        )
-    }
+    if (!paymentData) return <LoadingState message='Memuat data...' />;
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4">
-            <div className="max-w-md mx-auto">
-                {/* Header */}
-                <div className="mb-6 text-center">
-                    <div className="bg-amber-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                        <Clock className="w-10 h-10 text-amber-600" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Pembayaran Kedaluwarsa</h1>
-                    <p className="text-gray-600">Waktu pembayaran telah habis</p>
-                </div>
+        <>
+            <ErrorState
+                title='Pembayaran Kedaluwarsa'
+                message='Waktu pembayaran telah habis'
+                icon={<Clock className="text-amber-600" />}
+            />
+
+            <div className='space-y-4'>
 
                 {/* Expiration Information */}
-                <Card className="mb-6 border-amber-200 bg-amber-50">
+                <Card className=" border-amber-200 bg-amber-50">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg flex items-center gap-2">
                             <Timer className="w-5 h-5 text-amber-600" />
@@ -175,7 +147,7 @@ export default function PaymentExpiredPage() {
                 </Card>
 
                 {/* Order Summary */}
-                <Card className="mb-6">
+                <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg">Ringkasan Pesanan</CardTitle>
                     </CardHeader>
@@ -217,7 +189,7 @@ export default function PaymentExpiredPage() {
                 </Card>
 
                 {/* Customer Info */}
-                <Card className="mb-6">
+                <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg">Informasi Pelanggan</CardTitle>
                     </CardHeader>
@@ -278,23 +250,15 @@ export default function PaymentExpiredPage() {
                 </div>
 
                 {/* Information Box */}
-                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-2">Mengapa pembayaran kedaluwarsa?</h4>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• Pembayaran harus diselesaikan dalam waktu yang ditentukan</li>
-                        <li>• Hal ini untuk menjaga keamanan transaksi</li>
-                        <li>• Virtual Account atau QR Code memiliki batas waktu aktif</li>
-                        <li>• Anda dapat membuat pembayaran baru dengan mudah</li>
-                    </ul>
-                </div>
+                <ImportantInformationCard type='expired' />
 
                 {/* Help Text */}
-                <div className="mt-6 text-center">
+                <div className="text-center">
                     <p className="text-sm text-gray-500">
                         Butuh bantuan? Hubungi customer service kami
                     </p>
                 </div>
             </div>
-        </div>
+        </>
     )
 }

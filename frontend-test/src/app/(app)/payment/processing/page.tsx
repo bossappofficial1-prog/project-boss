@@ -19,6 +19,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppBarConfig } from '@/hooks/useAppBarConfig';
 import { formatCurrency } from '@/lib/utils';
+import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard';
 
 const PROCESSING_APP_BAR_CONFIG = {
     title: 'Proses Pembayaran',
@@ -305,16 +306,7 @@ export default function PaymentProcessing() {
             </div>
 
             {/* Important Notes */}
-            <Card className="bg-blue-50 p-0 border-blue-200">
-                <CardContent className="p-4">
-                    <h4 className="font-medium text-blue-800 mb-2">Penting:</h4>
-                    <ul className="text-sm text-blue-600 space-y-1 list-disc list-inside">
-                        <li>Jangan tutup halaman ini sampai pembayaran selesai</li>
-                        <li>Status akan diperbarui otomatis setelah pembayaran</li>
-                        <li>Hubungi customer service jika ada kendala</li>
-                    </ul>
-                </CardContent>
-            </Card>
+            <ImportantInformationCard type='processing' />
         </div>
     );
 }

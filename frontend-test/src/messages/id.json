@@ -4,13 +4,13 @@
         "profile": "Profil"
     },
     "homePage": {
-        "title": "Selamat Datang di Aplikasi Kami"
+        "title": "Selamat datang di Aplikasi kami"
     },
     "nearbyPage": {
         "title": "Outlet Terdekat",
-        "subtitle": "Temukan outlet dalam radius 10km dari lokasi Anda",
+        "subtitle": "Temukan outlet dalam jarak 10km dari lokasi Anda",
         "searchPlaceholder": "Cari outlet...",
-        "noOutletsFound": "Outlet tidak ditemukan",
+        "noOutletsFound": "Tidak ada outlet yang ditemukan",
         "noNearbyOutlets": "Tidak ada outlet terdekat",
         "loadMore": "Muat Lebih Banyak",
         "noMoreOutlets": "Tidak ada outlet lagi untuk dimuat",
@@ -20,23 +20,23 @@
         "title": "Cari Outlet",
         "subtitle": "Temukan outlet, produk, dan layanan",
         "searchPlaceholder": "Cari outlet, produk, atau layanan...",
-        "for": "Pencarian untuk",
-        "recentSearches": "Pencarian terakhir",
+        "for": "Cari untuk",
+        "recentSearches": "Pencarian terbaru",
         "clearAll": "Hapus semua",
-        "noOutletsFound": "Tidak ada outlet ditemukan",
+        "noOutletsFound": "Tidak ada outlet yang ditemukan",
         "noResultsFor": "Tidak ada hasil untuk '{query}'",
-        "tryDifferentSearch": "Coba kata kunci yang berbeda",
+        "tryDifferentSearch": "Coba istilah pencarian yang berbeda",
         "searchError": "Terjadi kesalahan saat mencari",
         "loading": "Memuat...",
         "loadMore": "Muat Lebih Banyak",
-        "noMoreOutlets": "Tidak ada outlet lagi",
+        "noMoreOutlets": "Tidak ada outlet lagi untuk dimuat",
         "outletCount": "outlet ditemukan",
-        "startSearching": "Mulai pencarian",
-        "searchDescription": "Masukkan kata kunci untuk mencari outlet, produk, atau layanan"
+        "startSearching": "Mulai mencari",
+        "searchDescription": "Masukkan kata kunci untuk menemukan outlet, produk, atau layanan"
     },
     "search": {
         "placeholder": "Cari outlet, produk, layanan...",
-        "loading": "Mencari...",
+        "loading": "Sedang mencari...",
         "noResults": "Tidak ada hasil untuk",
         "outlet": "Outlet",
         "product": "Produk",
@@ -53,24 +53,24 @@
         "whatsapp": "WhatsApp",
         "direction": "Arah",
         "cart": "Keranjang",
-        "viewCart": "Lihat Cart",
+        "viewCart": "Lihat Keranjang",
         "products": "Produk",
         "services": "Layanan",
         "product": "Produk",
         "service": "Layanan",
-        "outOfStock": "Habis",
+        "outOfStock": "Stok Habis",
         "limited": "Terbatas",
         "add": "Tambah",
         "order": "Pesan",
-        "inCart": "Di keranjang",
+        "inCart": "Di Keranjang",
         "item": "item",
         "duration": "Durasi",
         "minutes": "menit",
         "available": "Tersedia",
         "noProducts": "Tidak ada produk",
-        "noProductsDesc": "Outlet ini belum memiliki produk yang tersedia.",
+        "noProductsDesc": "Outlet ini tidak memiliki produk yang tersedia.",
         "noServices": "Tidak ada layanan",
-        "noServicesDesc": "Outlet ini belum menyediakan layanan.",
+        "noServicesDesc": "Outlet ini tidak menyediakan layanan.",
         "whatsappMessage": "Halo, saya tertarik dengan outlet"
     },
     "cart": {
@@ -85,15 +85,15 @@
         "totalItems": "Total Item",
         "items": "item",
         "total": "Total",
-        "checkout": "Lanjut ke Pembayaran",
-        "processing": "Memproses...",
+        "checkout": "Lanjutkan ke Checkout",
+        "processing": "Sedang diproses...",
         "clearAll": "Hapus Semua",
-        "note": "Harga dapat berubah berdasarkan lokasi dan ketersediaan",
+        "note": "Harga dapat bervariasi berdasarkan lokasi dan ketersediaan",
         "viewOutlet": "Lihat Outlet",
         "empty": {
             "title": "Keranjang Anda kosong",
-            "description": "Tambahkan produk atau layanan untuk memulai",
-            "browse": "Jelajahi Outlet"
+            "description": "Tambahkan beberapa produk atau layanan untuk memulai",
+            "browse": "Telusuri Outlet"
         }
     },
     "favorites": {
@@ -102,14 +102,14 @@
         "empty": {
             "title": "Belum ada favorit",
             "description": "Mulai tambahkan outlet ke favorit Anda",
-            "browse": "Jelajahi Outlet"
+            "browse": "Telusuri Outlet"
         }
     },
     "profilePage": {
         "title": "Profil & Preferensi",
         "subtitle": "Kelola informasi pribadi dan pengaturan aplikasi Anda",
         "contactInformation": "Informasi Kontak",
-        "contactDescription": "Hanya nama dan nomor WhatsApp yang diperlukan untuk komunikasi.",
+        "contactDescription": "Hanya nama dan nomor WhatsApp Anda yang diperlukan untuk komunikasi.",
         "fullName": "Nama Lengkap",
         "enterFullName": "Masukkan nama lengkap Anda",
         "whatsappNumber": "Nomor WhatsApp",
@@ -118,13 +118,20 @@
         "lightTheme": "Tema Terang",
         "darkTheme": "Tema Gelap",
         "language": "Bahasa",
-        "languageDescription": "Pilih bahasa yang diinginkan untuk antarmuka aplikasi.",
-        "languageSwitcher": "Ganti Bahasa",
+        "languageDescription": "Pilih bahasa yang Anda inginkan untuk antarmuka aplikasi.",
+        "languageSwitcher": "Ubah Bahasa",
         "saveChanges": "Simpan Perubahan",
-        "reset": "Reset",
+        "reset": "Atur Ulang",
         "login": "Masuk",
-        "becomeBusiness": "Jadi Akun Bisnis",
-        "settings": "Pengaturan"
+        "becomeBusiness": "Menjadi Bisnis",
+        "settings": "Pengaturan",
+        "resetModal": {
+            "title": "Atur Ulang Pengaturan",
+            "description": "Apakah Anda yakin ingin mengatur ulang semua pengaturan yang tersimpan? Tindakan ini tidak dapat dibatalkan.",
+            "confirmButton": "Konfirmasi",
+            "cancelButton": "Batal"
+        },
+        "messageSuccess": "Preferensi Tersimpan."
     },
     "onboarding": {
         "step1": {
@@ -133,19 +140,65 @@
         },
         "step2": {
             "title": "Temukan outlet terdekat",
-            "description": "Aktifkan lokasi agar kami bisa menampilkan outlet di sekitar Anda.",
+            "description": "Aktifkan lokasi agar kami dapat menunjukkan outlet di sekitar Anda.",
             "allowLocation": "Izinkan Lokasi",
             "skip": "Lewati untuk sekarang"
         },
         "step3": {
             "title": "Pesan dengan mudah",
-            "description": "Pilih outlet, tambahkan produk ke keranjang, dan lakukan pembayaran."
+            "description": "Pilih outlet, tambahkan item ke keranjang, dan checkout."
         },
         "actions": {
-            "next": "Lanjut",
+            "next": "Berikutnya",
             "back": "Kembali",
             "close": "Tutup",
             "getStarted": "Mulai"
         }
+    },
+    "nearbyOutlets": {
+        "title": "Outlet Terdekat",
+        "viewAll": "Lihat Semua",
+        "loading": "Memuat outlet terdekat...",
+        "empty": "Tidak ada outlet terdekat"
+    },
+    "featuredOutlets": {
+        "title": "Outlet Unggulan",
+        "loading": "Memuat outlet unggulan...",
+        "empty": "Tidak ada outlet tersedia"
+    },
+    "error": {
+        "retry": "Coba Lagi",
+        "networkError": "Terjadi kesalahan internet"
+    },
+    "outletDetail": {
+        "currentStatus": "Status Sekarang",
+        "open": "Buka",
+        "closed": "Tutup",
+        "openUntil": "Buka sampai {time}",
+        "opensAt": "Buka pukul {time}",
+        "closedToday": "Tutup hari ini",
+        "operatingHours": "Jam Operasional",
+        "today": "Hari ini",
+        "products": "Produk",
+        "services": "Layanan",
+        "openingHours": "Jam Buka",
+        "noProducts": "Tidak ada produk",
+        "noProductsDescription": "Outlet ini belum menyediakan produk",
+        "noServices": "Tidak ada layanan",
+        "noServicesDescription": "Outlet ini belum menyediakan layanan",
+        "noOperatingHours": "Jam operasional tidak tersedia",
+        "noOperatingHoursDescription": "Informasi jam buka outlet ini belum tersedia",
+        "outletNotFound": "Outlet tidak ditemukan",
+        "whatsappMessage": "Halo, saya tertarik dengan outlet {name}"
+    },
+    "text": {
+        "open": "Buka",
+        "closed": "Tutup",
+        "distanceKm": "KM",
+        "distanceM": "M",
+        "address": "Alamat",
+        "phone": "Telepon",
+        "orders": "Pesanan",
+        "txtImportantInformation": "Informasi Penting"
     }
 }

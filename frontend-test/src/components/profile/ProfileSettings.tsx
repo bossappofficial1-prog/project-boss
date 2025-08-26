@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -13,10 +13,10 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { useTranslations } from '@/hooks/useI18n';
-import { useAppBarConfig } from "@/hooks/useAppBarConfig";
-import { User, Phone, Sun, Moon, Monitor, Globe, Save, ChevronRight, LogIn, Building } from "lucide-react";
+import { User, Phone, Sun, Moon, Monitor, Globe, Save, LogIn, Building } from "lucide-react";
+import { STORAGE_PROFILE_KEY } from "@/constants";
+import { ResetModal } from "./ResetModal";
 
-const STORAGE_KEY = "user_preferences";
 
 const schema = z.object({
     fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -31,6 +31,7 @@ export default function ProfileSettings() {
     const router = useRouter();
     const toast = useToast();
     const t = useTranslations('profilePage');
+    const [isResetModalShowed, setIsResetModalShowed] = useState<boolean>(false)
 
     const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
         resolver: zodResolver(schema),
@@ -40,7 +41,7 @@ export default function ProfileSettings() {
     // Load stored preferences on client-side only
     useEffect(() => {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            const raw = localStorage.getItem(STORAGE_PROFILE_KEY);
             if (raw) {
                 const prefs = JSON.parse(raw);
                 const updates: Partial<FormValues> = {};
@@ -63,10 +64,10 @@ export default function ProfileSettings() {
     useEffect(() => {
         if (watchedTheme) setAppTheme(watchedTheme);
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            const raw = localStorage.getItem(STORAGE_PROFILE_KEY);
             const prefs = raw ? JSON.parse(raw) : {};
             prefs.theme = watchedTheme;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+            localStorage.setItem(STORAGE_PROFILE_KEY, JSON.stringify(prefs));
         } catch (e) {
             // ignore
         }
@@ -74,16 +75,16 @@ export default function ProfileSettings() {
 
     const onSubmit = (data: FormValues) => {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            const raw = localStorage.getItem(STORAGE_PROFILE_KEY);
             const prefs = raw ? JSON.parse(raw) : {};
             prefs.fullName = data.fullName;
             prefs.phone = data.whatsapp;
             prefs.theme = data.theme;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+            localStorage.setItem(STORAGE_PROFILE_KEY, JSON.stringify(prefs));
             // indicate save
             const ev = new CustomEvent('prefs:saved');
             window.dispatchEvent(ev);
-            toast.push({ title: 'Preferences saved.' });
+            !isResetModalShowed && toast.push({ title: t("messageSuccess") });
         } catch (e) {
             console.error(e);
         }
@@ -111,10 +112,10 @@ export default function ProfileSettings() {
                     <User className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <h1 className="text-xl font-semibold text-foreground">
-                    {t(`profilePage`).title}
+                    {t(`title`)}
                 </h1>
                 <p className="text-muted-foreground text-sm mt-1">
-                    {t(`profilePage`).subtitle}
+                    {t(`subtitle`)}
                 </p>
             </div>
 
@@ -124,14 +125,14 @@ export default function ProfileSettings() {
                     <div className="flex items-center gap-2 mb-3">
                         <User className="w-5 h-5 text-primary" />
                         <h2 className="font-medium text-card-foreground">
-                            {t(`profilePage`).contactInformation}
+                            {t(`contactInformation`)}
                         </h2>
                     </div>
 
                     <div className="space-y-3">
                         <div>
                             <label className="block text-sm font-medium text-card-foreground mb-2">
-                                {t(`profilePage`).fullName}
+                                {t(`fullName`)}
                             </label>
                             <Input
                                 {...register('fullName')}
@@ -147,7 +148,7 @@ export default function ProfileSettings() {
 
                         <div>
                             <label className="block text-sm font-medium text-card-foreground mb-2">
-                                {t(`profilePage`).whatsappNumber}
+                                {t(`whatsappNumber`)}
                             </label>
                             <Input
                                 {...register('whatsapp')}
@@ -165,11 +166,14 @@ export default function ProfileSettings() {
 
                 {/* Theme Settings */}
                 <div className="bg-card rounded-lg border p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Sun className="w-5 h-5 text-primary" />
-                        <h2 className="font-medium text-card-foreground">
-                            {t(`profilePage`).appearance}
-                        </h2>
+                    <div className="flex flex-col mb-4 space-y-2">
+                        <div className="flex items-center gap-2">
+                            <Sun className="w-5 h-5 text-primary" />
+                            <h2 className="font-medium text-card-foreground">
+                                {t(`appearance`)}
+                            </h2>
+                        </div>
+                        <p>{t("appearanceDescription")}</p>
                     </div>
 
                     <RadioGroup
@@ -180,7 +184,7 @@ export default function ProfileSettings() {
                         <label className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
                             <div className="flex items-center gap-2">
                                 <Sun className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">{t(`profilePage`).lightTheme}</span>
+                                <span className="text-sm font-medium">{t(`lightTheme`)}</span>
                             </div>
                             <RadioGroupItem value="light" />
                         </label>
@@ -188,7 +192,7 @@ export default function ProfileSettings() {
                         <label className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
                             <div className="flex items-center gap-2">
                                 <Moon className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">{t(`profilePage`).darkTheme}</span>
+                                <span className="text-sm font-medium">{t(`darkTheme`)}</span>
                             </div>
                             <RadioGroupItem value="dark" />
                         </label>
@@ -208,7 +212,7 @@ export default function ProfileSettings() {
                     <div className="flex items-center gap-2 mb-4">
                         <Globe className="w-5 h-5 text-primary" />
                         <h2 className="font-medium text-card-foreground">
-                            {t('profilePage').language}
+                            {t('language')}
                         </h2>
                     </div>
                     <LanguageSwitcher />
@@ -218,7 +222,7 @@ export default function ProfileSettings() {
                 <div className="space-y-3 pt-2">
                     <Button type="submit" className="w-full h-11">
                         <Save className="w-4 h-4 mr-2" />
-                        {t("profilePage").saveChanges}
+                        {t("saveChanges")}
                     </Button>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -228,7 +232,7 @@ export default function ProfileSettings() {
                             className="h-11"
                         >
                             <LogIn className="w-4 h-4 mr-2" />
-                            {t("profilePage").login}
+                            {t("login")}
                         </Button>
 
                         <Button
@@ -237,42 +241,24 @@ export default function ProfileSettings() {
                             className="h-11"
                         >
                             <Building className="w-4 h-4 mr-2" />
-                            {t("profilePage").becomeBusiness}
+                            {t("becomeBusiness")}
                         </Button>
                     </div>
 
                     {/* Reset Dialog */}
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="ghost" className="w-full h-11 text-muted-foreground">
-                                {t("profilePage").reset}
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Reset pengaturan?</DialogTitle>
-                                <DialogDescription>
-                                    Apakah Anda yakin ingin menghapus semua pengaturan yang tersimpan? Tindakan ini tidak dapat dibatalkan.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                                <DialogClose asChild>
-                                    <Button variant="outline">Batal</Button>
-                                </DialogClose>
-                                <DialogClose asChild>
-                                    <Button
-                                        variant="destructive"
-                                        onClick={() => {
-                                            localStorage.removeItem(STORAGE_KEY);
-                                            toast.push({ title: 'Pengaturan dihapus' });
-                                        }}
-                                    >
-                                        Konfirmasi
-                                    </Button>
-                                </DialogClose>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <Button
+                        variant="ghost"
+                        className="w-full h-11 text-muted-foreground"
+                        onClick={() => setIsResetModalShowed(!isResetModalShowed)}
+                    >
+                        {t("reset")}
+                    </Button>
+                    {isResetModalShowed && (
+                        <ResetModal
+                            isOpen={isResetModalShowed}
+                            onOpenChange={setIsResetModalShowed}
+                        />
+                    )}
                 </div>
             </form>
         </div>

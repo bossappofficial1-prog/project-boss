@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchOutlets } from '@/hooks/useSearchOutlets';
 import { OutletCard } from '@/components/home/OutletCard';
 import { LoadingState, EmptyState, ErrorState } from '@/components/Base';
-import { SearchComponent } from '@/components/shared/SearchComponent';
 import { Button } from '@/components/ui/button';
 import { Loader2, Store, Search as SearchIcon } from 'lucide-react';
 import { useTranslations } from '@/hooks/useI18n';
@@ -40,9 +39,9 @@ function SearchOutletContent() {
 
     useEffect(() => {
         updateAppbar({
-            title: t('searchPage.title'),
+            title: t('title'),
             sticky: true,
-            subtitle: t('searchPage.subtitle'),
+            subtitle: t('subtitle'),
             showSearch: false,
         });
     }, [updateAppbar, t]);
@@ -82,7 +81,7 @@ function SearchOutletContent() {
         }
 
         if (isError) {
-            return <ErrorState message={error?.message || t('searchPage.searchError')} onRetry={refetch} />;
+            return <ErrorState message={error?.message || t('searchError')} onRetry={refetch} />;
         }
 
         if (allOutlets.length > 0) {
@@ -91,7 +90,7 @@ function SearchOutletContent() {
                     <div className="flex items-center gap-2 mb-4">
                         <Store className="h-5 w-5 text-gray-500" />
                         <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {allOutlets.length} {t('searchPage.outletCount')} {t('searchPage.for')} "<span className="font-medium">{debouncedSearch}</span>"
+                            {allOutlets.length} {t('outletCount')} {t('for')} "<span className="font-medium">{debouncedSearch}</span>"
                         </span>
                     </div>
                     <div className="grid gap-4 mb-6">
@@ -103,16 +102,16 @@ function SearchOutletContent() {
                         <div className="flex justify-center">
                             <Button onClick={handleLoadMore} disabled={isFetchingNextPage} variant="outline" className="px-8">
                                 {isFetchingNextPage ? (
-                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('searchPage.loading')}</>
+                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('loading')}</>
                                 ) : (
-                                    t('searchPage.loadMore')
+                                    t('loadMore')
                                 )}
                             </Button>
                         </div>
                     )}
                     {!hasNextPage && (
                         <div className="text-center py-4">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{t('searchPage.noMoreOutlets')}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{t('noMoreOutlets')}</p>
                         </div>
                     )}
                 </>
@@ -122,8 +121,8 @@ function SearchOutletContent() {
         return (
             <EmptyState
                 icon={<Store className="w-6 h-6 text-muted-foreground" />}
-                title={t('searchPage.noOutletsFound')}
-                description={t('searchPage.noResultsFor').replace('{query}', debouncedSearch)}
+                title={t('noOutletsFound')}
+                description={t('noResultsFor').replace('{query}', debouncedSearch)}
             />
         );
     };
@@ -138,7 +137,7 @@ function SearchOutletContent() {
                 className='mb-2'
             >
                 <SearchInput
-                    placeholder={t('searchPage.searchPlaceholder')}
+                    placeholder={t('searchPlaceholder')}
                 />
                 <SearchDropdown />
             </Search>
@@ -148,8 +147,8 @@ function SearchOutletContent() {
             ) : (
                 <EmptyState
                     icon={<SearchIcon className="w-6 h-6 text-muted-foreground" />}
-                    title={t('searchPage.startSearching')}
-                    description={t('searchPage.searchDescription')}
+                    title={t('startSearching')}
+                    description={t('searchDescription')}
                 />
             )}
         </>

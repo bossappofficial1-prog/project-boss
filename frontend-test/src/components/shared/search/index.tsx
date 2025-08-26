@@ -8,6 +8,7 @@ import { Search as SearchIcon, Clock, X } from 'lucide-react';
 import { useSearchContext, SearchContext } from './context';
 import { useSearchLogic } from './use-search-logic';
 import { searchInputVariants, searchIconVariants, clearButtonVariants } from './variants';
+import { useTranslations } from '@/hooks/useI18n';
 
 // Props untuk Komponen Utama (Provider)
 interface SearchProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
@@ -24,6 +25,7 @@ const Search = ({ value, onChange, onSearch, namespace, size, children, classNam
 
     const providerValue = {
         ...logic,
+        t: (logic.t as unknown) as (key: string) => string,
         inputRef: logic.inputRef as React.RefObject<HTMLInputElement>,
     };
 
@@ -71,7 +73,8 @@ SearchInput.displayName = 'SearchInput';
 
 // Sub-Komponen: Dropdown Saran Pencarian
 const SearchDropdown = () => {
-    const { value, handleSearch, t, recentSearches, filteredSuggestions, removeRecentSearch } = useSearchContext();
+    const { value, handleSearch, recentSearches, filteredSuggestions, removeRecentSearch } = useSearchContext();
+    const t = useTranslations("searchPage")
 
     const showCurrentSearch = value.trim().length > 0;
     const hasFilteredSuggestions = filteredSuggestions.length > 0;
@@ -87,7 +90,7 @@ const SearchDropdown = () => {
                 {showCurrentSearch && (
                     <SuggestionItem
                         icon={<SearchIcon size={16} />}
-                        text={<span>{t('searchPage.for')} "<span className="font-semibold">{value}</span>"</span>}
+                        text={<span>{t('for')} "<span className="font-semibold">{value}</span>"</span>}
                         onClick={() => handleSearch(value)}
                     />
                 )}
@@ -101,7 +104,6 @@ const SearchDropdown = () => {
                                 query={s.query}
                                 highlight={value}
                                 onClick={() => handleSearch(s.query)}
-                                // FIX: Tambahkan onRemove untuk menampilkan tombol 'X'
                                 onRemove={() => removeRecentSearch(s.id)}
                             />
                         ))}
@@ -117,7 +119,6 @@ const SearchDropdown = () => {
                                 icon={<Clock size={16} />}
                                 query={s.query}
                                 onClick={() => handleSearch(s.query)}
-                                // FIX: Tambahkan onRemove untuk menampilkan tombol 'X'
                                 onRemove={() => removeRecentSearch(s.id)}
                             />
                         ))}
@@ -129,21 +130,20 @@ const SearchDropdown = () => {
 };
 
 const RecentSearchesHeader = () => {
-    const { t, clearRecentSearches } = useSearchContext();
+    const { clearRecentSearches } = useSearchContext();
+    const t = useTranslations("searchPage")
     return (
         <div className="px-2 pt-2 pb-1.5 flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground capitalize tracking-wider">{t('searchPage.recentSearches')}</span>
-            <Button variant="ghost" size="sm" onClick={clearRecentSearches} className="text-xs h-auto p-1 text-muted-foreground hover:text-destructive">{t('searchPage.clearAll')}</Button>
+            <span className="text-xs font-semibold text-muted-foreground capitalize tracking-wider">{t('recentSearches')}</span>
+            <Button variant="ghost" size="sm" onClick={clearRecentSearches} className="text-xs h-auto p-1 text-muted-foreground hover:text-destructive">{t('clearAll')}</Button>
         </div>
     );
 };
 
-// FIX: Mengaktifkan kembali komponen SuggestionItem yang benar dan memperbaiki tipe props-nya
 interface SuggestionItemProps {
     icon: ReactNode;
     onClick: () => void;
     onRemove?: () => void;
-    // Props opsional, salah satu dari `text` atau `query` harus ada
     text?: ReactNode;
     query?: string;
     highlight?: string;

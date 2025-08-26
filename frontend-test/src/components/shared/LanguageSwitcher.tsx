@@ -4,14 +4,13 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useLocale } from '@/hooks/useI18n';
 import { SelectOption } from './SelectOption';
-
-const LANGUAGES = [`Indonesia`, 'English'] as const
+import { LANGUAGES, LanguageType } from '@/constants';
 
 export default function LanguageSwitcher() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const currentLocale = useLocale();
+    const currentLocale = useLocale() as LanguageType;
 
     const handleLanguageChange = (newLocale: string) => {
         // Create new URLSearchParams
@@ -28,9 +27,9 @@ export default function LanguageSwitcher() {
             <SelectOption
                 value={currentLocale}
                 onValueChange={handleLanguageChange}
-                options={LANGUAGES.map(lang => ({
-                    value: lang.toLowerCase().slice(0, 2),
-                    label: lang
+                options={LANGUAGES?.map(lang => ({
+                    value: lang.key,
+                    label: lang.label
                 }))}
             />
         </div>

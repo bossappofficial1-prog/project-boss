@@ -6,8 +6,6 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function parseRemotePatterns(pattern: string) {
-  console.log(pattern);
-
   return pattern.split(", ").map(pattern => new URL(pattern))
 }
 
@@ -45,3 +43,21 @@ export const isRouteDisabled = (pathname: string, disabledRoutes: string[]) => {
     return regex.test(pathname);
   });
 };
+
+export const formatDateTime = (timestamp: string) => {
+  return new Date(timestamp).toLocaleString('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
+export const formatTime = (date: Date, locale: string = 'id-ID') =>
+  date.toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });

@@ -124,7 +124,14 @@
         "reset": "Reset",
         "login": "Login",
         "becomeBusiness": "Become a Business",
-        "settings": "Settings"
+        "settings": "Settings",
+        "resetModal": {
+            "title": "Reset Settings",
+            "description": "Are you sure you want to reset all saved settings? This action cannot be undone.",
+            "confirmButton": "Confirm",
+            "cancelButton": "Cancel"
+        },
+        "messageSuccess": "Preferences saved."
     },
     "onboarding": {
         "step1": {
@@ -147,5 +154,51 @@
             "close": "Close",
             "getStarted": "Get Started"
         }
+    },
+    "nearbyOutlets": {
+        "title": "Nearby Outlets",
+        "viewAll": "View All",
+        "loading": "Loading nearby outlets...",
+        "empty": "No nearby outlets"
+    },
+    "featuredOutlets": {
+        "title": "Featured Outlets",
+        "loading": "Loading featured outlets...",
+        "empty": "No outlets available"
+    },
+    "error": {
+        "retry": "Retry",
+        "networkError": "Network Error"
+    },
+    "outletDetail": {
+        "currentStatus": "Current Status",
+        "open": "Open",
+        "closed": "Closed",
+        "openUntil": "Open until {time}",
+        "opensAt": "Opens at {time}",
+        "closedToday": "Closed today",
+        "operatingHours": "Operating Hours",
+        "today": "Today",
+        "products": "Products",
+        "services": "Services",
+        "openingHours": "Opening Hours",
+        "noProducts": "No Products",
+        "noProductsDescription": "This outlet does not provide any products",
+        "noServices": "No Services",
+        "noServicesDescription": "This outlet does not provide any services",
+        "noOperatingHours": "Operating hours not available",
+        "noOperatingHoursDescription": "Opening hours information for this outlet is not available",
+        "outletNotFound": "Outlet not found",
+        "whatsappMessage": "Hello, I am interested in the outlet {name}"
+    },
+    "text": {
+        "open": "Open",
+        "closed": "Closed",
+        "distanceKm": "KM",
+        "distanceM": "M",
+        "address": "Address",
+        "phone": "Phone",
+        "orders": "Orders",
+        "txtImportantInformation": "Important Information"
     }
 }

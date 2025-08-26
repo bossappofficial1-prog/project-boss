@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useAppBarConfig } from '@/hooks/useAppBarConfig';
 import { formatCurrency } from '@/lib/utils';
 import { SuccessState } from '@/components/Base';
+import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard';
 
 const SUCCESS_APP_BAR_CONFIG = {
     title: 'Pembayaran Berhasil',
@@ -47,7 +48,6 @@ export default function PaymentSuccess() {
             />
 
             <div className='space-y-4'>
-
                 {/* Payment Info */}
                 {paymentInfo && (
                     <Card className='p-0'>
@@ -123,17 +123,7 @@ export default function PaymentSuccess() {
                     </Button>
                 </div>
 
-                {/* Additional Info */}
-                <Card className="p-0 border-blue-200">
-                    <CardContent className="p-4">
-                        <h3 className="font-medium text-center text-blue-800 mb-2">Informasi Penting</h3>
-                        <ul className="text-sm text-blue-600 space-y-1">
-                            <li>Anda akan menerima notifikasi saat pesanan dikonfirmasi</li>
-                            <li>Silakan datang ke outlet sesuai waktu yang dijadwalkan</li>
-                            <li>Tunjukkan bukti pemesanan saat mengambil pesanan</li>
-                        </ul>
-                    </CardContent>
-                </Card>
+                <ImportantInformationCard type='success' />
             </div>
         </>
     );
