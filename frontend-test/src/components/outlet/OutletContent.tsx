@@ -18,6 +18,7 @@ import { EmptyState, ErrorState, LoadingState } from "../Base";
 import { OperatingHourType } from "@/types";
 import { useSearchParams } from "next/navigation";
 import { DAY_NAMES, LanguageType } from "@/constants";
+import { formatTime } from "@/lib/utils";
 
 const formatOperatingHours = (operatingHours: OperatingHourType[], locale: LanguageType) => {
     if (typeof window === "undefined") return
@@ -63,12 +64,12 @@ const getCurrentDayStatus = (operatingHours: OperatingHourType[]) => {
     if (now >= openTime && now <= closeTime) {
         return {
             isOpen: true,
-            message: `${t("openUntil")} ${closeTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+            message: t("openUntil", { time: formatTime(closeTime) })
         };
     } else if (now < openTime) {
         return {
             isOpen: false,
-            message: `${t("openingHours")} ${openTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+            message: t("openUntil", { time: formatTime(openTime) })
         };
     } else {
         return { isOpen: false, message: t("closedToday") };
