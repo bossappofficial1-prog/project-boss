@@ -13,17 +13,18 @@ export class OutletRepository {
         });
     }
 
-    static async findById(id: string): Promise<any | null> {
+    static async findById(id: string) {
         return db.outlet.findUnique({
             where: { id },
             include: {
-                business: true,
-                operatingHours: true,
-                staff: {
-                    where: {
-                        status: 'ACTIVE'
+                business: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true
                     }
-                }
+                },
+                operatingHours: true,
             },
         });
     }
@@ -71,13 +72,25 @@ export class OutletRepository {
         skip?: number
     ): Promise<{ outlets: Outlet[], total: number }> {
         const whereClause: any = {
-            ...(businessId && { businessId }), // Conditionally add businessId
+            ...(businessId && { businessId }),
             ...(search && {
-                name: {
-                    contains: search,
-                    mode: 'insensitive',
-                },
-            }),
+                OR: [
+                    {
+                        name: {
+                            contains: search,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        business: {
+                            description: {
+                                contains: search,
+                                mode: "insensitive"
+                            }
+                        }
+                    }
+                ]
+            })
         };
 
         const [outlets, total] = await db.$transaction([

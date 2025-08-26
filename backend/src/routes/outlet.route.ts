@@ -14,7 +14,6 @@ import { validateSchema } from "../middleware/zod.middleware";
 import { createOutletSchema, updateOutletSchema, updateOutletLocationSchema } from "../schemas/outlet.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
-import { getBookingSlotByOutlet } from "../controller/booking.controller";
 
 const outletRouter = Router();
 

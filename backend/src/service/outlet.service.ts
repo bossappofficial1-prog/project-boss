@@ -4,6 +4,7 @@ import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
 import { OutletRepository } from "../repositories/outlet.repository";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
+import Console from "../utils/logger";
 import { getBusinessByOwnerIdService } from "./business.service";
 
 export async function createOutletService(data: CreateOutletInput, ownerId: string) {
@@ -164,26 +165,27 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
 
 export async function getOutletByIdService(id: string, date?: Date) {
     const today = date || new Date();
+    const outletRaw = await OutletRepository.findById(id)
 
-    const outlet = await db.outlet.findUnique({
-        where: { id },
-        include: {
-            operatingHours: true,
-            business: {
-                select: {
-                    id: true,
-                    name: true,
-                    defaultTransactionFeeBearer: true
-                }
-            }
-        }
-    });
-
-    if (!outlet) {
+    if (!outletRaw) {
         throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+    const { isOpen, operatingHours, ...outlet } = outletRaw;
 
-    return outlet;
+    const isOpenOutlet = operatingHours.length > 0
+        ? operatingHours.some((oper) => {
+            const todayMinutes = today.getHours() * 60 + today.getMinutes(); // Total menit saat ini
+            const openMinutes = oper.openTime.getHours() * 60 + oper.openTime.getMinutes(); // Total menit waktu buka
+            const closeMinutes = oper.closeTime.getHours() * 60 + oper.closeTime.getMinutes(); // Total menit waktu tutup
+
+            Console.log(closeMinutes, openMinutes, todayMinutes, today.getDay(), oper.dayOfWeek);
+            Console.log(oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes);
+
+            return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
+        })
+        : isOpen;
+
+    return { ...outlet, operatingHours, isOpen: isOpenOutlet };
 }
 export async function getAllOutletService() {
     const outlet = await OutletRepository.getAll();
