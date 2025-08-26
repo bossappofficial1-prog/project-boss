@@ -14,13 +14,10 @@ import { Search, SearchDropdown, SearchInput } from '@/components/shared/search'
 function SearchOutletContent() {
     const t = useTranslations('searchPage');
     const { updateAppbar } = useAppBar();
-
     const [search, setSearch] = useState('');
 
-    // REFACTOR: Menggunakan custom hook untuk kebersihan kode
     const debouncedSearch = useDebounce(search, 500);
 
-    // REFACTOR: Efek ini hanya untuk memuat state dari sessionStorage saat pertama kali render
     useEffect(() => {
         const savedSearch = sessionStorage.getItem('currentSearch');
         if (savedSearch) {
@@ -28,7 +25,6 @@ function SearchOutletContent() {
         }
     }, []);
 
-    // REFACTOR: Efek ini hanya untuk menyimpan state ke sessionStorage saat pencarian benar-benar dilakukan
     useEffect(() => {
         if (debouncedSearch) {
             sessionStorage.setItem('currentSearch', debouncedSearch);
@@ -63,7 +59,6 @@ function SearchOutletContent() {
 
     const allOutlets = data?.pages.flatMap(page => page.data) || [];
 
-    // REFACTOR: Menggunakan useCallback untuk memoization
     const handleSearchChange = useCallback((value: string) => {
         setSearch(value);
     }, []);
@@ -74,7 +69,6 @@ function SearchOutletContent() {
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    // Fungsi untuk merender konten hasil pencarian
     const renderContent = () => {
         if (isLoading) {
             return <LoadingState />;
@@ -93,7 +87,7 @@ function SearchOutletContent() {
                             {allOutlets.length} {t('outletCount')} {t('for')} "<span className="font-medium">{debouncedSearch}</span>"
                         </span>
                     </div>
-                    <div className="grid gap-4 mb-6">
+                    <div className="grid gap-2 mb-6">
                         {allOutlets.map((outlet) => (
                             <OutletCard key={outlet.id} outlet={outlet as any} alignment="horizontal" />
                         ))}

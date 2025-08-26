@@ -160,7 +160,7 @@ function NearbyOutletContent() {
                     </div>
 
                     {/* Outlets List */}
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         {allOutlets.map((outlet, index) => {
                             const normalizedOutlet = {
                                 ...outlet,

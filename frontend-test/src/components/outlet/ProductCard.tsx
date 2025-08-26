@@ -1,7 +1,8 @@
 'use client'
 
 import { useCart } from "@/hooks/useCart";
-import { OutletDetails, Product, ProductType } from "@/types";
+import { OutletDetails, ProductType } from "@/types";
+import { BookingSlot } from "@/types/booking-slots";
 import { useState, useCallback } from "react";
 import { Card } from "../ui/card";
 import { ImageRender } from "../shared/Image";
@@ -24,13 +25,14 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
     const cartItem = cartItems.find(item => item.productId === product.id);
     const inCartQuantity = cartItem?.quantity || 0;
     const maxQuantity = product.type === "GOODS" && product.quantity !== null ? product.quantity : 99;
+    const outletNotOpen = !outlet.isOpen
 
     const handleCardClick = useCallback(() => {
         router.push(`/outlet/${outlet.id}/product/${product.id}`);
     }, [router, outlet.id, product.id]);
 
     const handleAddToCart = useCallback((e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent card click
+        e.stopPropagation();
         if (product.type === 'GOODS') {
             if (!isOutOfStock) {
                 addItem(outlet.id, outlet.name, product, quantity);
@@ -42,7 +44,7 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
     }, [addItem, outlet.id, outlet.name, product, quantity, isOutOfStock]);
 
     const handleQuantityChange = (delta: number, e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent card click
+        e.stopPropagation();
         setQuantity(prevQuantity => {
             const newQuantity = prevQuantity + delta;
             if (newQuantity >= 1 && newQuantity <= maxQuantity - inCartQuantity) {
@@ -52,9 +54,14 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
         });
     };
 
-    const handleScheduleSelect = useCallback((selectedSchedule: string) => {
-        addItem(outlet.id, outlet.name, product, 1, selectedSchedule);
-        setIsScheduleModalOpen(false);
+    const handleScheduleSelect = useCallback((selectedSchedule: BookingSlot | string) => {
+        const success = addItem(outlet.id, outlet.name, product, 1, selectedSchedule);
+        if (success) {
+            setIsScheduleModalOpen(false);
+        } else {
+            // Could add toast notification here for conflict
+            console.warn('Failed to add service to cart due to time conflict');
+        }
     }, [addItem, outlet.id, outlet.name, product]);
 
     return (
@@ -133,12 +140,16 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
                                                 <Plus className="h-3 w-3" />
                                             </Button>
                                         </div>
-                                        <Button size="icon" className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0" onClick={handleAddToCart} disabled={inCartQuantity >= maxQuantity}>
+                                        <Button size="icon" className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0" onClick={handleAddToCart} disabled={inCartQuantity >= maxQuantity || outletNotOpen}>
                                             <ShoppingCart className="w-3.5 h-3.5" />
                                         </Button>
                                     </>
-                                ) : ( // For Services
-                                    <Button size="sm" className="h-8 px-3 text-xs" onClick={handleAddToCart}>
+                                ) : (
+                                    <Button
+                                        size="sm"
+                                        className="h-8 px-3 text-xs"
+                                        disabled={outletNotOpen}
+                                        onClick={handleAddToCart}>
                                         <Clock className="w-3 h-3 mr-1.5" />
                                         Jadwal
                                     </Button>
@@ -154,6 +165,7 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
                 onClose={() => setIsScheduleModalOpen(false)}
                 onSelectSchedule={handleScheduleSelect}
                 product={product}
+                outletId={outlet.id}
             />
         </>
     );

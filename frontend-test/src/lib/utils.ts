@@ -1,12 +1,24 @@
 import { clsx, type ClassValue } from "clsx"
+import { RemotePattern } from "next/dist/shared/lib/image-config";
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function parseRemotePatterns(pattern: string) {
-  return pattern.split(", ").map(pattern => new URL(pattern))
+export function parseRemotePatterns(patterns: string): RemotePattern[] {
+  return patterns.split(", ").map((pattern) => {
+    const url = new URL(pattern.trim());
+
+    const proto = url.protocol.replace(":", "");
+    const protocol = proto === "http" || proto === "https" ? proto : undefined;
+
+    return {
+      protocol,
+      hostname: url.hostname,
+      pathname: url.pathname === "/" ? "/**" : url.pathname
+    }
+  })
 }
 
 export const formatIsoToTime = (iso: string) =>

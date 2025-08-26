@@ -61,7 +61,7 @@ const getCurrentDayStatus = (operatingHours: OperatingHourType[]) => {
     } else if (now < openTime) {
         return {
             isOpen: false,
-            message: t("openUntil", { time: formatTime(openTime) })
+            message: t("opensAt", { time: formatTime(openTime) })
         };
     } else {
         return { isOpen: false, message: t("closedToday") };

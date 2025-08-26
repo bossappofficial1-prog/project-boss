@@ -12,21 +12,43 @@ import { CalendarIcon, Timer } from "lucide-react"
 import { format } from "date-fns"
 import { Calendar } from "../ui/calendar"
 import { EmptyState, LoadingState } from "../Base"
+import { useCart } from "@/hooks/useCart"
 
 export function ScheduleModal({
     isOpen,
     onClose,
     onSelectSchedule,
     product,
+    outletId,
 }: {
     isOpen: boolean
     onClose: () => void
-    onSelectSchedule: (schedule: string) => void
+    onSelectSchedule: (schedule: BookingSlot | string) => void
     product: Partial<ProductType>
+    outletId?: string
 }) {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [scheduleSlots, setScheduleSlots] = useState<BookingSlot[]>([])
     const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null)
+    const { getSelectedSlot, getServiceInCart, checkTimeConflict } = useCart()
+
+    const selectedSlotIdInCart = getSelectedSlot(selectedSlot?.id!)
+
+    // Check if this service is already in cart for the same outlet
+    const existingServiceInCart = product.type === 'SERVICE' && outletId
+        ? getServiceInCart(product.id!, outletId)
+        : null
+
+    const isReplaceMode = !!existingServiceInCart
+
+    // Check for time conflicts when selecting a new slot
+    const timeConflict = selectedSlot && outletId
+        ? checkTimeConflict(outletId, {
+            startTime: selectedSlot.startTime,
+            endTime: selectedSlot.endTime,
+            date: selectedDate?.toISOString().split('T')[0] || ''
+        })
+        : null
 
     const { data: fetchedSlots, isLoading: isSlotsLoading, error: slotsError } = useGetSlotProduct(
         product.id!,
@@ -39,7 +61,6 @@ export function ScheduleModal({
             return
         }
 
-        // If API returned slots, map them to BookingSlot shape and use them
         if (fetchedSlots && fetchedSlots.length > 0) {
             const mapped: BookingSlot[] = fetchedSlots.map((s: BookingSlot) => ({
                 ...s,
@@ -48,22 +69,52 @@ export function ScheduleModal({
             }));
 
             setScheduleSlots(mapped);
+
+            // If in replace mode and existing service has a slot, pre-select it
+            if (isReplaceMode && existingServiceInCart?.selectedSlot) {
+                const existingSlot = mapped.find(slot => slot.id === existingServiceInCart.selectedSlot);
+                if (existingSlot) {
+                    setSelectedSlot(existingSlot);
+                }
+            }
+
             return;
         } else {
             setScheduleSlots([])
         }
 
-    }, [selectedDate, fetchedSlots])
+    }, [selectedDate, fetchedSlots, isReplaceMode, existingServiceInCart])
 
     const handleSlotSelect = (slot: BookingSlot) => {
         if (slot.status === "BOOKED") return
+
+        // Check for time conflict if not in replace mode
+        if (!isReplaceMode && outletId) {
+            const conflict = checkTimeConflict(outletId, {
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                date: selectedDate?.toISOString().split('T')[0] || ''
+            });
+
+            // Allow selection even if there's conflict, but show warning
+            // User can still see the conflict warning and decide
+        }
+
         setSelectedSlot(slot)
     }
 
     const handleConfirm = () => {
-        if (selectedSlot) {
-            // onSelectSchedule(`${selectedSlot.date} ${selectedSlot.startTime} - ${selectedSlot.endTime}`)
-            onSelectSchedule(selectedSlot.id)
+        if (selectedSlot && selectedDate) {
+            // Create slot object with complete data
+            const slotData = {
+                id: selectedSlot.id,
+                startTime: selectedSlot.startTime,
+                endTime: selectedSlot.endTime,
+                date: selectedDate.toISOString().split('T')[0],
+                status: selectedSlot.status
+            };
+
+            onSelectSchedule(slotData)
             onClose()
         }
     }
@@ -78,7 +129,9 @@ export function ScheduleModal({
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>Pilih Jadwal</DialogTitle>
+                    <DialogTitle>
+                        {isReplaceMode ? "Ganti Jadwal" : "Pilih Jadwal"}
+                    </DialogTitle>
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto space-y-6 px-1">
@@ -88,6 +141,20 @@ export function ScheduleModal({
                         <p className="text-sm text-muted-foreground mt-1">
                             Durasi: {product.serviceDurationMinutes || 30} menit
                         </p>
+                        {isReplaceMode && existingServiceInCart && (
+                            <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                                <p className="text-xs text-amber-700">
+                                    Jadwal saat ini sudah dipilih. Pilih jadwal baru untuk mengganti.
+                                </p>
+                            </div>
+                        )}
+                        {timeConflict && !isReplaceMode && (
+                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                                <p className="text-xs text-red-700">
+                                    Konflik waktu dengan layanan "{timeConflict.name}" ({timeConflict.slotStartTime} - {timeConflict.slotEndTime})
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Date Picker */}
@@ -134,9 +201,9 @@ export function ScheduleModal({
                                                             ? "default"
                                                             : "outline"
                                                 }
-                                                disabled={slot.status === "BOOKED" || slot.status === "BLOCKED"}
+                                                disabled={slot.status === "BOOKED" || slot.status === "BLOCKED" || slot.id === selectedSlotIdInCart}
                                                 className={`flex flex-col items-center p-3 text-sm 
-                                                ${selectedSlot?.id === slot.id && "bg-green-500 text-white hover:bg-green-600"}`}
+                                                ${selectedSlot?.id === slot.id && "bg-green-500 text-white hover:bg-green-600"} ${slot.id === selectedSlotIdInCart && "bg-orange-500"}`}
                                                 onClick={() => handleSlotSelect(slot)}
                                             >
                                                 <span className="font-medium">
@@ -159,10 +226,12 @@ export function ScheduleModal({
                     <Button variant="outline" onClick={handleClose} className="flex-1">
                         Batal
                     </Button>
-                    <Button onClick={handleConfirm} disabled={!selectedSlot} className="flex-1">
-                        {selectedSlot
-                            ? `Pesan ${selectedSlot.startTime} - ${selectedSlot.endTime}`
-                            : "Pilih Waktu"}
+                    <Button onClick={handleConfirm} disabled={!selectedSlot || (!!timeConflict && !isReplaceMode)} className="flex-1">
+                        {!selectedSlot
+                            ? "Pilih Waktu"
+                            : timeConflict && !isReplaceMode
+                                ? "Konflik Waktu"
+                                : `${isReplaceMode ? 'Ganti ke' : 'Pesan'} ${selectedSlot.startTime} - ${selectedSlot.endTime}`}
                     </Button>
                 </DialogFooter>
             </DialogContent>

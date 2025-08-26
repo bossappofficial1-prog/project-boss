@@ -17,7 +17,10 @@ export interface CartItem {
     unit?: string;
     maxQuantity?: number; // For GOODS with limited stock
     serviceDurationMinutes?: number; // For SERVICES
-    selectedSlot?: string; // For SERVICES with booking slots
+    selectedSlot?: string; // For SERVICES with booking slots (slot ID)
+    slotStartTime?: string; // For time conflict checking
+    slotEndTime?: string; // For time conflict checking
+    slotDate?: string; // For date-specific conflict checking
 }
 
 interface CartState {
@@ -25,7 +28,7 @@ interface CartState {
     isOpen: boolean;
 
     // Actions
-    addItem: (outletId: string, outletName: string, product: ProductType, quantity?: number, selectedSlot?: any) => void;
+    addItem: (outletId: string, outletName: string, product: ProductType, quantity?: number, selectedSlot?: any) => boolean;
     removeItem: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
     updateItem: (itemId: string, updates: Partial<CartItem>) => void;
@@ -38,6 +41,9 @@ interface CartState {
     getTotalPrice: () => number;
     getOutletItems: (outletId: string) => CartItem[];
     getItemById: (itemId: string) => CartItem | undefined;
+    getSelectedSlot: (slotId: string) => string;
+    getServiceInCart: (productId: string, outletId: string) => CartItem | undefined;
+    checkTimeConflict: (outletId: string, newSlot: { startTime: string; endTime: string; date: string }) => CartItem | undefined;
 }
 
 export const useCart = create<CartState>()(
@@ -48,6 +54,22 @@ export const useCart = create<CartState>()(
 
             addItem: (outletId: string, outletName: string, product: ProductType, quantity = 1, selectedSlot) => {
                 const { items } = get();
+
+                // Check for time conflicts for SERVICE items
+                if (product.type === 'SERVICE' && selectedSlot) {
+                    const conflict = get().checkTimeConflict(outletId, {
+                        startTime: selectedSlot.startTime,
+                        endTime: selectedSlot.endTime,
+                        date: selectedSlot.date
+                    });
+
+                    if (conflict) {
+                        // Conflict detected - don't add the item
+                        console.warn('Time conflict detected with existing service:', conflict);
+                        return false; // Return false to indicate failure
+                    }
+                }
+
                 const existingItemIndex = items.findIndex(
                     item => item.productId === product.id && item.outletId === outletId
                 );
@@ -56,22 +78,36 @@ export const useCart = create<CartState>()(
                     // Update existing item
                     const updatedItems = [...items];
                     const existingItem = updatedItems[existingItemIndex];
-                    const newQuantity = existingItem.quantity + quantity;
 
-                    // Check max quantity for GOODS
-                    if (product.type === 'GOODS' && product.quantity !== null) {
-                        if (newQuantity > product.quantity) {
-                            // Don't add if exceeds stock
-                            return;
+                    if (product.type === 'SERVICE') {
+                        // For services, update the selected slot instead of quantity
+                        updatedItems[existingItemIndex] = {
+                            ...existingItem,
+                            selectedSlot: selectedSlot?.id,
+                            slotStartTime: selectedSlot?.startTime,
+                            slotEndTime: selectedSlot?.endTime,
+                            slotDate: selectedSlot?.date
+                        };
+                    } else {
+                        // For goods, update quantity
+                        const newQuantity = existingItem.quantity + quantity;
+
+                        // Check max quantity for GOODS
+                        if (product.type === 'GOODS' && product.quantity !== null) {
+                            if (newQuantity > product.quantity) {
+                                // Don't add if exceeds stock
+                                return false;
+                            }
                         }
+
+                        updatedItems[existingItemIndex] = {
+                            ...existingItem,
+                            quantity: newQuantity
+                        };
                     }
 
-                    updatedItems[existingItemIndex] = {
-                        ...existingItem,
-                        quantity: newQuantity
-                    };
-
                     set({ items: updatedItems });
+                    return true;
                 } else {
                     // Add new item
                     const newItem: CartItem = {
@@ -87,10 +123,14 @@ export const useCart = create<CartState>()(
                         unit: product.unit || undefined,
                         maxQuantity: product.type === 'GOODS' ? product.quantity || undefined : undefined,
                         serviceDurationMinutes: product.type === 'SERVICE' ? product.serviceDurationMinutes || undefined : undefined,
-                        selectedSlot: product.type === 'SERVICE' ? selectedSlot : undefined
+                        selectedSlot: product.type === 'SERVICE' ? selectedSlot?.id : undefined,
+                        slotStartTime: product.type === 'SERVICE' ? selectedSlot?.startTime : undefined,
+                        slotEndTime: product.type === 'SERVICE' ? selectedSlot?.endTime : undefined,
+                        slotDate: product.type === 'SERVICE' ? selectedSlot?.date : undefined
                     };
 
                     set({ items: [...items, newItem] });
+                    return true;
                 }
             },
 
@@ -162,6 +202,62 @@ export const useCart = create<CartState>()(
             getItemById: (itemId: string) => {
                 const { items } = get();
                 return items.find(item => item.id === itemId);
+            },
+
+            getSelectedSlot: (slotId: string) => {
+                const { items } = get();
+                const found = items.find(item => item.selectedSlot === slotId);
+                return found ? found.selectedSlot || '' : '';
+            },
+
+            getServiceInCart: (productId: string, outletId: string) => {
+                const { items } = get();
+                return items.find(item =>
+                    item.productId === productId &&
+                    item.outletId === outletId &&
+                    item.type === 'SERVICE'
+                );
+            },
+
+            checkTimeConflict: (outletId: string, newSlot: { startTime: string; endTime: string; date: string }) => {
+                const { items } = get();
+
+                // Helper function to convert time string to minutes (e.g., "08:00" -> 480)
+                const timeToMinutes = (timeStr: string): number => {
+                    const [hours, minutes] = timeStr.split(':').map(Number);
+                    return hours * 60 + minutes;
+                };
+
+                const newStartMinutes = timeToMinutes(newSlot.startTime);
+                const newEndMinutes = timeToMinutes(newSlot.endTime);
+
+                // Find services in the same outlet on the same date that might conflict
+                const servicesInOutlet = items.filter(item =>
+                    item.outletId === outletId &&
+                    item.type === 'SERVICE' &&
+                    item.selectedSlot &&
+                    item.slotDate === newSlot.date
+                );
+
+                for (const service of servicesInOutlet) {
+                    if (service.slotStartTime && service.slotEndTime) {
+                        const existingStartMinutes = timeToMinutes(service.slotStartTime);
+                        const existingEndMinutes = timeToMinutes(service.slotEndTime);
+
+                        // Check if there's any overlap between the time slots
+                        const hasConflict = (
+                            (newStartMinutes >= existingStartMinutes && newStartMinutes < existingEndMinutes) ||
+                            (newEndMinutes > existingStartMinutes && newEndMinutes <= existingEndMinutes) ||
+                            (newStartMinutes <= existingStartMinutes && newEndMinutes >= existingEndMinutes)
+                        );
+
+                        if (hasConflict) {
+                            return service; // Return the conflicting service
+                        }
+                    }
+                }
+
+                return undefined; // No conflict found
             },
         }),
         {
