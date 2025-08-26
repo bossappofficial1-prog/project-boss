@@ -6,7 +6,7 @@ import { useUser } from '@/hooks/useUser';
 import { useFeaturedOutlets } from '@/hooks/useFeaturedOutlets';
 import useFetch from "@/components/home/useFetch";
 import { OutletCard } from "@/components/home/OutletCard";
-import { LoadingState, EmptyState } from "@/components/Base";
+import { LoadingState, EmptyState, ErrorState } from "@/components/Base";
 import { Star, Gift, ShoppingBag, Bell } from "lucide-react";
 import { useUserPosition } from "@/hooks/userUserPosition";
 import Link from "next/link";
@@ -286,14 +286,14 @@ function HomeContent() {
           <h2 className="text-base font-medium">Featured Outlets</h2>
         </div>
         {(() => {
-          const { data, isLoading, error } = useFeaturedOutlets();
+          const { data, isLoading, error, refetch } = useFeaturedOutlets();
 
           if (isLoading) return (
             <LoadingState message="Loading featured outlets..." />
           );
 
-          if (error) return <div className="text-sm text-destructive">Failed to load featured outlets</div>;
-          if (!data || data.length === 0) return <div className="text-sm text-muted-foreground">No featured outlets right now.</div>;
+          if (error) return <ErrorState onRetry={() => refetch()} message={error.message === "Network Error" ? "Terjadi kesalahan internet" : undefined} />;
+          if (!data || data.length === 0) return <EmptyState title="Tidak ada outlet tersedia" />;
 
           return (
             <DivXScroll className="gap-2">

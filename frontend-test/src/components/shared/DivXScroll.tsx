@@ -11,7 +11,7 @@ export function DivXScroll({ children, className, ...props }: { children: React.
             if (e.deltaY === 0) return
             e.preventDefault()
 
-            el.scrollLeft += e.deltaY
+            el.scrollLeft += e.deltaY * 2
         }
 
         el.addEventListener("wheel", onWheel, { passive: false })

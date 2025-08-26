@@ -26,3 +26,22 @@ export const formatCurrency = (amount: number): string => {
     maximumFractionDigits: 0,
   }).format(amount);
 };
+
+export const isRouteDisabled = (pathname: string, disabledRoutes: string[]) => {
+  return disabledRoutes.some((pattern) => {
+    if (pattern.endsWith("/**")) {
+      const basePattern = pattern.slice(0, -3);
+      const regexPattern = basePattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&") + "(/.*)?";
+      const regex = new RegExp(`^${regexPattern}$`);
+      return regex.test(pathname);
+    }
+
+    // Untuk kasus biasa dan '*'
+    const regexPattern = pattern
+      .replace(/[.+?^${}()|[\]\\]/g, "\\$&") // Escape
+      .replace(/\*/g, "[^/]*"); // Handle '*'
+
+    const regex = new RegExp(`^${regexPattern}$`);
+    return regex.test(pathname);
+  });
+};

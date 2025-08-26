@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppBarConfig } from '@/hooks/useAppBarConfig';
+import { formatCurrency } from '@/lib/utils';
 
 const PROCESSING_APP_BAR_CONFIG = {
     title: 'Proses Pembayaran',
@@ -99,15 +100,6 @@ export default function PaymentProcessing() {
         return () => clearInterval(statusCheck);
     }, [paymentStatus, router]);
 
-    const formatCurrency = (amount: number): string => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(amount);
-    };
-
     const handleCopy = async (text: string) => {
         try {
             await navigator.clipboard.writeText(text);
@@ -141,12 +133,12 @@ export default function PaymentProcessing() {
     const { selectedPaymentMethod, checkoutData, customerInfo } = paymentInfo;
 
     return (
-        <div className="space-y-4 p-4 pb-32">
+        <div className="space-y-4">
             {/* Payment Status Header */}
-            <Card className={`border-2 ${paymentStatus === 'confirmed' ? 'border-green-200 bg-green-50' :
-                    paymentStatus === 'failed' ? 'border-red-200 bg-red-50' :
-                        paymentStatus === 'processing' ? 'border-blue-200 bg-blue-50' :
-                            'border-orange-200 bg-orange-50'
+            <Card className={`border-2 p-0 ${paymentStatus === 'confirmed' ? 'border-green-200 bg-green-50' :
+                paymentStatus === 'failed' ? 'border-red-200 bg-red-50' :
+                    paymentStatus === 'processing' ? 'border-blue-200 bg-blue-50' :
+                        'border-orange-200 bg-orange-50'
                 }`}>
                 <CardContent className="p-4 text-center">
                     <div className="flex items-center justify-center mb-3">
@@ -177,7 +169,7 @@ export default function PaymentProcessing() {
 
                     {/* Timer */}
                     {(paymentStatus === 'pending' || paymentStatus === 'processing') && (
-                        <div className="flex items-center justify-center gap-2 bg-white rounded-lg p-3 border">
+                        <div className="flex items-center justify-center gap-2 bg-white rounded-lg px-3 border">
                             <Clock className="w-4 h-4 text-orange-600" />
                             <span className="font-mono font-bold text-lg">
                                 {String(timer.minutes).padStart(2, '0')}:{String(timer.seconds).padStart(2, '0')}
@@ -189,7 +181,7 @@ export default function PaymentProcessing() {
             </Card>
 
             {/* Payment Details */}
-            <Card>
+            <Card className='p-0'>
                 <CardContent className="p-4">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-lg bg-white border flex items-center justify-center text-lg">
@@ -268,7 +260,7 @@ export default function PaymentProcessing() {
             </Card>
 
             {/* Customer Info */}
-            <Card>
+            <Card className='p-0'>
                 <CardContent className="p-4">
                     <h3 className="font-semibold mb-3">Detail Pembeli</h3>
                     <div className="space-y-2">
@@ -313,13 +305,13 @@ export default function PaymentProcessing() {
             </div>
 
             {/* Important Notes */}
-            <Card className="bg-blue-50 border-blue-200">
+            <Card className="bg-blue-50 p-0 border-blue-200">
                 <CardContent className="p-4">
                     <h4 className="font-medium text-blue-800 mb-2">Penting:</h4>
-                    <ul className="text-sm text-blue-600 space-y-1">
-                        <li>• Jangan tutup halaman ini sampai pembayaran selesai</li>
-                        <li>• Status akan diperbarui otomatis setelah pembayaran</li>
-                        <li>• Hubungi customer service jika ada kendala</li>
+                    <ul className="text-sm text-blue-600 space-y-1 list-disc list-inside">
+                        <li>Jangan tutup halaman ini sampai pembayaran selesai</li>
+                        <li>Status akan diperbarui otomatis setelah pembayaran</li>
+                        <li>Hubungi customer service jika ada kendala</li>
                     </ul>
                 </CardContent>
             </Card>

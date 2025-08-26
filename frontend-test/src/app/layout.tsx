@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
     title: "BOSS",
     description: "Manage your business with BOSS",
-    themeColor: "black"
+    icons: "/assets/logo/logo-bossapp.svg"
 };
 
 export default function Layout({

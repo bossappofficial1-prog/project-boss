@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, Plus, Minus, X, Package, Wrench, Clock, Calendar, MapPin, AlertCircle } from 'lucide-react';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { ImageRender } from '@/components/shared/Image';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
     Dialog,
     DialogContent,
@@ -19,6 +19,8 @@ import {
 import { BookingSlotType } from '@/types';
 import { BookingSlot } from '@/services/booking-slot';
 import FloatingButton from '../shared/FloatingButton';
+import { ROUTES_CART_DISABLED } from '@/constants';
+import { isRouteDisabled } from '@/lib/utils';
 
 interface CartItemComponentProps {
     item: CartItem;
@@ -375,17 +377,17 @@ export function CartDrawer({ children }: CartDrawerProps) {
 }
 
 export function FloatingCartButton({ className = '' }: { className?: string }) {
+    const pathname = usePathname()
     const { getTotalItems } = useCart();
     const router = useRouter();
     const totalItems = getTotalItems();
-
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    if (!mounted || totalItems === 0) return null;
+    if (!mounted || totalItems === 0 || isRouteDisabled(pathname, ROUTES_CART_DISABLED)) return null;
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -397,7 +399,7 @@ export function FloatingCartButton({ className = '' }: { className?: string }) {
         <FloatingButton>
             <Button
                 size="lg"
-                className="rounded-full bg-blue-500 hover:bg-blue-600 h-12 w-12 p-2 shadow-lg hover:shadow-xl transition-shadow"
+                className={"rounded-full bg-blue-500 hover:bg-blue-600 h-12 w-12 p-2 shadow-lg hover:shadow-xl transition-shadow" + className}
                 onClick={handleClick}
             >
                 <div className="relative">

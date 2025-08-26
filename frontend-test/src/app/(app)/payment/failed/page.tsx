@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { XCircle, RefreshCw, ArrowLeft, Phone, AlertTriangle } from 'lucide-react'
+import { CUSTOMER_SERVICE_NUMBER } from '@/constants'
+import { ErrorState } from '@/components/Base'
 
 interface PaymentData {
     outlet: {
@@ -79,9 +80,7 @@ export default function PaymentFailedPage() {
     }
 
     const handleContactSupport = () => {
-        // Open WhatsApp or phone dialer
-        const phone = '+6281234567890' // Replace with actual support number
-        window.open(`https://wa.me/${phone}?text=Halo, saya mengalami masalah pembayaran untuk order ${paymentData?.orderId}`, '_blank')
+        window.open(`https://wa.me/${CUSTOMER_SERVICE_NUMBER}?text=Halo, saya mengalami masalah pembayaran untuk order ${paymentData?.orderId}`, '_blank')
     }
 
     const formatCurrency = (amount: number) => {
@@ -116,19 +115,17 @@ export default function PaymentFailedPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4">
-            <div className="max-w-md mx-auto">
-                {/* Header */}
-                <div className="mb-6 text-center">
-                    <div className="bg-red-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                        <XCircle className="w-10 h-10 text-red-600" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Pembayaran Gagal</h1>
-                    <p className="text-gray-600">Maaf, transaksi Anda tidak dapat diproses</p>
-                </div>
+        <>
+
+            {/* Header */}
+            <ErrorState
+                title='Pembayaran Gagal'
+                message='Maaf, transaksi Anda tidak dapat diproses'
+            />
+            <div className='space-y-4'>
 
                 {/* Failure Information */}
-                <Card className="mb-6">
+                <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg flex items-center gap-2">
                             <AlertTriangle className="w-5 h-5 text-red-500" />
@@ -148,7 +145,7 @@ export default function PaymentFailedPage() {
                 </Card>
 
                 {/* Order Summary */}
-                <Card className="mb-6">
+                <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg">Ringkasan Pesanan</CardTitle>
                     </CardHeader>
@@ -190,7 +187,7 @@ export default function PaymentFailedPage() {
                 </Card>
 
                 {/* Customer Info */}
-                <Card className="mb-6">
+                <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg">Informasi Pelanggan</CardTitle>
                     </CardHeader>
@@ -251,12 +248,12 @@ export default function PaymentFailedPage() {
                 </div>
 
                 {/* Help Text */}
-                <div className="mt-6 text-center">
+                <div className="text-center">
                     <p className="text-sm text-gray-500">
                         Jika masalah berlanjut, silakan hubungi customer service kami
                     </p>
                 </div>
             </div>
-        </div>
+        </>
     )
 }

@@ -15,7 +15,10 @@ interface CustomAxiosInstance extends AxiosInstance {
 const api: CustomAxiosInstance = axios.create({
     baseURL,
     timeout: 1000000,
-    withCredentials: true
+    withCredentials: true,
+    headers: {
+        "Authorization": ""
+    }
 }) as CustomAxiosInstance
 
 
