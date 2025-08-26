@@ -29,16 +29,8 @@ const formatOperatingHours = (operatingHours: OperatingHourType[], locale: Langu
     return sortedHours.map(hour => ({
         ...hour,
         dayName: dayNames[hour.dayOfWeek],
-        formattedOpenTime: new Date(hour.openTime).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        }),
-        formattedCloseTime: new Date(hour.closeTime).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        })
+        formattedOpenTime: formatTime(new Date(hour.openTime)),
+        formattedCloseTime: formatTime(new Date(hour.closeTime))
     }));
 };
 
@@ -144,16 +136,11 @@ export function OutletContent({ outletId }: { outletId: string }) {
 
     const results = useQueries({
         queries: [
-            {
-                queryKey: ["outlet", outletId],
-                queryFn: () => Outlet.getDetail(outletId)
-            },
-            {
-                queryKey: ["products", outletId],
-                queryFn: () => Product.getAllByOutlet(outletId)
-            }
+            { queryKey: ["outlet", outletId], queryFn: () => Outlet.getDetail(outletId), enabled: !!outletId },
+            { queryKey: ["products", outletId], queryFn: () => Product.getAllByOutlet(outletId), enabled: !!outletId }
         ],
     });
+
 
     const [outletQuery, productQuery] = results;
 
@@ -166,7 +153,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
         const outlet = outletQuery.data;
         toggleFavorite({
             id: outlet.id,
-            name: outlet.name,
+            name: outlet.name || t("outletNotFound"),
             address: outlet.address,
             image: outlet.image || undefined,
             isOpen: outlet.isOpen,
@@ -196,13 +183,14 @@ export function OutletContent({ outletId }: { outletId: string }) {
         lastOutletRef.current = currentOutletId;
         lastFavoriteState.current = isOutletFavorite;
 
-        if (!outletQuery.data) {
+        if (!outletQuery.data || outletQuery.error) {
             updateAppbar({
                 title: "Outlet",
                 sticky: true,
                 showSearch: false,
                 centerTitle: true,
-                rightContent: null
+                rightContent: null,
+                subtitle: t("outletNotFound")
             });
             return;
         }
@@ -241,7 +229,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 </>
             )
         });
-    }, [outletQuery.data?.id, outletQuery.data?.name, isOutletFavorite, handleToggleFavorite]);
+    }, [toggleFavorite, outletQuery.data?.id, outletQuery.data?.name, outletQuery.data?.address, outletQuery.data?.image, outletQuery.data?.isOpen]);
 
     if (outletQuery.isLoading) {
         return <LoadingState />;
