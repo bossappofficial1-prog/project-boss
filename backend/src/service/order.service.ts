@@ -2,7 +2,7 @@ import { OrderStatus, Product } from "@prisma/client";
 import { db } from "../config/prisma";
 import { getRabbitMQChannel } from "../config/rabbitmq";
 import { messagePublisher } from "./message-publisher.service";
-import { getSocketIO } from "../config/socket";
+import { getUnifiedSocketIO, emitToBusinessRoom, emitToOrderTracking } from "../config/socket-unified";
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
@@ -299,17 +299,46 @@ async function createOrderInDbService(data: CreateOrderInput) {
             });
         }
 
-        const io = getSocketIO();
-        io.to(business.id).emit('new_order', await tx.order.findUnique({
-            where: { id: order.id },
-            include: {
-                items: {
-                    include: { product: true }
-                },
-                guestCustomer: true,
-                outlet: true
+        // Emit new order event dengan error handling yang lebih baik
+        try {
+            const orderData = await tx.order.findUnique({
+                where: { id: order.id },
+                include: {
+                    items: {
+                        include: { product: true }
+                    },
+                    guestCustomer: true,
+                    outlet: true
+                }
+            });
+
+            if (orderData) {
+                const success = emitToBusinessRoom(business.id, 'new_order', orderData);
+                if (!success) {
+                    console.warn(`⚠️ Failed to emit new_order event for business ${business.id}`);
+                }
+
+                // Emit ke public socket untuk customer tracking
+                const publicSuccess = emitToOrderTracking(order.id, 'order_created', {
+                    orderId: order.id,
+                    status: order.orderStatus,
+                    totalAmount: order.totalAmount,
+                    // estimatedTime: order.,
+                    outlet: {
+                        id: orderData.outlet?.id,
+                        name: orderData.outlet?.name
+                    },
+                    createdAt: order.createdAt
+                });
+
+                if (!publicSuccess) {
+                    console.warn(`⚠️ Failed to emit order_created to public tracking for order ${order.id}`);
+                }
             }
-        }));
+        } catch (socketError) {
+            console.error('❌ Error emitting new_order event:', socketError);
+            // Tidak throw error karena order sudah berhasil dibuat
+        }
 
         return { order, midtransFee, appFee, feeBearer, totalAmount };
     });

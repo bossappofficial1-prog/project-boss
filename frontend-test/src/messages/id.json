@@ -1,0 +1,151 @@
+{
+    "navigation": {
+        "home": "Beranda",
+        "profile": "Profil"
+    },
+    "homePage": {
+        "title": "Selamat Datang di Aplikasi Kami"
+    },
+    "nearbyPage": {
+        "title": "Outlet Terdekat",
+        "subtitle": "Temukan outlet dalam radius 10km dari lokasi Anda",
+        "searchPlaceholder": "Cari outlet...",
+        "noOutletsFound": "Outlet tidak ditemukan",
+        "noNearbyOutlets": "Tidak ada outlet terdekat",
+        "loadMore": "Muat Lebih Banyak",
+        "noMoreOutlets": "Tidak ada outlet lagi untuk dimuat",
+        "outletCount": "outlet ditemukan"
+    },
+    "searchPage": {
+        "title": "Cari Outlet",
+        "subtitle": "Temukan outlet, produk, dan layanan",
+        "searchPlaceholder": "Cari outlet, produk, atau layanan...",
+        "for": "Pencarian untuk",
+        "recentSearches": "Pencarian terakhir",
+        "clearAll": "Hapus semua",
+        "noOutletsFound": "Tidak ada outlet ditemukan",
+        "noResultsFor": "Tidak ada hasil untuk '{query}'",
+        "tryDifferentSearch": "Coba kata kunci yang berbeda",
+        "searchError": "Terjadi kesalahan saat mencari",
+        "loading": "Memuat...",
+        "loadMore": "Muat Lebih Banyak",
+        "noMoreOutlets": "Tidak ada outlet lagi",
+        "outletCount": "outlet ditemukan",
+        "startSearching": "Mulai pencarian",
+        "searchDescription": "Masukkan kata kunci untuk mencari outlet, produk, atau layanan"
+    },
+    "search": {
+        "placeholder": "Cari outlet, produk, layanan...",
+        "loading": "Mencari...",
+        "noResults": "Tidak ada hasil untuk",
+        "outlet": "Outlet",
+        "product": "Produk",
+        "service": "Layanan",
+        "results": "Hasil Pencarian",
+        "showingResults": "Menampilkan hasil untuk",
+        "suggestions": "Saran",
+        "clear": "Hapus pencarian"
+    },
+    "outlet": {
+        "back": "Kembali",
+        "openNow": "Buka Sekarang",
+        "closed": "Tutup",
+        "whatsapp": "WhatsApp",
+        "direction": "Arah",
+        "cart": "Keranjang",
+        "viewCart": "Lihat Cart",
+        "products": "Produk",
+        "services": "Layanan",
+        "product": "Produk",
+        "service": "Layanan",
+        "outOfStock": "Habis",
+        "limited": "Terbatas",
+        "add": "Tambah",
+        "order": "Pesan",
+        "inCart": "Di keranjang",
+        "item": "item",
+        "duration": "Durasi",
+        "minutes": "menit",
+        "available": "Tersedia",
+        "noProducts": "Tidak ada produk",
+        "noProductsDesc": "Outlet ini belum memiliki produk yang tersedia.",
+        "noServices": "Tidak ada layanan",
+        "noServicesDesc": "Outlet ini belum menyediakan layanan.",
+        "whatsappMessage": "Halo, saya tertarik dengan outlet"
+    },
+    "cart": {
+        "title": "Keranjang Belanja",
+        "subtitle": "Tinjau item Anda sebelum checkout",
+        "product": "Produk",
+        "service": "Layanan",
+        "minutes": "menit",
+        "stock": "Stok",
+        "subtotal": "Subtotal",
+        "summary": "Ringkasan Pesanan",
+        "totalItems": "Total Item",
+        "items": "item",
+        "total": "Total",
+        "checkout": "Lanjut ke Pembayaran",
+        "processing": "Memproses...",
+        "clearAll": "Hapus Semua",
+        "note": "Harga dapat berubah berdasarkan lokasi dan ketersediaan",
+        "viewOutlet": "Lihat Outlet",
+        "empty": {
+            "title": "Keranjang Anda kosong",
+            "description": "Tambahkan produk atau layanan untuk memulai",
+            "browse": "Jelajahi Outlet"
+        }
+    },
+    "favorites": {
+        "title": "Favorit Saya",
+        "subtitle": "Outlet yang Anda simpan",
+        "empty": {
+            "title": "Belum ada favorit",
+            "description": "Mulai tambahkan outlet ke favorit Anda",
+            "browse": "Jelajahi Outlet"
+        }
+    },
+    "profilePage": {
+        "title": "Profil & Preferensi",
+        "subtitle": "Kelola informasi pribadi dan pengaturan aplikasi Anda",
+        "contactInformation": "Informasi Kontak",
+        "contactDescription": "Hanya nama dan nomor WhatsApp yang diperlukan untuk komunikasi.",
+        "fullName": "Nama Lengkap",
+        "enterFullName": "Masukkan nama lengkap Anda",
+        "whatsappNumber": "Nomor WhatsApp",
+        "appearance": "Tampilan",
+        "appearanceDescription": "Pilih antara tema terang dan gelap sesuai preferensi Anda.",
+        "lightTheme": "Tema Terang",
+        "darkTheme": "Tema Gelap",
+        "language": "Bahasa",
+        "languageDescription": "Pilih bahasa yang diinginkan untuk antarmuka aplikasi.",
+        "languageSwitcher": "Ganti Bahasa",
+        "saveChanges": "Simpan Perubahan",
+        "reset": "Reset",
+        "login": "Masuk",
+        "becomeBusiness": "Jadi Akun Bisnis",
+        "settings": "Pengaturan"
+    },
+    "onboarding": {
+        "step1": {
+            "title": "Selamat datang di BOSS",
+            "description": "Temukan outlet terdekat, cari, dan pesan dengan cepat."
+        },
+        "step2": {
+            "title": "Temukan outlet terdekat",
+            "description": "Aktifkan lokasi agar kami bisa menampilkan outlet di sekitar Anda.",
+            "allowLocation": "Izinkan Lokasi",
+            "skip": "Lewati untuk sekarang"
+        },
+        "step3": {
+            "title": "Pesan dengan mudah",
+            "description": "Pilih outlet, tambahkan produk ke keranjang, dan lakukan pembayaran."
+        },
+        "actions": {
+            "next": "Lanjut",
+            "back": "Kembali",
+            "close": "Tutup",
+            "getStarted": "Mulai"
+        }
+    }
+}

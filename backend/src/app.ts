@@ -34,12 +34,10 @@ app.use(helmet({
 
 // Konfigurasi CORS - Menangani Berbagi Sumber Daya Lintas-Origin
 app.use(cors({
-    origin: config.NODE_ENV === "production" ? config.CLIENT_URL : "*",
+    origin: config.CLIENT_URL,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Metode HTTP yang diizinkan
-    allowedHeaders: config.NODE_ENV === "production"
-        ? ['Content-Type', 'Authorization', 'X-Requested-With']
-        : ['Content-Type', 'Authorization', 'X-Requested-With', 'ngrok-skip-browser-warning'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'ngrok-skip-browser-warning'],
 }))
 
 //Rate limiting untuk melindungi dari serangan brute-force dan penyalahgunaan

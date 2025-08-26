@@ -1,0 +1,11 @@
+import { parseRemotePatterns } from "@/lib/utils";
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  reactStrictMode: false,
+  images: {
+    remotePatterns: parseRemotePatterns(process.env.NEXT_PUBLIC_REMOTE_PATTERNS!)
+  }
+};
+
+export default nextConfig;

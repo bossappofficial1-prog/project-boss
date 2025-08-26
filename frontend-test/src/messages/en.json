@@ -1,0 +1,151 @@
+{
+    "navigation": {
+        "home": "Home",
+        "profile": "Profile"
+    },
+    "homePage": {
+        "title": "Welcome to our Application"
+    },
+    "nearbyPage": {
+        "title": "Nearby Outlets",
+        "subtitle": "Find outlets within 10km of your location",
+        "searchPlaceholder": "Search outlets...",
+        "noOutletsFound": "No outlets found",
+        "noNearbyOutlets": "No nearby outlets",
+        "loadMore": "Load More",
+        "noMoreOutlets": "No more outlets to load",
+        "outletCount": "outlets found"
+    },
+    "searchPage": {
+        "title": "Search Outlets",
+        "subtitle": "Find outlets, products, and services",
+        "searchPlaceholder": "Search outlets, products, or services...",
+        "for": "Search for",
+        "recentSearches": "Recent searches",
+        "clearAll": "Clear all",
+        "noOutletsFound": "No outlets found",
+        "noResultsFor": "No results found for '{query}'",
+        "tryDifferentSearch": "Try a different search term",
+        "searchError": "Error occurred while searching",
+        "loading": "Loading...",
+        "loadMore": "Load More",
+        "noMoreOutlets": "No more outlets to load",
+        "outletCount": "outlets found",
+        "startSearching": "Start searching",
+        "searchDescription": "Enter keywords to find outlets, products, or services"
+    },
+    "search": {
+        "placeholder": "Search outlets, products, services...",
+        "loading": "Searching...",
+        "noResults": "No results found for",
+        "outlet": "Outlet",
+        "product": "Product",
+        "service": "Service",
+        "results": "Search Results",
+        "showingResults": "Showing results for",
+        "suggestions": "Suggestions",
+        "clear": "Clear search"
+    },
+    "outlet": {
+        "back": "Back",
+        "openNow": "Open Now",
+        "closed": "Closed",
+        "whatsapp": "WhatsApp",
+        "direction": "Direction",
+        "cart": "Cart",
+        "viewCart": "View Cart",
+        "products": "Products",
+        "services": "Services",
+        "product": "Product",
+        "service": "Service",
+        "outOfStock": "Out of Stock",
+        "limited": "Limited",
+        "add": "Add",
+        "order": "Order",
+        "inCart": "In Cart",
+        "item": "item",
+        "duration": "Duration",
+        "minutes": "minutes",
+        "available": "Available",
+        "noProducts": "No products",
+        "noProductsDesc": "This outlet doesn't have any products available.",
+        "noServices": "No services",
+        "noServicesDesc": "This outlet doesn't provide any services.",
+        "whatsappMessage": "Hello, I'm interested in outlet"
+    },
+    "cart": {
+        "title": "Shopping Cart",
+        "subtitle": "Review your items before checkout",
+        "product": "Product",
+        "service": "Service",
+        "minutes": "min",
+        "stock": "Stock",
+        "subtotal": "Subtotal",
+        "summary": "Order Summary",
+        "totalItems": "Total Items",
+        "items": "items",
+        "total": "Total",
+        "checkout": "Proceed to Checkout",
+        "processing": "Processing...",
+        "clearAll": "Clear All",
+        "note": "Prices may vary by location and availability",
+        "viewOutlet": "View Outlet",
+        "empty": {
+            "title": "Your cart is empty",
+            "description": "Add some products or services to get started",
+            "browse": "Browse Outlets"
+        }
+    },
+    "favorites": {
+        "title": "My Favorites",
+        "subtitle": "Your saved outlets",
+        "empty": {
+            "title": "No favorites yet",
+            "description": "Start adding outlets to your favorites",
+            "browse": "Browse Outlets"
+        }
+    },
+    "profilePage": {
+        "title": "Profile & Preferences",
+        "subtitle": "Manage your personal information and app settings",
+        "contactInformation": "Contact Information",
+        "contactDescription": "Only your name and WhatsApp number are required for communication.",
+        "fullName": "Full Name",
+        "enterFullName": "Enter your full name",
+        "whatsappNumber": "WhatsApp Number",
+        "appearance": "Appearance",
+        "appearanceDescription": "Choose between light and dark theme for your preference.",
+        "lightTheme": "Light Theme",
+        "darkTheme": "Dark Theme",
+        "language": "Language",
+        "languageDescription": "Select your preferred language for the application interface.",
+        "languageSwitcher": "Change Language",
+        "saveChanges": "Save Changes",
+        "reset": "Reset",
+        "login": "Login",
+        "becomeBusiness": "Become a Business",
+        "settings": "Settings"
+    },
+    "onboarding": {
+        "step1": {
+            "title": "Welcome to BOSS",
+            "description": "Discover nearby outlets, search, and order quickly."
+        },
+        "step2": {
+            "title": "Find nearby outlets",
+            "description": "Enable location so we can show outlets around you.",
+            "allowLocation": "Allow Location",
+            "skip": "Skip for now"
+        },
+        "step3": {
+            "title": "Easy ordering",
+            "description": "Select an outlet, add items to cart and checkout."
+        },
+        "actions": {
+            "next": "Next",
+            "back": "Back",
+            "close": "Close",
+            "getStarted": "Get Started"
+        }
+    }
+}

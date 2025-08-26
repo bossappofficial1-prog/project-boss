@@ -1,9 +1,9 @@
-import { BookingSlot } from "@prisma/client";
+import { $Enums, BookingSlot } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateBookingSlotInput, UpdateBookingSlotInput } from "../schemas/booking.schema";
 
 export class BookingRepository {
-    static async create(data: CreateBookingSlotInput): Promise<BookingSlot> {
+    static async create(data: CreateBookingSlotInput): Promise<Pick<BookingSlot, "id" | "date" | "startTime" | "endTime" | "status">> {
         return db.bookingSlot.create({
             data: {
                 ...data,
@@ -11,6 +11,13 @@ export class BookingRepository {
                 startTime: new Date(data.startTime),
                 endTime: new Date(data.endTime),
             },
+            select: {
+                id: true,
+                startTime: true,
+                endTime: true,
+                date: true,
+                status: true,
+            }
         });
     }
 
@@ -33,6 +40,40 @@ export class BookingRepository {
         })
 
         return slot
+    }
+
+    static async createMany(data: {
+        status: $Enums.BookingSlotStatus,
+        date: Date,
+        endTime: Date,
+        productId: string,
+        startTime: Date
+    }[]) {
+        const slots = await db.bookingSlot.createMany({
+            skipDuplicates: true,
+            data
+        })
+        return slots
+    }
+
+    static async getSlotsByProductId(productId: string, date: any) {
+        const slots = await db.bookingSlot.findMany({
+            where: {
+                AND: [
+                    { productId },
+                    { date }
+                ]
+            },
+            select: {
+                id: true,
+                startTime: true,
+                endTime: true,
+                date: true,
+                status: true
+            }
+        })
+
+        return slots
     }
 
     static async update(id: string, data: UpdateBookingSlotInput): Promise<BookingSlot> {
