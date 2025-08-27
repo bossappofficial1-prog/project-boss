@@ -17,7 +17,7 @@ const api: CustomAxiosInstance = axios.create({
     timeout: 1000000,
     withCredentials: true,
     headers: {
-        "Authorization": ""
+        "ngrok-skip-browser-warning": "true"
     }
 }) as CustomAxiosInstance
 
