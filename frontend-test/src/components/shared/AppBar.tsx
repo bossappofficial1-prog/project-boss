@@ -103,7 +103,7 @@ export default function AppBar({
             </div>
 
             {/* Center Section - Title */}
-            <div className={`flex-1 ${centerTitle ? "text-center" : "text-left"} mx-4`}>
+            <div className={`flex-1 ${centerTitle ? "text-center mx-4 max-w-[53vw]" : "text-left"}`}>
                 {title && (
                     <h1 className="text-lg font-semibold truncate leading-tight">
                         {title}
