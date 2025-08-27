@@ -14,6 +14,7 @@ import { createProductSchema, updateProductSchema } from "../schemas/product.sch
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
 import upload from "../middleware/upload.middleware";
+import { getBookingSlotByOutlet } from "../controller/booking.controller";
 
 const productRouter = Router();
 
@@ -21,6 +22,7 @@ const productRouter = Router();
 productRouter.get("/search", searchProductsByNameController);
 productRouter.get("/:id", getProductByIdController);
 productRouter.get("/outlet/:outletId", getProductsByOutletIdController);
+productRouter.get("/:productId/booking-slots", getBookingSlotByOutlet)
 
 // Rute yang hanya bisa diakses oleh Owner
 productRouter.get("/template/import", getProductImportTemplateController);

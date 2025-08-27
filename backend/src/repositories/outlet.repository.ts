@@ -1,4 +1,4 @@
-import { Outlet } from "@prisma/client";
+import { Outlet, OutletOperatingHours } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 
@@ -13,17 +13,18 @@ export class OutletRepository {
         });
     }
 
-    static async findById(id: string): Promise<any | null> {
+    static async findById(id: string) {
         return db.outlet.findUnique({
             where: { id },
             include: {
-                business: true,
-                operatingHours: true,
-                staff: {
-                    where: {
-                        status: 'ACTIVE'
+                business: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true
                     }
-                }
+                },
+                operatingHours: true,
             },
         });
     }
@@ -69,15 +70,27 @@ export class OutletRepository {
         search?: string,
         take?: number,
         skip?: number
-    ): Promise<{ outlets: Outlet[], total: number }> {
+    ): Promise<{ outlets: Array<Outlet & { operatingHours: OutletOperatingHours[] }>, total: number }> {
         const whereClause: any = {
-            ...(businessId && { businessId }), // Conditionally add businessId
+            ...(businessId && { businessId }),
             ...(search && {
-                name: {
-                    contains: search,
-                    mode: 'insensitive',
-                },
-            }),
+                OR: [
+                    {
+                        name: {
+                            contains: search,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        business: {
+                            description: {
+                                contains: search,
+                                mode: "insensitive"
+                            }
+                        }
+                    }
+                ]
+            })
         };
 
         const [outlets, total] = await db.$transaction([
@@ -91,7 +104,8 @@ export class OutletRepository {
                             id: true,
                             name: true
                         }
-                    }
+                    },
+                    operatingHours: true
                 }
             }),
             db.outlet.count({

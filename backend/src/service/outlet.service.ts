@@ -1,9 +1,11 @@
+import { OutletOperatingHours } from "@prisma/client";
 import { db } from "../config/prisma";
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
 import { OutletRepository } from "../repositories/outlet.repository";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
+import Console from "../utils/logger";
 import { getBusinessByOwnerIdService } from "./business.service";
 
 export async function createOutletService(data: CreateOutletInput, ownerId: string) {
@@ -18,6 +20,19 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
 interface Location {
     latitude: number;
     longitude: number;
+}
+
+const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: Date) => {
+    return operatingHours.some((oper) => {
+        const todayMinutes = today.getHours() * 60 + today.getMinutes(); // Total menit saat ini
+        const openMinutes = oper.openTime.getHours() * 60 + oper.openTime.getMinutes(); // Total menit waktu buka
+        const closeMinutes = oper.closeTime.getHours() * 60 + oper.closeTime.getMinutes(); // Total menit waktu tutup
+
+        Console.log(closeMinutes, openMinutes, todayMinutes, today.getDay(), oper.dayOfWeek);
+        Console.log(oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes);
+
+        return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
+    });
 }
 
 function calculateDistance(point1: Location, point2: Location): number {
@@ -87,6 +102,7 @@ export async function findNearbyOutletsService(
                     description: true
                 }
             },
+            operatingHours: true,
             _count: {
                 select: {
                     orders: true,
@@ -123,9 +139,14 @@ export async function findNearbyOutletsService(
             return a.distance - b.distance;
         });
 
-    // Apply pagination
+    const today = new Date()
     const skip = (page - 1) * limit;
-    const paginatedOutlets = outletsWithDistance.slice(skip, skip + limit);
+    const paginatedOutlets = outletsWithDistance.slice(skip, skip + limit).map((outlet) => ({
+        ...outlet,
+        isOpen: outlet.operatingHours.length > 0
+            ? getIsOutletOpen(outlet.operatingHours, today)
+            : outlet.isOpen
+    }));
 
     return {
         outlets: paginatedOutlets,
@@ -164,62 +185,18 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
 
 export async function getOutletByIdService(id: string, date?: Date) {
     const today = date || new Date();
-    const dayOfWeek = today.getDay();
+    const outletRaw = await OutletRepository.findById(id)
 
-    const outlet = await db.outlet.findUnique({
-        where: { id },
-        include: {
-            products: {
-                where: {
-                    type: 'SERVICE',
-                    status: 'ACTIVE'
-                },
-                include: {
-                    capacity: true,
-                    bookingSlots: {
-                        where: {
-                            date: {
-                                equals: today
-                            },
-                            status: 'AVAILABLE'
-                        },
-                        orderBy: {
-                            startTime: 'asc'
-                        }
-                    }
-                }
-            },
-            operatingHours: {
-                where: {
-                    dayOfWeek,
-                    isOpen: true
-                }
-            },
-            business: {
-                select: {
-                    defaultTransactionFeeBearer: true
-                }
-            }
-        }
-    });
-
-    if (!outlet) {
+    if (!outletRaw) {
         throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+    const { isOpen, operatingHours, ...outlet } = outletRaw;
 
-    // Hanya tampilkan slot yang dalam jam operasional
-    const operatingHours = outlet.operatingHours[0];
-    if (operatingHours) {
-        outlet.products = outlet.products.map(product => ({
-            ...product,
-            bookingSlots: product.bookingSlots.filter(slot =>
-                slot.startTime >= operatingHours.openTime &&
-                slot.endTime <= operatingHours.closeTime
-            )
-        }));
-    }
+    const isOpenOutlet = operatingHours.length > 0
+        ? getIsOutletOpen(operatingHours, today)
+        : isOpen;
 
-    return outlet;
+    return { ...outlet, operatingHours, isOpen: isOpenOutlet };
 }
 export async function getAllOutletService() {
     const outlet = await OutletRepository.getAll();
@@ -235,12 +212,22 @@ export async function getOutletsByBusinessIdService(
     take?: number,
     skip?: number
 ) {
-    const { outlets, total } = await OutletRepository.findManyWithPagination(
+    const { outlets: outletsRaw, total } = await OutletRepository.findManyWithPagination(
         businessId,
         search,
         take,
         skip
     );
+
+    const today = new Date()
+    const outlets = outletsRaw.map((outlet) => ({
+        ...outlet,
+        isOpen: outlet.operatingHours.length > 0
+            ? getIsOutletOpen(outlet.operatingHours, today)
+            : outlet.isOpen
+    }))
+
+    Console.log(outlets)
     return { outlets, total };
 }
 
@@ -269,16 +256,25 @@ export async function getAllOutletsService(
     take?: number,
     skip?: number
 ) {
-    const { outlets, total } = await OutletRepository.findManyWithPagination(
+    const { outlets: outletRaw, total } = await OutletRepository.findManyWithPagination(
         undefined,
         search,
         take,
         skip
     );
+
+    const today = new Date()
+    const outlets = outletRaw.map((outlet) => ({
+        ...outlet,
+        isOpen: outlet.operatingHours.length > 0
+            ? getIsOutletOpen(outlet.operatingHours, today)
+            : outlet.isOpen
+    }))
     return { outlets, total };
 }
 
 export async function getFeaturedOutletsService() {
+    const today = new Date()
     const outlets = await db.outlet.findMany({
         include: {
             business: {
@@ -287,6 +283,7 @@ export async function getFeaturedOutletsService() {
                     name: true
                 }
             },
+            operatingHours: true,
             _count: {
                 select: {
                     orders: true,
@@ -296,6 +293,11 @@ export async function getFeaturedOutletsService() {
     });
 
     const sortedOutlets = outlets.sort((a, b) => b._count.orders - a._count.orders);
-
-    return sortedOutlets.slice(0, 5); // Return top 5
+    const featuredOutlet = sortedOutlets.map((outlet) => ({
+        ...outlet,
+        isOpen: outlet.operatingHours.length > 0
+            ? getIsOutletOpen(outlet.operatingHours, today)
+            : outlet.isOpen
+    }))
+    return featuredOutlet.slice(0, 5);
 }

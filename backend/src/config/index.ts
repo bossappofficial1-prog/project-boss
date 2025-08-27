@@ -5,7 +5,9 @@ dotenv.config()
 export const config = {
     PORT: parseInt(process.env.PORT || "6789", 10),
     NODE_ENV: process.env.NODE_ENV || "development",
-    CLIENT_URL: process.env.CLIENT_URL || "http://localhost:3000",
+    CLIENT_URL: process.env.CLIENT_URL?.includes(", ")
+        ? process.env.CLIENT_URL.split(", ")
+        : process.env.CLIENT_URL || "http://localhost:3000",
     BASE_URL: process.env.BASE_URL || "http://localhost:6789",
     JWT_SECRET: process.env.JWT_SECRET || "rahasia-123-!@#",
     SERVICE: process.env.SERVICE_NAME || "service-1",

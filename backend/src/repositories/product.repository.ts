@@ -54,9 +54,6 @@ export class ProductRepository {
 
         return db.product.findMany({
             where: whereClause,
-            include: {
-                bookingSlots: true
-            },
             orderBy: {
                 createdAt: 'desc',
             },

@@ -8,7 +8,7 @@ import { ProductRepository } from "../repositories/product.repository";
 import { CreateProductInput, UpdateProductInput, createProductSchema } from "../schemas/product.schema";
 import { getOutletByIdService } from './outlet.service';
 import { generateDefaultBookingSlots } from './booking.service';
-import { FeeBearer, ProductType, ServiceStatus } from '@prisma/client';
+import { BookingSlot, FeeBearer, Product, ProductType, ServiceStatus } from '@prisma/client';
 
 export async function createProductService(data: CreateProductInput) {
     await getOutletByIdService(data.outletId);
@@ -41,7 +41,7 @@ export async function createProductService(data: CreateProductInput) {
             });
 
             if (outlet?.operatingHours) {
-                await generateDefaultBookingSlots(prisma, {
+                await generateDefaultBookingSlots({
                     productId: createdProduct.id,
                     operatingHours: outlet.operatingHours,
                     serviceDurationMinutes: data.serviceDurationMinutes,
@@ -56,7 +56,7 @@ export async function createProductService(data: CreateProductInput) {
     return product;
 }
 
-export async function getProductByIdService(id: string) {
+export async function getProductByIdService(id: string): Promise<Product & { defaultTransactionFeeBearer: any; bookingSlots: BookingSlot[] }> {
     const cacheKey = `product:${id}`;
     const cachedProduct = await redis.get(cacheKey);
 
@@ -228,7 +228,7 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
                         include: { operatingHours: true }
                     });
                     if (outlet?.operatingHours?.length) {
-                        await generateDefaultBookingSlots(tx, {
+                        await generateDefaultBookingSlots({
                             productId: createdProduct.id,
                             operatingHours: outlet.operatingHours,
                             serviceDurationMinutes: createdProduct.serviceDurationMinutes,

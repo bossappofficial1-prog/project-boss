@@ -19,6 +19,8 @@ import uploadRouter from "./upload.route";
 import securityRouter from "./security.route";
 import queueMonitoringRouter from "./queue-monitoring.route";
 import notificationRouter from "./notification.route";
+import socketRouter from "./socket.routes";
+import socketPublicRouter from "./socket-public.routes";
 
 const apiRouter = Router()
 
@@ -42,5 +44,7 @@ apiRouter.use('/upload', uploadRouter)
 apiRouter.use('/security', securityRouter)
 apiRouter.use('/queue-monitoring', queueMonitoringRouter)
 apiRouter.use('/notifications', notificationRouter)
+apiRouter.use('/socket', socketRouter)
+apiRouter.use('/socket-public', socketPublicRouter)
 
 export default apiRouter

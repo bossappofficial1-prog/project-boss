@@ -17,7 +17,9 @@
     "db:prepare": "npx prisma generate",
     "docs:install": "npm install --no-save redoc-cli@^0.13.21",
     "docs:generate": "redoc-cli build openapi.json --output docs/index.html --title 'BOSS API Documentation'",
-    "docs:serve": "redoc-cli serve openapi.json --watch --port 8080"
+    "docs:serve": "redoc-cli serve openapi.json --watch --port 8080",
+    "socket:test": "node test-socket.js",
+    "socket:test-public": "node test-socket-public.js"
   },
   "prisma": {
     "seed": "ts-node prisma/db/seed.ts"
@@ -53,6 +55,7 @@
     "pdfkit": "^0.17.1",
     "prisma": "^6.11.1",
     "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "twilio": "^5.7.3",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",

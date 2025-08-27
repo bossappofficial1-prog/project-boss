@@ -3,9 +3,9 @@ import { BookingSlotStatus } from "@prisma/client";
 
 export const createBookingSlotSchema = z.object({
     productId: z.string().nonempty({ message: "ID Produk tidak boleh kosong" }),
-    date: z.string().datetime({ message: "Format tanggal tidak valid" }),
-    startTime: z.string().datetime({ message: "Format waktu mulai tidak valid" }),
-    endTime: z.string().datetime({ message: "Format waktu selesai tidak valid" }),
+    date: z.date(),
+    startTime: z.date(),
+    endTime: z.date(),
 });
 
 export type CreateBookingSlotInput = z.infer<typeof createBookingSlotSchema>;

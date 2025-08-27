@@ -1,7 +1,7 @@
 import { networkInterfaces } from "node:os";
 import app from "./app";
 import { config } from "./config";
-import { initSocket } from "./config/socket";
+import { initUnifiedSocket } from "./config/socket-unified";
 import { connectRabbitMQ } from "./config/rabbitmq";
 
 function getNetworkAdresses(): string[] {
@@ -24,11 +24,15 @@ async function startServer(port: number) {
         // 1. Hubungkan ke RabbitMQ terlebih dahulu dan tunggu sampai selesai.
         await connectRabbitMQ();
 
-        const server = initSocket(app);
+        // 2. Inisialisasi Socket.IO server dengan unified auth + public
+        const server = initUnifiedSocket(app);
 
         server.listen(port, () => {
             console.log(`• Server running on:`);
             console.log(`   Local:   http://localhost:${port}`);
+            console.log(`   Socket.IO (Unified): http://localhost:${port}/socket.io/`);
+            console.log(`   - Authenticated: use token in query/header/auth`);
+            console.log(`   - Public: use ?public=true in connection`);
 
             const addrs = getNetworkAdresses();
             if (addrs.length) {
