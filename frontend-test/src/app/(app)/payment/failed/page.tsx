@@ -4,37 +4,12 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
-import { XCircle, RefreshCw, ArrowLeft, Phone, AlertTriangle } from 'lucide-react'
+import { RefreshCw, ArrowLeft, Phone, AlertTriangle } from 'lucide-react'
 import { CUSTOMER_SERVICE_NUMBER } from '@/constants'
 import { ErrorState } from '@/components/Base'
-
-interface PaymentData {
-    outlet: {
-        name: string
-        id: string
-    }
-    items: Array<{
-        id: string
-        name: string
-        price: number
-        quantity: number
-    }>
-    subtotal: number
-    applicationFee: number
-    total: number
-    paymentMethod: {
-        type: string
-        name: string
-        category: string
-    }
-    customerInfo: {
-        name: string
-        phone: string
-    }
-    orderId: string
-    failureReason?: string
-    timestamp: string
-}
+import { PaymentFooter } from '@/components/payment/PaymentFooter'
+import { CustomerInfo } from '@/components/payment/CustomerInfo'
+import { PaymentData } from '@/types'
 
 export default function PaymentFailedPage() {
     const [paymentData, setPaymentData] = useState<PaymentData | null>(null)
@@ -138,7 +113,7 @@ export default function PaymentFailedPage() {
                         </div>
                         <div className="text-sm text-gray-600">
                             <p><span className="font-medium">Order ID:</span> {paymentData.orderId}</p>
-                            <p><span className="font-medium">Waktu:</span> {formatDateTime(paymentData.timestamp)}</p>
+                            <p><span className="font-medium">Waktu:</span> {formatDateTime(paymentData.timestamp!)}</p>
                             <p><span className="font-medium">Metode:</span> {paymentData.paymentMethod.name}</p>
                         </div>
                     </CardContent>
@@ -187,23 +162,10 @@ export default function PaymentFailedPage() {
                 </Card>
 
                 {/* Customer Info */}
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">Informasi Pelanggan</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Nama</span>
-                                <span className="font-medium">{paymentData.customerInfo.name}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">No. Telepon</span>
-                                <span className="font-medium">{paymentData.customerInfo.phone}</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <CustomerInfo
+                    name={paymentData.customerInfo.name}
+                    phone={paymentData.customerInfo.phone}
+                />
 
                 {/* Action Buttons */}
                 <div className="space-y-3">
@@ -248,11 +210,7 @@ export default function PaymentFailedPage() {
                 </div>
 
                 {/* Help Text */}
-                <div className="text-center">
-                    <p className="text-sm text-gray-500">
-                        Jika masalah berlanjut, silakan hubungi customer service kami
-                    </p>
-                </div>
+                <PaymentFooter />
             </div>
         </>
     )

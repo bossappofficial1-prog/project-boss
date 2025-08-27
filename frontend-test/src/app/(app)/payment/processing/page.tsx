@@ -12,7 +12,6 @@ import {
     Check,
     Clock,
     AlertCircle,
-    ArrowLeft,
     Smartphone,
     RefreshCw
 } from 'lucide-react';
@@ -20,6 +19,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppBarConfig } from '@/hooks/useAppBarConfig';
 import { formatCurrency } from '@/lib/utils';
 import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard';
+import { CustomerInfo } from '@/components/payment/CustomerInfo';
 
 const PROCESSING_APP_BAR_CONFIG = {
     title: 'Proses Pembayaran',
@@ -261,21 +261,10 @@ export default function PaymentProcessing() {
             </Card>
 
             {/* Customer Info */}
-            <Card className='p-0'>
-                <CardContent className="p-4">
-                    <h3 className="font-semibold mb-3">Detail Pembeli</h3>
-                    <div className="space-y-2">
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Nama</span>
-                            <span className="font-medium">{customerInfo.name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">No. Telepon</span>
-                            <span className="font-medium">{customerInfo.phone}</span>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            <CustomerInfo
+                name={customerInfo.name}
+                phone={customerInfo.phone}
+            />
 
             {/* Action Buttons */}
             <div className="space-y-3">

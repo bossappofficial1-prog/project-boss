@@ -7,6 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { Clock, RefreshCw, ArrowLeft, CheckCircle, XCircle, AlertCircle, Phone } from 'lucide-react'
 import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard'
+import { PaymentFooter } from '@/components/payment/PaymentFooter'
+import { PaymentOrderSummary } from '@/components/payment/PaymentOrderSummary'
+import { ErrorState } from '@/components/Base'
 
 interface PaymentData {
     outlet: {
@@ -171,16 +174,12 @@ export default function PaymentPendingPage() {
         <div className="min-h-screen bg-gray-50 p-4">
             <div className="max-w-md mx-auto">
                 {/* Header */}
-                <div className="mb-6 text-center">
-                    <div className="bg-yellow-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                        <Clock className="w-10 h-10 text-yellow-600 animate-pulse" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Pembayaran Menunggu</h1>
-                    <p className="text-gray-600">Transaksi sedang diproses oleh bank</p>
-                    <Badge variant="secondary" className="mt-2 bg-yellow-100 text-yellow-800">
-                        Status: Pending
-                    </Badge>
-                </div>
+                <ErrorState
+                    icon={<Clock className="text-yellow-600 animate-pulse" />}
+                    iconClassName='bg-yellow-100'
+                    message='Pesanan sedang diproses'
+                    title='Pending'
+                />
 
                 {/* Status Information */}
                 <Card className="mb-6 border-yellow-200 bg-yellow-50">
@@ -246,46 +245,9 @@ export default function PaymentPendingPage() {
                 </Card>
 
                 {/* Order Summary */}
-                <Card className="mb-6">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">Ringkasan Pesanan</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        {/* Outlet Info */}
-                        <div className="pb-3 border-b">
-                            <h3 className="font-medium text-gray-900">{paymentData.outlet.name}</h3>
-                        </div>
-
-                        {/* Items */}
-                        <div className="space-y-2">
-                            {paymentData.items.map((item) => (
-                                <div key={item.id} className="flex justify-between items-center text-sm">
-                                    <div className="flex-1">
-                                        <p className="font-medium text-gray-900">{item.name}</p>
-                                        <p className="text-gray-600">{item.quantity}x {formatCurrency(item.price)}</p>
-                                    </div>
-                                    <p className="font-medium">{formatCurrency(item.price * item.quantity)}</p>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Fees */}
-                        <div className="border-t pt-3 space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Subtotal</span>
-                                <span>{formatCurrency(paymentData.subtotal)}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Biaya Aplikasi</span>
-                                <span>{formatCurrency(paymentData.applicationFee)}</span>
-                            </div>
-                            <div className="flex justify-between font-bold border-t pt-2">
-                                <span>Total</span>
-                                <span>{formatCurrency(paymentData.total)}</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <PaymentOrderSummary
+                    data={paymentData}
+                />
 
                 {/* Action Buttons */}
                 <div className="space-y-3">
@@ -333,11 +295,7 @@ export default function PaymentPendingPage() {
                 <ImportantInformationCard type='pending' />
 
                 {/* Help Text */}
-                <div className="mt-6 text-center">
-                    <p className="text-sm text-gray-500">
-                        Pembayaran membutuhkan waktu lebih lama? Hubungi customer service
-                    </p>
-                </div>
+                <PaymentFooter className='mt-4' />
             </div>
         </div>
     )

@@ -201,10 +201,12 @@ export function ProductDetails({ params }: Props) {
             </div>
 
             {product.type === "SERVICE" && showScheduleModal && <ScheduleModal
+                key={outletId + productId}
                 isOpen={showScheduleModal}
                 onClose={() => setShowScheduleModal(!showScheduleModal)}
                 onSelectSchedule={(schedule) => { addItem(outletId, outlet.name, product, 1, schedule) }}
                 product={product}
+                outletId={outletId}
             />}
         </>
     );

@@ -88,16 +88,12 @@ export function ScheduleModal({
     const handleSlotSelect = (slot: BookingSlot) => {
         if (slot.status === "BOOKED") return
 
-        // Check for time conflict if not in replace mode
         if (!isReplaceMode && outletId) {
             const conflict = checkTimeConflict(outletId, {
                 startTime: slot.startTime,
                 endTime: slot.endTime,
                 date: selectedDate?.toISOString().split('T')[0] || ''
             });
-
-            // Allow selection even if there's conflict, but show warning
-            // User can still see the conflict warning and decide
         }
 
         setSelectedSlot(slot)
@@ -105,7 +101,6 @@ export function ScheduleModal({
 
     const handleConfirm = () => {
         if (selectedSlot && selectedDate) {
-            // Create slot object with complete data
             const slotData = {
                 id: selectedSlot.id,
                 startTime: selectedSlot.startTime,

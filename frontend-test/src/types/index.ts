@@ -82,4 +82,40 @@ export interface BookingSlotType {
 export type BookingSlotStatus =
     "AVAILABLE" |
     "BOOKED" |
-    "BLOCKED"
+    "BLOCKED";
+
+export interface PaymentData {
+    outlet: {
+        name: string
+        id: string
+    }
+    items: Array<{
+        id: string
+        name: string
+        price: number
+        quantity: number
+    }>
+    subtotal: number
+    applicationFee: number
+    total: number
+    paymentMethod: {
+        type: string
+        name: string
+        category: string
+    }
+    customerInfo: {
+        name: string
+        phone: string
+    }
+    orderId: string
+    pendingSince?: string
+    bankReference?: string
+    estimatedProcessing?: string
+    cancelledAt?: string
+    cancelReason?: string
+    failureReason?: string
+    timestamp?: string
+    expiredAt?: string
+    paymentStarted?: string
+    timeLimit?: number
+}

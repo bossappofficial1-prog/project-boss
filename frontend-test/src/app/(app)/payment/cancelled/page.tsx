@@ -6,36 +6,13 @@ import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { XCircle, ArrowLeft, RotateCcw, Home, Clock } from 'lucide-react'
 import { ErrorState, LoadingState } from '@/components/Base'
-import { formatCurrency, formatDateTime } from '@/lib/utils'
+import { formatDateTime } from '@/lib/utils'
 import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard'
+import { PaymentFooter } from '@/components/payment/PaymentFooter'
+import { CustomerInfo } from '@/components/payment/CustomerInfo'
+import { PaymentOrderSummary } from '@/components/payment/PaymentOrderSummary'
+import { PaymentData } from '@/types'
 
-interface PaymentData {
-    outlet: {
-        name: string
-        id: string
-    }
-    items: Array<{
-        id: string
-        name: string
-        price: number
-        quantity: number
-    }>
-    subtotal: number
-    applicationFee: number
-    total: number
-    paymentMethod: {
-        type: string
-        name: string
-        category: string
-    }
-    customerInfo: {
-        name: string
-        phone: string
-    }
-    orderId: string
-    cancelledAt: string
-    cancelReason?: string
-}
 
 export default function PaymentCancelledPage() {
     const [paymentData, setPaymentData] = useState<PaymentData | null>(null)
@@ -129,72 +106,22 @@ export default function PaymentCancelledPage() {
                         </div>
                         <div className="text-sm text-gray-600">
                             <p><span className="font-medium">Order ID:</span> {paymentData.orderId}</p>
-                            <p><span className="font-medium">Dibatalkan pada:</span> {formatDateTime(paymentData.cancelledAt)}</p>
+                            <p><span className="font-medium">Dibatalkan pada:</span> {formatDateTime(paymentData.cancelledAt!)}</p>
                             <p><span className="font-medium">Metode pembayaran:</span> {paymentData.paymentMethod.name}</p>
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Order Summary */}
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">Ringkasan Pesanan</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        {/* Outlet Info */}
-                        <div className="pb-3 border-b">
-                            <h3 className="font-medium text-gray-900">{paymentData.outlet.name}</h3>
-                        </div>
-
-                        {/* Items */}
-                        <div className="space-y-2">
-                            {paymentData.items.map((item) => (
-                                <div key={item.id} className="flex justify-between items-center text-sm">
-                                    <div className="flex-1">
-                                        <p className="font-medium text-gray-900">{item.name}</p>
-                                        <p className="text-gray-600">{item.quantity}x {formatCurrency(item.price)}</p>
-                                    </div>
-                                    <p className="font-medium">{formatCurrency(item.price * item.quantity)}</p>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Fees */}
-                        <div className="border-t pt-3 space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Subtotal</span>
-                                <span>{formatCurrency(paymentData.subtotal)}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Biaya Aplikasi</span>
-                                <span>{formatCurrency(paymentData.applicationFee)}</span>
-                            </div>
-                            <div className="flex justify-between font-bold border-t pt-2">
-                                <span>Total</span>
-                                <span>{formatCurrency(paymentData.total)}</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <PaymentOrderSummary
+                    data={paymentData}
+                />
 
                 {/* Customer Info */}
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">Informasi Pelanggan</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Nama</span>
-                                <span className="font-medium">{paymentData.customerInfo.name}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">No. Telepon</span>
-                                <span className="font-medium">{paymentData.customerInfo.phone}</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <CustomerInfo
+                    name={paymentData.customerInfo.name}
+                    phone={paymentData.customerInfo.phone}
+                />
 
                 {/* Action Buttons */}
                 <div className="space-y-3">
@@ -232,11 +159,7 @@ export default function PaymentCancelledPage() {
                 <ImportantInformationCard type='cancelled' />
 
                 {/* Help Text */}
-                <div className="text-center">
-                    <p className="text-sm text-gray-500">
-                        Butuh bantuan? Hubungi customer service kami
-                    </p>
-                </div>
+                <PaymentFooter />
             </div>
         </>
     )

@@ -26,11 +26,8 @@ import { BookingSlot } from '@/services/booking-slot';
 import { CheckoutService } from '@/services/checkout';
 import { id } from 'date-fns/locale';
 import { ScheduleModal } from '@/components/outlet/ScheduleModal';
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link';
-import NotificationCenter from '@/components/notifications/NotificationCenter';
-
-// --- Helper & Sub-komponen (TIDAK ADA PERUBAHAN) ---
 
 function formatSelectedSlot(dateStr: string, startTimeStr: string, endTimeStr: string) {
     const date = parseISO(dateStr);
@@ -52,7 +49,9 @@ function CartItemCard({ item, slotInfo }: CartItemProps) {
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const isService = item.type === "SERVICE";
 
-    const handleScheduleSelect = (slotId: string) => {
+    const handleScheduleSelect = (schedule: string | BookingSlot) => {
+        const slotId = typeof schedule === 'string' ? schedule : (schedule as any).id;
+        if (!slotId) return;
         updateItem(item.id, { selectedSlot: slotId });
         setShowScheduleModal(false);
     };
@@ -149,8 +148,9 @@ function CartItemCard({ item, slotInfo }: CartItemProps) {
                 <ScheduleModal
                     isOpen={showScheduleModal}
                     onClose={() => setShowScheduleModal(false)}
-                    onSelectSchedule={handleScheduleSelect}
+                    onSelectSchedule={(slot) => { handleScheduleSelect(slot as any) }}
                     product={{ ...item, id: item.productId }}
+                    outletId={item.outletId}
                 />
             )}
         </div>
