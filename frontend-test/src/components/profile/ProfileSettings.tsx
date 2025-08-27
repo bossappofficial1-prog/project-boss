@@ -13,7 +13,8 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { useTranslations } from '@/hooks/useI18n';
-import { User, Phone, Sun, Moon, Monitor, Globe, Save, LogIn, Building } from "lucide-react";
+import { User, Phone, Sun, Moon, Monitor, Globe, Save, LogIn, Building, Heart } from "lucide-react";
+import { useFavorites } from "@/hooks/useFavorites";
 import { STORAGE_PROFILE_KEY } from "@/constants";
 import { ResetModal } from "./ResetModal";
 
@@ -32,6 +33,7 @@ export default function ProfileSettings() {
     const toast = useToast();
     const t = useTranslations('profilePage');
     const [isResetModalShowed, setIsResetModalShowed] = useState<boolean>(false)
+    const { getFavoriteCount } = useFavorites();
 
     const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
         resolver: zodResolver(schema),
@@ -96,6 +98,10 @@ export default function ProfileSettings() {
 
     const goLogin = () => {
         router.push('/login');
+    };
+
+    const goToFavorites = () => {
+        router.push('/favorites');
     };
 
     const handleThemeChange = (val: string) => {
@@ -216,6 +222,31 @@ export default function ProfileSettings() {
                         </h2>
                     </div>
                     <LanguageSwitcher />
+                </div>
+
+                {/* Favorites Section */}
+                <div className="bg-card rounded-lg border p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Heart className="w-5 h-5 text-primary" />
+                        <h2 className="font-medium text-card-foreground">
+                            My Favorites
+                        </h2>
+                    </div>
+                    <div
+                        onClick={goToFavorites}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Saved Outlets</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                                {getFavoriteCount()} saved
+                            </span>
+                            <span className="text-muted-foreground">→</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Action Buttons */}

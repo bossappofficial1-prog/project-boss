@@ -40,16 +40,16 @@ export const useOrderEvents = () => {
         return () => off(eventName, callback);
     }, [on, off]);
 
-    const trackOrder = useCallback((orderId: string) => {
-        emit('track_order', { orderId });
-    }, [emit]);
+    // const trackOrder = useCallback((orderId: string) => {
+    //     emit('track_order', { orderId });
+    // }, [emit]);
 
     return {
         subscribeToOrderUpdates,
         subscribeToOrderConfirmation,
         subscribeToOrderReady,
         subscribeToOrderCancelled,
-        trackOrder,
+        // trackOrder,
     };
 };
 
@@ -122,13 +122,13 @@ export const useOutletEvents = () => {
         };
     }, [on, off, joinRoom, leaveRoom]);
 
-    const requestOutletStatus = useCallback((outletId: string) => {
-        emit('get_outlet_status', { outletId });
-    }, [emit]);
+    // const requestOutletStatus = useCallback((outletId: string) => {
+    //     emit('get_outlet_status', { outletId });
+    // }, [emit]);
 
     return {
         subscribeToOutletUpdates,
-        requestOutletStatus,
+        // requestOutletStatus,
     };
 };
 
@@ -148,12 +148,12 @@ export const useLocationTracking = () => {
         const watchId = navigator.geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
-                emit('location_update', {
-                    orderId,
-                    latitude,
-                    longitude,
-                    timestamp: Date.now(),
-                });
+                // emit('location_update', {
+                //     orderId,
+                //     latitude,
+                //     longitude,
+                //     timestamp: Date.now(),
+                // });
             },
             (error) => {
                 console.error('Location tracking error:', error);

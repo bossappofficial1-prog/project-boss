@@ -33,7 +33,7 @@ export const OutletStatusCard: React.FC<OutletStatusCardProps> = ({ outlet }) =>
   });
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  const { subscribeToOutletUpdates, requestOutletStatus } = useOutletEvents();
+  const { subscribeToOutletUpdates } = useOutletEvents();
   const { isConnected } = useConnectionStatus();
 
   // Subscribe to outlet updates
@@ -55,19 +55,19 @@ export const OutletStatusCard: React.FC<OutletStatusCardProps> = ({ outlet }) =>
     setIsSubscribed(true);
 
     // Request current status on mount
-    requestOutletStatus(outlet.id);
+    // requestOutletStatus(outlet.id);
 
     return () => {
       unsubscribe();
       setIsSubscribed(false);
     };
-  }, [outlet.id, subscribeToOutletUpdates, requestOutletStatus, isConnected]);
+  }, [outlet.id, subscribeToOutletUpdates, isConnected]);
 
-  const refreshStatus = () => {
-    if (isConnected) {
-      requestOutletStatus(outlet.id);
-    }
-  };
+  // const refreshStatus = () => {
+  //   if (isConnected) {
+  //     requestOutletStatus(outlet.id);
+  //   }
+  // };
 
   const getStatusBadge = () => {
     if (!isConnected) {
@@ -112,7 +112,7 @@ export const OutletStatusCard: React.FC<OutletStatusCardProps> = ({ outlet }) =>
           <div className="flex items-center space-x-2">
             {getStatusBadge()}
             <Button
-              onClick={refreshStatus}
+              onClick={() => { }}
               variant="ghost"
               size="sm"
               className="h-6 w-6 p-0"

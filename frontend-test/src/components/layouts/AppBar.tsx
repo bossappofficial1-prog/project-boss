@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SearchComponent } from "@/components/shared/SearchComponent";
 import { useCart } from "@/hooks/useCart";
 import { Search, ShoppingCart } from "lucide-react";
 
@@ -35,17 +34,6 @@ export function AppBar() {
                 <Link href="/" className="text-xl font-bold">
                     MyApp
                 </Link>
-
-                {/* Search - Hidden on mobile, shown on larger screens */}
-                <div className="hidden md:flex flex-1 max-w-sm">
-                    <SearchComponent
-                        placeholder="Cari outlet..."
-                        onSearch={handleSearch}
-                        size="sm"
-                        namespace="header"
-                        className="w-full"
-                    />
-                </div>
 
                 {/* Navigation */}
                 <nav className="hidden md:flex gap-6">
