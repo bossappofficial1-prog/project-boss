@@ -200,5 +200,22 @@
         "phone": "Phone",
         "orders": "Orders",
         "txtImportantInformation": "Important Information"
+    },
+    "orders": {
+        "title": "My Orders",
+        "subtitle": "Order history and status",
+        "empty": {
+            "title": "No Orders Yet",
+            "description": "You haven't placed any orders. Start ordering from nearby outlets!",
+            "browse": "Browse Outlets"
+        },
+        "status": {
+            "pending": "Waiting for Confirmation",
+            "confirmed": "Order Confirmed",
+            "preparing": "Being Prepared",
+            "ready": "Ready for Pickup",
+            "completed": "Completed",
+            "cancelled": "Cancelled"
+        }
     }
 }

@@ -28,7 +28,33 @@ export default function PaymentSuccess() {
     useEffect(() => {
         const lastPayment = localStorage.getItem('lastPayment');
         if (lastPayment) {
-            setPaymentInfo(JSON.parse(lastPayment));
+            const paymentData = JSON.parse(lastPayment);
+            setPaymentInfo(paymentData);
+
+            // Save to orders list
+            try {
+                const savedOrders = localStorage.getItem('userOrders');
+                const orders = savedOrders ? JSON.parse(savedOrders) : [];
+
+                // Check if this payment is already saved as an order
+                const orderExists = orders.some((order: any) =>
+                    order.paymentDate === paymentData.paymentDate
+                );
+
+                if (!orderExists) {
+                    const newOrder = {
+                        id: Date.now().toString(),
+                        ...paymentData,
+                        status: 'pending',
+                        orderNumber: `ORD-${Date.now().toString().slice(-6)}`
+                    };
+
+                    orders.unshift(newOrder); // Add to beginning of array
+                    localStorage.setItem('userOrders', JSON.stringify(orders));
+                }
+            } catch (error) {
+                console.error('Error saving order:', error);
+            }
         }
     }, []);
 

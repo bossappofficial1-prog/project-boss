@@ -200,5 +200,22 @@
         "phone": "Telepon",
         "orders": "Pesanan",
         "txtImportantInformation": "Informasi Penting"
+    },
+    "orders": {
+        "title": "Pesanan Saya",
+        "subtitle": "Riwayat dan status pesanan",
+        "empty": {
+            "title": "Belum Ada Pesanan",
+            "description": "Anda belum memiliki pesanan. Mulai pesan dari outlet terdekat!",
+            "browse": "Jelajahi Outlet"
+        },
+        "status": {
+            "pending": "Menunggu Konfirmasi",
+            "confirmed": "Pesanan Dikonfirmasi",
+            "preparing": "Sedang Dipersiapkan",
+            "ready": "Siap Diambil",
+            "completed": "Selesai",
+            "cancelled": "Dibatalkan"
+        }
     }
 }

@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { useTranslations } from '@/hooks/useI18n';
-import { User, Phone, Sun, Moon, Monitor, Globe, Save, LogIn, Building, Heart } from "lucide-react";
+import { User, Phone, Sun, Moon, Monitor, Globe, Save, LogIn, Building, Heart, Receipt } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { STORAGE_PROFILE_KEY } from "@/constants";
 import { ResetModal } from "./ResetModal";
@@ -102,6 +102,10 @@ export default function ProfileSettings() {
 
     const goToFavorites = () => {
         router.push('/favorites');
+    };
+
+    const goToOrders = () => {
+        router.push('/orders');
     };
 
     const handleThemeChange = (val: string) => {
@@ -249,7 +253,30 @@ export default function ProfileSettings() {
                     </div>
                 </div>
 
-                {/* Action Buttons */}
+                {/* Orders Section */}
+                <div className="bg-card rounded-lg border p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Receipt className="w-5 h-5 text-primary" />
+                        <h2 className="font-medium text-card-foreground">
+                            My Orders
+                        </h2>
+                    </div>
+                    <div
+                        onClick={goToOrders}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Receipt className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Order History</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                                View all orders
+                            </span>
+                            <span className="text-muted-foreground">→</span>
+                        </div>
+                    </div>
+                </div>                {/* Action Buttons */}
                 <div className="space-y-3 pt-2">
                     <Button type="submit" className="w-full h-11">
                         <Save className="w-4 h-4 mr-2" />
