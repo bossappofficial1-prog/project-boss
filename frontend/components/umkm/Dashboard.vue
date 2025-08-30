@@ -7,6 +7,7 @@ const summary = ref<DashboardSummary | null>(null);
 const stats = ref<OrderStats | null>(null);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
+const router = useRouter();
 
 // Alerts sourced from API notifications, initially empty
 const alerts = ref<Array<{
@@ -28,6 +29,10 @@ const dismissAlert = (id: string) => {
 const outletId = computed(() => auth.selectedOutlet?.id);
 
 async function fetchData() {
+  if (error.value && error.value == 'Token expired') {
+    await auth.logout();
+    router.push('/auth/login');
+  };
   if (!outletId.value) return;
 
   isLoading.value = true;
