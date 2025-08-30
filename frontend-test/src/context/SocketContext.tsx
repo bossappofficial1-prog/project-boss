@@ -25,9 +25,10 @@ export interface SocketEvents {
 
     // User events
     user_message: (data: { from: string; message: string; timestamp: string }) => void;
-}
 
-// Socket Context Type
+    // Test events
+    test_response: (data: { message: string; originalData: any; serverTimestamp: Date; socketId: string }) => void;
+}// Socket Context Type
 interface SocketContextType {
     socket: Socket | null;
     isConnected: boolean;
@@ -35,6 +36,7 @@ interface SocketContextType {
     error: string | null;
     connect: () => void;
     disconnect: () => void;
+    testConnection: () => Promise<void>;
     emit: <T extends keyof SocketEvents>(event: T, data?: any) => void;
     on: <T extends keyof SocketEvents>(event: T, callback: SocketEvents[T]) => void;
     off: <T extends keyof SocketEvents>(event: T, callback?: SocketEvents[T]) => void;
@@ -47,15 +49,18 @@ const SocketContext = createContext<SocketContextType | null>(null);
 
 // Socket configuration from environment variables
 const SOCKET_CONFIG = {
-    url: process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001',
+    url: process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:1234', // Updated to match backend port
     options: {
-        path: process.env.NEXT_PUBLIC_SOCKET_PATH || '/socket.io/',
+        path: '/socket.io/',
+        query: { public: 'true' },
         reconnection: process.env.NEXT_PUBLIC_SOCKET_RECONNECTION === 'true',
         reconnectionAttempts: parseInt(process.env.NEXT_PUBLIC_SOCKET_RECONNECTION_ATTEMPTS || '5'),
         reconnectionDelay: parseInt(process.env.NEXT_PUBLIC_SOCKET_RECONNECTION_DELAY || '1000'),
         timeout: parseInt(process.env.NEXT_PUBLIC_SOCKET_TIMEOUT || '20000'),
         transports: ['websocket', 'polling'],
         autoConnect: false,
+        forceNew: true,
+        upgrade: true,
     },
 };
 
@@ -75,24 +80,59 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return newSocket;
     }, [socket]);
 
-    // Connect Function
+    // Test Connection Function
+    const testConnection = useCallback(async () => {
+        try {
+            console.log('Testing socket connection...');
+            console.log('Socket URL:', SOCKET_CONFIG.url);
+            console.log('Socket Path:', SOCKET_CONFIG.options.path);
+            console.log('Socket Query:', SOCKET_CONFIG.options.query);
+
+            // Test basic fetch to server
+            const testUrl = `${SOCKET_CONFIG.url}${SOCKET_CONFIG.options.path}?EIO=4&transport=polling&public=true`;
+            console.log('Testing URL:', testUrl);
+
+            const response = await fetch(testUrl, {
+                method: 'GET',
+                signal: AbortSignal.timeout(5000)
+            });
+
+            if (response.ok) {
+                console.log('Server is reachable via polling');
+                const text = await response.text();
+                console.log('Server response:', text.substring(0, 100));
+            } else {
+                console.warn('Server not reachable via polling:', response.status, response.statusText);
+            }
+        } catch (error) {
+            console.error('Connection test failed:', error);
+        }
+    }, [socket]);
+
+    // Enhanced Connect Function with better error handling
     const connect = useCallback(() => {
         if (isConnected || isConnecting) return;
 
+        console.log('Attempting to connect to socket...');
         setIsConnecting(true);
         setError(null);
+
+        // Test connection first
+        testConnection();
 
         const socketInstance = initializeSocket();
 
         // Setup connection event listeners
         socketInstance.on('connect', () => {
-            console.log('Socket connected:', socketInstance.id);
+            console.log('✅ Socket connected successfully:', socketInstance.id);
+            console.log('🔗 Socket URL:', SOCKET_CONFIG.url);
+            console.log('📡 Socket path:', SOCKET_CONFIG.options.path);
             setIsConnected(true);
             setIsConnecting(false);
             setError(null);
 
             // Auto-join user room if authenticated
-            const userId = getUserId(); // Implement this function based on your auth
+            const userId = getUserId();
             if (userId) {
                 socketInstance.emit('join', `user_${userId}`);
             }
@@ -106,7 +146,28 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         socketInstance.on('connect_error', (error) => {
             console.error('Socket connection error:', error);
-            setError(error.message);
+            console.error('Error details:', {
+                message: error.message,
+                type: error.name,
+                description: (error as any).description || 'No description',
+                context: (error as any).context || 'No context'
+            });
+
+            let errorMessage = 'Connection failed';
+            if (error.message.includes('timeout')) {
+                errorMessage = 'Connection timeout - server mungkin tidak merespons';
+            } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                errorMessage = 'Network error - periksa koneksi internet';
+            } else if (error.message.includes('TransportError') || error.message.includes('websocket error')) {
+                errorMessage = 'WebSocket error - kemungkinan server tidak mendukung WebSocket atau URL tidak valid';
+            } else if (error.message.includes('Invalid URL')) {
+                errorMessage = 'URL tidak valid - periksa konfigurasi socket URL';
+            } else {
+                errorMessage = `Connection error: ${error.message}`;
+            }
+
+            console.error('Final error message:', errorMessage);
+            setError(errorMessage);
             setIsConnecting(false);
         });
 
@@ -122,7 +183,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         // Connect the socket
         socketInstance.connect();
-    }, [isConnected, isConnecting, initializeSocket]);
+    }, [isConnected, isConnecting, initializeSocket, testConnection]);
 
     // Disconnect Function
     const disconnect = useCallback(() => {
@@ -165,8 +226,43 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Join Room Function
     const joinRoom = useCallback((roomName: string) => {
         if (socket && isConnected) {
+            console.log(`🏠 Attempting to join room: ${roomName}`);
+            console.log('Socket ID:', socket.id);
+            console.log('Socket connected:', socket.connected);
+
+            // Try multiple ways to join room
             socket.emit('join', roomName);
-            console.log('Joined room:', roomName);
+            console.log(`📡 Emitted 'join' event for room: ${roomName}`);
+
+            // Also try the business room join for authenticated connections
+            socket.emit('join_business_room', roomName, (success: boolean) => {
+                if (success) {
+                    console.log(`✅ Successfully joined room: ${roomName} (via business_room)`);
+                } else {
+                    console.log(`❌ Failed to join room: ${roomName} (via business_room)`);
+                }
+            });
+
+            // Listen for room join confirmation
+            const handleRoomJoined = (joinedRoom: string) => {
+                if (joinedRoom === roomName) {
+                    console.log(`🎉 Confirmed joined room: ${joinedRoom}`);
+                }
+            };
+
+            socket.on('room_joined', handleRoomJoined);
+            socket.on('business_room_joined', handleRoomJoined);
+
+            // Cleanup listeners after 5 seconds
+            setTimeout(() => {
+                socket.off('room_joined', handleRoomJoined);
+                socket.off('business_room_joined', handleRoomJoined);
+            }, 5000);
+
+        } else {
+            console.warn('⚠️ Cannot join room - socket not connected');
+            console.log('Socket exists:', !!socket);
+            console.log('Is connected:', isConnected);
         }
     }, [socket, isConnected]);
 
@@ -217,6 +313,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         error,
         connect,
         disconnect,
+        testConnection,
         emit,
         on,
         off,

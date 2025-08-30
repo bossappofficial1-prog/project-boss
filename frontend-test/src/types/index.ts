@@ -16,6 +16,12 @@ export interface OutletType {
     business: Pick<BusinessType, "id" | "name" | "defaultTransactionFeeBearer">
 }
 
+export interface PaymentTimer {
+    hours: number;
+    minutes: number;
+    seconds: number;
+}
+
 export interface BusinessType {
     id: string
     name: string
@@ -118,4 +124,60 @@ export interface PaymentData {
     expiredAt?: string
     paymentStarted?: string
     timeLimit?: number
+}
+
+export type PaymentMethodId = "qris" | "bca-va" | "bni-va" | "bri-va" | "mandiri-va" | "permata-va"
+export type PaymentMethodType = "qris" | "va"
+export interface PaymentMethod {
+    id: PaymentMethodId
+    name: string
+    type: PaymentMethodType
+    description: string
+    image_url: string
+}
+
+export interface PaymentResponse {
+    status_code: string
+    status_message: string
+    transaction_id: string
+    order_id: string
+    merchant_id: string
+    gross_amount: string
+    currency: string
+    payment_type: string
+    transaction_time: string
+    transaction_status: MidtransTransactionStatus
+    fraud_status: string
+    actions?: Action[]
+    acquirer?: string
+    qr_string?: string
+    expiry_time: string
+    va_numbers?: VaNumber[]
+    transaction_type?: string //'off-us'
+}
+
+export type MidtransTransactionStatus =
+    | "capture"
+    | "settlement"
+    | "pending"
+    | "deny"
+    | "cancel"
+    | "expire"
+    | "failure";
+
+
+export interface CustomerInfo {
+    name: string,
+    phone: string
+}
+
+export interface Action {
+    name: string
+    method: string
+    url: string
+}
+
+export interface VaNumber {
+    bank: string
+    va_number: string
 }

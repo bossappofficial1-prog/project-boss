@@ -20,8 +20,6 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Temporary files & assets (kecuali yang diizinkan)
-public/*
-!public/info.txt
 tmp/*
 !tmp/info.txt
 

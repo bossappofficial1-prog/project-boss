@@ -5,12 +5,14 @@ import Image from "next/image";
 
 export function ImageRender(
     { src, alt, className, sizes }:
-        { src: string, alt: string, className: string, sizes?: string }) {
+        { src: string, alt: string, className?: string, sizes?: string }) {
     const [imgSrc, setImgSrc] = useState(src || "/assets/images/default-image.png");
 
     return (
         <Image
-            fill
+            // fill
+            width={1000}
+            height={1000}
             src={imgSrc}
             alt={alt}
             className={` ${className}`}

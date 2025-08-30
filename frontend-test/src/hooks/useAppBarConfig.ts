@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { useAppBar } from '@/context/AppBarContext';
 
 interface AppBarConfig {
@@ -15,32 +15,27 @@ interface AppBarConfig {
     centerTitle?: boolean;
 }
 
-/**
- * Custom hook untuk mengkonfigurasi AppBar dengan mudah
- * Secara otomatis akan mengupdate AppBar ketika komponen mount
- */
 export function useAppBarConfig(config: AppBarConfig) {
     const { updateAppbar } = useAppBar();
+
+    // Memoize the config to prevent unnecessary re-renders
+    const memoizedConfig = useMemo(() => ({
+        showBackButton: true,
+        showSearch: false,
+        showMenu: false,
+        variant: 'default' as const,
+        ...config
+    }), [config]);
 
     // Use a ref to track if this is the first mount
     const isFirstMount = useRef(true);
 
     useEffect(() => {
-        // Only update if this is the first mount or if props actually changed
         if (isFirstMount.current) {
             isFirstMount.current = false;
-            updateAppbar({
-                showBackButton: true,
-                showSearch: false,
-                showMenu: false,
-                variant: 'default',
-                ...config
-            });
-        } else {
-            // For subsequent updates, only pass the config without defaults
-            updateAppbar(config);
+            updateAppbar(memoizedConfig);
         }
-    }, [updateAppbar, config]);
+    }, [updateAppbar, memoizedConfig]);
 
     return { updateAppbar };
 }

@@ -52,7 +52,6 @@ app.use(cookieParser());
 
 // Middleware kompresi - Mengompres body respons untuk pemuatan yang lebih cepat
 app.use(compression());
-app.use(requestLogger)
 
 // Middleware logging permintaan (Morgan)
 if (config.NODE_ENV === "development") {
@@ -61,6 +60,7 @@ if (config.NODE_ENV === "development") {
 
 // Serve static files (uploaded images)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/', express.static(path.join(process.cwd(), 'public')));
 
 app.get("/", (req, res) => {
     res.status(200).json({

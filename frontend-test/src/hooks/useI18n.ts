@@ -2,12 +2,12 @@
 
 import { LanguageType } from "@/constants";
 import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import enMessages from "../messages/en.json";
 
 export function useLocale(): LanguageType {
     const searchParams = useSearchParams();
-    const locale = (searchParams.get("locale") || "id") as LanguageType;
+    const locale = useMemo(() => (searchParams.get("locale") || "id") as LanguageType, [searchParams]);
 
     return locale;
 }
@@ -38,10 +38,10 @@ export function useTranslations<N extends NamespaceKeys>(namespace: N) {
         }
     }, [locale]);
 
-    return function t<K extends NestedKeyOf<Messages[N]>>(
+    const t = useCallback(<K extends NestedKeyOf<Messages[N]>>(
         key: K,
         interpolations?: Record<string, string | number>
-    ): string {
+    ): string => {
         // Rekursif untuk mengakses nilai berdasarkan key
         const getValue = (obj: any, path: string[]): any => {
             if (!obj || path.length === 0) return undefined;
@@ -63,5 +63,7 @@ export function useTranslations<N extends NamespaceKeys>(namespace: N) {
         }
 
         return result as string;
-    };
+    }, [messages, namespace]);
+
+    return t;
 }

@@ -21,7 +21,8 @@ export class OutletRepository {
                     select: {
                         id: true,
                         name: true,
-                        description: true
+                        description: true,
+                        defaultTransactionFeeBearer: true
                     }
                 },
                 operatingHours: true,
@@ -114,5 +115,33 @@ export class OutletRepository {
         ]);
 
         return { outlets, total };
+    }
+
+    static async findNearby(latitude: number, longitude: number, longDiff: number, latDiff: number) {
+        return db.outlet.findMany({
+            where: {
+                AND: [
+                    { latitude: { gte: latitude - latDiff } },
+                    { latitude: { lte: latitude + latDiff } },
+                    { longitude: { gte: longitude - longDiff } },
+                    { longitude: { lte: longitude + longDiff } }
+                ]
+            },
+            include: {
+                business: {
+                    select: {
+                        name: true,
+                        description: true
+                    }
+                },
+                operatingHours: true,
+                _count: {
+                    select: {
+                        orders: true,
+                        products: true
+                    }
+                }
+            }
+        })
     }
 }

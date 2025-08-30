@@ -9,7 +9,7 @@ const baseURL = `${clientUrl}${apiPrefix}` || '';
 interface CustomAxiosInstance extends AxiosInstance {
     getData<T>(url: string, config?: AxiosRequestConfig): Promise<T>;
 
-    addData<T>(url: string, config?: AxiosRequestConfig): Promise<T>;
+    addData<T>(url: string, data: any, config?: AxiosRequestConfig): Promise<T>;
 }
 
 const api: CustomAxiosInstance = axios.create({

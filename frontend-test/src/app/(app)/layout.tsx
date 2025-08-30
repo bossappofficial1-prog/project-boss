@@ -6,6 +6,7 @@ import { AppToaster } from "@/components/ui/toast";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppBarProvider } from "@/context/AppBarContext";
 import GlobalAppBar from "@/components/shared/GlobalAppBar";
+import { Suspense } from "react";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const queryClient = new QueryClient();
@@ -14,7 +15,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <ThemeProvider attribute="class">
                 <AppBarProvider>
                     <GlobalAppBar />
-                    <main className="lg:max-w-2xl min-h-[calc(100vh-56px)] p-4 mx-auto">{children}</main>
+                    <main className="lg:max-w-2xl min-h-[calc(100vh-56px)] p-4 mx-auto">
+                        <Suspense fallback={<div>Loading...</div>}>
+                            {children}
+                        </Suspense>
+                    </main>
                     <AppToaster />
                     <FloatingCartButton />
                     <BottomNav />

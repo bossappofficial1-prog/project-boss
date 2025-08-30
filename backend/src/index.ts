@@ -1,8 +1,9 @@
 import { networkInterfaces } from "node:os";
 import app from "./app";
 import { config } from "./config";
-import { initUnifiedSocket } from "./config/socket-unified";
 import { connectRabbitMQ } from "./config/rabbitmq";
+import { socketUtils } from "./utils/socket.utils";
+import http from "node:http"
 
 function getNetworkAdresses(): string[] {
     const nets = networkInterfaces();
@@ -21,18 +22,14 @@ function getNetworkAdresses(): string[] {
 
 async function startServer(port: number) {
     try {
-        // 1. Hubungkan ke RabbitMQ terlebih dahulu dan tunggu sampai selesai.
-        await connectRabbitMQ();
+        const server = http.createServer(app)
+        socketUtils.init(server)
 
-        // 2. Inisialisasi Socket.IO server dengan unified auth + public
-        const server = initUnifiedSocket(app);
+        await connectRabbitMQ();
 
         server.listen(port, () => {
             console.log(`• Server running on:`);
             console.log(`   Local:   http://localhost:${port}`);
-            console.log(`   Socket.IO (Unified): http://localhost:${port}/socket.io/`);
-            console.log(`   - Authenticated: use token in query/header/auth`);
-            console.log(`   - Public: use ?public=true in connection`);
 
             const addrs = getNetworkAdresses();
             if (addrs.length) {
@@ -44,7 +41,7 @@ async function startServer(port: number) {
 
         server.on("error", (err: NodeJS.ErrnoException) => {
             if (err.code === "EADDRINUSE") {
-                console.warn(`Port ${port} in use, trying ${port + 1}…`);
+                console.warn(`Port ${port} in use, trying ${port + 1}...`);
                 startServer(port + 1);
             } else {
                 console.error("Server error:", err);
@@ -53,8 +50,6 @@ async function startServer(port: number) {
 
     } catch (error) {
         console.error("🔴 Failed to start server:", error);
-        // Jika koneksi awal ke RabbitMQ gagal, proses akan keluar
-        // Ini lebih baik daripada menjalankan server dalam keadaan tidak stabil
         process.exit(1);
     }
 }

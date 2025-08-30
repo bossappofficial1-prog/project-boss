@@ -142,7 +142,6 @@ export async function processWithdrawal(
         });
     }
 
-    // APPROVE: tandai selesai secara manual (admin telah transfer manual)
     return db.withdrawal.update({
         where: { id: withdrawalId },
         data: {
@@ -153,7 +152,3 @@ export async function processWithdrawal(
         }
     });
 }
-
-// Webhook handlers dan integrasi otomatis disimpan untuk masa depan,
-// namun tidak dipakai pada mode manual. Biarkan tetap ada jika diperlukan.
-// ...existing code...

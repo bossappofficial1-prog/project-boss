@@ -1,4 +1,6 @@
 import { getRabbitMQChannel } from '../config/rabbitmq';
+import { MidtransWebhookPayloadType } from '../types/Others';
+import { socketUtils } from '../utils/socket.utils';
 import logger from '../utils/winston.logger';
 
 // Base interface for all events
@@ -99,7 +101,8 @@ class MessagePublisherService {
         });
     }
 
-    async publishPaymentWebhookReceived(payload: any, source: 'midtrans' | 'xendit') {
+    async publishPaymentWebhookReceived(payload: MidtransWebhookPayloadType, source: 'midtrans' | 'xendit') {
+        socketUtils.emitToOrder(payload.order_id, payload)
         await this.publish(EXCHANGE_NAMES.PAYMENT_WEBHOOK, '', {
             type: 'PAYMENT_WEBHOOK_RECEIVED',
             payload: { source, payload }

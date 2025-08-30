@@ -1,192 +1,111 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2, RefreshCw } from 'lucide-react';
+
+import { useAppBarConfig } from '@/hooks/useAppBarConfig';
+import { useSocket } from '@/hooks/useSocket-v2';
+import { usePaymentTimer } from '@/hooks/usePaymentTimer';
+
+import { PaymentService } from '@/services/paymentService';
+import { formatCurrency } from '@/lib/utils';
+import { CustomerInfo as CustomerInfoType, MidtransTransactionStatus, PaymentMethod, PaymentResponse } from '@/types';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-    Loader2,
-    QrCode,
-    Building2,
-    Copy,
-    Check,
-    Clock,
-    AlertCircle,
-    Smartphone,
-    RefreshCw
-} from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useAppBarConfig } from '@/hooks/useAppBarConfig';
-import { formatCurrency } from '@/lib/utils';
-import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard';
 import { CustomerInfo } from '@/components/payment/CustomerInfo';
+import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard';
+import { PaymentStatusHeader } from '@/components/payment/PaymentStatusHeader';
+import { QrisPaymentDetails } from '@/components/payment/QrisPaymentDetails';
+import { VaPaymentDetails } from '@/components/payment/VaPaymentDetails';
+import { ImageRender } from '@/components/shared/Image';
+import { LoadingState } from '@/components/Base';
+import { redirectMap } from '@/components/payment/function';
 
 const PROCESSING_APP_BAR_CONFIG = {
     title: 'Proses Pembayaran',
     showBackButton: true,
 };
 
-interface PaymentTimer {
-    minutes: number;
-    seconds: number;
-}
-
 export default function PaymentProcessing() {
-    const [paymentInfo, setPaymentInfo] = useState<any>(null);
-    const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'confirmed' | 'failed'>('pending');
-    const [timer, setTimer] = useState<PaymentTimer>({ minutes: 15, seconds: 0 });
-    const [qrCode, setQrCode] = useState<string>('');
-    const [vaNumber, setVaNumber] = useState<string>('');
-    const [copied, setCopied] = useState(false);
+    const [paymentInfo, setPaymentInfo] = useState<PaymentResponse & { customerInfo: CustomerInfoType; selectedPaymentMethod: PaymentMethod } | null>(null);
+    const [paymentStatus, setPaymentStatus] = useState<MidtransTransactionStatus>('pending');
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const { isConnected, emitEvent, onEvent } = useSocket();
     const router = useRouter();
-    const searchParams = useSearchParams();
 
-    // Configure app bar
     useAppBarConfig(PROCESSING_APP_BAR_CONFIG);
 
     useEffect(() => {
-        // Load payment data
-        const lastPayment = localStorage.getItem('lastPayment');
-        if (lastPayment) {
-            const payment = JSON.parse(lastPayment);
-            setPaymentInfo(payment);
-
-            // Generate mock payment details based on method
-            if (payment.selectedPaymentMethod.type === 'qris') {
-                setQrCode(`QRIS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-            } else if (payment.selectedPaymentMethod.type === 'va') {
-                const bankCode = payment.selectedPaymentMethod.id.includes('bca') ? '8877' :
-                    payment.selectedPaymentMethod.id.includes('bni') ? '8866' :
-                        payment.selectedPaymentMethod.id.includes('mandiri') ? '8855' : '8844';
-                setVaNumber(`${bankCode}${Math.random().toString().slice(2, 14)}`);
-            }
-        } else {
+        const paymentData = PaymentService.getPaymentInformation();
+        if (!paymentData || !paymentData.order_id) {
             router.replace('/cart');
+            return;
         }
+        setPaymentInfo(paymentData);
+        setPaymentStatus(paymentData.transaction_status as MidtransTransactionStatus);
     }, [router]);
 
-    // Timer countdown
-    useEffect(() => {
-        const countdown = setInterval(() => {
-            setTimer(prev => {
-                if (prev.minutes === 0 && prev.seconds === 0) {
-                    clearInterval(countdown);
-                    setPaymentStatus('failed');
-                    return { minutes: 0, seconds: 0 };
-                }
+    const onTimerExpire = useCallback(() => { setPaymentStatus("failure") }, [])
 
-                if (prev.seconds === 0) {
-                    return { minutes: prev.minutes - 1, seconds: 59 };
-                }
+    const timer = usePaymentTimer(paymentInfo?.expiry_time ?? '', onTimerExpire);
 
-                return { ...prev, seconds: prev.seconds - 1 };
-            });
-        }, 1000);
+    const orderId = useMemo(() => paymentInfo?.order_id, [paymentInfo]);
 
-        return () => clearInterval(countdown);
-    }, []);
+    const handleOrderEvent = useCallback((data: PaymentResponse) => {
+        if (data.order_id === orderId) {
+            console.log('✅ Event matches, updating status:', data.transaction_status);
+            const newStatus = data.transaction_status as MidtransTransactionStatus;
+            setPaymentStatus(newStatus);
+            PaymentService.updatePaymentInformation(data);
 
-    // Simulate payment status check
-    useEffect(() => {
-        const statusCheck = setInterval(() => {
-            // Simulate random payment confirmation (for demo)
-            if (Math.random() > 0.98 && paymentStatus === 'pending') {
-                setPaymentStatus('confirmed');
-                setTimeout(() => {
-                    router.push('/payment/success');
-                }, 2000);
+            const redirectPath = redirectMap[newStatus];
+            if (redirectPath) {
+                setTimeout(() => { router.push(redirectPath) }, 2000)
             }
-        }, 3000);
-
-        return () => clearInterval(statusCheck);
-    }, [paymentStatus, router]);
-
-    const handleCopy = async (text: string) => {
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error('Failed to copy: ', err);
         }
-    };
+    }, [orderId, router]);
+
+    useEffect(() => {
+        if (isConnected && orderId) {
+            emitEvent("order:update", orderId);
+            onEvent("orderEvent", handleOrderEvent);
+        }
+    }, [isConnected, orderId, emitEvent, onEvent, handleOrderEvent]);
 
     const handleRefreshStatus = () => {
-        setPaymentStatus('processing');
+        if (!orderId) return;
+        setIsRefreshing(true);
         setTimeout(() => {
-            setPaymentStatus('pending');
-        }, 1000);
+            console.log('Simulating status refresh...');
+            setIsRefreshing(false);
+        }, 1500);
     };
 
-    const handleCancelPayment = () => {
-        localStorage.removeItem('lastPayment');
-        router.push('/payment/failed?reason=cancelled');
-    };
+    const vaNumber = paymentInfo?.va_numbers?.[0]?.va_number;
+    const qrCodeUrl = paymentInfo?.actions?.[0]?.url;
 
-    if (!paymentInfo) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="w-8 h-8 animate-spin" />
-            </div>
-        );
+    if (!paymentInfo) return <LoadingState />
+    if (paymentInfo.transaction_status !== "pending") {
+        router.push("/")
     }
 
-    const { selectedPaymentMethod, checkoutData, customerInfo } = paymentInfo;
+    const { selectedPaymentMethod, customerInfo, gross_amount } = paymentInfo;
 
     return (
         <div className="space-y-4">
-            {/* Payment Status Header */}
-            <Card className={`border-2 p-0 ${paymentStatus === 'confirmed' ? 'border-green-200 bg-green-50' :
-                paymentStatus === 'failed' ? 'border-red-200 bg-red-50' :
-                    paymentStatus === 'processing' ? 'border-blue-200 bg-blue-50' :
-                        'border-orange-200 bg-orange-50'
-                }`}>
-                <CardContent className="p-4 text-center">
-                    <div className="flex items-center justify-center mb-3">
-                        {paymentStatus === 'confirmed' ? (
-                            <Check className="w-8 h-8 text-green-600" />
-                        ) : paymentStatus === 'failed' ? (
-                            <AlertCircle className="w-8 h-8 text-red-600" />
-                        ) : paymentStatus === 'processing' ? (
-                            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                        ) : (
-                            <Clock className="w-8 h-8 text-orange-600" />
-                        )}
-                    </div>
+            <PaymentStatusHeader status={paymentStatus} timer={timer} />
 
-                    <h2 className="text-lg font-bold mb-2">
-                        {paymentStatus === 'confirmed' ? 'Pembayaran Berhasil!' :
-                            paymentStatus === 'failed' ? 'Pembayaran Gagal' :
-                                paymentStatus === 'processing' ? 'Memproses Pembayaran...' :
-                                    'Menunggu Pembayaran'}
-                    </h2>
-
-                    <p className="text-sm text-muted-foreground mb-3">
-                        {paymentStatus === 'confirmed' ? 'Redirecting ke halaman sukses...' :
-                            paymentStatus === 'failed' ? 'Waktu pembayaran telah habis' :
-                                paymentStatus === 'processing' ? 'Mengecek status pembayaran...' :
-                                    'Selesaikan pembayaran sebelum waktu habis'}
-                    </p>
-
-                    {/* Timer */}
-                    {(paymentStatus === 'pending' || paymentStatus === 'processing') && (
-                        <div className="flex items-center justify-center gap-2 bg-white rounded-lg px-3 border">
-                            <Clock className="w-4 h-4 text-orange-600" />
-                            <span className="font-mono font-bold text-lg">
-                                {String(timer.minutes).padStart(2, '0')}:{String(timer.seconds).padStart(2, '0')}
-                            </span>
-                            <span className="text-sm text-muted-foreground">tersisa</span>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* Payment Details */}
             <Card className='p-0'>
                 <CardContent className="p-4">
+                    {/* Payment Method Info */}
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-lg bg-white border flex items-center justify-center text-lg">
-                            {selectedPaymentMethod.icon}
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border bg-white text-lg">
+                            <ImageRender
+                                src={selectedPaymentMethod.image_url}
+                                alt={selectedPaymentMethod.name}
+                            />
                         </div>
                         <div>
                             <h3 className="font-semibold">{selectedPaymentMethod.name}</h3>
@@ -194,107 +113,38 @@ export default function PaymentProcessing() {
                         </div>
                     </div>
 
+                    {/* Total Amount */}
                     <div className="text-center mb-4">
                         <p className="text-sm text-muted-foreground">Total Pembayaran</p>
-                        <p className="text-2xl font-bold text-primary">{formatCurrency(checkoutData.grandTotal)}</p>
+                        <p className="text-2xl font-bold text-primary">{formatCurrency(Number(gross_amount))}</p>
                     </div>
 
-                    {/* QRIS Payment */}
-                    {selectedPaymentMethod.type === 'qris' && (
-                        <div className="space-y-4">
-                            <div className="w-48 h-48 mx-auto bg-muted/20 border-2 border-dashed rounded-xl flex items-center justify-center">
-                                <div className="text-center">
-                                    <QrCode className="w-16 h-16 mx-auto mb-2 text-muted-foreground" />
-                                    <p className="text-sm text-muted-foreground">QR Code</p>
-                                    <p className="text-xs text-muted-foreground">Scan untuk bayar</p>
-                                </div>
-                            </div>
-
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                                    <Smartphone className="w-4 h-4" />
-                                    Cara Pembayaran:
-                                </h4>
-                                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                                    <li>Buka aplikasi {selectedPaymentMethod.name}</li>
-                                    <li>Pilih menu "Scan" atau "Bayar"</li>
-                                    <li>Scan QR Code di atas</li>
-                                    <li>Konfirmasi pembayaran</li>
-                                </ol>
-                            </div>
-                        </div>
+                    {/* Conditional Rendering of Payment Details */}
+                    {selectedPaymentMethod.type === 'qris' && qrCodeUrl && (
+                        <QrisPaymentDetails qrCodeUrl={qrCodeUrl} paymentMethodName={selectedPaymentMethod.name} />
                     )}
 
-                    {/* Virtual Account Payment */}
-                    {selectedPaymentMethod.type === 'va' && (
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-sm font-medium mb-2">Nomor Virtual Account</p>
-                                <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
-                                    <span className="font-mono font-bold text-lg flex-1">{vaNumber}</span>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleCopy(vaNumber)}
-                                    >
-                                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                                    <Building2 className="w-4 h-4" />
-                                    Cara Transfer:
-                                </h4>
-                                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                                    <li>Buka mobile banking atau ATM</li>
-                                    <li>Pilih menu "Transfer" → "Virtual Account"</li>
-                                    <li>Masukkan nomor: {vaNumber}</li>
-                                    <li>Masukkan nominal: {formatCurrency(checkoutData.grandTotal)}</li>
-                                    <li>Konfirmasi pembayaran</li>
-                                </ol>
-                            </div>
-                        </div>
+                    {selectedPaymentMethod.type === 'va' && vaNumber && (
+                        <VaPaymentDetails vaNumber={vaNumber} totalAmount={Number(gross_amount)} />
                     )}
                 </CardContent>
             </Card>
 
-            {/* Customer Info */}
-            <CustomerInfo
-                name={customerInfo.name}
-                phone={customerInfo.phone}
-            />
+            <CustomerInfo name={customerInfo.name} phone={customerInfo.phone} />
 
-            {/* Action Buttons */}
             <div className="space-y-3">
                 <Button
                     variant="outline"
                     size="lg"
                     className="w-full h-12"
                     onClick={handleRefreshStatus}
-                    disabled={paymentStatus === 'processing'}
+                    disabled={isRefreshing}
                 >
-                    {paymentStatus === 'processing' ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                    )}
+                    {isRefreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                     Refresh Status
-                </Button>
-
-                <Button
-                    variant="destructive"
-                    size="lg"
-                    className="w-full h-12"
-                    onClick={handleCancelPayment}
-                    disabled={paymentStatus === 'confirmed' || paymentStatus === 'processing'}
-                >
-                    Batalkan Pembayaran
                 </Button>
             </div>
 
-            {/* Important Notes */}
             <ImportantInformationCard type='processing' />
         </div>
     );

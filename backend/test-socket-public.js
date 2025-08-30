@@ -8,7 +8,7 @@
 const { io } = require('socket.io-client');
 
 // Default configuration
-const DEFAULT_SERVER = 'http://192.168.18.13:1234';
+const DEFAULT_SERVER = 'http://localhost:1234';
 const DEFAULT_ORDER_ID = 'test-order-123';
 
 // Parse command line arguments
@@ -65,7 +65,7 @@ socket.on('order_tracking_left', (orderId) => {
     console.log(`📦 Left order tracking: ${orderId}`);
 });
 
-socket.on('announcements_joined', () => {
+socket.on('order_status_updated', () => {
     console.log('📢 Joined announcements room');
 });
 

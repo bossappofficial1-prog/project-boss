@@ -1,9 +1,12 @@
 // Checkout related types
+import { CartItem } from '@/hooks/useCart';
+
 export interface OutletSummary {
     outletName: string;
     subtotal: number;
     transactionFee: number;
     applicationFee: number;
+    items: CartItem[];
 }
 
 export interface CheckoutData {

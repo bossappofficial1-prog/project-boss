@@ -37,13 +37,14 @@ export function AppBarProvider({ children }: { children: React.ReactNode }) {
             sticky: updates.sticky,
             showSearch: updates.showSearch,
             centerTitle: updates.centerTitle,
-            // Include hasRightContent in hash to track when rightContent changes from null to content or vice versa
             hasRightContent: !!updates.rightContent
         });
 
-        // For rightContent, we'll always allow updates since we can't easily compare JSX
-        // But we'll use a simple throttling mechanism
-        const shouldUpdate = lastUpdateRef.current !== updateHash || updates.rightContent !== undefined;
+        // For rightContent, we'll compare the reference if it's the same object
+        const rightContentChanged = updates.rightContent !== undefined && updates.rightContent !== appBarState.rightContent;
+
+        // Only update if hash changed or rightContent actually changed
+        const shouldUpdate = lastUpdateRef.current !== updateHash || rightContentChanged;
 
         if (!shouldUpdate) {
             return;
@@ -55,7 +56,7 @@ export function AppBarProvider({ children }: { children: React.ReactNode }) {
             ...prev,
             ...updates
         }));
-    }, [])
+    }, [appBarState.rightContent])
 
     const resetAppBar = useCallback(() => {
         setAppBarState(defaultAppBarState)

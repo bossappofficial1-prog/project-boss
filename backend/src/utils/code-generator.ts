@@ -181,15 +181,12 @@ export const generateOrderCode = (
     config: CodeConfig = {},
     counter?: number
 ): string => {
-    const defaultConfig: CodeConfig = {
-        prefix: 'ORD',
-        dateFormat: 'YYMMDD',
-        randomLength: 3,
-        separator: '-',
-        ...config
-    };
+    const now = new Date();
+    const dateString = generateDateString(now, 'YYYYMMDD');
+    const timeString = generateTimeString(now).substring(0, 4); // Take only HHMM
+    const counterString = counter !== undefined ? generateSequential(counter, 4) : generateRandomNumber(4);
 
-    return generateTransactionCode(outlet, defaultConfig, counter);
+    return `ORD${dateString}${timeString}${counterString}`;
 };
 
 /**

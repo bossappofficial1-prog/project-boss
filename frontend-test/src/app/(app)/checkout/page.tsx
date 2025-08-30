@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import CheckoutPage from '@/components/checkout/CheckoutPage';
 import { CheckoutService } from '@/services/checkout';
 import { useAppBarConfig } from '@/hooks/useAppBarConfig';
-import LoadingEffect from '@/components/shared/LoadingEffect';
 import { CheckoutData } from '@/types/checkout';
 import { LoadingState } from '@/components/Base';
 
 const CHECKOUT_APP_BAR_CONFIG = {
     title: 'Checkout',
     showBackButton: true,
+    showSearch: false,
+    centerTitle: true,
 };
 
 export default function CheckoutPageWrapper() {
@@ -22,11 +23,9 @@ export default function CheckoutPageWrapper() {
     useAppBarConfig(CHECKOUT_APP_BAR_CONFIG);
 
     useEffect(() => {
-        // Get checkout data from localStorage
         const data = CheckoutService.getCheckoutDataFromStorage();
 
         if (!data) {
-            // No checkout data found, redirect back to cart
             router.push('/cart');
             return;
         }

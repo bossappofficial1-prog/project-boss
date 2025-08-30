@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { CheckoutData, PaymentMethod } from '@/types/checkout';
 import { CheckoutService } from '@/services/checkout';
 import { formatCurrency } from '@/lib/utils';
+import { useCart } from '@/hooks/useCart';
 
 interface PaymentPageProps {
     checkoutData: CheckoutData;
@@ -103,7 +104,7 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkou
                 </CardTitle>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-2">
                 {checkoutData.outlets.map((outlet, index) => (
                     <div key={index} className="border rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
@@ -228,6 +229,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    const { items: cartItems } = useCart();
 
     // Load customer info from ProfileSettings (if available)
     useEffect(() => {
@@ -271,29 +273,76 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
         setIsLoading(true);
 
         try {
-            // Simulate payment processing
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Construct payload for backend API
+            let itemDetails: Array<{ productId: string; quantity: number; outletId: string }> = [];
 
-            // Save payment info
+            // Try to get items from checkoutData first
+            const checkoutItems = checkoutData.outlets.flatMap(outlet => {
+                if (!outlet.items || !Array.isArray(outlet.items)) {
+                    return [];
+                }
+                return outlet.items.map(item => ({
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    outletId: item.outletId
+                }));
+            });
+
+            if (checkoutItems.length > 0) {
+                itemDetails = checkoutItems;
+            } else {
+                // Fallback to cart items if checkoutData doesn't have items
+                console.warn('Using cart items as fallback for payment payload');
+                itemDetails = cartItems.map(item => ({
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    outletId: item.outletId
+                }));
+            }
+
+            const payloadBody = {
+                customer_details: {
+                    name: customerInfo.name,
+                    phone: customerInfo.phone
+                },
+                item_details: itemDetails,
+                payment_method: selectedPaymentMethod.id as any
+            };
+
+            console.log('Payment payload:', payloadBody);
+
+            // Check if we have any items
+            if (itemDetails.length === 0) {
+                throw new Error('No items found. Please go back to cart and add items.');
+            }
+
+            // Send to backend API
+            const response = await CheckoutService.processPayment(payloadBody);
+
+            // Save payment info for local reference
             const paymentInfo = {
                 checkoutData,
                 selectedPaymentMethod,
                 customerInfo,
                 paymentDate: new Date().toISOString(),
-                status: 'pending'
+                status: 'pending',
+                payload: payloadBody
             };
 
             localStorage.setItem('lastPayment', JSON.stringify(paymentInfo));
+            localStorage.setItem("paymentInfo", JSON.stringify(response))
 
             // Clear checkout and payment data
             CheckoutService.clearCheckoutDataFromStorage();
             CheckoutService.clearPaymentDataFromStorage();
 
-            // Redirect to success page (or payment processing page)
-            router.push('/payment/success');
+            // Redirect to success page
+            router.push('/payment/processing');
 
         } catch (error) {
             console.error('Payment failed:', error);
+            // You can add a toast notification here or show an error message to the user
+            alert(error instanceof Error ? error.message : 'Payment processing failed. Please try again.');
             setIsLoading(false);
         }
     };

@@ -169,16 +169,10 @@ function OrderSummary({ totalPrice, totalItems, outletCount, hasUnscheduledServi
     const router = useRouter();
     const { items } = useCart();
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         if (hasUnscheduledServices) return;
-
-        // Prepare checkout data from cart items
-        const checkoutData = CheckoutService.prepareCheckoutData(items);
-
-        // Save to localStorage for checkout page
+        const checkoutData = await CheckoutService.prepareCheckoutData(items);
         CheckoutService.saveCheckoutDataToStorage(checkoutData);
-
-        // Redirect to checkout page
         router.push('/checkout');
     };
 
@@ -307,7 +301,7 @@ export default function CartPage() {
             )}
 
             <div className="grid lg:grid-cols-3 gap-4 items-start">
-                <div className="lg:col-span-2 space-y-4">
+                <div className="lg:col-span-2 space-y-2">
                     {Object.entries(itemsByOutlet).map(([outletId, { outletName, items: outletItems }]) => (
                         <Card key={outletId} className="pt-0 py-0 overflow-hidden">
                             <CardHeader className="bg-muted/50 pt-3 px-3">

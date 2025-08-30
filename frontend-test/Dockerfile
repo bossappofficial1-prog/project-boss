@@ -9,6 +9,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG NEXT_PUBLIC_REMOTE_PATTERNS
+ENV NEXT_PUBLIC_REMOTE_PATTERNS=$NEXT_PUBLIC_REMOTE_PATTERNS
 RUN npm run build
 
 # Stage 3: Production image

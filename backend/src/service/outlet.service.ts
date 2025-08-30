@@ -28,9 +28,6 @@ const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: Date) =>
         const openMinutes = oper.openTime.getHours() * 60 + oper.openTime.getMinutes(); // Total menit waktu buka
         const closeMinutes = oper.closeTime.getHours() * 60 + oper.closeTime.getMinutes(); // Total menit waktu tutup
 
-        Console.log(closeMinutes, openMinutes, todayMinutes, today.getDay(), oper.dayOfWeek);
-        Console.log(oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes);
-
         return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
     });
 }
@@ -86,31 +83,7 @@ export async function findNearbyOutletsService(
     const longDiff = radiusKm / degLongKm;
 
     // First, get outlets within the bounding box (rough filter)
-    const outlets = await db.outlet.findMany({
-        where: {
-            AND: [
-                { latitude: { gte: latitude - latDiff } },
-                { latitude: { lte: latitude + latDiff } },
-                { longitude: { gte: longitude - longDiff } },
-                { longitude: { lte: longitude + longDiff } }
-            ]
-        },
-        include: {
-            business: {
-                select: {
-                    name: true,
-                    description: true
-                }
-            },
-            operatingHours: true,
-            _count: {
-                select: {
-                    orders: true,
-                    products: true
-                }
-            }
-        }
-    });
+    const outlets = await OutletRepository.findNearby(latitude, longitude, longDiff, latDiff)
 
     // Calculate exact distances and filter
     const outletsWithDistance = outlets
@@ -177,10 +150,7 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
         throw new AppError('Invalid longitude. Must be between -180 and 180', HttpStatus.BAD_REQUEST);
     }
 
-    return db.outlet.update({
-        where: { id: outletId },
-        data: { latitude, longitude }
-    });
+    return OutletRepository.update(outletId, { latitude, longitude })
 }
 
 export async function getOutletByIdService(id: string, date?: Date) {
@@ -198,6 +168,7 @@ export async function getOutletByIdService(id: string, date?: Date) {
 
     return { ...outlet, operatingHours, isOpen: isOpenOutlet };
 }
+
 export async function getAllOutletService() {
     const outlet = await OutletRepository.getAll();
     if (!outlet) {
@@ -227,7 +198,6 @@ export async function getOutletsByBusinessIdService(
             : outlet.isOpen
     }))
 
-    Console.log(outlets)
     return { outlets, total };
 }
 

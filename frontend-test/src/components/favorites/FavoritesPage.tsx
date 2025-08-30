@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useTranslations } from '@/hooks/useI18n';
 import { useAppBar } from '@/context/AppBarContext';
 import { EmptyState } from '@/components/Base';
 import FavoriteOutletCard from './FavoriteOutletCard';
-import { Heart, Store } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function FavoritesPage() {
@@ -15,14 +15,11 @@ export default function FavoritesPage() {
     const { updateAppbar } = useAppBar();
     const t = useTranslations('favorites');
     const router = useRouter();
+    const hasUpdatedRef = useRef(false);
 
-    useEffect(() => {
-        updateAppbar({
-            title: t('title'),
-            subtitle: t('subtitle'),
-            showSearch: false,
-            centerTitle: true,
-            rightContent: favorites.length > 0 ? (
+    const rightContent = useMemo(() => {
+        if (favorites.length > 0) {
+            return (
                 <Button
                     variant="ghost"
                     size="sm"
@@ -31,9 +28,25 @@ export default function FavoritesPage() {
                 >
                     Clear All
                 </Button>
-            ) : null
-        });
-    }, [updateAppbar, t, favorites.length, clearFavorites]);
+            );
+        }
+        return null;
+    }, [favorites.length, clearFavorites]);
+
+    const appBarConfig = useMemo(() => ({
+        title: t('title'),
+        subtitle: t('subtitle'),
+        showSearch: false,
+        centerTitle: true,
+        rightContent
+    }), [t, rightContent]);
+
+    useLayoutEffect(() => {
+        if (!hasUpdatedRef.current) {
+            updateAppbar(appBarConfig);
+            hasUpdatedRef.current = true;
+        }
+    }, [updateAppbar, appBarConfig]);
 
     const handleBrowseOutlets = () => {
         router.push('/nearby');

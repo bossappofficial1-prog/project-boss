@@ -1,6 +1,12 @@
 import { DefaultEventsMap } from 'socket.io';
 
-// Interface untuk data yang dikirim dalam event
+/// Interface untuk event yang diterima dari client
+export interface ClientToServerEvents {
+    join_business_room: (businessId: string, callback?: (success: boolean) => void) => void;
+    leave_business_room: (businessId: string, callback?: (success: boolean) => void) => void;
+    ping: (callback?: (response?: string) => void) => void;
+    test_event: (data: any) => void; // Added for testing
+}
 export interface NewOrderData {
     id: string;
     businessId: string;
@@ -50,7 +56,8 @@ export interface NotificationData {
 export interface ClientToServerEvents {
     join_business_room: (businessId: string, callback?: (success: boolean) => void) => void;
     leave_business_room: (businessId: string, callback?: (success: boolean) => void) => void;
-    ping: (callback?: (response: string) => void) => void;
+    ping: (callback?: (response?: string) => void) => void;
+    test_event: (data: any) => void;
 }
 
 // Interface untuk event yang dikirim ke client
@@ -70,6 +77,7 @@ export interface ServerToClientEvents {
     // Common events
     pong: (message: string) => void;
     error: (message: string) => void;
+    test_response: (data: { message: string; originalData: any; serverTimestamp: Date; socketId: string }) => void;
 }
 
 // Interface untuk inter-server events (untuk scaling)

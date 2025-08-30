@@ -5,37 +5,37 @@ import { SocketProvider } from "@/context/SocketContext";
 import "./globals.css";
 
 const geistSans = Geist({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-    title: "BOSS",
-    description: "Manage your business with BOSS",
-    icons: "/assets/logo/logo-bossapp.svg"
+  title: "BOSS",
+  description: "Manage your business with BOSS",
+  icons: "/assets/logo/logo-bossapp.svg"
 };
 
 export default function Layout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return (
-        <html lang="id" suppressHydrationWarning={true}>
-            <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-            >
-                <SocketProvider>
-                    <RootLayout>
-                        {children}
-                    </RootLayout>
-                </SocketProvider>
-            </body>
-        </html>
-    );
+  return (
+    <html lang="id" suppressHydrationWarning={true}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <SocketProvider>
+          <RootLayout>
+            {children}
+          </RootLayout>
+        </SocketProvider>
+      </body>
+    </html>
+  );
 }
