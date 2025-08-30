@@ -36,17 +36,18 @@ export const createPaymentSchema = z.object({
         message: "Total quantity semua item tidak boleh melebihi 10.000",
         path: ["item_details"]
     }
-).refine(
-    (data) => {
-        // Validate all items have the same outlet
-        const outletIds = data.item_details.map(item => item.outletId);
-        const uniqueOutletIds = new Set(outletIds);
-        return uniqueOutletIds.size === 1;
-    },
-    {
-        message: "Semua item harus dari outlet yang sama",
-        path: ["item_details"]
-    }
-);
+)
+    .refine(
+        (data) => {
+            // Validate all items have the same outlet
+            const outletIds = data.item_details.map(item => item.outletId);
+            const uniqueOutletIds = new Set(outletIds);
+            return uniqueOutletIds.size === 1;
+        },
+        {
+            message: "Semua item harus dari outlet yang sama",
+            path: ["item_details"]
+        }
+    );
 
 export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;

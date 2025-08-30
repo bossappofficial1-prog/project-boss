@@ -1,14 +1,20 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
-import { createMidtransTransactionService, createQrisPaymentService } from "../service/payment.service";
+import { createMidtransTransactionService, createPaymentService, createQrisPaymentService } from "../service/payment.service";
 import { ResponseUtil } from "../utils/response";
 import { messagePublisher } from "../service/message-publisher.service";
+import { generateOrderCode } from "../utils";
+import { PaymentMethodId } from "../constants/payment-method";
+import { CreatePaymentPayload } from "../schemas/payment-v2.schema";
+import { HttpStatus } from "../constants/http-status";
 
-// export const createTransactionController = asyncHandler(async (req: Request, res: Response) => {
-//     const { orderId } = req.params;
-//     const transaction = await createMidtransTransactionService(orderId);
-//     return ResponseUtil.success(res, transaction);
-// });
+export const createPaymentController = asyncHandler(async (req: Request, res: Response) => {
+    const { customer_details, item_details, payment_method } = req.body as CreatePaymentPayload
+
+    const result = await createPaymentService({ customer_details, item_details, payment_method })
+
+    return ResponseUtil.success(res, result, HttpStatus.CREATED)
+})
 
 export const createQrisPaymentController = asyncHandler(async (req: Request, res: Response) => {
     const { orderId } = req.params;
