@@ -4,7 +4,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useTranslations } from '@/hooks/useI18n';
-import { useAppBar } from '@/context/AppBarContext';
+import { useAppBarV2 } from '@/context/AppBarContextV2';
 import { EmptyState } from '@/components/Base';
 import FavoriteOutletCard from './FavoriteOutletCard';
 import { Heart } from 'lucide-react';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 
 export default function FavoritesPage() {
     const { favorites, clearFavorites } = useFavorites();
-    const { updateAppbar } = useAppBar();
+    const { setAppBar } = useAppBarV2();
     const t = useTranslations('favorites');
     const router = useRouter();
     const hasUpdatedRef = useRef(false);
@@ -43,10 +43,10 @@ export default function FavoritesPage() {
 
     useLayoutEffect(() => {
         if (!hasUpdatedRef.current) {
-            updateAppbar(appBarConfig);
+            setAppBar(appBarConfig);
             hasUpdatedRef.current = true;
         }
-    }, [updateAppbar, appBarConfig]);
+    }, [setAppBar, appBarConfig]);
 
     const handleBrowseOutlets = () => {
         router.push('/nearby');

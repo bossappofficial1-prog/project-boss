@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import CheckoutPage from '@/components/checkout/CheckoutPage';
 import { CheckoutService } from '@/services/checkout';
-import { useAppBarConfig } from '@/hooks/useAppBarConfig';
 import { CheckoutData } from '@/types/checkout';
 import { LoadingState } from '@/components/Base';
 import { useAppBarV2 } from '@/context/AppBarContextV2';

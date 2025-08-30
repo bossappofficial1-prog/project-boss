@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppBar } from '@/context/AppBarContext';
+import { useAppBarV2 } from '@/context/AppBarContextV2';
 import { EmptyState } from '@/components/Base';
 import OrderCard from './OrderCard';
 import { Receipt } from 'lucide-react';
@@ -38,11 +38,11 @@ export interface OrderData {
 
 export default function OrdersPage() {
     const [orders, setOrders] = useState<OrderData[]>([]);
-    const { updateAppbar } = useAppBar();
+    const { setAppBar } = useAppBarV2();
     const router = useRouter();
 
     useEffect(() => {
-        updateAppbar({
+        setAppBar({
             title: "Pesanan Saya",
             subtitle: "Riwayat dan status pesanan",
             showSearch: false,
@@ -52,7 +52,7 @@ export default function OrdersPage() {
 
         // Load orders from localStorage
         loadOrders();
-    }, [updateAppbar]);
+    }, [setAppBar]);
 
     const loadOrders = () => {
         try {
