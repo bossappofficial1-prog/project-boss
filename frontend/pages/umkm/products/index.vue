@@ -17,35 +17,7 @@ const config = useRuntimeConfig()
 const baseUrl = config.public.apiBaseUrl
 const API_TEMPLATE_URL = `${baseUrl}/products/template/import`
 const downloadTemplate = async () => {
-  try {
-    const response = await fetch(API_TEMPLATE_URL, {
-      method: 'GET',
-    })
-    if (!response.ok) throw new Error('Gagal mengunduh template')
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    // Coba ambil nama file dari header jika ada, fallback ke default
-    const disposition = response.headers.get('Content-Disposition')
-    let filename = 'template-produk.xlsx'
-    if (disposition && disposition.includes('filename=')) {
-      filename = disposition.split('filename=')[1].replace(/"/g, '')
-    }
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    setTimeout(() => {
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-    }, 100)
-  } catch (err: any) {
-    toast.add({
-      title: 'Gagal Mengunduh',
-      description: err.message || 'Terjadi kesalahan saat mengunduh template.',
-      color: 'error',
-    })
-  }
+  window.open(API_TEMPLATE_URL, '_blank')
 }
 
 const triggerFileInput = () => {
@@ -95,8 +67,7 @@ const handleFileUpload = async (event: Event) => {
 
 // Refactored to use useAsyncData for proper reactivity, as the custom useApi
 // composable does not seem to handle reactive URLs correctly.
-const { data, pending, error, refresh } = useApi<{ products: Product[] }>(`/products/outlet/${auth.selectedOutlet?.id}`
-)
+const { data, pending, error, refresh } = useApi<{ products: Product[] }>(`/products/outlet/${auth.selectedOutlet?.id}`)
 
 // The products are now directly the result of the transformed data.
 const products = computed(() => data.value?.data?.products || [])
@@ -109,10 +80,11 @@ watch(searchQuery, () => {
   debouncedRefresh()
 })
 
-onMounted(() => {
+onMounted(async () => {
   // Initial fetch if an outlet is already selected when the component mounts.
   if (auth.selectedOutlet?.id) {
-    refresh()
+    await refresh()
+    console.log("PRODUKKKKKK", data.value!.data)
   }
 })
 
