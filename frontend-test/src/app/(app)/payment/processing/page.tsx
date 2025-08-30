@@ -31,11 +31,17 @@ const PROCESSING_APP_BAR_CONFIG = {
 export default function PaymentProcessing() {
     const [paymentInfo, setPaymentInfo] = useState<PaymentResponse & { customerInfo: CustomerInfoType; selectedPaymentMethod: PaymentMethod } | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<MidtransTransactionStatus>('pending');
+    const [isMounted, setIsMounted] = useState(false)
     const [isRefreshing, setIsRefreshing] = useState(false);
     const { isConnected, emitEvent, onEvent } = useSocket();
     const router = useRouter();
 
     useAppBarConfig(PROCESSING_APP_BAR_CONFIG);
+    useEffect(() => {
+        if (typeof window === "undefined") return
+        if (isMounted) return
+        setIsMounted(true)
+    }, [])
 
     useEffect(() => {
         const paymentData = PaymentService.getPaymentInformation();
@@ -87,8 +93,9 @@ export default function PaymentProcessing() {
     const qrCodeUrl = paymentInfo?.actions?.[0]?.url;
 
     if (!paymentInfo) return <LoadingState />
-    if (paymentInfo.transaction_status !== "pending") {
-        router.push("/")
+    if (isMounted) {
+        const redirectPath = redirectMap[paymentStatus]
+        if (redirectPath && redirectPath !== "/payment/processing") window.location.href = redirectPath;
     }
 
     const { selectedPaymentMethod, customerInfo, gross_amount } = paymentInfo;

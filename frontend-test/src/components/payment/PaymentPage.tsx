@@ -229,7 +229,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    const { items: cartItems } = useCart();
+    const { items: cartItems, clearCart } = useCart();
 
     // Load customer info from ProfileSettings (if available)
     useEffect(() => {
@@ -309,8 +309,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 payment_method: selectedPaymentMethod.id as any
             };
 
-            console.log('Payment payload:', payloadBody);
-
             // Check if we have any items
             if (itemDetails.length === 0) {
                 throw new Error('No items found. Please go back to cart and add items.');
@@ -335,13 +333,13 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             // Clear checkout and payment data
             CheckoutService.clearCheckoutDataFromStorage();
             CheckoutService.clearPaymentDataFromStorage();
+            clearCart()
 
             // Redirect to success page
             router.push('/payment/processing');
 
         } catch (error) {
-            console.error('Payment failed:', error);
-            // You can add a toast notification here or show an error message to the user
+            console.error('Payment failed:', error)
             alert(error instanceof Error ? error.message : 'Payment processing failed. Please try again.');
             setIsLoading(false);
         }
