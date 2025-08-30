@@ -7,7 +7,6 @@ import orderRouter from "./order.route";
 import dashboardRouter from "./dashboard.route";
 import bookingRouter from "./booking.route";
 import paymentRouter from "./payment.route";
-import businessRouter from "./business.route";
 import homeRouter from "./home.route";
 import outletRouter from "./outlet.route";
 import expenseRouter from "./expense.route";
@@ -19,11 +18,8 @@ import uploadRouter from "./upload.route";
 import securityRouter from "./security.route";
 import queueMonitoringRouter from "./queue-monitoring.route";
 import notificationRouter from "./notification.route";
-import socketRouter from "./socket.routes";
-import socketPublicRouter from "./socket-public.routes";
 import { ResponseUtil } from "../utils";
 import { paymentMethod } from "../constants/payment-method";
-import { socketUtils } from "../utils/socket.utils";
 
 const apiRouter = Router()
 
@@ -46,19 +42,17 @@ apiRouter.use('/upload', uploadRouter)
 apiRouter.use('/security', securityRouter)
 apiRouter.use('/queue-monitoring', queueMonitoringRouter)
 apiRouter.use('/notifications', notificationRouter)
-apiRouter.use('/socket', socketRouter)
-apiRouter.use('/socket-public', socketPublicRouter)
 apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
-apiRouter.get("/test-websocket/:orderId", async (req, res) => {
-    const { orderId } = req.params
-    socketUtils.emitToOrder(orderId, {
-        message: "Hello World",
-        orderId: "ORD20250828123456",
-        status: "test",
-        timestamp: new Date()
-    })
+// apiRouter.get("/test-websocket/:orderId", async (req, res) => {
+//     const { orderId } = req.params
+//     socketUtils.emitToOrder(orderId, {
+//         message: "Hello World",
+//         orderId: "ORD20250828123456",
+//         status: "test",
+//         timestamp: new Date()
+//     })
 
-    res.json({ message: "OK" })
-})
+//     res.json({ message: "OK" })
+// })
 
 export default apiRouter
