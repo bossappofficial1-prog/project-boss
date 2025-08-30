@@ -4,13 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-    CheckCircle,
     Receipt,
     Home,
     Clock
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAppBarConfig } from '@/hooks/useAppBarConfig';
 import { formatCurrency } from '@/lib/utils';
 import { SuccessState } from '@/components/Base';
 import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard';
@@ -24,7 +22,6 @@ export default function PaymentSuccess() {
     const [paymentInfo, setPaymentInfo] = useState<any>(null);
     const router = useRouter();
 
-    useAppBarConfig(SUCCESS_APP_BAR_CONFIG);
     useEffect(() => {
         const lastPayment = localStorage.getItem('lastPayment');
         if (lastPayment) {

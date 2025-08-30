@@ -17,6 +17,7 @@ import { Search, SearchDropdown, SearchInput } from "@/components/shared/search"
 import { useTranslations } from "@/hooks/useI18n";
 import { useNearbyOutletsSingle } from "@/hooks/useNearbyOutlets";
 import { DivXScroll } from "@/components/shared/DivXScroll";
+import { useAppBarV2 } from "@/context/AppBarContextV2";
 
 // // Quick Stats Component - Restored with API calls but mobile design
 // function QuickStats() {
@@ -196,18 +197,11 @@ function HomeContent() {
   const router = useRouter();
   const tp = useTranslations("featuredOutlets")
   const t = useTranslations("searchPage")
+  const { setAppBar } = useAppBarV2()
 
-  const appBarConfig = useMemo(() => ({
-    ...HOME_APP_BAR_CONFIG,
-    rightContent: (
-      <Button variant="ghost" size="icon">
-        <Bell className="h-5 w-5" />
-      </Button>
-    )
-  }), []);
-
-  // Configure AppBar for Home page
-  useAppBarConfig(appBarConfig);
+  useEffect(() => {
+    setAppBar({ title: "Home" })
+  }, [])
 
   const handleSearch = (query: string) => {
     if (query.trim()) {

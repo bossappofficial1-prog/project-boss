@@ -7,6 +7,7 @@ import { CheckoutService } from '@/services/checkout';
 import { useAppBarConfig } from '@/hooks/useAppBarConfig';
 import { CheckoutData } from '@/types/checkout';
 import { LoadingState } from '@/components/Base';
+import { useAppBarV2 } from '@/context/AppBarContextV2';
 
 const CHECKOUT_APP_BAR_CONFIG = {
     title: 'Checkout',
@@ -19,8 +20,9 @@ export default function CheckoutPageWrapper() {
     const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
+    const { setAppBar } = useAppBarV2()
 
-    useAppBarConfig(CHECKOUT_APP_BAR_CONFIG);
+    useEffect(() => { typeof window !== undefined && setAppBar(CHECKOUT_APP_BAR_CONFIG) }, [])
 
     useEffect(() => {
         const data = CheckoutService.getCheckoutDataFromStorage();

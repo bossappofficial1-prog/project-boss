@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
+// Interface tetap sama
 export interface FavoriteOutlet {
     id: string;
     name: string;
@@ -11,94 +12,94 @@ export interface FavoriteOutlet {
     addedAt: number;
 }
 
+// Return type sedikit diubah untuk favoriteCount
 interface UseFavoritesReturn {
     favorites: FavoriteOutlet[];
+    favoriteCount: number; // Menjadi nilai, bukan fungsi
     isFavorite: (outletId: string) => boolean;
     addFavorite: (outlet: Omit<FavoriteOutlet, 'addedAt'>) => void;
     removeFavorite: (outletId: string) => void;
     toggleFavorite: (outlet: Omit<FavoriteOutlet, 'addedAt'>) => void;
     clearFavorites: () => void;
-    getFavoriteCount: () => number;
 }
 
 export function useFavorites(): UseFavoritesReturn {
-    const [favorites, setFavorites] = useState<FavoriteOutlet[]>([]);
-    const [isClient, setIsClient] = useState(false);
-
-    // Load favorites from localStorage on mount
-    useEffect(() => {
-        setIsClient(true);
-        if (typeof window !== 'undefined') {
-            try {
-                const stored = localStorage.getItem('favorite-outlets');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    setFavorites(Array.isArray(parsed) ? parsed : []);
-                }
-            } catch (error) {
-                console.error('Error loading favorites:', error);
-                setFavorites([]);
-            }
+    // HIGHLIGHT: Inisialisasi state langsung dari localStorage dalam satu langkah.
+    // Ini menghindari render awal dengan state kosong lalu render kedua dengan data.
+    const [favorites, setFavorites] = useState<FavoriteOutlet[]>(() => {
+        // Cek ini penting agar tidak error saat Server-Side Rendering (SSR) di Next.js
+        if (typeof window === 'undefined') {
+            return [];
         }
-    }, []);
-
-    // Save favorites to localStorage whenever favorites change
-    useEffect(() => {
-        if (isClient && typeof window !== 'undefined') {
-            try {
-                localStorage.setItem('favorite-outlets', JSON.stringify(favorites));
-            } catch (error) {
-                console.error('Error saving favorites:', error);
+        try {
+            const stored = localStorage.getItem('favorite-outlets');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                return Array.isArray(parsed) ? parsed : [];
             }
+            return [];
+        } catch (error) {
+            console.error('Error loading favorites from localStorage:', error);
+            return [];
         }
-    }, [favorites, isClient]);
+    });
 
-    const isFavorite = (outletId: string): boolean => {
+    // HIGHLIGHT: Hanya butuh satu useEffect untuk menyimpan perubahan ke localStorage.
+    useEffect(() => {
+        try {
+            localStorage.setItem('favorite-outlets', JSON.stringify(favorites));
+        } catch (error) {
+            console.error('Error saving favorites to localStorage:', error);
+        }
+    }, [favorites]); // Efek ini hanya berjalan ketika state `favorites` berubah.
+
+    // HIGHLIGHT: Semua fungsi dibungkus dengan `useCallback` agar referensinya stabil.
+    // Ini adalah kunci utama untuk mencegah infinite loop di komponen lain.
+
+    const isFavorite = useCallback((outletId: string): boolean => {
         return favorites.some(fav => fav.id === outletId);
-    };
+    }, [favorites]); // Bergantung pada `favorites` karena ia membaca state secara langsung.
 
-    const addFavorite = (outlet: Omit<FavoriteOutlet, 'addedAt'>): void => {
-        const newFavorite: FavoriteOutlet = {
-            ...outlet,
-            addedAt: Date.now()
-        };
-
+    const addFavorite = useCallback((outlet: Omit<FavoriteOutlet, 'addedAt'>): void => {
         setFavorites(prev => {
-            // Check if already exists
             if (prev.some(fav => fav.id === outlet.id)) {
-                return prev;
+                return prev; // Jika sudah ada, jangan lakukan apa-apa
             }
+            const newFavorite: FavoriteOutlet = { ...outlet, addedAt: Date.now() };
             return [newFavorite, ...prev];
         });
-    };
+    }, []); // Dependency array kosong, super stabil!
 
-    const removeFavorite = (outletId: string): void => {
+    const removeFavorite = useCallback((outletId: string): void => {
         setFavorites(prev => prev.filter(fav => fav.id !== outletId));
-    };
+    }, []); // Dependency array kosong, super stabil!
 
-    const toggleFavorite = (outlet: Omit<FavoriteOutlet, 'addedAt'>): void => {
-        if (isFavorite(outlet.id)) {
-            removeFavorite(outlet.id);
-        } else {
-            addFavorite(outlet);
-        }
-    };
+    const toggleFavorite = useCallback((outlet: Omit<FavoriteOutlet, 'addedAt'>): void => {
+        setFavorites(prev => {
+            const exists = prev.some(fav => fav.id === outlet.id);
+            if (exists) {
+                return prev.filter(fav => fav.id !== outlet.id);
+            } else {
+                const newFavorite: FavoriteOutlet = { ...outlet, addedAt: Date.now() };
+                return [newFavorite, ...prev];
+            }
+        });
+    }, []); // Dependency array kosong, super stabil!
 
-    const clearFavorites = (): void => {
+    const clearFavorites = useCallback((): void => {
         setFavorites([]);
-    };
+    }, []); // Dependency array kosong, super stabil!
 
-    const getFavoriteCount = (): number => {
-        return favorites.length;
-    };
+    // HIGHLIGHT: Mengganti fungsi `getFavoriteCount` dengan nilai langsung.
+    const favoriteCount = favorites.length;
 
     return {
         favorites,
+        favoriteCount,
         isFavorite,
         addFavorite,
         removeFavorite,
         toggleFavorite,
-        clearFavorites,
-        getFavoriteCount
+        clearFavorites
     };
 }

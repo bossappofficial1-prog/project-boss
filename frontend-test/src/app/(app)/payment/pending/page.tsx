@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
-import { Clock, RefreshCw, ArrowLeft, CheckCircle, XCircle, AlertCircle, Phone } from 'lucide-react'
+import { Clock, RefreshCw, ArrowLeft, CheckCircle, AlertCircle, Phone } from 'lucide-react'
 import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard'
 import { PaymentFooter } from '@/components/payment/PaymentFooter'
 import { PaymentOrderSummary } from '@/components/payment/PaymentOrderSummary'
@@ -110,26 +109,6 @@ export default function PaymentPendingPage() {
         // Open WhatsApp or phone dialer
         const phone = '+6281234567890' // Replace with actual support number
         window.open(`https://wa.me/${phone}?text=Halo, saya ingin menanyakan status pembayaran untuk order ${paymentData?.orderId}`, '_blank')
-    }
-
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(amount)
-    }
-
-    const formatDateTime = (timestamp: string) => {
-        return new Date(timestamp).toLocaleString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        })
     }
 
     const formatRelativeTime = (timestamp: string) => {

@@ -7,13 +7,13 @@ import { LoadingState, EmptyState, ErrorState } from '@/components/Base';
 import { Button } from '@/components/ui/button';
 import { Loader2, Store, Search as SearchIcon } from 'lucide-react';
 import { useTranslations } from '@/hooks/useI18n';
-import { useAppBar } from '@/context/AppBarContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Search, SearchDropdown, SearchInput } from '@/components/shared/search';
+import { useAppBarV2 } from '@/context/AppBarContextV2';
 
 function SearchOutletContent() {
     const t = useTranslations('searchPage');
-    const { updateAppbar } = useAppBar();
+    const { setAppBar, resetAppBar } = useAppBarV2();
     const [search, setSearch] = useState('');
 
     const debouncedSearch = useDebounce(search, 500);
@@ -34,13 +34,15 @@ function SearchOutletContent() {
     }, [debouncedSearch]);
 
     useEffect(() => {
-        updateAppbar({
+        setAppBar({
             title: t('title'),
             sticky: true,
             subtitle: t('subtitle'),
             showSearch: false,
         });
-    }, [updateAppbar, t]);
+
+        return () => resetAppBar()
+    }, [setAppBar, t]);
 
     const {
         data,

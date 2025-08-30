@@ -4,7 +4,6 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, RefreshCw } from 'lucide-react';
 
-import { useAppBarConfig } from '@/hooks/useAppBarConfig';
 import { useSocket } from '@/hooks/useSocket-v2';
 import { usePaymentTimer } from '@/hooks/usePaymentTimer';
 
@@ -23,11 +22,6 @@ import { ImageRender } from '@/components/shared/Image';
 import { LoadingState } from '@/components/Base';
 import { redirectMap } from '@/components/payment/function';
 
-const PROCESSING_APP_BAR_CONFIG = {
-    title: 'Proses Pembayaran',
-    showBackButton: true,
-};
-
 export default function PaymentProcessing() {
     const [paymentInfo, setPaymentInfo] = useState<PaymentResponse & { customerInfo: CustomerInfoType; selectedPaymentMethod: PaymentMethod } | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<MidtransTransactionStatus>('pending');
@@ -36,7 +30,6 @@ export default function PaymentProcessing() {
     const { isConnected, emitEvent, onEvent } = useSocket();
     const router = useRouter();
 
-    useAppBarConfig(PROCESSING_APP_BAR_CONFIG);
     useEffect(() => {
         if (typeof window === "undefined") return
         if (isMounted) return

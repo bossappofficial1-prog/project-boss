@@ -10,12 +10,14 @@ import { Loader2 } from 'lucide-react';
 import { useTranslations } from '@/hooks/useI18n';
 import { Search, SearchDropdown, SearchInput } from '@/components/shared/search';
 import { Outlet } from '@/services/outlets';
+import { useAppBarV2 } from '@/context/AppBarContextV2';
 
 function NearbyOutletContent() {
     const t = useTranslations('nearbyPage');
     const { position, loading: positionLoading } = useUserPosition();
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const { setAppBar } = useAppBarV2()
 
     useEffect(() => {
         if (position?.[0] && position?.[1]) {
@@ -34,6 +36,10 @@ function NearbyOutletContent() {
             debugNearbyOutlets();
         }
     }, [position]);
+
+    useEffect(() => {
+        typeof window !== undefined && setAppBar({ title: "Nearby outlet" })
+    }, [])
 
     // Debounce search input
     useEffect(() => {

@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PaymentPage from '@/components/payment/PaymentPage';
 import { CheckoutService } from '@/services/checkout';
-import { useAppBarConfig } from '@/hooks/useAppBarConfig';
 import { LoadingState } from '@/components/Base';
+import { useAppBarV2 } from '@/context/AppBarContextV2';
 
 const PAYMENT_APP_BAR_CONFIG = {
     title: 'Pembayaran',
@@ -16,16 +16,15 @@ export default function Payment() {
     const [paymentData, setPaymentData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const { setAppBar } = useAppBarV2()
 
-    // Configure app bar
-    useAppBarConfig(PAYMENT_APP_BAR_CONFIG);
+    useEffect(() => { typeof window !== undefined && setAppBar(PAYMENT_APP_BAR_CONFIG) }, [])
 
     useEffect(() => {
         const loadPaymentData = () => {
             const data = CheckoutService.getPaymentDataFromStorage();
 
             if (!data) {
-                // No payment data, redirect to cart
                 router.replace('/cart');
                 return;
             }

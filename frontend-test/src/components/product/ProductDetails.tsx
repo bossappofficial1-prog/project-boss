@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Product as ProductService } from "@/services/product";
 import { Outlet as OutletService } from "@/services/outlets";
-import { useAppBar } from "@/context/AppBarContext";
 import { useCart } from "@/hooks/useCart";
 import { useFavorites } from "@/hooks/useFavorites";
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,7 @@ import Link from "next/link";
 import { ShareOutlet } from "@/components/shared/ShareOutlet";
 import { ProductType } from "@/types";
 import { ScheduleModal } from "../outlet/ScheduleModal";
+import { useAppBarV2 } from "@/context/AppBarContextV2";
 
 type Props = {
     params: Promise<{ id: string; productId: string }>;
@@ -25,8 +25,8 @@ type Props = {
 
 export function ProductDetails({ params }: Props) {
     const router = useRouter();
-    const { updateAppbar } = useAppBar();
     const { addItem } = useCart();
+    const { setAppBar } = useAppBarV2()
     const { isFavorite, toggleFavorite } = useFavorites();
     const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false)
 
@@ -56,6 +56,16 @@ export function ProductDetails({ params }: Props) {
     const outlet = outletQuery.data;
     const isProductFavorite = product ? isFavorite(product.id) : false;
 
+    useEffect(() => {
+        if (!product) return;
+        setAppBar({
+            title: "Detail Product",
+            subtitle: product?.name,
+            centerTitle: true,
+            showBackButton: true
+        })
+    }, [product?.name])
+
     const handleToggleFavorite = useCallback(() => {
         if (!product || !outlet) return;
         toggleFavorite({
@@ -71,20 +81,6 @@ export function ProductDetails({ params }: Props) {
         if (!product || !outlet) return;
         addItem(outlet.id, outlet.name, product, 1);
     }, [product, outlet, addItem]);
-
-    useEffect(() => {
-        updateAppbar({
-            title: "Detail Produk",
-            subtitle: product?.name || "Memuat...",
-            centerTitle: true,
-            sticky: false,
-            rightContent: (
-                <ShareOutlet outlet={{ id: outlet?.id ?? '', name: product?.name ?? '', address: outlet?.address ?? '', image: product?.image }}>
-                    <Button variant="ghost" size="icon"><Share2 className="w-5 h-5" /></Button>
-                </ShareOutlet>
-            )
-        });
-    }, [product, outlet, updateAppbar, router]);
 
     if (productQuery.isLoading || outletQuery.isLoading) return <LoadingState />;
     if (productQuery.isError || outletQuery.isError) return <ErrorState onRetry={() => router.refresh()} />;

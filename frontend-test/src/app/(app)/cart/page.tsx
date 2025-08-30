@@ -19,7 +19,6 @@ import {
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
-import { useAppBarConfig } from '@/hooks/useAppBarConfig';
 import { EmptyState } from '@/components/Base';
 import { BookingSlotType } from '@/types';
 import { BookingSlot } from '@/services/booking-slot';
@@ -28,6 +27,7 @@ import { id } from 'date-fns/locale';
 import { ScheduleModal } from '@/components/outlet/ScheduleModal';
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link';
+import { useAppBarV2 } from '@/context/AppBarContextV2';
 
 function formatSelectedSlot(dateStr: string, startTimeStr: string, endTimeStr: string) {
     const date = parseISO(dateStr);
@@ -215,15 +215,18 @@ function OrderSummary({ totalPrice, totalItems, outletCount, hasUnscheduledServi
 
 const CART_APP_BAR_CONFIG = {
     title: 'Keranjang',
-    showBackButton: true,
+    showBackButton: false,
 };
 
 export default function CartPage() {
     const { items, getTotalItems, getTotalPrice } = useCart();
-    const router = useRouter();
-    useAppBarConfig(CART_APP_BAR_CONFIG);
+    const { setAppBar } = useAppBarV2()
 
-    // 1. Siapkan input untuk useQuery (ID slot yang unik dan sudah diurutkan)
+    const router = useRouter();
+    useEffect(() => {
+        setAppBar(CART_APP_BAR_CONFIG)
+    }, [])
+
     const uniqueSlotIds = useMemo(() => {
         const slotIds = items
             .filter(item => item.type === 'SERVICE' && item.selectedSlot)
@@ -231,29 +234,24 @@ export default function CartPage() {
         return [...new Set(slotIds)].sort();
     }, [items]);
 
-    // 2. Gunakan useQuery untuk fetch data slot secara deklaratif
     const { data: slotDetails, isLoading: isLoadingSlots, isError } = useQuery({
         queryKey: ['bookingSlots', uniqueSlotIds],
 
         queryFn: async () => {
-            // Promise.all untuk menjalankan semua request API secara paralel
             const slots = await Promise.all(
                 uniqueSlotIds.map(id => BookingSlot.getById(id))
             );
 
-            // Mengubah array hasil fetch menjadi object/map agar mudah diakses
             return slots.reduce((acc, slot) => {
                 if (slot) acc[slot.id] = slot;
                 return acc;
             }, {} as Record<string, BookingSlotType>);
         },
 
-        // `enabled` memastikan query ini hanya berjalan jika ada slotId untuk dicari.
         enabled: uniqueSlotIds.length > 0,
         placeholderData: {},
     });
 
-    // React Query sudah menangani state loading, error, dan data.
     const { itemsByOutlet, hasUnscheduledServices, totalItems, totalPrice } = useMemo(() => {
         const grouped = items.reduce((acc, item) => {
             if (!acc[item.outletId]) {

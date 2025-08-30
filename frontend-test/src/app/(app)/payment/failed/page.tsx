@@ -17,7 +17,6 @@ export default function PaymentFailedPage() {
     const router = useRouter()
 
     useEffect(() => {
-        // Get payment data from localStorage
         const data = localStorage.getItem('paymentData')
         if (data) {
             const parsed = JSON.parse(data)

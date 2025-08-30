@@ -33,7 +33,7 @@ export default function ProfileSettings() {
     const toast = useToast();
     const t = useTranslations('profilePage');
     const [isResetModalShowed, setIsResetModalShowed] = useState<boolean>(false)
-    const { getFavoriteCount } = useFavorites();
+    const { favoriteCount } = useFavorites();
 
     const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
         resolver: zodResolver(schema),
@@ -246,7 +246,7 @@ export default function ProfileSettings() {
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">
-                                {getFavoriteCount()} saved
+                                {favoriteCount ? favoriteCount : 0} saved
                             </span>
                             <span className="text-muted-foreground">→</span>
                         </div>

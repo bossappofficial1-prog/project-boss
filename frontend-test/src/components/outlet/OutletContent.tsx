@@ -9,16 +9,16 @@ import { ImageRender } from "../shared/Image";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import ProductCard from "./ProductCard";
-import { useAppBar } from "@/context/AppBarContext";
 import { useEffect, useMemo, useCallback, useRef } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { Outlet } from "@/services/outlets";
 import { Product } from "@/services/product";
 import { EmptyState, ErrorState, LoadingState } from "../Base";
-import { OperatingHourType } from "@/types";
+import { OperatingHourType, OutletType } from "@/types";
 import { useSearchParams } from "next/navigation";
 import { DAY_NAMES, LanguageType } from "@/constants";
 import { formatTime } from "@/lib/utils";
+import { useAppBarV2 } from "@/context/AppBarContextV2";
 
 const formatOperatingHours = (operatingHours: OperatingHourType[], locale: LanguageType) => {
     if (typeof window === "undefined") return
@@ -129,9 +129,40 @@ const OperatingHoursTab = ({ operatingHours }: { operatingHours: OperatingHourTy
     );
 };
 
+export function LeftContentAppBarOutlet({
+    handleToggleFavorite,
+    isOutletFavorite,
+    outlet
+}: { handleToggleFavorite: () => void, isOutletFavorite: boolean, outlet: OutletType }) {
+    return <>
+        <Button
+            variant="secondary"
+            size="sm"
+            className="rounded-full backdrop-blur-sm"
+            onClick={handleToggleFavorite}
+        >
+            <Heart className={`w-4 h-4 ${isOutletFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+        </Button>
+        <ShareOutlet outlet={{
+            id: outlet.id,
+            name: outlet.name,
+            address: outlet.address,
+            image: outlet.image || undefined
+        }}>
+            <Button
+                variant="ghost"
+                size="sm"
+                className="p-0 backdrop-blur-sm rounded-full"
+            >
+                <Share2 className="w-4 h-4" />
+            </Button>
+        </ShareOutlet>
+    </>
+}
+
 export function OutletContent({ outletId }: { outletId: string }) {
     const { isFavorite, toggleFavorite } = useFavorites();
-    const { updateAppbar } = useAppBar();
+    const { setAppBar, resetAppBar } = useAppBarV2()
     const t = useTranslations('outletDetail');
 
     const results = useQueries({
@@ -141,12 +172,28 @@ export function OutletContent({ outletId }: { outletId: string }) {
         ],
     });
 
-
     const [outletQuery, productQuery] = results;
 
     const services = useMemo(() => productQuery.data?.filter(p => p.type === "SERVICE") ?? [], [productQuery.data]);
     const goods = useMemo(() => productQuery.data?.filter(p => p.type === "GOODS") ?? [], [productQuery.data]);
     const isOutletFavorite = outletQuery.data ? isFavorite(outletQuery.data.id) : false;
+
+    useEffect(() => {
+        const outletData = outletQuery.data;
+
+        if (outletData) {
+            setAppBar({
+                title: "Outlet",
+                subtitle: outletData.name,
+                showBackButton: true,
+                centerTitle: true,
+            });
+        }
+
+        return () => {
+            resetAppBar();
+        };
+    }, [setAppBar, resetAppBar, outletQuery.data?.name]);
 
     const handleToggleFavorite = useCallback(() => {
         if (!outletQuery.data) return;
@@ -160,6 +207,22 @@ export function OutletContent({ outletId }: { outletId: string }) {
         });
     }, [toggleFavorite, outletQuery.data?.id, outletQuery.data?.name, outletQuery.data?.address, outletQuery.data?.image, outletQuery.data?.isOpen]);
 
+    useEffect(() => {
+        const outletData = outletQuery.data;
+
+        if (outletData) {
+            setAppBar({
+                rightContent: (
+                    <LeftContentAppBarOutlet
+                        handleToggleFavorite={handleToggleFavorite}
+                        isOutletFavorite={isOutletFavorite}
+                        outlet={outletData}
+                    />
+                )
+            });
+        }
+    }, [setAppBar, isOutletFavorite, outletQuery.data?.id]);
+
     const handleWhatsAppChat = useCallback(() => {
         if (!outletQuery.data?.phone) return;
         const outlet = outletQuery.data;
@@ -167,69 +230,6 @@ export function OutletContent({ outletId }: { outletId: string }) {
         const whatsappUrl = `https://wa.me/${(outlet.phone?.startsWith("+62") ? outlet.phone : "+62" + outlet.phone.slice(1)).replace(/\D/g, '')}?text=${message}`;
         window.open(whatsappUrl, '_blank');
     }, [outletQuery.data?.phone, outletQuery.data?.name]);
-
-    const lastOutletRef = useRef<string>('');
-    const lastFavoriteState = useRef<boolean>(false);
-
-    useEffect(() => {
-        const currentOutletId = outletQuery.data?.id || '';
-
-        if (lastOutletRef.current === currentOutletId &&
-            lastFavoriteState.current === isOutletFavorite &&
-            currentOutletId !== '') {
-            return;
-        }
-
-        lastOutletRef.current = currentOutletId;
-        lastFavoriteState.current = isOutletFavorite;
-
-        if (!outletQuery.data || outletQuery.error) {
-            updateAppbar({
-                title: "Outlet",
-                sticky: true,
-                showSearch: false,
-                centerTitle: true,
-                rightContent: null,
-                subtitle: t("outletNotFound")
-            });
-            return;
-        }
-
-        const outlet = outletQuery.data;
-        updateAppbar({
-            title: "Outlet",
-            sticky: true,
-            subtitle: outlet.name,
-            showSearch: false,
-            centerTitle: true,
-            rightContent: (
-                <>
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        className="rounded-full backdrop-blur-sm"
-                        onClick={handleToggleFavorite}
-                    >
-                        <Heart className={`w-4 h-4 ${isOutletFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-                    </Button>
-                    <ShareOutlet outlet={{
-                        id: outlet.id,
-                        name: outlet.name,
-                        address: outlet.address,
-                        image: outlet.image || undefined
-                    }}>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-0 backdrop-blur-sm rounded-full"
-                        >
-                            <Share2 className="w-4 h-4" />
-                        </Button>
-                    </ShareOutlet>
-                </>
-            )
-        });
-    }, [toggleFavorite, outletQuery.data?.id, outletQuery.data?.name, outletQuery.data?.address, outletQuery.data?.image, outletQuery.data?.isOpen]);
 
     if (outletQuery.isLoading) {
         return <LoadingState />;
