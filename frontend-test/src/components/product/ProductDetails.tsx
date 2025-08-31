@@ -18,6 +18,7 @@ import { ShareOutlet } from "@/components/shared/ShareOutlet";
 import { ProductType } from "@/types";
 import { ScheduleModal } from "../outlet/ScheduleModal";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
+import { useToast } from "@/components/ui/toast";
 
 type Props = {
     params: Promise<{ id: string; productId: string }>;
@@ -26,6 +27,7 @@ type Props = {
 export function ProductDetails({ params }: Props) {
     const router = useRouter();
     const { addItem } = useCart();
+    const { push: toast } = useToast();
     const { setAppBar } = useAppBarV2()
     const { isFavorite, toggleFavorite } = useFavorites();
     const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false)
@@ -79,8 +81,28 @@ export function ProductDetails({ params }: Props) {
 
     const handleAddToCart = useCallback(() => {
         if (!product || !outlet) return;
-        addItem(outlet.id, outlet.name, product, 1);
-    }, [product, outlet, addItem]);
+        try {
+            addItem(outlet.id, outlet.name, product, 1);
+        } catch (error) {
+            toast({
+                title: 'Tidak dapat menambahkan produk',
+                description: error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan produk ke keranjang'
+            });
+        }
+    }, [product, outlet, addItem, toast]);
+
+    const handleScheduleSelect = useCallback((schedule: any) => {
+        if (!outlet || !product) return;
+        try {
+            addItem(outletId, outlet.name, product, 1, schedule);
+            setShowScheduleModal(false);
+        } catch (error) {
+            toast({
+                title: 'Tidak dapat menambahkan layanan',
+                description: error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan layanan ke keranjang'
+            });
+        }
+    }, [outletId, outlet, product, addItem, toast]);
 
     if (productQuery.isLoading || outletQuery.isLoading) return <LoadingState />;
     if (productQuery.isError || outletQuery.isError) return <ErrorState onRetry={() => router.refresh()} />;
@@ -200,7 +222,7 @@ export function ProductDetails({ params }: Props) {
                 key={outletId + productId}
                 isOpen={showScheduleModal}
                 onClose={() => setShowScheduleModal(!showScheduleModal)}
-                onSelectSchedule={(schedule) => { addItem(outletId, outlet.name, product, 1, schedule) }}
+                onSelectSchedule={handleScheduleSelect}
                 product={product}
                 outletId={outletId}
             />}

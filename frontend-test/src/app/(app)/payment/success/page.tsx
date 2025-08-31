@@ -10,17 +10,14 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils';
+import { useTranslations } from '@/hooks/useI18n';
 import { SuccessState } from '@/components/Base';
 import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard';
-
-const SUCCESS_APP_BAR_CONFIG = {
-    title: 'Pembayaran Berhasil',
-    showBackButton: false,
-};
 
 export default function PaymentSuccess() {
     const [paymentInfo, setPaymentInfo] = useState<any>(null);
     const router = useRouter();
+    const t = useTranslations("paymentSuccess");
 
     useEffect(() => {
         const lastPayment = localStorage.getItem('lastPayment');
@@ -66,8 +63,8 @@ export default function PaymentSuccess() {
     return (
         <>
             <SuccessState
-                title='Pesanan Berhasil!'
-                description='Terima kasih, pesanan Anda sedang diproses'
+                title={t("orderSuccessful")}
+                description={t("orderProcessing")}
             />
 
             <div className='space-y-4'>
@@ -76,7 +73,7 @@ export default function PaymentSuccess() {
                     <Card className='p-0'>
                         <CardContent className="p-6 space-y-4">
                             <div className="text-center border-b pb-4">
-                                <p className="text-sm text-muted-foreground">Total Pembayaran</p>
+                                <p className="text-sm text-muted-foreground">{t("totalPayment")}</p>
                                 <p className="text-3xl font-bold text-primary">
                                     {formatCurrency(paymentInfo.checkoutData.grandTotal)}
                                 </p>
@@ -84,22 +81,22 @@ export default function PaymentSuccess() {
 
                             <div className="space-y-3">
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Metode Pembayaran</span>
+                                    <span className="text-muted-foreground">{t("paymentMethod")}</span>
                                     <span className="font-medium text-sm">{paymentInfo.selectedPaymentMethod.name}</span>
                                 </div>
 
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Nama Pembeli</span>
+                                    <span className="text-muted-foreground">{t("customerName")}</span>
                                     <span className="font-medium text-sm">{paymentInfo.customerInfo.name}</span>
                                 </div>
 
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">No. Telepon</span>
+                                    <span className="text-muted-foreground">{t("phoneNumber")}</span>
                                     <span className="font-medium text-sm">{paymentInfo.customerInfo.phone}</span>
                                 </div>
 
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Waktu Pemesanan</span>
+                                    <span className="text-muted-foreground">{t("orderTime")}</span>
                                     <span className="font-medium text-sm">
                                         {new Date(paymentInfo.paymentDate).toLocaleString('id-ID')}
                                     </span>
@@ -115,9 +112,9 @@ export default function PaymentSuccess() {
                         <div className="flex items-center gap-3">
                             <Clock className="w-5 h-5 text-orange-600" />
                             <div>
-                                <p className="font-medium text-orange-800">Status: Menunggu Konfirmasi</p>
+                                <p className="font-medium text-orange-800">{t("statusWaiting")}</p>
                                 <p className="text-sm text-orange-600">
-                                    Outlet akan mengonfirmasi pesanan Anda dalam 5-10 menit
+                                    {t("statusDescription")}
                                 </p>
                             </div>
                         </div>
@@ -132,7 +129,7 @@ export default function PaymentSuccess() {
                         onClick={handleViewReceipt}
                     >
                         <Receipt className="w-4 h-4 mr-2" />
-                        Lihat Detail Pesanan
+                        {t("viewOrderDetails")}
                     </Button>
 
                     <Button
@@ -142,7 +139,7 @@ export default function PaymentSuccess() {
                         onClick={handleBackToHome}
                     >
                         <Home className="w-4 h-4 mr-2" />
-                        Kembali ke Beranda
+                        {t("backToHome")}
                     </Button>
                 </div>
 

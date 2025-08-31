@@ -3,7 +3,13 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Check, Clock, AlertCircle } from 'lucide-react';
-import { MidtransTransactionStatus, PaymentTimer } from '@/types'; // Assuming you create a types file
+import { MidtransTransactionStatus, PaymentTimer } from '@/types';
+import { useTranslations } from '@/hooks/useI18n';
+
+interface PaymentStatusHeaderProps {
+    status: MidtransTransactionStatus;
+    timer: PaymentTimer;
+}
 
 interface PaymentStatusHeaderProps {
     status: MidtransTransactionStatus;
@@ -18,46 +24,48 @@ type StatusConfig = {
     message: string;
 };
 
-const STATUS_CONFIG: Partial<Record<MidtransTransactionStatus, StatusConfig>> = {
-    settlement: {
-        borderColor: 'border-green-200',
-        bgColor: 'bg-green-50',
-        icon: <Check className="w-8 h-8 text-green-600" />,
-        title: 'Pembayaran Berhasil!',
-        message: 'Redirecting ke halaman sukses...',
-    },
-    failure: {
-        borderColor: 'border-red-200',
-        bgColor: 'bg-red-50',
-        icon: <AlertCircle className="w-8 h-8 text-red-600" />,
-        title: 'Pembayaran Gagal',
-        message: 'Waktu pembayaran telah habis atau dibatalkan.',
-    },
-    // processing: {
-    //     borderColor: 'border-blue-200',
-    //     bgColor: 'bg-blue-50',
-    //     icon: <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />,
-    //     title: 'Memproses Pembayaran...',
-    //     message: 'Mengecek status pembayaran...',
-    // },
-    pending: {
-        borderColor: 'border-orange-200',
-        bgColor: 'bg-orange-50',
-        icon: <Clock className="w-8 h-8 text-orange-600" />,
-        title: 'Menunggu Pembayaran',
-        message: 'Selesaikan pembayaran sebelum waktu habis',
-    },
-};
-
-const DEFAULT_CONFIG: StatusConfig = {
-    borderColor: 'border-gray-200',
-    bgColor: 'bg-white',
-    icon: <AlertCircle className="w-8 h-8 text-gray-600" />,
-    title: 'Status Tidak Diketahui',
-    message: 'Silakan cek kembali status pembayaran.',
-};
-
 export function PaymentStatusHeader({ status, timer }: PaymentStatusHeaderProps) {
+    const t = useTranslations("paymentComponents");
+
+    const STATUS_CONFIG: Partial<Record<MidtransTransactionStatus, StatusConfig>> = {
+        settlement: {
+            borderColor: 'border-green-200',
+            bgColor: 'bg-green-50',
+            icon: <Check className="w-8 h-8 text-green-600" />,
+            title: t("paymentStatus.successTitle"),
+            message: t("paymentStatus.successMessage"),
+        },
+        failure: {
+            borderColor: 'border-red-200',
+            bgColor: 'bg-red-50',
+            icon: <AlertCircle className="w-8 h-8 text-red-600" />,
+            title: t("paymentStatus.failedTitle"),
+            message: t("paymentStatus.failedMessage"),
+        },
+        // processing: {
+        //     borderColor: 'border-blue-200',
+        //     bgColor: 'bg-blue-50',
+        //     icon: <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />,
+        //     title: 'Memproses Pembayaran...',
+        //     message: 'Mengecek status pembayaran...',
+        // },
+        pending: {
+            borderColor: 'border-orange-200',
+            bgColor: 'bg-orange-50',
+            icon: <Clock className="w-8 h-8 text-orange-600" />,
+            title: t("paymentStatus.pendingTitle"),
+            message: t("paymentStatus.pendingMessage"),
+        },
+    };
+
+    const DEFAULT_CONFIG: StatusConfig = {
+        borderColor: 'border-gray-200',
+        bgColor: 'bg-white',
+        icon: <AlertCircle className="w-8 h-8 text-gray-600" />,
+        title: t("paymentStatus.unknownTitle"),
+        message: t("paymentStatus.unknownMessage"),
+    };
+
     const config = STATUS_CONFIG[status] ?? DEFAULT_CONFIG;
 
     return (
@@ -73,7 +81,7 @@ export function PaymentStatusHeader({ status, timer }: PaymentStatusHeaderProps)
                         <span className="font-mono font-bold text-lg">
                             {String(timer.hours).padStart(2, '0')}:{String(timer.minutes).padStart(2, '0')}:{String(timer.seconds).padStart(2, '0')}
                         </span>
-                        <span className="text-sm text-muted-foreground">tersisa</span>
+                        <span className="text-sm text-muted-foreground">{t("paymentStatus.timeRemaining")}</span>
                     </div>
                 )}
             </CardContent>

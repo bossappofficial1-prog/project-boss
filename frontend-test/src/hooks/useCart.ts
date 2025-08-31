@@ -55,6 +55,15 @@ export const useCart = create<CartState>()(
             addItem: (outletId: string, outletName: string, product: ProductType, quantity = 1, selectedSlot) => {
                 const { items } = get();
 
+                // Validasi: Dalam satu outlet, tidak boleh ada campuran GOODS dan SERVICE
+                const existingItemsInOutlet = items.filter(item => item.outletId === outletId);
+                if (existingItemsInOutlet.length > 0) {
+                    const existingProductTypes = [...new Set(existingItemsInOutlet.map(item => item.type))];
+                    if (!existingProductTypes.includes(product.type)) {
+                        throw new Error(`Tidak dapat menambahkan ${product.type === 'GOODS' ? 'produk' : 'layanan'} ke outlet yang sudah berisi ${existingProductTypes.includes('GOODS') ? 'produk' : 'layanan'}. Silakan checkout terlebih dahulu atau pilih outlet lain.`);
+                    }
+                }
+
                 // Check for time conflicts for SERVICE items
                 if (product.type === 'SERVICE' && selectedSlot) {
                     const conflict = get().checkTimeConflict(outletId, {

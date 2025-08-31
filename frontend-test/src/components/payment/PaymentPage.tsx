@@ -19,6 +19,7 @@ import { CheckoutData, PaymentMethod } from '@/types/checkout';
 import { CheckoutService } from '@/services/checkout';
 import { formatCurrency } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
+import { useTranslations } from '@/hooks/useI18n';
 
 interface PaymentPageProps {
     checkoutData: CheckoutData;
@@ -36,22 +37,24 @@ const CustomerInfoForm: React.FC<{
     onInfoChange: (info: CustomerInfo) => void;
     errors: Record<string, string>;
 }> = ({ customerInfo, onInfoChange, errors }) => {
+    const t = useTranslations("paymentPage");
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                     <User className="w-5 h-5 text-primary" />
-                    Informasi Pembeli
+                    {t("customerInfo.title")}
                 </CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-4">
                 <div>
                     <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                        Nama Lengkap
+                        {t("customerInfo.fullName")}
                     </label>
                     <Input
-                        placeholder="Masukkan nama lengkap"
+                        placeholder={t("customerInfo.fullNamePlaceholder")}
                         value={customerInfo.name}
                         onChange={(e) => onInfoChange({ ...customerInfo, name: e.target.value })}
                         className={errors.name ? 'border-red-500' : ''}
@@ -66,10 +69,10 @@ const CustomerInfoForm: React.FC<{
 
                 <div>
                     <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                        Nomor Telepon
+                        {t("customerInfo.phoneNumber")}
                     </label>
                     <Input
-                        placeholder="Contoh: 081234567890"
+                        placeholder={t("customerInfo.phonePlaceholder")}
                         value={customerInfo.phone}
                         onChange={(e) => onInfoChange({ ...customerInfo, phone: e.target.value })}
                         className={errors.phone ? 'border-red-500' : ''}
@@ -85,7 +88,7 @@ const CustomerInfoForm: React.FC<{
                 <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                     <p className="text-sm text-blue-700">
                         <AlertCircle className="w-4 h-4 inline mr-1" />
-                        Informasi ini akan digunakan untuk konfirmasi pesanan dan pengiriman.
+                        {t("customerInfo.infoMessage")}
                     </p>
                 </div>
             </CardContent>
@@ -95,12 +98,14 @@ const CustomerInfoForm: React.FC<{
 
 // Order Summary Component for Payment
 const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkoutData }) => {
+    const t = useTranslations("paymentPage");
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                     <Receipt className="w-5 h-5 text-primary" />
-                    Ringkasan Pesanan
+                    {t("orderSummary.title")}
                 </CardTitle>
             </CardHeader>
 
@@ -114,20 +119,20 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkou
 
                         <div className="space-y-1 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-muted-foreground">Subtotal</span>
+                                <span className="text-muted-foreground">{t("orderSummary.subtotal")}</span>
                                 <span>{formatCurrency(outlet.subtotal)}</span>
                             </div>
 
                             {outlet.transactionFee > 0 && (
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Biaya Transaksi</span>
+                                    <span className="text-muted-foreground">{t("orderSummary.transactionFee")}</span>
                                     <span>{formatCurrency(outlet.transactionFee)}</span>
                                 </div>
                             )}
 
                             {outlet.applicationFee > 0 && (
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Biaya Aplikasi</span>
+                                    <span className="text-muted-foreground">{t("orderSummary.applicationFee")}</span>
                                     <span>{formatCurrency(outlet.applicationFee)}</span>
                                 </div>
                             )}
@@ -138,26 +143,26 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkou
                 {/* Total Summary */}
                 <div className="border-t pt-3 space-y-2">
                     <div className="flex justify-between text-sm">
-                        <span>Total Pesanan</span>
+                        <span>{t("orderSummary.totalOrder")}</span>
                         <span>{formatCurrency(checkoutData.subtotal)}</span>
                     </div>
 
                     {checkoutData.totalTransactionFee > 0 && (
                         <div className="flex justify-between text-sm">
-                            <span>Total Biaya Transaksi</span>
+                            <span>{t("orderSummary.totalTransactionFee")}</span>
                             <span>{formatCurrency(checkoutData.totalTransactionFee)}</span>
                         </div>
                     )}
 
                     {checkoutData.applicationFee > 0 && (
                         <div className="flex justify-between text-sm">
-                            <span>Biaya Aplikasi</span>
+                            <span>{t("orderSummary.applicationFee")}</span>
                             <span>{formatCurrency(checkoutData.applicationFee)}</span>
                         </div>
                     )}
 
                     <div className="flex justify-between font-semibold text-lg pt-2 border-t">
-                        <span>Total Pembayaran</span>
+                        <span>{t("orderSummary.totalPayment")}</span>
                         <span className="text-primary">{formatCurrency(checkoutData.grandTotal)}</span>
                     </div>
                 </div>
@@ -168,12 +173,14 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkou
 
 // Payment Method Display Component
 const PaymentMethodDisplay: React.FC<{ method: PaymentMethod }> = ({ method }) => {
+    const t = useTranslations("paymentPage");
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-primary" />
-                    Metode Pembayaran
+                    {t("paymentMethod.title")}
                 </CardTitle>
             </CardHeader>
 
@@ -187,7 +194,9 @@ const PaymentMethodDisplay: React.FC<{ method: PaymentMethod }> = ({ method }) =
                         <p className="text-sm text-muted-foreground">{method.description}</p>
                     </div>
                     <Badge variant="secondary" className="h-6">
-                        {method.type === 'qris' ? 'QRIS' : method.type === 'va' ? 'Bank Transfer' : 'Kartu'}
+                        {method.type === 'qris' ? t("paymentMethod.types.qris") :
+                            method.type === 'va' ? t("paymentMethod.types.va") :
+                                t("paymentMethod.types.card")}
                     </Badge>
                 </div>
             </CardContent>
@@ -201,12 +210,14 @@ const PaymentButton: React.FC<{
     amount: number;
     isLoading: boolean;
 }> = ({ onPay, amount, isLoading }) => {
+    const t = useTranslations("paymentPage");
+
     return (
         <Card className="sticky bottom-0 py-0 border-t shadow-lg">
             <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <p className="text-sm text-muted-foreground">Total Pembayaran</p>
+                        <p className="text-sm text-muted-foreground">{t("paymentButton.totalPayment")}</p>
                         <p className="text-xl font-bold text-primary">{formatCurrency(amount)}</p>
                     </div>
                     <Button
@@ -215,7 +226,7 @@ const PaymentButton: React.FC<{
                         onClick={onPay}
                         disabled={isLoading}
                     >
-                        {isLoading ? 'Memproses...' : 'Bayar Sekarang'}
+                        {isLoading ? t("paymentButton.processing") : t("paymentButton.payNow")}
                     </Button>
                 </div>
             </CardContent>
@@ -230,6 +241,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
     const { items: cartItems, clearCart } = useCart();
+    const t = useTranslations("paymentPage");
 
     // Load customer info from ProfileSettings (if available)
     useEffect(() => {
@@ -252,13 +264,13 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
         const newErrors: Record<string, string> = {};
 
         if (!customerInfo.name.trim()) {
-            newErrors.name = 'Nama lengkap wajib diisi';
+            newErrors.name = t("validation.nameRequired");
         }
 
         if (!customerInfo.phone.trim()) {
-            newErrors.phone = 'Nomor telepon wajib diisi';
+            newErrors.phone = t("validation.phoneRequired");
         } else if (!/^(\+62|62|0)[0-9]{9,12}$/.test(customerInfo.phone.replace(/\s/g, ''))) {
-            newErrors.phone = 'Format nomor telepon tidak valid';
+            newErrors.phone = t("validation.phoneInvalid");
         }
 
         setErrors(newErrors);
@@ -311,7 +323,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
 
             // Check if we have any items
             if (itemDetails.length === 0) {
-                throw new Error('No items found. Please go back to cart and add items.');
+                throw new Error(t("errors.noItems"));
             }
 
             // Send to backend API
@@ -340,7 +352,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
 
         } catch (error) {
             console.error('Payment failed:', error)
-            alert(error instanceof Error ? error.message : 'Payment processing failed. Please try again.');
+            alert(error instanceof Error ? error.message : t("errors.paymentFailed"));
             setIsLoading(false);
         }
     };

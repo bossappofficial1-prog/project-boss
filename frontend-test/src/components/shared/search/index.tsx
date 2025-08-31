@@ -45,15 +45,15 @@ const SearchInput = forwardRef<HTMLInputElement, Omit<React.InputHTMLAttributes<
 
     return (
         <PopoverTrigger asChild>
-            <div className="relative">
+            <div className="relative group">
                 <SearchIcon className={searchIconVariants({ size })} />
                 <Input
                     ref={ref}
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    className={searchInputVariants({ size })}
                     {...props}
+                    className={`${searchInputVariants({ size })} ${props.className}`}
                 />
                 {value && (
                     <Button

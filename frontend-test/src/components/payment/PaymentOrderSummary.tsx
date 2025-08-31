@@ -1,16 +1,19 @@
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { PaymentData } from "@/types";
+import { useTranslations } from "@/hooks/useI18n";
 
 type PaymentOrderSummaryProps = {
     data: PaymentData
 }
 
 export function PaymentOrderSummary({ data }: PaymentOrderSummaryProps) {
+    const t = useTranslations("paymentComponents");
+
     return (
         <Card className="mb-6">
             <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Ringkasan Pesanan</CardTitle>
+                <CardTitle className="text-lg">{t("orderSummary.title")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
                 {/* Outlet Info */}
@@ -34,15 +37,15 @@ export function PaymentOrderSummary({ data }: PaymentOrderSummaryProps) {
                 {/* Fees */}
                 <div className="border-t pt-3 space-y-2">
                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal</span>
+                        <span className="text-gray-600">{t("orderSummary.subtotal")}</span>
                         <span>{formatCurrency(data.subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Biaya Aplikasi</span>
+                        <span className="text-gray-600">{t("orderSummary.applicationFee")}</span>
                         <span>{formatCurrency(data.applicationFee)}</span>
                     </div>
                     <div className="flex justify-between font-bold border-t pt-2">
-                        <span>Total</span>
+                        <span>{t("orderSummary.total")}</span>
                         <span>{formatCurrency(data.total)}</span>
                     </div>
                 </div>

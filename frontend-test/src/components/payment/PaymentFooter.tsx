@@ -1,7 +1,11 @@
+import { useTranslations } from "@/hooks/useI18n";
+
 export function PaymentFooter({ className }: { className?: string }) {
+    const t = useTranslations("paymentComponents");
+
     return <div className={`text-center ${className}`}>
         <p className="text-sm text-gray-500">
-            Butuh bantuan? Hubungi customer service kami
+            {t("footer.helpText")}
         </p>
     </div>
 }

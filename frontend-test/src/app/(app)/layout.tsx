@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Suspense } from "react";
 import { AppBarProviderV2 } from "@/context/AppBarContextV2";
 import AppBar from "@/components/AppBarV2";
+import { LoadingState } from "@/components/Base";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const queryClient = new QueryClient();
@@ -16,7 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <AppBarProviderV2>
                     <AppBar />
                     <main className="lg:max-w-2xl min-h-[calc(100vh-56px)] p-4 mx-auto">
-                        <Suspense fallback={<div>Loading...</div>}>
+                        <Suspense fallback={<LoadingState />}>
                             {children}
                         </Suspense>
                     </main>

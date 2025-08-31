@@ -1,7 +1,7 @@
 import { cva } from 'class-variance-authority';
 
 export const searchInputVariants = cva(
-    'relative w-full rounded-md transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+    'relative w-full rounded-md transition-all duration-200 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:border-primary/30',
     {
         variants: {
             size: {
@@ -16,7 +16,7 @@ export const searchInputVariants = cva(
     }
 );
 
-export const searchIconVariants = cva('absolute top-1/2 -translate-y-1/2 text-muted-foreground z-10', {
+export const searchIconVariants = cva('absolute top-1/2 -translate-y-1/2 text-primary/70 z-10 transition-colors duration-200 group-hover:text-primary', {
     variants: {
         size: {
             sm: 'h-4 w-4 left-2.5',
@@ -29,7 +29,7 @@ export const searchIconVariants = cva('absolute top-1/2 -translate-y-1/2 text-mu
     },
 });
 
-export const clearButtonVariants = cva('absolute top-1/2 -translate-y-1/2 z-10 p-0', {
+export const clearButtonVariants = cva('absolute top-1/2 -translate-y-1/2 z-10 p-0 hover:bg-muted/50 transition-colors duration-200', {
     variants: {
         size: {
             sm: 'h-7 w-7 right-1',

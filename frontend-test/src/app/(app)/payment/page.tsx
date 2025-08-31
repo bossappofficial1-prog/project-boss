@@ -6,19 +6,16 @@ import PaymentPage from '@/components/payment/PaymentPage';
 import { CheckoutService } from '@/services/checkout';
 import { LoadingState } from '@/components/Base';
 import { useAppBarV2 } from '@/context/AppBarContextV2';
-
-const PAYMENT_APP_BAR_CONFIG = {
-    title: 'Pembayaran',
-    showBackButton: true,
-};
+import { useTranslations } from '@/hooks/useI18n';
 
 export default function Payment() {
+    const t = useTranslations("paymentPage");
     const [paymentData, setPaymentData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const { setAppBar } = useAppBarV2()
 
-    useEffect(() => { typeof window !== undefined && setAppBar(PAYMENT_APP_BAR_CONFIG) }, [])
+    useEffect(() => { typeof window !== undefined && setAppBar({ title: t("title"), showBackButton: true }) }, [t])
 
     useEffect(() => {
         const loadPaymentData = () => {

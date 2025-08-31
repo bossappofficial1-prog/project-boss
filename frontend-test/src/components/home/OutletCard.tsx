@@ -15,7 +15,7 @@ type OutletCardProps = {
 };
 
 const OutletImage = ({ outlet, imageSize }: { outlet: OutletCardProps['outlet'], imageSize: string }) => {
-    const t = useTranslations("text")
+    const t = useTranslations("common")
     return (
         <div className="w-full h-full relative overflow-hidden bg-muted">
             {outlet.image ? (
@@ -55,7 +55,8 @@ const OutletHeader = ({ name }: { name: string }) => (
 );
 
 const OutletInfo = ({ outlet, mapsUrl, showPhone }: { outlet: OutletCardProps['outlet'], mapsUrl: string, showPhone: boolean }) => {
-    const formattedDistance = outlet.distance > 0.999 ? `${outlet.distance.toFixed(1)} KM` : `${Math.round(outlet.distance * 1000)} M`;
+    const t = useTranslations("common");
+    const formattedDistance = outlet.distance > 0.999 ? `${outlet.distance.toFixed(1)} ${t('km')}` : `${Math.round(outlet.distance * 1000)} ${t('m')}`;
 
     const handleInteraction = (e: React.MouseEvent, url: string) => {
         e.preventDefault();

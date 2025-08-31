@@ -10,10 +10,12 @@ import { Clock, Minus, Package, Plus, ShoppingCart, Wrench } from "lucide-react"
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { ScheduleModal } from "./ScheduleModal";
+import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 
 export default function ProductCard({ product, outlet }: { product: ProductType; outlet: OutletDetails }) {
     const { addItem, getOutletItems } = useCart();
+    const { push: toast } = useToast();
     const router = useRouter();
     const [quantity, setQuantity] = useState(1);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -35,13 +37,20 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
         e.stopPropagation();
         if (product.type === 'GOODS') {
             if (!isOutOfStock) {
-                addItem(outlet.id, outlet.name, product, quantity);
-                setQuantity(1);
+                try {
+                    addItem(outlet.id, outlet.name, product, quantity);
+                    setQuantity(1);
+                } catch (error) {
+                    toast({
+                        title: 'Tidak dapat menambahkan produk',
+                        description: error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan produk ke keranjang'
+                    });
+                }
             }
         } else if (product.type === 'SERVICE') {
             setIsScheduleModalOpen(true);
         }
-    }, [addItem, outlet.id, outlet.name, product, quantity, isOutOfStock]);
+    }, [addItem, outlet.id, outlet.name, product, quantity, isOutOfStock, toast]);
 
     const handleQuantityChange = (delta: number, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -55,14 +64,21 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
     };
 
     const handleScheduleSelect = useCallback((selectedSchedule: BookingSlot | string) => {
-        const success = addItem(outlet.id, outlet.name, product, 1, selectedSchedule);
-        if (success) {
-            setIsScheduleModalOpen(false);
-        } else {
-            // Could add toast notification here for conflict
-            console.warn('Failed to add service to cart due to time conflict');
+        try {
+            const success = addItem(outlet.id, outlet.name, product, 1, selectedSchedule);
+            if (success) {
+                setIsScheduleModalOpen(false);
+            } else {
+                // Could add toast notification here for conflict
+                console.warn('Failed to add service to cart due to time conflict');
+            }
+        } catch (error) {
+            toast({
+                title: 'Tidak dapat menambahkan layanan',
+                description: error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan layanan ke keranjang'
+            });
         }
-    }, [addItem, outlet.id, outlet.name, product]);
+    }, [addItem, outlet.id, outlet.name, product, toast]);
 
     return (
         <>

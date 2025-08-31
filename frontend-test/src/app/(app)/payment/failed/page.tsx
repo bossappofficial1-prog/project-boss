@@ -10,11 +10,13 @@ import { ErrorState } from '@/components/Base'
 import { PaymentFooter } from '@/components/payment/PaymentFooter'
 import { CustomerInfo } from '@/components/payment/CustomerInfo'
 import { PaymentData } from '@/types'
+import { useTranslations } from '@/hooks/useI18n'
 
 export default function PaymentFailedPage() {
     const [paymentData, setPaymentData] = useState<PaymentData | null>(null)
     const [isRetrying, setIsRetrying] = useState(false)
     const router = useRouter()
+    const t = useTranslations("paymentFailed")
 
     useEffect(() => {
         const data = localStorage.getItem('paymentData')
@@ -82,7 +84,7 @@ export default function PaymentFailedPage() {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Memuat data...</p>
+                    <p className="text-gray-600">{t("loadingData")}</p>
                 </div>
             </div>
         )
@@ -93,8 +95,8 @@ export default function PaymentFailedPage() {
 
             {/* Header */}
             <ErrorState
-                title='Pembayaran Gagal'
-                message='Maaf, transaksi Anda tidak dapat diproses'
+                title={t("title")}
+                message={t("transactionFailed")}
             />
             <div className='space-y-4'>
 
@@ -103,7 +105,7 @@ export default function PaymentFailedPage() {
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg flex items-center gap-2">
                             <AlertTriangle className="w-5 h-5 text-red-500" />
-                            Informasi Kegagalan
+                            {t("failureInformation")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -111,9 +113,9 @@ export default function PaymentFailedPage() {
                             <p className="text-red-800 font-medium">{paymentData.failureReason}</p>
                         </div>
                         <div className="text-sm text-gray-600">
-                            <p><span className="font-medium">Order ID:</span> {paymentData.orderId}</p>
-                            <p><span className="font-medium">Waktu:</span> {formatDateTime(paymentData.timestamp!)}</p>
-                            <p><span className="font-medium">Metode:</span> {paymentData.paymentMethod.name}</p>
+                            <p><span className="font-medium">{t("orderId")}:</span> {paymentData.orderId}</p>
+                            <p><span className="font-medium">{t("time")}:</span> {formatDateTime(paymentData.timestamp!)}</p>
+                            <p><span className="font-medium">{t("method")}:</span> {paymentData.paymentMethod.name}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -121,7 +123,7 @@ export default function PaymentFailedPage() {
                 {/* Order Summary */}
                 <Card>
                     <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">Ringkasan Pesanan</CardTitle>
+                        <CardTitle className="text-lg">{t("orderSummary")}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         {/* Outlet Info */}
@@ -145,15 +147,15 @@ export default function PaymentFailedPage() {
                         {/* Fees */}
                         <div className="border-t pt-3 space-y-2">
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Subtotal</span>
+                                <span className="text-gray-600">{t("subtotal")}</span>
                                 <span>{formatCurrency(paymentData.subtotal)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Biaya Aplikasi</span>
+                                <span className="text-gray-600">{t("applicationFee")}</span>
                                 <span>{formatCurrency(paymentData.applicationFee)}</span>
                             </div>
                             <div className="flex justify-between font-bold border-t pt-2">
-                                <span>Total</span>
+                                <span>{t("total")}</span>
                                 <span>{formatCurrency(paymentData.total)}</span>
                             </div>
                         </div>
@@ -177,12 +179,12 @@ export default function PaymentFailedPage() {
                         {isRetrying ? (
                             <>
                                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                                Mencoba Ulang...
+                                {t("retrying")}
                             </>
                         ) : (
                             <>
                                 <RefreshCw className="w-4 h-4 mr-2" />
-                                Coba Lagi
+                                {t("tryAgain")}
                             </>
                         )}
                     </Button>
@@ -194,7 +196,7 @@ export default function PaymentFailedPage() {
                         size="lg"
                     >
                         <Phone className="w-4 h-4 mr-2" />
-                        Hubungi Customer Service
+                        {t("contactSupport")}
                     </Button>
 
                     <Button
@@ -204,7 +206,7 @@ export default function PaymentFailedPage() {
                         size="lg"
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        Kembali ke Keranjang
+                        {t("backToCart")}
                     </Button>
                 </div>
 

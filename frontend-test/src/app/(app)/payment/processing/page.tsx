@@ -6,6 +6,7 @@ import { Loader2, RefreshCw } from 'lucide-react';
 
 import { useSocket } from '@/hooks/useSocket-v2';
 import { usePaymentTimer } from '@/hooks/usePaymentTimer';
+import { useTranslations } from '@/hooks/useI18n';
 
 import { PaymentService } from '@/services/paymentService';
 import { formatCurrency } from '@/lib/utils';
@@ -29,6 +30,7 @@ export default function PaymentProcessing() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const { isConnected, emitEvent, onEvent } = useSocket();
     const router = useRouter();
+    const t = useTranslations("paymentProcessing");
 
     useEffect(() => {
         if (typeof window === "undefined") return
@@ -115,7 +117,7 @@ export default function PaymentProcessing() {
 
                     {/* Total Amount */}
                     <div className="text-center mb-4">
-                        <p className="text-sm text-muted-foreground">Total Pembayaran</p>
+                        <p className="text-sm text-muted-foreground">{t("totalPayment")}</p>
                         <p className="text-2xl font-bold text-primary">{formatCurrency(Number(gross_amount))}</p>
                     </div>
 
@@ -141,7 +143,7 @@ export default function PaymentProcessing() {
                     disabled={isRefreshing}
                 >
                     {isRefreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                    Refresh Status
+                    {t("refreshStatus")}
                 </Button>
             </div>
 

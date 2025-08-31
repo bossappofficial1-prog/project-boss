@@ -1,43 +1,67 @@
 {
-    "navigation": {
+    "nav": {
         "home": "Beranda",
         "profile": "Profil"
     },
+    "common": {
+        "open": "Buka",
+        "closed": "Tutup",
+        "km": "KM",
+        "m": "M"
+    },
     "homePage": {
-        "title": "Selamat datang di Aplikasi kami"
+        "title": "Selamat Datang di Aplikasi Kami"
     },
     "nearbyPage": {
         "title": "Outlet Terdekat",
-        "subtitle": "Temukan outlet dalam jarak 10km dari lokasi Anda",
+        "subtitle": "Temukan outlet di sekitar lokasi Anda",
         "searchPlaceholder": "Cari outlet...",
-        "noOutletsFound": "Tidak ada outlet yang ditemukan",
+        "noOutletsFound": "Tidak ada outlet ditemukan",
         "noNearbyOutlets": "Tidak ada outlet terdekat",
         "loadMore": "Muat Lebih Banyak",
         "noMoreOutlets": "Tidak ada outlet lagi untuk dimuat",
-        "outletCount": "outlet ditemukan"
+        "outletCount": "outlet ditemukan",
+        "appBarTitle": "Outlet Terdekat",
+        "loadingLocation": "Mendapatkan lokasi Anda...",
+        "findingOutlets": "Mencari outlet terdekat...",
+        "loadingNearby": "Memuat outlet terdekat...",
+        "locationRequired": "Lokasi Diperlukan",
+        "locationRequiredDesc": "Harap aktifkan akses lokasi untuk menemukan outlet terdekat",
+        "retry": "Coba Lagi",
+        "failedToLoad": "Gagal memuat outlet",
+        "somethingWrong": "Terjadi kesalahan",
+        "noOutletsForSearch": "Tidak ada outlet ditemukan untuk",
+        "tryDifferentTerm": "Coba kata kunci pencarian yang berbeda.",
+        "clearSearch": "Hapus pencarian",
+        "outletsFoundFor": "outlet ditemukan untuk",
+        "loadingMore": "Memuat outlet lainnya...",
+        "noOutletsWithinRange": "Tidak ada outlet dalam jarak yang dipilih dari lokasi Anda.",
+        "distanceLabel": "Radius pencarian",
+        "distanceUnit": "km",
+        "selectDistance": "Pilih jarak"
     },
     "searchPage": {
-        "title": "Cari Outlet",
-        "subtitle": "Temukan outlet, produk, dan layanan",
+        "title": "Pencarian Outlet",
+        "subtitle": "Cari outlet, produk, dan layanan",
         "searchPlaceholder": "Cari outlet, produk, atau layanan...",
-        "for": "Cari untuk",
-        "recentSearches": "Pencarian terbaru",
-        "clearAll": "Hapus semua",
-        "noOutletsFound": "Tidak ada outlet yang ditemukan",
-        "noResultsFor": "Tidak ada hasil untuk '{query}'",
-        "tryDifferentSearch": "Coba istilah pencarian yang berbeda",
-        "searchError": "Terjadi kesalahan saat mencari",
+        "for": "Pencarian untuk",
+        "recentSearches": "Pencarian Terbaru",
+        "clearAll": "Hapus Semua",
+        "noOutletsFound": "Tidak ada outlet ditemukan",
+        "noResultsFor": "Tidak ditemukan hasil untuk '{query}'",
+        "tryDifferentSearch": "Coba kata kunci lain",
+        "searchError": "Terjadi kesalahan saat melakukan pencarian",
         "loading": "Memuat...",
         "loadMore": "Muat Lebih Banyak",
-        "noMoreOutlets": "Tidak ada outlet lagi untuk dimuat",
+        "noMoreOutlets": "Tidak ada outlet lain untuk ditampilkan",
         "outletCount": "outlet ditemukan",
         "startSearching": "Mulai mencari",
         "searchDescription": "Masukkan kata kunci untuk menemukan outlet, produk, atau layanan"
     },
     "search": {
-        "placeholder": "Cari outlet, produk, layanan...",
+        "placeholder": "Cari outlet, produk, atau layanan...",
         "loading": "Sedang mencari...",
-        "noResults": "Tidak ada hasil untuk",
+        "noResults": "Tidak ditemukan hasil untuk",
         "outlet": "Outlet",
         "product": "Produk",
         "service": "Layanan",
@@ -68,14 +92,14 @@
         "minutes": "menit",
         "available": "Tersedia",
         "noProducts": "Tidak ada produk",
-        "noProductsDesc": "Outlet ini tidak memiliki produk yang tersedia.",
+        "noProductsDesc": "Outlet ini belum menyediakan produk.",
         "noServices": "Tidak ada layanan",
-        "noServicesDesc": "Outlet ini tidak menyediakan layanan.",
+        "noServicesDesc": "Outlet ini belum menyediakan layanan.",
         "whatsappMessage": "Halo, saya tertarik dengan outlet"
     },
     "cart": {
         "title": "Keranjang Belanja",
-        "subtitle": "Tinjau item Anda sebelum checkout",
+        "subtitle": "Periksa kembali pesanan Anda sebelum melanjutkan",
         "product": "Produk",
         "service": "Layanan",
         "minutes": "menit",
@@ -85,15 +109,83 @@
         "totalItems": "Total Item",
         "items": "item",
         "total": "Total",
-        "checkout": "Lanjutkan ke Checkout",
+        "checkout": "Lanjut ke Pembayaran",
         "processing": "Sedang diproses...",
         "clearAll": "Hapus Semua",
-        "note": "Harga dapat bervariasi berdasarkan lokasi dan ketersediaan",
+        "note": "Harga dapat berbeda tergantung lokasi dan ketersediaan",
         "viewOutlet": "Lihat Outlet",
+        "pageTitle": "Keranjang",
         "empty": {
             "title": "Keranjang Anda kosong",
-            "description": "Tambahkan beberapa produk atau layanan untuk memulai",
-            "browse": "Telusuri Outlet"
+            "description": "Tambahkan produk atau layanan untuk mulai berbelanja",
+            "browse": "Lihat Outlet",
+            "action": "Mulai Belanja"
+        },
+        "error": {
+            "slotLoadFailed": "Gagal memuat beberapa detail jadwal. Silakan coba muat ulang halaman."
+        },
+        "checkoutRules": {
+            "title": "Aturan Checkout",
+            "rules": {
+                "1": "Pilih satu outlet untuk checkout",
+                "2": "Dalam satu outlet, tidak dapat mencampur produk GOODS dan SERVICE",
+                "3": "Klik pada card outlet untuk memilih"
+            }
+        },
+        "outlet": {
+            "selected": "Dipilih",
+            "chooseOutlet": "Pilih Outlet",
+            "chooseOutletDescription": "Klik pada outlet untuk memilih yang akan di-checkout",
+            "selectedOutlet": "Outlet Dipilih",
+            "cancel": "Batal"
+        },
+        "itemDetails": {
+            "duration": "Durasi",
+            "scheduleNotSelected": "Jadwal belum dipilih",
+            "stockRemaining": "Stok: {count} tersisa",
+            "serviceQuantity": "1x Layanan",
+            "perItem": "per item"
+        },
+        "schedule": {
+            "available": "Tersedia",
+            "unavailable": "Tidak Tersedia/Dipesan",
+            "changeSchedule": "Ganti Jadwal",
+            "selectSchedule": "Pilih Jadwal",
+            "slotAvailable": "Slot tersedia",
+            "slotUnavailable": "Slot tidak tersedia/sudah dipesan"
+        },
+        "orderSummary": {
+            "totalPayment": "Total Pembayaran",
+            "fromOutlet": "Dari outlet {outletName}",
+            "fromOutlets": "Dari {count} outlet berbeda."
+        },
+        "validation": {
+            "selectOutlet": "Silakan pilih outlet yang ingin di-checkout",
+            "checkoutError": "Terjadi kesalahan saat mempersiapkan checkout",
+            "attention": "Perhatian",
+            "mixedProducts": "Outlet \"{outletName}\" memiliki {types}. Pilih salah satu jenis produk saja untuk checkout."
+        },
+        "buttons": {
+            "completeScheduleFirst": "Lengkapi Jadwal Dahulu",
+            "selectOutletFirst": "Pilih Outlet Dahulu",
+            "selectProductType": "Pilih Jenis Produk",
+            "proceedToPayment": "Lanjut ke Pembayaran",
+            "deleteAll": "Hapus Semua",
+            "checkout": "Checkout"
+        },
+        "drawer": {
+            "title": "Keranjang ({count})",
+            "description": "Kelola item dalam keranjang belanja Anda",
+            "empty": {
+                "title": "Keranjang Kosong",
+                "description": "Tambahkan produk atau layanan ke keranjang untuk memulai"
+            },
+            "products": "produk",
+            "services": "layanan",
+            "scheduleReminder": {
+                "title": "Jadwal Belum Dipilih",
+                "description": "Beberapa layanan belum memiliki jadwal. Pastikan pilih jadwal sebelum checkout."
+            }
         }
     },
     "favorites": {
@@ -101,52 +193,52 @@
         "subtitle": "Outlet yang Anda simpan",
         "empty": {
             "title": "Belum ada favorit",
-            "description": "Mulai tambahkan outlet ke favorit Anda",
-            "browse": "Telusuri Outlet"
+            "description": "Mulai tambahkan outlet ke daftar favorit Anda",
+            "browse": "Lihat Outlet"
         }
     },
     "profilePage": {
         "title": "Profil & Preferensi",
-        "subtitle": "Kelola informasi pribadi dan pengaturan aplikasi Anda",
+        "subtitle": "Kelola informasi pribadi dan pengaturan aplikasi",
         "contactInformation": "Informasi Kontak",
-        "contactDescription": "Hanya nama dan nomor WhatsApp Anda yang diperlukan untuk komunikasi.",
+        "contactDescription": "Hanya nama dan nomor WhatsApp yang dibutuhkan untuk komunikasi.",
         "fullName": "Nama Lengkap",
         "enterFullName": "Masukkan nama lengkap Anda",
         "whatsappNumber": "Nomor WhatsApp",
         "appearance": "Tampilan",
-        "appearanceDescription": "Pilih antara tema terang dan gelap sesuai preferensi Anda.",
+        "appearanceDescription": "Pilih tema terang atau gelap sesuai preferensi Anda.",
         "lightTheme": "Tema Terang",
         "darkTheme": "Tema Gelap",
         "language": "Bahasa",
-        "languageDescription": "Pilih bahasa yang Anda inginkan untuk antarmuka aplikasi.",
+        "languageDescription": "Pilih bahasa yang Anda inginkan untuk tampilan aplikasi.",
         "languageSwitcher": "Ubah Bahasa",
         "saveChanges": "Simpan Perubahan",
         "reset": "Atur Ulang",
         "login": "Masuk",
-        "becomeBusiness": "Menjadi Bisnis",
+        "becomeBusiness": "Daftar sebagai Mitra",
         "settings": "Pengaturan",
         "resetModal": {
             "title": "Atur Ulang Pengaturan",
-            "description": "Apakah Anda yakin ingin mengatur ulang semua pengaturan yang tersimpan? Tindakan ini tidak dapat dibatalkan.",
+            "description": "Apakah Anda yakin ingin mengatur ulang semua pengaturan? Tindakan ini tidak dapat dibatalkan.",
             "confirmButton": "Konfirmasi",
             "cancelButton": "Batal"
         },
-        "messageSuccess": "Preferensi Tersimpan."
+        "messageSuccess": "Preferensi berhasil disimpan."
     },
     "onboarding": {
         "step1": {
-            "title": "Selamat datang di BOSS",
-            "description": "Temukan outlet terdekat, cari, dan pesan dengan cepat."
+            "title": "Selamat Datang di BOSS",
+            "description": "Temukan outlet terdekat, lakukan pencarian, dan pesan dengan cepat."
         },
         "step2": {
-            "title": "Temukan outlet terdekat",
-            "description": "Aktifkan lokasi agar kami dapat menunjukkan outlet di sekitar Anda.",
+            "title": "Temukan Outlet Terdekat",
+            "description": "Aktifkan lokasi agar kami dapat menampilkan outlet di sekitar Anda.",
             "allowLocation": "Izinkan Lokasi",
             "skip": "Lewati untuk sekarang"
         },
         "step3": {
-            "title": "Pesan dengan mudah",
-            "description": "Pilih outlet, tambahkan item ke keranjang, dan checkout."
+            "title": "Pemesanan Mudah",
+            "description": "Pilih outlet, tambahkan item ke keranjang, dan lakukan pembayaran."
         },
         "actions": {
             "next": "Berikutnya",
@@ -158,36 +250,36 @@
     "nearbyOutlets": {
         "title": "Outlet Terdekat",
         "viewAll": "Lihat Semua",
-        "loading": "Memuat outlet terdekat...",
-        "empty": "Tidak ada outlet terdekat"
+        "loading": "Sedang memuat outlet terdekat...",
+        "empty": "Tidak ada outlet di sekitar Anda"
     },
     "featuredOutlets": {
         "title": "Outlet Unggulan",
-        "loading": "Memuat outlet unggulan...",
+        "loading": "Sedang memuat outlet unggulan...",
         "empty": "Tidak ada outlet tersedia"
     },
     "error": {
         "retry": "Coba Lagi",
-        "networkError": "Terjadi kesalahan internet"
+        "networkError": "Kesalahan Jaringan"
     },
     "outletDetail": {
-        "currentStatus": "Status Sekarang",
+        "currentStatus": "Status Saat Ini",
         "open": "Buka",
         "closed": "Tutup",
-        "openUntil": "Buka sampai {time}",
+        "openUntil": "Buka hingga {time}",
         "opensAt": "Buka pukul {time}",
         "closedToday": "Tutup hari ini",
         "operatingHours": "Jam Operasional",
-        "today": "Hari ini",
+        "today": "Hari Ini",
         "products": "Produk",
         "services": "Layanan",
         "openingHours": "Jam Buka",
-        "noProducts": "Tidak ada produk",
-        "noProductsDescription": "Outlet ini belum menyediakan produk",
-        "noServices": "Tidak ada layanan",
-        "noServicesDescription": "Outlet ini belum menyediakan layanan",
+        "noProducts": "Tidak ada Produk",
+        "noProductsDescription": "Outlet ini tidak menyediakan produk",
+        "noServices": "Tidak ada Layanan",
+        "noServicesDescription": "Outlet ini tidak menyediakan layanan",
         "noOperatingHours": "Jam operasional tidak tersedia",
-        "noOperatingHoursDescription": "Informasi jam buka outlet ini belum tersedia",
+        "noOperatingHoursDescription": "Informasi jam buka outlet ini tidak tersedia",
         "outletNotFound": "Outlet tidak ditemukan",
         "whatsappMessage": "Halo, saya tertarik dengan outlet {name}"
     },
@@ -206,8 +298,8 @@
         "subtitle": "Riwayat dan status pesanan",
         "empty": {
             "title": "Belum Ada Pesanan",
-            "description": "Anda belum memiliki pesanan. Mulai pesan dari outlet terdekat!",
-            "browse": "Jelajahi Outlet"
+            "description": "Anda belum pernah melakukan pesanan. Mulai pesan dari outlet terdekat!",
+            "browse": "Lihat Outlet"
         },
         "status": {
             "pending": "Menunggu Konfirmasi",
@@ -216,6 +308,212 @@
             "ready": "Siap Diambil",
             "completed": "Selesai",
             "cancelled": "Dibatalkan"
+        }
+    },
+    "payment": {
+        "title": "Pilih Metode Pembayaran",
+        "subtitle": "Gunakan metode pembayaran yang Anda inginkan",
+        "categories": {
+            "all": "Semua",
+            "qris": "QRIS",
+            "va": "Transfer Bank"
+        },
+        "types": {
+            "qris": "QRIS",
+            "va": "Transfer Bank"
+        },
+        "loading": "Sedang memuat metode pembayaran...",
+        "error": {
+            "title": "Gagal Memuat Metode Pembayaran",
+            "message": "Terjadi kesalahan saat memuat metode pembayaran. Silakan coba lagi.",
+            "retry": "Coba Lagi"
+        },
+        "empty": {
+            "title": "Metode Pembayaran Tidak Tersedia",
+            "description": "Metode pembayaran untuk kategori ini belum tersedia."
+        },
+        "security": {
+            "title": "Pembayaran Aman & Terlindungi",
+            "description": "Semua transaksi dilindungi dengan sistem keamanan terbaru"
+        },
+        "note": {
+            "title": "Catatan",
+            "description": "Pastikan saldo akun Anda mencukupi sebelum melakukan pembayaran."
+        },
+        "selected": "Dipilih",
+        "count": "metode"
+    },
+    "checkout": {
+        "orderSummary": {
+            "productFrom": "Produk dari {outletName}",
+            "otherProducts": "+ produk lainnya",
+            "transactionFee": "Biaya Transaksi",
+            "applicationFee": "Biaya Aplikasi",
+            "orderSubtotal": "Subtotal Pesanan",
+            "totalOrder": "Total Pesanan ({count} outlet)",
+            "totalPayment": "Total Pembayaran"
+        },
+        "checkoutButton": {
+            "totalPayment": "Total Pembayaran",
+            "createOrder": "Buat Pesanan"
+        }
+    },
+    "paymentPage": {
+        "title": "Pembayaran",
+        "customerInfo": {
+            "title": "Informasi Pembeli",
+            "fullName": "Nama Lengkap",
+            "fullNamePlaceholder": "Masukkan nama lengkap Anda",
+            "phoneNumber": "Nomor Telepon",
+            "phonePlaceholder": "Contoh: 081234567890",
+            "infoMessage": "Informasi ini digunakan untuk konfirmasi pesanan dan pengiriman."
+        },
+        "orderSummary": {
+            "title": "Ringkasan Pesanan",
+            "subtotal": "Subtotal",
+            "transactionFee": "Biaya Transaksi",
+            "applicationFee": "Biaya Aplikasi",
+            "totalOrder": "Total Pesanan",
+            "totalTransactionFee": "Total Biaya Transaksi",
+            "totalPayment": "Total Pembayaran"
+        },
+        "paymentMethod": {
+            "title": "Metode Pembayaran",
+            "types": {
+                "qris": "QRIS",
+                "va": "Transfer Bank",
+                "card": "Kartu"
+            }
+        },
+        "paymentButton": {
+            "totalPayment": "Total Pembayaran",
+            "processing": "Sedang diproses...",
+            "payNow": "Bayar Sekarang"
+        },
+        "validation": {
+            "nameRequired": "Nama lengkap wajib diisi",
+            "phoneRequired": "Nomor telepon wajib diisi",
+            "phoneInvalid": "Format nomor telepon tidak valid"
+        },
+        "errors": {
+            "noItems": "Tidak ada item ditemukan. Silakan kembali ke keranjang dan tambahkan item.",
+            "paymentFailed": "Pembayaran gagal diproses. Silakan coba lagi."
+        }
+    },
+    "paymentProcessing": {
+        "title": "Memproses Pembayaran",
+        "totalPayment": "Total Pembayaran",
+        "refreshStatus": "Perbarui Status"
+    },
+    "paymentSuccess": {
+        "title": "Pembayaran Berhasil",
+        "orderSuccessful": "Pesanan Berhasil!",
+        "orderProcessing": "Terima kasih, pesanan Anda sedang diproses",
+        "totalPayment": "Total Pembayaran",
+        "paymentMethod": "Metode Pembayaran",
+        "customerName": "Nama Pembeli",
+        "phoneNumber": "Nomor Telepon",
+        "orderTime": "Waktu Pemesanan",
+        "statusWaiting": "Status: Menunggu Konfirmasi",
+        "statusDescription": "Outlet akan mengonfirmasi pesanan Anda dalam 5-10 menit",
+        "viewOrderDetails": "Lihat Detail Pesanan",
+        "backToHome": "Kembali ke Beranda"
+    },
+    "paymentFailed": {
+        "title": "Pembayaran Gagal",
+        "transactionFailed": "Maaf, transaksi Anda tidak dapat diproses",
+        "loadingData": "Memuat data...",
+        "failureInformation": "Informasi Kegagalan",
+        "orderId": "ID Pesanan:",
+        "time": "Waktu:",
+        "method": "Metode:",
+        "orderSummary": "Ringkasan Pesanan",
+        "subtotal": "Subtotal",
+        "applicationFee": "Biaya Aplikasi",
+        "total": "Total",
+        "retrying": "Mencoba ulang...",
+        "tryAgain": "Coba Lagi",
+        "contactSupport": "Hubungi Customer Service",
+        "backToCart": "Kembali ke Keranjang"
+    },
+    "paymentPending": {
+        "title": "Pembayaran Pending",
+        "orderProcessing": "Pesanan sedang diproses",
+        "paymentStatus": "Status Pembayaran",
+        "verifyingByBank": "Sedang diverifikasi oleh bank",
+        "estimatedCompletion": "Estimasi selesai",
+        "orderId": "ID Pesanan:",
+        "bankReference": "Referensi Bank:",
+        "pendingSince": "Pending sejak:",
+        "method": "Metode:",
+        "lastChecked": "Terakhir dicek:",
+        "verificationProcess": "Proses Verifikasi",
+        "paymentReceived": "Pembayaran diterima",
+        "transferSuccessful": "Transfer berhasil",
+        "bankVerification": "Verifikasi bank",
+        "processing": "Sedang diproses...",
+        "orderConfirmation": "Konfirmasi pesanan",
+        "waitingVerification": "Menunggu verifikasi",
+        "checkingStatus": "Mengecek Status...",
+        "checkPaymentStatus": "Cek Status Pembayaran",
+        "contactSupport": "Hubungi Customer Service",
+        "backToCart": "Kembali ke Keranjang",
+        "justNow": "Baru saja",
+        "minutesAgo": "menit yang lalu",
+        "hoursAgo": "jam yang lalu",
+        "daysAgo": "hari yang lalu",
+        "minutesLeft": "menit lagi",
+        "beingProcessed": "Sedang diproses",
+        "loadingData": "Memuat data..."
+    },
+    "paymentComponents": {
+        "paymentStatus": {
+            "successTitle": "Pembayaran Berhasil",
+            "successMessage": "Pembayaran Anda telah diproses dengan sukses",
+            "failedTitle": "Pembayaran Gagal",
+            "failedMessage": "Pembayaran Anda tidak dapat diproses",
+            "pendingTitle": "Memproses Pembayaran",
+            "pendingMessage": "Harap tunggu sementara kami memproses pembayaran Anda",
+            "unknownTitle": "Status Pembayaran",
+            "unknownMessage": "Memeriksa status pembayaran...",
+            "timeRemaining": "Waktu tersisa"
+        },
+        "customerInfo": {
+            "title": "Informasi Pelanggan",
+            "name": "Nama",
+            "phone": "Telepon"
+        },
+        "qrisPayment": {
+            "title": "Pembayaran QRIS",
+            "qrNotAvailable": "Qr tidak tersedia",
+            "instructions": "Pindai kode QR di bawah ini dengan aplikasi e-wallet Anda untuk menyelesaikan pembayaran",
+            "steps": {
+                "1": "Buka aplikasi e-wallet Anda",
+                "2": "Pindai kode QR",
+                "3": "Selesaikan pembayaran",
+                "4": "Tunggu konfirmasi"
+            }
+        },
+        "vaPayment": {
+            "title": "Pembayaran Virtual Account",
+            "vaNumber": "Nomor Virtual Account",
+            "copySuccess": "Nomor VA berhasil disalin ke clipboard",
+            "instructions": "Transfer jumlah yang tepat ke nomor virtual account di bawah ini",
+            "steps": {
+                "1": "Salin nomor virtual account",
+                "2": "Buka aplikasi perbankan Anda",
+                "3": "Transfer jumlah yang tepat",
+                "4": "Tunggu konfirmasi"
+            }
+        },
+        "orderSummary": {
+            "title": "Ringkasan Pesanan",
+            "subtotal": "Subtotal",
+            "applicationFee": "Biaya Aplikasi",
+            "total": "Total"
+        },
+        "footer": {
+            "helpText": "Butuh bantuan? Hubungi customer service kami"
         }
     }
 }

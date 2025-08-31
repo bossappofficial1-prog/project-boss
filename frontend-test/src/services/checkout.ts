@@ -9,6 +9,18 @@ export class CheckoutService {
      * Transform cart items to checkout data format
      */
     static async prepareCheckoutData(cartItems: CartItem[]): Promise<CheckoutData> {
+        // Validasi: Pastikan hanya ada satu outlet
+        const uniqueOutlets = [...new Set(cartItems.map(item => item.outletId))];
+        if (uniqueOutlets.length > 1) {
+            throw new Error('Checkout hanya dapat dilakukan untuk satu outlet saja');
+        }
+
+        // Validasi: Pastikan hanya ada satu jenis produk
+        const uniqueProductTypes = [...new Set(cartItems.map(item => item.type))];
+        if (uniqueProductTypes.length > 1) {
+            throw new Error('Tidak dapat checkout produk GOODS dan SERVICE secara bersamaan dalam satu outlet');
+        }
+
         // Group items by outlet
         const outletGroups = cartItems.reduce((groups, item) => {
             const outletId = item.outletId;

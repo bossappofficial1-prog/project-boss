@@ -6,7 +6,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 const initialState: AppBarProps = {
     title: "Boss App",
     showBackButton: false,
-    variant: "elevated"
+    variant: "transparent"
 }
 
 const AppBarrContextV2 = createContext<{ appBarConfig: AppBarProps; setAppBar: (config: Partial<AppBarProps>) => void; resetAppBar: () => void } | null>(null)

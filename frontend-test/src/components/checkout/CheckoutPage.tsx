@@ -13,9 +13,11 @@ import { CheckoutProps } from '@/types/checkout';
 import PaymentMethodsList from './PaymentMethodsList';
 import { formatCurrency } from '@/lib/utils';
 import { PaymentMethod } from '@/types';
+import { useTranslations } from '@/hooks/useI18n';
 
 // Order Summary Component
 const OrderSummary: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransactionFee, applicationFee, grandTotal }) => {
+    const t = useTranslations("checkout");
     const totalItems = outlets.reduce((total, outlet) => total + 1, 0);
     console.log(outlets);
 
@@ -39,8 +41,8 @@ const OrderSummary: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
                                     <Gift className="w-6 h-6 text-muted-foreground" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium">Produk dari {outlet.outletName}</p>
-                                    <p className="text-xs text-muted-foreground">+ produk lainnya</p>
+                                    <p className="text-sm font-medium">{t("orderSummary.productFrom", { outletName: outlet.outletName })}</p>
+                                    <p className="text-xs text-muted-foreground">{t("orderSummary.otherProducts")}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm font-medium">{formatCurrency(outlet.subtotal)}</p>
@@ -50,7 +52,7 @@ const OrderSummary: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
                             {/* Transaction Fee */}
                             {outlet.transactionFee > 0 && (
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Biaya Transaksi</span>
+                                    <span className="text-muted-foreground">{t("orderSummary.transactionFee")}</span>
                                     <span>{formatCurrency(outlet.transactionFee)}</span>
                                 </div>
                             )}
@@ -58,14 +60,14 @@ const OrderSummary: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
                             {/* Application Fee */}
                             {outlet.applicationFee > 0 && (
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Biaya Aplikasi</span>
+                                    <span className="text-muted-foreground">{t("orderSummary.applicationFee")}</span>
                                     <span>{formatCurrency(outlet.applicationFee)}</span>
                                 </div>
                             )}
 
                             {/* Outlet Subtotal */}
                             <div className="flex items-center justify-between pt-2 border-t">
-                                <span className="text-sm font-medium">Subtotal Pesanan</span>
+                                <span className="text-sm font-medium">{t("orderSummary.orderSubtotal")}</span>
                                 <span className="font-semibold text-primary">
                                     {formatCurrency(outlet.subtotal + outlet.transactionFee + outlet.applicationFee)}
                                 </span>
@@ -80,23 +82,23 @@ const OrderSummary: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
                 <CardContent className="p-4">
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                            <span>Total Pesanan ({totalItems} outlet)</span>
+                            <span>{t("orderSummary.totalOrder", { count: totalItems })}</span>
                             <span>{formatCurrency(subtotal)}</span>
                         </div>
                         {totalTransactionFee > 0 && (
                             <div className="flex justify-between text-sm">
-                                <span>Biaya Transaksi</span>
+                                <span>{t("orderSummary.transactionFee")}</span>
                                 <span>{formatCurrency(totalTransactionFee)}</span>
                             </div>
                         )}
                         {applicationFee > 0 && (
                             <div className="flex justify-between text-sm">
-                                <span>Biaya Aplikasi</span>
+                                <span>{t("orderSummary.applicationFee")}</span>
                                 <span>{formatCurrency(applicationFee)}</span>
                             </div>
                         )}
                         <div className="flex justify-between pt-2 border-t border-blue-200">
-                            <span className="font-semibold">Total Pembayaran</span>
+                            <span className="font-semibold">{t("orderSummary.totalPayment")}</span>
                             <span className="font-bold text-lg text-primary">{formatCurrency(grandTotal)}</span>
                         </div>
                     </div>
@@ -111,12 +113,14 @@ const CheckoutButton: React.FC<{
     grandTotal: number;
     onCheckout: () => void;
 }> = ({ grandTotal, onCheckout }) => {
+    const t = useTranslations("checkout");
+
     return (
         <Card className="sticky bottom-0 py-0 border-t shadow-lg">
             <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <p className="text-sm text-muted-foreground">Total Pembayaran</p>
+                        <p className="text-sm text-muted-foreground">{t("checkoutButton.totalPayment")}</p>
                         <p className="text-lg font-bold text-primary">{formatCurrency(grandTotal)}</p>
                     </div>
                     <Button
@@ -124,7 +128,7 @@ const CheckoutButton: React.FC<{
                         className="px-8 h-12"
                         onClick={onCheckout}
                     >
-                        Buat Pesanan
+                        {t("checkoutButton.createOrder")}
                     </Button>
                 </div>
             </CardContent>
