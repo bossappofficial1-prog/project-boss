@@ -128,7 +128,7 @@
             "title": "Aturan Checkout",
             "rules": {
                 "1": "Pilih satu outlet untuk checkout",
-                "2": "Dalam satu outlet, tidak dapat mencampur produk GOODS dan SERVICE",
+                "2": "Dalam satu outlet, tidak dapat mencampur produk Barang dan Jasa",
                 "3": "Klik pada card outlet untuk memilih"
             }
         },
@@ -514,6 +514,44 @@
         },
         "footer": {
             "helpText": "Butuh bantuan? Hubungi customer service kami"
+        }
+    },
+    "productDetails": {
+        "title": "Detail Produk",
+        "shareText": "Lihat {type}: {name}",
+        "shareType": {
+            "GOODS": "produk",
+            "SERVICE": "layanan"
+        },
+        "toast": {
+            "addProductError": "Tidak dapat menambahkan produk",
+            "addProductErrorDesc": "Terjadi kesalahan saat menambahkan produk ke keranjang",
+            "addServiceError": "Tidak dapat menambahkan layanan",
+            "addServiceErrorDesc": "Terjadi kesalahan saat menambahkan layanan ke keranjang"
+        },
+        "empty": {
+            "title": "Produk tidak ditemukan"
+        },
+        "labels": {
+            "category": "Kategori",
+            "general": "Umum",
+            "type": "Tipe",
+            "product": "Produk",
+            "service": "Layanan",
+            "duration": "Durasi",
+            "minutes": "menit",
+            "status": "Status",
+            "available": "Tersedia",
+            "outOfStock": "Habis",
+            "availableAt": "Tersedia di",
+            "description": "Deskripsi {type}"
+        },
+        "buttons": {
+            "productUnavailable": "Produk Tidak Tersedia",
+            "storeClosed": "Toko Sedang Tutup",
+            "addToCart": "Tambah Keranjang",
+            "serviceUnavailable": "Layanan Tidak Tersedia",
+            "bookService": "Booking Layanan"
         }
     }
 }

@@ -20,6 +20,7 @@ import { CheckoutService } from '@/services/checkout';
 import { formatCurrency } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
 import { useTranslations } from '@/hooks/useI18n';
+import { PaymentMethodId } from '@/types';
 
 interface PaymentPageProps {
     checkoutData: CheckoutData;
@@ -285,19 +286,34 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
         setIsLoading(true);
 
         try {
-            // Construct payload for backend API
-            let itemDetails: Array<{ productId: string; quantity: number; outletId: string }> = [];
+            // Construct payload for backend API sesuai format yang benar
+            let itemDetails: Array<{ productId: string; quantity: number }> = [];
+            let selectedSlotId: string | undefined;
+            let outletId: string = '';
 
             // Try to get items from checkoutData first
             const checkoutItems = checkoutData.outlets.flatMap(outlet => {
                 if (!outlet.items || !Array.isArray(outlet.items)) {
                     return [];
                 }
-                return outlet.items.map(item => ({
-                    productId: item.productId,
-                    quantity: item.quantity,
-                    outletId: item.outletId
-                }));
+
+                // Set outletId dari outlet pertama (karena checkout hanya 1 outlet)
+                if (!outletId) {
+                    outletId = outlet.items[0]?.outletId || '';
+                }
+
+                return outlet.items.map(item => {
+                    // Untuk service products, ambil selectedSlotId
+                    if (item.type === 'SERVICE' && item.selectedSlot && !selectedSlotId) {
+                        selectedSlotId = item.selectedSlot;
+                    }
+
+                    // Return item dengan format yang benar
+                    return {
+                        productId: item.productId,
+                        quantity: item.quantity
+                    };
+                });
             });
 
             if (checkoutItems.length > 0) {
@@ -305,21 +321,45 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             } else {
                 // Fallback to cart items if checkoutData doesn't have items
                 console.warn('Using cart items as fallback for payment payload');
-                itemDetails = cartItems.map(item => ({
-                    productId: item.productId,
-                    quantity: item.quantity,
-                    outletId: item.outletId
-                }));
+                const fallbackItems = cartItems.map(item => {
+                    // Set outletId dari cart item pertama
+                    if (!outletId) {
+                        outletId = item.outletId;
+                    }
+
+                    // Untuk service products, ambil selectedSlotId
+                    if (item.type === 'SERVICE' && item.selectedSlot && !selectedSlotId) {
+                        selectedSlotId = item.selectedSlot;
+                    }
+
+                    return {
+                        productId: item.productId,
+                        quantity: item.quantity
+                    };
+                });
+                itemDetails = fallbackItems;
             }
 
+            // Construct payload sesuai format backend yang benar
             const payloadBody = {
+                outletId: outletId,
                 customer_details: {
                     name: customerInfo.name,
                     phone: customerInfo.phone
                 },
                 item_details: itemDetails,
-                payment_method: selectedPaymentMethod.id as any
+                payment_method: selectedPaymentMethod.id as PaymentMethodId,
+                ...(selectedSlotId && { selectedSlotId: selectedSlotId })
             };
+
+            // Debug log untuk memastikan payload sesuai
+            console.log('Payment Payload:', {
+                outletId,
+                customer_details: payloadBody.customer_details,
+                item_details: payloadBody.item_details,
+                payment_method: payloadBody.payment_method,
+                selectedSlotId: payloadBody.selectedSlotId
+            });
 
             // Check if we have any items
             if (itemDetails.length === 0) {

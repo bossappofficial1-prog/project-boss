@@ -49,7 +49,7 @@ const PaymentMethodsList: React.FC<{
 
     return (
         <>
-            <Card className="shadow-sm border-0 bg-gradient-to-br from-white to-gray-50/50">
+            <Card className="shadow-sm  ">
                 <CardHeader className="pb-1 px-4">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -74,14 +74,14 @@ const PaymentMethodsList: React.FC<{
                                     onClick={() => setSelectedCategory(category.id)}
                                     className={`h-9 px-3 whitespace-nowrap transition-all duration-200 flex-shrink-0 text-xs ${isActive
                                         ? 'bg-primary text-primary-foreground shadow-sm'
-                                        : 'hover:bg-primary/5 hover:border-primary/30'
+                                        : 'hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/30 dark:hover:border-primary/50'
                                         }`}
                                 >
                                     <Icon className="w-3.5 h-3.5 mr-1.5" />
                                     <span className="truncate max-w-[60px]">{category.label}</span>
                                     <Badge
                                         variant="secondary"
-                                        className={`ml-1.5 text-xs px-1.5 py-0.5 ${isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted'
+                                        className={`ml-1.5 text-xs px-1.5 py-0.5 ${isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted dark:bg-gray-700'
                                             }`}
                                     >
                                         {category.count}
@@ -108,8 +108,8 @@ const PaymentMethodsList: React.FC<{
                                         key={method.id}
                                         onClick={() => onSelectPayment(method)}
                                         className={`w-full p-3 border-2 rounded-lg transition-all duration-300 group relative overflow-hidden min-h-[60px] ${isSelected
-                                            ? 'border-primary bg-primary/5 shadow-md ring-1 ring-primary/20'
-                                            : 'border-gray-200 hover:border-primary/50 hover:bg-primary/2 hover:shadow-sm'
+                                            ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-md ring-1 ring-primary/20'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/2 dark:hover:bg-primary/5 hover:shadow-sm'
                                             }`}
                                     >
                                         {/* Selection Indicator */}
@@ -123,8 +123,8 @@ const PaymentMethodsList: React.FC<{
                                             <div className="flex items-center gap-3">
                                                 {/* Payment Method Icon */}
                                                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${isSelected
-                                                    ? 'bg-primary/10'
-                                                    : 'bg-gray-50 group-hover:bg-primary/5'
+                                                    ? 'bg-primary/10 dark:bg-primary/20'
+                                                    : 'bg-gray-50 dark:bg-gray-800 group-hover:bg-primary/5 dark:group-hover:bg-primary/10'
                                                     }`}>
                                                     <ImageRender
                                                         src={method.image_url}
@@ -135,11 +135,11 @@ const PaymentMethodsList: React.FC<{
 
                                                 {/* Payment Method Details */}
                                                 <div className="flex-1 text-left min-w-0">
-                                                    <div className={`font-semibold text-sm transition-colors truncate ${isSelected ? 'text-primary' : 'text-gray-900 group-hover:text-primary'
+                                                    <div className={`font-semibold text-sm transition-colors truncate ${isSelected ? 'text-primary' : 'text-gray-900 dark:text-gray-100 group-hover:text-primary'
                                                         }`}>
                                                         {method.name}
                                                     </div>
-                                                    <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                                    <div className="text-xs text-muted-foreground dark:text-gray-400 mt-0.5 line-clamp-2">
                                                         {method.description}
                                                     </div>
 
@@ -148,10 +148,10 @@ const PaymentMethodsList: React.FC<{
                                                         <Badge
                                                             variant="outline"
                                                             className={`text-xs px-1.5 py-0.5 ${method.type === 'qris'
-                                                                ? 'border-blue-200 text-blue-700 bg-blue-50'
+                                                                ? 'border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/50'
                                                                 : method.type === 'va'
-                                                                    ? 'border-green-200 text-green-700 bg-green-50'
-                                                                    : 'border-gray-200 text-gray-600 bg-gray-50'
+                                                                    ? 'border-green-200 dark:border-green-700 text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/50'
+                                                                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800'
                                                                 }`}
                                                         >
                                                             {method.type === 'qris' ? t("types.qris") :
@@ -163,7 +163,7 @@ const PaymentMethodsList: React.FC<{
                                             </div>
 
                                             {/* Arrow Indicator */}
-                                            <div className={`transition-all duration-300 ${isSelected ? 'text-primary' : 'text-gray-400 group-hover:text-primary'
+                                            <div className={`transition-all duration-300 ${isSelected ? 'text-primary' : 'text-gray-400 dark:text-gray-500 group-hover:text-primary'
                                                 }`}>
                                                 <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${isSelected ? 'translate-x-0.5' : 'group-hover:translate-x-0.5'
                                                     }`} />
@@ -171,7 +171,7 @@ const PaymentMethodsList: React.FC<{
                                         </div>
 
                                         {/* Hover Effect Overlay */}
-                                        <div className="absolute inset-0 bg-gradient-to-r from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-r from-primary/0 to-primary/5 dark:to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
                                     </button>
                                 );
                             })
@@ -186,14 +186,14 @@ const PaymentMethodsList: React.FC<{
                     </div>
 
                     {/* Mobile-Optimized Security Notice */}
-                    <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200/50">
+                    <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/50 dark:to-emerald-900/50 rounded-lg border border-green-200/50 dark:border-green-700/50">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-800 flex items-center justify-center flex-shrink-0">
                                 <Shield className="w-4 h-4 text-green-600" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-green-800 text-xs">{t("security.title")}</div>
-                                <div className="text-xs text-green-600 mt-0.5 leading-tight">
+                                <div className="font-semibold text-green-800 dark:text-green-200 text-xs">{t("security.title")}</div>
+                                <div className="text-xs text-green-600 dark:text-green-300 mt-0.5 leading-tight">
                                     {t("security.description")}
                                 </div>
                             </div>
@@ -201,12 +201,12 @@ const PaymentMethodsList: React.FC<{
                     </div>
 
                     {/* Mobile-Optimized Additional Info */}
-                    <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200/50">
+                    <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/50 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
                         <div className="flex items-start gap-2">
-                            <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-                                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                            <div className="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mt-0.5 flex-shrink-0">
+                                <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
                             </div>
-                            <div className="text-xs text-blue-700 leading-tight">
+                            <div className="text-xs text-blue-700 dark:text-blue-300 leading-tight">
                                 <strong>{t("note.title")}:</strong> {t("note.description")}
                             </div>
                         </div>

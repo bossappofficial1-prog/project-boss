@@ -389,21 +389,23 @@ export default function CartPage() {
             <div className="grid lg:grid-cols-3 gap-4 items-start">
                 <div className="lg:col-span-2 space-y-2">
                     {/* Informasi tentang batasan checkout */}
-                    <Card className="bg-blue-50 border-blue-200">
-                        <CardContent className="p-4">
+                    <Card className="bg-blue-50 border border-blue-200 dark:bg-blue-900/40 dark:border-blue-700 rounded-lg shadow-sm transition-colors duration-300">
+                        <CardContent>
                             <div className="flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                                 <div>
-                                    <h3 className="font-medium text-blue-900 text-sm">{t("checkoutRules.title")}</h3>
-                                    <ul className="text-xs text-blue-700 mt-1 space-y-1">
-                                        <li>• {t("checkoutRules.rules.1")}</li>
-                                        <li>• {t("checkoutRules.rules.2")}</li>
-                                        <li>• {t("checkoutRules.rules.3")}</li>
+                                    <h3 className="font-semibold text-blue-900 dark:text-blue-200 text-sm">
+                                        {t("checkoutRules.title")}
+                                    </h3>
+                                    <ul className="text-xs text-blue-700 dark:text-blue-300 mt-2 space-y-1 list-disc list-inside">
+                                        <li>{t("checkoutRules.rules.1")}</li>
+                                        <li>{t("checkoutRules.rules.2")}</li>
+                                        <li>{t("checkoutRules.rules.3")}</li>
                                     </ul>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
+
 
                     {Object.entries(itemsByOutlet).map(([outletId, { outletName, items: outletItems }]) => (
                         <Card key={outletId} onClick={() => setIsSelectedOutlet(outletId)} className={`pt-0 py-0 overflow-hidden cursor-pointer transition-all ${isSelectedOutlet === outletId ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "hover:border-primary/50"}`}>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import RootLayout from "@/components/layouts/RootLayout";
 import { SocketProvider } from "@/context/SocketContext";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,11 +31,18 @@ export default function Layout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SocketProvider>
-          <RootLayout>
-            {children}
-          </RootLayout>
-        </SocketProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SocketProvider>
+            <RootLayout>
+              {children}
+            </RootLayout>
+          </SocketProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

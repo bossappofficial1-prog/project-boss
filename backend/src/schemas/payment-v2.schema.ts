@@ -14,12 +14,12 @@ export const CreatePaymentSchema = z.object({
     item_details: z.array(
         z.object({
             productId: z.string().min(1, "ProductId wajib diisi"),
-            quantity: z.number().min(1, "Quantity minimal 1"),
-            outletId: z.string().min(1, "OutletId wajib diisi")
+            quantity: z.number().min(1, "Quantity minimal 1")
         })
     ),
     payment_method: z.enum(paymentMethodIds),
-    bookingSlotId: z.string().optional()
+    selectedSlotId: z.string().optional(),
+    outletId: z.string()
 })
 
 export type CreatePaymentPayload = z.infer<typeof CreatePaymentSchema>

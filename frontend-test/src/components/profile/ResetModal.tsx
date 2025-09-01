@@ -39,6 +39,7 @@ export function ResetModal({
                             variant="destructive"
                             onClick={() => {
                                 localStorage.removeItem(STORAGE_PROFILE_KEY);
+                                localStorage.removeItem("hasSeenOnboarding")
                                 toast.push({ title: 'Pengaturan dihapus' });
                             }}
                         >

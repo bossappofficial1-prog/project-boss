@@ -269,14 +269,12 @@ export async function createPaymentService(data: CreatePaymentPayload) {
         customer_details: customerDetails,
         item_details: inputItems,
         payment_method,
-        bookingSlotId,
+        selectedSlotId
     } = data;
 
     const paymentMethod = payment_method as PaymentMethodId;
     const midtransPaymentType: MidtransPaymentMethod =
         paymentMethodMapping[paymentMethod];
-
-    const uniqueOutletIds = new Set(inputItems.map((i) => i.outletId));
 
     // Build item details for Midtrans
     const itemDetails: any[] = [];
@@ -303,19 +301,17 @@ export async function createPaymentService(data: CreatePaymentPayload) {
     }
 
     // Tambah transaction fee (per outlet)
-    for (const outletId of uniqueOutletIds) {
-        const outlet = await OutletRepository.findById(outletId);
-        if (outlet?.business.defaultTransactionFeeBearer === "CUSTOMER") {
-            const fee = Math.floor(grossAmount * 0.02);
-            transactionFeeTotal += fee;
+    const outlet = await OutletRepository.findById(data.outletId);
+    if (outlet?.business.defaultTransactionFeeBearer === "CUSTOMER") {
+        const fee = Math.floor(grossAmount * 0.02);
+        transactionFeeTotal += fee;
 
-            itemDetails.push({
-                id: `transaction-fee-${outletId}`,
-                name: "Biaya Transaksi",
-                price: fee,
-                quantity: 1,
-            });
-        }
+        itemDetails.push({
+            id: `transaction-fee-${data.outletId}`,
+            name: "Biaya Transaksi",
+            price: fee,
+            quantity: 1,
+        });
     }
 
     // Application fee (selalu ditanggung customer di sini)
@@ -384,8 +380,8 @@ export async function createPaymentService(data: CreatePaymentPayload) {
                 appFee: applicationFee,
                 midtransFee: transactionFeeTotal,
                 chargedTo: FeeBearer.CUSTOMER,
-                ...(bookingSlotId && {
-                    bookingSlot: { connect: { id: bookingSlotId } },
+                ...(selectedSlotId && {
+                    bookingSlot: { connect: { id: selectedSlotId } },
                 }),
                 guestCustomer: {
                     create: {
@@ -393,9 +389,8 @@ export async function createPaymentService(data: CreatePaymentPayload) {
                         phone: customerDetails.phone,
                     },
                 },
-                // kalau model order → outlet relation 1:1
                 outlet: {
-                    connect: { id: [...uniqueOutletIds][0] }, // ambil outlet pertama
+                    connect: { id: data.outletId },
                 },
             },
         });

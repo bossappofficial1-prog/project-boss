@@ -154,6 +154,7 @@ export class CheckoutService {
      * Process payment by sending payload to backend API
      */
     static async processPayment(payload: {
+        outletId: string;
         customer_details: {
             name: string;
             phone: string;
@@ -161,9 +162,9 @@ export class CheckoutService {
         item_details: Array<{
             productId: string;
             quantity: number;
-            outletId: string;
         }>;
-        payment_method: PaymentMethodId
+        payment_method: PaymentMethodId;
+        selectedSlotId?: string;
     }): Promise<any> {
         try {
             // TODO: Replace with actual API endpoint

@@ -297,9 +297,10 @@ export default function ProfileSettings() {
                             onClick={becomeBusiness}
                             variant="secondary"
                             className="h-11"
+                            title={t("becomeBusiness")}
                         >
                             <Building className="w-4 h-4 mr-2" />
-                            {t("becomeBusiness")}
+                            <span className="line-clamp-1 truncate"> {t("becomeBusiness")}</span>
                         </Button>
                     </div>
 

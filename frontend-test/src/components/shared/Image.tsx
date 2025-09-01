@@ -4,8 +4,19 @@ import { useState } from "react";
 import Image from "next/image";
 
 export function ImageRender(
-    { src, alt, className, sizes }:
-        { src: string, alt: string, className?: string, sizes?: string }) {
+    { src,
+        alt,
+        className,
+        sizes,
+        priority
+    }:
+        {
+            src: string,
+            alt: string,
+            className?: string,
+            sizes?: string,
+            priority?: boolean
+        }) {
     const [imgSrc, setImgSrc] = useState(src || "/assets/images/default-image.png");
 
     return (
@@ -18,7 +29,7 @@ export function ImageRender(
             className={` ${className}`}
             sizes={sizes || "(max-width: 768px) 100vw, 600px"}
             onError={() => setImgSrc("/assets/images/default-image.png")}
-            loading="lazy"
+            {...(priority ? { priority } : { loading: "lazy" })}
         />
     );
 }

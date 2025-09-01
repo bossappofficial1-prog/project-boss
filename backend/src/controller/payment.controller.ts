@@ -9,9 +9,9 @@ import { CreatePaymentPayload } from "../schemas/payment-v2.schema";
 import { HttpStatus } from "../constants/http-status";
 
 export const createPaymentController = asyncHandler(async (req: Request, res: Response) => {
-    const { customer_details, item_details, payment_method } = req.body as CreatePaymentPayload
+    const { customer_details, item_details, payment_method, selectedSlotId, outletId } = req.body as CreatePaymentPayload
 
-    const result = await createPaymentService({ customer_details, item_details, payment_method })
+    const result = await createPaymentService({ customer_details, item_details, payment_method, outletId, selectedSlotId })
 
     return ResponseUtil.success(res, result, HttpStatus.CREATED)
 })
