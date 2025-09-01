@@ -367,6 +367,16 @@
     "orders": {
         "title": "Pesanan Saya",
         "subtitle": "Riwayat dan status pesanan",
+        "my_orders": "Pesanan Saya",
+        "history_and_status": "Riwayat dan status pesanan Anda",
+        "order_singular": "pesanan",
+        "order_plural": "pesanan",
+        "found": "ditemukan",
+        "error_title": "Gagal Memuat Pesanan",
+        "error_message": "Terjadi kesalahan saat mengambil pesanan Anda. Silakan coba lagi nanti.",
+        "no_orders_title": "Belum Ada Pesanan",
+        "no_orders_description": "Anda belum pernah melakukan pesanan. Mulai pesan dari outlet terdekat!",
+        "explore_outlets": "Jelajahi Outlet",
         "empty": {
             "title": "Belum Ada Pesanan",
             "description": "Anda belum pernah melakukan pesanan. Mulai pesan dari outlet terdekat!",

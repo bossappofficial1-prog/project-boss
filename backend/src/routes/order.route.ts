@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express";
-import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController } from "../controller/order.controller";
+import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController } from "../controller/order.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOrderSchema, updateOrderStatusSchema } from "../schemas/order.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
@@ -20,6 +20,8 @@ orderRouter.post("/",
     validateSchema(createOrderSchema),
     createOrderController
 );
+
+orderRouter.get("/details/:phone", getOrderByCustomerPhoneController)
 
 // SECURITY FIX: Add rate limiting for owner order management
 orderRouter.use(orderManagementLimiter);

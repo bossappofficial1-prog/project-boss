@@ -2,138 +2,122 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { useAppBarV2 } from '@/context/AppBarContextV2';
 import { EmptyState } from '@/components/Base';
-import OrderCard from './OrderCard';
+import OrderCard from './parts/OrderCard';
+import OrderDetailModal from './parts/OrderDetailModal';
+import OrderCardSkeleton from './parts/OrderCardSkeleton';
+import { Order } from '@/services/order';
+import { OrderDetail } from '@/types';
 import { Receipt } from 'lucide-react';
-
-export interface OrderData {
-    id: string;
-    checkoutData: {
-        outlets: Array<{
-            outletName: string;
-            subtotal: number;
-            transactionFee: number;
-            applicationFee: number;
-        }>;
-        subtotal: number;
-        totalTransactionFee: number;
-        applicationFee: number;
-        grandTotal: number;
-    };
-    selectedPaymentMethod: {
-        id: string;
-        name: string;
-        description: string;
-        type: string;
-    };
-    customerInfo: {
-        name: string;
-        phone: string;
-    };
-    paymentDate: string;
-    status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
-    orderNumber?: string;
-}
+import { useTranslations } from '@/hooks/useI18n';
 
 export default function OrdersPage() {
-    const [orders, setOrders] = useState<OrderData[]>([]);
-    const { setAppBar } = useAppBarV2();
+    const { setAppBar, resetAppBar } = useAppBarV2();
     const router = useRouter();
+    const t = useTranslations('orders');
+    const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const { data: orders, isLoading, error } = useQuery<OrderDetail[], Error>({
+        queryKey: ['orders'],
+        queryFn: Order.getOrderDetails
+    });
 
     useEffect(() => {
         setAppBar({
-            title: "Pesanan Saya",
-            subtitle: "Riwayat dan status pesanan",
+            title: t('my_orders'),
+            subtitle: t('history_and_status'),
             showSearch: false,
+            showBackButton: true,
             centerTitle: true,
             rightContent: null
         });
 
-        // Load orders from localStorage
-        loadOrders();
-    }, [setAppBar]);
+        return () => resetAppBar();
+    }, [setAppBar, resetAppBar, t]);
 
-    const loadOrders = () => {
-        try {
-            const savedOrders = localStorage.getItem('userOrders');
-            if (savedOrders) {
-                const parsedOrders = JSON.parse(savedOrders);
-                setOrders(Array.isArray(parsedOrders) ? parsedOrders : []);
-            } else {
-                // If no orders exist, check for lastPayment (single order)
-                const lastPayment = localStorage.getItem('lastPayment');
-                if (lastPayment) {
-                    const paymentData = JSON.parse(lastPayment);
-                    const order: OrderData = {
-                        id: Date.now().toString(),
-                        ...paymentData,
-                        status: 'pending',
-                        orderNumber: `ORD-${Date.now().toString().slice(-6)}`
-                    };
-                    setOrders([order]);
-                    // Save this as the first order
-                    localStorage.setItem('userOrders', JSON.stringify([order]));
-                }
-            }
-        } catch (error) {
-            console.error('Error loading orders:', error);
-            setOrders([]);
-        }
+    const handleOrderClick = (order: OrderDetail) => {
+        setSelectedOrder(order);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedOrder(null);
     };
 
     const handleBrowseOutlets = () => {
         router.push('/nearby');
     };
 
-    if (orders.length === 0) {
+    const renderContent = () => {
+        if (isLoading) {
+            return (
+                <div className="space-y-3">
+                    {[...Array(3)].map((_, i) => <OrderCardSkeleton key={i} />)}
+                </div>
+            );
+        }
+
+        if (error) {
+            return (
+                <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+                    <EmptyState
+                        title={t('error_title')}
+                        description={t('error_message')}
+                        icon={<Receipt className="w-6 h-6 text-muted-foreground" />}
+                    />
+                </div>
+            );
+        }
+
+        if (!orders || orders.length === 0) {
+            return (
+                <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+                    <EmptyState
+                        title={t('no_orders_title')}
+                        description={t('no_orders_description')}
+                        icon={<Receipt className="w-6 h-6 text-muted-foreground" />}
+                        action={{
+                            label: t('explore_outlets'),
+                            onClick: handleBrowseOutlets
+                        }}
+                    />
+                </div>
+            );
+        }
+
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-                <EmptyState
-                    title="Belum Ada Pesanan"
-                    description="Anda belum memiliki pesanan. Mulai pesan dari outlet terdekat!"
-                    icon={<Receipt className="w-6 h-6 text-muted-foreground" />}
-                    action={{
-                        label: "Jelajahi Outlet",
-                        onClick: handleBrowseOutlets
-                    }}
-                />
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-4 pb-20">
-            <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                    {orders.length} {orders.length === 1 ? 'pesanan' : 'pesanan'} ditemukan
-                </p>
-            </div>
-
             <div className="space-y-3">
                 {orders.map((order) => (
                     <OrderCard
                         key={order.id}
                         order={order}
-                        onStatusUpdate={(orderId: string, newStatus: OrderData['status']) => {
-                            setOrders(prev =>
-                                prev.map(order =>
-                                    order.id === orderId
-                                        ? { ...order, status: newStatus }
-                                        : order
-                                )
-                            );
-                            // Update localStorage
-                            const updatedOrders = orders.map(order =>
-                                order.id === orderId
-                                    ? { ...order, status: newStatus }
-                                    : order
-                            );
-                            localStorage.setItem('userOrders', JSON.stringify(updatedOrders));
-                        }}
+                        onClick={() => handleOrderClick(order)}
                     />
                 ))}
             </div>
+        );
+    };
+
+    return (
+        <div className="space-y-2">
+            {!isLoading && orders && orders.length > 0 && (
+                <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                        {orders.length} {orders.length === 1 ? t('order_singular') : t('order_plural')} {t('found')}
+                    </p>
+                </div>
+            )}
+            {renderContent()}
+            <OrderDetailModal
+                order={selectedOrder}
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+            />
         </div>
     );
 }
+

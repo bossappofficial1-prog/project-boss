@@ -564,3 +564,20 @@ export async function completeServiceOrderService(orderId: string) {
 
     return completedOrder;
 }
+
+export async function getOrderByCustomerPhoneService(phone: string) {
+    const customerOrder = await OrderRepository.getOrderByCustomerPhone(phone)
+
+    if (!customerOrder || customerOrder.length === 0) throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    const customerOrderMap = customerOrder.map((order) => {
+        const { guestCustomer, ...otherOrder } = order
+
+        return {
+            ...otherOrder,
+            customerDetails: guestCustomer
+        }
+    })
+
+    return customerOrderMap
+}

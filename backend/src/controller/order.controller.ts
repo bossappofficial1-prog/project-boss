@@ -6,7 +6,8 @@ import {
     getOrderByIdService, refundOrderService,
     createOrderAndMidtransTransactionService,
     updateOrderStatusService, completeServiceOrderService,
-    getGoodsOrdersByOutletService, getServiceQueueByOutletService
+    getGoodsOrdersByOutletService, getServiceQueueByOutletService,
+    getOrderByCustomerPhoneService
 } from "../service/order.service";
 import { ReceiptService } from "../service/receipt.service";
 
@@ -131,3 +132,10 @@ export const listServiceQueueByOutletController = asyncHandler(async (req: Reque
         HttpStatus.OK
     );
 });
+
+export const getOrderByCustomerPhoneController = asyncHandler(async (req: Request, res: Response) => {
+    const { phone } = req.params
+
+    const customerOrder = await getOrderByCustomerPhoneService(phone)
+    return ResponseUtil.success(res, customerOrder)
+})

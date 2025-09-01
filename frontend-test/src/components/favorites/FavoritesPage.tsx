@@ -19,10 +19,10 @@ type ViewMode = 'grid' | 'list';
 
 export default function FavoritesPage() {
     const { favorites, clearFavorites, removeFavorite } = useFavorites();
-    const { setAppBar } = useAppBarV2();
+    const { setAppBar, resetAppBar } = useAppBarV2();
     const t = useTranslations('favorites');
     const router = useRouter();
-    const hasUpdatedRef = useRef(false);
+    // AppBar will be set on mount and reset on unmount
     const [showValidationAlert, setShowValidationAlert] = useState(false);
 
     const [sortBy, setSortBy] = useState<SortOption>(() => (typeof window !== 'undefined' ? (localStorage.getItem('fav-sort') as SortOption) || 'dateAdded' : 'dateAdded'));
@@ -144,11 +144,11 @@ export default function FavoritesPage() {
     }), [t, validCount, rightContent]);
 
     useEffect(() => {
-        if (!hasUpdatedRef.current) {
-            setAppBar({ ...appBarConfig });
-            hasUpdatedRef.current = true;
-        }
-    }, [setAppBar, appBarConfig]);
+        setAppBar({ ...appBarConfig });
+        return () => {
+            resetAppBar();
+        };
+    }, [setAppBar, resetAppBar, appBarConfig]);
 
     // Show validation alert when invalid outlets are found
     useEffect(() => {

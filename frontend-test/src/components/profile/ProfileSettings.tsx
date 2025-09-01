@@ -5,7 +5,6 @@ import { useTheme } from "next-themes";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -37,7 +36,7 @@ export default function ProfileSettings() {
 
     const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
         resolver: zodResolver(schema),
-        defaultValues: { fullName: "", whatsapp: "", theme: "light" },
+        defaultValues: { fullName: "", whatsapp: "", theme: "system" },
     });
 
     // Load stored preferences on client-side only
@@ -270,9 +269,9 @@ export default function ProfileSettings() {
                             <span className="text-sm font-medium">{t("orders.orderHistory")}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
+                            {/* <span className="text-xs text-muted-foreground">
                                 {t("orders.viewAll")}
-                            </span>
+                            </span> */}
                             <span className="text-muted-foreground">→</span>
                         </div>
                     </div>

@@ -181,3 +181,46 @@ export interface VaNumber {
     bank: string
     va_number: string
 }
+
+export const OrderStatus = {
+    AWAITING_PAYMENT: "AWAITING_PAYMENT", // Menunggu pembayaran dikonfirmasi
+    PROCESSING: "PROCESSING", // Pesanan sedang diproses (bisa masuk antrian Redis/RabbitMQ)
+    READY: "READY", // Siap diambil (untuk barang) atau siap dimulai (untuk jasa)
+    COMPLETED: "COMPLETED", // Pesanan selesai
+    CANCELLED: "CANCELLED", // Pesanan dibatalkan
+    CONFIRMED: "CONFIRMED" // Tambahkan status baru di sini
+} as const
+
+type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus]
+
+export interface OrderDetail {
+    id: string
+    totalAmount: number
+    bookingDate: any
+    customerType: string
+    paymentStatus: string
+    paymentReminderSent: boolean
+    orderStatus: OrderStatusType
+    midtransFee: number
+    appFee: number
+    outletId: string
+    createdAt: string
+    updatedAt: string
+    items: Item[]
+    outlet: Pick<OutletType, "id" | "name">
+    transaction: Transaction
+    customerDetails: CustomerInfo & { id: string }
+}
+
+export interface Item {
+    id: string
+    priceAtTimeOfOrder: number
+    quantity: number
+    product: Pick<ProductType, "id" | "name" | "price">
+}
+
+export interface Transaction {
+    id: string
+    paymentMethod: string
+    status: string
+}

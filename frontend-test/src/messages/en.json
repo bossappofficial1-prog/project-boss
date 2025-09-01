@@ -367,6 +367,16 @@
     "orders": {
         "title": "My Orders",
         "subtitle": "Order history and status",
+        "my_orders": "My Orders",
+        "history_and_status": "History and status of your orders",
+        "order_singular": "order",
+        "order_plural": "orders",
+        "found": "found",
+        "error_title": "Failed to Load Orders",
+        "error_message": "An error occurred while fetching your orders. Please try again later.",
+        "no_orders_title": "No Orders Yet",
+        "no_orders_description": "You haven't placed any orders. Start ordering from nearby outlets!",
+        "explore_outlets": "Explore Outlets",
         "empty": {
             "title": "No Orders Yet",
             "description": "You haven't placed any orders. Start ordering from nearby outlets!",
