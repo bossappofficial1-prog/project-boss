@@ -195,6 +195,58 @@
             "title": "No favorites yet",
             "description": "Start adding outlets to your favorites",
             "browse": "Browse Outlets"
+        },
+        "validation": {
+            "checking": "Checking outlet availability...",
+            "invalidOutlets": "outlet(s) no longer available",
+            "removeUnavailable": "Remove Unavailable",
+            "dismiss": "Dismiss",
+            "someUnavailable": "Some outlets in your favorites may have been closed or removed.",
+            "available": "available",
+            "unavailable": "unavailable",
+            "refresh": "Refresh"
+        },
+        "controls": {
+            "availableOnly": "Available Only",
+            "showAll": "Show All Favorites",
+            "date": "Date",
+            "name": "Name",
+            "status": "Status",
+            "availableOutlets": "{count} available outlets",
+            "resultsCount": "{shown} of {total} outlet(s)",
+            "noAvailableOutlets": "No available outlets",
+            "noFavoritesYet": "No favorites yet",
+            "allUnavailableDescription": "All your favorite outlets are currently unavailable. Try disabling the filter.",
+            "startExploringDescription": "Start exploring and add outlets to your favorites to see them here.",
+            "restaurant": "Restaurant",
+            "addedAgo": "Added {timeAgo}"
+        },
+        "alert": {
+            "unavailableTitle": "{count} outlet(s) no longer available",
+            "unavailableDescription": "Some outlets in your favorites may have been closed or removed."
+        },
+        "buttons": {
+            "removeUnavailable": "Remove Unavailable",
+            "dismiss": "Dismiss",
+            "showAllFavorites": "Show All Favorites",
+            "clearAll": "Clear All",
+            "cancel": "Cancel",
+            "apply": "Apply"
+        },
+        "loading": {
+            "favorites": "Loading favorites...",
+            "checking": "Checking outlet availability..."
+        },
+        "sort": {
+            "label": "Sort",
+            "dateAdded": "Newest",
+            "name": "Name A-Z",
+            "status": "Status"
+        },
+        "confirm": {
+            "clearAllTitle": "Clear Favorites?",
+            "clearAllDesc": "This will remove all saved outlets from your favorites.",
+            "clear": "Clear"
         }
     },
     "profilePage": {
@@ -223,7 +275,26 @@
             "confirmButton": "Confirm",
             "cancelButton": "Cancel"
         },
-        "messageSuccess": "Preferences saved."
+        "messageSuccess": "Preferences saved.",
+        "placeholders": {
+            "fullName": "Enter your full name",
+            "whatsapp": "+1 234 567 8900"
+        },
+        "systemTheme": "System",
+        "favorites": {
+            "title": "My Favorites",
+            "savedOutlets": "Saved Outlets",
+            "count": "{count} saved"
+        },
+        "orders": {
+            "title": "My Orders",
+            "orderHistory": "Order History",
+            "viewAll": "View all orders"
+        },
+        "validation": {
+            "fullNameMin": "Full name must be at least 2 characters",
+            "invalidWhatsapp": "Invalid WhatsApp number"
+        }
     },
     "onboarding": {
         "step1": {

@@ -195,6 +195,58 @@
             "title": "Belum ada favorit",
             "description": "Mulai tambahkan outlet ke daftar favorit Anda",
             "browse": "Lihat Outlet"
+        },
+        "validation": {
+            "checking": "Memeriksa ketersediaan outlet...",
+            "invalidOutlets": "outlet tidak tersedia",
+            "removeUnavailable": "Hapus yang Tidak Tersedia",
+            "dismiss": "Tutup",
+            "someUnavailable": "Beberapa outlet di favorit Anda mungkin sudah tutup atau dihapus.",
+            "available": "tersedia",
+            "unavailable": "tidak tersedia",
+            "refresh": "Refresh"
+        },
+        "controls": {
+            "availableOnly": "Hanya yang Tersedia",
+            "showAll": "Tampilkan Semua Favorit",
+            "date": "Tanggal",
+            "name": "Nama",
+            "status": "Status",
+            "availableOutlets": "{count} outlet tersedia",
+            "resultsCount": "{shown} dari {total} outlet",
+            "noAvailableOutlets": "Tidak ada outlet tersedia",
+            "noFavoritesYet": "Belum ada favorit",
+            "allUnavailableDescription": "Semua outlet favorit Anda saat ini tidak tersedia. Coba matikan filter.",
+            "startExploringDescription": "Mulai jelajahi dan tambahkan outlet ke favorit Anda untuk melihatnya di sini.",
+            "restaurant": "Restoran",
+            "addedAgo": "Ditambahkan {timeAgo}"
+        },
+        "alert": {
+            "unavailableTitle": "{count} outlet tidak lagi tersedia",
+            "unavailableDescription": "Beberapa outlet di favorit Anda mungkin sudah tutup atau dihapus."
+        },
+        "buttons": {
+            "removeUnavailable": "Hapus yang Tidak Tersedia",
+            "dismiss": "Tutup",
+            "showAllFavorites": "Tampilkan Semua Favorit",
+            "clearAll": "Hapus Semua",
+            "cancel": "Batal",
+            "apply": "Terapkan"
+        },
+        "loading": {
+            "favorites": "Memuat favorit...",
+            "checking": "Memeriksa ketersediaan outlet..."
+        },
+        "sort": {
+            "label": "Urutkan",
+            "dateAdded": "Terbaru",
+            "name": "Nama A-Z",
+            "status": "Status"
+        },
+        "confirm": {
+            "clearAllTitle": "Hapus Semua Favorit?",
+            "clearAllDesc": "Tindakan ini akan menghapus semua outlet dari daftar favorit Anda.",
+            "clear": "Hapus"
         }
     },
     "profilePage": {
@@ -223,7 +275,26 @@
             "confirmButton": "Konfirmasi",
             "cancelButton": "Batal"
         },
-        "messageSuccess": "Preferensi berhasil disimpan."
+        "messageSuccess": "Preferensi berhasil disimpan.",
+        "placeholders": {
+            "fullName": "Masukkan nama lengkap",
+            "whatsapp": "+62 812 3456 7890"
+        },
+        "systemTheme": "Sistem",
+        "favorites": {
+            "title": "Favorit Saya",
+            "savedOutlets": "Outlet Tersimpan",
+            "count": "{count} tersimpan"
+        },
+        "orders": {
+            "title": "Pesanan Saya",
+            "orderHistory": "Riwayat Pesanan",
+            "viewAll": "Lihat semua pesanan"
+        },
+        "validation": {
+            "fullNameMin": "Nama lengkap minimal 2 karakter",
+            "invalidWhatsapp": "Nomor WhatsApp tidak valid"
+        }
     },
     "onboarding": {
         "step1": {

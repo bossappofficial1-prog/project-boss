@@ -19,14 +19,6 @@ import { STORAGE_PROFILE_KEY } from "@/constants";
 import { ResetModal } from "./ResetModal";
 
 
-const schema = z.object({
-    fullName: z.string().min(2, "Full name must be at least 2 characters"),
-    whatsapp: z.string().min(6, "Invalid WhatsApp number"),
-    theme: z.enum(["light", "dark"]),
-});
-
-type FormValues = z.infer<typeof schema>;
-
 export default function ProfileSettings() {
     const { setTheme: setAppTheme } = useTheme();
     const router = useRouter();
@@ -34,6 +26,14 @@ export default function ProfileSettings() {
     const t = useTranslations('profilePage');
     const [isResetModalShowed, setIsResetModalShowed] = useState<boolean>(false)
     const { favoriteCount } = useFavorites();
+
+    const schema = z.object({
+        fullName: z.string().min(2, t("validation.fullNameMin")),
+        whatsapp: z.string().min(6, t("validation.invalidWhatsapp")),
+        theme: z.enum(["light", "dark", "system"]),
+    });
+
+    type FormValues = z.infer<typeof schema>;
 
     const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
         resolver: zodResolver(schema),
@@ -146,7 +146,7 @@ export default function ProfileSettings() {
                             </label>
                             <Input
                                 {...register('fullName')}
-                                placeholder="Masukkan nama lengkap"
+                                placeholder={t("placeholders.fullName")}
                                 className="h-11"
                             />
                             {errors.fullName && (
@@ -162,7 +162,7 @@ export default function ProfileSettings() {
                             </label>
                             <Input
                                 {...register('whatsapp')}
-                                placeholder="+62 812 3456 7890"
+                                placeholder={t("placeholders.whatsapp")}
                                 className="h-11"
                             />
                             {errors.whatsapp && (
@@ -210,7 +210,7 @@ export default function ProfileSettings() {
                         <label className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
                             <div className="flex items-center gap-2">
                                 <Monitor className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">System</span>
+                                <span className="text-sm font-medium">{t("systemTheme")}</span>
                             </div>
                             <RadioGroupItem value="system" />
                         </label>
@@ -233,7 +233,7 @@ export default function ProfileSettings() {
                     <div className="flex items-center gap-2 mb-4">
                         <Heart className="w-5 h-5 text-primary" />
                         <h2 className="font-medium text-card-foreground">
-                            My Favorites
+                            {t("favorites.title")}
                         </h2>
                     </div>
                     <div
@@ -242,11 +242,11 @@ export default function ProfileSettings() {
                     >
                         <div className="flex items-center gap-2">
                             <Heart className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">Saved Outlets</span>
+                            <span className="text-sm font-medium">{t("favorites.savedOutlets")}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">
-                                {favoriteCount ? favoriteCount : 0} saved
+                                {t("favorites.count", { count: favoriteCount ? favoriteCount : 0 })}
                             </span>
                             <span className="text-muted-foreground">→</span>
                         </div>
@@ -258,7 +258,7 @@ export default function ProfileSettings() {
                     <div className="flex items-center gap-2 mb-4">
                         <Receipt className="w-5 h-5 text-primary" />
                         <h2 className="font-medium text-card-foreground">
-                            My Orders
+                            {t("orders.title")}
                         </h2>
                     </div>
                     <div
@@ -267,11 +267,11 @@ export default function ProfileSettings() {
                     >
                         <div className="flex items-center gap-2">
                             <Receipt className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">Order History</span>
+                            <span className="text-sm font-medium">{t("orders.orderHistory")}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">
-                                View all orders
+                                {t("orders.viewAll")}
                             </span>
                             <span className="text-muted-foreground">→</span>
                         </div>

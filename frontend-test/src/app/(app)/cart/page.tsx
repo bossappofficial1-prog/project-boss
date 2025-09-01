@@ -15,8 +15,10 @@ import {
     AlertCircle,
     Timer,
     Calendar,
+    RefreshCw,
 } from 'lucide-react';
 import { useCart, CartItem } from '@/hooks/useCart';
+import { useCartValidation } from '@/hooks/useCartValidation';
 import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
 import { EmptyState } from '@/components/Base';
@@ -43,9 +45,11 @@ function formatSelectedSlot(dateStr: string, startTimeStr: string, endTimeStr: s
 interface CartItemProps {
     item: CartItem;
     slotInfo?: BookingSlotType | null;
+    isValid?: boolean;
+    invalidReason?: string | null;
 }
 
-function CartItemCard({ item, slotInfo }: CartItemProps) {
+function CartItemCard({ item, slotInfo, isValid = true, invalidReason }: CartItemProps) {
     const { updateQuantity, updateItem, removeItem } = useCart();
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const isService = item.type === "SERVICE";
@@ -98,17 +102,37 @@ function CartItemCard({ item, slotInfo }: CartItemProps) {
     };
 
     return (
-        <div className="p-4 border-b last:border-b-0">
+        <div className={`p-4 border-b last:border-b-0 ${!isValid ? 'bg-destructive/5 border-destructive/20' : ''}`}>
+            {/* Validation warning */}
+            {!isValid && invalidReason && (
+                <div className="mb-3 p-2 rounded-md bg-destructive/10 border border-destructive/20">
+                    <div className="flex items-center gap-2 text-destructive text-sm">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="font-medium">Item Unavailable</span>
+                    </div>
+                    <p className="text-xs text-destructive/80 mt-1">{invalidReason}</p>
+                </div>
+            )}
+
             <div className="flex gap-4">
-                <img
-                    src={item.image || '/assets/images/default-image.png'}
-                    alt={item.name}
-                    className="w-16 h-16 rounded-lg object-cover bg-muted flex-shrink-0"
-                />
+                <div className="relative">
+                    <img
+                        src={item.image || '/assets/images/default-image.png'}
+                        alt={item.name}
+                        className={`w-16 h-16 rounded-lg object-cover bg-muted flex-shrink-0 ${!isValid ? 'opacity-50' : ''}`}
+                    />
+                    {!isValid && (
+                        <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
+                            <AlertCircle className="w-6 h-6 text-destructive" />
+                        </div>
+                    )}
+                </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h3 className="font-semibold text-sm line-clamp-2">{item.name}</h3>
+                            <h3 className={`font-semibold text-sm line-clamp-2 ${!isValid ? 'text-muted-foreground' : ''}`}>
+                                {item.name}
+                            </h3>
                             <p className="text-xs text-muted-foreground">{item.outletName}</p>
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0" onClick={() => removeItem(item.id)}>
@@ -121,17 +145,29 @@ function CartItemCard({ item, slotInfo }: CartItemProps) {
                             <Badge variant="outline">{t("service")}</Badge>
                         ) : (
                             <div className="flex items-center gap-2">
-                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                    disabled={item.quantity <= 1 || !isValid}
+                                >
                                     <Minus className="h-3.5 w-3.5" />
                                 </Button>
                                 <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
-                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQuantity(item.id, item.quantity + 1)} disabled={!!(item.maxQuantity && item.quantity >= item.maxQuantity)}>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                    disabled={!!(item.maxQuantity && item.quantity >= item.maxQuantity) || !isValid}
+                                >
                                     <Plus className="h-3.5 w-3.5" />
                                 </Button>
                             </div>
                         )}
                         <div className="text-right">
-                            <p className="font-bold text-base text-primary">
+                            <p className={`font-bold text-base ${!isValid ? 'text-muted-foreground line-through' : 'text-primary'}`}>
                                 Rp{(item.price * item.quantity).toLocaleString('id-ID')}
                             </p>
                             {item.quantity > 1 && !isService && (
@@ -294,7 +330,26 @@ export default function CartPage() {
     const { items, getTotalItems, getTotalPrice } = useCart();
     const { setAppBar } = useAppBarV2()
     const [isSelectedOutlet, setIsSelectedOutlet] = useState<string | null>(null)
+    const [showValidationAlert, setShowValidationAlert] = useState(false);
     const t = useTranslations("cart");
+
+    // Cart validation hook
+    const {
+        isValidating,
+        hasInvalidItems,
+        invalidItemsCount,
+        validItemsCount,
+        removeInvalidItems,
+        isItemValid,
+        getInvalidReason,
+        revalidate
+    } = useCartValidation({
+        enabled: true,
+        refetchInterval: 5 * 60 * 1000, // 5 menit
+        onInvalidItemsFound: (invalidItems) => {
+            setShowValidationAlert(true);
+        }
+    });
 
     const router = useRouter();
     useEffect(() => {
@@ -302,7 +357,7 @@ export default function CartPage() {
             title: t("pageTitle"),
             showBackButton: false,
         })
-    }, [t])
+    }, [setAppBar, t])
 
     const uniqueSlotIds = useMemo(() => {
         const slotIds = items
@@ -379,7 +434,53 @@ export default function CartPage() {
 
     return (
         <div className="py-2">
-            {/* <NotificationCenter /> */}
+            {/* Cart Validation Alert */}
+            {showValidationAlert && hasInvalidItems && (
+                <Card className="mb-4 border-destructive bg-destructive/5">
+                    <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                                <h4 className="font-medium text-destructive">
+                                    {invalidItemsCount} item{invalidItemsCount > 1 ? 's' : ''} no longer available
+                                </h4>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Some items in your cart may have been removed or are out of stock.
+                                </p>
+                                <div className="flex gap-2 mt-3">
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={removeInvalidItems}
+                                    >
+                                        Remove Unavailable Items
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setShowValidationAlert(false)}
+                                    >
+                                        Dismiss
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Validation loading indicator */}
+            {isValidating && items.length > 0 && (
+                <Card className="mb-4 bg-blue-50 border-blue-200">
+                    <CardContent className="p-3">
+                        <div className="flex items-center gap-2 text-blue-600 text-sm">
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Checking item availability...</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {isError && (
                 <div className="mb-4 p-4 rounded-md bg-destructive/10 border border-destructive/20 text-sm text-destructive">
                     {t("error.slotLoadFailed")}
@@ -388,7 +489,7 @@ export default function CartPage() {
 
             <div className="grid lg:grid-cols-3 gap-4 items-start">
                 <div className="lg:col-span-2 space-y-2">
-                    {/* Informasi tentang batasan checkout */}
+                    {/* Cart summary dengan validasi */}
                     <Card className="bg-blue-50 border border-blue-200 dark:bg-blue-900/40 dark:border-blue-700 rounded-lg shadow-sm transition-colors duration-300">
                         <CardContent>
                             <div className="flex items-start gap-3">
@@ -401,6 +502,13 @@ export default function CartPage() {
                                         <li>{t("checkoutRules.rules.2")}</li>
                                         <li>{t("checkoutRules.rules.3")}</li>
                                     </ul>
+                                    {hasInvalidItems && (
+                                        <div className="mt-2 pt-2 border-t border-blue-300 dark:border-blue-600">
+                                            <p className="text-xs text-blue-600 dark:text-blue-300 font-medium">
+                                                ⚠️ {validItemsCount} available • {invalidItemsCount} unavailable
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>
@@ -419,11 +527,26 @@ export default function CartPage() {
                                         <Store className="w-5 h-5 text-primary" />
                                         {outletName}
                                     </Link>
-                                    {isSelectedOutlet === outletId && (
-                                        <Badge variant="default" className="ml-auto">
-                                            {t("outlet.selected")}
-                                        </Badge>
-                                    )}
+                                    <div className="flex items-center gap-2 ml-auto">
+                                        {/* Show refresh button for this outlet */}
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                revalidate();
+                                            }}
+                                            disabled={isValidating}
+                                            className="text-xs h-6"
+                                        >
+                                            <RefreshCw className={`w-3 h-3 ${isValidating ? 'animate-spin' : ''}`} />
+                                        </Button>
+                                        {isSelectedOutlet === outletId && (
+                                            <Badge variant="default">
+                                                {t("outlet.selected")}
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0 divide-y">
@@ -432,6 +555,8 @@ export default function CartPage() {
                                         key={item.id}
                                         item={item}
                                         slotInfo={item.selectedSlot ? slotDetails?.[item.selectedSlot] : null}
+                                        isValid={isItemValid(item.id)}
+                                        invalidReason={getInvalidReason(item.id)}
                                     />
                                 ))}
                             </CardContent>
