@@ -15,15 +15,16 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app/frontend
 
-# --- PERUBAHAN DI SINI UNTUK MEMASTIKAN PATH BENAR ---
-# Salin semua hasil build Nuxt.js.
-# Untuk Nuxt 3, output biasanya di .output/
+# Copy Nuxt.js build output
 COPY --from=builder /app/frontend/.output ./
-# Pastikan node_modules juga disalin untuk runtime
+# Copy node_modules for runtime dependencies
 COPY --from=builder /app/frontend/node_modules ./node_modules
+# Copy package.json for any runtime scripts
+COPY --from=builder /app/frontend/package.json ./
 
 # Expose the application port
 EXPOSE 3000
 
 # Command to run the Nuxt.js server
-CMD ["node", "./server/index.mjs"]
+# Command to run the Nuxt.js server
+CMD ["node", ".output/server/index.mjs"]

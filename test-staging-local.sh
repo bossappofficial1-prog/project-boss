@@ -78,7 +78,7 @@ fi
 
 # Test building images
 print_status "Testing Docker image builds..."
-SERVICES=("backend" "frontend")
+SERVICES=("backend" "frontend" "frontend-customer")
 
 for service in "${SERVICES[@]}"; do
     print_info "Building $service image..."
@@ -130,6 +130,34 @@ if curl -f http://localhost:3000 2>/dev/null; then
     print_status "✅ Frontend is accessible"
 else
     print_warning "⚠️  Frontend not accessible yet (might still be starting)"
+fi
+
+# Test Nginx configuration and service
+print_status "Testing Nginx configuration..."
+if command -v docker-compose &> /dev/null; then
+    if docker-compose -f docker-compose.yml -f docker-compose.dev.yml exec -T nginx nginx -t >/dev/null 2>&1; then
+        print_status "✅ Nginx configuration is valid"
+    else
+        print_warning "⚠️  Nginx configuration test failed"
+    fi
+
+    if docker-compose -f docker-compose.yml -f docker-compose.dev.yml ps nginx | grep -q "Up"; then
+        print_status "✅ Nginx service is running"
+    else
+        print_warning "⚠️  Nginx service is not running"
+    fi
+else
+    if docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T nginx nginx -t >/dev/null 2>&1; then
+        print_status "✅ Nginx configuration is valid"
+    else
+        print_warning "⚠️  Nginx configuration test failed"
+    fi
+
+    if docker compose -f docker-compose.yml -f docker-compose.dev.yml ps nginx | grep -q "Up"; then
+        print_status "✅ Nginx service is running"
+    else
+        print_warning "⚠️  Nginx service is not running"
+    fi
 fi
 
 # Show logs

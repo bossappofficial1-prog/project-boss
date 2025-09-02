@@ -7,18 +7,74 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function parseRemotePatterns(patterns: string): RemotePattern[] {
-    return patterns.split(", ").map((pattern) => {
-        const url = new URL(pattern.trim());
+    if (!patterns || patterns.trim() === '') {
+        // Return default patterns if no environment variable is set
+        return [
+            {
+                protocol: 'https',
+                hostname: 'bossapp.id',
+            },
+            {
+                protocol: 'https',
+                hostname: 'api.bossapp.id',
+            },
+            {
+                protocol: 'https',
+                hostname: 'dashboard.bossapp.id',
+            },
+            {
+                protocol: 'http',
+                hostname: 'localhost',
+            }
+        ];
+    }
 
-        const proto = url.protocol.replace(":", "");
-        const protocol = proto === "http" || proto === "https" ? proto : undefined;
+    try {
+        return patterns.split(',').map((pattern) => {
+            const trimmed = pattern.trim();
+            if (!trimmed) return null;
 
-        return {
-            protocol,
-            hostname: url.hostname,
-            pathname: url.pathname === "/" ? "/**" : url.pathname
-        }
-    })
+            // Simple pattern parsing - you can enhance this based on your needs
+            if (trimmed.includes('://')) {
+                const url = new URL(trimmed);
+                const proto = url.protocol.replace(':', '');
+                const protocol = proto === 'http' || proto === 'https' ? proto : undefined;
+
+                return {
+                    protocol: protocol as 'http' | 'https' | undefined,
+                    hostname: url.hostname,
+                    pathname: url.pathname === '/' ? '/**' : url.pathname
+                };
+            } else {
+                // Assume https if no protocol specified
+                return {
+                    protocol: 'https' as const,
+                    hostname: trimmed,
+                    pathname: '/**'
+                };
+            }
+        }).filter(Boolean) as RemotePattern[];
+    } catch (error) {
+        console.warn('Error parsing remote patterns, using defaults:', error);
+        return [
+            {
+                protocol: 'https',
+                hostname: 'bossapp.id',
+            },
+            {
+                protocol: 'https',
+                hostname: 'api.bossapp.id',
+            },
+            {
+                protocol: 'https',
+                hostname: 'dashboard.bossapp.id',
+            },
+            {
+                protocol: 'http',
+                hostname: 'localhost',
+            }
+        ];
+    }
 }
 
 export const formatIsoToTime = (iso: string) =>

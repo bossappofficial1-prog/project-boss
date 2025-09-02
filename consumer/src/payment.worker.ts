@@ -2,7 +2,7 @@ import amqplib from 'amqplib';
 import { config } from './config';
 import logger from './utils/logger';
 import { snap } from './lib/midtrans';
-import apiClient from './lib/api-client';
+import { apiClient } from './lib/api-client';
 
 const QUEUE_NAME = 'payment_webhook_queue';
 const EXCHANGE_NAME = 'payment_webhook_exchange';
