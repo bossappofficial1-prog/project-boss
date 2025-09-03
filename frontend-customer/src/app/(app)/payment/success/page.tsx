@@ -1,54 +1,34 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useCart } from '@/hooks/useCart';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
     Receipt,
     Home,
-    Clock
+    Clock,
+    Store
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils';
 import { useTranslations } from '@/hooks/useI18n';
 import { SuccessState } from '@/components/Base';
 import { ImportantInformationCard } from '@/components/payment/ImportantInformationCard';
+import { CustomerInfo, PaymentMethod, PaymentResponse } from '@/types';
+import { PaymentService } from '@/services/paymentService';
 
 export default function PaymentSuccess() {
-    const [paymentInfo, setPaymentInfo] = useState<any>(null);
+    const { items } = useCart();
+    const [paymentInfo, setPaymentInfo] = useState<PaymentResponse & { customerInfo: CustomerInfo; selectedPaymentMethod: PaymentMethod } | null>(null);
     const router = useRouter();
     const t = useTranslations("paymentSuccess");
 
     useEffect(() => {
-        const lastPayment = localStorage.getItem('lastPayment');
-        if (lastPayment) {
-            const paymentData = JSON.parse(lastPayment);
-            setPaymentInfo(paymentData);
+        const paymentInfo = PaymentService.getPaymentInformation()
 
-            // Save to orders list
-            try {
-                const savedOrders = localStorage.getItem('userOrders');
-                const orders = savedOrders ? JSON.parse(savedOrders) : [];
-
-                // Check if this payment is already saved as an order
-                const orderExists = orders.some((order: any) =>
-                    order.paymentDate === paymentData.paymentDate
-                );
-
-                if (!orderExists) {
-                    const newOrder = {
-                        id: Date.now().toString(),
-                        ...paymentData,
-                        status: 'pending',
-                        orderNumber: `ORD-${Date.now().toString().slice(-6)}`
-                    };
-
-                    orders.unshift(newOrder); // Add to beginning of array
-                    localStorage.setItem('userOrders', JSON.stringify(orders));
-                }
-            } catch (error) {
-                console.error('Error saving order:', error);
-            }
+        if (paymentInfo) {
+            setPaymentInfo(paymentInfo);
         }
     }, []);
 
@@ -75,31 +55,103 @@ export default function PaymentSuccess() {
                             <div className="text-center border-b pb-4">
                                 <p className="text-sm text-muted-foreground">{t("totalPayment")}</p>
                                 <p className="text-3xl font-bold text-primary">
-                                    {formatCurrency(paymentInfo.checkoutData.grandTotal)}
+                                    {formatCurrency(Number(paymentInfo.gross_amount) || 0)}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Status: {paymentInfo.status_message} ({paymentInfo.status_code})
                                 </p>
                             </div>
 
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t("paymentMethod")}</span>
-                                    <span className="font-medium text-sm">{paymentInfo.selectedPaymentMethod.name}</span>
+                            <div className="space-y-4">
+                                {/* Main Payment Info */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="text-center">
+                                        <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("paymentMethod")}</p>
+                                        <p className="font-semibold text-sm">{paymentInfo.selectedPaymentMethod.name}</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Order ID</p>
+                                        <p className="font-semibold text-sm">{paymentInfo.order_id}</p>
+                                    </div>
                                 </div>
 
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t("customerName")}</span>
-                                    <span className="font-medium text-sm">{paymentInfo.customerInfo.name}</span>
+                                {/* Customer Info */}
+                                <div className="border-t pt-4">
+                                    <h3 className="font-medium text-sm mb-3 text-muted-foreground">Customer Information</h3>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-muted-foreground">{t("customerName")}</span>
+                                            <span className="font-medium text-sm">{paymentInfo.customerInfo.name}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-muted-foreground">{t("phoneNumber")}</span>
+                                            <span className="font-medium text-sm">{paymentInfo.customerInfo.phone}</span>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t("phoneNumber")}</span>
-                                    <span className="font-medium text-sm">{paymentInfo.customerInfo.phone}</span>
+                                {/* Transaction Details */}
+                                <div className="border-t pt-4">
+                                    <h3 className="font-medium text-sm mb-3 text-muted-foreground">{t("transactionDetails")}</h3>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-muted-foreground">{t("transactionId")}</span>
+                                            <span className="font-medium text-xs font-mono">{paymentInfo.transaction_id}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-muted-foreground">{t("paymentTime")}</span>
+                                            <span className="font-medium text-sm">
+                                                {paymentInfo.payment_amounts?.[0]?.paid_at
+                                                    ? new Date(paymentInfo.payment_amounts[0].paid_at).toLocaleString('id-ID')
+                                                    : new Date(paymentInfo.transaction_time).toLocaleString('id-ID')
+                                                }
+                                            </span>
+                                        </div>
+                                        {paymentInfo.va_numbers && paymentInfo.va_numbers.length > 0 && (
+                                            <div className="flex justify-between">
+                                                <span className="text-sm text-muted-foreground">{t("vaNumber")}</span>
+                                                <span className="font-medium text-xs font-mono">{paymentInfo.va_numbers[0].va_number}</span>
+                                            </div>
+                                        )}
+                                        {paymentInfo.payment_type && (
+                                            <div className="flex justify-between">
+                                                <span className="text-sm text-muted-foreground">{t("paymentType")}</span>
+                                                <span className="font-medium text-sm capitalize">{paymentInfo.payment_type}</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t("orderTime")}</span>
-                                    <span className="font-medium text-sm">
-                                        {new Date(paymentInfo.paymentDate).toLocaleString('id-ID')}
-                                    </span>
+                                {/* Next Steps */}
+                                <div className="border-t pt-4">
+                                    <h3 className="font-medium text-sm mb-3 text-muted-foreground">{t("whatsNext")}</h3>
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex items-start gap-2">
+                                            <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                                            <p className="text-muted-foreground">{t("orderBeingProcessed")}</p>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                                            <p className="text-muted-foreground">{t("confirmationSms")}</p>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                                            <p className="text-muted-foreground">{t("trackOrderRealtime")}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Processing Time */}
+                                <div className="border-t pt-4">
+                                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Clock className="w-4 h-4 text-blue-600" />
+                                            <h3 className="font-medium text-sm text-blue-800">{t("estimatedProcessing")}</h3>
+                                        </div>
+                                        <p className="text-sm text-blue-700">
+                                            {t("orderReadyTime")}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>

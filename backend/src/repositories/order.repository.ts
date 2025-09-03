@@ -109,6 +109,9 @@ export class OrderRepository {
                         status: true
                     }
                 }
+            },
+            orderBy: {
+                createdAt: "desc"
             }
         })
     }
@@ -127,7 +130,7 @@ export class OrderRepository {
                 guestCustomer: true,
             },
             orderBy: {
-                createdAt: 'asc',
+                createdAt: 'desc',
             },
         });
     }

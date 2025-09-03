@@ -498,7 +498,20 @@
         "statusWaiting": "Status: Menunggu Konfirmasi",
         "statusDescription": "Outlet akan mengonfirmasi pesanan Anda dalam 5-10 menit",
         "viewOrderDetails": "Lihat Detail Pesanan",
-        "backToHome": "Kembali ke Beranda"
+        "backToHome": "Kembali ke Beranda",
+        "transactionDetails": "Detail Transaksi",
+        "transactionId": "ID Transaksi",
+        "paymentTime": "Waktu Pembayaran",
+        "vaNumber": "Nomor VA",
+        "paymentType": "Tipe Pembayaran",
+        "whatsNext": "Apa Selanjutnya?",
+        "orderBeingProcessed": "Pesanan Anda sedang diproses",
+        "confirmationSms": "Anda akan menerima SMS konfirmasi",
+        "trackOrderRealtime": "Lacak pesanan secara real-time",
+        "outletInformation": "Informasi Outlet",
+        "orderIdLabel": "ID Pesanan:",
+        "estimatedProcessing": "Estimasi Pemrosesan",
+        "orderReadyTime": "Pesanan Anda akan siap dalam waktu sekitar 30-45 menit"
     },
     "paymentFailed": {
         "title": "Pembayaran Gagal",

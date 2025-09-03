@@ -146,6 +146,7 @@ export interface PaymentResponse {
     currency: string
     payment_type: string
     transaction_time: string
+    payment_amounts: { paid_at: string, amount: string }[]
     transaction_status: MidtransTransactionStatus
     fraud_status: string
     actions?: Action[]
@@ -154,6 +155,7 @@ export interface PaymentResponse {
     expiry_time: string
     va_numbers?: VaNumber[]
     transaction_type?: string //'off-us'
+    pdf_url?: string
 }
 
 export type MidtransTransactionStatus =

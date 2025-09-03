@@ -3,6 +3,15 @@ import { db } from "../config/prisma";
 import { CreateProductInput, UpdateProductInput } from "../schemas/product.schema";
 
 export class ProductRepository {
+    static async findManyByIds(ids: string[]): Promise<Product[]> {
+        return db.product.findMany({
+            where: {
+                id: {
+                    in: ids
+                }
+            }
+        });
+    }
     static async create(data: CreateProductInput): Promise<Product> {
         // Destructure capacity and the rest of the fields
         const { capacity, ...rest } = data as any;

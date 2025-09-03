@@ -1,11 +1,13 @@
 # 🚀 Project Boss - Complete Deployment Configuration Summary
 
 ## 📋 Overview
+
 This document summarizes the complete setup for Project Boss, including CI/CD pipelines, staging deployment, domain configuration, and environment management.
 
 ## 🏗️ Architecture Overview
 
 ### Services
+
 - **Backend**: Node.js/Express API server (Port 4444)
 - **Frontend**: Nuxt.js dashboard application (Port 3000)
 - **Frontend-Customer**: Next.js customer-facing application (Port 3001)
@@ -15,6 +17,7 @@ This document summarizes the complete setup for Project Boss, including CI/CD pi
 - **Message Queue**: RabbitMQ (Ports 5672, 15672)
 
 ### Infrastructure
+
 - **Containerization**: Docker & Docker Compose
 - **CI/CD**: GitHub Actions
 - **Deployment**: SSH-based staging deployment
@@ -24,26 +27,31 @@ This document summarizes the complete setup for Project Boss, including CI/CD pi
 ## 📁 Configuration Files Created
 
 ### GitHub Actions Workflows
+
 - `.github/workflows/ci.yml` - Continuous Integration pipeline
 - `.github/workflows/staging.yml` - Staging deployment workflow
 
 ### Environment Files
+
 - `.env.prod` - Production environment variables
 - `.env.dev` - Development environment variables
 - `.env.staging.example` - Staging environment template
 
 ### Docker Configuration
+
 - `docker-compose.yml` - Production orchestration (updated for Nginx)
 - `docker-compose.dev.yml` - Development orchestration
 - `consumer/Dockerfile` - Fixed multi-stage build
 
 ### Nginx Configuration
+
 - `nginx/nginx.conf` - Main Nginx configuration
 - `nginx/conf.d/default.conf` - Domain routing configuration
 - `nginx/conf.d/ssl.conf` - SSL/HTTPS configuration
 - `nginx/ssl/` - SSL certificates directory
 
 ### Scripts
+
 - `setup-staging-server.sh` - Server preparation script
 - `generate-ssh-keys.sh` - SSH key generation
 - `test-staging-local.sh` - Local testing (updated for Nginx)
@@ -54,17 +62,20 @@ This document summarizes the complete setup for Project Boss, including CI/CD pi
 - `test-nginx.sh` - Nginx configuration testing
 
 ### Documentation
+
 - `GITHUB_ACTIONS_SETUP.md` - Complete CI/CD documentation
 - `DOMAIN_CONFIGURATION.md` - Domain setup guide
 
 ## 🌐 Domain Configuration
 
 ### Production Domains
+
 - **API**: `api.bossapp.id` → Backend service
 - **Dashboard**: `dashboard.bossapp.id` → Frontend service
 - **Customer App**: `bossapp.id` → Frontend-Customer service
 
 ### Development Domains
+
 - **API**: `api-dev.bossapp.id` → Backend service
 - **Dashboard**: `dashboard-dev.bossapp.id` → Frontend service
 - **Customer App**: `dev.bossapp.id` → Frontend-Customer service
@@ -72,6 +83,7 @@ This document summarizes the complete setup for Project Boss, including CI/CD pi
 ## 🔧 Environment Variables
 
 ### Production (.env.prod)
+
 ```bash
 # Database
 DATABASE_URL="postgresql://user:password@db:5432/boss_prod"
@@ -96,6 +108,7 @@ MIDTRANS_CLIENT_KEY=your-midtrans-client-key
 ```
 
 ### Development (.env.dev)
+
 ```bash
 # Database
 DATABASE_URL="postgresql://user:password@db:5433/boss_dev"
@@ -121,6 +134,7 @@ VITE_API_BASE_URL=http://localhost:4444
 ## 🚀 Deployment Process
 
 ### 1. Initial Setup
+
 ```bash
 # 1. Configure GitHub Secrets
 # Required secrets in GitHub repository:
@@ -141,6 +155,7 @@ chmod +x generate-ssh-keys.sh
 ```
 
 ### 2. Domain Setup
+
 ```bash
 # Configure domains on production server
 chmod +x setup-domains.sh
@@ -152,6 +167,7 @@ chmod +x test-domains.sh
 ```
 
 ### 3. Deploy to Staging
+
 ```bash
 # Push to develop branch to trigger staging deployment
 git checkout develop
@@ -161,6 +177,7 @@ git push origin develop
 ```
 
 ### 4. Configure Domains and SSL
+
 ```bash
 # Setup domains and nginx
 sudo ./setup-domains.sh
@@ -175,11 +192,13 @@ sudo ./generate-ssl.sh
 ## 🔍 Monitoring & Troubleshooting
 
 ### GitHub Actions Monitoring
+
 - Check workflow runs in GitHub Actions tab
 - View deployment logs in real-time
 - Monitor build status and test results
 
 ### Service Health Checks
+
 ```bash
 # Check all services
 docker-compose ps
@@ -197,6 +216,7 @@ docker-compose exec nginx nginx -s reload
 ### Common Issues & Solutions
 
 #### 1. SSH Connection Failed
+
 ```bash
 # Test SSH connection manually
 ssh -i ~/.ssh/staging_deploy_key user@staging-server
@@ -206,6 +226,7 @@ chmod 600 ~/.ssh/staging_deploy_key
 ```
 
 #### 2. Docker Build Failed
+
 ```bash
 # Test local build
 docker-compose build [service-name]
@@ -215,6 +236,7 @@ docker-compose build --no-cache [service-name]
 ```
 
 #### 3. Domain Not Resolving
+
 ```bash
 # Test DNS resolution
 nslookup your-domain.com
@@ -224,6 +246,7 @@ dig your-domain.com
 ```
 
 #### 4. SSL Certificate Issues
+
 ```bash
 # Check certificate status
 certbot certificates
@@ -238,6 +261,7 @@ certbot certonly --standalone -d your-domain.com
 ## 📊 CI/CD Pipeline Details
 
 ### CI Pipeline (ci.yml)
+
 - **Triggers**: Push to any branch, Pull Requests
 - **Jobs**:
   - Build all services (backend, frontend, frontend-customer, consumer)
@@ -246,6 +270,7 @@ certbot certonly --standalone -d your-domain.com
   - Build and push Docker images
 
 ### Staging Deployment (staging.yml)
+
 - **Triggers**: Push to `develop` branch
 - **Jobs**:
   - Build and push images
@@ -256,18 +281,21 @@ certbot certonly --standalone -d your-domain.com
 ## 🔐 Security Considerations
 
 ### Environment Variables
+
 - Never commit secrets to repository
 - Use GitHub Secrets for CI/CD
 - Rotate secrets regularly
 - Use different secrets for each environment
 
 ### SSL/TLS
+
 - Use Let's Encrypt for free certificates
 - Enable HSTS headers
 - Regular certificate renewal
 - Monitor certificate expiry
 
 ### Network Security
+
 - Use firewall rules
 - Limit SSH access
 - Use VPN for sensitive operations
@@ -276,6 +304,7 @@ certbot certonly --standalone -d your-domain.com
 ## 📈 Next Steps
 
 ### Immediate Actions
+
 1. ✅ Configure GitHub Secrets for deployment
 2. ✅ Setup staging server with Docker
 3. ✅ Configure DNS records for domains
@@ -285,6 +314,7 @@ certbot certonly --standalone -d your-domain.com
 7. ✅ Test all domains and endpoints
 
 ### Future Enhancements
+
 - [ ] Add monitoring (Prometheus/Grafana)
 - [ ] Implement blue-green deployments
 - [ ] Add automated rollback capabilities
@@ -295,6 +325,7 @@ certbot certonly --standalone -d your-domain.com
 ## 📞 Support
 
 For issues or questions:
+
 1. Check the logs: `docker-compose logs -f`
 2. Review GitHub Actions workflow runs
 3. Test locally: `./test-staging-local.sh`

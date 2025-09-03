@@ -21,6 +21,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
 import { useTranslations } from '@/hooks/useI18n';
 import { PaymentMethodId } from '@/types';
+import { ImageRender } from '../shared/Image';
 
 interface PaymentPageProps {
     checkoutData: CheckoutData;
@@ -187,8 +188,11 @@ const PaymentMethodDisplay: React.FC<{ method: PaymentMethod }> = ({ method }) =
 
             <CardContent>
                 <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/30">
-                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-lg shadow-sm">
-                        {method.icon}
+                    <div className="w-10 h-10 overflow-hidden rounded-lg bg-white flex items-center justify-center text-lg shadow-sm">
+                        <ImageRender
+                            alt={method.name}
+                            src={(method as any).image_url}
+                        />
                     </div>
                     <div className="flex-1">
                         <p className="font-medium">{method.name}</p>
@@ -241,7 +245,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    const { items: cartItems, clearCart } = useCart();
+    const { items: cartItems, clearCart, clearOutletItems } = useCart();
     const t = useTranslations("paymentPage");
 
     // Load customer info from ProfileSettings (if available)
@@ -352,15 +356,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 ...(selectedSlotId && { selectedSlotId: selectedSlotId })
             };
 
-            // Debug log untuk memastikan payload sesuai
-            console.log('Payment Payload:', {
-                outletId,
-                customer_details: payloadBody.customer_details,
-                item_details: payloadBody.item_details,
-                payment_method: payloadBody.payment_method,
-                selectedSlotId: payloadBody.selectedSlotId
-            });
-
             // Check if we have any items
             if (itemDetails.length === 0) {
                 throw new Error(t("errors.noItems"));
@@ -385,7 +380,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             // Clear checkout and payment data
             CheckoutService.clearCheckoutDataFromStorage();
             CheckoutService.clearPaymentDataFromStorage();
-            clearCart()
+            clearOutletItems(outletId)
 
             // Redirect to success page
             router.push('/payment/processing');

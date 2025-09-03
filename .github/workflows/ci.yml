@@ -7,7 +7,7 @@ on:
     branches: [develop, staging, main]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: "18"
 
 jobs:
   # Job untuk testing dan build
@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: ${{ matrix.service }}/package-lock.json
 
       - name: Install dependencies
@@ -66,16 +66,16 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
   # Job untuk Docker build test
   docker-build-test:

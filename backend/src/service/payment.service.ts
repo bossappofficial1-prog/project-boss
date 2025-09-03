@@ -9,11 +9,200 @@ import { OutletRepository } from '../repositories/outlet.repository';
 import { ProductRepository } from '../repositories/product.repository';
 import { generateOrderCode } from '../utils';
 import Console from '../utils/logger';
+import { MidtransItem, MidtransPayload, MidtransWebhookPayloadType } from '../types/Others';
+import { mappingTransactionStatusForMidtrans } from '../utils/mapping';
+import { AppError } from '../errors/app-error';
+import { Messages } from '../constants/message';
+import { HttpStatus } from '../constants/http-status';
+
+// Konstanta untuk fee rates
+const TRANSACTION_FEE_RATE = 0.02;
+const APPLICATION_FEE_RATE = 0.03;
 
 type OrderWithDetails = Order & {
     items: (OrderItem & { product: Product })[];
     guestCustomer: GuestCustomer;
 };
+
+// Sub-fungsi untuk validasi dan prepare data
+async function validateItemsAndPrepareData(inputItems: any[], outletId: string) {
+    const productIds = inputItems.map((item) => item.productId);
+    const [products, outlet] = await Promise.all([
+        ProductRepository.findManyByIds(productIds),
+        OutletRepository.findById(outletId),
+    ]);
+
+    if (!outlet) {
+        throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    const productMap = new Map(products.map((p: Product) => [p.id, p]));
+    const itemDetails: MidtransItem[] = [];
+    let totalProductPrice = 0;
+
+    for (const item of inputItems) {
+        const product = productMap.get(item.productId);
+        if (!product) {
+            throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
+        }
+
+        const subtotal = product.price * item.quantity;
+        totalProductPrice += subtotal;
+
+        itemDetails.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: item.quantity,
+        });
+    }
+
+    return { productMap, outlet, itemDetails, totalProductPrice };
+}
+
+// Sub-fungsi untuk hitung biaya
+function calculateFees(totalProductPrice: number, outlet: any) {
+    const transactionFeeTotal =
+        outlet.business.defaultTransactionFeeBearer === "CUSTOMER" ?
+            Math.floor(totalProductPrice * TRANSACTION_FEE_RATE) :
+            0;
+
+    const applicationFee = Math.floor(totalProductPrice * APPLICATION_FEE_RATE);
+    const grossAmount = totalProductPrice + transactionFeeTotal + applicationFee;
+
+    return { transactionFeeTotal, applicationFee, grossAmount };
+}
+
+// Sub-fungsi untuk build payload Midtrans
+function buildMidtransPayload(orderId: string, grossAmount: number, itemDetails: MidtransItem[], customerDetails: any, midtransPaymentType: string) {
+    const payload: MidtransPayload = {
+        transaction_details: {
+            order_id: orderId,
+            gross_amount: grossAmount,
+        },
+        customer_details: {
+            first_name: customerDetails.name,
+            phone: customerDetails.phone,
+        },
+        item_details: itemDetails,
+        payment_type: "",
+    };
+
+    if (midtransPaymentType.endsWith("_va")) {
+        payload.payment_type = "bank_transfer";
+        payload.bank_transfer = {
+            bank: midtransPaymentType.replace("_va", ""),
+        };
+    } else {
+        payload.payment_type = "qris";
+    }
+
+    return payload;
+}
+
+// Sub-fungsi untuk create order dan items
+async function createOrderAndItems(orderId: string, grossAmount: number, applicationFee: number, transactionFeeTotal: number, selectedSlotId: string | undefined, outletId: string, customerDetails: any, inputItems: any[], productMap: Map<string, Product>) {
+    await db.$transaction(async (tr) => {
+        await tr.order.create({
+            data: {
+                id: orderId,
+                totalAmount: grossAmount,
+                appFee: applicationFee,
+                midtransFee: transactionFeeTotal,
+                chargedTo: FeeBearer.CUSTOMER,
+                ...(selectedSlotId && {
+                    bookingSlot: {
+                        connect: {
+                            id: selectedSlotId
+                        }
+                    },
+                }),
+                guestCustomer: {
+                    create: {
+                        name: customerDetails.name,
+                        phone: customerDetails.phone,
+                    },
+                },
+                outlet: {
+                    connect: {
+                        id: outletId
+                    },
+                },
+            },
+        });
+
+        for (const item of inputItems) {
+            const product = productMap.get(item.productId);
+
+            if (product?.type === "GOODS") {
+                const productQuantity = product.quantity ?? 0;
+                if (item.quantity > productQuantity) {
+                    throw new AppError(Messages.PRODUCT_OUT_OF_STOCK, HttpStatus.BAD_REQUEST);
+                }
+            } else if (product?.type === "SERVICE" && selectedSlotId) {
+                const bookingSlot = await tr.bookingSlot.findUnique({
+                    where: { id: selectedSlotId },
+                });
+
+                if (!bookingSlot) throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
+                if (bookingSlot.status === "BOOKED" || bookingSlot.status === "BLOCKED") throw new AppError(Messages.BOOKING_SLOT_ALREADY_BOOKED, HttpStatus.BAD_REQUEST);
+
+            } else if (product?.type === "SERVICE" && !selectedSlotId) throw new AppError(Messages.BOOKING_SLOT_REQUIRED, HttpStatus.BAD_REQUEST);
+
+            await tr.orderItem.create({
+                data: {
+                    orderId,
+                    productId: product?.id!,
+                    quantity: item.quantity,
+                    priceAtTimeOfOrder: product?.price!,
+                },
+            });
+
+            if (product?.type === "GOODS") {
+                await tr.product.update({
+                    where: { id: product.id },
+                    data: {
+                        quantity: {
+                            decrement: item.quantity
+                        },
+                    },
+                });
+            }
+
+            if (product?.type === "SERVICE") {
+                await tr.bookingSlot.update({ where: { id: selectedSlotId }, data: { status: "BOOKED" } });
+            }
+        }
+    });
+}
+
+// Sub-fungsi untuk handle Midtrans charge
+async function handleMidtransCharge(payload: MidtransPayload, orderId: string) {
+    try {
+        const midtransResponse = await coreApi.charge(payload) as MidtransWebhookPayloadType;
+
+        await db.transaction.create({
+            data: {
+                id: midtransResponse.transaction_id,
+                externalId: midtransResponse.transaction_id,
+                amount: Number(midtransResponse.gross_amount),
+                paymentMethod: midtransResponse.payment_type,
+                expiresAt: new Date(midtransResponse.expiry_time),
+                orderId: orderId,
+                status: mappingTransactionStatusForMidtrans(midtransResponse.transaction_status),
+            },
+        });
+
+        return midtransResponse;
+    } catch (error) {
+        await db.order.delete({
+            where: {
+                id: orderId
+            }
+        });
+        throw error;
+    }
+}
 
 export async function createMidtransTransactionService(orderId: string, finalAmount: number, midtransFee: number, appFee: number, paymentMethod: 'online' | 'qris', chargedTo: 'customer' | 'owner') {
     const order = await getOrderByIdService(orderId) as OrderWithDetails;
@@ -126,198 +315,31 @@ export async function createQrisPaymentService(orderId: string) {
     return chargeResponse;
 }
 
-// export async function createPaymentService(data: CreatePaymentPayload) {
-//     const { customer_details: customerDetails, item_details: itemDetails, payment_method, bookingSlotId } = data
-//     const paymentMethod = payment_method as PaymentMethodId
-
-//     const uniqueOutletIds = new Set(itemDetails.map(order => order.outletId))
-
-//     // Mapping payment method ke Midtrans format
-//     const midtransPaymentType: MidtransPaymentMethod = paymentMethodMapping[paymentMethod];
-
-//     let item_details = []
-//     const customer_details = {
-//         first_name: customerDetails.name,
-//         phone: customerDetails.phone
-//     }
-
-//     let gross_amount: number = 0
-//     let transaction_amount = 0
-//     let application_amount = 0
-
-//     for (const item of itemDetails) {
-//         const product = await ProductRepository.findById(item.productId)
-//         const price = product?.price! * item.quantity
-//         item_details.push({
-//             id: product?.id,
-//             quantity: item.quantity,
-//             name: product?.name,
-//             price: product?.price
-//         })
-//         gross_amount += price
-//     }
-
-
-//     for (const outletId of uniqueOutletIds) {
-//         const outlet = await OutletRepository.findById(outletId)
-//         if (outlet?.business.defaultTransactionFeeBearer === "CUSTOMER") {
-//             const price = Math.floor(gross_amount * 0.02)
-//             transaction_amount = price
-
-//             item_details.push({
-//                 id: "transaction-fees",
-//                 quantity: 1,
-//                 price,
-//                 name: "Biaya Traksaksi"
-//             })
-//         }
-//     }
-
-//     application_amount = gross_amount * 0.03
-//     gross_amount += transaction_amount + application_amount
-
-//     item_details.push({
-//         id: "app_fee",
-//         quantity: 1,
-//         price: application_amount,
-//         name: "Biaya Aplikasi"
-//     })
-
-//     const orderId = generateOrderCode({ name: "Test" })
-
-//     let payload: any = {
-//         transaction_details: {
-//             order_id: orderId,
-//             gross_amount
-//         },
-//         customer_details,
-//         item_details
-//     }
-
-//     Console.log("Gross Amount: ", gross_amount,
-//         "\nPayload Gross Amount: ", payload.transaction_details.gross_amount,
-//         "\nItem Details: ", payload.item_details);
-
-
-//     // Set payment type berdasarkan mapping
-//     switch (midtransPaymentType) {
-//         case "qris":
-//             payload.payment_type = "qris";
-//             break;
-
-//         case "bca_va":
-//             payload.payment_type = "bank_transfer";
-//             payload.bank_transfer = { bank: "bca" };
-//             break;
-
-//         case "bni_va":
-//             payload.payment_type = "bank_transfer";
-//             payload.bank_transfer = { bank: "bni" };
-//             break;
-
-//         case "bri_va":
-//             payload.payment_type = "bank_transfer";
-//             payload.bank_transfer = { bank: "bri" };
-//             break;
-
-//         case "mandiri_va":
-//             payload.payment_type = "bank_transfer";
-//             payload.bank_transfer = { bank: "mandiri" };
-//             break;
-
-//         case "permata_va":
-//             payload.payment_type = "bank_transfer";
-//             payload.bank_transfer = { bank: "permata" };
-//             break;
-
-//         default:
-//             throw new Error(`Midtrans payment type ${midtransPaymentType} not implemented`);
-//     }
-
-//     const result = await db.$transaction(async (tr) => {
-//         for(const outletId of uniqueOutletIds){
-//             const order = await tr.order.create({
-//                 data: {
-//                     id: orderId,
-//                     totalAmount: gross_amount,
-//                     appFee: application_amount,
-//                     ...(bookingSlotId && {
-//                         bookingSlot: { connect: { id: bookingSlotId } }
-//                     }),
-//                     midtransFee: transaction_amount,
-//                     chargedTo: FeeBearer.CUSTOMER,
-//                     guestCustomer: {
-//                         create: {
-//                             name: customerDetails.name,
-//                             phone: customerDetails.phone
-//                         }
-//                     },
-//                     outlet: {
-//                         connect: { id: outletId }
-//                     }
-//                 }
-//             })
-//         }
-//     })
-
-//     return await coreApi.charge(payload)
-// }
-
-
 export async function createPaymentService(data: CreatePaymentPayload) {
     const {
         customer_details: customerDetails,
         item_details: inputItems,
         payment_method,
-        selectedSlotId
+        selectedSlotId,
+        outletId,
     } = data;
 
-    const paymentMethod = payment_method as PaymentMethodId;
-    const midtransPaymentType: MidtransPaymentMethod =
-        paymentMethodMapping[paymentMethod];
+    // Validasi dan prepare data
+    const { productMap, outlet, itemDetails: baseItemDetails, totalProductPrice } = await validateItemsAndPrepareData(inputItems, outletId);
 
-    // Build item details for Midtrans
-    const itemDetails: any[] = [];
-    let grossAmount = 0;
-    let transactionFeeTotal = 0;
-    let applicationFee = 0;
+    // Hitung biaya
+    const { transactionFeeTotal, applicationFee, grossAmount } = calculateFees(totalProductPrice, outlet);
 
-    for (const item of inputItems) {
-        const product = await ProductRepository.findById(item.productId);
-        if (!product) {
-            throw new Error(`Product with id ${item.productId} not found`);
-        }
-
-        const subtotal = product.price * item.quantity;
-
+    // Tambahkan item biaya ke detail
+    const itemDetails = [...baseItemDetails];
+    if (transactionFeeTotal > 0) {
         itemDetails.push({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            quantity: item.quantity,
-        });
-
-        grossAmount += subtotal;
-    }
-
-    // Tambah transaction fee (per outlet)
-    const outlet = await OutletRepository.findById(data.outletId);
-    if (outlet?.business.defaultTransactionFeeBearer === "CUSTOMER") {
-        const fee = Math.floor(grossAmount * 0.02);
-        transactionFeeTotal += fee;
-
-        itemDetails.push({
-            id: `transaction-fee-${data.outletId}`,
+            id: `transaction-fee-${outletId}`,
             name: "Biaya Transaksi",
-            price: fee,
+            price: transactionFeeTotal,
             quantity: 1,
         });
     }
-
-    // Application fee (selalu ditanggung customer di sini)
-    applicationFee = Math.floor(grossAmount * 0.03);
-    grossAmount += transactionFeeTotal + applicationFee;
-
     itemDetails.push({
         id: "app_fee",
         name: "Biaya Aplikasi",
@@ -326,89 +348,15 @@ export async function createPaymentService(data: CreatePaymentPayload) {
     });
 
     const orderId = generateOrderCode({ name: "Test" });
+    const paymentMethod = payment_method as PaymentMethodId;
+    const midtransPaymentType = paymentMethodMapping[paymentMethod];
 
-    // Payload Midtrans
-    const payload: any = {
-        transaction_details: {
-            order_id: orderId,
-            gross_amount: grossAmount,
-        },
-        customer_details: {
-            first_name: customerDetails.name,
-            phone: customerDetails.phone,
-        },
-        item_details: itemDetails,
-    };
+    // Build payload Midtrans
+    const payload = buildMidtransPayload(orderId, grossAmount, itemDetails, customerDetails, midtransPaymentType);
 
-    // Set payment type berdasarkan mapping
-    switch (midtransPaymentType) {
-        case "qris":
-            payload.payment_type = "qris";
-            break;
-        case "bca_va":
-            payload.payment_type = "bank_transfer";
-            payload.bank_transfer = { bank: "bca" };
-            break;
-        case "bni_va":
-            payload.payment_type = "bank_transfer";
-            payload.bank_transfer = { bank: "bni" };
-            break;
-        case "bri_va":
-            payload.payment_type = "bank_transfer";
-            payload.bank_transfer = { bank: "bri" };
-            break;
-        case "mandiri_va":
-            payload.payment_type = "bank_transfer";
-            payload.bank_transfer = { bank: "mandiri" };
-            break;
-        case "permata_va":
-            payload.payment_type = "bank_transfer";
-            payload.bank_transfer = { bank: "permata" };
-            break;
-        default:
-            throw new Error(
-                `Midtrans payment type ${midtransPaymentType} not implemented`
-            );
-    }
+    // Create order dan items
+    await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, outletId, customerDetails, inputItems, productMap);
 
-    // Simpan order dan orderItem
-    await db.$transaction(async (tr) => {
-        const order = await tr.order.create({
-            data: {
-                id: orderId,
-                totalAmount: grossAmount,
-                appFee: applicationFee,
-                midtransFee: transactionFeeTotal,
-                chargedTo: FeeBearer.CUSTOMER,
-                ...(selectedSlotId && {
-                    bookingSlot: { connect: { id: selectedSlotId } },
-                }),
-                guestCustomer: {
-                    create: {
-                        name: customerDetails.name,
-                        phone: customerDetails.phone,
-                    },
-                },
-                outlet: {
-                    connect: { id: data.outletId },
-                },
-            },
-        });
-
-        // Create order items
-        for (const item of inputItems) {
-            await tr.orderItem.create({
-                data: {
-                    orderId: order.id,
-                    productId: item.productId,
-                    quantity: item.quantity,
-                    priceAtTimeOfOrder: (
-                        await ProductRepository.findById(item.productId)
-                    )?.price!,
-                },
-            });
-        }
-    });
-
-    return coreApi.charge(payload);
+    // Handle Midtrans charge
+    return await handleMidtransCharge(payload, orderId);
 }

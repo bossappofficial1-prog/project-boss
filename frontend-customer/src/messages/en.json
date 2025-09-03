@@ -498,7 +498,20 @@
         "statusWaiting": "Status: Waiting for Confirmation",
         "statusDescription": "Outlet will confirm your order in 5-10 minutes",
         "viewOrderDetails": "View Order Details",
-        "backToHome": "Back to Home"
+        "backToHome": "Back to Home",
+        "transactionDetails": "Transaction Details",
+        "transactionId": "Transaction ID",
+        "paymentTime": "Payment Time",
+        "vaNumber": "VA Number",
+        "paymentType": "Payment Type",
+        "whatsNext": "What's Next?",
+        "orderBeingProcessed": "Your order is being processed",
+        "confirmationSms": "You'll receive a confirmation SMS",
+        "trackOrderRealtime": "Track your order in real-time",
+        "outletInformation": "Outlet Information",
+        "orderIdLabel": "Order ID:",
+        "estimatedProcessing": "Estimated Processing",
+        "orderReadyTime": "Your order will be ready in approximately 30-45 minutes"
     },
     "paymentFailed": {
         "title": "Payment Failed",

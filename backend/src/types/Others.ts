@@ -43,3 +43,26 @@ export type MidtransWebhookPayloadType = {
     expiry_time: string//'2025-08-29 14:46:09',
     currency: string// 'IDR'
 }
+
+export interface MidtransItem {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+}
+
+export interface MidtransPayload {
+    transaction_details: {
+        order_id: string;
+        gross_amount: number;
+    };
+    customer_details: {
+        first_name: string;
+        phone: string;
+    };
+    item_details: MidtransItem[];
+    payment_type: string;
+    bank_transfer?: {
+        bank: string
+    };
+}

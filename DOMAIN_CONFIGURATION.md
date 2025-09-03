@@ -3,11 +3,13 @@
 ## Domain Structure
 
 ### Production Environment
+
 - **Backend API**: `api.bossapp.id`
 - **Dashboard (Frontend)**: `dashboard.bossapp.id`
 - **Customer Frontend**: `bossapp.id`
 
 ### Development Environment
+
 - **Backend API**: `api-dev.bossapp.id`
 - **Dashboard (Frontend)**: `dashboard-dev.bossapp.id`
 - **Customer Frontend**: `dev.bossapp.id`
@@ -15,6 +17,7 @@
 ## DNS Configuration
 
 ### Production DNS Records
+
 ```
 bossapp.id      A     YOUR_SERVER_IP
 api.bossapp.id      A     YOUR_SERVER_IP
@@ -22,6 +25,7 @@ dashboard.bossapp.id A     YOUR_SERVER_IP
 ```
 
 ### Development DNS Records
+
 ```
 dev.bossapp.id          A     YOUR_DEV_SERVER_IP
 api-dev.bossapp.id      A     YOUR_DEV_SERVER_IP
@@ -31,6 +35,7 @@ dashboard-dev.bossapp.id A     YOUR_DEV_SERVER_IP
 ## SSL/TLS Configuration
 
 ### Let's Encrypt (Recommended for Production)
+
 ```bash
 # Install certbot
 sudo apt install certbot
@@ -48,6 +53,7 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 ## Traefik Configuration
 
 ### Production docker-compose.yml Labels
+
 ```yaml
 labels:
   - "traefik.enable=true"
@@ -58,6 +64,7 @@ labels:
 ```
 
 ### Development docker-compose.dev.yml Labels
+
 ```yaml
 labels:
   - "traefik.enable=true"
@@ -70,6 +77,7 @@ labels:
 ## Environment Variables
 
 ### Production (.env.prod)
+
 ```bash
 # Domain Configuration
 BACKEND_DOMAIN=api.bossapp.id
@@ -82,6 +90,7 @@ SSL_KEY_PATH=/etc/letsencrypt/live/bossapp.id/privkey.pem
 ```
 
 ### Development (.env.dev)
+
 ```bash
 # Domain Configuration
 BACKEND_DOMAIN=api-dev.bossapp.id
@@ -96,6 +105,7 @@ SSL_KEY_PATH=/etc/ssl/private/dev.bossapp.id.key
 ## Deployment Commands
 
 ### Production Deployment
+
 ```bash
 # Copy production environment file
 cp .env.prod .env
@@ -105,6 +115,7 @@ docker-compose -f docker-compose.yml --env-file .env.prod up -d
 ```
 
 ### Development Deployment
+
 ```bash
 # Copy development environment file
 cp .env.dev .env
@@ -118,6 +129,7 @@ docker-compose -f docker-compose.dev.yml --env-file .env.dev up -d
 If you prefer to use Nginx instead of Traefik:
 
 ### /etc/nginx/sites-available/bossapp.id
+
 ```nginx
 # Upstream servers
 upstream backend_api {
@@ -191,6 +203,7 @@ server {
 ## Testing
 
 ### Test Domain Resolution
+
 ```bash
 # Test production domains
 curl -I https://api.bossapp.id/health
@@ -204,6 +217,7 @@ curl -I https://dev.bossapp.id
 ```
 
 ### SSL Certificate Testing
+
 ```bash
 # Check SSL certificate validity
 openssl s_client -connect api.bossapp.id:443 -servername api.bossapp.id < /dev/null
@@ -215,11 +229,13 @@ openssl s_client -connect api.bossapp.id:443 -servername api.bossapp.id 2>/dev/n
 ## Monitoring
 
 ### Health Check Endpoints
+
 - Backend: `https://api.bossapp.id/health`
 - Frontend Dashboard: `https://dashboard.bossapp.id/api/health`
 - Frontend Customer: `https://bossapp.id/api/health`
 
 ### Log Monitoring
+
 ```bash
 # View service logs
 docker-compose logs -f backend
@@ -235,16 +251,19 @@ docker-compose logs -f traefik
 ### Common Issues
 
 1. **SSL Certificate Issues**
+
    - Ensure DNS records are properly configured
    - Check certificate validity: `certbot certificates`
    - Renew certificates: `certbot renew`
 
 2. **Domain Not Resolving**
+
    - Check DNS propagation: `dig bossapp.id`
    - Verify DNS records with your domain registrar
    - Clear DNS cache: `sudo systemd-resolve --flush-caches`
 
 3. **Traefik Routing Issues**
+
    - Check Traefik dashboard: `http://your-server-ip:8080`
    - Verify labels in docker-compose files
    - Check container logs: `docker-compose logs traefik`
