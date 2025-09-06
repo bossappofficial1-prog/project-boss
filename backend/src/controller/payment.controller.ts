@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
-import { createMidtransTransactionService, createPaymentService, createQrisPaymentService } from "../service/payment.service";
+import { createMidtransTransactionService, createPaymentService, createQrisPaymentService, cancelPaymentService } from "../service/payment.service";
 import { ResponseUtil } from "../utils/response";
 import { messagePublisher } from "../service/message-publisher.service";
 import { generateOrderCode } from "../utils";
@@ -30,4 +30,10 @@ export const handleNotificationController = asyncHandler(async (req: Request, re
 
     // Langsung balas 200 OK
     return ResponseUtil.success(res, { message: "Webhook received and queued" });
+});
+
+export const cancelPaymentController = asyncHandler(async (req: Request, res: Response) => {
+    const { orderId } = req.params;
+    const result = await cancelPaymentService(orderId);
+    return ResponseUtil.success(res, result, HttpStatus.OK);
 });

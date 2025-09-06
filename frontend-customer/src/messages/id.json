@@ -484,7 +484,8 @@
     "paymentProcessing": {
         "title": "Memproses Pembayaran",
         "totalPayment": "Total Pembayaran",
-        "refreshStatus": "Perbarui Status"
+        "refreshStatus": "Perbarui Status",
+        "cancelPayment": "Batalkan Pembayaran"
     },
     "paymentSuccess": {
         "title": "Pembayaran Berhasil",

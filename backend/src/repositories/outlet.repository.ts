@@ -4,7 +4,17 @@ import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 
 export class OutletRepository {
     static async getAll() {
-        return db.outlet.findMany()
+        return db.outlet.findMany({
+            include: {
+                business: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
+                operatingHours: true
+            }
+        });
     }
 
     static async create(data: CreateOutletInput): Promise<Outlet> {
@@ -137,11 +147,133 @@ export class OutletRepository {
                 operatingHours: true,
                 _count: {
                     select: {
-                        orders: true,
+                        orders: {
+                            where: {
+                                OR: [
+                                    { orderStatus: "COMPLETED" }
+                                ]
+                            }
+                        },
                         products: true
                     }
                 }
             }
         })
+    }
+
+    static async findFeaturedOutlets() {
+        return db.outlet.findMany({
+            include: {
+                business: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
+                operatingHours: true,
+                _count: {
+                    select: {
+                        orders: {
+                            where: {
+                                OR: [
+                                    { orderStatus: "COMPLETED" }
+                                ]
+                            }
+                        },
+                    },
+                },
+            },
+            orderBy: {
+                orders: {
+                    _count: 'desc'
+                }
+            },
+            take: 5
+        });
+    }
+
+    static async findNearbyWithPagination(
+        latitude: number,
+        longitude: number,
+        latMin: number,
+        latMax: number,
+        longMin: number,
+        longMax: number,
+        page: number = 1,
+        limit: number = 10
+    ) {
+        const skip = (page - 1) * limit;
+
+        // Get total count within bounding box
+        const total = await db.outlet.count({
+            where: {
+                AND: [
+                    { latitude: { gte: latMin } },
+                    { latitude: { lte: latMax } },
+                    { longitude: { gte: longMin } },
+                    { longitude: { lte: longMax } }
+                ]
+            }
+        });
+
+        // Get outlets within bounding box with pagination
+        const outlets = await db.outlet.findMany({
+            where: {
+                AND: [
+                    { latitude: { gte: latMin } },
+                    { latitude: { lte: latMax } },
+                    { longitude: { gte: longMin } },
+                    { longitude: { lte: longMax } }
+                ]
+            },
+            include: {
+                business: {
+                    select: {
+                        name: true,
+                        description: true
+                    }
+                },
+                operatingHours: true,
+                _count: {
+                    select: {
+                        orders: {
+                            where: {
+                                OR: [
+                                    { orderStatus: "COMPLETED" }
+                                ]
+                            }
+                        },
+                        products: true
+                    }
+                }
+            },
+            skip,
+            take: limit
+        });
+
+        return { outlets, total };
+    }
+
+    static async getAllWithPagination(page: number = 1, limit: number = 10) {
+        const skip = (page - 1) * limit;
+
+        const [outlets, total] = await db.$transaction([
+            db.outlet.findMany({
+                include: {
+                    business: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    },
+                    operatingHours: true
+                },
+                skip,
+                take: limit
+            }),
+            db.outlet.count()
+        ]);
+
+        return { outlets, total };
     }
 }

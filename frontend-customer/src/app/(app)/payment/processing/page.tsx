@@ -22,6 +22,7 @@ import { VaPaymentDetails } from '@/components/payment/VaPaymentDetails';
 import { ImageRender } from '@/components/shared/Image';
 import { LoadingState } from '@/components/Base';
 import { redirectMap } from '@/components/payment/function';
+import { useMutation } from '@tanstack/react-query';
 
 export default function PaymentProcessing() {
     const [paymentInfo, setPaymentInfo] = useState<PaymentResponse & { customerInfo: CustomerInfoType; selectedPaymentMethod: PaymentMethod } | null>(null);
@@ -29,6 +30,7 @@ export default function PaymentProcessing() {
     const [isMounted, setIsMounted] = useState(false)
     const [isRefreshing, setIsRefreshing] = useState(false);
     const { isConnected, emitEvent, onEvent } = useSocket();
+    const [isCancelling, setIsCancelling] = useState(false);
     const router = useRouter();
     const t = useTranslations("paymentProcessing");
 
@@ -37,6 +39,25 @@ export default function PaymentProcessing() {
         if (isMounted) return
         setIsMounted(true)
     }, [])
+
+    const cancelPaymentMutation = useMutation({
+        mutationFn: async (orderId: string) => {
+            return PaymentService.cancelPayment(orderId)
+        },
+        onSuccess: () => {
+            setPaymentStatus('cancel');
+            PaymentService.updatePaymentInformation({ ...(paymentInfo as PaymentResponse), transaction_status: 'cancel' });
+            router.push('/payment/cancelled');
+        },
+        onError: (error) => {
+            console.error('Error cancelling payment:', error);
+        }
+    });
+
+    const handleCancelPayment = () => {
+        if (!orderId || !paymentInfo) return;
+        cancelPaymentMutation.mutate(orderId);
+    };
 
     useEffect(() => {
         const paymentData = PaymentService.getPaymentInformation();
@@ -144,6 +165,18 @@ export default function PaymentProcessing() {
                 >
                     {isRefreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                     {t("refreshStatus")}
+                </Button>
+                <Button
+                    variant="destructive"
+                    size="lg"
+                    className="w-full h-12"
+                    onClick={handleCancelPayment}
+                    disabled={cancelPaymentMutation.isPending || paymentStatus !== 'pending'}
+                >
+                    {cancelPaymentMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
+                    {t("cancelPayment")}
                 </Button>
             </div>
 

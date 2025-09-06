@@ -484,7 +484,8 @@
     "paymentProcessing": {
         "title": "Payment Processing",
         "totalPayment": "Total Payment",
-        "refreshStatus": "Refresh Status"
+        "refreshStatus": "Refresh Status",
+        "cancelPayment": "Cancel Payment"
     },
     "paymentSuccess": {
         "title": "Payment Successful",

@@ -27,6 +27,14 @@ async function startServer(port: number) {
 
         await connectRabbitMQ();
 
+        // Initialize Elasticsearch (optional - won't crash app if ES is down)
+        try {
+            const { initializeElasticsearch } = await import('./service/elastic.service');
+            await initializeElasticsearch();
+        } catch (error) {
+            console.warn('⚠️ Elasticsearch initialization failed, continuing without search features:', error);
+        }
+
         server.listen(port, () => {
             console.log(`• Server running on:`);
             console.log(`   Local:   http://localhost:${port}`);

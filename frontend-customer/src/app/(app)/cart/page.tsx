@@ -436,7 +436,7 @@ export default function CartPage() {
         <div className="py-2">
             {/* Cart Validation Alert */}
             {showValidationAlert && hasInvalidItems && (
-                <Card className="mb-4 border-destructive bg-destructive/5">
+                <Card className="mb-4 border-destructive bg-destructive/5 p-0">
                     <CardContent className="p-4">
                         <div className="flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />

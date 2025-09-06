@@ -30,6 +30,7 @@ enum PaymentStatus {
   FAILED // Pembayaran gagal
   REFUNDED // Dana dikembalikan
   EXPIRED // Waktu pembayaran habis
+  CANCELLED // Pembayaran dibatalkan
 }
 
 // Status alur pesanan secara keseluruhan

@@ -1,0 +1,23 @@
+name: "Push to Dev"
+
+on:
+  push:
+    branches: [develop]
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        default: "development"
+        type: choice
+        options:
+          - development
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Notify
+        run: echo "Triggered by push to develop"

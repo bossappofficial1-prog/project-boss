@@ -1,3 +1,4 @@
+import api from "@/lib/api";
 import { CustomerInfo, PaymentMethod, PaymentResponse } from "@/types";
 
 export class PaymentService {
@@ -15,5 +16,11 @@ export class PaymentService {
     static updatePaymentInformation(data: PaymentResponse) {
         const stringifyData = JSON.stringify(data)
         localStorage.setItem("paymentInfo", stringifyData)
+    }
+
+    static async cancelPayment(orderId: string) {
+        const response = await api.post(`/payments/${orderId}/cancel`)
+
+        return response.data
     }
 }

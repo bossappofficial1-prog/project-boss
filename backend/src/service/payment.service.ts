@@ -1,6 +1,7 @@
 import { snap, coreApi } from '../config/midtrans';
 import { getOrderByIdService } from './order.service';
 import { db } from '../config/prisma';
+import { config } from '../config';
 import { PaymentStatus, Order, OrderItem, Product, GuestCustomer, FeeBearer } from '@prisma/client';
 import { messagePublisher } from './message-publisher.service';
 import { CreatePaymentPayload } from '../schemas/payment-v2.schema';
@@ -359,4 +360,52 @@ export async function createPaymentService(data: CreatePaymentPayload) {
 
     // Handle Midtrans charge
     return await handleMidtransCharge(payload, orderId);
+}
+
+export async function cancelPaymentService(orderId: string) {
+    // Cari transaksi berdasarkan orderId
+    const transaction = await db.transaction.findFirst({
+        where: { orderId },
+        include: { order: { include: { items: { include: { product: true } } } } },
+    });
+
+    if (!transaction) {
+        throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    if (transaction.status !== PaymentStatus.PENDING) {
+        throw new AppError("Pembayaran tidak dapat dibatalkan karena status sudah " + transaction.status, HttpStatus.BAD_REQUEST);
+    }
+
+    // Cancel via Midtrans API (manual HTTP request)
+    try {
+        await coreApi.transaction.cancel(orderId);
+    } catch (error) {
+        Console.error("Error expiring Midtrans transaction:", error);
+        throw new AppError("Gagal membatalkan pembayaran di Midtrans", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // Update status transaksi di database
+    await db.transaction.update({
+        where: { id: transaction.id },
+        data: { status: PaymentStatus.CANCELLED },
+    });
+
+    // Rollback stok untuk produk GOODS
+    await db.$transaction(async (tr) => {
+        for (const item of transaction.order.items) {
+            if (item.product.type === "GOODS") {
+                await tr.product.update({
+                    where: { id: item.product.id },
+                    data: {
+                        quantity: {
+                            increment: item.quantity
+                        },
+                    },
+                });
+            }
+        }
+    });
+
+    return { message: "Pembayaran berhasil dibatalkan", orderId };
 }

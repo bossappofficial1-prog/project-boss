@@ -15,6 +15,7 @@ Sistem backend untuk platform manajemen bisnis multi-outlet yang mendukung **e-c
 - **Guest Orders**: Pemesanan tanpa registrasi untuk kemudahan customer
 - **WhatsApp Integration**: Notifikasi otomatis via WhatsApp API
 - **Booking System**: Sistem booking untuk layanan dengan slot management
+- **Advanced Search**: Elasticsearch untuk pencarian produk & outlet yang powerful
 - **Comprehensive API**: RESTful API dengan dokumentasi OpenAPI 3.0
 - **TypeScript**: Kode lebih aman & maintainable
 - **Prisma ORM**: Query database PostgreSQL dengan mudah
@@ -130,8 +131,76 @@ Pastikan konfigurasi berikut telah diatur:
 - `MIDTRANS_SERVER_KEY` & `MIDTRANS_CLIENT_KEY`: Kredensial Midtrans
 - `WHATSAPP_API_TOKEN`: Token untuk WhatsApp API
 - `RABBITMQ_URL`: Connection string RabbitMQ
+- `ELASTIC_NODE`: URL Elasticsearch (default: http://localhost:9200)
+- `ELASTIC_USERNAME` & `ELASTIC_PASSWORD`: Kredensial Elasticsearch (opsional)
 
-### 3. Setup Database
+### 3. Setup Elasticsearch (Opsional - untuk fitur pencarian advanced)
+
+Elasticsearch digunakan untuk meningkatkan performa pencarian produk dan outlet.
+
+#### Opsi 1: Menggunakan Docker (Recommended)
+
+```sh
+# Jalankan Elasticsearch dengan Docker
+docker run -d \
+  --name elasticsearch \
+  -p 9200:9200 \
+  -p 9300:9300 \
+  -e "discovery.type=single-node" \
+  -e "xpack.security.enabled=false" \
+  elasticsearch:8.11.0
+```
+
+#### Opsi 2: Menggunakan Docker Compose
+
+Buat file `docker-compose.elasticsearch.yml`:
+
+```yaml
+version: "3.8"
+services:
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: boss-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - boss-network
+
+volumes:
+  elasticsearch-data:
+
+networks:
+  boss-network:
+    driver: bridge
+```
+
+Jalankan dengan:
+
+```sh
+docker-compose -f docker-compose.elasticsearch.yml up -d
+```
+
+#### Test Koneksi Elasticsearch
+
+```sh
+# Test koneksi
+npm run elastic:test
+
+# Setup indices dan sample data
+npm run elastic:setup
+
+# Test search functionality
+npm run elastic:search
+```
+
+### 4. Setup Database
 
 - Pastikan PostgreSQL berjalan.
 - Edit `DATABASE_URL` di `.env` sesuai database Anda.
@@ -279,6 +348,61 @@ npm run test:coverage
 2. Set environment variable `base_url` ke `http://localhost:1234/api/c1`
 3. Jalankan test flow: Register → Login → Create Business → Create Outlet → Create Product → Create Order
 4. Token akan otomatis tersimpan setelah login untuk endpoint yang memerlukan authentication
+
+---
+
+## Search & Discovery Endpoints
+
+### Product Search
+
+```
+GET /api/products/search?name={query}
+```
+
+**Features**:
+
+- Full-text search pada nama produk
+- Fuzzy matching untuk toleransi typo
+- Autocomplete suggestions
+- Filter berdasarkan outlet, kategori, harga
+- Pagination support
+
+**Example**:
+
+```bash
+curl "http://localhost:1234/api/products/search?name=nasi&page=1&limit=10"
+```
+
+### Outlet Discovery
+
+```
+GET /api/outlets/nearby?latitude={lat}&longitude={lng}&radius={km}
+```
+
+**Features**:
+
+- Geospatial search berdasarkan lokasi
+- Filter berdasarkan radius
+- Sort berdasarkan jarak
+- Include outlet details dan business info
+
+**Example**:
+
+```bash
+curl "http://localhost:1234/api/outlets/nearby?latitude=-6.2088&longitude=106.8456&radius=5"
+```
+
+### Advanced Product Filtering
+
+```
+GET /api/products/outlet/{outletId}?q={query}&category={cat}&minPrice={min}&maxPrice={max}
+```
+
+**Features**:
+
+- Search dalam outlet tertentu
+- Filter kombinasi: nama, kategori, range harga
+- Sort berdasarkan relevansi atau harga
 
 ---
 
