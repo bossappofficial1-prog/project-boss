@@ -17,7 +17,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: development
     steps:
       - uses: actions/checkout@v4
       - name: Notify
-        run: echo "Triggered by push to develop"
+        run: echo "Triggered by push to develop ${{ secrets.BASE_URL }}"
