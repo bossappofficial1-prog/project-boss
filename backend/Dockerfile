@@ -4,6 +4,12 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app/backend
 
+ARG NODE_ENV=production
+ARG DATABASE_URL
+
+ENV NODE_ENV=$NODE_ENV
+ENV DATABASE_URL=$DATABASE_URL
+
 COPY package*.json ./
 RUN npm install
 
@@ -32,4 +38,4 @@ RUN apk add --no-cache openssl libstdc++ ca-certificates
 RUN npm install prisma --omit=dev --no-fund --no-audit --ignore-scripts
 
 EXPOSE 4444
-CMD ["npm", "start"]
+CMD sh -c 'if [ "$NODE_ENV" = "development" ]; then npx prisma migrate deploy && npx prisma db seed; fi && npm start'
