@@ -39,3 +39,14 @@ jobs:
           push: true # Push image setelah build selesai
           # Ganti 'namadockerhub' dengan username Anda
           tags: ${{ secrets.DOCKER_USER }}/project-backend:development
+
+  deploy_to_vps:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
