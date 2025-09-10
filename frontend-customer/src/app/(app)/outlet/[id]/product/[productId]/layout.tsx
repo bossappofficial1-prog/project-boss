@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { ProductType } from "@/types";
-import api from "@/lib/api";
-import { Product } from "@/services/product";
 
 type Props = {
     params: Promise<{ id: string; productId: string }>;
@@ -9,9 +7,15 @@ type Props = {
 
 async function getProduct(outletId: string, productId: string): Promise<ProductType | null> {
     try {
-        const data = await Product.getDetail(productId);
-        const product: ProductType = data;
-        return product || null;
+        const res = await fetch(`${process.env.SERVER_API_URL}/products/${productId}`);
+        const data = await res.json().then((data) => {
+            return data.data
+        }).catch((error) => {
+            console.log(error);
+            return null
+        })
+
+        return data
     } catch (error) {
         console.error(`Error fetching product ${productId}:`, error);
         return null;

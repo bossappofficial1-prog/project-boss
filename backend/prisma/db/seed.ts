@@ -1,13 +1,55 @@
 const { PrismaClient, ProductType, UserRole, ServiceStatus, FeeBearer } = require('@prisma/client');
-// import { hash } from 'bcryptjs';
 const { hash } = require("bcryptjs")
 
 const prisma = new PrismaClient();
 
+// Check for force reseed flag
+const forceReseed = process.argv.includes('--force') || process.argv.includes('-f');
+
+// Environment validation
+function validateEnvironment() {
+    const requiredEnvVars = ['DATABASE_URL'];
+    const missing = requiredEnvVars.filter(env => !process.env[env]);
+
+    if (missing.length > 0) {
+        console.error('❌ Missing required environment variables:', missing.join(', '));
+        console.error('Please check your .env file and ensure all required variables are set.');
+        process.exit(1);
+    }
+}
+
 async function main() {
     console.log('🌱 Starting simplified database seeding...');
 
-    // 1. Clean existing data
+    // Validate environment first
+    validateEnvironment();
+
+    if (forceReseed) {
+        console.log('⚡ FORCE RESEED MODE: Will clear all existing data first!');
+    }
+
+    // Check if data already exists
+    console.log('🔍 Checking existing data...');
+    const existingUsers = await prisma.user.count();
+    const existingBusinesses = await prisma.business.count();
+    const existingOutlets = await prisma.outlet.count();
+
+    if (existingUsers > 0 || existingBusinesses > 0 || existingOutlets > 0) {
+        if (!forceReseed) {
+            console.log('⚠️  Database already contains data!');
+            console.log(`   Users: ${existingUsers}, Businesses: ${existingBusinesses}, Outlets: ${existingOutlets}`);
+            console.log('   Skipping seeding to avoid duplicates.');
+            console.log('   Use --force or -f flag to force reseed: npm run seed -- --force');
+            return;
+        } else {
+            console.log('⚠️  Database contains existing data, but force reseed is enabled.');
+            console.log(`   Will clear ${existingUsers} users, ${existingBusinesses} businesses, ${existingOutlets} outlets`);
+        }
+    } else {
+        console.log('✅ Database is empty, proceeding with seeding...');
+    }
+
+    // 1. Clean existing data (just in case)
     console.log('🗑️ Cleaning existing data...');
     await prisma.outletOperatingHours.deleteMany({});
     await prisma.product.deleteMany({});
@@ -357,14 +399,26 @@ async function main() {
     console.log('📧 lisa@beauty.com - password: password123 (Toko Elektronik Maju)');
     console.log('📧 mike@tech.com - password: password123 (Laundry Express)');
 
-    console.log('\n✨ Simplified database seeding completed successfully!');
+    console.log('\n📋 AVAILABLE COMMANDS:');
+    console.log('======================');
+    console.log('npm run db:seed        - Run seeder (skip if data exists)');
+    console.log('npm run db:seed:force  - Force reseed (clear all data first)');
+    console.log('npm run db:reset       - Reset database and apply all migrations');
+
+    console.log('\n✨ Database seeding completed successfully!');
 }
 
 main()
     .catch((err) => {
         console.error('❌ Seeding error:', err);
+        console.error('\n🔧 Troubleshooting:');
+        console.error('1. Make sure database is running and accessible');
+        console.error('2. Check database connection in your .env file');
+        console.error('3. Run: npm run db:reset to reset database');
+        console.error('4. Use: npm run db:seed:force to force reseed');
         process.exit(1);
     })
     .finally(async () => {
         await prisma.$disconnect();
+        console.log('🔌 Database connection closed.');
     });

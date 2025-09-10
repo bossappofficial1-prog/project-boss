@@ -6,9 +6,11 @@ WORKDIR /app/backend
 
 ARG NODE_ENV=production
 ARG DATABASE_URL
+ARG CLIENT_URL
 
 ENV NODE_ENV=$NODE_ENV
 ENV DATABASE_URL=$DATABASE_URL
+ENV CLIENT_URL=$CLIENT_URL
 
 COPY package*.json ./
 RUN npm install
@@ -28,6 +30,7 @@ WORKDIR /app/backend
 COPY --from=builder /app/backend/package*.json ./
 # COPY --from=builder /app/backend/node_modules ./node_modules
 COPY --from=builder /app/backend/dist ./dist
+COPY --from=builder /app/backend/public ./public
 COPY --from=builder /app/backend/prisma ./prisma
 
 # Pastikan dependensi OpenSSL terinstal di Alpine

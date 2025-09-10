@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { OutletDetails } from "@/types/outlet";
-import api from "@/lib/api";
 
 type Props = {
     params: Promise<{ id: string }>;
@@ -8,8 +7,15 @@ type Props = {
 
 async function getOutlet(id: string): Promise<OutletDetails | null> {
     try {
-        const { data } = await api.get(`/outlets/${id}`);
-        return data.data;
+        const res = await fetch(`${process.env.SERVER_API_URL}/outlets/${id}`);
+        const data = await res.json().then((data) => {
+            return data.data
+        }).catch((error) => {
+            console.log(error);
+            return null
+        })
+
+        return data
     } catch (error) {
         console.error(`Error fetching outlet ${id}:`, error);
         return null;

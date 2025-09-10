@@ -68,6 +68,14 @@ app.get("/", (req, res) => {
     })
 })
 
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    })
+})
+
 app.use(App.API_PREFIX, apiRouter)
 app.use(`${App.API_PREFIX}/promos`, promoRouter);
 app.use(`${App.API_PREFIX}/internal`, internalApiRouter);
