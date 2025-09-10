@@ -70,8 +70,7 @@ export async function findNearbyOutletsService(
             return a.distance - b.distance;
         });
 
-    const today = new Date();
-    const outlets = mapOutletsWithOpenStatus(outletsWithDistance, today);
+    const outlets = mapOutletsWithOpenStatus(outletsWithDistance);
     const nearbyOutlets = removeOperatingHoursFromOutlets(outlets);
 
     return {
@@ -142,8 +141,7 @@ export async function getOutletsByBusinessIdService(
         skip
     );
 
-    const today = new Date();
-    const outlets = mapOutletsWithOpenStatus(outletsRaw, today);
+    const outlets = mapOutletsWithOpenStatus(outletsRaw);
 
     return { outlets, total };
 }
@@ -180,8 +178,7 @@ export async function getAllOutletsService(
         skip
     );
 
-    const today = new Date();
-    const outlets = mapOutletsWithOpenStatus(outletRaw, today);
+    const outlets = mapOutletsWithOpenStatus(outletRaw);
 
     return { outlets, total };
 }
@@ -193,10 +190,9 @@ export async function getFeaturedOutletsService() {
         return JSON.parse(cached);
     }
 
-    const today = new Date();
     const outlets = await OutletRepository.findFeaturedOutlets();
 
-    const featuredOutlets = mapOutletsWithOpenStatus(outlets, today);
+    const featuredOutlets = mapOutletsWithOpenStatus(outlets);
     const result = removeOperatingHoursFromOutlets(featuredOutlets);
 
     // Cache for 10 minutes

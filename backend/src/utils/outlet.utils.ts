@@ -1,14 +1,4 @@
 import { OutletOperatingHours } from "@prisma/client";
-import { addHours } from 'date-fns';
-
-function isWIBTimezone(): boolean {
-    const offset = new Date().getTimezoneOffset();
-    return offset === -420; // WIB adalah UTC+7 atau -420 menit
-}
-
-function getWIBTime(date: Date): Date {
-    return isWIBTimezone() ? date : addHours(date, 7);
-}
 
 export interface Location {
     latitude: number;
@@ -16,18 +6,17 @@ export interface Location {
 }
 
 export const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: Date) => {
-    const wibTime = getWIBTime(today);
-
     return operatingHours.some((oper) => {
-        const todayMinutes = wibTime.getHours() * 60 + wibTime.getMinutes();
-        const openMinutes = oper.openTime.getHours() * 60 + oper.openTime.getMinutes();
-        const closeMinutes = oper.closeTime.getHours() * 60 + oper.closeTime.getMinutes();
-        return oper.dayOfWeek === wibTime.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
+        const todayMinutes = today.getUTCHours() * 60 + today.getUTCMinutes(); // Total menit saat ini
+        const openMinutes = oper.openTime.getHours() * 60 + oper.openTime.getMinutes(); // Total menit waktu buka
+        const closeMinutes = oper.closeTime.getHours() * 60 + oper.closeTime.getMinutes(); // Total menit waktu tutup
+
+        return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
     });
 }
 
 export function calculateDistance(point1: Location, point2: Location): number {
-    const R = 6371;
+    const R = 6371; // Radius of the Earth in kilometers
     const dLat = toRadian(point2.latitude - point1.latitude);
     const dLon = toRadian(point2.longitude - point1.longitude);
 

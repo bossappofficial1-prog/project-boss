@@ -265,20 +265,29 @@ async function main() {
         // Create operating hours for Monday to Sunday (0-6)
         const operatingHours = [];
         for (let day = 0; day < 7; day++) {
-            const openHour = Math.floor(Math.random() * 3) + 7; // Open between 7-9 AM
-            const closeHour = Math.floor(Math.random() * 3) + 19; // Close between 7-9 PM
+            // Jam buka antara 9 AM WIB
+            const openHour = 9;
+            // Jam tutup antara 19-21 (7-9 PM) WIB
+            const closeHour = Math.floor(Math.random() * 3) + 19;
 
-            const openTime = new Date();
-            openTime.setHours(openHour, 0, 0, 0);
+            // Buat tanggal basis di timezone WIB (UTC+7)
+            const baseDate = new Date();
+            // Set ke midnight WIB
+            baseDate.setUTCHours(-7, 0, 0, 0);
 
-            const closeTime = new Date();
-            closeTime.setHours(closeHour, 0, 0, 0);
+            // Set jam buka
+            const openTime = new Date(baseDate);
+            openTime.setUTCHours(openHour - 7);
+
+            // Set jam tutup
+            const closeTime = new Date(baseDate);
+            closeTime.setUTCHours(closeHour - 7);
 
             operatingHours.push({
                 dayOfWeek: day,
                 openTime,
                 closeTime,
-                isOpen: day !== 0 || Math.random() > 0.3, // 70% chance open on Sunday
+                isOpen: day !== 0 || Math.random() > 0.3,
                 outletId: outlet.id,
             });
         }
