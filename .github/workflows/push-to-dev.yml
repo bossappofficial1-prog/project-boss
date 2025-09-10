@@ -37,7 +37,6 @@ jobs:
           context: ./backend # Lokasi Dockerfile backend
           file: ./backend/Dockerfile
           push: true # Push image setelah build selesai
-          # Ganti 'namadockerhub' dengan username Anda
           tags: ${{ secrets.DOCKER_USER }}/project-backend:development
 
   deploy_to_vps:

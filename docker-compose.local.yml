@@ -1,6 +1,6 @@
 services:
   database:
-    image: postgres:latest
+    image: postgis/postgis:14-3.3
     container_name: database_boss
 
     environment:
@@ -25,6 +25,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    ports:
+      - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -48,7 +50,6 @@ services:
       dockerfile: Dockerfile
       args:
         - NODE_ENV=development
-        - DATABASE_URL=postgresql://bossuser:bosspass@database:5432/boss_db?schema=public
 
     container_name: bossapp-backend
     env_file:
@@ -58,11 +59,46 @@ services:
       DATABASE_URL: postgresql://bossuser:bosspass@database:5432/boss_db?schema=public
       REDIS_URL: redis://redis:6379
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      PORT: 4444
+      PORT: 1234
     ports:
-      - "4444:4444"
+      - "1234:1234"
     depends_on:
       database:
         condition: service_healthy
     networks:
       - default
+
+  consumer:
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    container_name: consumer-dev
+    env_file:
+      - ./consumer/.env
+    environment:
+      - BACKEND_API_URL=http://backend:1234/api/v1
+      - RABBITMQ_URL=amqp://rabbitmq
+      - NODE_ENV=development
+
+    depends_on:
+      - rabbitmq
+      - backend
+
+  frontend-customer:
+    build:
+      context: ./frontend-customer
+      dockerfile: Dockerfile
+    container_name: frontend-customer
+    restart: always
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://backend:1234
+      NEXT_PUBLIC_API_PREFIX: /api/v1
+      NEXT_PUBLIC_SOCKET_URL: http://backend:1234
+
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend-customer/.env

@@ -1,5 +1,6 @@
 import { elasticClient, testElasticConnection, getElasticInfo } from '../config/elastic';
 import {
+    bulkIndex,
     createIndexIfNotExists,
     ELASTIC_INDEXES,
     refreshIndex
@@ -11,6 +12,7 @@ import {
     BUSINESS_INDEX_MAPPING
 } from '../config/elastic-mappings';
 import logger from '../utils/winston.logger';
+import { getAllOutletsService } from './outlet.service';
 
 /**
  * Initialize Elasticsearch connection and create required indices
@@ -135,9 +137,6 @@ export const reindexAllData = async (): Promise<void> => {
         logger.info('🔄 Starting full reindex...');
 
         // Import services dynamically to avoid circular dependencies
-        const { getProductsByOutletIdService } = await import('../service/product.service');
-        const { getAllOutletsService } = await import('../service/outlet.service');
-        const { getAllBusinessesService } = await import('../service/business.service');
         // Note: getAllOrdersService doesn't exist, we'll implement it later if needed
 
         // Reindex products
@@ -170,7 +169,6 @@ export const reindexAllData = async (): Promise<void> => {
                 }
             }));
 
-            const { bulkIndex } = await import('../utils/elastic.utils');
             await bulkIndex(ELASTIC_INDEXES.OUTLETS, outletDocs);
         }
 

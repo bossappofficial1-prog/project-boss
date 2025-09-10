@@ -2,8 +2,9 @@
 // learn more about it in the docs: https://pris.ly/prisma-schema
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
@@ -230,6 +231,7 @@ model Business {
   withdrawals Withdrawal[]
 
   @@index([ownerId])
+  @@index([description]) // Indeks untuk pencarian deskripsi bisnis
 }
 
 // Model untuk cabang/outlet dari sebuah bisnis
@@ -262,6 +264,8 @@ model Outlet {
   staff          Staff[]
 
   @@index([businessId])
+  @@index([latitude, longitude]) // Indeks untuk query lokasi (bounding box)
+  @@index([name]) // Indeks untuk pencarian nama outlet
 }
 
 // Model untuk produk (barang) atau jasa yang ditawarkan

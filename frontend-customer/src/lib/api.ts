@@ -5,6 +5,7 @@ import { NearbyOutletsParams } from '@/types';
 const clientUrl = process.env.NEXT_PUBLIC_API_URL ?? '';
 const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX ?? '';
 const baseURL = `${clientUrl}${apiPrefix}` || '';
+console.log(clientUrl, apiPrefix);
 
 interface CustomAxiosInstance extends AxiosInstance {
     getData<T>(url: string, config?: AxiosRequestConfig): Promise<T>;

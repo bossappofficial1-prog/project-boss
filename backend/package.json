@@ -11,7 +11,7 @@
     "test:coverage": "jest --coverage",
     "db:migrate": "npx prisma migrate dev",
     "db:generate": "npx prisma generate",
-    "db:seed": "npx prisma db seed",
+    "db:seed": "ts-node --compiler-options '{\"module\": \"commonjs\"}' prisma/db/seed.ts",
     "db:studio": "npx prisma studio",
     "db:reset": "npx prisma migrate reset --force",
     "db:prepare": "npx prisma generate",
@@ -25,7 +25,7 @@
     "elastic:search": "node test-elastic.js search"
   },
   "prisma": {
-    "seed": "ts-node prisma/db/seed.ts"
+    "seed": "npm run db:seed"
   },
   "keywords": [
     "service",

@@ -5,6 +5,10 @@ import { OutletRepository } from "../repositories/outlet.repository";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 import { getBusinessByOwnerIdService } from "./business.service";
 import { getIsOutletOpen, calculateDistance, validateCoordinates, calculateBoundingBox, validatePaginationParams, validateRadius, mapOutletsWithOpenStatus, removeOperatingHoursFromOutlets } from "../utils/outlet.utils";
+import Redis from "ioredis";
+
+// Redis client
+const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
 
 export async function createOutletService(data: CreateOutletInput, ownerId: string) {
     const business = await getBusinessByOwnerIdService(ownerId);
@@ -183,9 +187,20 @@ export async function getAllOutletsService(
 }
 
 export async function getFeaturedOutletsService() {
+    const cacheKey = "featured_outlets";
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+
     const today = new Date();
     const outlets = await OutletRepository.findFeaturedOutlets();
 
     const featuredOutlets = mapOutletsWithOpenStatus(outlets, today);
-    return removeOperatingHoursFromOutlets(featuredOutlets);
+    const result = removeOperatingHoursFromOutlets(featuredOutlets);
+
+    // Cache for 10 minutes
+    await redis.setex(cacheKey, 600, JSON.stringify(result));
+
+    return result;
 }

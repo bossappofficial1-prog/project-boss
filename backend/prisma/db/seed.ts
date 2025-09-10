@@ -1,5 +1,6 @@
-import { PrismaClient, ProductType, UserRole, ServiceStatus, FeeBearer } from '@prisma/client';
-import { BcryptUtil } from '../../src/utils';
+const { PrismaClient, ProductType, UserRole, ServiceStatus, FeeBearer } = require('@prisma/client');
+// import { hash } from 'bcryptjs';
+const { hash } = require("bcryptjs")
 
 const prisma = new PrismaClient();
 
@@ -18,7 +19,7 @@ async function main() {
 
     // 2. Create Users (Owners)
     console.log('👥 Creating users...');
-    const hashedPassword = await BcryptUtil.hash('password123');
+    const hashedPassword = await hash('password123', 10);
 
     const users = await Promise.all([
         prisma.user.create({
