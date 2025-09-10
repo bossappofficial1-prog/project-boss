@@ -16,6 +16,8 @@ ARG NEXT_PUBLIC_API_PREFIX
 ARG NEXT_PUBLIC_SOCKET_URL
 ARG NODE_ENV=production
 ARG DATABASE_URL
+ARG NEXT_PUBLIC_DASHBOARD_LOGIN_URL=http://localhost:3010/login
+ARG NEXT_PUBLIC_DASHBOARD_REGISTER_URL=http://localhost:3010/register
 
 ENV NEXT_PUBLIC_REMOTE_PATTERNS=$NEXT_PUBLIC_REMOTE_PATTERNS
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
@@ -23,6 +25,8 @@ ENV NEXT_PUBLIC_API_PREFIX=$NEXT_PUBLIC_API_PREFIX
 ENV NEXT_PUBLIC_SOCKET_URL=$NEXT_PUBLIC_SOCKET_URL
 ENV NODE_ENV=$NODE_ENV
 ENV DATABASE_URL=$DATABASE_URL
+ENV NEXT_PUBLIC_DASHBOARD_LOGIN_URL=$NEXT_PUBLIC_DASHBOARD_LOGIN_URL
+ENV NEXT_PUBLIC_DASHBOARD_REGISTER_URL=$NEXT_PUBLIC_DASHBOARD_REGISTER_URL
 
 # Debug: Print environment variables during build
 RUN echo "NEXT_PUBLIC_API_URL during build: $NEXT_PUBLIC_API_URL"
@@ -42,7 +46,6 @@ COPY --from=builder /app/frontend-customer/node_modules ./node_modules
 COPY --from=builder /app/frontend-customer/next.config.ts ./
 COPY --from=builder /app/frontend-customer/next-env.d.ts ./
 COPY --from=builder /app/frontend-customer/tsconfig.json ./
-# Ensure src folder is included for next.config.ts imports
 COPY --from=builder /app/frontend-customer/src ./src
 
 EXPOSE 3000

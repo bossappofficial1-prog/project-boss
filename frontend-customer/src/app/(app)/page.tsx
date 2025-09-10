@@ -28,7 +28,6 @@ function NearbyOutlets() {
         ? <LoadingState message={t("loading")} />
         : (
           <div className="space-y-2">
-            <strong>HAI TEST UPDATE</strong>
             {outlets && outlets.length > 0
               ? outlets.map((outlet, index: any) => (
                 <OutletCard key={index + outlet.id} alignment="horizontal" outlet={outlet} />

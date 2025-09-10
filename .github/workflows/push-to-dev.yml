@@ -28,6 +28,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: check-changes
         with:
+          base: "develop"
           filters: |
             backend:
               - 'backend/**'
@@ -81,9 +82,8 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_API_PREFIX=${{ vars.NEXT_PUBLIC_API_PREFIX }}
             NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_SOCKET_URL }}
-            NEXT_PUBLIC_REMOTE_PATTERNS=${{ vars.NEXT_PUBLIC_REMOTE_PATTERNS }}
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            CLIENT_URL=${{ vars.CLIENT_URL }}
+            NEXT_PUBLIC_DASHBOARD_LOGIN_URL=${{ vars.NEXT_PUBLIC_DASHBOARD_LOGIN_URL }}
+            NEXT_PUBLIC_DASHBOARD_REGISTER_URL=${{ vars.NEXT_PUBLIC_DASHBOARD_REGISTER_URL }}
 
   deploy_to_vps:
     needs: build_and_push
