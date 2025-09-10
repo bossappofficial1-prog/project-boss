@@ -8,6 +8,9 @@ jobs:
   build_and_push:
     runs-on: ubuntu-latest
     environment: development
+    outputs:
+      any_changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' }}
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -33,6 +36,15 @@ jobs:
             frontend-customer:
               - 'frontend-customer/**'
 
+      # Langkah debugging untuk melihat output dari paths-filter
+      - name: Debug paths filter output
+        run: |
+          echo "Backend changed: ${{ steps.check-changes.outputs.backend }}"
+          echo "Consumer changed: ${{ steps.check-changes.outputs.consumer }}"
+          echo "Frontend customer changed: ${{ steps.check-changes.outputs.frontend-customer }}"
+          echo "Any service changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' }}"
+
+      # Build dan push Backend hanya jika ada perubahan di direktori 'backend'
       - name: Build and push Backend
         if: steps.check-changes.outputs.backend == 'true'
         uses: docker/build-push-action@v4
@@ -46,7 +58,8 @@ jobs:
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             CLIENT_URL=${{ vars.CLIENT_URL }}
 
-      - name: Build and push consumer
+      # Build dan push Consumer hanya jika ada perubahan di direktori 'consumer'
+      - name: Build and push Consumer
         if: steps.check-changes.outputs.consumer == 'true'
         uses: docker/build-push-action@v4
         with:
@@ -55,7 +68,8 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-consumer:development
 
-      - name: Build and push frontend customer
+      # Build dan push Frontend Customer hanya jika ada perubahan di direktori 'frontend-customer'
+      - name: Build and push Frontend Customer
         if: steps.check-changes.outputs.frontend-customer == 'true'
         uses: docker/build-push-action@v4
         with:
@@ -73,12 +87,13 @@ jobs:
 
   deploy_to_vps:
     needs: build_and_push
+    if: needs.build_and_push.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Create  project directory on VPS if it does not exits
+      - name: Create project directory on VPS if it does not exist
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
@@ -96,7 +111,7 @@ jobs:
           source: "./docker-compose.dev.yml"
           target: "~/projects/boss-project/dev"
 
-      - name: Run Docker Compose on VPS
+      - name: Pull latest images and Run Docker Compose on VPS
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
@@ -104,5 +119,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/dev
-            docker compose -f docker-compose.dev.yml up -d
+            echo "Pulling latest images from Docker Hub..."
+            docker compose -f docker-compose.dev.yml pull
+            echo "Starting Docker Compose services..."
+            docker compose -f docker-compose.dev.yml up -d --remove-orphans
             echo "Docker Compose started successfully"
