@@ -4,16 +4,6 @@ on:
   push:
     branches: [develop]
 
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "Environment to deploy"
-        required: true
-        default: "development"
-        type: choice
-        options:
-          - development
-
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
