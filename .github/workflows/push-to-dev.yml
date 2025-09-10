@@ -31,7 +31,20 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: check-changes
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            consumer:
+              - 'consumer/**'
+            frontend-customer:
+              - 'frontend-customer/**'
+
       - name: Build and push Backend
+        if: steps.check-changes.outputs.backend == 'true'
         uses: docker/build-push-action@v4
         with:
           context: ./backend
@@ -44,6 +57,7 @@ jobs:
             CLIENT_URL=${{ vars.CLIENT_URL }}
 
       - name: Build and push consumer
+        if: steps.check-changes.outputs.consumer == 'true'
         uses: docker/build-push-action@v4
         with:
           context: ./consumer
@@ -52,6 +66,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USER }}/project-consumer:development
 
       - name: Build and push frontend customer
+        if: steps.check-changes.outputs.frontend-customer == 'true'
         uses: docker/build-push-action@v4
         with:
           context: ./frontend-customer
