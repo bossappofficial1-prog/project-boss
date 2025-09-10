@@ -8,8 +8,8 @@ export interface Location {
 export const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: Date) => {
     return operatingHours.some((oper) => {
         const todayMinutes = today.getUTCHours() * 60 + today.getUTCMinutes(); // Total menit saat ini
-        const openMinutes = oper.openTime.getHours() * 60 + oper.openTime.getMinutes(); // Total menit waktu buka
-        const closeMinutes = oper.closeTime.getHours() * 60 + oper.closeTime.getMinutes(); // Total menit waktu tutup
+        const openMinutes = oper.openTime.getUTCHours() * 60 + oper.openTime.getUTCMinutes(); // Total menit waktu buka
+        const closeMinutes = oper.closeTime.getUTCHours() * 60 + oper.closeTime.getUTCMinutes(); // Total menit waktu tutup
 
         return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
     });
