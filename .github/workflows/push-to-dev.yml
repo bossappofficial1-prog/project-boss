@@ -34,10 +34,14 @@ jobs:
       - name: Build and push Backend
         uses: docker/build-push-action@v4
         with:
-          context: ./backend # Lokasi Dockerfile backend
+          context: ./backend
           file: ./backend/Dockerfile
-          push: true # Push image setelah build selesai
+          push: true
           tags: ${{ secrets.DOCKER_USER }}/project-backend:development
+          build-args: |
+            NODE_ENV=development
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            CLIENT_URL=${{ vars.CLIENT_URL }}
 
   deploy_to_vps:
     needs: build_and_push
@@ -63,3 +67,14 @@ jobs:
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           source: "./docker-compose.dev.yml"
           target: "~/projects/boss-project/dev"
+
+      - name: Run Docker Compose on VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/dev
+            docker-compose -f docker-compose.dev.yml up -d
+            docker-compose ps

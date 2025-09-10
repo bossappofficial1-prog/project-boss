@@ -42,5 +42,5 @@ RUN apk add --no-cache openssl libstdc++ ca-certificates
 RUN npm install --omit=dev
 RUN npm install ts-node
 
-EXPOSE 4444
+EXPOSE 1234
 CMD sh -c 'if [ "$NODE_ENV" = "development" ]; then npx prisma migrate deploy && npm run db:seed; fi && npm start'

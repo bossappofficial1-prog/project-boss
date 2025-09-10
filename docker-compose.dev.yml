@@ -1,17 +1,32 @@
 services:
+  # database:
+  #   image: postgis/postgis:14-3.3
+  #   container_name: database_boss
+
+  #   environment:
+  #     - POSTGRES_DB=boss_db
+  #     - POSTGRES_USER=bossuser
+  #     - POSTGRES_PASSWORD=bosspass
+
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - default
+
   redis:
     image: redis:7-alpine
     container_name: project-boss-redis-dev
     restart: always
-    ports:
-      - "6380:6379"
-    volumes:
-      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
+    ports:
+      - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -23,43 +38,81 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
+      start_period: 30s
+    networks:
+      - default
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: project-boss-backend-dev
-    restart: always
+    image: pitok/project-backend:development
+
+    container_name: bossapp-backend
     env_file:
-      - .env.dev
-    ports:
-      - "1234:1234" # Expose port ke host untuk akses langsung dari localhost
+      - .env.backend
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_DATABASE}?schema=public
       REDIS_URL: redis://redis:6379
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       PORT: 1234
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    ports:
+      - "1234:1234"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 1234 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # depends_on:
+    #   database:
+    #     condition: service_healthy
+    networks:
+      - default
 
-volumes:
-  db_data:
-  redis_data:
-  rabbitmq_data:
+  # consumer:
+  #   build:
+  #     context: ./consumer
+  #     dockerfile: Dockerfile
+  #   container_name: consumer-dev
+  #   env_file:
+  #     - ./consumer/.env
+  #   environment:
+  #     - BACKEND_API_URL=http://backend:1234/api/v1
+  #     - RABBITMQ_URL=amqp://rabbitmq
+  #     - NODE_ENV=development
 
-networks:
-  default:
-    driver: bridge
+  #   depends_on:
+  #     database:
+  #       condition: service_healthy
+  #     rabbitmq:
+  #       condition: service_healthy
+  #     backend:
+  #       condition: service_healthy
+
+  # frontend-customer:
+  # build:
+  #   context: ./frontend-customer
+  #   dockerfile: Dockerfile
+  #   args:
+  #     NEXT_PUBLIC_API_URL: http://localhost:1234
+  #     NEXT_PUBLIC_API_PREFIX: /api/v1
+  #     NEXT_PUBLIC_SOCKET_URL: http://localhost:1234
+  #     NEXT_PUBLIC_REMOTE_PATTERNS: "http://localhost:1234/**, https://images.unsplash.com/**, https://cheaply-full-leech.ngrok-free.app/**, https://png.pngtree.com/**, https://example.com/**, https://press-parts-outlet.com/**, https://iconlogovector.com/**, https://encrypted-tbn0.gstatic.com/**, https://img2.beritasatu.com/**, https://algorit.ma/wp-content/**"
+  # container_name: frontend-customer
+  # restart: always
+  # environment:
+  #   NODE_ENV: development
+  #   SERVER_API_URL: http://backend:1234/api/v1
+
+  # depends_on:
+  #   backend:
+  #     condition: service_healthy
+  #   rabbitmq:
+  #     condition: service_healthy
+  # ports:
+  #   - "3000:3000"
+  # env_file:
+  #   - ./frontend-customer/.env
