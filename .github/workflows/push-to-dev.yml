@@ -43,7 +43,7 @@ jobs:
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             CLIENT_URL=${{ vars.CLIENT_URL }}
 
-      - name: Build and push frontend customer
+      - name: Build and push consumer
         uses: docker/build-push-action@v4
         with:
           context: ./consumer
@@ -60,7 +60,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USER }}/project-frontend-customer:development
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_API_PREFIX=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_PREFIX=${{ vars.NEXT_PUBLIC_API_PREFIX }}
             NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_SOCKET_URL }}
             NEXT_PUBLIC_REMOTE_PATTERNS=${{ vars.NEXT_PUBLIC_REMOTE_PATTERNS }}
             DATABASE_URL=${{ secrets.DATABASE_URL }}
