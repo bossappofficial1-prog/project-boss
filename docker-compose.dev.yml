@@ -66,53 +66,39 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    # depends_on:
-    #   database:
-    #     condition: service_healthy
     networks:
       - default
 
-  # consumer:
-  #   build:
-  #     context: ./consumer
-  #     dockerfile: Dockerfile
-  #   container_name: consumer-dev
-  #   env_file:
-  #     - ./consumer/.env
-  #   environment:
-  #     - BACKEND_API_URL=http://backend:1234/api/v1
-  #     - RABBITMQ_URL=amqp://rabbitmq
-  #     - NODE_ENV=development
+  consumer:
+    image: pitok/project-consumer:development
+    container_name: consumer-dev
+    env_file:
+      - .env.consumer
+    environment:
+      - BACKEND_API_URL=http://backend:1234/api/v1
+      - RABBITMQ_URL=amqp://rabbitmq
+      - NODE_ENV=development
 
-  #   depends_on:
-  #     database:
-  #       condition: service_healthy
-  #     rabbitmq:
-  #       condition: service_healthy
-  #     backend:
-  #       condition: service_healthy
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
 
-  # frontend-customer:
-  # build:
-  #   context: ./frontend-customer
-  #   dockerfile: Dockerfile
-  #   args:
-  #     NEXT_PUBLIC_API_URL: http://localhost:1234
-  #     NEXT_PUBLIC_API_PREFIX: /api/v1
-  #     NEXT_PUBLIC_SOCKET_URL: http://localhost:1234
-  #     NEXT_PUBLIC_REMOTE_PATTERNS: "http://localhost:1234/**, https://images.unsplash.com/**, https://cheaply-full-leech.ngrok-free.app/**, https://png.pngtree.com/**, https://example.com/**, https://press-parts-outlet.com/**, https://iconlogovector.com/**, https://encrypted-tbn0.gstatic.com/**, https://img2.beritasatu.com/**, https://algorit.ma/wp-content/**"
-  # container_name: frontend-customer
-  # restart: always
-  # environment:
-  #   NODE_ENV: development
-  #   SERVER_API_URL: http://backend:1234/api/v1
+  frontend-customer:
+    image: pitok/project-frontend-customer:development
+    container_name: frontend-customer-dev
+    restart: always
+    environment:
+      NODE_ENV: development
+      SERVER_API_URL: http://backend:1234/api/v1
 
-  # depends_on:
-  #   backend:
-  #     condition: service_healthy
-  #   rabbitmq:
-  #     condition: service_healthy
-  # ports:
-  #   - "3000:3000"
-  # env_file:
-  #   - ./frontend-customer/.env
+    depends_on:
+      backend:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.frontend-customer

@@ -10,6 +10,7 @@
 !.yarn/releases
 !.yarn/versions
 *.postman_collection.json
+package-lock.json
 
 # testing
 /coverage

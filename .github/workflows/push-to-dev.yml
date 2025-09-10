@@ -43,6 +43,29 @@ jobs:
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             CLIENT_URL=${{ vars.CLIENT_URL }}
 
+      - name: Build and push frontend customer
+        uses: docker/build-push-action@v4
+        with:
+          context: ./consumer
+          file: ./consumer/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/project-consumer:development
+
+      - name: Build and push frontend customer
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend-customer
+          file: ./frontend-customer/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/project-frontend-customer:development
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_PREFIX=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_SOCKET_URL }}
+            NEXT_PUBLIC_REMOTE_PATTERNS=${{ vars.NEXT_PUBLIC_REMOTE_PATTERNS }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            CLIENT_URL=${{ vars.CLIENT_URL }}
+
   deploy_to_vps:
     needs: build_and_push
     runs-on: ubuntu-latest

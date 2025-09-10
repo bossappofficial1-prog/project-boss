@@ -92,19 +92,19 @@ export default function ProfileSettings() {
     };
 
     const becomeBusiness = () => {
-        router.push('/register');
+        window.location.href = `${process.env.NEXT_PUBLIC_DASHBOARD_REGISTER_URL}`
     };
 
     const goLogin = () => {
-        router.push('/login');
+        window.location.href = `${process.env.NEXT_PUBLIC_DASHBOARD_LOGIN_URL}`
     };
 
     const goToFavorites = () => {
-        router.push('/favorites');
+        window.location.href = "/favorites"
     };
 
     const goToOrders = () => {
-        router.push('/orders');
+        window.location.href = "/orders"
     };
 
     const handleThemeChange = (val: string) => {
