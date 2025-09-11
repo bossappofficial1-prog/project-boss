@@ -294,6 +294,9 @@ model Product {
 
   image String? @default("https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png")
 
+  // New relation: multiple images per product
+  productImages ProductImage[]
+
   // Relasi: Satu produk bisa ada di banyak item pesanan
   orderItems OrderItem[]
 
@@ -307,6 +310,20 @@ model Product {
   updatedAt DateTime @updatedAt
 
   @@index([outletId])
+}
+
+// Model untuk menyimpan banyak gambar per produk
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId, order])
 }
 
 // Model untuk slot booking khusus layanan jasa

@@ -57,6 +57,7 @@ export interface ProductType {
     serviceDurationMinutes: any
     outletId: string
     image: string
+    images?: { url: string; alt?: string }[]
     createdAt: string
     updatedAt: string
     defaultTransactionFeeBearer: string
