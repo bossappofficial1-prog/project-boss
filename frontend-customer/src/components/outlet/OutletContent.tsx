@@ -295,7 +295,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
 
             <div className="space-y-3 mt-6">
                 <Tabs defaultValue="products" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 h-12">
+                    <TabsList className="grid w-full grid-cols-3 h-10">
                         <TabsTrigger value="products" className="flex items-center gap-2">
                             <Package className="w-4 h-4" />
                             <span className="text-xs sm:text-sm">{t("products")} ({goods.length})</span>
