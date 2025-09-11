@@ -45,17 +45,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     return {
-        title: `${outlet.name} - ${outlet.business?.name ?? "Boss App"}`,
+        title: `${outlet.name} | ${outlet.business?.name ?? "Boss App"}`,
         description: outlet.description || "Informasi outlet",
         openGraph: {
-            title: `${outlet.name} - ${outlet.business?.name ?? "Boss App"}`,
+            title: `${outlet.name} | ${outlet.business?.name ?? "Boss App"}`,
             description: outlet.description || "Informasi outlet",
             images: outlet.image ? [outlet.image] : [],
             type: "website"
         },
         twitter: {
             card: "summary_large_image",
-            title: `${outlet.name} - ${outlet.business?.name ?? "Boss App"}`,
+            title: `${outlet.name} | ${outlet.business?.name ?? "Boss App"}`,
             description: outlet.description || "Informasi outlet",
             images: outlet.image ? [outlet.image] : [],
         },

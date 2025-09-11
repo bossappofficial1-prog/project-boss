@@ -183,10 +183,10 @@ export default function FavoritesPage() {
     }
 
     return (
-        <div className="space-y-4 pb-28 sm:pb-20">
+        <div className="space-y-4">
             {/* Filter Controls */}
             {favorites.length > 0 && (
-                <div className="border-b sticky bg-background/70 backdrop-blur-sm top-16 left-0 z-20 px-3 pt-2 pb-3 space-y-3">
+                <div className="border-b bg-background/70 backdrop-blur-sm top-16 left-0 z-20 px-3 pt-2 pb-3 space-y-3">
                     {/* Desktop Row */}
                     <div className="hidden sm:flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ProductType } from "@/types";
+import { Outlet } from "@/services/outlets";
 
 type Props = {
     params: Promise<{ id: string; productId: string }>;
@@ -25,6 +26,7 @@ async function getProduct(outletId: string, productId: string): Promise<ProductT
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { id, productId } = await params;
     const product = await getProduct(id, productId);
+    const outlet = await Outlet.getDetail(id)
 
     if (!product) {
         return {
@@ -34,17 +36,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     return {
-        title: `${product.name} - Boss App`,
+        title: `${product.name} | ${outlet.name}`,
         description: product.description || `Detail product ${product.name}`,
         openGraph: {
-            title: `${product.name} - Boss App`,
+            title: `${product.name} | ${outlet.name}`,
             description: product.description || `Detail product ${product.name}`,
             images: product.image ? [product.image] : [],
             type: "website"
         },
         twitter: {
             card: "summary_large_image",
-            title: `${product.name} - Boss App`,
+            title: `${product.name} | ${outlet.name}`,
             description: product.description || `Detail product ${product.name}`,
             images: product.image ? [product.image] : [],
         },

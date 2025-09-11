@@ -15,7 +15,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <AppBarProviderV2>
                 <div className="flex flex-col min-h-screen">
                     <AppBar />
-                    <main className="flex-1 pb-16 md:pb-20 pt-[72px] lg:max-w-2xl w-full overflow-hidden overflow-x-auto p-4 mx-auto overflow-y-auto">
+                    <main
+                        style={{
+                            paddingTop: 'var(--appbar-height, 64px)',
+                            paddingBottom: 'var(--bottomnav-height, 72px)'
+                        }}
+                        className="flex-1 lg:max-w-2xl w-full m-2 overflow-hidden overflow-x-auto p-4 mx-auto"
+                    >
                         <Suspense fallback={<LoadingState />}>
                             {children}
                         </Suspense>

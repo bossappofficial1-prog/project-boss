@@ -26,7 +26,13 @@ export default function BottomNav() {
 
     if (!mainRoutes.includes(pathname)) return null
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[99] px-4 py-2 bg-background/80 backdrop-blur-lg border-t">
+        <div
+            className="fixed bottom-0 left-0 right-0 z-[99] px-4 py-2 bg-background/80 backdrop-blur-lg border-t"
+            ref={(el) => {
+                if (!el) return;
+                document.documentElement.style.setProperty('--bottomnav-height', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+            }}
+        >
             <nav
                 role="navigation"
                 aria-label="Bottom Navigation"

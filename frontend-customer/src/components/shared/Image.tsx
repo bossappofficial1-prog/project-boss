@@ -19,11 +19,12 @@ export function ImageRender(
         }) {
     const [imgSrc, setImgSrc] = useState(src || "/assets/images/default-image.png");
 
+    // Use smaller default dimensions and lazy loading by default to avoid
+    // blocking LCP. Consumers can pass `priority` explicitly when needed.
     return (
         <Image
-            // fill
-            width={1000}
-            height={1000}
+            width={600}
+            height={400}
             src={imgSrc}
             alt={alt}
             className={` ${className}`}
@@ -33,3 +34,5 @@ export function ImageRender(
         />
     );
 }
+
+export default ImageRender;

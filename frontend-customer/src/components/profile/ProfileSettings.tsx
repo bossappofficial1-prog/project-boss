@@ -114,7 +114,7 @@ export default function ProfileSettings() {
     const currentTheme = watch('theme');
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-2">
             {/* Header */}
             <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-primary rounded-full mx-auto mb-4 flex items-center justify-center">
@@ -128,7 +128,7 @@ export default function ProfileSettings() {
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
                 {/* Contact Information */}
                 <div className="bg-card rounded-lg border p-4 space-y-4">
                     <div className="flex items-center gap-2 mb-3">

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { ArrowLeft, Menu, Search, MoreVertical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -50,6 +50,25 @@ export default function AppBar({
     sticky = true,
     elevation = true,
 }: AppBarProps) {
+    const ref = useRef<HTMLElement | null>(null);
+
+    // Publish header height to a CSS variable so layout can adjust padding dynamically
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+
+        const setVar = () => {
+            const h = el.getBoundingClientRect().height;
+            document.documentElement.style.setProperty('--appbar-height', `${Math.ceil(h)}px`);
+        };
+        setVar();
+        const ro = new ResizeObserver(setVar);
+        ro.observe(el);
+        return () => {
+            ro.disconnect();
+            document.documentElement.style.setProperty('--appbar-height', '0px');
+        };
+    }, []);
 
     // Handle back navigation - you can customize this based on your routing solution
     const handleBackClick = () => {
@@ -65,7 +84,7 @@ export default function AppBar({
 
     const baseClasses = `
     flex items-center justify-between
-    px-4 py-3 min-h-[64px]
+    px-4 py-3 min-h-[54px]
     ${sticky ? "fixed top-0 left-0 right-0 z-50" : ""}
     ${variant === "transparent"
             ? "bg-background/60 backdrop-blur-lg border-b border-border/40"
@@ -74,7 +93,7 @@ export default function AppBar({
   `.replace(/\s+/g, " ").trim();
 
     return (
-        <header className={baseClasses}>
+        <header ref={ref} className={baseClasses}>
             {/* Left Section */}
             <div className="flex items-center gap-2 flex-shrink-0">
                 {(leftIcon || showBackButton) && (
