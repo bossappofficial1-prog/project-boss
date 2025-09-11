@@ -6,10 +6,11 @@ export interface Location {
 }
 
 export const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: Date) => {
+    const wibHours = (today.getUTCHours() + 7) % 24;
     return operatingHours.some((oper) => {
-        const todayMinutes = today.getUTCHours() * 60 + today.getUTCMinutes(); // Total menit saat ini
-        const openMinutes = oper.openTime.getUTCHours() * 60 + oper.openTime.getUTCMinutes(); // Total menit waktu buka
-        const closeMinutes = oper.closeTime.getUTCHours() * 60 + oper.closeTime.getUTCMinutes(); // Total menit waktu tutup
+        const todayMinutes = wibHours * 60 + today.getUTCMinutes(); // Total menit saat ini
+        const openMinutes = ((oper.openTime.getUTCHours() + 7) % 24) * 60 + oper.openTime.getUTCMinutes(); // Total menit waktu buka
+        const closeMinutes = ((oper.closeTime.getUTCHours() + 7) % 24) * 60 + oper.closeTime.getUTCMinutes(); // Total menit waktu tutup
 
         return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
     });
