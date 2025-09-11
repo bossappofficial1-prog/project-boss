@@ -15,7 +15,7 @@ import {
 } from "../service/outlet.service";
 
 export const findNearbyOutletsController = asyncHandler(async (req: Request, res: Response) => {
-    const { latitude, longitude, radius, page, limit } = req.query;
+    const { latitude, longitude, radius, page, limit, search } = req.query;
 
     // Validasi parameter koordinat
     if (!latitude || !longitude) {
@@ -37,7 +37,8 @@ export const findNearbyOutletsController = asyncHandler(async (req: Request, res
         lngNum,
         parsedRadius,
         page ? parseInt(page as string) : 1,
-        limit ? parseInt(limit as string) : 10
+        limit ? parseInt(limit as string) : 10,
+        search as string
     );
 
     return ResponseUtil.paginated(res, outlets.outlets, outlets.page, outlets.limit, outlets.totalPages, HttpStatus.OK);

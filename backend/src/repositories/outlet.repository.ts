@@ -200,32 +200,30 @@ export class OutletRepository {
         longMin: number,
         longMax: number,
         page: number = 1,
-        limit: number = 10
+        limit: number = 10,
+        search?: string
     ) {
         const skip = (page - 1) * limit;
 
+        let where: any = {
+            AND: [
+                { latitude: { gte: latMin } },
+                { latitude: { lte: latMax } },
+                { longitude: { gte: longMin } },
+                { longitude: { lte: longMax } }
+            ]
+        }
+
+        if (search && search !== "") where.AND.push({
+            OR: [{ name: { contains: search, mode: "insensitive" } }]
+        })
+
         // Get total count within bounding box
-        const total = await db.outlet.count({
-            where: {
-                AND: [
-                    { latitude: { gte: latMin } },
-                    { latitude: { lte: latMax } },
-                    { longitude: { gte: longMin } },
-                    { longitude: { lte: longMax } }
-                ]
-            }
-        });
+        const total = await db.outlet.count({ where });
 
         // Get outlets within bounding box with pagination
         const outlets = await db.outlet.findMany({
-            where: {
-                AND: [
-                    { latitude: { gte: latMin } },
-                    { latitude: { lte: latMax } },
-                    { longitude: { gte: longMin } },
-                    { longitude: { lte: longMax } }
-                ]
-            },
+            where,
             include: {
                 business: {
                     select: {

@@ -24,7 +24,8 @@ export async function findNearbyOutletsService(
     longitude: number,
     radiusKm: number = 5,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    search?: string
 ) {
     // Validate inputs using utilities
     try {
@@ -40,7 +41,7 @@ export async function findNearbyOutletsService(
 
     // Get paginated outlets from repository
     const { outlets: outletsRaw, total } = await OutletRepository.findNearbyWithPagination(
-        latitude, longitude, latMin, latMax, longMin, longMax, page, limit
+        latitude, longitude, latMin, latMax, longMin, longMax, page, limit, search
     );
 
     // Calculate exact distances and filter within radius
