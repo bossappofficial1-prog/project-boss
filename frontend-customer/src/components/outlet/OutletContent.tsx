@@ -19,6 +19,7 @@ import { useSearchParams } from "next/navigation";
 import { DAY_NAMES, LanguageType } from "@/constants";
 import { formatTime } from "@/lib/utils";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
+import { EmptyStates } from "../base/EmptyStates";
 
 const formatOperatingHours = (operatingHours: OperatingHourType[], locale: LanguageType) => {
     if (typeof window === "undefined") return
@@ -234,6 +235,11 @@ export function OutletContent({ outletId }: { outletId: string }) {
     if (outletQuery.isLoading) {
         return <LoadingState />;
     }
+    if ((results[0].error as any)?.response.status == 404) return <EmptyStates.NotFound action={{
+        label: "Back to Home", onClick() {
+            window.location.href = '/'
+        },
+    }} />
 
     if (outletQuery.isError) {
         return <ErrorState />;

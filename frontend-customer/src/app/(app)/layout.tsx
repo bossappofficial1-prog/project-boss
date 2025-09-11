@@ -13,16 +13,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
         <QueryClientProvider client={queryClient}>
             <AppBarProviderV2>
-                <AppBar />
-                <main className="lg:max-w-2xl min-h-[calc(100vh-56px)] p-4 mx-auto">
-                    <Suspense fallback={<LoadingState />}>
-                        {children}
-                    </Suspense>
-                </main>
-                <AppToaster />
-                <FloatingCartButton />
+                <div className="flex flex-col min-h-screen">
+                    <AppBar />
+                    <main className="flex-1 pb-16 md:pb-20 pt-[72px] lg:max-w-2xl w-full overflow-hidden overflow-x-auto p-4 mx-auto overflow-y-auto">
+                        <Suspense fallback={<LoadingState />}>
+                            {children}
+                        </Suspense>
+                    </main>
+                    <AppToaster />
+                    <FloatingCartButton />
+                    <BottomNav />
+                </div>
             </AppBarProviderV2>
-            <BottomNav />
         </QueryClientProvider>
     );
 }

@@ -20,13 +20,18 @@ export function NavItem({
         <Link
             href={href}
             aria-label={ariaLabel ?? label}
-            className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-full text-[0.66rem] transition-colors ${highlight
-                ? "bg-primary text-white shadow-md hover:brightness-95"
-                : "text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/6"
-                }`}
+            className={`
+                flex flex-col items-center justify-center gap-1.5 
+                p-2 rounded-xl text-xs font-medium
+                transition-all duration-200 ease-in-out
+                ${highlight
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }
+            `}
         >
             <span className="inline-flex">{children}</span>
-            <span className="sr-only">{label}</span>
+            <span className="hidden md:block">{label}</span>
         </Link>
     )
 }

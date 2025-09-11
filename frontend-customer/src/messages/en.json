@@ -7,7 +7,38 @@
         "open": "Open",
         "closed": "Closed",
         "km": "KM",
-        "m": "M"
+        "m": "M",
+        "emptyStates": {
+            "notFound": {
+                "title": "Page Not Found",
+                "description": "The page you are looking for might have been removed or is temporarily unavailable.",
+                "action": "Back to Home"
+            },
+            "noOutlets": {
+                "title": "No Outlets Available",
+                "description": "No outlets available in this area. Please try another area."
+            },
+            "noOrders": {
+                "title": "No Orders Yet",
+                "description": "You don't have any orders yet. Start ordering now!"
+            },
+            "noUsers": {
+                "title": "No Users",
+                "description": "There are no registered users at this time."
+            },
+            "noReviews": {
+                "title": "No Reviews",
+                "description": "Be the first to write a review."
+            },
+            "noAccess": {
+                "title": "Access Restricted",
+                "description": "You don't have permission to access this page."
+            },
+            "comingSoon": {
+                "title": "Coming Soon",
+                "description": "This feature will be available soon. Stay tuned for updates!"
+            }
+        }
     },
     "homePage": {
         "title": "Welcome to our Application"

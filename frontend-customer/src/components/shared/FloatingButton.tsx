@@ -9,7 +9,7 @@ export default function FloatingButton({ children }: { children: React.ReactNode
             return { x, y }
         }
 
-        return { x: 20, y: 20 }
+        return { x: 340, y: 713 }
     });
     const [isDragging, setIsDragging] = useState(false);
     const [hasMoved, setHasMoved] = useState(false);
