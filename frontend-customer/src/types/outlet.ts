@@ -41,7 +41,6 @@ export type OutletDetails = {
     business: {
         id: string;
         name: string;
-        description: string;
     };
     openingHours?: Array<{
         day: string;
