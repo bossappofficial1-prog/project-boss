@@ -14,7 +14,45 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "BOSS",
   description: "Manage your business with BOSS",
-  icons: "/assets/logo/logo-bossapp.svg"
+  icons: "/assets/logo/logo-bossapp.svg",
+  openGraph: {
+    title: "BOSS - Business Management Platform",
+    description: "Manage your business with BOSS - Complete solution for business operations, scheduling, and customer management",
+    url: "https://bossapp.id",
+    siteName: "BOSS",
+    images: [
+      {
+        url: "/assets/logo/logo-bossapp.svg",
+        width: 1200,
+        height: 630,
+        alt: "BOSS Business Management Platform",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BOSS - Business Management Platform",
+    description: "Manage your business with BOSS - Complete solution for business operations",
+    images: ["/assets/logo/logo-bossapp.svg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  keywords: ["business management", "scheduling", "customer management", "BOSS", "business platform"],
+  authors: [{ name: "BOSS Team" }],
+  creator: "BOSS Team",
+  publisher: "BOSS",
+  category: "business",
 };
 
 export default function Layout({
