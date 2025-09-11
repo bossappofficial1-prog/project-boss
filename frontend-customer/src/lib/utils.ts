@@ -143,3 +143,8 @@ export async function copyToClipboard(text: string): Promise<boolean> {
         return false;
     }
 }
+
+export const toMapDestination = (latitude: string | number, longitude: string | number) => {
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+    window.open(mapsUrl, "_blank");
+}

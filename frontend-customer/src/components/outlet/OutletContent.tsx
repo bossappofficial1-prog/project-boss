@@ -17,7 +17,7 @@ import { EmptyState, ErrorState, LoadingState } from "../Base";
 import { OperatingHourType, OutletType } from "@/types";
 import { useSearchParams } from "next/navigation";
 import { DAY_NAMES, LanguageType } from "@/constants";
-import { formatTime } from "@/lib/utils";
+import { formatTime, toMapDestination } from "@/lib/utils";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
 import { EmptyStates } from "../base/EmptyStates";
 
@@ -275,15 +275,13 @@ export function OutletContent({ outletId }: { outletId: string }) {
                             {outlet.isOpen ? t("open") : t("closed")}
                         </Badge>
                     </div>
-                    <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(outlet.address)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex gap-1 items-center text-white/90 text-sm mb-3"
+                    <span
+                        onClick={() => toMapDestination(outlet.latitude, outlet.longitude)}
+                        className="flex gap-1 items-center text-white/90 text-sm mb-3 hover:text-white cursor-pointer"
                     >
                         <MapPin className="w-4 h-4" />
                         <span className="text-xs truncate">{outlet.address}</span>
-                    </a>
+                    </span>
                     {outlet.phone && (
                         <div onClick={handleWhatsAppChat} className="flex cursor-pointer items-center gap-1 text-white/80 text-sm">
                             <Phone className="w-4 h-4" />

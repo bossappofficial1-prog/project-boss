@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ImageRender } from "../shared/Image";
 import { BusinessType, OutletType } from "@/types";
 import { useTranslations } from "@/hooks/useI18n";
+import { toMapDestination } from "@/lib/utils";
 
 type OutletCardProps = {
     outlet: OutletType & Pick<BusinessType, "id" | "name"> & { _count: { orders: number }; distance: number };
@@ -54,14 +55,14 @@ const OutletHeader = ({ name }: { name: string }) => (
     </div>
 );
 
-const OutletInfo = ({ outlet, mapsUrl, showPhone }: { outlet: OutletCardProps['outlet'], mapsUrl: string, showPhone: boolean }) => {
+const OutletInfo = ({ outlet, showPhone }: { outlet: OutletCardProps['outlet'], showPhone: boolean }) => {
     const t = useTranslations("common");
     const formattedDistance = outlet.distance > 0.999 ? `${outlet.distance.toFixed(1)} ${t('km')}` : `${Math.round(outlet.distance * 1000)} ${t('m')}`;
 
-    const handleInteraction = (e: React.MouseEvent, url: string) => {
+    const handleInteraction = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        window.open(url, "_blank");
+        toMapDestination(outlet.latitude, outlet.longitude)
     };
 
     return (
@@ -73,13 +74,13 @@ const OutletInfo = ({ outlet, mapsUrl, showPhone }: { outlet: OutletCardProps['o
                 </div>
             )}
             {outlet.address && (
-                <div onClick={(e) => handleInteraction(e, mapsUrl)} className="flex items-start gap-2 hover:text-blue-600 transition-colors cursor-pointer group/address">
+                <div onClick={(e) => handleInteraction(e)} className="flex items-start gap-2 hover:text-blue-600 transition-colors cursor-pointer group/address">
                     <MapPin className="w-3 h-3 mt-0.5 shrink-0 text-blue-500 group-hover/address:text-blue-600" />
                     <span className="line-clamp-2 leading-snug">{outlet.address}</span>
                 </div>
             )}
             {showPhone && outlet.phone && (
-                <div onClick={(e) => handleInteraction(e, `tel:${outlet.phone}`)} className="flex items-center gap-2 hover:text-green-600 transition-colors cursor-pointer group/phone">
+                <div onClick={(e) => handleInteraction(e)} className="flex items-center gap-2 hover:text-green-600 transition-colors cursor-pointer group/phone">
                     <Phone className="w-3 h-3 shrink-0 text-green-500 group-hover/phone:text-green-600" />
                     <span className="font-medium">{outlet.phone}</span>
                 </div>
@@ -89,9 +90,6 @@ const OutletInfo = ({ outlet, mapsUrl, showPhone }: { outlet: OutletCardProps['o
 };
 
 export function OutletCard({ outlet, alignment = "vertical" }: OutletCardProps) {
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        outlet.address || outlet.name || ""
-    )}`;
 
     if (alignment === "horizontal") {
         return (
@@ -107,7 +105,7 @@ export function OutletCard({ outlet, alignment = "vertical" }: OutletCardProps) 
                                 {outlet.business.name}
                             </Badge>
                         )}
-                        <OutletInfo outlet={outlet} mapsUrl={mapsUrl} showPhone={false} />
+                        <OutletInfo outlet={outlet} showPhone={false} />
                     </div>
                 </div>
             </Link>
@@ -122,7 +120,7 @@ export function OutletCard({ outlet, alignment = "vertical" }: OutletCardProps) 
                 </div>
                 <CardContent className="p-3 flex-grow flex flex-col justify-between">
                     <OutletHeader name={outlet.name} />
-                    <OutletInfo outlet={outlet} mapsUrl={mapsUrl} showPhone={true} />
+                    <OutletInfo outlet={outlet} showPhone={true} />
                 </CardContent>
             </Card>
         </Link>
