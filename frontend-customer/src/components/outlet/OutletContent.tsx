@@ -9,13 +9,13 @@ import { ImageRender } from "../shared/Image";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import ProductCard from "./ProductCard";
-import { useEffect, useMemo, useCallback, useRef } from "react";
+import { useEffect, useMemo, useCallback, useRef, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { Outlet } from "@/services/outlets";
 import { Product } from "@/services/product";
 import { EmptyState, ErrorState, LoadingState } from "../Base";
 import { OperatingHourType, OutletType } from "@/types";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DAY_NAMES, LanguageType } from "@/constants";
 import { formatTime, toMapDestination } from "@/lib/utils";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
@@ -164,6 +164,13 @@ export function LeftContentAppBarOutlet({
 export function OutletContent({ outletId }: { outletId: string }) {
     const { isFavorite, toggleFavorite } = useFavorites();
     const { setAppBar, resetAppBar } = useAppBarV2()
+    const [selectedTabs, setSelectedTabs] = useState<string | undefined>(() => {
+        if (typeof window === "undefined") return undefined;
+        const storedSelectedTabs = localStorage.getItem("selectedTabs")
+        return storedSelectedTabs ?? "products"
+    })
+    const router = useRouter()
+
     const t = useTranslations('outletDetail');
 
     const results = useQueries({
@@ -188,6 +195,9 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 subtitle: outletData.name,
                 showBackButton: true,
                 centerTitle: true,
+                onLeftClick() {
+                    router.push("/")
+                },
             });
         }
 
@@ -292,7 +302,10 @@ export function OutletContent({ outletId }: { outletId: string }) {
             </div>
 
             <div className="space-y-3 mt-6">
-                <Tabs defaultValue="products" className="w-full">
+                <Tabs
+                    defaultValue={selectedTabs}
+                    onValueChange={(value) => { setSelectedTabs(value); localStorage.setItem("selectedTabs", value) }}
+                    className="w-full">
                     <TabsList className="grid w-full grid-cols-3 h-10">
                         <TabsTrigger value="products" className="flex items-center gap-2">
                             <Package className="w-4 h-4" />

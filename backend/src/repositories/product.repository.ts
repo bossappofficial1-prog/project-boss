@@ -46,6 +46,9 @@ export class ProductRepository {
                             }
                         }
                     }
+                },
+                productImages: {
+                    orderBy: { order: 'asc' }
                 }
             },
         });

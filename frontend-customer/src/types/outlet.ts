@@ -23,6 +23,7 @@ export type Product = {
     serviceDurationMinutes: number | null;
     outletId: string;
     image: string;
+    images?: { url: string; alt?: string }[];
     bookingSlots: BookingSlot[];
 };
 
