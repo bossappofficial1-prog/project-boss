@@ -197,11 +197,13 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 subtitle: outletData.name,
                 showBackButton: true,
                 centerTitle: true,
-                ...(from && from !== "search" ? {
+                ...(from && from === "search" ? {
                     onLeftClick() {
-                        router.push("/")
+                        router.push("/search")
                     },
-                } : {})
+                } : {onLeftClick() {
+                    router.push("/")
+                },})
             });
         }
 
