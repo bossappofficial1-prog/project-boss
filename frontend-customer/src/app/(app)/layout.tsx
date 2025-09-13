@@ -14,7 +14,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
             <AppBarProviderV2>
                 <div className="flex flex-col min-h-screen">
-                    <AppBar />
+                    <Suspense fallback={<LoadingState />}>
+                        <AppBar />
+                    </Suspense>
                     <main
                         style={{
                             paddingTop: 'var(--appbar-height, 0px)',

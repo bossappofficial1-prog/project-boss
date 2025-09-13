@@ -169,6 +169,8 @@ export function OutletContent({ outletId }: { outletId: string }) {
         const storedSelectedTabs = localStorage.getItem("selectedTabs")
         return storedSelectedTabs ?? "products"
     })
+    const from = useSearchParams().get("search")
+
     const router = useRouter()
 
     const t = useTranslations('outletDetail');
@@ -195,9 +197,11 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 subtitle: outletData.name,
                 showBackButton: true,
                 centerTitle: true,
-                onLeftClick() {
-                    router.push("/")
-                },
+                ...(from && from !== "search" ? {
+                    onLeftClick() {
+                        router.push("/")
+                    },
+                } : {})
             });
         }
 

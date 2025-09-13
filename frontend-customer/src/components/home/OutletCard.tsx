@@ -13,6 +13,7 @@ import { toMapDestination } from "@/lib/utils";
 type OutletCardProps = {
     outlet: OutletType & Pick<BusinessType, "id" | "name"> & { _count: { orders: number }; distance: number };
     alignment?: "vertical" | "horizontal";
+    from?: string;
 };
 
 const OutletImage = ({ outlet, imageSize }: { outlet: OutletCardProps['outlet'], imageSize: string }) => {
@@ -89,22 +90,22 @@ const OutletInfo = ({ outlet, showPhone }: { outlet: OutletCardProps['outlet'], 
     );
 };
 
-export function OutletCard({ outlet, alignment = "vertical" }: OutletCardProps) {
+export function OutletCard({ outlet, alignment = "vertical", from }: OutletCardProps) {
 
     if (alignment === "horizontal") {
         return (
-            <Link href={`/outlet/${outlet.id}`} className="block group">
+            <Link href={{ pathname: `/outlet/${outlet.id}`, ...(from && from !== "" ? { query: from } : {}) }} className="block group">
                 <div className="flex gap-3 bg-card rounded-lg border hover:shadow-md hover:border-border/60 transition-all duration-300 p-2.5">
                     <div className="w-24 h-24 rounded-md overflow-hidden shrink-0">
                         <OutletImage outlet={outlet} imageSize="80px" />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <OutletHeader name={outlet.name} />
-                        {outlet.business && (
+                        {/* {outlet.business && (
                             <Badge variant="outline" className="text-xs w-fit mt-1.5 h-5 bg-red-50 text-red-600 border-red-200 font-medium">
                                 {outlet.business.name}
                             </Badge>
-                        )}
+                        )} */}
                         <OutletInfo outlet={outlet} showPhone={false} />
                     </div>
                 </div>

@@ -253,7 +253,7 @@ export default function ProfileSettings() {
                 </div>
 
                 {/* Orders Section */}
-                <div className="bg-card rounded-lg border p-4">
+                {/* <div className="bg-card rounded-lg border p-4">
                     <div className="flex items-center gap-2 mb-4">
                         <Receipt className="w-5 h-5 text-primary" />
                         <h2 className="font-medium text-card-foreground">
@@ -269,13 +269,14 @@ export default function ProfileSettings() {
                             <span className="text-sm font-medium">{t("orders.orderHistory")}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            {/* <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                                 {t("orders.viewAll")}
-                            </span> */}
+                            </span>
                             <span className="text-muted-foreground">→</span>
                         </div>
                     </div>
-                </div>                {/* Action Buttons */}
+                </div>   */}
+                {/* Action Buttons */}
                 <div className="space-y-3 pt-2">
                     <Button type="submit" className="w-full h-11">
                         <Save className="w-4 h-4 mr-2" />
