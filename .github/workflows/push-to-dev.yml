@@ -4,20 +4,13 @@ on:
   push:
     branches: [develop]
 
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "Environment to deploy"
-        required: true
-        default: "development"
-        type: choice
-        options:
-          - development
-
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
     environment: development
+    outputs:
+      any_changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' }}
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -31,23 +24,76 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: check-changes
+        with:
+          base: "develop"
+          filters: |
+            backend:
+              - 'backend/**'
+            consumer:
+              - 'consumer/**'
+            frontend-customer:
+              - 'frontend-customer/**'
+
+      # Langkah debugging untuk melihat output dari paths-filter
+      - name: Debug paths filter output
+        run: |
+          echo "Backend changed: ${{ steps.check-changes.outputs.backend }}"
+          echo "Consumer changed: ${{ steps.check-changes.outputs.consumer }}"
+          echo "Frontend customer changed: ${{ steps.check-changes.outputs.frontend-customer }}"
+          echo "Any service changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' }}"
+
+      # Build dan push Backend hanya jika ada perubahan di direktori 'backend'
       - name: Build and push Backend
+        if: steps.check-changes.outputs.backend == 'true'
         uses: docker/build-push-action@v4
         with:
-          context: ./backend # Lokasi Dockerfile backend
+          context: ./backend
           file: ./backend/Dockerfile
-          push: true # Push image setelah build selesai
-          # Ganti 'namadockerhub' dengan username Anda
+          push: true
           tags: ${{ secrets.DOCKER_USER }}/project-backend:development
+          build-args: |
+            NODE_ENV=development
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            CLIENT_URL=${{ vars.CLIENT_URL }}
+
+      # Build dan push Consumer hanya jika ada perubahan di direktori 'consumer'
+      - name: Build and push Consumer
+        if: steps.check-changes.outputs.consumer == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: ./consumer
+          file: ./consumer/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/project-consumer:development
+
+      # Build dan push Frontend Customer hanya jika ada perubahan di direktori 'frontend-customer'
+      - name: Build and push Frontend Customer
+        if: steps.check-changes.outputs.frontend-customer == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend-customer
+          file: ./frontend-customer/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/project-frontend-customer:development
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_PREFIX=${{ vars.NEXT_PUBLIC_API_PREFIX }}
+            NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_SOCKET_URL }}
+            NEXT_PUBLIC_DASHBOARD_LOGIN_URL=${{ vars.NEXT_PUBLIC_DASHBOARD_LOGIN_URL }}
+            NEXT_PUBLIC_DASHBOARD_REGISTER_URL=${{ vars.NEXT_PUBLIC_DASHBOARD_REGISTER_URL }}
 
   deploy_to_vps:
     needs: build_and_push
+    if: needs.build_and_push.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Create  project directory on VPS if it does not exits
+      - name: Create project directory on VPS if it does not exist
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
@@ -64,3 +110,17 @@ jobs:
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           source: "./docker-compose.dev.yml"
           target: "~/projects/boss-project/dev"
+
+      - name: Pull latest images and Run Docker Compose on VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/dev
+            echo "Pulling latest images from Docker Hub..."
+            docker compose -f docker-compose.dev.yml pull
+            echo "Starting Docker Compose services..."
+            docker compose -f docker-compose.dev.yml up -d --remove-orphans
+            echo "Docker Compose started successfully"

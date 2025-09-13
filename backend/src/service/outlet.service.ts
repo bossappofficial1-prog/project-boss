@@ -5,6 +5,10 @@ import { OutletRepository } from "../repositories/outlet.repository";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 import { getBusinessByOwnerIdService } from "./business.service";
 import { getIsOutletOpen, calculateDistance, validateCoordinates, calculateBoundingBox, validatePaginationParams, validateRadius, mapOutletsWithOpenStatus, removeOperatingHoursFromOutlets } from "../utils/outlet.utils";
+import Redis from "ioredis";
+
+// Redis client
+const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
 
 export async function createOutletService(data: CreateOutletInput, ownerId: string) {
     const business = await getBusinessByOwnerIdService(ownerId);
@@ -20,7 +24,8 @@ export async function findNearbyOutletsService(
     longitude: number,
     radiusKm: number = 5,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    search?: string
 ) {
     // Validate inputs using utilities
     try {
@@ -36,7 +41,7 @@ export async function findNearbyOutletsService(
 
     // Get paginated outlets from repository
     const { outlets: outletsRaw, total } = await OutletRepository.findNearbyWithPagination(
-        latitude, longitude, latMin, latMax, longMin, longMax, page, limit
+        latitude, longitude, latMin, latMax, longMin, longMax, page, limit, search
     );
 
     // Calculate exact distances and filter within radius
@@ -66,8 +71,7 @@ export async function findNearbyOutletsService(
             return a.distance - b.distance;
         });
 
-    const today = new Date();
-    const outlets = mapOutletsWithOpenStatus(outletsWithDistance, today);
+    const outlets = mapOutletsWithOpenStatus(outletsWithDistance);
     const nearbyOutlets = removeOperatingHoursFromOutlets(outlets);
 
     return {
@@ -138,8 +142,7 @@ export async function getOutletsByBusinessIdService(
         skip
     );
 
-    const today = new Date();
-    const outlets = mapOutletsWithOpenStatus(outletsRaw, today);
+    const outlets = mapOutletsWithOpenStatus(outletsRaw);
 
     return { outlets, total };
 }
@@ -176,16 +179,25 @@ export async function getAllOutletsService(
         skip
     );
 
-    const today = new Date();
-    const outlets = mapOutletsWithOpenStatus(outletRaw, today);
+    const outlets = mapOutletsWithOpenStatus(outletRaw);
 
     return { outlets, total };
 }
 
 export async function getFeaturedOutletsService() {
-    const today = new Date();
+    const cacheKey = "featured_outlets";
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+
     const outlets = await OutletRepository.findFeaturedOutlets();
 
-    const featuredOutlets = mapOutletsWithOpenStatus(outlets, today);
-    return removeOperatingHoursFromOutlets(featuredOutlets);
+    const featuredOutlets = mapOutletsWithOpenStatus(outlets);
+    const result = removeOperatingHoursFromOutlets(featuredOutlets);
+
+    // Cache for 10 minutes
+    await redis.setex(cacheKey, 600, JSON.stringify(result));
+
+    return result;
 }

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ProductType } from "@/types";
-import api from "@/lib/api";
-import { Product } from "@/services/product";
+import { Outlet } from "@/services/outlets";
 
 type Props = {
     params: Promise<{ id: string; productId: string }>;
@@ -9,9 +8,15 @@ type Props = {
 
 async function getProduct(outletId: string, productId: string): Promise<ProductType | null> {
     try {
-        const data = await Product.getDetail(productId);
-        const product: ProductType = data;
-        return product || null;
+        const res = await fetch(`${process.env.SERVER_API_URL}/products/${productId}`);
+        const data = await res.json().then((data) => {
+            return data.data
+        }).catch((error) => {
+            console.log(error);
+            return null
+        })
+
+        return data
     } catch (error) {
         console.error(`Error fetching product ${productId}:`, error);
         return null;
@@ -21,6 +26,7 @@ async function getProduct(outletId: string, productId: string): Promise<ProductT
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { id, productId } = await params;
     const product = await getProduct(id, productId);
+    const outlet = await Outlet.getDetail(id)
 
     if (!product) {
         return {
@@ -30,17 +36,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     return {
-        title: `${product.name} - Boss App`,
+        title: `${product.name} | ${outlet.name}`,
         description: product.description || `Detail product ${product.name}`,
         openGraph: {
-            title: `${product.name} - Boss App`,
+            title: `${product.name} | ${outlet.name}`,
             description: product.description || `Detail product ${product.name}`,
             images: product.image ? [product.image] : [],
             type: "website"
         },
         twitter: {
             card: "summary_large_image",
-            title: `${product.name} - Boss App`,
+            title: `${product.name} | ${outlet.name}`,
             description: product.description || `Detail product ${product.name}`,
             images: product.image ? [product.image] : [],
         },

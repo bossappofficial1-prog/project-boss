@@ -7,38 +7,25 @@ import { LoadingState, EmptyState, ErrorState } from '@/components/Base';
 import { Button } from '@/components/ui/button';
 import { Loader2, Store, Search as SearchIcon } from 'lucide-react';
 import { useTranslations } from '@/hooks/useI18n';
-import { useDebounce } from '@/hooks/useDebounce';
-import { Search, SearchDropdown, SearchInput } from '@/components/shared/search';
 import { useAppBarV2 } from '@/context/AppBarContextV2';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 function SearchOutletContent() {
     const t = useTranslations('searchPage');
+    const query = useSearchParams().get("q")
     const { setAppBar, resetAppBar } = useAppBarV2();
-    const [search, setSearch] = useState('');
-
-    const debouncedSearch = useDebounce(search, 500);
-
-    useEffect(() => {
-        const savedSearch = sessionStorage.getItem('currentSearch');
-        if (savedSearch) {
-            setSearch(savedSearch);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (debouncedSearch) {
-            sessionStorage.setItem('currentSearch', debouncedSearch);
-        } else {
-            sessionStorage.removeItem('currentSearch');
-        }
-    }, [debouncedSearch]);
+    const [search, setSearch] = useState(query || '');
 
     useEffect(() => {
         setAppBar({
             title: t('title'),
             sticky: true,
             subtitle: t('subtitle'),
-            showSearch: false,
+            showSearch: true,
+            showBackButton: true,
+            onSearch(query) {
+                setSearch(query)
+            },
         });
 
         return () => resetAppBar()
@@ -55,15 +42,11 @@ function SearchOutletContent() {
         refetch
     } = useSearchOutlets({
         take: 10,
-        search: debouncedSearch || undefined,
-        enabled: !!debouncedSearch.trim(),
+        search: search || undefined,
+        enabled: !!search.trim(),
     });
 
     const allOutlets = data?.pages.flatMap(page => page.data) || [];
-
-    const handleSearchChange = useCallback((value: string) => {
-        setSearch(value);
-    }, []);
 
     const handleLoadMore = useCallback(() => {
         if (hasNextPage && !isFetchingNextPage) {
@@ -86,12 +69,12 @@ function SearchOutletContent() {
                     <div className="flex items-center gap-2 mb-4">
                         <Store className="h-5 w-5 text-gray-500" />
                         <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {allOutlets.length} {t('outletCount')} {t('for')} "<span className="font-medium">{debouncedSearch}</span>"
+                            {allOutlets.length} {t('outletCount')} {t('for')} "<span className="font-medium">{search}</span>"
                         </span>
                     </div>
                     <div className="grid gap-2 mb-6">
                         {allOutlets.map((outlet) => (
-                            <OutletCard key={outlet.id} outlet={outlet as any} alignment="horizontal" />
+                            <OutletCard key={outlet.id} outlet={outlet as any} from='search' alignment="horizontal" />
                         ))}
                     </div>
                     {hasNextPage && (
@@ -118,27 +101,14 @@ function SearchOutletContent() {
             <EmptyState
                 icon={<Store className="w-6 h-6 text-muted-foreground" />}
                 title={t('noOutletsFound')}
-                description={t('noResultsFor').replace('{query}', debouncedSearch)}
+                description={t('noResultsFor').replace('{query}', search)}
             />
         );
     };
 
     return (
         <>
-            <Search
-                onChange={handleSearchChange}
-                value={search}
-                onSearch={handleSearchChange}
-                size='md'
-                className='mb-2'
-            >
-                <SearchInput
-                    placeholder={t('searchPlaceholder')}
-                />
-                <SearchDropdown />
-            </Search>
-
-            {debouncedSearch.trim() ? (
+            {search.trim() ? (
                 renderContent()
             ) : (
                 <EmptyState

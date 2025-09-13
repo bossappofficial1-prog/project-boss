@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import { ExtendedError } from 'socket.io/dist/namespace';
 import { TypedSocket } from '../types/socket';
 import { UserRepository } from '../repositories/user.repository';
+import { ExtendedError } from 'socket.io';
 
 // Interface untuk JWT payload
 interface JWTPayload {

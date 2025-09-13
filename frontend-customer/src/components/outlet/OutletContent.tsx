@@ -9,16 +9,17 @@ import { ImageRender } from "../shared/Image";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import ProductCard from "./ProductCard";
-import { useEffect, useMemo, useCallback, useRef } from "react";
+import { useEffect, useMemo, useCallback, useRef, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { Outlet } from "@/services/outlets";
 import { Product } from "@/services/product";
 import { EmptyState, ErrorState, LoadingState } from "../Base";
 import { OperatingHourType, OutletType } from "@/types";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DAY_NAMES, LanguageType } from "@/constants";
-import { formatTime } from "@/lib/utils";
+import { formatTime, toMapDestination } from "@/lib/utils";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
+import { EmptyStates } from "../base/EmptyStates";
 
 const formatOperatingHours = (operatingHours: OperatingHourType[], locale: LanguageType) => {
     if (typeof window === "undefined") return
@@ -163,6 +164,15 @@ export function LeftContentAppBarOutlet({
 export function OutletContent({ outletId }: { outletId: string }) {
     const { isFavorite, toggleFavorite } = useFavorites();
     const { setAppBar, resetAppBar } = useAppBarV2()
+    const [selectedTabs, setSelectedTabs] = useState<string | undefined>(() => {
+        if (typeof window === "undefined") return undefined;
+        const storedSelectedTabs = localStorage.getItem("selectedTabs")
+        return storedSelectedTabs ?? "products"
+    })
+    const from = useSearchParams().get("search")
+
+    const router = useRouter()
+
     const t = useTranslations('outletDetail');
 
     const results = useQueries({
@@ -187,6 +197,11 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 subtitle: outletData.name,
                 showBackButton: true,
                 centerTitle: true,
+                ...(from && from !== "search" ? {
+                    onLeftClick() {
+                        router.push("/")
+                    },
+                } : {})
             });
         }
 
@@ -234,6 +249,11 @@ export function OutletContent({ outletId }: { outletId: string }) {
     if (outletQuery.isLoading) {
         return <LoadingState />;
     }
+    if ((results[0].error as any)?.response.status == 404) return <EmptyStates.NotFound action={{
+        label: "Back to Home", onClick() {
+            window.location.href = '/'
+        },
+    }} />
 
     if (outletQuery.isError) {
         return <ErrorState />;
@@ -269,15 +289,13 @@ export function OutletContent({ outletId }: { outletId: string }) {
                             {outlet.isOpen ? t("open") : t("closed")}
                         </Badge>
                     </div>
-                    <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(outlet.address)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex gap-1 items-center text-white/90 text-sm mb-3"
+                    <span
+                        onClick={() => toMapDestination(outlet.latitude, outlet.longitude)}
+                        className="flex gap-1 items-center text-white/90 text-sm mb-3 hover:text-white cursor-pointer"
                     >
                         <MapPin className="w-4 h-4" />
                         <span className="text-xs truncate">{outlet.address}</span>
-                    </a>
+                    </span>
                     {outlet.phone && (
                         <div onClick={handleWhatsAppChat} className="flex cursor-pointer items-center gap-1 text-white/80 text-sm">
                             <Phone className="w-4 h-4" />
@@ -288,8 +306,11 @@ export function OutletContent({ outletId }: { outletId: string }) {
             </div>
 
             <div className="space-y-3 mt-6">
-                <Tabs defaultValue="products" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 h-12">
+                <Tabs
+                    defaultValue={selectedTabs}
+                    onValueChange={(value) => { setSelectedTabs(value); localStorage.setItem("selectedTabs", value) }}
+                    className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 h-10">
                         <TabsTrigger value="products" className="flex items-center gap-2">
                             <Package className="w-4 h-4" />
                             <span className="text-xs sm:text-sm">{t("products")} ({goods.length})</span>

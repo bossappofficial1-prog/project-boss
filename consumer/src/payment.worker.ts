@@ -130,11 +130,15 @@ class PaymentWorker {
 
         // Panggil API internal di backend untuk update status
         logger.info(`Updating payment status for order ${orderId} to ${paymentStatus}`, { component: 'PaymentWorker' });
-        await apiClient.post(`/internal/orders/update-payment-status`, {
-            orderId,
-            paymentStatus,
-            // Sertakan detail lain jika diperlukan oleh backend
-        });
+        try {
+            await apiClient.post(`/internal/orders/update-payment-status`, {
+                orderId,
+                paymentStatus,
+                // Sertakan detail lain jika diperlukan oleh backend
+            });
+        } catch (error) {
+            console.log(error);
+        }
     }
 
     stop() {

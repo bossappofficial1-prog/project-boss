@@ -33,7 +33,6 @@ uploads/
 # OS generated files
 .DS_Store
 Thumbs.db
-prisma/migrations
 
 index.html
 /generated/prisma

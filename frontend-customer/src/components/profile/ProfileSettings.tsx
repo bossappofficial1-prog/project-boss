@@ -92,19 +92,19 @@ export default function ProfileSettings() {
     };
 
     const becomeBusiness = () => {
-        router.push('/register');
+        window.location.href = `${process.env.NEXT_PUBLIC_DASHBOARD_REGISTER_URL}`
     };
 
     const goLogin = () => {
-        router.push('/login');
+        window.location.href = `${process.env.NEXT_PUBLIC_DASHBOARD_LOGIN_URL}`
     };
 
     const goToFavorites = () => {
-        router.push('/favorites');
+        window.location.href = "/favorites"
     };
 
     const goToOrders = () => {
-        router.push('/orders');
+        window.location.href = "/orders"
     };
 
     const handleThemeChange = (val: string) => {
@@ -114,7 +114,7 @@ export default function ProfileSettings() {
     const currentTheme = watch('theme');
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-2">
             {/* Header */}
             <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-primary rounded-full mx-auto mb-4 flex items-center justify-center">
@@ -128,7 +128,7 @@ export default function ProfileSettings() {
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
                 {/* Contact Information */}
                 <div className="bg-card rounded-lg border p-4 space-y-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -253,7 +253,7 @@ export default function ProfileSettings() {
                 </div>
 
                 {/* Orders Section */}
-                <div className="bg-card rounded-lg border p-4">
+                {/* <div className="bg-card rounded-lg border p-4">
                     <div className="flex items-center gap-2 mb-4">
                         <Receipt className="w-5 h-5 text-primary" />
                         <h2 className="font-medium text-card-foreground">
@@ -269,13 +269,14 @@ export default function ProfileSettings() {
                             <span className="text-sm font-medium">{t("orders.orderHistory")}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            {/* <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                                 {t("orders.viewAll")}
-                            </span> */}
+                            </span>
                             <span className="text-muted-foreground">→</span>
                         </div>
                     </div>
-                </div>                {/* Action Buttons */}
+                </div>   */}
+                {/* Action Buttons */}
                 <div className="space-y-3 pt-2">
                     <Button type="submit" className="w-full h-11">
                         <Save className="w-4 h-4 mr-2" />

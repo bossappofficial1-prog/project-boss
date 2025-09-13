@@ -29,7 +29,6 @@ function NearbyOutletContent() {
                         latitude: position[0],
                         longitude: position[1]
                     });
-                    console.log('Distance data:', res.map(m => m.distance));
                 } catch (error) {
                     console.error('Error fetching nearby outlets:', error);
                 }

@@ -8,28 +8,34 @@ export function ImageRender(
         alt,
         className,
         sizes,
-        priority
+        priority,
+        onLoad
     }:
         {
             src: string,
             alt: string,
             className?: string,
             sizes?: string,
-            priority?: boolean
+            priority?: boolean,
+            onLoad?: () => void
         }) {
     const [imgSrc, setImgSrc] = useState(src || "/assets/images/default-image.png");
 
+    // Use smaller default dimensions and lazy loading by default to avoid
+    // blocking LCP. Consumers can pass `priority` explicitly when needed.
     return (
         <Image
-            // fill
-            width={1000}
-            height={1000}
+            width={600}
+            height={400}
             src={imgSrc}
             alt={alt}
             className={` ${className}`}
             sizes={sizes || "(max-width: 768px) 100vw, 600px"}
             onError={() => setImgSrc("/assets/images/default-image.png")}
+            onLoad={onLoad}
             {...(priority ? { priority } : { loading: "lazy" })}
         />
     );
 }
+
+export default ImageRender;

@@ -1,10 +1,12 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ChangeEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Menu, Search, MoreVertical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Search as SearchComponent, SearchInput, SearchDropdown } from "./search";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
-type AppBarVariant = "default" | "primary" | "transparent" | "elevated";
+type AppBarVariant = "default" | "transparent";
 
 export type AppBarProps = {
     // Content props
@@ -21,7 +23,9 @@ export type AppBarProps = {
     showSearch?: boolean;
     showMenu?: boolean;
     onSearchClick?: () => void;
+    onSearch?: (query: string) => void;
     onMenuClick?: () => void;
+    searchValue?: string;
 
     // Styling props
     variant?: AppBarVariant;
@@ -43,89 +47,171 @@ export default function AppBar({
     showSearch = false,
     showMenu = false,
     onSearchClick,
+    onSearch,
     onMenuClick,
     variant = "default",
     className = "",
     centerTitle = false,
     sticky = true,
+    searchValue = "",
     elevation = true,
 }: AppBarProps) {
+    const ref = useRef<HTMLElement | null>(null);
+    const [isSearchActive, setIsSearchActive] = useState(false);
+    const searchParams = useSearchParams()
+    const query = searchParams.get("q")
+    const [searchValues, setSearchValue] = useState(query || "")
+    const router = useRouter()
+    const pathname = usePathname()
 
-    // Handle back navigation - you can customize this based on your routing solution
+    // keep internal value in sync when URL param changes
+    useEffect(() => {
+        setSearchValue(query || "")
+    }, [query])
+
+    const handleSearchValueChange = useCallback((value: string) => {
+        setSearchValue(value)
+    }, [])
+
+    const submitSearch = useCallback((value: string) => {
+        const trimmed = value.trim()
+        const params = new URLSearchParams(searchParams?.toString() || '')
+        if (trimmed) params.set('q', trimmed)
+        else params.delete('q')
+
+        const dest = params.toString() ? `${pathname}?${params.toString()}` : pathname || '/'
+        router.replace(dest)
+    }, [router, pathname])
+
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+
+        const setVar = () => {
+            const h = el.getBoundingClientRect().height;
+            document.documentElement.style.setProperty('--appbar-height', `${Math.ceil(h)}px`);
+        };
+        setVar();
+        const ro = new ResizeObserver(setVar);
+        ro.observe(el);
+        return () => {
+            ro.disconnect();
+            document.documentElement.style.setProperty('--appbar-height', '0px');
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && isSearchActive) {
+                setIsSearchActive(false)
+                setSearchValue(query || "")
+            }
+        }
+
+        document.addEventListener('keydown', handleEscape)
+
+        return () => document.removeEventListener('keydown', handleEscape)
+    }, [isSearchActive, query])
+
     const handleBackClick = () => {
         if (onLeftClick) {
             onLeftClick();
         } else {
-            // Default back behavior
             if (typeof window !== "undefined") {
                 window.history.back();
             }
         }
     };
 
-    // Variant styles
-    const getVariantStyles = (variant: AppBarVariant) => {
-        switch (variant) {
-            case "primary":
-                return "bg-blue-600 text-white";
-            case "transparent":
-                return "bg-transparent backdrop-blur-md";
-            case "elevated":
-                return "bg-white shadow-lg border-b border-gray-100";
-            default:
-                return "bg-white text-gray-900";
-        }
+    const handleSearchClick = () => onSearchClick ? onSearchClick() : setIsSearchActive((s) => !s);
+
+    const handleSearch = (query: string) => {
+        if (onSearch) onSearch(query);
+        setIsSearchActive(false);
     };
 
     const baseClasses = `
     flex items-center justify-between
-    px-4 py-3 min-h-[56px]
-    ${sticky ? "sticky top-0 z-50" : ""}
-    ${elevation ? "shadow-md" : ""}
-    ${getVariantStyles(variant)}
+    px-4 py-3 min-h-[54px]
+    ${sticky ? "fixed top-0 left-0 right-0 z-50" : ""}
+    ${variant === "transparent"
+            ? "bg-background/60 backdrop-blur-lg border-b border-border/40"
+            : "bg-background/95 backdrop-blur-lg border-b border-border/40"}
     ${className}
   `.replace(/\s+/g, " ").trim();
+    // Build header classes, override when search active for the teal look
+    const headerClasses = `${baseClasses} ${isSearchActive ? 'border-none' : ''}`;
 
     return (
-        <header className={baseClasses}>
+        <header ref={ref} className={headerClasses}>
             {/* Left Section */}
             <div className="flex items-center gap-2 flex-shrink-0">
                 {(leftIcon || showBackButton) && (
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={handleBackClick}
-                        className={variant === "primary" ? "text-white hover:bg-white/20" : ""}
+                        onClick={() => (isSearchActive && showSearch) ? setIsSearchActive(false) : handleBackClick()}
+                        className={`hover:bg-accent rounded-xl transition-all duration-200 `}
                     >
                         {leftIcon ?? <ArrowLeft className="h-5 w-5" />}
                     </Button>
                 )}
             </div>
 
-            {/* Center Section - Title */}
-            <div className={`flex-1 ${centerTitle ? "text-center mx-4 max-w-[53vw]" : "text-left"}`}>
-                {title && (
-                    <h1 className="text-lg font-semibold truncate leading-tight">
-                        {title}
-                    </h1>
-                )}
-                {subtitle && (
-                    <p className="text-sm opacity-70 truncate leading-tight">
-                        {subtitle}
-                    </p>
+            {/* Center Section - Title or In-App Search */}
+            <div className={`flex-1 ${centerTitle ? 'text-center mx-4 max-w-[60%]' : 'text-left'} transition-all duration-300`}>
+                {isSearchActive && showSearch ? (
+                    <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                            <SearchComponent
+                                onSearch={(q) => {
+                                    submitSearch(q)
+                                    if (onSearch) onSearch(q)
+                                }}
+                                value={searchValues}
+                                onChange={handleSearchValueChange}
+                                size="sm"
+                                className="w-full"
+                            >
+                                <SearchInput
+                                    placeholder="Cari outlet, produk, atau layanan..."
+                                    autoFocus={isSearchActive}
+                                    className="bg-transparent placeholder-white/80"
+                                />
+                                <SearchDropdown />
+                            </SearchComponent>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col">
+                        {title && (
+                            <h1 className="text-base font-medium truncate leading-tight text-foreground">
+                                {title}
+                            </h1>
+                        )}
+                        {subtitle && (
+                            <p className="text-xs text-muted-foreground truncate leading-tight">
+                                {subtitle}
+                            </p>
+                        )}
+                    </div>
                 )}
             </div>
 
             {/* Right Section */}
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
                 {showSearch && (
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={onSearchClick}
-                        className={variant === "primary" ? "text-white hover:bg-white/20" : ""}
+                        onClick={handleSearchClick}
+                        className={`hover:bg-accent rounded-xl transition-all duration-200`}
                     >
-                        <Search className="h-5 w-5" />
+                        {isSearchActive ? (
+                            <X className="h-5 w-5" />
+                        ) : (
+                            <Search className="h-5 w-5" />
+                        )}
                     </Button>
                 )}
 
@@ -136,7 +222,7 @@ export default function AppBar({
                         variant="ghost"
                         size="icon"
                         onClick={onMenuClick}
-                        className={variant === "primary" ? "text-white hover:bg-white/20" : ""}
+                        className={`hover:bg-accent rounded-xl transition-all duration-200`}
                     >
                         <MoreVertical className="h-5 w-5" />
                     </Button>

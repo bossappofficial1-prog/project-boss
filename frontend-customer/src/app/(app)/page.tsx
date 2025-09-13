@@ -39,14 +39,6 @@ function NearbyOutlets() {
   );
 }
 
-const HOME_APP_BAR_CONFIG = {
-  title: 'Home',
-  showBackButton: false,
-  showSearch: true,
-  showMenu: false,
-  variant: 'default' as const,
-};
-
 export default function Home() {
   return (
     <Suspense fallback={<LoadingState message="Loading home page..." />}>
@@ -58,34 +50,21 @@ export default function Home() {
 function HomeContent() {
   const router = useRouter();
   const tp = useTranslations("featuredOutlets")
-  const t = useTranslations("searchPage")
-  const { setAppBar } = useAppBarV2()
+  const { setAppBar, resetAppBar } = useAppBarV2()
 
   useEffect(() => {
-    setAppBar({ title: "Home" })
-  }, [])
+    setAppBar({
+      title: "Home",
+      showSearch: true,
+      onSearch: (query: string) => router.push(`/search?q=${encodeURIComponent(query)}`),
+    })
 
-  const handleSearch = (query: string) => {
-    if (query.trim()) {
-      router.push(`/search?q=${encodeURIComponent(query)}`);
-    }
-  };
+    return () => resetAppBar()
+  }, [])
 
   return (
     <div className="space-y-4">
       {/* <AuthGreeting /> */}
-      <Search
-        onChange={handleSearch}
-        namespace='outlets'
-        size='md'
-        onSearch={handleSearch}
-        className='mb-4'
-      >
-        <SearchInput
-          placeholder={t('searchPlaceholder')}
-        />
-        <SearchDropdown />
-      </Search>
 
       <NearbyOutlets />
 

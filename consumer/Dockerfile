@@ -2,16 +2,16 @@
 FROM node:20-alpine AS builder
 
 # Set working directory
-WORKDIR /app
+WORKDIR /app/consumer
 
-# Copy package files from consumer directory (build context is project root)
-COPY consumer/package*.json ./
+# Copy package files (build context is consumer directory)
+COPY package*.json ./
 
 # Install dependencies
 RUN npm install --no-package-lock
 
-# Copy consumer source code
-COPY consumer/ ./
+# Copy source code
+COPY . ./
 
 # Build the application
 RUN npm run build
@@ -20,23 +20,23 @@ RUN npm run build
 FROM node:20-alpine AS runner
 
 # Set working directory
-WORKDIR /app
+WORKDIR /app/consumer
 
 # Install OpenSSL for libraries that might need it
 RUN apk add --no-cache openssl libstdc++ ca-certificates
 
 # Copy package files
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/consumer/package*.json ./
 
 # Copy node_modules from builder
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/consumer/node_modules ./node_modules
 
 # Copy built application
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/consumer/dist ./dist
 
 # Copy other necessary files
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/tsconfig.json ./
+COPY --from=builder /app/consumer/src ./src
+COPY --from=builder /app/consumer/tsconfig.json ./
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs

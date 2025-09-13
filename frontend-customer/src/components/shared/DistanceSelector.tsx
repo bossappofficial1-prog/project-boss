@@ -25,7 +25,7 @@ export function DistanceSelector({ value, onChange, className = '' }: DistanceSe
                 <SelectTrigger className="w-full h-10 bg-background border-border/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 text-sm hover:bg-muted/30 transition-colors rounded-l-none border-l-0">
                     <div className="flex items-center justify-center gap-1">
                         <MapPin className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-foreground text-xs font-medium">{value}</span>
+                        <span className="text-foreground text-xs font-medium">{value} KM</span>
                     </div>
                 </SelectTrigger>
                 <SelectContent className="min-w-[120px] max-h-48">

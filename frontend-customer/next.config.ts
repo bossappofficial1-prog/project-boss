@@ -1,4 +1,4 @@
-import { parseRemotePatterns } from "@/lib/utils";
+import { parseRemotePatterns } from "./src/lib/utils";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

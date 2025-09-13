@@ -56,22 +56,32 @@ export async function createProductService(data: CreateProductInput) {
     return product;
 }
 
-export async function getProductByIdService(id: string): Promise<Product & { defaultTransactionFeeBearer: any; bookingSlots: BookingSlot[] }> {
-    const cacheKey = `product:${id}`;
-    const cachedProduct = await redis.get(cacheKey);
+export async function getProductByIdService(id: string): Promise<Product & { defaultTransactionFeeBearer: any; bookingSlots: BookingSlot[]; images?: { url: string; alt?: string }[] }> {
+    // const cacheKey = `product:${id}`;
+    // const cachedProduct = await redis.get(cacheKey);
 
-    if (cachedProduct) {
-        return JSON.parse(cachedProduct);
-    }
+    // if (cachedProduct) {
+    //     return JSON.parse(cachedProduct);
+    // }
 
     const product = await ProductRepository.findById(id);
     if (!product) {
         throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    await redis.set(cacheKey, JSON.stringify(product), 'EX', 3600);
     const { outlet, ...productWithoutOutlet } = product
 
-    return { ...productWithoutOutlet, defaultTransactionFeeBearer: outlet.business.defaultTransactionFeeBearer };
+    const images = (product as any).productImages?.map((pi: any) => ({ url: pi.url, alt: pi.alt })) || [];
+
+    if (images.length === 0 && (product as any).image) {
+        images.push({ url: (product as any).image, alt: null });
+    }
+
+    const result = { ...productWithoutOutlet, defaultTransactionFeeBearer: outlet.business.defaultTransactionFeeBearer, images };
+
+    // Cache the transformed result (so cached responses include images)
+    // await redis.set(cacheKey, JSON.stringify(result), 'EX', 3600);
+
+    return result;
 }
 
 export async function getProductsByOutletIdService(outletId: string, q?: string) {

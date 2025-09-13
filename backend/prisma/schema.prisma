@@ -2,8 +2,9 @@
 // learn more about it in the docs: https://pris.ly/prisma-schema
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
@@ -230,6 +231,7 @@ model Business {
   withdrawals Withdrawal[]
 
   @@index([ownerId])
+  @@index([description]) // Indeks untuk pencarian deskripsi bisnis
 }
 
 // Model untuk cabang/outlet dari sebuah bisnis
@@ -262,6 +264,8 @@ model Outlet {
   staff          Staff[]
 
   @@index([businessId])
+  @@index([latitude, longitude]) // Indeks untuk query lokasi (bounding box)
+  @@index([name]) // Indeks untuk pencarian nama outlet
 }
 
 // Model untuk produk (barang) atau jasa yang ditawarkan
@@ -290,6 +294,9 @@ model Product {
 
   image String? @default("https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png")
 
+  // New relation: multiple images per product
+  productImages ProductImage[]
+
   // Relasi: Satu produk bisa ada di banyak item pesanan
   orderItems OrderItem[]
 
@@ -303,6 +310,20 @@ model Product {
   updatedAt DateTime @updatedAt
 
   @@index([outletId])
+}
+
+// Model untuk menyimpan banyak gambar per produk
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId, order])
 }
 
 // Model untuk slot booking khusus layanan jasa
@@ -384,11 +405,11 @@ model Order {
 
   // Relasi: Pesanan dibuat oleh guest customer
   guestCustomerId String
-  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Restrict)
+  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
 
   // Relasi: Pesanan dibuat di outlet mana
   outletId String
-  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Restrict)
+  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
   // Relasi: Satu pesanan punya banyak item
   items OrderItem[]
@@ -419,7 +440,7 @@ model OrderItem {
 
   // Relasi: Item ini merujuk ke produk apa
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@index([productId])
@@ -473,7 +494,7 @@ model Withdrawal {
 
   // Relasi: Penarikan ini untuk bisnis mana (langsung ke business)
   businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   // Admin yang memproses withdrawal (opsional)
   processedById String?

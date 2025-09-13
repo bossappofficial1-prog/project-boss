@@ -7,7 +7,38 @@
         "open": "Buka",
         "closed": "Tutup",
         "km": "KM",
-        "m": "M"
+        "m": "M",
+        "emptyStates": {
+            "notFound": {
+                "title": "Halaman Tidak Ditemukan",
+                "description": "Halaman yang Anda cari mungkin telah dihapus atau sedang tidak tersedia.",
+                "action": "Kembali ke Beranda"
+            },
+            "noOutlets": {
+                "title": "Belum Ada Outlet",
+                "description": "Belum ada outlet yang tersedia di area ini. Silakan coba area lain."
+            },
+            "noOrders": {
+                "title": "Belum Ada Pesanan",
+                "description": "Anda belum memiliki riwayat pesanan. Mulai pesan sekarang!"
+            },
+            "noUsers": {
+                "title": "Belum Ada Pengguna",
+                "description": "Belum ada pengguna yang terdaftar saat ini."
+            },
+            "noReviews": {
+                "title": "Belum Ada Ulasan",
+                "description": "Jadilah yang pertama memberikan ulasan."
+            },
+            "noAccess": {
+                "title": "Akses Terbatas",
+                "description": "Anda tidak memiliki izin untuk mengakses halaman ini."
+            },
+            "comingSoon": {
+                "title": "Segera Hadir",
+                "description": "Fitur ini akan segera tersedia. Nantikan update selanjutnya!"
+            }
+        }
     },
     "homePage": {
         "title": "Selamat Datang di Aplikasi Kami"

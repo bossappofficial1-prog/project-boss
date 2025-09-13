@@ -2,7 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import LoadingEffect from "@/components/shared/LoadingEffect";
-import OnboardingModal from "../onboarding/OnboardingModal";
+import dynamic from 'next/dynamic';
+
+// Dynamically load the onboarding modal to avoid pulling heavy animation/icons
+// libraries into the initial bundle.
+const OnboardingModal = dynamic(() => import('../onboarding/OnboardingModal'), { ssr: false, loading: () => null });
 
 type RootLayoutProps = {
     children: React.ReactNode;
@@ -17,51 +21,44 @@ export default function RootLayout({
     minDuration = 300,
     onLoaded,
 }: RootLayoutProps) {
-    const [loading, setLoading] = useState(true);
+    // Keep loading disabled by default to avoid render-blocking overlay
+    // which hurts LCP in Lighthouse. If you need a loading overlay, prefer
+    // a lightweight skeleton or show it only for specific async actions.
+    const [loading, setLoading] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
 
     useEffect(() => {
-        // onboarding: show once per browser unless user already saw it
+        // onboarding: show once per browser unless user already saw it.
+        // Delay showing slightly so LCP isn't affected by modal/animations.
+        let mounted = true;
         try {
             const seen = localStorage.getItem("hasSeenOnboarding");
-            if (!seen) setShowOnboarding(true);
+            if (!seen) {
+                const id = setTimeout(() => {
+                    if (mounted) setShowOnboarding(true);
+                }, 1500);
+                return () => {
+                    mounted = false;
+                    clearTimeout(id);
+                };
+            }
         } catch {
-            setShowOnboarding(true);
+            const id = setTimeout(() => {
+                if (mounted) setShowOnboarding(true);
+            }, 1500);
+            return () => {
+                mounted = false;
+                clearTimeout(id);
+            };
         }
     }, []);
 
-    useEffect(() => {
-        let mounted = true;
-        const startedAt = Date.now();
-
-        const finish = () => {
-            const elapsed = Date.now() - startedAt;
-            const wait = Math.max(0, minDuration - elapsed);
-            setTimeout(() => {
-                if (!mounted) return;
-                setLoading(false);
-                onLoaded?.();
-            }, wait);
-        };
-
-        if (document.readyState === "complete") {
-            finish();
-        } else {
-            const onLoad = () => finish();
-            window.addEventListener("load", onLoad, { once: true });
-            return () => {
-                mounted = false;
-                window.removeEventListener("load", onLoad);
-            };
-        }
-
-        return () => {
-            mounted = false;
-        };
-    }, [minDuration, onLoaded]);
+    // removed waiting for window.load so the page can render quickly and
+    // avoid a render-blocking overlay that negatively impacts LCP.
 
     const defaultFallback = (
-        <div style={overlayStyle} aria-live="polite" role="status">
+        // keep a minimal fallback markup for API compatibility; not shown by default
+        <div aria-live="polite" role="status" style={{ position: 'absolute', top: 0, left: 0 }}>
             <LoadingEffect standalone />
         </div>
     );
@@ -81,11 +78,11 @@ export default function RootLayout({
 
     return (
         <div style={{ minHeight: "100vh", position: "relative" }}>
-            <div aria-hidden={loading} className="bg-[var(--bg)] text-[var(--fg)]" style={{ filter: loading ? "blur(2px)" : "none", transition: "filter .25s ease" }}>
+            <div className="bg-[var(--bg)] text-[var(--fg)]">
                 {children}
             </div>
 
-            {loading ? (fallback ?? defaultFallback) : null}
+            {/* loading overlay is disabled by default to improve LCP. */}
 
             {/* onboarding modal shown after initial load (or you can show immediately by removing !loading) */}
             {!loading && (
