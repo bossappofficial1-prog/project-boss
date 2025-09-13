@@ -9,7 +9,7 @@ import { useTranslations } from "@/hooks/useI18n";
 import { useRouter } from "next/navigation";
 import { SavedProductCard } from "@/components/product/SavedProductCard";
 import { LoadingState, ErrorState, EmptyState, ConfirmationModal } from "@/components/Base";
-import { Bookmark, Trash2 } from "lucide-react";
+import { Bookmark, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductType } from "@/types";
 
@@ -203,7 +203,7 @@ export default function SavedProductsPage() {
                             }}
                             title={t("removeFromSaved")}
                         >
-                            <Trash2 size={10} />
+                            <X size={10} />
                         </Button>
                     </div>
                 ))}

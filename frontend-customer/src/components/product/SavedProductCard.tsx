@@ -64,19 +64,6 @@ export function SavedProductCard({ product, onClick }: SavedProductCardProps) {
                             <h3 className="font-semibold text-sm sm:text-base line-clamp-2 leading-tight flex-1 pr-6">
                                 {product.name}
                             </h3>
-
-                            {/* Status Badge - positioned to avoid overlap with remove button */}
-                            <Badge
-                                variant={product.status === "ACTIVE" ? "default" : "destructive"}
-                                className="text-xs rounded-full px-2 py-0.5 flex-shrink-0 mr-6"
-                            >
-                                <span className="hidden sm:inline">
-                                    {product.status === "ACTIVE" ? t("labels.available") : t("labels.outOfStock")}
-                                </span>
-                                <span className="sm:hidden">
-                                    {product.status === "ACTIVE" ? "✓" : "✗"}
-                                </span>
-                            </Badge>
                         </div>
 
                         {/* Description - only show on larger screens */}

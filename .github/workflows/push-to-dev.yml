@@ -10,6 +10,9 @@ jobs:
     environment: development
     outputs:
       any_changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' }}
+      backend_changed: ${{ steps.check-changes.outputs.backend }}
+      consumer_changed: ${{ steps.check-changes.outputs.consumer }}
+      frontend_customer_changed: ${{ steps.check-changes.outputs.frontend-customer }}
 
     steps:
       - name: Checkout Repository
@@ -111,7 +114,8 @@ jobs:
           source: "./docker-compose.dev.yml"
           target: "~/projects/boss-project/dev"
 
-      - name: Pull latest images and Run Docker Compose on VPS
+      - name: Pull Backend Image
+        if: needs.build_and_push.outputs.backend_changed == 'true'
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
@@ -119,8 +123,41 @@ jobs:
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/dev
-            echo "Pulling latest images from Docker Hub..."
-            docker compose -f docker-compose.dev.yml pull
+            echo "Pulling backend image..."
+            docker compose pull backend
+
+      - name: Pull Consumer Image
+        if: needs.build_and_push.outputs.consumer_changed == 'true'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/dev
+            echo "Pulling consumer image..."
+            docker compose pull consumer
+
+      - name: Pull Frontend Customer Image
+        if: needs.build_and_push.outputs.frontend_customer_changed == 'true'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/dev
+            echo "Pulling frontend-customer image..."
+            docker compose pull frontend-customer
+
+      - name: Start Docker Compose Services
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/dev
             echo "Starting Docker Compose services..."
-            docker compose -f docker-compose.dev.yml up -d --remove-orphans
+            docker compose up -d --remove-orphans
             echo "Docker Compose started successfully"
