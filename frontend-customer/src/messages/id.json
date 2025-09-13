@@ -303,6 +303,7 @@
         }
     },
     "profilePage": {
+        "title": "Profil & Preferensi",
         "subtitle": "Kelola informasi pribadi dan pengaturan aplikasi",
         "contactInformation": "Informasi Kontak",
         "contactDescription": "Hanya nama dan nomor WhatsApp yang dibutuhkan untuk komunikasi.",
