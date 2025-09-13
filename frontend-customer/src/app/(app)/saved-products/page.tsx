@@ -173,7 +173,7 @@ export default function SavedProductsPage() {
     }
 
     return (
-        <div className="px-4 py-2 space-y-4 pb-6">
+        <div className="space-y-2 pb-6">
             <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
                     {t("foundProducts", { count: savedProducts.length })}
@@ -185,7 +185,7 @@ export default function SavedProductsPage() {
                 )}
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
                 {savedProducts.map((product) => (
                     <div key={product.id} className="relative group">
                         <SavedProductCard
@@ -193,7 +193,6 @@ export default function SavedProductsPage() {
                             onClick={() => handleProductClick(product)}
                         />
 
-                        {/* Mobile-optimized remove button - positioned to avoid overlap */}
                         <Button
                             variant="destructive"
                             size="sm"

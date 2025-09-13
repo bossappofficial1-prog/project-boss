@@ -89,8 +89,8 @@ export function SavedProductCard({ product, onClick }: SavedProductCardProps) {
 
                     {/* Bottom Section: Price and Duration */}
                     <div className="flex items-end justify-between mt-2">
-                        <div className="flex flex-col">
-                            <span className="text-lg sm:text-xl font-bold text-primary">
+                        <div className="flex flex-row gap-1 justify-center items-center">
+                            <span className="text-sm sm:text-xl font-bold text-primary">
                                 {formatCurrency(product.price)}
                             </span>
                             {product.unit && (
