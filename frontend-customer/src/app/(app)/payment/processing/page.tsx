@@ -20,7 +20,7 @@ import { PaymentStatusHeader } from '@/components/payment/PaymentStatusHeader';
 import { QrisPaymentDetails } from '@/components/payment/QrisPaymentDetails';
 import { VaPaymentDetails } from '@/components/payment/VaPaymentDetails';
 import { ImageRender } from '@/components/shared/Image';
-import { LoadingState } from '@/components/Base';
+import { LoadingState, ConfirmationModal } from '@/components/Base';
 import { redirectMap } from '@/components/payment/function';
 import { useMutation } from '@tanstack/react-query';
 
@@ -29,6 +29,7 @@ export default function PaymentProcessing() {
     const [paymentStatus, setPaymentStatus] = useState<MidtransTransactionStatus>('pending');
     const [isMounted, setIsMounted] = useState(false)
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
     const { isConnected, emitEvent, onEvent } = useSocket();
     const [isCancelling, setIsCancelling] = useState(false);
     const router = useRouter();
@@ -55,7 +56,12 @@ export default function PaymentProcessing() {
     });
 
     const handleCancelPayment = () => {
+        setShowCancelConfirmation(true);
+    };
+
+    const confirmCancelPayment = () => {
         if (!orderId || !paymentInfo) return;
+        setShowCancelConfirmation(false);
         cancelPaymentMutation.mutate(orderId);
     };
 
@@ -124,7 +130,7 @@ export default function PaymentProcessing() {
                 <CardContent className="p-4">
                     {/* Payment Method Info */}
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border bg-white text-lg">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border bg-background text-lg">
                             <ImageRender
                                 src={selectedPaymentMethod.image_url}
                                 alt={selectedPaymentMethod.name}
@@ -181,6 +187,19 @@ export default function PaymentProcessing() {
             </div>
 
             <ImportantInformationCard type='processing' />
+
+            {/* Cancel Payment Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showCancelConfirmation}
+                onClose={() => setShowCancelConfirmation(false)}
+                onConfirm={confirmCancelPayment}
+                title={t("cancelConfirmation.title")}
+                message={t("cancelConfirmation.message")}
+                confirmText={t("cancelConfirmation.confirm")}
+                cancelText={t("cancelConfirmation.cancel")}
+                variant="destructive"
+                isLoading={cancelPaymentMutation.isPending}
+            />
         </div>
     );
 }

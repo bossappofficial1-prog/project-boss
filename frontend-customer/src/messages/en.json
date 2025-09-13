@@ -280,6 +280,28 @@
             "clear": "Clear"
         }
     },
+    "savedProductsPage": {
+        "title": "Saved Products",
+        "subtitle": "Your saved products and services",
+        "foundProducts": "{count} products found",
+        "clearAll": "Clear All",
+        "removeFromSaved": "Remove from saved",
+        "swipeHint": "Tap red button to remove",
+        "empty": {
+            "title": "No Saved Products Yet",
+            "description": "Start saving your favorite products and services for quick access.",
+            "action": "Explore Products"
+        },
+        "error": {
+            "fetchError": "Failed to load saved products"
+        },
+        "deleteConfirmation": {
+            "title": "Remove Saved Product",
+            "message": "Are you sure you want to remove '{productName}' from your saved products?",
+            "confirm": "Remove",
+            "cancel": "Cancel"
+        }
+    },
     "profilePage": {
         "title": "Profile & Preferences",
         "subtitle": "Manage your personal information and app settings",
@@ -309,12 +331,17 @@
         "messageSuccess": "Preferences saved.",
         "placeholders": {
             "fullName": "Enter your full name",
-            "whatsapp": "+1 234 567 8900"
+            "whatsapp": "+62 834 567 8900"
         },
         "systemTheme": "System",
         "favorites": {
             "title": "My Favorites",
             "savedOutlets": "Saved Outlets",
+            "count": "{count} saved"
+        },
+        "savedProducts": {
+            "title": "Saved Products",
+            "savedItems": "Products & Services",
             "count": "{count} saved"
         },
         "orders": {
@@ -516,7 +543,13 @@
         "title": "Payment Processing",
         "totalPayment": "Total Payment",
         "refreshStatus": "Refresh Status",
-        "cancelPayment": "Cancel Payment"
+        "cancelPayment": "Cancel Payment",
+        "cancelConfirmation": {
+            "title": "Cancel Payment",
+            "message": "Are you sure you want to cancel this payment? This action cannot be undone.",
+            "confirm": "Yes, Cancel",
+            "cancel": "No"
+        }
     },
     "paymentSuccess": {
         "title": "Payment Successful",
@@ -678,6 +711,22 @@
             "addToCart": "Add to Cart",
             "serviceUnavailable": "Service Unavailable",
             "bookService": "Book Service"
+        }
+    },
+    "notFound": {
+        "title": "Oops! Page Not Found",
+        "subtitle": "It seems the page you're looking for has ventured into another dimension.",
+        "description": "Don't worry, let's get you back on the right track! ✨",
+        "buttons": {
+            "back": "Go Back",
+            "home": "Home",
+            "search": "Search Services",
+            "contact": "Need help?"
+        },
+        "footer": "Error 404 • Page not found",
+        "theme": {
+            "light": "Light Theme",
+            "dark": "Dark Theme"
         }
     }
 }

@@ -389,3 +389,6 @@ export function Alert({ type, title, message, action, onClose, className }: Aler
         </Card>
     );
 }
+
+// Export ConfirmationModal from Base folder
+export { ConfirmationModal } from './Base/ConfirmationModal';

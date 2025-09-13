@@ -30,7 +30,7 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
     const outletNotOpen = !outlet.isOpen
 
     const handleCardClick = useCallback(() => {
-        router.push(`/outlet/${outlet.id}/product/${product.id}`);
+        router.push(`/outlet/${outlet.id}/product/${product.id}?from=outlet`);
     }, [router, outlet.id, product.id]);
 
     const handleAddToCart = useCallback((e: React.MouseEvent) => {

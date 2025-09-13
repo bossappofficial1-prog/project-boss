@@ -161,15 +161,23 @@ export function LeftContentAppBarOutlet({
     </>
 }
 
+const SESSION_KEY = "prev_page_to_outlet"
+
 export function OutletContent({ outletId }: { outletId: string }) {
     const { isFavorite, toggleFavorite } = useFavorites();
     const { setAppBar, resetAppBar } = useAppBarV2()
+    const [prevPage] = useState(() => {
+        if (typeof window === "undefined") return ""
+        return sessionStorage.getItem(SESSION_KEY)
+    })
+
     const [selectedTabs, setSelectedTabs] = useState<string | undefined>(() => {
         if (typeof window === "undefined") return undefined;
         const storedSelectedTabs = localStorage.getItem("selectedTabs")
         return storedSelectedTabs ?? "products"
     })
-    const from = useSearchParams().get("search")
+
+    const from = useSearchParams().get("from")
 
     const router = useRouter()
 
@@ -189,21 +197,32 @@ export function OutletContent({ outletId }: { outletId: string }) {
     const isOutletFavorite = outletQuery.data ? isFavorite(outletQuery.data.id) : false;
 
     useEffect(() => {
+        if (typeof window !== "undefined" && from && from !== "") {
+            sessionStorage.setItem(SESSION_KEY, from)
+        } else { sessionStorage.removeItem(SESSION_KEY) }
+
         const outletData = outletQuery.data;
+        console.log(prevPage, from);
 
         if (outletData) {
+            let onLeftClickHandler: (() => void) | undefined;
+
+            if (prevPage == "search" && from == "product") {
+                onLeftClickHandler = () => router.replace('/search');
+            } else if (prevPage == "nearby" && from == "product") {
+                onLeftClickHandler = () => router.push("/nearby");
+            } else if (from == "nearby") {
+                onLeftClickHandler = () => router.push('/nearby');
+            } else if (from === "product") {
+                onLeftClickHandler = () => router.push('/');
+            }
+
             setAppBar({
                 title: "Outlet",
                 subtitle: outletData.name,
                 showBackButton: true,
                 centerTitle: true,
-                ...(from && from === "search" ? {
-                    onLeftClick() {
-                        router.push("/search")
-                    },
-                } : {onLeftClick() {
-                    router.push("/")
-                },})
+                ...(onLeftClickHandler ? { onLeftClick: onLeftClickHandler } : {})
             });
         }
 

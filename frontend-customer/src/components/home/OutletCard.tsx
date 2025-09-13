@@ -94,7 +94,7 @@ export function OutletCard({ outlet, alignment = "vertical", from }: OutletCardP
 
     if (alignment === "horizontal") {
         return (
-            <Link href={{ pathname: `/outlet/${outlet.id}`, ...(from && from !== "" ? { query: from } : {}) }} className="block group">
+            <Link href={{ pathname: `/outlet/${outlet.id}`, ...(from && from !== "" ? { query: { from: from } } : {}) }} className="block group">
                 <div className="flex gap-3 bg-card rounded-lg border hover:shadow-md hover:border-border/60 transition-all duration-300 p-2.5">
                     <div className="w-24 h-24 rounded-md overflow-hidden shrink-0">
                         <OutletImage outlet={outlet} imageSize="80px" />
@@ -114,7 +114,7 @@ export function OutletCard({ outlet, alignment = "vertical", from }: OutletCardP
     }
 
     return (
-        <Link href={`/outlet/${outlet.id}`} className="block h-full group">
+        <Link href={{ pathname: `/outlet/${outlet.id}`, ...(from && from !== "" ? { query: { from: from } } : {}) }} className="block h-full group">
             <Card className="flex flex-col gap-2 w-full h-full overflow-hidden border border-border/30 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-lg p-0">
                 <div className="w-full h-40">
                     <OutletImage outlet={outlet} imageSize="(max-width: 768px) 100vw, 200px" />

@@ -35,12 +35,12 @@ export function VaPaymentDetails({ vaNumber, totalAmount }: VaPaymentDetailsProp
                 </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-medium text-sm mb-2 flex items-center gap-2 text-blue-800 dark:text-blue-200">
                     <Building2 className="w-4 h-4" />
                     {t("vaPayment.title")}
                 </h4>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
                     <li>{t("vaPayment.steps.1")}</li>
                     <li>{t("vaPayment.steps.2")}</li>
                     <li>{t("vaPayment.steps.3")} <strong>{vaNumber}</strong></li>

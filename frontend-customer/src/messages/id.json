@@ -280,8 +280,29 @@
             "clear": "Hapus"
         }
     },
+    "savedProductsPage": {
+        "title": "Produk Tersimpan",
+        "subtitle": "Daftar produk dan layanan yang Anda simpan",
+        "foundProducts": "{count} produk ditemukan",
+        "clearAll": "Hapus Semua",
+        "removeFromSaved": "Hapus dari tersimpan",
+        "swipeHint": "Ketuk tombol merah untuk hapus",
+        "empty": {
+            "title": "Belum Ada Produk Tersimpan",
+            "description": "Mulai simpan produk dan layanan favorit Anda untuk akses cepat.",
+            "action": "Jelajahi Produk"
+        },
+        "error": {
+            "fetchError": "Gagal memuat produk tersimpan"
+        },
+        "deleteConfirmation": {
+            "title": "Hapus Produk Tersimpan",
+            "message": "Apakah Anda yakin ingin menghapus '{productName}' dari daftar produk tersimpan?",
+            "confirm": "Hapus",
+            "cancel": "Batal"
+        }
+    },
     "profilePage": {
-        "title": "Profil & Preferensi",
         "subtitle": "Kelola informasi pribadi dan pengaturan aplikasi",
         "contactInformation": "Informasi Kontak",
         "contactDescription": "Hanya nama dan nomor WhatsApp yang dibutuhkan untuk komunikasi.",
@@ -315,6 +336,11 @@
         "favorites": {
             "title": "Favorit Saya",
             "savedOutlets": "Outlet Tersimpan",
+            "count": "{count} tersimpan"
+        },
+        "savedProducts": {
+            "title": "Produk Tersimpan",
+            "savedItems": "Produk & Layanan",
             "count": "{count} tersimpan"
         },
         "orders": {
@@ -516,7 +542,13 @@
         "title": "Memproses Pembayaran",
         "totalPayment": "Total Pembayaran",
         "refreshStatus": "Perbarui Status",
-        "cancelPayment": "Batalkan Pembayaran"
+        "cancelPayment": "Batalkan Pembayaran",
+        "cancelConfirmation": {
+            "title": "Batalkan Pembayaran",
+            "message": "Apakah Anda yakin ingin membatalkan pembayaran ini? Tindakan ini tidak dapat dibatalkan.",
+            "confirm": "Ya, Batalkan",
+            "cancel": "Tidak"
+        }
     },
     "paymentSuccess": {
         "title": "Pembayaran Berhasil",
@@ -678,6 +710,22 @@
             "addToCart": "Tambah Keranjang",
             "serviceUnavailable": "Layanan Tidak Tersedia",
             "bookService": "Booking Layanan"
+        }
+    },
+    "notFound": {
+        "title": "Oops! Halaman Hilang",
+        "subtitle": "Sepertinya halaman yang Anda cari telah berpetualang ke dimensi lain.",
+        "description": "Jangan khawatir, mari kita bawa Anda kembali ke jalur yang benar! ✨",
+        "buttons": {
+            "back": "Kembali",
+            "home": "Beranda",
+            "search": "Cari Layanan",
+            "contact": "Butuh bantuan?"
+        },
+        "footer": "Error 404 • Halaman tidak ditemukan",
+        "theme": {
+            "light": "Tema Terang",
+            "dark": "Tema Gelap"
         }
     }
 }

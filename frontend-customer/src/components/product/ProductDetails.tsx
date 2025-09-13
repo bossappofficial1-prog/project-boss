@@ -6,13 +6,14 @@ import { Product as ProductService } from "@/services/product";
 import { Outlet as OutletService } from "@/services/outlets";
 import { useCart } from "@/hooks/useCart";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useSavedProducts } from "@/hooks/useSavedProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ImageRender } from "@/components/shared/Image";
 import { LoadingState, ErrorState, EmptyState } from "@/components/Base";
-import { Heart, ShoppingCart, ArrowLeft, Clock, MapPin, Share2, Tag, Layers, CheckCircle, Store } from "lucide-react";
+import { Heart, ShoppingCart, ArrowLeft, Clock, MapPin, Share2, Tag, Layers, CheckCircle, Store, Bookmark } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ProductType } from "@/types";
 import { ScheduleModal } from "../outlet/ScheduleModal";
@@ -30,10 +31,11 @@ export function ProductDetails({ params }: Props) {
     const { addItem } = useCart();
     const { push: toast } = useToast();
     const { setAppBar, resetAppBar } = useAppBarV2()
-    const { isFavorite, toggleFavorite } = useFavorites();
+    const { isProductSaved, toggleSaveProduct } = useSavedProducts();
     const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false)
     const t = useTranslations("productDetails");
     const tCommon = useTranslations("common");
+    const from = useSearchParams().get("from")
 
     const [outletId, setOutletId] = useState<string>('');
     const [productId, setProductId] = useState<string>('');
@@ -59,7 +61,7 @@ export function ProductDetails({ params }: Props) {
 
     const product = productQuery.data;
     const outlet = outletQuery.data;
-    const isProductFavorite = product ? isFavorite(product.id) : false;
+    const isProductInSaved = product ? isProductSaved(product.id) : false;
 
     useEffect(() => {
         if (!product) return;
@@ -68,9 +70,15 @@ export function ProductDetails({ params }: Props) {
             subtitle: product?.name,
             centerTitle: true,
             showBackButton: true,
-            onLeftClick() {
-                router.push(`/outlet/${outletId}`)
-            },
+            ...(from && from === "saved-products" ? {
+                onLeftClick() {
+                    router.back()
+                },
+            } : {
+                onLeftClick() {
+                    router.push(`/outlet/${outletId}?from=product`)
+                },
+            }),
             rightContent: (
                 <button
                     onClick={() => {
@@ -93,13 +101,10 @@ export function ProductDetails({ params }: Props) {
         return () => resetAppBar()
     }, [product, outletId, router, setAppBar, resetAppBar, t]);
 
-    const handleToggleFavorite = useCallback(() => {
-        if (!product || !outlet) return;
-        toggleFavorite({
-            id: product.id, name: product.name, address: outlet.address,
-            image: product.image || undefined, isOpen: outlet.isOpen,
-        });
-    }, [product, outlet, toggleFavorite]);
+    const handleToggleSaveProduct = useCallback(() => {
+        if (!product) return;
+        toggleSaveProduct(product.id);
+    }, [product, toggleSaveProduct]);
 
     const handleAddToCart = useCallback(() => {
         if (!product || !outlet) return;
@@ -253,8 +258,8 @@ export function ProductDetails({ params }: Props) {
                         <span className="text-xs text-muted-foreground">Total</span>
                         <span className="font-bold text-lg text-primary -mt-0.5">{formatCurrency(product.price)}</span>
                     </div>
-                    <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl border-muted" onClick={handleToggleFavorite}>
-                        <Heart className={`w-6 h-6 transition-all duration-300 ${isProductFavorite ? 'fill-red-500 text-red-500 scale-110' : ''}`} />
+                    <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl border-muted" onClick={handleToggleSaveProduct}>
+                        <Bookmark className={`w-6 h-6 transition-all duration-300 ${isProductInSaved ? 'fill-blue-500 text-blue-500 scale-110' : ''}`} />
                     </Button>
                     {product.type === "GOODS" && (
                         <Button size="lg" className="flex-1 h-12 rounded-xl" onClick={handleAddToCart} disabled={product.status !== "ACTIVE" || !outlet.isOpen}>

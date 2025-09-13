@@ -29,16 +29,16 @@ export function PaymentStatusHeader({ status, timer }: PaymentStatusHeaderProps)
 
     const STATUS_CONFIG: Partial<Record<MidtransTransactionStatus, StatusConfig>> = {
         settlement: {
-            borderColor: 'border-green-200',
-            bgColor: 'bg-green-50',
-            icon: <Check className="w-8 h-8 text-green-600" />,
+            borderColor: 'border-green-200 dark:border-green-800',
+            bgColor: 'bg-green-50 dark:bg-green-950/20',
+            icon: <Check className="w-8 h-8 text-green-600 dark:text-green-400" />,
             title: t("paymentStatus.successTitle"),
             message: t("paymentStatus.successMessage"),
         },
         failure: {
-            borderColor: 'border-red-200',
-            bgColor: 'bg-red-50',
-            icon: <AlertCircle className="w-8 h-8 text-red-600" />,
+            borderColor: 'border-red-200 dark:border-red-800',
+            bgColor: 'bg-red-50 dark:bg-red-950/20',
+            icon: <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />,
             title: t("paymentStatus.failedTitle"),
             message: t("paymentStatus.failedMessage"),
         },
@@ -50,18 +50,18 @@ export function PaymentStatusHeader({ status, timer }: PaymentStatusHeaderProps)
         //     message: 'Mengecek status pembayaran...',
         // },
         pending: {
-            borderColor: 'border-orange-200',
-            bgColor: 'bg-orange-50',
-            icon: <Clock className="w-8 h-8 text-orange-600" />,
+            borderColor: 'border-orange-200 dark:border-orange-800',
+            bgColor: 'bg-orange-50 dark:bg-orange-950/20',
+            icon: <Clock className="w-8 h-8 text-orange-600 dark:text-orange-400" />,
             title: t("paymentStatus.pendingTitle"),
             message: t("paymentStatus.pendingMessage"),
         },
     };
 
     const DEFAULT_CONFIG: StatusConfig = {
-        borderColor: 'border-gray-200',
-        bgColor: 'bg-white',
-        icon: <AlertCircle className="w-8 h-8 text-gray-600" />,
+        borderColor: 'border-gray-200 dark:border-gray-700',
+        bgColor: 'bg-background',
+        icon: <AlertCircle className="w-8 h-8 text-gray-600 dark:text-gray-400" />,
         title: t("paymentStatus.unknownTitle"),
         message: t("paymentStatus.unknownMessage"),
     };
@@ -76,8 +76,8 @@ export function PaymentStatusHeader({ status, timer }: PaymentStatusHeaderProps)
                 <p className="text-sm text-muted-foreground mb-3">{config.message}</p>
 
                 {(status === 'pending') && (
-                    <div className="flex items-center justify-center gap-2 bg-white rounded-lg px-3 border py-1">
-                        <Clock className="w-4 h-4 text-orange-600" />
+                    <div className="flex items-center justify-center gap-2 bg-background border rounded-lg px-3 py-1">
+                        <Clock className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                         <span className="font-mono font-bold text-lg">
                             {String(timer.hours).padStart(2, '0')}:{String(timer.minutes).padStart(2, '0')}:{String(timer.seconds).padStart(2, '0')}
                         </span>
