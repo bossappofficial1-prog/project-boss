@@ -317,3 +317,99 @@ export function generateProductImportTemplateService(): Buffer {
     const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
     return buffer;
 }
+
+export async function exportProductsToExcelService(
+    outletId: string, 
+    filters?: { type?: 'GOODS' | 'SERVICE'; search?: string }
+): Promise<Buffer> {
+    // Validate outlet exists
+    await getOutletByIdService(outletId);
+
+    // Build where clause for filtering
+    const where: any = {
+    outletId: outletId
+    };
+
+    if (filters?.type) {
+        where.type = filters.type;
+    }
+
+    if (filters?.search) {
+        where.OR = [
+            { name: { contains: filters.search, mode: 'insensitive' } },
+            { description: { contains: filters.search, mode: 'insensitive' } }
+        ];
+    }
+
+    // Fetch products from database
+    const products = await db.product.findMany({
+        where,
+        orderBy: { createdAt: 'desc' }
+    });
+
+    // Prepare data for Excel
+    const headers = [
+        "No",
+        "Nama Produk",
+        "Deskripsi",
+        "Tipe",
+        "Harga Modal",
+        "Harga Jual",
+        "Stok",
+        "Satuan",
+        "Status",
+        "Durasi Layanan (menit)",
+    "Kapasitas Paralel",
+    "Penanggung Biaya Transaksi",
+        "Tanggal Dibuat"
+    ];
+
+    const data = products.map((product, index) => [
+        index + 1,
+        product.name,
+        product.description || '',
+        product.type === 'GOODS' ? 'Barang' : 'Jasa',
+        (product as any).costPrice ?? 0,
+        product.price,
+        product.type === 'GOODS' ? ((product as any).quantity ?? 0) : 'N/A',
+        product.type === 'GOODS' ? ((product as any).unit || 'pcs') : 'N/A',
+        product.status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif',
+        (product as any).serviceDurationMinutes ?? 'N/A',
+    'N/A',
+        ((product as any).transactionFeeBearer === 'CUSTOMER') ? 'Pelanggan' :
+        ((product as any).transactionFeeBearer === 'OWNER') ? 'Pemilik' : 'Default Bisnis',
+        product.createdAt.toLocaleDateString('id-ID')
+    ]);
+
+    // Create worksheet
+    const worksheet = xlsx.utils.aoa_to_sheet([headers, ...data]);
+
+    // Set column widths
+    const colWidths = [
+        { wch: 5 },   // No
+        { wch: 25 },  // Nama Produk
+        { wch: 30 },  // Deskripsi
+        { wch: 10 },  // Tipe
+        { wch: 15 },  // Harga Modal
+        { wch: 15 },  // Harga Jual
+        { wch: 10 },  // Stok
+        { wch: 10 },  // Satuan
+        { wch: 12 },  // Status
+        { wch: 20 },  // Durasi Layanan
+        { wch: 15 },  // Kapasitas Paralel
+        { wch: 15 },  // Penanggung Biaya
+        { wch: 15 }   // Tanggal Dibuat
+    ];
+    worksheet['!cols'] = colWidths;
+
+    // Create workbook and add worksheet
+    const workbook = xlsx.utils.book_new();
+    const sheetName = filters?.type === 'GOODS' ? 'Data Produk' : 
+                     filters?.type === 'SERVICE' ? 'Data Jasa' : 
+                     'Data Produk & Jasa';
+    xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    // Generate buffer
+    const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+    return buffer;
+}

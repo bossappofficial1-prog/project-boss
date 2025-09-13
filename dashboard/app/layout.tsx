@@ -9,7 +9,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "BOSS Dashboard",
+  title: "BOSS",
   description: "Business Operations Support System Dashboard",
 };
 
