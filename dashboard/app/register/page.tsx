@@ -170,13 +170,13 @@ export default function RegisterPage() {
             <Image
               src="/Logo Boss.png"
               alt="BOSS Logo"
-              width={120}
-              height={120}
+              width={200}
+              height={200}
               className="object-contain"
               priority
             />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 font-poppins">
+          <h2 className="text-2xl font-bold text-gray-900 font-poppins">
             {getStepTitle()}
           </h2>
           <p className="mt-2 text-sm text-gray-600 font-poppins">

@@ -3,7 +3,7 @@
 ## 📋 **Overview**
 BOSS (Business One Stop System) Backend API adalah REST API yang dibangun dengan **Express.js**, **TypeScript**, dan **Prisma ORM** untuk mengelola sistem manajemen bisnis UMKM.
 
-**Base URL**: `http://localhost:4444/api/v1`  
+**Base URL**: `http://localhost:1234/api/v1`  
 
 ---
 
