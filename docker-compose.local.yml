@@ -122,3 +122,20 @@ services:
       - "3000:3000"
     env_file:
       - ./frontend-customer/.env
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: project-boss-dashboard-local
+    ports:
+      - "3010:3010"
+    environment:
+      NODE_ENV: development
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - default
+    env_file:
+      - ./dashboard/.env
