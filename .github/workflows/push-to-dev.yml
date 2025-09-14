@@ -102,6 +102,26 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-dashboard:development
 
+      - name: Send Telegram Notification (Build)
+        if: always()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🚀 **Build Status for Develop Branch**
+
+            **Status:** ${{ job.status }}
+            **Triggered by:** ${{ github.actor }}
+            **Commit:** ${{ github.sha }}
+            **Changes:**
+            - Backend: ${{ steps.check-changes.outputs.backend }}
+            - Consumer: ${{ steps.check-changes.outputs.consumer }}
+            - Frontend Customer: ${{ steps.check-changes.outputs.frontend-customer }}
+            - Dashboard: ${{ steps.check-changes.outputs.dashboard }}
+
+            [View Commit](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+
   deploy_to_vps:
     needs: build_and_push
     if: needs.build_and_push.outputs.any_changed == 'true'
@@ -187,3 +207,23 @@ jobs:
             echo "Starting Docker Compose services..."
             docker compose -f docker-compose.dev.yml up -d --remove-orphans
             echo "Docker Compose started successfully"
+
+      - name: Send Telegram Notification (Deploy)
+        if: always()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🚀 **Deploy Status to Dev VPS**
+
+            **Status:** ${{ job.status }}
+            **Triggered by:** ${{ github.actor }}
+            **Commit:** ${{ github.sha }}
+            **Services Updated:**
+            - Backend: ${{ needs.build_and_push.outputs.backend_changed }}
+            - Consumer: ${{ needs.build_and_push.outputs.consumer_changed }}
+            - Frontend Customer: ${{ needs.build_and_push.outputs.frontend_customer_changed }}
+            - Dashboard: ${{ needs.build_and_push.outputs.dashboard_changed }}
+
+            [View Commit](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
