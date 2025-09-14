@@ -28,10 +28,15 @@ async function checkExpiringPayments() {
 
     try {
         // 1. Panggil API backend untuk mendapatkan transaksi yang akan kedaluwarsa
-        const response = await apiClient.get<TransactionWithOrderDetails[]>('/internal/expiring-transactions');
-        const expiringTransactions = response.data;
+        const response = await apiClient.get('/internal/expiring-transactions');
+        const expiringTransactions = response.data.data; // response.data adalah {success, data, ...}, jadi .data.data
 
-        if (expiringTransactions.length === 0) {
+        logger.info(`API Response: ${JSON.stringify(response.data)}`, {
+            component: 'PaymentReminderWorker',
+            event: 'api_response'
+        });
+
+        if (!expiringTransactions || expiringTransactions.length === 0) {
             logger.info('Tidak ada pembayaran yang memerlukan pengingat.', {
                 component: 'PaymentReminderWorker',
                 event: 'no_reminders_needed'

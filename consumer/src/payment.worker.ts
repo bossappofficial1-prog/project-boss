@@ -119,8 +119,12 @@ class PaymentWorker {
             }
         } else if (transactionStatus == 'settlement') {
             paymentStatus = 'SUCCESS';
-        } else if (transactionStatus == 'cancel' || transactionStatus == 'deny' || transactionStatus == 'expire') {
+        } else if (transactionStatus == 'cancel') {
+            paymentStatus = 'CANCELLED';
+        } else if (transactionStatus == 'deny') {
             paymentStatus = 'FAILED';
+        } else if (transactionStatus == 'expire') {
+            paymentStatus = 'EXPIRED';
         }
 
         if (paymentStatus === 'PENDING') {

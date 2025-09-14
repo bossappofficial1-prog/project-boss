@@ -2,6 +2,7 @@ import { notificationWorker } from './notification.worker';
 import { serviceOrderWorker } from './service-order.worker';
 import { emailWorker } from './email.worker'; // Impor worker baru
 import { paymentWorker } from './payment.worker'; // Impor worker baru
+import './payment.reminder.worker'; // Impor worker reminder (jalan otomatis)
 import logger from './utils/logger'; // Menggunakan logger baru
 
 class WorkerManager {
