@@ -4,6 +4,10 @@ FROM node:18-alpine AS base
 # Set the working directory
 WORKDIR /app/dashboard
 
+ARG NEXT_PUBLIC_API_BASE_URL
+
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+
 # Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
