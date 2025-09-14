@@ -144,11 +144,17 @@ export interface Outlet {
   businessId: string
   latitude?: number
   longitude?: number
+  isOpen?: boolean
+  distance?: number
   // Relations
   business?: Business
   products?: Product[]
   orders?: Order[]
   expenses?: Expense[]
+  _count?: {
+    orders: number
+    products: number
+  }
 }
 
 export interface Product {
@@ -321,6 +327,21 @@ export interface ApiResponse<T> {
   data?: T
   message?: string
   errors?: string[]
+}
+
+// =============================================
+// NOTIFICATIONS TYPES
+// =============================================
+
+export type NotificationItem =
+  | { type: 'NEW_ORDERS'; title: string; message: string; count: number; time: string }
+  | { type: 'LOW_STOCK'; title: string; message: string; count: number; threshold: number; time: string }
+  | { type: 'WEEKLY_REPORT'; title: string; message: string; time: string };
+
+export interface NotificationsResponse {
+  outletId: string
+  generatedAt: string
+  items: NotificationItem[]
 }
 
 // =============================================

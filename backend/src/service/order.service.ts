@@ -2,7 +2,7 @@ import { OrderStatus, Product } from "@prisma/client";
 import { db } from "../config/prisma";
 import { getRabbitMQChannel } from "../config/rabbitmq";
 import { messagePublisher } from "./message-publisher.service";
-import { getSocketIO } from "../config/socket";
+import { getUnifiedSocketIO, emitToBusinessRoom, emitToOrderTracking } from "../config/socket-unified";
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
@@ -13,6 +13,108 @@ import { getOutletByIdService } from "./outlet.service";
 import { getBusinessByIdService } from "./business.service"; // Impor service bisnis
 import { generateOrderCode } from "../utils";
 import { BookingRepository } from "../repositories/booking.repository";
+
+// List goods orders by outlet with optional status filter and pagination
+export async function getGoodsOrdersByOutletService(
+    outletId: string,
+    ownerId: string,
+    options?: { status?: OrderStatus; page?: number; limit?: number }
+) {
+    const page = Math.max(1, options?.page || 1);
+    const limit = Math.min(100, Math.max(1, options?.limit || 20));
+    const skip = (page - 1) * limit;
+
+    // Ownership validation
+    const outlet = await getOutletByIdService(outletId);
+    const business = await getBusinessByIdService(outlet.businessId);
+    if (business.ownerId !== ownerId) {
+        throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+    }
+
+    const baseWhere = {
+        outletId,
+        ...(options?.status ? { orderStatus: options.status } : {}),
+        items: {
+            some: {
+                product: { type: 'GOODS' }
+            }
+        }
+    } as const;
+
+    const [total, orders] = await db.$transaction([
+        db.order.count({ where: baseWhere as any }),
+        db.order.findMany({
+            where: baseWhere as any,
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit,
+            include: {
+                items: { include: { product: true } },
+                guestCustomer: true
+            }
+        })
+    ]);
+
+    return {
+        data: orders,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+    };
+}
+
+// List service queue by outlet (READY orders with SERVICE items), ordered by createdAt asc and position
+export async function getServiceQueueByOutletService(
+    outletId: string,
+    ownerId: string,
+    options?: { page?: number; limit?: number }
+) {
+    const page = Math.max(1, options?.page || 1);
+    const limit = Math.min(100, Math.max(1, options?.limit || 50));
+    const skip = (page - 1) * limit;
+
+    // Ownership validation
+    const outlet = await getOutletByIdService(outletId);
+    const business = await getBusinessByIdService(outlet.businessId);
+    if (business.ownerId !== ownerId) {
+        throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+    }
+
+    const where = {
+        outletId,
+        orderStatus: OrderStatus.READY,
+        items: { some: { product: { type: 'SERVICE' } } }
+    } as const;
+
+    const [total, orders] = await db.$transaction([
+        db.order.count({ where: where as any }),
+        db.order.findMany({
+            where: where as any,
+            orderBy: { createdAt: 'asc' },
+            skip,
+            take: limit,
+            include: {
+                items: { include: { product: true } },
+                guestCustomer: true,
+                bookingSlot: true
+            }
+        })
+    ]);
+
+    const data = orders.map((o, idx) => ({
+        position: skip + idx + 1,
+        ...o
+    }));
+
+    return {
+        data,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+    };
+}
 
 async function createOrderInDbService(data: CreateOrderInput) {
     const { items, outletId, bookingSlotId } = data;
@@ -197,17 +299,46 @@ async function createOrderInDbService(data: CreateOrderInput) {
             });
         }
 
-        const io = getSocketIO();
-        io.to(business.id).emit('new_order', await tx.order.findUnique({
-            where: { id: order.id },
-            include: {
-                items: {
-                    include: { product: true }
-                },
-                guestCustomer: true,
-                outlet: true
+        // Emit new order event dengan error handling yang lebih baik
+        try {
+            const orderData = await tx.order.findUnique({
+                where: { id: order.id },
+                include: {
+                    items: {
+                        include: { product: true }
+                    },
+                    guestCustomer: true,
+                    outlet: true
+                }
+            });
+
+            if (orderData) {
+                const success = emitToBusinessRoom(business.id, 'new_order', orderData);
+                if (!success) {
+                    console.warn(`⚠️ Failed to emit new_order event for business ${business.id}`);
+                }
+
+                // Emit ke public socket untuk customer tracking
+                const publicSuccess = emitToOrderTracking(order.id, 'order_created', {
+                    orderId: order.id,
+                    status: order.orderStatus,
+                    totalAmount: order.totalAmount,
+                    // estimatedTime: order.,
+                    outlet: {
+                        id: orderData.outlet?.id,
+                        name: orderData.outlet?.name
+                    },
+                    createdAt: order.createdAt
+                });
+
+                if (!publicSuccess) {
+                    console.warn(`⚠️ Failed to emit order_created to public tracking for order ${order.id}`);
+                }
             }
-        }));
+        } catch (socketError) {
+            console.error('❌ Error emitting new_order event:', socketError);
+            // Tidak throw error karena order sudah berhasil dibuat
+        }
 
         return { order, midtransFee, appFee, feeBearer, totalAmount };
     });
@@ -432,4 +563,21 @@ export async function completeServiceOrderService(orderId: string) {
     }
 
     return completedOrder;
+}
+
+export async function getOrderByCustomerPhoneService(phone: string) {
+    const customerOrder = await OrderRepository.getOrderByCustomerPhone(phone)
+
+    if (!customerOrder || customerOrder.length === 0) throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    const customerOrderMap = customerOrder.map((order) => {
+        const { guestCustomer, ...otherOrder } = order
+
+        return {
+            ...otherOrder,
+            customerDetails: guestCustomer
+        }
+    })
+
+    return customerOrderMap
 }

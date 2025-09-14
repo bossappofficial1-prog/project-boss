@@ -1,0 +1,732 @@
+{
+    "navigation": {
+        "home": "Home",
+        "profile": "Profile"
+    },
+    "common": {
+        "open": "Open",
+        "closed": "Closed",
+        "km": "KM",
+        "m": "M",
+        "emptyStates": {
+            "notFound": {
+                "title": "Page Not Found",
+                "description": "The page you are looking for might have been removed or is temporarily unavailable.",
+                "action": "Back to Home"
+            },
+            "noOutlets": {
+                "title": "No Outlets Available",
+                "description": "No outlets available in this area. Please try another area."
+            },
+            "noOrders": {
+                "title": "No Orders Yet",
+                "description": "You don't have any orders yet. Start ordering now!"
+            },
+            "noUsers": {
+                "title": "No Users",
+                "description": "There are no registered users at this time."
+            },
+            "noReviews": {
+                "title": "No Reviews",
+                "description": "Be the first to write a review."
+            },
+            "noAccess": {
+                "title": "Access Restricted",
+                "description": "You don't have permission to access this page."
+            },
+            "comingSoon": {
+                "title": "Coming Soon",
+                "description": "This feature will be available soon. Stay tuned for updates!"
+            }
+        }
+    },
+    "homePage": {
+        "title": "Welcome to our Application"
+    },
+    "nearbyPage": {
+        "title": "Nearby Outlets",
+        "subtitle": "Find outlets near your location",
+        "searchPlaceholder": "Search outlets...",
+        "noOutletsFound": "No outlets found",
+        "noNearbyOutlets": "No nearby outlets",
+        "loadMore": "Load More",
+        "noMoreOutlets": "No more outlets to load",
+        "outletCount": "outlets found",
+        "appBarTitle": "Nearby Outlets",
+        "loadingLocation": "Getting your location...",
+        "findingOutlets": "Finding nearby outlets...",
+        "loadingNearby": "Loading nearby outlets...",
+        "locationRequired": "Location Required",
+        "locationRequiredDesc": "Please enable location access to find nearby outlets",
+        "retry": "Retry",
+        "failedToLoad": "Failed to load outlets",
+        "somethingWrong": "Something went wrong",
+        "noOutletsForSearch": "No outlets found for",
+        "tryDifferentTerm": "Try a different search term.",
+        "clearSearch": "Clear search",
+        "outletsFoundFor": "outlets found for",
+        "loadingMore": "Loading more outlets...",
+        "noOutletsWithinRange": "There are no outlets within the selected distance of your location.",
+        "distanceLabel": "Search radius",
+        "distanceUnit": "km",
+        "selectDistance": "Select distance"
+    },
+    "searchPage": {
+        "title": "Search Outlets",
+        "subtitle": "Find outlets, products, and services",
+        "searchPlaceholder": "Search outlets, products, or services...",
+        "for": "Search for",
+        "recentSearches": "Recent searches",
+        "clearAll": "Clear all",
+        "noOutletsFound": "No outlets found",
+        "noResultsFor": "No results found for '{query}'",
+        "tryDifferentSearch": "Try a different search term",
+        "searchError": "Error occurred while searching",
+        "loading": "Loading...",
+        "loadMore": "Load More",
+        "noMoreOutlets": "No more outlets to load",
+        "outletCount": "outlets found",
+        "startSearching": "Start searching",
+        "searchDescription": "Enter keywords to find outlets, products, or services"
+    },
+    "search": {
+        "placeholder": "Search outlets, products, services...",
+        "loading": "Searching...",
+        "noResults": "No results found for",
+        "outlet": "Outlet",
+        "product": "Product",
+        "service": "Service",
+        "results": "Search Results",
+        "showingResults": "Showing results for",
+        "suggestions": "Suggestions",
+        "clear": "Clear search"
+    },
+    "outlet": {
+        "back": "Back",
+        "openNow": "Open Now",
+        "closed": "Closed",
+        "whatsapp": "WhatsApp",
+        "direction": "Direction",
+        "cart": "Cart",
+        "viewCart": "View Cart",
+        "products": "Products",
+        "services": "Services",
+        "product": "Product",
+        "service": "Service",
+        "outOfStock": "Out of Stock",
+        "limited": "Limited",
+        "add": "Add",
+        "order": "Order",
+        "inCart": "In Cart",
+        "item": "item",
+        "duration": "Duration",
+        "minutes": "minutes",
+        "available": "Available",
+        "noProducts": "No products",
+        "noProductsDesc": "This outlet doesn't have any products available.",
+        "noServices": "No services",
+        "noServicesDesc": "This outlet doesn't provide any services.",
+        "whatsappMessage": "Hello, I'm interested in outlet"
+    },
+    "cart": {
+        "title": "Shopping Cart",
+        "subtitle": "Review your items before checkout",
+        "product": "Product",
+        "service": "Service",
+        "minutes": "min",
+        "stock": "Stock",
+        "subtotal": "Subtotal",
+        "summary": "Order Summary",
+        "totalItems": "Total Items",
+        "items": "items",
+        "total": "Total",
+        "checkout": "Proceed to Checkout",
+        "processing": "Processing...",
+        "clearAll": "Clear All",
+        "note": "Prices may vary by location and availability",
+        "viewOutlet": "View Outlet",
+        "pageTitle": "Cart",
+        "empty": {
+            "title": "Your cart is empty",
+            "description": "Add some products or services to get started",
+            "browse": "Browse Outlets",
+            "action": "Start Shopping"
+        },
+        "error": {
+            "slotLoadFailed": "Failed to load some schedule details. Please try reloading the page."
+        },
+        "checkoutRules": {
+            "title": "Checkout Rules",
+            "rules": {
+                "1": "Select one outlet for checkout",
+                "2": "Within one outlet, cannot mix Goods and Service products",
+                "3": "Click on outlet card to select"
+            }
+        },
+        "outlet": {
+            "selected": "Selected",
+            "chooseOutlet": "Choose Outlet",
+            "chooseOutletDescription": "Click on outlet to select for checkout",
+            "selectedOutlet": "Selected Outlet",
+            "cancel": "Cancel"
+        },
+        "itemDetails": {
+            "duration": "Duration",
+            "scheduleNotSelected": "Schedule not selected",
+            "stockRemaining": "Stock: {count} remaining",
+            "serviceQuantity": "1x Service",
+            "perItem": "per item"
+        },
+        "schedule": {
+            "available": "Available",
+            "unavailable": "Unavailable/Reserved",
+            "changeSchedule": "Change Schedule",
+            "selectSchedule": "Select Schedule",
+            "slotAvailable": "Slot available",
+            "slotUnavailable": "Slot unavailable/reserved"
+        },
+        "orderSummary": {
+            "totalPayment": "Total Payment",
+            "fromOutlet": "From outlet {outletName}",
+            "fromOutlets": "From {count} different outlets."
+        },
+        "validation": {
+            "selectOutlet": "Please select outlet to checkout",
+            "checkoutError": "An error occurred while preparing checkout",
+            "attention": "Attention",
+            "mixedProducts": "Outlet \"{outletName}\" has {types}. Please select only one product type for checkout."
+        },
+        "buttons": {
+            "completeScheduleFirst": "Complete Schedule First",
+            "selectOutletFirst": "Select Outlet First",
+            "selectProductType": "Select Product Type",
+            "proceedToPayment": "Proceed to Payment",
+            "deleteAll": "Delete All",
+            "checkout": "Checkout"
+        },
+        "drawer": {
+            "title": "Cart ({count})",
+            "description": "Manage items in your shopping cart",
+            "empty": {
+                "title": "Empty Cart",
+                "description": "Add products or services to cart to get started"
+            },
+            "products": "products",
+            "services": "services",
+            "scheduleReminder": {
+                "title": "Schedule Not Selected",
+                "description": "Some services don't have schedules yet. Make sure to select schedule before checkout."
+            }
+        }
+    },
+    "favorites": {
+        "title": "My Favorites",
+        "subtitle": "Your saved outlets",
+        "empty": {
+            "title": "No favorites yet",
+            "description": "Start adding outlets to your favorites",
+            "browse": "Browse Outlets"
+        },
+        "validation": {
+            "checking": "Checking outlet availability...",
+            "invalidOutlets": "outlet(s) no longer available",
+            "removeUnavailable": "Remove Unavailable",
+            "dismiss": "Dismiss",
+            "someUnavailable": "Some outlets in your favorites may have been closed or removed.",
+            "available": "available",
+            "unavailable": "unavailable",
+            "refresh": "Refresh"
+        },
+        "controls": {
+            "availableOnly": "Available Only",
+            "showAll": "Show All Favorites",
+            "date": "Date",
+            "name": "Name",
+            "status": "Status",
+            "availableOutlets": "{count} available outlets",
+            "resultsCount": "{shown} of {total} outlet(s)",
+            "noAvailableOutlets": "No available outlets",
+            "noFavoritesYet": "No favorites yet",
+            "allUnavailableDescription": "All your favorite outlets are currently unavailable. Try disabling the filter.",
+            "startExploringDescription": "Start exploring and add outlets to your favorites to see them here.",
+            "restaurant": "Restaurant",
+            "addedAgo": "Added {timeAgo}"
+        },
+        "alert": {
+            "unavailableTitle": "{count} outlet(s) no longer available",
+            "unavailableDescription": "Some outlets in your favorites may have been closed or removed."
+        },
+        "buttons": {
+            "removeUnavailable": "Remove Unavailable",
+            "dismiss": "Dismiss",
+            "showAllFavorites": "Show All Favorites",
+            "clearAll": "Clear All",
+            "cancel": "Cancel",
+            "apply": "Apply"
+        },
+        "loading": {
+            "favorites": "Loading favorites...",
+            "checking": "Checking outlet availability..."
+        },
+        "sort": {
+            "label": "Sort",
+            "dateAdded": "Newest",
+            "name": "Name A-Z",
+            "status": "Status"
+        },
+        "confirm": {
+            "clearAllTitle": "Clear Favorites?",
+            "clearAllDesc": "This will remove all saved outlets from your favorites.",
+            "clear": "Clear"
+        }
+    },
+    "savedProductsPage": {
+        "title": "Saved Products",
+        "subtitle": "Your saved products and services",
+        "foundProducts": "{count} products found",
+        "clearAll": "Clear All",
+        "removeFromSaved": "Remove from saved",
+        "swipeHint": "Tap red button to remove",
+        "empty": {
+            "title": "No Saved Products Yet",
+            "description": "Start saving your favorite products and services for quick access.",
+            "action": "Explore Products"
+        },
+        "error": {
+            "fetchError": "Failed to load saved products"
+        },
+        "deleteConfirmation": {
+            "title": "Remove Saved Product",
+            "message": "Are you sure you want to remove '{productName}' from your saved products?",
+            "confirm": "Remove",
+            "cancel": "Cancel"
+        }
+    },
+    "profilePage": {
+        "title": "Profile & Preferences",
+        "subtitle": "Manage your personal information and app settings",
+        "contactInformation": "Contact Information",
+        "contactDescription": "Only your name and WhatsApp number are required for communication.",
+        "fullName": "Full Name",
+        "enterFullName": "Enter your full name",
+        "whatsappNumber": "WhatsApp Number",
+        "appearance": "Appearance",
+        "appearanceDescription": "Choose between light and dark theme for your preference.",
+        "lightTheme": "Light Theme",
+        "darkTheme": "Dark Theme",
+        "language": "Language",
+        "languageDescription": "Select your preferred language for the application interface.",
+        "languageSwitcher": "Change Language",
+        "saveChanges": "Save Changes",
+        "reset": "Reset",
+        "login": "Login",
+        "becomeBusiness": "Become a Business",
+        "settings": "Settings",
+        "resetModal": {
+            "title": "Reset Settings",
+            "description": "Are you sure you want to reset all saved settings? This action cannot be undone.",
+            "confirmButton": "Confirm",
+            "cancelButton": "Cancel"
+        },
+        "messageSuccess": "Preferences saved.",
+        "placeholders": {
+            "fullName": "Enter your full name",
+            "whatsapp": "+62 834 567 8900"
+        },
+        "systemTheme": "System",
+        "favorites": {
+            "title": "My Favorites",
+            "savedOutlets": "Saved Outlets",
+            "count": "{count} saved"
+        },
+        "savedProducts": {
+            "title": "Saved Products",
+            "savedItems": "Products & Services",
+            "count": "{count} saved"
+        },
+        "orders": {
+            "title": "My Orders",
+            "orderHistory": "Order History",
+            "viewAll": "View all orders"
+        },
+        "validation": {
+            "fullNameMin": "Full name must be at least 2 characters",
+            "invalidWhatsapp": "Invalid WhatsApp number"
+        }
+    },
+    "onboarding": {
+        "step1": {
+            "title": "Welcome to BOSS",
+            "description": "Discover nearby outlets, search, and order quickly."
+        },
+        "step2": {
+            "title": "Find nearby outlets",
+            "description": "Enable location so we can show outlets around you.",
+            "allowLocation": "Allow Location",
+            "skip": "Skip for now"
+        },
+        "step3": {
+            "title": "Easy ordering",
+            "description": "Select an outlet, add items to cart and checkout."
+        },
+        "actions": {
+            "next": "Next",
+            "back": "Back",
+            "close": "Close",
+            "getStarted": "Get Started"
+        }
+    },
+    "nearbyOutlets": {
+        "title": "Nearby Outlets",
+        "viewAll": "View All",
+        "loading": "Loading nearby outlets...",
+        "empty": "No nearby outlets"
+    },
+    "featuredOutlets": {
+        "title": "Featured Outlets",
+        "loading": "Loading featured outlets...",
+        "empty": "No outlets available"
+    },
+    "error": {
+        "retry": "Retry",
+        "networkError": "Network Error"
+    },
+    "outletDetail": {
+        "currentStatus": "Current Status",
+        "open": "Open",
+        "closed": "Closed",
+        "openUntil": "Open until {time}",
+        "opensAt": "Opens at {time}",
+        "closedToday": "Closed today",
+        "operatingHours": "Operating Hours",
+        "today": "Today",
+        "products": "Products",
+        "services": "Services",
+        "openingHours": "Opening Hours",
+        "noProducts": "No Products",
+        "noProductsDescription": "This outlet does not provide any products",
+        "noServices": "No Services",
+        "noServicesDescription": "This outlet does not provide any services",
+        "noOperatingHours": "Operating hours not available",
+        "noOperatingHoursDescription": "Opening hours information for this outlet is not available",
+        "outletNotFound": "Outlet not found",
+        "whatsappMessage": "Hello, I am interested in the outlet {name}"
+    },
+    "text": {
+        "open": "Open",
+        "closed": "Closed",
+        "distanceKm": "KM",
+        "distanceM": "M",
+        "address": "Address",
+        "phone": "Phone",
+        "orders": "Orders",
+        "txtImportantInformation": "Important Information"
+    },
+    "orders": {
+        "title": "My Orders",
+        "subtitle": "Order history and status",
+        "my_orders": "My Orders",
+        "history_and_status": "History and status of your orders",
+        "order_singular": "order",
+        "order_plural": "orders",
+        "found": "found",
+        "error_title": "Failed to Load Orders",
+        "error_message": "An error occurred while fetching your orders. Please try again later.",
+        "no_orders_title": "No Orders Yet",
+        "no_orders_description": "You haven't placed any orders. Start ordering from nearby outlets!",
+        "explore_outlets": "Explore Outlets",
+        "empty": {
+            "title": "No Orders Yet",
+            "description": "You haven't placed any orders. Start ordering from nearby outlets!",
+            "browse": "Browse Outlets"
+        },
+        "status": {
+            "pending": "Waiting for Confirmation",
+            "confirmed": "Order Confirmed",
+            "preparing": "Being Prepared",
+            "ready": "Ready for Pickup",
+            "completed": "Completed",
+            "cancelled": "Cancelled"
+        }
+    },
+    "payment": {
+        "title": "Select Payment Method",
+        "subtitle": "Choose your preferred payment method",
+        "categories": {
+            "all": "All",
+            "qris": "QRIS",
+            "va": "Bank Transfer"
+        },
+        "types": {
+            "qris": "QRIS",
+            "va": "Bank Transfer"
+        },
+        "loading": "Loading payment methods...",
+        "error": {
+            "title": "Failed to Load Payment Methods",
+            "message": "An error occurred while loading payment methods. Please try again.",
+            "retry": "Try Again"
+        },
+        "empty": {
+            "title": "No Payment Methods Available",
+            "description": "Payment methods for this category are not available yet."
+        },
+        "security": {
+            "title": "Secure & Protected Payment",
+            "description": "All transactions are protected by the latest security systems"
+        },
+        "note": {
+            "title": "Note",
+            "description": "Make sure your account has sufficient balance before making payment."
+        },
+        "selected": "Selected",
+        "count": "methods"
+    },
+    "checkout": {
+        "orderSummary": {
+            "productFrom": "Product from {outletName}",
+            "otherProducts": "+ other products",
+            "transactionFee": "Transaction Fee",
+            "applicationFee": "Application Fee",
+            "orderSubtotal": "Order Subtotal",
+            "totalOrder": "Total Order ({count} outlets)",
+            "totalPayment": "Total Payment"
+        },
+        "checkoutButton": {
+            "totalPayment": "Total Payment",
+            "createOrder": "Create Order"
+        }
+    },
+    "paymentPage": {
+        "title": "Payment",
+        "customerInfo": {
+            "title": "Buyer Information",
+            "fullName": "Full Name",
+            "fullNamePlaceholder": "Enter your full name",
+            "phoneNumber": "Phone Number",
+            "phonePlaceholder": "Example: 081234567890",
+            "infoMessage": "This information will be used for order confirmation and delivery."
+        },
+        "orderSummary": {
+            "title": "Order Summary",
+            "subtotal": "Subtotal",
+            "transactionFee": "Transaction Fee",
+            "applicationFee": "Application Fee",
+            "totalOrder": "Total Order",
+            "totalTransactionFee": "Total Transaction Fee",
+            "totalPayment": "Total Payment"
+        },
+        "paymentMethod": {
+            "title": "Payment Method",
+            "types": {
+                "qris": "QRIS",
+                "va": "Bank Transfer",
+                "card": "Card"
+            }
+        },
+        "paymentButton": {
+            "totalPayment": "Total Payment",
+            "processing": "Processing...",
+            "payNow": "Pay Now"
+        },
+        "validation": {
+            "nameRequired": "Full name is required",
+            "phoneRequired": "Phone number is required",
+            "phoneInvalid": "Invalid phone number format"
+        },
+        "errors": {
+            "noItems": "No items found. Please go back to cart and add items.",
+            "paymentFailed": "Payment processing failed. Please try again."
+        }
+    },
+    "paymentProcessing": {
+        "title": "Payment Processing",
+        "totalPayment": "Total Payment",
+        "refreshStatus": "Refresh Status",
+        "cancelPayment": "Cancel Payment",
+        "cancelConfirmation": {
+            "title": "Cancel Payment",
+            "message": "Are you sure you want to cancel this payment? This action cannot be undone.",
+            "confirm": "Yes, Cancel",
+            "cancel": "No"
+        }
+    },
+    "paymentSuccess": {
+        "title": "Payment Successful",
+        "orderSuccessful": "Order Successful!",
+        "orderProcessing": "Thank you, your order is being processed",
+        "totalPayment": "Total Payment",
+        "paymentMethod": "Payment Method",
+        "customerName": "Customer Name",
+        "phoneNumber": "Phone Number",
+        "orderTime": "Order Time",
+        "statusWaiting": "Status: Waiting for Confirmation",
+        "statusDescription": "Outlet will confirm your order in 5-10 minutes",
+        "viewOrderDetails": "View Order Details",
+        "backToHome": "Back to Home",
+        "transactionDetails": "Transaction Details",
+        "transactionId": "Transaction ID",
+        "paymentTime": "Payment Time",
+        "vaNumber": "VA Number",
+        "paymentType": "Payment Type",
+        "whatsNext": "What's Next?",
+        "orderBeingProcessed": "Your order is being processed",
+        "confirmationSms": "You'll receive a confirmation SMS",
+        "trackOrderRealtime": "Track your order in real-time",
+        "outletInformation": "Outlet Information",
+        "orderIdLabel": "Order ID:",
+        "estimatedProcessing": "Estimated Processing",
+        "orderReadyTime": "Your order will be ready in approximately 30-45 minutes"
+    },
+    "paymentFailed": {
+        "title": "Payment Failed",
+        "transactionFailed": "Sorry, your transaction could not be processed",
+        "loadingData": "Loading data...",
+        "failureInformation": "Failure Information",
+        "orderId": "Order ID:",
+        "time": "Time:",
+        "method": "Method:",
+        "orderSummary": "Order Summary",
+        "subtotal": "Subtotal",
+        "applicationFee": "Application Fee",
+        "total": "Total",
+        "retrying": "Retrying...",
+        "tryAgain": "Try Again",
+        "contactSupport": "Contact Customer Service",
+        "backToCart": "Back to Cart"
+    },
+    "paymentPending": {
+        "title": "Payment Pending",
+        "orderProcessing": "Order is being processed",
+        "paymentStatus": "Payment Status",
+        "verifyingByBank": "Being verified by bank",
+        "estimatedCompletion": "Estimated completion",
+        "orderId": "Order ID:",
+        "bankReference": "Bank Reference:",
+        "pendingSince": "Pending since:",
+        "method": "Method:",
+        "lastChecked": "Last checked:",
+        "verificationProcess": "Verification Process",
+        "paymentReceived": "Payment received",
+        "transferSuccessful": "Transfer successful",
+        "bankVerification": "Bank verification",
+        "processing": "Processing...",
+        "orderConfirmation": "Order confirmation",
+        "waitingVerification": "Waiting for verification",
+        "checkingStatus": "Checking Status...",
+        "checkPaymentStatus": "Check Payment Status",
+        "contactSupport": "Contact Customer Service",
+        "backToCart": "Back to Cart",
+        "justNow": "Just now",
+        "minutesAgo": "minutes ago",
+        "hoursAgo": "hours ago",
+        "daysAgo": "days ago",
+        "minutesLeft": "minutes left",
+        "beingProcessed": "Being processed",
+        "loadingData": "Loading data..."
+    },
+    "paymentComponents": {
+        "paymentStatus": {
+            "successTitle": "Payment Successful",
+            "successMessage": "Your payment has been processed successfully",
+            "failedTitle": "Payment Failed",
+            "failedMessage": "Your payment could not be processed",
+            "pendingTitle": "Processing Payment",
+            "pendingMessage": "Please wait while we process your payment",
+            "unknownTitle": "Payment Status",
+            "unknownMessage": "Checking payment status...",
+            "timeRemaining": "Time remaining"
+        },
+        "customerInfo": {
+            "title": "Customer Information",
+            "name": "Name",
+            "phone": "Phone"
+        },
+        "qrisPayment": {
+            "title": "QRIS Payment",
+            "qrNotAvailable": "Qr not available",
+            "instructions": "Scan the QR code below with your e-wallet app to complete the payment",
+            "steps": {
+                "1": "Open your e-wallet app",
+                "2": "Scan the QR code",
+                "3": "Complete the payment",
+                "4": "Wait for confirmation"
+            }
+        },
+        "vaPayment": {
+            "title": "Virtual Account Payment",
+            "vaNumber": "Virtual Account Number",
+            "copySuccess": "VA number copied to clipboard",
+            "instructions": "Transfer the exact amount to the virtual account number below",
+            "steps": {
+                "1": "Copy the virtual account number",
+                "2": "Open your banking app",
+                "3": "Transfer the exact amount",
+                "4": "Wait for confirmation"
+            }
+        },
+        "orderSummary": {
+            "title": "Order Summary",
+            "subtotal": "Subtotal",
+            "applicationFee": "Application Fee",
+            "total": "Total"
+        },
+        "footer": {
+            "helpText": "Need help? Contact our customer service"
+        }
+    },
+    "productDetails": {
+        "title": "Product Details",
+        "shareText": "Check out {type}: {name}",
+        "shareType": {
+            "GOODS": "product",
+            "SERVICE": "service"
+        },
+        "toast": {
+            "addProductError": "Cannot add product",
+            "addProductErrorDesc": "An error occurred while adding product to cart",
+            "addServiceError": "Cannot add service",
+            "addServiceErrorDesc": "An error occurred while adding service to cart"
+        },
+        "empty": {
+            "title": "Product not found"
+        },
+        "labels": {
+            "category": "Category",
+            "general": "General",
+            "type": "Type",
+            "product": "Product",
+            "service": "Service",
+            "duration": "Duration",
+            "minutes": "minutes",
+            "status": "Status",
+            "available": "Available",
+            "outOfStock": "Out of Stock",
+            "availableAt": "Available at",
+            "description": "Description {type}"
+        },
+        "buttons": {
+            "productUnavailable": "Product Unavailable",
+            "storeClosed": "Store Closed",
+            "addToCart": "Add to Cart",
+            "serviceUnavailable": "Service Unavailable",
+            "bookService": "Book Service"
+        }
+    },
+    "notFound": {
+        "title": "Oops! Page Not Found",
+        "subtitle": "It seems the page you're looking for has ventured into another dimension.",
+        "description": "Don't worry, let's get you back on the right track! ✨",
+        "buttons": {
+            "back": "Go Back",
+            "home": "Home",
+            "search": "Search Services",
+            "contact": "Need help?"
+        },
+        "footer": "Error 404 • Page not found",
+        "theme": {
+            "light": "Light Theme",
+            "dark": "Dark Theme"
+        }
+    }
+}

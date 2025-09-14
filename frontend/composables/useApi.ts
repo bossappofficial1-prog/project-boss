@@ -20,8 +20,6 @@ export function useApi<T>(
     ...(token ? { Authorization: `Bearer ${token}` } : {})
   }
 
-  // If the body is FormData, don't set the Content-Type header.
-  // The browser will automatically set it with the correct boundary.
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
   }

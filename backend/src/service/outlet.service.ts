@@ -1,10 +1,14 @@
-import { db } from "../config/prisma";
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
 import { OutletRepository } from "../repositories/outlet.repository";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 import { getBusinessByOwnerIdService } from "./business.service";
+import { getIsOutletOpen, calculateDistance, validateCoordinates, calculateBoundingBox, validatePaginationParams, validateRadius, mapOutletsWithOpenStatus, removeOperatingHoursFromOutlets } from "../utils/outlet.utils";
+import Redis from "ioredis";
+
+// Redis client
+const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
 
 export async function createOutletService(data: CreateOutletInput, ownerId: string) {
     const business = await getBusinessByOwnerIdService(ownerId);
@@ -15,102 +19,33 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
     return outlet;
 }
 
-interface Location {
-    latitude: number;
-    longitude: number;
-}
-
-function calculateDistance(point1: Location, point2: Location): number {
-    const R = 6371; // Radius of the Earth in kilometers
-    const dLat = toRadian(point2.latitude - point1.latitude);
-    const dLon = toRadian(point2.longitude - point1.longitude);
-
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRadian(point1.latitude)) * Math.cos(toRadian(point2.latitude)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in kilometers
-}
-
-function toRadian(degree: number): number {
-    return degree * Math.PI / 180;
-}
-
 export async function findNearbyOutletsService(
     latitude: number,
     longitude: number,
     radiusKm: number = 5,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    search?: string
 ) {
-    // Validate coordinates
-    if (latitude < -90 || latitude > 90) {
-        throw new AppError('Invalid latitude. Must be between -90 and 90', HttpStatus.BAD_REQUEST);
-    }
-    if (longitude < -180 || longitude > 180) {
-        throw new AppError('Invalid longitude. Must be between -180 and 180', HttpStatus.BAD_REQUEST);
-    }
-    if (radiusKm <= 0) {
-        throw new AppError('Radius must be greater than 0', HttpStatus.BAD_REQUEST);
-    }
-    if (page < 1) {
-        throw new AppError('Page must be greater than 0', HttpStatus.BAD_REQUEST);
-    }
-    if (limit < 1) {
-        throw new AppError('Limit must be greater than 0', HttpStatus.BAD_REQUEST);
+    // Validate inputs using utilities
+    try {
+        validateRadius(radiusKm);
+        validatePaginationParams(page, limit);
+        validateCoordinates(latitude, longitude);
+    } catch (error) {
+        throw new AppError(error instanceof Error ? error.message : 'Invalid input parameters', HttpStatus.BAD_REQUEST);
     }
 
-    // Calculate bounding box for initial filtering
-    const latRadian = latitude * Math.PI / 180;
-    const degLatKm = 110.574; // Approximate degrees per km at the equator
-    const degLongKm = 111.320 * Math.cos(latRadian); // Adjust for latitude
+    // Calculate bounding box
+    const { latMin, latMax, longMin, longMax } = calculateBoundingBox(latitude, longitude, radiusKm);
 
-    const latDiff = radiusKm / degLatKm;
-    const longDiff = radiusKm / degLongKm;
+    // Get paginated outlets from repository
+    const { outlets: outletsRaw, total } = await OutletRepository.findNearbyWithPagination(
+        latitude, longitude, latMin, latMax, longMin, longMax, page, limit, search
+    );
 
-    // First, get outlets within the bounding box (rough filter)
-    const outlets = await db.outlet.findMany({
-        where: {
-            AND: [
-                { latitude: { gte: latitude - latDiff } },
-                { latitude: { lte: latitude + latDiff } },
-                { longitude: { gte: longitude - longDiff } },
-                { longitude: { lte: longitude + longDiff } }
-            ]
-        },
-        include: {
-            business: {
-                select: {
-                    name: true,
-                    description: true
-                }
-            },
-            products: {
-                where: {
-                    status: 'ACTIVE',
-                },
-                select: {
-                    id: true,
-                    name: true,
-                    price: true,
-                    type: true,
-                    image: true,
-                    status: true
-                }
-            },
-            _count: {
-                select: {
-                    orders: true,
-                    products: true
-                }
-            }
-        }
-    });
-
-    // Calculate exact distances and filter
-    const outletsWithDistance = outlets
+    // Calculate exact distances and filter within radius
+    const outletsWithDistance = outletsRaw
         .map(outlet => {
             if (!outlet.latitude || !outlet.longitude) return null;
 
@@ -124,7 +59,7 @@ export async function findNearbyOutletsService(
 
             return {
                 ...outlet,
-                distance: Number(distance.toFixed(2)) // Round to 2 decimal places
+                distance: Number(distance.toFixed(2))
             };
         })
         .filter((outlet): outlet is NonNullable<typeof outlet> => outlet !== null)
@@ -136,12 +71,11 @@ export async function findNearbyOutletsService(
             return a.distance - b.distance;
         });
 
-    // Apply pagination
-    const skip = (page - 1) * limit;
-    const paginatedOutlets = outletsWithDistance.slice(skip, skip + limit);
+    const outlets = mapOutletsWithOpenStatus(outletsWithDistance);
+    const nearbyOutlets = removeOperatingHoursFromOutlets(outlets);
 
     return {
-        outlets: paginatedOutlets,
+        outlets: nearbyOutlets,
         total: outletsWithDistance.length,
         page,
         limit,
@@ -161,79 +95,32 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
         throw new AppError("Anda tidak berhak mengupdate outlet ini.", HttpStatus.FORBIDDEN);
     }
 
-    // Validate coordinates
-    if (latitude < -90 || latitude > 90) {
-        throw new AppError('Invalid latitude. Must be between -90 and 90', HttpStatus.BAD_REQUEST);
-    }
-    if (longitude < -180 || longitude > 180) {
-        throw new AppError('Invalid longitude. Must be between -180 and 180', HttpStatus.BAD_REQUEST);
+    // Validate coordinates using utility
+    try {
+        validateCoordinates(latitude, longitude);
+    } catch (error) {
+        throw new AppError(error instanceof Error ? error.message : 'Invalid coordinates', HttpStatus.BAD_REQUEST);
     }
 
-    return db.outlet.update({
-        where: { id: outletId },
-        data: { latitude, longitude }
-    });
+    return OutletRepository.update(outletId, { latitude, longitude });
 }
 
 export async function getOutletByIdService(id: string, date?: Date) {
     const today = date || new Date();
-    const dayOfWeek = today.getDay();
+    const outletRaw = await OutletRepository.findById(id)
 
-    const outlet = await db.outlet.findUnique({
-        where: { id },
-        include: {
-            products: {
-                where: {
-                    type: 'SERVICE',
-                    status: 'ACTIVE'
-                },
-                include: {
-                    capacity: true,
-                    bookingSlots: {
-                        where: {
-                            date: {
-                                equals: today
-                            },
-                            status: 'AVAILABLE'
-                        },
-                        orderBy: {
-                            startTime: 'asc'
-                        }
-                    }
-                }
-            },
-            operatingHours: {
-                where: {
-                    dayOfWeek,
-                    isOpen: true
-                }
-            },
-            business: {
-                select: {
-                    defaultTransactionFeeBearer: true
-                }
-            }
-        }
-    });
-
-    if (!outlet) {
+    if (!outletRaw) {
         throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+    const { isOpen, operatingHours, ...outlet } = outletRaw;
 
-    // Hanya tampilkan slot yang dalam jam operasional
-    const operatingHours = outlet.operatingHours[0];
-    if (operatingHours) {
-        outlet.products = outlet.products.map(product => ({
-            ...product,
-            bookingSlots: product.bookingSlots.filter(slot =>
-                slot.startTime >= operatingHours.openTime &&
-                slot.endTime <= operatingHours.closeTime
-            )
-        }));
-    }
+    const isOpenOutlet = operatingHours.length > 0
+        ? getIsOutletOpen(operatingHours, today)
+        : isOpen;
 
-    return outlet;
+    return { ...outlet, operatingHours, isOpen: isOpenOutlet };
 }
+
 export async function getAllOutletService() {
     const outlet = await OutletRepository.getAll();
     if (!outlet) {
@@ -248,12 +135,15 @@ export async function getOutletsByBusinessIdService(
     take?: number,
     skip?: number
 ) {
-    const { outlets, total } = await OutletRepository.findManyWithPagination(
+    const { outlets: outletsRaw, total } = await OutletRepository.findManyWithPagination(
         businessId,
         search,
         take,
         skip
     );
+
+    const outlets = mapOutletsWithOpenStatus(outletsRaw);
+
     return { outlets, total };
 }
 
@@ -282,27 +172,32 @@ export async function getAllOutletsService(
     take?: number,
     skip?: number
 ) {
-    const { outlets, total } = await OutletRepository.findManyWithPagination(
+    const { outlets: outletRaw, total } = await OutletRepository.findManyWithPagination(
         undefined,
         search,
         take,
         skip
     );
+
+    const outlets = mapOutletsWithOpenStatus(outletRaw);
+
     return { outlets, total };
 }
 
 export async function getFeaturedOutletsService() {
-    const outlets = await db.outlet.findMany({
-        include: {
-            _count: {
-                select: {
-                    orders: true,
-                },
-            },
-        },
-    });
+    const cacheKey = "featured_outlets";
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+        return JSON.parse(cached);
+    }
 
-    const sortedOutlets = outlets.sort((a, b) => b._count.orders - a._count.orders);
+    const outlets = await OutletRepository.findFeaturedOutlets();
 
-    return sortedOutlets.slice(0, 5); // Return top 5
+    const featuredOutlets = mapOutletsWithOpenStatus(outlets);
+    const result = removeOperatingHoursFromOutlets(featuredOutlets);
+
+    // Cache for 10 minutes
+    await redis.setex(cacheKey, 600, JSON.stringify(result));
+
+    return result;
 }

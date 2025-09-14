@@ -77,6 +77,45 @@ export class OrderRepository {
         });
     }
 
+    static async getOrderByCustomerPhone(phone: string) {
+        return db.order.findMany({
+            where: { guestCustomer: { phone } },
+            include: {
+                items: {
+                    select: {
+                        id: true,
+                        priceAtTimeOfOrder: true,
+                        quantity: true,
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                price: true,
+                            }
+                        }
+                    }
+                },
+                guestCustomer: { select: { name: true, phone: true, id: true } },
+                outlet: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
+                transaction: {
+                    select: {
+                        id: true,
+                        paymentMethod: true,
+                        status: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: "desc"
+            }
+        })
+    }
+
     static async findByProductId(productId: string, status: OrderStatus) {
         return db.order.findMany({
             where: {
@@ -91,7 +130,7 @@ export class OrderRepository {
                 guestCustomer: true,
             },
             orderBy: {
-                createdAt: 'asc',
+                createdAt: 'desc',
             },
         });
     }

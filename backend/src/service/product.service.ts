@@ -8,7 +8,7 @@ import { ProductRepository } from "../repositories/product.repository";
 import { CreateProductInput, UpdateProductInput, createProductSchema } from "../schemas/product.schema";
 import { getOutletByIdService } from './outlet.service';
 import { generateDefaultBookingSlots } from './booking.service';
-import { FeeBearer, ProductType, ServiceStatus } from '@prisma/client';
+import { BookingSlot, FeeBearer, Product, ProductType, ServiceStatus } from '@prisma/client';
 
 export async function createProductService(data: CreateProductInput) {
     await getOutletByIdService(data.outletId);
@@ -41,7 +41,7 @@ export async function createProductService(data: CreateProductInput) {
             });
 
             if (outlet?.operatingHours) {
-                await generateDefaultBookingSlots(prisma, {
+                await generateDefaultBookingSlots({
                     productId: createdProduct.id,
                     operatingHours: outlet.operatingHours,
                     serviceDurationMinutes: data.serviceDurationMinutes,
@@ -56,22 +56,32 @@ export async function createProductService(data: CreateProductInput) {
     return product;
 }
 
-export async function getProductByIdService(id: string) {
-    const cacheKey = `product:${id}`;
-    const cachedProduct = await redis.get(cacheKey);
+export async function getProductByIdService(id: string): Promise<Product & { defaultTransactionFeeBearer: any; bookingSlots: BookingSlot[]; images?: { url: string; alt?: string }[] }> {
+    // const cacheKey = `product:${id}`;
+    // const cachedProduct = await redis.get(cacheKey);
 
-    if (cachedProduct) {
-        return JSON.parse(cachedProduct);
-    }
+    // if (cachedProduct) {
+    //     return JSON.parse(cachedProduct);
+    // }
 
     const product = await ProductRepository.findById(id);
     if (!product) {
         throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    await redis.set(cacheKey, JSON.stringify(product), 'EX', 3600);
     const { outlet, ...productWithoutOutlet } = product
 
-    return { ...productWithoutOutlet, defaultTransactionFeeBearer: outlet.business.defaultTransactionFeeBearer };
+    const images = (product as any).productImages?.map((pi: any) => ({ url: pi.url, alt: pi.alt })) || [];
+
+    if (images.length === 0 && (product as any).image) {
+        images.push({ url: (product as any).image, alt: null });
+    }
+
+    const result = { ...productWithoutOutlet, defaultTransactionFeeBearer: outlet.business.defaultTransactionFeeBearer, images };
+
+    // Cache the transformed result (so cached responses include images)
+    // await redis.set(cacheKey, JSON.stringify(result), 'EX', 3600);
+
+    return result;
 }
 
 export async function getProductsByOutletIdService(outletId: string, q?: string) {
@@ -228,7 +238,7 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
                         include: { operatingHours: true }
                     });
                     if (outlet?.operatingHours?.length) {
-                        await generateDefaultBookingSlots(tx, {
+                        await generateDefaultBookingSlots({
                             productId: createdProduct.id,
                             operatingHours: outlet.operatingHours,
                             serviceDurationMinutes: createdProduct.serviceDurationMinutes,
@@ -304,6 +314,102 @@ export function generateProductImportTemplateService(): Buffer {
     const workbook = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(workbook, worksheet, "Products");
 
+    const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+    return buffer;
+}
+
+export async function exportProductsToExcelService(
+    outletId: string, 
+    filters?: { type?: 'GOODS' | 'SERVICE'; search?: string }
+): Promise<Buffer> {
+    // Validate outlet exists
+    await getOutletByIdService(outletId);
+
+    // Build where clause for filtering
+    const where: any = {
+    outletId: outletId
+    };
+
+    if (filters?.type) {
+        where.type = filters.type;
+    }
+
+    if (filters?.search) {
+        where.OR = [
+            { name: { contains: filters.search, mode: 'insensitive' } },
+            { description: { contains: filters.search, mode: 'insensitive' } }
+        ];
+    }
+
+    // Fetch products from database
+    const products = await db.product.findMany({
+        where,
+        orderBy: { createdAt: 'desc' }
+    });
+
+    // Prepare data for Excel
+    const headers = [
+        "No",
+        "Nama Produk",
+        "Deskripsi",
+        "Tipe",
+        "Harga Modal",
+        "Harga Jual",
+        "Stok",
+        "Satuan",
+        "Status",
+        "Durasi Layanan (menit)",
+    "Kapasitas Paralel",
+    "Penanggung Biaya Transaksi",
+        "Tanggal Dibuat"
+    ];
+
+    const data = products.map((product, index) => [
+        index + 1,
+        product.name,
+        product.description || '',
+        product.type === 'GOODS' ? 'Barang' : 'Jasa',
+        (product as any).costPrice ?? 0,
+        product.price,
+        product.type === 'GOODS' ? ((product as any).quantity ?? 0) : 'N/A',
+        product.type === 'GOODS' ? ((product as any).unit || 'pcs') : 'N/A',
+        product.status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif',
+        (product as any).serviceDurationMinutes ?? 'N/A',
+    'N/A',
+        ((product as any).transactionFeeBearer === 'CUSTOMER') ? 'Pelanggan' :
+        ((product as any).transactionFeeBearer === 'OWNER') ? 'Pemilik' : 'Default Bisnis',
+        product.createdAt.toLocaleDateString('id-ID')
+    ]);
+
+    // Create worksheet
+    const worksheet = xlsx.utils.aoa_to_sheet([headers, ...data]);
+
+    // Set column widths
+    const colWidths = [
+        { wch: 5 },   // No
+        { wch: 25 },  // Nama Produk
+        { wch: 30 },  // Deskripsi
+        { wch: 10 },  // Tipe
+        { wch: 15 },  // Harga Modal
+        { wch: 15 },  // Harga Jual
+        { wch: 10 },  // Stok
+        { wch: 10 },  // Satuan
+        { wch: 12 },  // Status
+        { wch: 20 },  // Durasi Layanan
+        { wch: 15 },  // Kapasitas Paralel
+        { wch: 15 },  // Penanggung Biaya
+        { wch: 15 }   // Tanggal Dibuat
+    ];
+    worksheet['!cols'] = colWidths;
+
+    // Create workbook and add worksheet
+    const workbook = xlsx.utils.book_new();
+    const sheetName = filters?.type === 'GOODS' ? 'Data Produk' : 
+                     filters?.type === 'SERVICE' ? 'Data Jasa' : 
+                     'Data Produk & Jasa';
+    xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    // Generate buffer
     const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
     return buffer;
 }

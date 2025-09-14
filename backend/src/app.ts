@@ -34,12 +34,10 @@ app.use(helmet({
 
 // Konfigurasi CORS - Menangani Berbagi Sumber Daya Lintas-Origin
 app.use(cors({
-    origin: config.NODE_ENV === "production" ? config.CLIENT_URL : "*",
+    origin: config.CLIENT_URL,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Metode HTTP yang diizinkan
-    allowedHeaders: config.NODE_ENV === "production"
-        ? ['Content-Type', 'Authorization', 'X-Requested-With']
-        : ['Content-Type', 'Authorization', 'X-Requested-With', 'ngrok-skip-browser-warning'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'ngrok-skip-browser-warning'],
 }))
 
 //Rate limiting untuk melindungi dari serangan brute-force dan penyalahgunaan
@@ -54,7 +52,6 @@ app.use(cookieParser());
 
 // Middleware kompresi - Mengompres body respons untuk pemuatan yang lebih cepat
 app.use(compression());
-app.use(requestLogger)
 
 // Middleware logging permintaan (Morgan)
 if (config.NODE_ENV === "development") {
@@ -63,10 +60,19 @@ if (config.NODE_ENV === "development") {
 
 // Serve static files (uploaded images)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/', express.static(path.join(process.cwd(), 'public')));
 
 app.get("/", (req, res) => {
     res.status(200).json({
         message: "success"
+    })
+})
+
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
     })
 })
 

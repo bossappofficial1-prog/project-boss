@@ -1,13 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../errors/app-error';
 import { HttpStatus } from '../constants/http-status';
+import { db } from '../config/prisma';
 
-/**
- * Advanced security validation for guest customer inputs
- */
 export const validateGuestCustomer = (req: Request, res: Response, next: NextFunction) => {
     const { guestCustomer } = req.body;
-    
+
     if (!guestCustomer) {
         throw new AppError("Data guest customer diperlukan", HttpStatus.BAD_REQUEST);
     }
@@ -45,14 +43,14 @@ export const validateGuestCustomer = (req: Request, res: Response, next: NextFun
     if (phone) {
         // Remove common formatting
         const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-        
+
         // Check for Indonesian phone number patterns
         const validPatterns = [
             /^08[0-9]{8,11}$/, // Indonesian mobile
             /^\+628[0-9]{8,11}$/, // Indonesian mobile with country code
             /^628[0-9]{8,11}$/, // Indonesian mobile without +
         ];
-        
+
         const isValidIndonesianPhone = validPatterns.some(pattern => pattern.test(cleanPhone));
         if (!isValidIndonesianPhone) {
             throw new AppError("Format nomor telepon Indonesia tidak valid", HttpStatus.BAD_REQUEST);
@@ -84,10 +82,10 @@ export const validateBusinessHours = (req: Request, res: Response, next: NextFun
 
     // Basic business hours: 8 AM to 10 PM, Monday to Sunday
     const isBusinessHour = currentHour >= 8 && currentHour <= 22;
-    
+
     if (!isBusinessHour) {
         throw new AppError(
-            "Pemesanan hanya dapat dilakukan pada jam operasional (08:00 - 22:00)", 
+            "Pemesanan hanya dapat dilakukan pada jam operasional (08:00 - 22:00)",
             HttpStatus.BAD_REQUEST
         );
     }
@@ -103,11 +101,11 @@ export const validateOrderFrequency = async (req: Request, res: Response, next: 
     const { phone } = guestCustomer;
 
     try {
-        const { db } = await import('../config/prisma');
-        
+        // const { db } = await import('/config/prisma');
+
         // Check orders from same phone in last hour
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-        
+
         const recentOrders = await db.order.count({
             where: {
                 guestCustomer: {
@@ -122,7 +120,7 @@ export const validateOrderFrequency = async (req: Request, res: Response, next: 
         // Maximum 3 orders per hour from same phone
         if (recentOrders >= 3) {
             throw new AppError(
-                "Terlalu banyak pesanan dari nomor ini dalam 1 jam terakhir. Silakan coba lagi nanti.", 
+                "Terlalu banyak pesanan dari nomor ini dalam 1 jam terakhir. Silakan coba lagi nanti.",
                 HttpStatus.TOO_MANY_REQUESTS
             );
         }

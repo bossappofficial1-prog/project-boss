@@ -18,5 +18,5 @@ export const updatePromoSchema = createPromoSchema.partial();
 
 export const applyPromoSchema = z.object({
     promoCode: z.string(),
-    orderId: z.string().uuid(),
+    orderId: z.string(),
 });

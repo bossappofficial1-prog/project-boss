@@ -1,11 +1,13 @@
-import { Router } from "express";
-import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController } from "../controller/order.controller";
+import { Request, Response, Router } from "express";
+import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController } from "../controller/order.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOrderSchema, updateOrderStatusSchema } from "../schemas/order.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
 import { orderCreationLimiter, orderManagementLimiter } from "../middleware/order-rate-limit.middleware";
 import { validateGuestCustomer, validateBusinessHours, validateOrderFrequency } from "../middleware/guest-validation.middleware";
+import { createPaymentController } from "../controller/payment.controller";
+import { CreatePaymentSchema } from "../schemas/payment-v2.schema";
 
 const orderRouter = Router();
 
@@ -18,6 +20,8 @@ orderRouter.post("/",
     validateSchema(createOrderSchema),
     createOrderController
 );
+
+orderRouter.get("/details/:phone", getOrderByCustomerPhoneController)
 
 // SECURITY FIX: Add rate limiting for owner order management
 orderRouter.use(orderManagementLimiter);
@@ -36,5 +40,13 @@ orderRouter.patch("/:id/status", protect, authorize(UserRole.OWNER), validateSch
 
 // Rute yang dilindungi untuk menyelesaikan pesanan
 orderRouter.post("/:id/complete", protect, authorize(UserRole.OWNER), completeOrderController);
+
+// List pesanan barang berdasarkan outlet (owner only)
+orderRouter.get("/:outletId/goods", protect, authorize(UserRole.OWNER), listGoodsOrdersByOutletController);
+
+// List antrian layanan berdasarkan outlet (owner only)
+orderRouter.get("/:outletId/queue", protect, authorize(UserRole.OWNER), listServiceQueueByOutletController);
+
+orderRouter.post("/create-payment", validateSchema(CreatePaymentSchema), createPaymentController)
 
 export default orderRouter;

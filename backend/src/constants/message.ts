@@ -38,6 +38,7 @@ export const Messages = {
     BOOKING_SLOT_NOT_FOUND: 'Slot booking tidak ditemukan',
     BOOKING_SLOT_ALREADY_BOOKED: 'Slot booking sudah terisi',
     BOOKING_SLOT_UNAVAILABLE: 'Slot booking tidak tersedia',
+    BOOKING_SLOT_REQUIRED: 'Slot booking diperlukan untuk layanan.',
 
     // Order & Pembayaran
     ORDER_NOT_FOUND: 'Pesanan tidak ditemukan',

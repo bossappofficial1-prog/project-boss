@@ -1,53 +1,57 @@
-# Stage 1: Build and compile
+# Multi-stage build for consumer service
 FROM node:20-alpine AS builder
 
-WORKDIR /app
-
-# Copy backend files first to leverage Docker layer caching
-COPY backend/package*.json ./backend/
-RUN cd backend && npm install
-
-# Copy consumer files
-COPY consumer/package*.json ./consumer/
-RUN cd consumer && npm install --no-package-lock
-
-# Copy all source code
-COPY . .
-
-# Generate Prisma client based on schema in backend
-RUN npx prisma generate --schema=./backend/prisma/schema.prisma
-
-# Build both backend and consumer
-RUN npm --prefix backend run build
-RUN npm --prefix consumer run build
-
-# --- Multi-stage build for smaller production image ---
-# Stage 1: Build and compile
-FROM node:20-alpine AS consumer_builder
-
+# Set working directory
 WORKDIR /app/consumer
 
+# Copy package files (build context is consumer directory)
 COPY package*.json ./
-RUN npm install
 
-COPY . .
+# Install dependencies
+RUN npm install --no-package-lock
 
+# Copy source code
+COPY . ./
+
+# Build the application
 RUN npm run build
 
-# Stage 2: Production runtime
-FROM node:20-alpine AS consumer_runner
+# Production stage
+FROM node:20-alpine AS runner
 
+# Set working directory
 WORKDIR /app/consumer
 
-# Copy only necessary files from the builder stage
-COPY --from=consumer_builder /app/consumer/package*.json ./
-COPY --from=consumer_builder /app/consumer/node_modules ./node_modules
-COPY --from=consumer_builder /app/consumer/dist ./dist
-
-# Install OpenSSL for libraries that might need it (like Prisma's engine in the future)
+# Install OpenSSL for libraries that might need it
 RUN apk add --no-cache openssl libstdc++ ca-certificates
 
-# No need to install dev dependencies in production
-# RUN npm install --omit=dev --no-fund --no-audit
+# Copy package files
+COPY --from=builder /app/consumer/package*.json ./
 
-CMD ["npm", "start"]
+# Copy node_modules from builder
+COPY --from=builder /app/consumer/node_modules ./node_modules
+
+# Copy built application
+COPY --from=builder /app/consumer/dist ./dist
+
+# Copy other necessary files
+COPY --from=builder /app/consumer/src ./src
+COPY --from=builder /app/consumer/tsconfig.json ./
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S consumer -u 1001
+
+# Change ownership of the app directory
+RUN chown -R consumer:nodejs /app
+USER consumer
+
+# Expose port if needed
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "console.log('Consumer service is healthy')" || exit 1
+
+# Start the application
+CMD ["node", "dist/worker-manager.js"]

@@ -15,17 +15,33 @@ import {
 } from "../service/outlet.service";
 
 export const findNearbyOutletsController = asyncHandler(async (req: Request, res: Response) => {
-    const { latitude, longitude, radius, page, limit } = req.query;
+    const { latitude, longitude, radius, page, limit, search } = req.query;
+
+    // Validasi parameter koordinat
+    if (!latitude || !longitude) {
+        return ResponseUtil.badRequest(res, 'Latitude and longitude are required');
+    }
+    const latNum = parseFloat(latitude as string);
+    const lngNum = parseFloat(longitude as string);
+    if (isNaN(latNum) || isNaN(lngNum)) {
+        return ResponseUtil.badRequest(res, 'Latitude and longitude must be valid numbers');
+    }
+
+    const parsedRadius = radius ? parseFloat(radius as string) : 5;
+    if (parsedRadius > 50) { // Batasi radius maksimal 50km untuk menghindari bounding box besar
+        return ResponseUtil.error(res, 'Radius maksimal 50km', undefined, HttpStatus.BAD_REQUEST);
+    }
 
     const outlets = await findNearbyOutletsService(
-        parseFloat(latitude as string),
-        parseFloat(longitude as string),
-        radius ? parseFloat(radius as string) : undefined,
-        page ? parseInt(page as string) : undefined,
-        limit ? parseInt(limit as string) : undefined
+        latNum,
+        lngNum,
+        parsedRadius,
+        page ? parseInt(page as string) : 1,
+        limit ? parseInt(limit as string) : 10,
+        search as string
     );
 
-    return ResponseUtil.success(res, outlets, HttpStatus.OK);
+    return ResponseUtil.paginated(res, outlets.outlets, outlets.page, outlets.limit, outlets.totalPages, HttpStatus.OK);
 });
 
 export const updateOutletLocationController = asyncHandler(async (req: Request, res: Response) => {
@@ -59,23 +75,23 @@ export const getOutletByIdController = asyncHandler(async (req: Request, res: Re
 export const getAllOutletsController = asyncHandler(async (req: Request, res: Response) => {
     const { search, take, skip } = req.query;
 
-    const parsedTake = take ? parseInt(take as string) : undefined;
-    const parsedSkip = skip ? parseInt(skip as string) : undefined;
+    const parsedTake = take ? parseInt(take as string) : 10; // Default 10 jika tidak disediakan
+    const parsedSkip = skip ? parseInt(skip as string) : 0;
 
     const { outlets, total } = await getAllOutletsService(
         search as string,
         parsedTake,
         parsedSkip
     );
-    return ResponseUtil.paginated(res, outlets, total, parsedTake || 0, parsedSkip || 0);
+    return ResponseUtil.paginated(res, outlets, total, parsedTake, parsedSkip);
 });
 
 export const getOutletsByBusinessIdController = asyncHandler(async (req: Request, res: Response) => {
     const { businessId } = req.params;
     const { search, take, skip } = req.query;
 
-    const parsedTake = take ? parseInt(take as string) : undefined;
-    const parsedSkip = skip ? parseInt(skip as string) : undefined;
+    const parsedTake = take ? parseInt(take as string) : 10; // Default 10 jika tidak disediakan
+    const parsedSkip = skip ? parseInt(skip as string) : 0;
 
     const { outlets, total } = await getOutletsByBusinessIdService(
         businessId,
@@ -83,7 +99,7 @@ export const getOutletsByBusinessIdController = asyncHandler(async (req: Request
         parsedTake,
         parsedSkip
     );
-    return ResponseUtil.paginated(res, outlets, total, parsedTake || 0, parsedSkip || 0);
+    return ResponseUtil.paginated(res, outlets, total, parsedTake, parsedSkip);
 });
 
 export const getFeaturedOutletsController = asyncHandler(async (req: Request, res: Response) => {

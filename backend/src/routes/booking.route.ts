@@ -16,11 +16,11 @@ const bookingRouter = Router();
 // Rute Publik untuk melihat slot jadwal
 bookingRouter.get("/product/:productId", getBookingSlotsByProductIdController);
 
+bookingRouter.get("/:id", getBookingSlotByIdController);
 // Semua rute di bawah ini akan dilindungi dan hanya untuk Owner
 bookingRouter.use(protect, authorize(UserRole.OWNER));
 
 bookingRouter.post("/", validateSchema(createBookingSlotSchema), createBookingSlotController);
-bookingRouter.get("/:id", getBookingSlotByIdController);
 bookingRouter.patch("/:id", validateSchema(updateBookingSlotSchema), updateBookingSlotController);
 bookingRouter.delete("/:id", deleteBookingSlotController);
 

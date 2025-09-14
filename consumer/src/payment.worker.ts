@@ -2,7 +2,7 @@ import amqplib from 'amqplib';
 import { config } from './config';
 import logger from './utils/logger';
 import { snap } from './lib/midtrans';
-import apiClient from './lib/api-client';
+import { apiClient } from './lib/api-client';
 
 const QUEUE_NAME = 'payment_webhook_queue';
 const EXCHANGE_NAME = 'payment_webhook_exchange';
@@ -119,8 +119,12 @@ class PaymentWorker {
             }
         } else if (transactionStatus == 'settlement') {
             paymentStatus = 'SUCCESS';
-        } else if (transactionStatus == 'cancel' || transactionStatus == 'deny' || transactionStatus == 'expire') {
+        } else if (transactionStatus == 'cancel') {
+            paymentStatus = 'CANCELLED';
+        } else if (transactionStatus == 'deny') {
             paymentStatus = 'FAILED';
+        } else if (transactionStatus == 'expire') {
+            paymentStatus = 'EXPIRED';
         }
 
         if (paymentStatus === 'PENDING') {
@@ -130,11 +134,15 @@ class PaymentWorker {
 
         // Panggil API internal di backend untuk update status
         logger.info(`Updating payment status for order ${orderId} to ${paymentStatus}`, { component: 'PaymentWorker' });
-        await apiClient.post(`/internal/orders/update-payment-status`, {
-            orderId,
-            paymentStatus,
-            // Sertakan detail lain jika diperlukan oleh backend
-        });
+        try {
+            await apiClient.post(`/internal/orders/update-payment-status`, {
+                orderId,
+                paymentStatus,
+                // Sertakan detail lain jika diperlukan oleh backend
+            });
+        } catch (error) {
+            console.log(error);
+        }
     }
 
     stop() {

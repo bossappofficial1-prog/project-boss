@@ -8,8 +8,11 @@ import { createMidtransTransactionService } from './payment.service';
 import { getOrderByIdService } from './order.service';
 import { db } from '../config/prisma';
 import { config } from '../config';
-import { Prisma, PrismaClient, OutletOperatingHours } from "@prisma/client";
+import { Prisma, PrismaClient, OutletOperatingHours, BookingSlot } from "@prisma/client";
 import { add, set } from "date-fns";
+import { getOutletByIdService } from "./outlet.service";
+import { generateTimeSlots } from "../utils";
+import Console from "../utils/logger";
 
 export async function createBookingSlotService(data: CreateBookingSlotInput) {
     const product = await getProductByIdService(data.productId);
@@ -92,6 +95,96 @@ export async function deleteBookingSlotService(id: string) {
     return bookingSlot;
 }
 
+export async function getBookingSlotByProductService(productId: string, date: Date): Promise<Array<Pick<BookingSlot, "id" | "date" | "startTime" | "endTime">>> {
+    let slots = await BookingRepository.getSlotsByProductId(productId, date);
+    Console.log(slots)
+
+    if (!slots.length) {
+        const product = await getProductByIdService(productId);
+
+        if (product.type !== 'SERVICE') {
+            throw new AppError("Slots can only be generated for SERVICE type products.", HttpStatus.BAD_REQUEST);
+        }
+
+        const serviceDurationMinutes = product.serviceDurationMinutes ?? 60
+
+        const outletId = product.outletId
+        if (!outletId) {
+            throw new AppError("Product tidak memiliki outlet terkait (outletId).", HttpStatus.BAD_REQUEST);
+        }
+
+        const outlet = await getOutletByIdService(outletId)
+
+        await generateSlotsForDate({
+            productId,
+            operatingHours: outlet.operatingHours,
+            serviceDurationMinutes,
+            date,
+        });
+
+        slots = await BookingRepository.getSlotsByProductId(productId, date);
+    }
+
+    return slots
+}
+
+type GenerateSlotsForDateParams = {
+    productId: string;
+    operatingHours: OutletOperatingHours[];
+    serviceDurationMinutes: number;
+    date: Date;
+};
+
+export async function generateSlotsForDate({ productId, operatingHours, serviceDurationMinutes, date }: GenerateSlotsForDateParams) {
+    const slotsToCreate: Prisma.BookingSlotCreateManyInput[] = [];
+    const dayOfWeek = date.getDay(); // 0-6
+
+    const workHours = operatingHours.find(h => h.dayOfWeek === dayOfWeek && h.isOpen);
+    if (!workHours) return;
+
+    // build start and close times on the requested date
+    const open = new Date(workHours.openTime);
+    const close = new Date(workHours.closeTime);
+
+    let slotStart = set(date, {
+        hours: open.getHours(),
+        minutes: open.getMinutes(),
+        seconds: 0,
+        milliseconds: 0,
+    });
+
+    let slotClose = set(date, {
+        hours: close.getHours(),
+        minutes: close.getMinutes(),
+        seconds: 0,
+        milliseconds: 0,
+    });
+
+    // if close <= open, treat close as next day
+    if (slotClose <= slotStart) {
+        slotClose = add(slotClose, { days: 1 });
+    }
+
+    // create slots [start, start + duration) while fully inside operating window
+    while (add(slotStart, { minutes: serviceDurationMinutes }) <= slotClose) {
+        const slotEnd = add(slotStart, { minutes: serviceDurationMinutes });
+
+        slotsToCreate.push({
+            productId,
+            date,
+            startTime: slotStart,
+            endTime: slotEnd,
+            status: 'AVAILABLE',
+        });
+
+        slotStart = slotEnd;
+    }
+
+    if (slotsToCreate.length > 0) {
+        await BookingRepository.createMany(slotsToCreate as any);
+    }
+}
+
 type GenerateSlotsParams = {
     productId: string;
     operatingHours: OutletOperatingHours[];
@@ -105,7 +198,6 @@ type GenerateSlotsParams = {
  * @param params - Parameters for slot generation.
  */
 export async function generateDefaultBookingSlots(
-    prisma: Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">,
     { productId, operatingHours, serviceDurationMinutes, daysToGenerate }: GenerateSlotsParams
 ) {
     const slotsToCreate: Prisma.BookingSlotCreateManyInput[] = [];
@@ -149,9 +241,6 @@ export async function generateDefaultBookingSlots(
     }
 
     if (slotsToCreate.length > 0) {
-        await prisma.bookingSlot.createMany({
-            data: slotsToCreate,
-            skipDuplicates: true,
-        });
+        await BookingRepository.createMany(slotsToCreate as any)
     }
 }

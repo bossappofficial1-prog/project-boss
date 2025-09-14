@@ -12,6 +12,7 @@ coverage/
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # Log files
 logs/
@@ -20,8 +21,6 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Temporary files & assets (kecuali yang diizinkan)
-public/*
-!public/info.txt
 tmp/*
 !tmp/info.txt
 
@@ -34,7 +33,6 @@ uploads/
 # OS generated files
 .DS_Store
 Thumbs.db
-prisma/migrations
 
 index.html
 /generated/prisma

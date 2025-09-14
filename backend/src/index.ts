@@ -1,8 +1,9 @@
 import { networkInterfaces } from "node:os";
 import app from "./app";
 import { config } from "./config";
-import { initSocket } from "./config/socket";
 import { connectRabbitMQ } from "./config/rabbitmq";
+import { socketUtils } from "./utils/socket.utils";
+import http from "node:http"
 
 function getNetworkAdresses(): string[] {
     const nets = networkInterfaces();
@@ -21,10 +22,18 @@ function getNetworkAdresses(): string[] {
 
 async function startServer(port: number) {
     try {
-        // 1. Hubungkan ke RabbitMQ terlebih dahulu dan tunggu sampai selesai.
+        const server = http.createServer(app)
+        socketUtils.init(server)
+
         await connectRabbitMQ();
 
-        const server = initSocket(app);
+        // Initialize Elasticsearch (optional - won't crash app if ES is down)
+        // try {
+        //     const { initializeElasticsearch } = await import('./service/elastic.service');
+        //     await initializeElasticsearch();
+        // } catch (error) {
+        //     console.warn('⚠️ Elasticsearch initialization failed, continuing without search features:', error);
+        // }
 
         server.listen(port, () => {
             console.log(`• Server running on:`);
@@ -40,7 +49,7 @@ async function startServer(port: number) {
 
         server.on("error", (err: NodeJS.ErrnoException) => {
             if (err.code === "EADDRINUSE") {
-                console.warn(`Port ${port} in use, trying ${port + 1}…`);
+                console.warn(`Port ${port} in use, trying ${port + 1}...`);
                 startServer(port + 1);
             } else {
                 console.error("Server error:", err);
@@ -49,8 +58,6 @@ async function startServer(port: number) {
 
     } catch (error) {
         console.error("🔴 Failed to start server:", error);
-        // Jika koneksi awal ke RabbitMQ gagal, proses akan keluar
-        // Ini lebih baik daripada menjalankan server dalam keadaan tidak stabil
         process.exit(1);
     }
 }

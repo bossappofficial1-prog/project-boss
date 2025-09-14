@@ -4,15 +4,20 @@ import { getDashboardSummaryService, getOrderStatsService } from "../service/das
 import { ResponseUtil } from "../utils/response";
 
 export const getDashboardSummaryController = asyncHandler(async (req: Request, res: Response) => {
-    // In a real multi-tenant app, you'd get the businessId from the authenticated user (req.user.business.id)
-    const businessId = "dummy-business-id"; // Placeholder
-    const summary = await getDashboardSummaryService(businessId);
+    const outletId = String(req.query.outletId || "");
+    if (!outletId) {
+        return ResponseUtil.badRequest(res, 'Parameter outletId wajib diisi');
+    }
+    const summary = await getDashboardSummaryService(outletId);
     return ResponseUtil.success(res, summary);
 });
 
 export const getOrderStatsController = asyncHandler(async (req: Request, res: Response) => {
-    const businessId = "dummy-business-id"; // Placeholder
+    const outletId = String(req.query.outletId || "");
+    if (!outletId) {
+        return ResponseUtil.badRequest(res, 'Parameter outletId wajib diisi');
+    }
     const { period } = req.query;
-    const stats = await getOrderStatsService(businessId, period as 'week' | 'month');
+    const stats = await getOrderStatsService(outletId, (period as 'week' | 'month') || 'month');
     return ResponseUtil.success(res, stats);
 });

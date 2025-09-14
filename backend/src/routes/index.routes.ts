@@ -7,7 +7,6 @@ import orderRouter from "./order.route";
 import dashboardRouter from "./dashboard.route";
 import bookingRouter from "./booking.route";
 import paymentRouter from "./payment.route";
-import businessRouter from "./business.route";
 import homeRouter from "./home.route";
 import outletRouter from "./outlet.route";
 import expenseRouter from "./expense.route";
@@ -18,6 +17,9 @@ import operatingHoursRouter from "./operating-hours.route";
 import uploadRouter from "./upload.route";
 import securityRouter from "./security.route";
 import queueMonitoringRouter from "./queue-monitoring.route";
+import notificationRouter from "./notification.route";
+import { ResponseUtil } from "../utils";
+import { paymentMethod } from "../constants/payment-method";
 
 const apiRouter = Router()
 
@@ -29,7 +31,6 @@ apiRouter.use('/orders', orderRouter)
 apiRouter.use('/dashboard', dashboardRouter)
 apiRouter.use('/bookings', bookingRouter)
 apiRouter.use('/payments', paymentRouter)
-apiRouter.use('/business', businessRouter)
 apiRouter.use('/outlets', outletRouter)
 apiRouter.use('/home', homeRouter)
 apiRouter.use('/expenses', expenseRouter)
@@ -40,6 +41,18 @@ apiRouter.use('/operating-hours', operatingHoursRouter)
 apiRouter.use('/upload', uploadRouter)
 apiRouter.use('/security', securityRouter)
 apiRouter.use('/queue-monitoring', queueMonitoringRouter)
-apiRouter.use('/security', securityRouter)
+apiRouter.use('/notifications', notificationRouter)
+apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
+// apiRouter.get("/test-websocket/:orderId", async (req, res) => {
+//     const { orderId } = req.params
+//     socketUtils.emitToOrder(orderId, {
+//         message: "Hello World",
+//         orderId: "ORD20250828123456",
+//         status: "test",
+//         timestamp: new Date()
+//     })
+
+//     res.json({ message: "OK" })
+// })
 
 export default apiRouter

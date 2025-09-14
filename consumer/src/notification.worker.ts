@@ -1,4 +1,4 @@
-import apiClient from './lib/api-client';
+import { apiClient } from './lib/api-client';
 import logger from './utils/logger';
 import { config } from './config';
 import amqplib from 'amqplib';

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth';
-import type { DashboardSummary, OrderStats } from '~/types';
+import type { DashboardSummary, OrderStats, NotificationsResponse } from '~/types';
 
 const auth = useAuthStore();
 const summary = ref<DashboardSummary | null>(null);
@@ -8,33 +8,15 @@ const stats = ref<OrderStats | null>(null);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
-// Mock alerts data - in real app, this would come from API
-const alerts = ref([
-  {
-    id: '1',
-    type: 'success' as const,
-    title: 'Pesanan Baru',
-    message: 'Anda memiliki 3 pesanan baru yang perlu diproses',
-    timestamp: new Date(),
-    dismissible: true
-  },
-  {
-    id: '2',
-    type: 'warning' as const,
-    title: 'Stok Rendah',
-    message: 'Beberapa produk memiliki stok di bawah batas minimum',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-    dismissible: true
-  },
-  {
-    id: '3',
-    type: 'info' as const,
-    title: 'Laporan Mingguan',
-    message: 'Laporan penjualan minggu ini sudah tersedia',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    dismissible: true
-  }
-]);
+// Alerts sourced from API notifications, initially empty
+const alerts = ref<Array<{
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  timestamp: Date;
+  dismissible?: boolean;
+}>>([]);
 
 const dismissAlert = (id: string) => {
   const index = alerts.value.findIndex(alert => alert.id === id);
@@ -52,16 +34,59 @@ async function fetchData() {
   error.value = null;
 
   try {
-    const [summaryResponse, statsResponse] = await Promise.all([
+    const [summaryResponse, statsResponse, notificationsResponse] = await Promise.all([
       useApi<DashboardSummary>(`/dashboard/summary?outletId=${outletId.value}`),
-      useApi<OrderStats>(`/dashboard/stats?outletId=${outletId.value}&period=month`)
+      useApi<OrderStats>(`/dashboard/stats?outletId=${outletId.value}&period=month`),
+      useApi<NotificationsResponse>(`/notifications?outletId=${outletId.value}&threshold=5`)
     ]);
 
     if (summaryResponse.error.value) throw summaryResponse.error.value;
     if (statsResponse.error.value) throw statsResponse.error.value;
+    if (notificationsResponse.error.value) throw notificationsResponse.error.value;
 
     summary.value = summaryResponse.data.value?.data || null;
     stats.value = statsResponse.data.value?.data || null;
+
+    // Map notifications to dashboard alerts, only when needed
+    const items = notificationsResponse.data.value?.data?.items || [];
+    const mapped = items
+      .flatMap((n) => {
+        if (n.type === 'NEW_ORDERS' && (n as any).count > 0) {
+          return [{
+            id: `${n.type}-${n.time}`,
+            type: 'success' as const,
+            title: n.title,
+            message: n.message,
+            timestamp: new Date(n.time),
+            dismissible: true,
+          }];
+        }
+        if (n.type === 'LOW_STOCK' && (n as any).count > 0) {
+          return [{
+            id: `${n.type}-${n.time}`,
+            type: 'warning' as const,
+            title: n.title,
+            message: n.message,
+            timestamp: new Date(n.time),
+            dismissible: true,
+          }];
+        }
+        if (n.type === 'WEEKLY_REPORT') {
+          // Only show when report is available (based on message from API)
+          if (typeof n.message === 'string' && n.message.toLowerCase().includes('sudah tersedia')) {
+            return [{
+              id: `${n.type}-${n.time}`,
+              type: 'info' as const,
+              title: n.title,
+              message: n.message,
+              timestamp: new Date(n.time),
+              dismissible: true,
+            }];
+          }
+        }
+        return [] as any[];
+      });
+    alerts.value = mapped;
   } catch (e: any) {
     error.value = e.data?.message || 'Gagal memuat data dashboard';
   } finally {

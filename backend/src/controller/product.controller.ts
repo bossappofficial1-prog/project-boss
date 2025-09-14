@@ -11,7 +11,8 @@ import {
     getProductsByOutletIdService,
     searchProductsByNameService,
     updateProductService,
-    generateProductImportTemplateService
+    generateProductImportTemplateService,
+    exportProductsToExcelService
 } from "../service/product.service";
 
 export const getProductImportTemplateController = asyncHandler(async (req: Request, res: Response) => {
@@ -68,4 +69,22 @@ export const deleteProductController = asyncHandler(async (req: Request, res: Re
     const { id } = req.params;
     const product = await deleteProductService(id);
     return ResponseUtil.success(res, product);
+});
+
+export const exportProductsController = asyncHandler(async (req: Request, res: Response) => {
+    const { outletId } = req.params;
+    const { type, search } = req.query;
+    
+    const buffer = await exportProductsToExcelService(outletId, {
+        type: type as 'GOODS' | 'SERVICE' | undefined,
+        search: search as string | undefined
+    });
+    
+    const filename = type === 'GOODS' ? 'data_produk.xlsx' : 
+                    type === 'SERVICE' ? 'data_jasa.xlsx' : 
+                    'data_produk_dan_jasa.xlsx';
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.send(buffer);
 });

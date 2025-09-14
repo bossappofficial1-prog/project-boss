@@ -1,5 +1,6 @@
 import { getRabbitMQChannel } from '../config/rabbitmq';
 import logger from '../utils/winston.logger';
+import { messagePublisher } from './message-publisher.service';
 
 export class NotificationMonitoringService {
 
@@ -154,7 +155,6 @@ export class NotificationMonitoringService {
      */
     static async testNotificationPublish() {
         try {
-            const { messagePublisher } = await import('./message-publisher.service');
 
             // Send test notification
             await messagePublisher.publishOrderStatusUpdate('TEST_ORDER_ID', 'TEST_STATUS');

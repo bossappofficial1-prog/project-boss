@@ -8,7 +8,6 @@ export const handleMidtransWebhook = asyncHandler(async (req: Request, res: Resp
 
     // Terbitkan seluruh payload notifikasi ke RabbitMQ
     await messagePublisher.publishPaymentWebhookReceived(notificationPayload, 'midtrans');
-
     // Langsung balas 200 OK
     return ResponseUtil.success(res, { message: 'Webhook received' });
 });

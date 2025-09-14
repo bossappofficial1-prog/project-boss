@@ -7,7 +7,7 @@ import { asyncHandler } from '../middleware/error.middleware';
 import { ResponseUtil } from '../utils/response';
 import { handlePaymentSuccess, handlePaymentFailure } from '../service/payment-update.service';
 
-const REMINDER_BEFORE_EXPIRY_MS = 3 * 60 * 1000; // 3 menit
+const REMINDER_BEFORE_EXPIRY_MS = 3 * 60 * 1000; // 1 jam untuk test
 
 export const getExpiringTransactions = asyncHandler(
     async (req: Request, res: Response) => {
@@ -90,7 +90,7 @@ export const updatePaymentStatus = asyncHandler(
 
         if (paymentStatus === 'SUCCESS') {
             await handlePaymentSuccess(orderId);
-        } else if (paymentStatus === 'FAILED') {
+        } else if (paymentStatus === 'FAILED' || paymentStatus === 'EXPIRED' || paymentStatus === 'CANCELLED') {
             await handlePaymentFailure(orderId);
         }
 

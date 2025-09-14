@@ -14,10 +14,13 @@ const IMAGE_MAGIC_NUMBERS = {
     'image/webp': ['52494646'] // RIFF for WebP
 };
 
-// Function to get file magic number
+// Function to get file magic number (optimized: read only first 4 bytes)
 const getFileMagicNumber = (filePath: string): string => {
-    const buffer = fs.readFileSync(filePath);
-    return buffer.toString('hex', 0, 4).toUpperCase();
+    const buffer = Buffer.alloc(4);
+    const fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buffer, 0, 4, 0);
+    fs.closeSync(fd);
+    return buffer.toString('hex').toUpperCase();
 };
 
 // Enhanced file validation function
