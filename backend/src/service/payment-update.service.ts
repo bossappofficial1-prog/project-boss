@@ -2,6 +2,7 @@ import { db } from '../config/prisma';
 import { HttpStatus } from '../constants/http-status';
 import { AppError } from '../errors/app-error';
 import { messagePublisher } from './message-publisher.service';
+import { socketUtils } from '../utils/socket.utils';
 
 export async function handlePaymentSuccess(orderId: string) {
     const order = await db.order.findUnique({
@@ -10,6 +11,7 @@ export async function handlePaymentSuccess(orderId: string) {
             items: { include: { product: true } },
             bookingSlot: true,
             outlet: true,
+            guestCustomer: true,
         },
     });
 
@@ -53,6 +55,16 @@ export async function handlePaymentSuccess(orderId: string) {
             },
         });
 
+        // 4. Kurangi quantity produk untuk GOODS
+        for (const item of order.items) {
+            if (item.product.type === 'GOODS') {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { quantity: { decrement: item.quantity } },
+                });
+            }
+        }
+
         // Logika booking slot jika ada
         if (order.bookingSlot) {
             await tx.bookingSlot.update({
@@ -64,6 +76,21 @@ export async function handlePaymentSuccess(orderId: string) {
 
     // Terbitkan event setelah transaksi database selesai
     await messagePublisher.publishOrderStatusUpdate(order.id, orderStatus);
+
+    // Emit notification to business outlet
+    try {
+        socketUtils.emitToBusinessOutlet(order.outletId, {
+            type: 'payment_success',
+            orderId: order.id,
+            amount: order.totalAmount,
+            orderStatus: orderStatus,
+            customerName: order.guestCustomer?.name || 'Customer',
+            timestamp: new Date()
+        });
+        console.log(`📡 Emitted payment_success event for outlet ${order.outletId}`);
+    } catch (socketError) {
+        console.error('❌ Error emitting payment_success event:', socketError);
+    }
 }
 
 export async function handlePaymentFailure(orderId: string) {
@@ -72,6 +99,8 @@ export async function handlePaymentFailure(orderId: string) {
         include: {
             items: { include: { product: true } },
             bookingSlot: true,
+            outlet: true,
+            guestCustomer: true,
         },
     });
 
@@ -97,12 +126,20 @@ export async function handlePaymentFailure(orderId: string) {
         });
     }
 
-    for (const item of order.items) {
-        if (item.product.type === 'GOODS') {
-            await db.product.update({
-                where: { id: item.productId },
-                data: { quantity: { increment: item.quantity } },
-            });
-        }
+    // Emit notification to business outlet
+    try {
+        socketUtils.emitToBusinessOutlet(order.outletId, {
+            type: 'payment_failed',
+            orderId: order.id,
+            amount: order.totalAmount,
+            orderStatus: 'CANCELLED',
+            customerName: order.guestCustomer?.name || 'Customer',
+            timestamp: new Date()
+        });
+        console.log(`📡 Emitted payment_failed event for outlet ${order.outletId}`);
+    } catch (socketError) {
+        console.error('❌ Error emitting payment_failed event:', socketError);
     }
+
+    // Tidak perlu kembalikan quantity karena belum dikurangi saat checkout
 }

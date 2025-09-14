@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { authApi, dashboardApi } from '@/lib/api';
+import { useSocket } from '@/lib/socket';
 import AddOutletModal from '@/components/modals/AddOutletModal';
 import BankAccountModal from '@/components/modals/BankAccountModal';
 
@@ -52,12 +53,15 @@ export default function DashboardPage() {
   const [showAddOutletModal, setShowAddOutletModal] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
 
+  // Initialize socket connection
+  const { isConnected, businessEvents } = useSocket(selectedOutlet);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
         const token = localStorage.getItem('token');
-        
+
         if (!token) {
           window.location.href = '/auth/login';
           return;
@@ -95,10 +99,22 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [selectedDate]);
 
+  // Handle new business events from socket
+  useEffect(() => {
+    if (businessEvents.length > 0) {
+      console.log('New business events received:', businessEvents);
+      // Refresh dashboard stats when new payment arrives
+      if (selectedOutlet) {
+        fetchDashboardSummary(selectedOutlet);
+        fetchOrderStats(selectedOutlet);
+      }
+    }
+  }, [businessEvents, selectedOutlet]);
+
   const fetchDashboardSummary = async (outletId: string) => {
     try {
       const summary = await dashboardApi.getSummary(outletId);
-      
+
       setStats({
         totalProducts: summary.totalProducts,
         totalServices: summary.totalServices,
@@ -131,7 +147,7 @@ export default function DashboardPage() {
     const handleOutletChange = (event: CustomEvent) => {
       const newOutletId = event.detail.outletId;
       setSelectedOutlet(newOutletId);
-      
+
       // Fetch new data for the selected outlet
       if (newOutletId) {
         fetchDashboardSummary(newOutletId);
@@ -140,7 +156,7 @@ export default function DashboardPage() {
     };
 
     window.addEventListener('outletChanged', handleOutletChange as EventListener);
-    
+
     return () => {
       window.removeEventListener('outletChanged', handleOutletChange as EventListener);
     };
@@ -201,9 +217,9 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-0">
           <div className="animate-slide-in-left">
-            
+
           </div>
-          
+
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 animate-slide-in-top">
             <div className="flex items-center bg-white rounded-xl sm:rounded-2xl shadow-lg px-3 sm:px-4 py-2.5 sm:py-3 border border-red-100 hover:shadow-xl transition-all duration-300 input-focus">
               <svg className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -215,6 +231,18 @@ export default function DashboardPage() {
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="border-none focus:outline-none text-sm font-medium text-gray-700 bg-transparent w-full"
               />
+            </div>
+
+            {/* Socket Connection Status */}
+            <div className={`flex items-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl shadow-lg border transition-all duration-300 ${isConnected
+                ? 'bg-green-50 border-green-200 text-green-700'
+                : 'bg-red-50 border-red-200 text-red-700'
+              }`}>
+              <div className={`w-2 h-2 rounded-full mr-2 sm:mr-3 ${isConnected ? 'bg-green-500' : 'bg-red-500'
+                }`}></div>
+              <span className="text-sm font-medium">
+                {isConnected ? 'Terhubung' : 'Terputus'}
+              </span>
             </div>
           </div>
         </div>
@@ -230,7 +258,7 @@ export default function DashboardPage() {
                 Profil Bisnis
               </h2>
             </div>
-            
+
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
               {/* Business Info */}
               <div className="space-y-3 sm:space-y-4">
@@ -238,28 +266,28 @@ export default function DashboardPage() {
                   <label className="text-sm font-medium text-gray-500">Nama Bisnis</label>
                   <p className="text-base sm:text-lg font-semibold text-gray-900 break-words">{business.name}</p>
                 </div>
-                
+
                 {business.description && (
                   <div>
                     <label className="text-sm font-medium text-gray-500">Deskripsi</label>
                     <p className="text-gray-700 break-words">{business.description}</p>
                   </div>
                 )}
-                
+
                 {business.type && (
                   <div>
                     <label className="text-sm font-medium text-gray-500">Jenis Bisnis</label>
                     <p className="text-gray-700">{business.type}</p>
                   </div>
                 )}
-                
+
                 {business.address && (
                   <div>
                     <label className="text-sm font-medium text-gray-500">Alamat</label>
                     <p className="text-gray-700 break-words">{business.address}</p>
                   </div>
                 )}
-                
+
                 {business.phone && (
                   <div>
                     <label className="text-sm font-medium text-gray-500">Telepon</label>
@@ -267,7 +295,7 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-              
+
               {/* Bank Info */}
               <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
                 <h3 className="text-base sm:text-lg font-semibold text-green-700 flex items-center">
@@ -276,7 +304,7 @@ export default function DashboardPage() {
                   </svg>
                   Informasi Bank
                 </h3>
-                
+
                 {business.bankName && business.bankAccount ? (
                   <>
                     <div className="flex items-start justify-between gap-2">
@@ -285,19 +313,19 @@ export default function DashboardPage() {
                           <label className="text-sm font-medium text-green-600">Nama Bank</label>
                           <p className="text-green-800 font-semibold break-words">{business.bankName}</p>
                         </div>
-                        
+
                         <div className="mt-3">
                           <label className="text-sm font-medium text-green-600">Nomor Rekening</label>
                           <p className="text-green-800 font-mono text-base sm:text-lg break-all">{business.bankAccount}</p>
                         </div>
-                        
+
                         {business.accountHolder && (
                           <div className="mt-3">
                             <label className="text-sm font-medium text-green-600">Nama Pemilik Rekening</label>
                             <p className="text-green-800 break-words">{business.accountHolder}</p>
                           </div>
                         )}
-                        
+
                         {business.transactionFeeBearer && (
                           <div className="mt-3">
                             <label className="text-sm font-medium text-green-600">Penanggung Biaya Transaksi</label>
@@ -305,7 +333,7 @@ export default function DashboardPage() {
                           </div>
                         )}
                       </div>
-                      
+
                       <button
                         onClick={() => setShowBankModal(true)}
                         className="flex-shrink-0 p-1.5 sm:p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
@@ -324,7 +352,7 @@ export default function DashboardPage() {
                     </svg>
                     <p className="text-green-600 font-medium">Informasi bank belum diatur</p>
                     <p className="text-green-500 text-sm mt-1">Atur rekening bank untuk menerima pembayaran</p>
-                    <button 
+                    <button
                       onClick={() => setShowBankModal(true)}
                       className="mt-3 text-sm bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
                     >
@@ -419,7 +447,7 @@ export default function DashboardPage() {
                 </svg>
                 Daftar Outlet ({outlets.length})
               </h2>
-              <button 
+              <button
                 onClick={() => setShowAddOutletModal(true)}
                 className="bg-blue-gradient text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:shadow-lg transition-all duration-300 text-sm font-medium flex items-center justify-center"
               >
@@ -429,23 +457,22 @@ export default function DashboardPage() {
                 Tambah Outlet
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {outlets.map((outlet, index) => (
-                <div 
-                  key={outlet.id} 
-                  className={`p-3 sm:p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
-                    outlet.id === selectedOutlet 
-                      ? 'border-red-500 bg-red-50 shadow-lg' 
+                <div
+                  key={outlet.id}
+                  className={`p-3 sm:p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${outlet.id === selectedOutlet
+                      ? 'border-red-500 bg-red-50 shadow-lg'
                       : 'border-gray-200 hover:border-red-300 hover:shadow-md'
-                  }`}
+                    }`}
                   style={{ animationDelay: `${0.1 * index}s` }}
                 >
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
                       {outlet.imageUrl ? (
-                        <img 
-                          src={outlet.imageUrl} 
+                        <img
+                          src={outlet.imageUrl}
                           alt={outlet.name}
                           className="w-12 h-12 rounded-lg object-cover"
                         />
@@ -457,14 +484,14 @@ export default function DashboardPage() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 truncate">{outlet.name}</h3>
                       <p className="text-sm text-gray-600 line-clamp-2">{outlet.address}</p>
                       {outlet.phone && (
                         <p className="text-sm text-gray-500 mt-1">{outlet.phone}</p>
                       )}
-                      
+
                       {outlet.id === selectedOutlet && (
                         <div className="mt-2">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
