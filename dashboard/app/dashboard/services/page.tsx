@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { productApi, authApi } from '@/lib/api';
+import EditProductServiceModal from '@/components/modals/EditProductServiceModal';
 
 interface Service {
   id: string;
@@ -31,12 +32,25 @@ export default function ServicesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [isLoading, setIsLoading] = useState(true);
+  const [hasBusinessProfile, setHasBusinessProfile] = useState<boolean>(false);
+  const [hasOutlet, setHasOutlet] = useState<boolean>(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeData = async () => {
       try {
-        const userData = await authApi.me();
+  const userData = await authApi.me();
         setOutlets(userData.outlets);
+  const hasBusiness = !!userData.business?.id;
+  const hasBank = !!(userData.business?.bankName && userData.business?.accountNumber);
+  setHasBusinessProfile(hasBusiness && hasBank);
+  setHasOutlet(userData.outlets.length > 0);
+  // Avoid skeleton-only state when no outlets
+  if (userData.outlets.length === 0) {
+    setIsLoading(false);
+  }
         if (userData.outlets.length > 0) {
           // Try restore persisted outlet selection
           const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
@@ -51,6 +65,7 @@ export default function ServicesPage() {
           }
         }
       } catch (error) {
+        setError('Error mengambil data user. Silakan coba lagi.');
         console.error('Error fetching user data:', error);
       }
     };
@@ -98,6 +113,7 @@ export default function ServicesPage() {
       
       setServices(serviceData);
     } catch (error) {
+      setError('Error mengambil data jasa. Silakan coba lagi.');
       console.error('Error fetching services:', error);
       setServices([]);
     } finally {
@@ -127,9 +143,14 @@ export default function ServicesPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
+      setError('Gagal mengekspor data jasa. Silakan coba lagi.');
       console.error('Error exporting services:', error);
-      alert('Gagal mengekspor data jasa. Silakan coba lagi.');
     }
+  };
+
+  const openEdit = (service: Service) => {
+    setSelectedService(service);
+    setShowEditModal(true);
   };
 
   const formatCurrency = (amount: number) => {
@@ -180,6 +201,39 @@ export default function ServicesPage() {
     );
   }
 
+  // Guidance screen when BOTH business profile and outlet are missing
+  if (!isLoading && !hasBusinessProfile && !hasOutlet) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-3xl mx-auto mt-10">
+          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 border border-amber-100">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10A8 8 0 11.001 10 8 8 0 0118 10zm-8-4a1 1 0 00-.993.883L9 7v3a1 1 0 00.883.993L10 11h.01a1 1 0 01.117 1.993L10 13H9a1 1 0 00-.117 1.993L9 15h2a1 1 0 00.117-1.993L11 13h-.01a1 1 0 01-.117-1.993L11 11h-1V7a1 1 0 00-1-1zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/></svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Lengkapi Profil Bisnis & Tambahkan Outlet</h2>
+                <p className="text-gray-600 mt-1">Untuk mulai menambah Produk dan Jasa, Anda perlu:</p>
+                <ul className="mt-3 space-y-2 text-gray-700 list-disc pl-5">
+                  <li>Lengkapi profil bisnis beserta informasi rekening</li>
+                  <li>Tambah minimal satu outlet</li>
+                </ul>
+                <div className="mt-6">
+                  <button
+                    onClick={() => (window.location.href = '/dashboard')}
+                    className="inline-flex items-center px-5 py-3 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  >
+                    Oke, ke Dashboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -203,6 +257,29 @@ export default function ServicesPage() {
             </button>
           </div>
         </div>
+
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+            </div>
+            <button 
+              onClick={() => setError(null)}
+              className="text-red-400 hover:text-red-600"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* No inline callout; full-page guidance covers the not-ready (both missing) case */}
 
         {/* Filters and Search */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -251,8 +328,58 @@ export default function ServicesPage() {
           </div>
         </div>
 
-        {/* Services Table */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        {/* Mobile list (cards) */}
+        <div className="sm:hidden space-y-3">
+          {filteredServices.map((service) => (
+            <div key={service.id} className="bg-white rounded-xl shadow p-4 flex gap-3">
+              <img
+                src={service.image || 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png'}
+                alt={service.name}
+                className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-semibold text-gray-900 line-clamp-2">{service.name}</div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                    service.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {service.status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif'}
+                  </span>
+                </div>
+                {service.description && (
+                  <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">{service.description}</div>
+                )}
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    <div className="font-medium">{formatCurrency(service.price)}</div>
+                    <div className="text-xs text-gray-500">Modal: {formatCurrency(service.costPrice)}</div>
+                  </div>
+                  <div className="text-xs text-gray-500">Durasi: {formatDuration(service.serviceDurationMinutes)}</div>
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    onClick={() => openEdit(service)}
+                    className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700"
+                  >
+                    Edit Jasa
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {filteredServices.length === 0 && !isLoading && (
+            <div className="text-center py-12 bg-white rounded-2xl shadow">
+              <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+              </svg>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Tidak ada jasa</h3>
+              <p className="text-gray-500">Belum ada jasa untuk outlet ini.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Services Table (desktop) */}
+        <div className="hidden sm:block bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Mobile scroll hint */}
           <div className="sm:hidden px-4 py-2 bg-gray-50 border-b">
             <div className="flex items-center justify-between">
@@ -270,28 +397,31 @@ export default function ServicesPage() {
           <div className="overflow-x-auto max-w-full">
             <div className="min-w-full inline-block align-middle">
               <table className="min-w-full divide-y divide-gray-200 table-fixed">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="w-12 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-14 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     No
                   </th>
-                  <th className="w-20 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  <th className="w-24 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                     Gambar
                   </th>
-                  <th className="w-40 sm:w-48 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-56 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nama Jasa
                   </th>
-                  <th className="w-24 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  <th className="w-28 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                     Harga Modal
                   </th>
-                  <th className="w-24 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-32 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Harga Jual
                   </th>
-                  <th className="w-24 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  <th className="w-24 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                     Durasi
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  <th className="w-28 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                     Status
+                  </th>
+                  <th className="w-28 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aksi
                   </th>
                 </tr>
               </thead>
@@ -370,6 +500,14 @@ export default function ServicesPage() {
                         {service.status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif'}
                       </span>
                     </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={() => openEdit(service)}
+                        className="text-indigo-600 hover:text-indigo-900"
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -389,6 +527,15 @@ export default function ServicesPage() {
           )}
         </div>
       </div>
+      <EditProductServiceModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        item={selectedService as any}
+        onSuccess={() => {
+          setShowEditModal(false);
+          fetchServices();
+        }}
+      />
     </DashboardLayout>
   );
 }
