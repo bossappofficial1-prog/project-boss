@@ -139,3 +139,43 @@ export const getOrderByCustomerPhoneController = asyncHandler(async (req: Reques
     const customerOrder = await getOrderByCustomerPhoneService(phone)
     return ResponseUtil.success(res, customerOrder)
 })
+
+export const getOrderNotificationDataController = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const order = await getOrderByIdService(id);
+
+    if (!order) {
+        return ResponseUtil.notFound(res, 'Order not found');
+    }
+
+    // Format data untuk notifikasi WhatsApp
+    const notificationData = {
+        id: order.id,
+        totalAmount: order.totalAmount,
+        paymentMethod: 'Online', // Default for now
+        updatedAt: order.updatedAt.toISOString(),
+        guestCustomer: {
+            name: order.guestCustomer.name,
+            phone: order.guestCustomer.phone
+        },
+        outlet: {
+            name: order.outlet.name,
+            address: order.outlet.address,
+            phone: order.outlet.phone,
+            whatsapp: order.outlet.phone
+        },
+        items: order.items.map(item => ({
+            quantity: item.quantity,
+            product: {
+                name: item.product.name,
+                type: item.product.type
+            }
+        })),
+        bookingSlot: order.bookingSlot ? {
+            dateTime: order.bookingSlot.startTime.toISOString()
+        } : undefined
+    };
+
+    return ResponseUtil.success(res, notificationData);
+})

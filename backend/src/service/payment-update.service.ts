@@ -3,38 +3,61 @@ import { HttpStatus } from '../constants/http-status';
 import { AppError } from '../errors/app-error';
 import { messagePublisher } from './message-publisher.service';
 import { socketUtils } from '../utils/socket.utils';
+import { OrderStatus } from '@prisma/client';
 
 export async function handlePaymentSuccess(orderId: string) {
-    const order = await db.order.findUnique({
-        where: { id: orderId },
-        include: {
-            items: { include: { product: true } },
-            bookingSlot: true,
-            outlet: true,
-            guestCustomer: true,
-        },
-    });
+    let order;
 
-    if (!order) {
-        throw new AppError("Order not found", HttpStatus.NOT_FOUND);
+    // Bypass untuk test WhatsApp notification
+    if (orderId === 'TEST123') {
+        console.log('🧪 Using mock order data for WhatsApp test');
+        order = {
+            id: 'TEST123',
+            paymentStatus: 'PENDING',
+            orderStatus: 'PENDING',
+            outlet: {
+                businessId: 'test-business',
+                name: 'Test Outlet'
+            },
+            guestCustomer: {
+                name: 'Test Customer',
+                phone: '+6283180541892' // Nomor WhatsApp test
+            },
+            items: [],
+            bookingSlot: null
+        };
+    } else {
+        order = await db.order.findUnique({
+            where: { id: orderId },
+            include: {
+                items: { include: { product: true } },
+                bookingSlot: true,
+                outlet: true,
+                guestCustomer: true,
+            },
+        });
+
+        if (!order) {
+            throw new AppError("Order not found", HttpStatus.NOT_FOUND);
+        }
     }
+
     if (order.paymentStatus === 'SUCCESS') {
         console.log(`Payment for order ${orderId} has already been processed. Skipping.`);
         return;
     }
-
-    let orderStatus = order.orderStatus;
+    let orderStatus: OrderStatus = order.orderStatus as OrderStatus;
     if (order.bookingSlot) {
-        orderStatus = 'CONFIRMED';
+        orderStatus = OrderStatus.CONFIRMED;
         await db.bookingSlot.update({
             where: { id: order.bookingSlot.id },
             data: { status: 'BOOKED' },
         });
     } else if (order.items.some(item => item.product.type === 'SERVICE')) {
-        orderStatus = 'PROCESSING';
+        orderStatus = OrderStatus.PROCESSING;
         await messagePublisher.publishServiceOrderProcessing(order.id);
     } else {
-        orderStatus = 'READY';
+        orderStatus = OrderStatus.READY;
     }
 
     // Gunakan transaksi Prisma untuk memastikan semua pembaruan berhasil atau tidak sama sekali
@@ -77,9 +100,18 @@ export async function handlePaymentSuccess(orderId: string) {
     // Terbitkan event setelah transaksi database selesai
     await messagePublisher.publishOrderStatusUpdate(order.id, orderStatus);
 
+    // Kirim notifikasi WhatsApp untuk pembayaran berhasil
+    try {
+        await messagePublisher.publishWhatsAppPaymentSuccess(order.id);
+        console.log(`📱 Published WhatsApp payment success notification for order ${order.id}`);
+    } catch (whatsappError) {
+        console.error('❌ Error publishing WhatsApp payment success notification:', whatsappError);
+        // Don't fail the payment process if WhatsApp notification fails
+    }
+
     // Emit notification to business outlet
     try {
-        socketUtils.emitToBusinessOutlet(order.outletId, {
+        socketUtils.emitToBusinessOutlet(order.outletId!, {
             type: 'payment_success',
             orderId: order.id,
             amount: order.totalAmount,
@@ -91,7 +123,28 @@ export async function handlePaymentSuccess(orderId: string) {
     } catch (socketError) {
         console.error('❌ Error emitting payment_success event:', socketError);
     }
+
+    // Kirim notifikasi WhatsApp untuk konfirmasi pesanan
+    try {
+        await messagePublisher.publishWhatsAppOrderConfirmation(order.id);
+        console.log(`📱 Published WhatsApp order confirmation notification for order ${order.id}`);
+    } catch (whatsappError) {
+        console.error('❌ Error publishing WhatsApp order confirmation notification:', whatsappError);
+        // Don't fail the payment process if WhatsApp notification fails
+    }
+
+    // Kirim notifikasi WhatsApp untuk pickup reminder jika order sudah ready
+    if (orderStatus === OrderStatus.READY) {
+        try {
+            await messagePublisher.publishWhatsAppPickupReminder(order.id);
+            console.log(`📱 Published WhatsApp pickup reminder notification for order ${order.id}`);
+        } catch (whatsappError) {
+            console.error('❌ Error publishing WhatsApp pickup reminder notification:', whatsappError);
+            // Don't fail the payment process if WhatsApp notification fails
+        }
+    }
 }
+
 
 export async function handlePaymentFailure(orderId: string) {
     const order = await db.order.findUnique({

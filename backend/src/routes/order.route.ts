@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express";
-import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController } from "../controller/order.controller";
+import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController } from "../controller/order.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOrderSchema, updateOrderStatusSchema } from "../schemas/order.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
@@ -46,6 +46,9 @@ orderRouter.get("/:outletId/goods", protect, authorize(UserRole.OWNER), listGood
 
 // List antrian layanan berdasarkan outlet (owner only)
 orderRouter.get("/:outletId/queue", protect, authorize(UserRole.OWNER), listServiceQueueByOutletController);
+
+// Endpoint internal untuk consumer mendapatkan data order untuk notifikasi
+orderRouter.get("/:id/notification-data", getOrderNotificationDataController);
 
 orderRouter.post("/create-payment", validateSchema(CreatePaymentSchema), createPaymentController)
 
