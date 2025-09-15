@@ -70,10 +70,10 @@ export async function getProductByIdService(id: string): Promise<Product & { def
     }
     const { outlet, ...productWithoutOutlet } = product
 
-    const images = (product as any).productImages?.map((pi: any) => ({ url: pi.url, alt: pi.alt })) || [];
-
-    if (images.length === 0 && (product as any).image) {
-        images.push({ url: (product as any).image, alt: null });
+    // Use the image field from product table, not productImages table
+    const images = [];
+    if ((product as any).image) {
+        images.push({ url: (product as any).image, alt: undefined });
     }
 
     const result = { ...productWithoutOutlet, defaultTransactionFeeBearer: outlet.business.defaultTransactionFeeBearer, images };

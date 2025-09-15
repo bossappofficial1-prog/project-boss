@@ -46,10 +46,8 @@ export class ProductRepository {
                             }
                         }
                     }
-                },
-                productImages: {
-                    orderBy: { order: 'asc' }
                 }
+                // productImages table doesn't exist, image is stored in product.image field
             },
         });
     }

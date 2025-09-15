@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { authApi, dashboardApi } from '@/lib/api';
-import AddOutletModal from '@/components/modals/AddOutletModal';
+import BusinessProfileModal from '@/components/modals/BusinessProfileModal';
 import BankAccountModal from '@/components/modals/BankAccountModal';
+import AddOutletModal from '@/components/modals/AddOutletModal';
+import { Button } from '@/components/ui/button';
 
 interface DashboardStats {
   totalProducts: number;
@@ -47,10 +49,14 @@ export default function DashboardPage() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [selectedOutlet, setSelectedOutlet] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddOutletModal, setShowAddOutletModal] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
+  const [showBusinessModal, setShowBusinessModal] = useState(false);
+  const [pendingCreateBusiness, setPendingCreateBusiness] = useState<{ name: string; description?: string; defaultTransactionFeeBearer: 'CUSTOMER' | 'OWNER' } | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -83,6 +89,7 @@ export default function DashboardPage() {
         }
       } catch (error: any) {
         console.error('Error fetching dashboard data:', error);
+        setGlobalError(error?.message || 'Gagal memuat data dashboard');
         if (error.message.includes('401') || error.message.includes('Unauthorized')) {
           localStorage.removeItem('token');
           window.location.href = '/auth/login';
@@ -198,6 +205,11 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 sm:space-y-8 animate-fade-in-up">
+        {globalError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
+            {globalError}
+          </div>
+        )}
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-0">
           <div className="animate-slide-in-left">
@@ -220,7 +232,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Business Profile Section */}
-        {business && (
+        {business ? (
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-red-50 card-hover animate-fade-in-up">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
@@ -229,6 +241,16 @@ export default function DashboardPage() {
                 </svg>
                 Profil Bisnis
               </h2>
+              <div className="flex items-center gap-2">
+                {business && (
+                  <button
+                    onClick={() => setShowBusinessModal(true)}
+                    className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  >
+                    Edit Profil Bisnis
+                  </button>
+                )}
+              </div>
             </div>
             
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
@@ -335,6 +357,19 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+        ) : (
+          // Empty Business Profile Card
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-red-50 animate-fade-in">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">Profil Bisnis</h2>
+                <p className="text-gray-600">Belum ada data profil bisnis. Lengkapi terlebih dahulu agar dapat menggunakan fitur secara penuh.</p>
+                <div className="mt-4">
+                  <Button onClick={() => setShowBusinessModal(true)}>Lengkapi Profil Bisnis</Button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Main Stats Cards */}
@@ -410,7 +445,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Outlets Section */}
-        {outlets.length > 0 && (
+        {outlets.length > 0 ? (
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-red-50 card-hover animate-fade-in-up">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
@@ -481,21 +516,72 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-red-50 animate-fade-in">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">Informasi Outlet</h2>
+                <p className="text-gray-600">Belum ada outlet terdaftar. Tambahkan outlet untuk mulai berjualan.</p>
+                <div className="mt-4">
+                  <Button onClick={() => setShowAddOutletModal(true)} variant="primary">Tambah Outlet</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bank owner info empty card if business exists but no bank */}
+        {business && !(business.bankName && business.bankAccount) && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100 animate-fade-in">
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Informasi Pemilik Rekening</h2>
+            <p className="text-gray-600">Lengkapi informasi pemilik rekening untuk penarikan dana.</p>
+            <div className="mt-4">
+              <Button onClick={() => setShowBankModal(true)} variant="primary">Lengkapi Informasi Rekening</Button>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Modals */}
-      <AddOutletModal
-        isOpen={showAddOutletModal}
-        onClose={() => setShowAddOutletModal(false)}
-        onSuccess={handleAddOutletSuccess}
+      <BusinessProfileModal
+        open={showBusinessModal}
+        onOpenChange={setShowBusinessModal}
+        businessId={business?.id}
+        initialName={business?.name}
+        initialDescription={business?.description}
+        onSuccess={() => {
+          // if updating, just reload; if creating, handled in onCreateRequested
+          if (business?.id) {
+            window.location.reload()
+          }
+        }}
+        onCreateRequested={(data) => {
+          setPendingCreateBusiness(data)
+          setShowBusinessModal(false)
+          setShowBankModal(true)
+        }}
+      />
+      {/* Bank modal: update if business exists, or create if not */}
+      <BankAccountModal
+        open={showBankModal}
+        onOpenChange={(v) => {
+          setShowBankModal(v)
+          if (!v) setPendingCreateBusiness(null)
+        }}
+        businessId={business?.id}
+        createPayload={business ? undefined : pendingCreateBusiness ?? undefined}
+        onSuccess={() => {
+          setPendingCreateBusiness(null)
+          handleBankAccountSuccess()
+        }}
       />
 
-      <BankAccountModal
-        isOpen={showBankModal}
-        onClose={() => setShowBankModal(false)}
-        businessId={business?.id ?? ''}
-        onSuccess={handleBankAccountSuccess}
+      {/* Add Outlet modal should still be openable, but requires an existing businessId */}
+      <AddOutletModal
+        open={showAddOutletModal}
+        onOpenChange={setShowAddOutletModal}
+        businessId={business?.id || ''}
+        onSuccess={handleAddOutletSuccess}
       />
     </DashboardLayout>
   );

@@ -44,12 +44,27 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
     },
   });
 
-  if (!response.ok) {
-    throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+  // Try to parse JSON body for success or error messages
+  const text = await response.text();
+  let parsed: any = null;
+  try {
+    parsed = text ? JSON.parse(text) : null;
+  } catch (e) {
+    // ignore JSON parse errors
   }
 
-  const result: ApiResponse<T> = await response.json();
-  
+  if (!response.ok) {
+    // Prefer backend-provided message if available
+    const backendMessage = parsed?.message || parsed?.data?.message || parsed?.error || parsed?.errors || null;
+    const message = backendMessage ? (typeof backendMessage === 'string' ? backendMessage : JSON.stringify(backendMessage)) : `${response.status} ${response.statusText}`;
+    throw new Error(message);
+  }
+
+  const result: ApiResponse<T> = parsed as ApiResponse<T>;
+  if (!result) {
+    throw new Error('Invalid API response');
+  }
+
   if (!result.success) {
     throw new Error(result.message || 'API call failed');
   }
@@ -106,6 +121,23 @@ export const businessApi = {
       revenue: number;
     }>;
   }>(`/dashboard/business/${businessId}`),
+  
+  // fetch my business
+  getMyBusiness: () => apiCall<any>(`/business/my/business`),
+  
+  // update basic fields of a business
+  updateBusiness: (businessId: string, data: Partial<{ name: string; description?: string; type?: string; address?: string; phone?: string }>) =>
+    apiCall<any>(`/business/${businessId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  
+  // create business minimal payload (backend create requires bank fields, but we support minimal and backend will validate)
+  createBusiness: (data: { name: string; description?: string; bankName?: string; bankAccount?: string; accountHolder?: string; defaultTransactionFeeBearer?: 'CUSTOMER' | 'OWNER' }) =>
+    apiCall<any>(`/business`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   
   updateBankAccount: (businessId: string, bankData: {
     bankName: string;
@@ -607,6 +639,11 @@ export const outletManagementApi = {
     latitude?: number;
     longitude?: number;
     image?: string;
+    // optional extras for future compatibility; backend may ignore unknown fields
+    email?: string;
+    description?: string;
+    openingHours?: string;
+    status?: 'ACTIVE' | 'INACTIVE';
   }) => apiCall<{
     id: string;
     name: string;

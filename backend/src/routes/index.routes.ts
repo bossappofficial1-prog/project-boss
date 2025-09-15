@@ -5,6 +5,7 @@ import membershipRouter from "./membership.route";
 import productRouter from "./product.route";
 import orderRouter from "./order.route";
 import dashboardRouter from "./dashboard.route";
+import businessRouter from "./business.route";
 import bookingRouter from "./booking.route";
 import paymentRouter from "./payment.route";
 import homeRouter from "./home.route";
@@ -29,6 +30,7 @@ apiRouter.use('/memberships', membershipRouter)
 apiRouter.use('/products', productRouter)
 apiRouter.use('/orders', orderRouter)
 apiRouter.use('/dashboard', dashboardRouter)
+apiRouter.use('/business', businessRouter)
 apiRouter.use('/bookings', bookingRouter)
 apiRouter.use('/payments', paymentRouter)
 apiRouter.use('/outlets', outletRouter)

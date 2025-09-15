@@ -27,17 +27,28 @@ export default function StockPage() {
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [selectedOutlet, setSelectedOutlet] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'ALL' | 'GOODS' | 'SERVICE'>('ALL');
+  // We always show GOODS only on this page
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [isLoading, setIsLoading] = useState(true);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<StockItem | null>(null);
+  const [hasBusinessProfile, setHasBusinessProfile] = useState<boolean>(false);
+  const [hasOutlet, setHasOutlet] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeData = async () => {
       try {
-        const userData = await authApi.me();
+  const userData = await authApi.me();
         setOutlets(userData.outlets);
+  const hasBusiness = !!userData.business?.id;
+  const hasBank = !!(userData.business?.bankName && userData.business?.accountNumber);
+  setHasBusinessProfile(hasBusiness && hasBank);
+  setHasOutlet(userData.outlets.length > 0);
+        // Avoid indefinite loading when there are no outlets yet
+        if (userData.outlets.length === 0) {
+          setIsLoading(false);
+        }
         if (userData.outlets.length > 0) {
           const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
           const validSaved = savedOutletId && userData.outlets.find((o: Outlet) => o.id === savedOutletId);
@@ -50,6 +61,7 @@ export default function StockPage() {
           }
         }
       } catch (error) {
+        setError('Error mengambil data user. Silakan coba lagi.');
         console.error('Error fetching user data:', error);
       }
     };
@@ -90,6 +102,7 @@ export default function StockPage() {
       const data = await stockApi.getByOutlet(selectedOutlet, filters);
       setStockItems(data);
     } catch (error) {
+      setError('Error mengambil data stok. Silakan coba lagi.');
       console.error('Error fetching stock data:', error);
       setStockItems([]);
     } finally {
@@ -119,8 +132,8 @@ export default function StockPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
+      setError('Gagal mengekspor data stok. Silakan coba lagi.');
       console.error('Error exporting stock:', error);
-      alert('Gagal mengekspor data stok. Silakan coba lagi.');
     }
   };
 
@@ -187,6 +200,39 @@ export default function StockPage() {
     );
   }
 
+  // Guidance screen when business profile/bank or outlets are not ready
+  if (!isLoading && !hasBusinessProfile && !hasOutlet) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-3xl mx-auto mt-10">
+          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 border border-amber-100">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10A8 8 0 11.001 10 8 8 0 0118 10zm-8-4a1 1 0 00-.993.883L9 7v3a1 1 0 00.883.993L10 11h.01a1 1 0 01.117 1.993L10 13H9a1 1 0 00-.117 1.993L9 15h2a1 1 0 00.117-1.993L11 13h-.01a1 1 0 01-.117-1.993L11 11h-1V7a1 1 0 00-1-1zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/></svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Lengkapi Profil Bisnis & Tambahkan Outlet</h2>
+                <p className="text-gray-600 mt-1">Untuk mengelola stok produk, Anda perlu:</p>
+                <ul className="mt-3 space-y-2 text-gray-700 list-disc pl-5">
+                  <li>Lengkapi profil bisnis beserta informasi rekening</li>
+                  <li>Tambah minimal satu outlet</li>
+                </ul>
+                <div className="mt-6">
+                  <button
+                    onClick={() => (window.location.href = '/dashboard')}
+                    className="inline-flex items-center px-5 py-3 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  >
+                    Oke, ke Dashboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -211,7 +257,28 @@ export default function StockPage() {
           </div>
         </div>
 
-        {/* Filters and Search */}
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+            </div>
+            <button 
+              onClick={() => setError(null)}
+              className="text-red-400 hover:text-red-600"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+  {/* Filters and Search */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Search */}
           <div className="sm:col-span-2 lg:col-span-1">
@@ -258,8 +325,46 @@ export default function StockPage() {
           </div>
         </div>
 
-        {/* Stock Table */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        {/* Mobile list (cards) */}
+        <div className="sm:hidden space-y-3">
+          {filteredStockItems.map((item) => (
+            <div key={item.id} className="bg-white rounded-xl shadow p-4 flex gap-3">
+              <img
+                src={item.image || 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png'}
+                alt={item.name}
+                className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-900 line-clamp-2">{item.name}</div>
+                <div className="mt-1 flex items-center gap-2 text-xs">
+                  <span className="text-gray-600">{formatCurrency(item.price)}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${getStockStatusColor(item.quantity)}`}>{getStockStatus(item.quantity)}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
+                  <div>Stok: {item.quantity || 0} {item.unit || 'pcs'}</div>
+                  <button
+                    onClick={() => handleUpdateStock(item)}
+                    className="text-indigo-600 hover:text-indigo-900"
+                  >
+                    Update Stok
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {filteredStockItems.length === 0 && !isLoading && (
+            <div className="text-center py-12 bg-white rounded-2xl shadow">
+              <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Tidak ada data stok</h3>
+              <p className="text-gray-500">Belum ada produk yang ditemukan.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Stock Table (desktop) */}
+        <div className="hidden sm:block bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Mobile scroll hint */}
           <div className="sm:hidden px-4 py-2 bg-gray-50 border-b">
             <div className="flex items-center justify-between">
@@ -277,30 +382,30 @@ export default function StockPage() {
           <div className="overflow-x-auto max-w-full">
             <div className="min-w-full inline-block align-middle">
               <table className="min-w-full divide-y divide-gray-200 table-fixed">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="w-12 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-14 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     No
                   </th>
-                  <th className="w-20 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  <th className="w-24 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                     Gambar
                   </th>
-                  <th className="w-40 sm:w-48 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-56 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nama Produk
                   </th>
-                  <th className="w-20 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-20 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Stok
                   </th>
-                  <th className="w-20 px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  <th className="w-20 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                     Satuan
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  <th className="w-28 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                     Harga Jual
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  <th className="w-28 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                     Status
                   </th>
-                  <th className="px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-28 px-3 sm:px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aksi
                   </th>
                 </tr>
@@ -411,19 +516,12 @@ export default function StockPage() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Update Stock Modal */}
       <UpdateStockModal
-        isOpen={showUpdateModal}
-        onClose={() => {
-          setShowUpdateModal(false);
-          setSelectedProduct(null);
-        }}
+        open={showUpdateModal}
+        onOpenChange={setShowUpdateModal}
         product={selectedProduct}
-        onSuccess={() => {
-          setShowUpdateModal(false);
-          setSelectedProduct(null);
-          fetchStockData();
-        }}
+        onUpdated={fetchStockData}
       />
     </DashboardLayout>
   );
