@@ -104,34 +104,34 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
           <DialogDescription>Isi detail untuk menambahkan item baru ke outlet.</DialogDescription>
         </DialogHeader>
         {!outletId && (
-          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800 text-sm">
+          <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 text-amber-800 dark:text-amber-400 text-sm">
             Pilih outlet terlebih dahulu agar dapat menambah produk atau jasa.
           </div>
         )}
         {error && (
-          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700 text-sm">
+          <div className="mb-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-red-700 dark:text-red-400 text-sm">
             {error}
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Jenis</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jenis</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as 'GOODS' | 'SERVICE')}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="GOODS">Produk (Barang)</option>
                 <option value="SERVICE">Jasa (Layanan)</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="ACTIVE">Aktif</option>
                 <option value="INACTIVE">Tidak Aktif</option>
@@ -140,45 +140,45 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Contoh: Kopi Susu Gula Aren"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi (opsional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deskripsi (opsional)</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Harga Modal</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Harga Modal</label>
               <input
                 type="number"
                 min={0}
                 value={costPrice}
                 onChange={(e) => setCostPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Harga Jual</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Harga Jual</label>
               <input
                 type="number"
                 min={0}
                 value={price}
                 onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
           </div>
@@ -186,46 +186,46 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
           {type === 'GOODS' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stok Awal</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stok Awal</label>
                 <input
                   type="number"
                   min={0}
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Satuan</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Satuan</label>
                 <input
                   type="text"
                   value={unit}
                   onChange={(e) => setUnit(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Durasi Layanan (menit)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Durasi Layanan (menit)</label>
               <input
                 type="number"
                 min={0}
                 value={serviceDurationMinutes}
                 onChange={(e) => setServiceDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Gambar (URL opsional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gambar (URL opsional)</label>
             <input
               type="url"
               value={image}
               onChange={(e) => setImage(e.target.value)}
               placeholder="https://..."
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
 

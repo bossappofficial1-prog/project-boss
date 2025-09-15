@@ -37,17 +37,17 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-poppins">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-300 font-poppins">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 flex font-poppins relative`}>
+    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-poppins relative`}>
       <style jsx global>{`
         @keyframes fadeInOverlay { from { opacity:0 } to { opacity:1 } }
         .animate-fadeIn { animation: fadeInOverlay 0.25s ease-out; }

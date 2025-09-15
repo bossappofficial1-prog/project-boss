@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1); // 1: Personal Info, 2: Account Details, 3: Verification
@@ -162,7 +163,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      {/* Theme Toggle Button */}
+      <div className="fixed top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+      
       <div className="max-w-md w-full space-y-8">
         {/* Logo and Header */}
         <div className="text-center">
@@ -176,10 +182,10 @@ export default function RegisterPage() {
               priority
             />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 font-poppins">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 font-poppins">
             {getStepTitle()}
           </h2>
-          <p className="mt-2 text-sm text-gray-600 font-poppins">
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 font-poppins">
             {getStepDescription()}
           </p>
         </div>
@@ -192,7 +198,7 @@ export default function RegisterPage() {
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold font-poppins ${
                   i <= step
                     ? 'bg-red-600 text-white'
-                    : 'bg-gray-200 text-gray-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                 }`}
               >
                 {i < step ? (
@@ -206,7 +212,7 @@ export default function RegisterPage() {
               {i < 3 && (
                 <div
                   className={`w-12 h-0.5 ml-2 ${
-                    i < step ? 'bg-red-600' : 'bg-gray-200'
+                    i < step ? 'bg-red-600' : 'bg-gray-200 dark:bg-gray-700'
                   }`}
                 />
               )}
@@ -214,10 +220,10 @@ export default function RegisterPage() {
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-red-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-red-100 dark:border-gray-700">
           {/* Success Message */}
           {success && (
-            <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-poppins">
+            <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm font-poppins">
               <div className="flex items-center">
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -229,7 +235,7 @@ export default function RegisterPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-poppins">
+            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm font-poppins">
               <div className="flex items-center">
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -243,7 +249,7 @@ export default function RegisterPage() {
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2 font-poppins">
+                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
                   Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -253,13 +259,13 @@ export default function RegisterPage() {
                   required
                   value={formData.name}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter your full name"
                 />
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2 font-poppins">
+                <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
                   Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -269,7 +275,7 @@ export default function RegisterPage() {
                   required
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter your phone number"
                 />
               </div>
@@ -291,7 +297,7 @@ export default function RegisterPage() {
           {step === 2 && (
             <div className="space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2 font-poppins">
+                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
                   Email Address <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -302,13 +308,13 @@ export default function RegisterPage() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter your email address"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2 font-poppins">
+                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
                   Password <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -319,13 +325,13 @@ export default function RegisterPage() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Create a secure password"
                 />
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2 font-poppins">
+                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
                   Confirm Password <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -336,7 +342,7 @@ export default function RegisterPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Confirm your password"
                 />
               </div>
@@ -345,7 +351,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={handlePrevStep}
-                  className="flex-1 flex justify-center py-3 px-4 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 font-poppins"
+                  className="flex-1 flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-semibold rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 font-poppins"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
@@ -383,19 +389,19 @@ export default function RegisterPage() {
           {step === 3 && (
             <form className="space-y-6" onSubmit={handleVerify}>
               <div className="text-center">
-                <div className="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                  <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="mx-auto h-16 w-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
+                  <svg className="h-8 w-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <p className="text-sm text-gray-600 mb-6 font-poppins">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 font-poppins">
                   We've sent a verification code to<br />
                   <strong>{formData.email}</strong>
                 </p>
               </div>
 
               <div>
-                <label htmlFor="verificationCode" className="block text-sm font-semibold text-gray-700 mb-2 font-poppins">
+                <label htmlFor="verificationCode" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
                   Verification Code
                 </label>
                 <input
@@ -405,7 +411,7 @@ export default function RegisterPage() {
                   required
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-center text-lg tracking-widest font-poppins transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-center text-lg tracking-widest font-poppins transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="000000"
                   maxLength={6}
                 />
@@ -415,7 +421,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={handlePrevStep}
-                  className="flex-1 flex justify-center py-3 px-4 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 font-poppins"
+                  className="flex-1 flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-semibold rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 font-poppins"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
@@ -451,9 +457,9 @@ export default function RegisterPage() {
           {/* Sign in link - Only show on step 1 */}
           {step === 1 && (
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600 font-poppins">
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-poppins">
                 Already have an account?{' '}
-                <Link href="/login" className="font-semibold text-red-600 hover:text-red-500 transition-colors duration-200">
+                <Link href="/login" className="font-semibold text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 transition-colors duration-200">
                   Sign In
                 </Link>
               </p>

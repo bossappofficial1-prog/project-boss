@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -57,7 +58,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-100 via-rose-50 to-pink-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-red-100 via-rose-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+      
       <div className="max-w-md w-full space-y-8">
         {/* Logo and Header */}
         <div className="text-center">
@@ -71,19 +77,19 @@ export default function LoginPage() {
               priority
             />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 font-poppins">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 font-poppins">
             Welcome Back
           </h2>
-          <p className="mt-2 text-sm text-gray-600 font-poppins">
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 font-poppins">
             Sign in to your BOSS Dashboard
           </p>
         </div>
 
         {/* Login Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6 border border-red-100">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6 border border-red-100 dark:border-gray-700">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-poppins">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm font-poppins">
                 <div className="flex items-center">
                   <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -94,7 +100,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2 font-poppins">
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
                 Email Address
               </label>
               <input
@@ -105,13 +111,13 @@ export default function LoginPage() {
                 required
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Enter your email"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2 font-poppins">
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
                 Password
               </label>
               <input
@@ -122,7 +128,7 @@ export default function LoginPage() {
                 required
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Enter your password"
               />
             </div>
@@ -153,9 +159,9 @@ export default function LoginPage() {
             </div>
 
             <div className="text-center">
-              <p className="text-sm text-gray-600 font-poppins">
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-poppins">
                 Don't have an account?{' '}
-                <Link href="/register" className="font-semibold text-red-600 hover:text-red-500 transition-colors duration-200">
+                <Link href="/register" className="font-semibold text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 transition-colors duration-200">
                   Create Account
                 </Link>
               </p>

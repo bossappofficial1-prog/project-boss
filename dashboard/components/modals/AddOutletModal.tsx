@@ -61,12 +61,12 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
         </DialogHeader>
         <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
           {!businessId && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 text-amber-800 px-3 py-2 text-sm">
+            <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-400 px-3 py-2 text-sm">
               Anda perlu membuat profil bisnis terlebih dahulu sebelum menambah outlet.
             </div>
           )}
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">{error}</div>
+            <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-3 py-2 text-sm">{error}</div>
           )}
           <div>
             <Label htmlFor="outlet-name">Nama Outlet</Label>
@@ -94,12 +94,12 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
           </div>
           <div>
             <Label htmlFor="outlet-status">Status</Label>
-            <select id="outlet-status" className="w-full rounded-md border px-3 py-2" value={status} onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}>
+            <select id="outlet-status" className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-4 py-2.5 text-sm outline-none transition-all focus:border-red-500 dark:focus:border-red-400" value={status} onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}>
               <option value="ACTIVE">ACTIVE</option>
               <option value="INACTIVE">INACTIVE</option>
             </select>
           </div>
-          <p className="text-xs text-gray-500">Catatan: Beberapa field opsional akan tersedia penuh setelah update backend. Saat ini data inti (nama, alamat, telepon, lokasi, gambar) akan disimpan.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Catatan: Beberapa field opsional akan tersedia penuh setelah update backend. Saat ini data inti (nama, alamat, telepon, lokasi, gambar) akan disimpan.</p>
           <div>
             <Label htmlFor="outlet-image">Image URL (opsional)</Label>
             <Input id="outlet-image" placeholder="https://..." value={image} onChange={(e) => setImage(e.target.value)} />

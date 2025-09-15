@@ -13,7 +13,7 @@ export function DialogOverlay({ className, ...props }: React.ComponentPropsWitho
   return (
     <DialogPrimitive.Overlay
       className={clsx(
-        'fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-fade-in',
+        'fixed inset-0 z-40 bg-black/40 dark:bg-black/60 backdrop-blur-sm animate-fade-in',
         className
       )}
       {...props}
@@ -27,10 +27,11 @@ export function DialogContent({ className, children, ...props }: React.Component
       <DialogOverlay />
       <DialogPrimitive.Content
         className={clsx(
-          'fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-sm sm:max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-5 sm:p-7 shadow-2xl outline-none',
+          'fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-sm sm:max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-gray-800 p-5 sm:p-7 shadow-2xl outline-none',
           // Improve small-screen usability: cap height and allow internal scroll
           'max-h-[85vh] overflow-y-auto',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:focus-visible:ring-red-400',
+          'border border-gray-200 dark:border-gray-700',
           className
         )}
         {...props}
@@ -48,7 +49,7 @@ export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLD
 export function DialogTitle({ className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      className={clsx('text-lg font-semibold leading-none tracking-tight', className)}
+      className={clsx('text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100', className)}
       {...props}
     />
   )
@@ -57,7 +58,7 @@ export function DialogTitle({ className, ...props }: React.ComponentPropsWithout
 export function DialogDescription({ className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>) {
   return (
     <DialogPrimitive.Description
-      className={clsx('text-sm text-gray-600', className)}
+      className={clsx('text-sm text-gray-600 dark:text-gray-400', className)}
       {...props}
     />
   )

@@ -72,7 +72,7 @@ export default function UpdateStockModal({ open, onOpenChange, product, onUpdate
         </DialogHeader>
 
         {error && (
-          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700 text-sm">
+          <div className="mb-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-red-700 dark:text-red-400 text-sm">
             {error}
           </div>
         )}
@@ -94,7 +94,7 @@ export default function UpdateStockModal({ open, onOpenChange, product, onUpdate
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Jumlah</label>
+            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Jumlah</label>
             <input
               type="number"
               min={0}
@@ -110,7 +110,7 @@ export default function UpdateStockModal({ open, onOpenChange, product, onUpdate
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Alasan (opsional)</label>
+            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Alasan (opsional)</label>
             <input
               type="text"
               value={reason}
@@ -121,7 +121,7 @@ export default function UpdateStockModal({ open, onOpenChange, product, onUpdate
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Catatan (opsional)</label>
+            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Catatan (opsional)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

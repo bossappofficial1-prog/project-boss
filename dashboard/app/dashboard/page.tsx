@@ -186,13 +186,13 @@ export default function DashboardPage() {
           {/* Stats Cards Skeleton */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl shadow-lg p-6 animate-pulse">
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 animate-pulse border dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-24 mb-3"></div>
-                    <div className="h-8 bg-gray-200 rounded w-32"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-3"></div>
+                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
                   </div>
-                  <div className="w-16 h-16 bg-gray-200 rounded-2xl"></div>
+                  <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
                 </div>
               </div>
             ))}
@@ -217,7 +217,7 @@ export default function DashboardPage() {
           </div>
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 animate-slide-in-top">
-            <div className="flex items-center bg-white rounded-xl sm:rounded-2xl shadow-lg px-3 sm:px-4 py-2.5 sm:py-3 border border-red-100 hover:shadow-xl transition-all duration-300 input-focus">
+            <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg dark:shadow-gray-900/20 px-3 sm:px-4 py-2.5 sm:py-3 border border-red-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 input-focus">
               <svg className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -225,7 +225,7 @@ export default function DashboardPage() {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="border-none focus:outline-none text-sm font-medium text-gray-700 bg-transparent w-full"
+                className="border-none focus:outline-none text-sm font-medium text-gray-700 dark:text-gray-300 bg-transparent w-full"
               />
             </div>
           </div>
@@ -233,9 +233,9 @@ export default function DashboardPage() {
 
         {/* Business Profile Section */}
         {business ? (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-red-50 card-hover animate-fade-in-up">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg dark:shadow-gray-900/20 p-4 sm:p-6 border border-red-50 dark:border-gray-700 card-hover animate-fade-in-up">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
                 <svg className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
@@ -245,7 +245,7 @@ export default function DashboardPage() {
                 {business && (
                   <button
                     onClick={() => setShowBusinessModal(true)}
-                    className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                    className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
                     Edit Profil Bisnis
                   </button>
@@ -257,35 +257,35 @@ export default function DashboardPage() {
               {/* Business Info */}
               <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Nama Bisnis</label>
-                  <p className="text-base sm:text-lg font-semibold text-gray-900 break-words">{business.name}</p>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Nama Bisnis</label>
+                  <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 break-words">{business.name}</p>
                 </div>
                 
                 {business.description && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Deskripsi</label>
-                    <p className="text-gray-700 break-words">{business.description}</p>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Deskripsi</label>
+                    <p className="text-gray-700 dark:text-gray-300 break-words">{business.description}</p>
                   </div>
                 )}
                 
                 {business.type && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Jenis Bisnis</label>
-                    <p className="text-gray-700">{business.type}</p>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Jenis Bisnis</label>
+                    <p className="text-gray-700 dark:text-gray-300">{business.type}</p>
                   </div>
                 )}
                 
                 {business.address && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Alamat</label>
-                    <p className="text-gray-700 break-words">{business.address}</p>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Alamat</label>
+                    <p className="text-gray-700 dark:text-gray-300 break-words">{business.address}</p>
                   </div>
                 )}
                 
                 {business.phone && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Telepon</label>
-                    <p className="text-gray-700">{business.phone}</p>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Telepon</label>
+                    <p className="text-gray-700 dark:text-gray-300">{business.phone}</p>
                   </div>
                 )}
               </div>
@@ -359,11 +359,11 @@ export default function DashboardPage() {
           </div>
         ) : (
           // Empty Business Profile Card
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-red-50 animate-fade-in">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-red-50 dark:border-gray-700 animate-fade-in">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-1">Profil Bisnis</h2>
-                <p className="text-gray-600">Belum ada data profil bisnis. Lengkapi terlebih dahulu agar dapat menggunakan fitur secara penuh.</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Profil Bisnis</h2>
+                <p className="text-gray-600 dark:text-gray-400">Belum ada data profil bisnis. Lengkapi terlebih dahulu agar dapat menggunakan fitur secara penuh.</p>
                 <div className="mt-4">
                   <Button onClick={() => setShowBusinessModal(true)}>Lengkapi Profil Bisnis</Button>
                 </div>
@@ -374,12 +374,12 @@ export default function DashboardPage() {
 
         {/* Main Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-red-50 card-hover animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg dark:shadow-gray-900/20 p-4 sm:p-6 border border-red-50 dark:border-gray-700 card-hover animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-500">Total Produk</p>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalProducts}</p>
-                <p className="text-sm text-green-600 font-medium mt-1">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Produk</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.totalProducts}</p>
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
                   Barang & Jasa
                 </p>
               </div>
@@ -391,12 +391,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-red-50 card-hover animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg dark:shadow-gray-900/20 p-4 sm:p-6 border border-red-50 dark:border-gray-700 card-hover animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-500">Total Layanan</p>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalServices}</p>
-                <p className="text-sm text-blue-600 font-medium mt-1">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Layanan</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.totalServices}</p>
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mt-1">
                   Jasa Tersedia
                 </p>
               </div>
@@ -409,12 +409,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-red-50 card-hover animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg dark:shadow-gray-900/20 p-4 sm:p-6 border border-red-50 dark:border-gray-700 card-hover animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-500">Total Pesanan</p>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalOrders}</p>
-                <p className="text-sm text-orange-600 font-medium mt-1">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Pesanan</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.totalOrders}</p>
+                <p className="text-sm text-orange-600 dark:text-orange-400 font-medium mt-1">
                   Hari Ini
                 </p>
               </div>
@@ -426,12 +426,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-red-50 card-hover animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg dark:shadow-gray-900/20 p-4 sm:p-6 border border-red-50 dark:border-gray-700 card-hover animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-500">Total Pendapatan</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words">{formatCurrency(stats.totalRevenue)}</p>
-                <p className="text-sm text-green-600 font-medium mt-1">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Pendapatan</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 break-words">{formatCurrency(stats.totalRevenue)}</p>
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
                   Keseluruhan
                 </p>
               </div>
@@ -446,9 +446,9 @@ export default function DashboardPage() {
 
         {/* Outlets Section */}
         {outlets.length > 0 ? (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-red-50 card-hover animate-fade-in-up">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg dark:shadow-gray-900/20 p-4 sm:p-6 border border-red-50 dark:border-gray-700 card-hover animate-fade-in-up">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
                 <svg className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
@@ -517,11 +517,11 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-red-50 animate-fade-in">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-red-50 dark:border-gray-700 animate-fade-in">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-1">Informasi Outlet</h2>
-                <p className="text-gray-600">Belum ada outlet terdaftar. Tambahkan outlet untuk mulai berjualan.</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Informasi Outlet</h2>
+                <p className="text-gray-600 dark:text-gray-400">Belum ada outlet terdaftar. Tambahkan outlet untuk mulai berjualan.</p>
                 <div className="mt-4">
                   <Button onClick={() => setShowAddOutletModal(true)} variant="primary">Tambah Outlet</Button>
                 </div>
@@ -532,9 +532,9 @@ export default function DashboardPage() {
 
         {/* Bank owner info empty card if business exists but no bank */}
         {business && !(business.bankName && business.bankAccount) && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100 animate-fade-in">
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Informasi Pemilik Rekening</h2>
-            <p className="text-gray-600">Lengkapi informasi pemilik rekening untuk penarikan dana.</p>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-green-100 dark:border-green-800/50 animate-fade-in">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Informasi Pemilik Rekening</h2>
+            <p className="text-gray-600 dark:text-gray-400">Lengkapi informasi pemilik rekening untuk penarikan dana.</p>
             <div className="mt-4">
               <Button onClick={() => setShowBankModal(true)} variant="primary">Lengkapi Informasi Rekening</Button>
             </div>

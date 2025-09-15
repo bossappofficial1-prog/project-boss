@@ -8,8 +8,9 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
     <input
       ref={ref}
       className={clsx(
-        'w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition-all',
-        'focus:border-red-500 focus:ring-0',
+        'w-full rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm outline-none transition-all',
+        'text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400',
+        'focus:border-red-500 dark:focus:border-red-400 focus:ring-0',
         className
       )}
       {...props}
@@ -23,8 +24,9 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
     <textarea
       ref={ref}
       className={clsx(
-        'w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition-all min-h-28',
-        'focus:border-red-500 focus:ring-0',
+        'w-full rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm outline-none transition-all min-h-28',
+        'text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400',
+        'focus:border-red-500 dark:focus:border-red-400 focus:ring-0',
         className
       )}
       {...props}

@@ -216,7 +216,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 z-50 h-full w-64 bg-gradient-to-b from-red-700 to-red-900 shadow-2xl transform transition-transform duration-300 ease-out lg:translate-x-0 lg:z-auto
+        className={`fixed left-0 top-0 z-50 h-full w-64 bg-gradient-to-b from-red-700 to-red-900 dark:from-gray-800 dark:to-gray-900 shadow-2xl transform transition-transform duration-300 ease-out lg:translate-x-0 lg:z-auto
         ${isOpen ? 'translate-x-0 opacity-100 scale-100' : '-translate-x-full opacity-0 scale-95'}
         lg:opacity-100 lg:scale-100
         `}
@@ -225,7 +225,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Sidebar container is fixed and full-height */}
         <div className="flex flex-col h-full overflow-hidden">
           {/* Logo */}
-          <div className="flex items-center justify-center py-8 px-4 border-b border-red-500/30">
+          <div className="flex items-center justify-center py-8 px-4 border-b border-red-500/30 dark:border-gray-700">
               <Image
                 src="/Logo Boss Putih.png"
                 alt="BOSS Logo"
@@ -236,8 +236,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
 
           {/* Outlet Selector */}
-          <div className="px-4 py-6 border-b border-red-500/30">
-            <label className="flex items-center text-sm font-semibold text-red-100 mb-3 font-poppins">
+          <div className="px-4 py-6 border-b border-red-500/30 dark:border-gray-700">
+            <label className="flex items-center text-sm font-semibold text-red-100 dark:text-gray-300 mb-3 font-poppins">
               Pilih Outlet
               {outlets.length > 0 && (
                 <span className="ml-2 bg-white/20 text-xs px-2 py-1 rounded-full">
@@ -248,7 +248,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <select
               value={selectedOutlet}
               onChange={(e) => handleOutletChange(e.target.value)}
-              className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 backdrop-blur-sm text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/20 text-sm font-medium font-poppins transition-all duration-200"
+              className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 placeholder-red-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-gray-500 focus:bg-white/20 dark:focus:bg-gray-600/50 text-sm font-medium font-poppins transition-all duration-200"
             >
               {outlets.length === 0 ? (
                 <option value="" className="text-gray-800">Belum ada outlet</option>
@@ -274,8 +274,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   href={item.href}
                   className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${
                     isActive
-                      ? 'bg-white text-red-600 shadow-lg transform scale-105'
-                      : 'text-red-100 hover:bg-white/10 hover:text-white hover:transform hover:scale-102'
+                      ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
+                      : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
                   }`}
                   onClick={() => {
                     localStorage.setItem('selectedOutlet', selectedOutlet);
@@ -289,7 +289,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   )}
                   
                   <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${
-                    isActive ? 'text-red-600' : 'text-red-200'
+                    isActive ? 'text-red-600 dark:text-red-400' : 'text-red-200 dark:text-gray-400'
                   }`}>
                     {item.icon}
                   </span>
