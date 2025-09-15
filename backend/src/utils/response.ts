@@ -16,12 +16,26 @@ export class ResponseUtil {
         return res.status(statusCode).json({
             success,
             message,
-            ...(data !== null ? { data } : {}),
+            ...(data !== null ? { data: this.sanitizeBigInt(data) } : {}),
             ...(errors ? { errors } : {}),
             ...extra,
             timestamp: new Date().toISOString(),
             path: res.req.originalUrl
         })
+    }
+
+    private static sanitizeBigInt(obj: any): any {
+        if (typeof obj === 'bigint') {
+            // ubah ke string supaya aman
+            return obj.toString();
+        } else if (Array.isArray(obj)) {
+            return obj.map((item) => ResponseUtil.sanitizeBigInt(item));
+        } else if (obj !== null && typeof obj === 'object') {
+            return Object.fromEntries(
+                Object.entries(obj).map(([k, v]) => [k, ResponseUtil.sanitizeBigInt(v)])
+            );
+        }
+        return obj;
     }
 
     static success<T>(

@@ -15,6 +15,7 @@ function SearchOutletContent() {
     const query = useSearchParams().get("q")
     const { setAppBar, resetAppBar } = useAppBarV2();
     const [search, setSearch] = useState(query || '');
+    const router = useRouter()
 
     useEffect(() => {
         setAppBar({
@@ -23,7 +24,11 @@ function SearchOutletContent() {
             subtitle: t('subtitle'),
             showSearch: true,
             showBackButton: true,
+            onLeftClick() {
+                router.replace("/")
+            },
             onSearch(query) {
+                localStorage.setItem('current_search', query)
                 setSearch(query)
             },
         });

@@ -24,7 +24,7 @@ export const loginController = asyncHandler(async (req: Request, res: Response) 
         httpOnly: true,
         secure: config.isProduction,
         sameSite: 'lax',
-        domain: config.isProduction ? '.yourdomain.com' : 'localhost',
+        domain: config.isProduction ? 'bossapp.id' : 'localhost',
         maxAge: 24 * 60 * 60 * 1000, // 1 day
         path: '/'
     });

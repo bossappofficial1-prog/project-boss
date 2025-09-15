@@ -201,6 +201,7 @@ function NearbyOutletContent() {
                                     key={`${outlet.id}-${index}`}
                                     outlet={normalizedOutlet}
                                     alignment="horizontal"
+                                    from='nearby'
                                 />
                             );
                         })}

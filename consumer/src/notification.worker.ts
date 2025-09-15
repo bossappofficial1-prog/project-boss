@@ -3,6 +3,8 @@ import logger from './utils/logger';
 import { config } from './config';
 import amqplib from 'amqplib';
 import { NotificationService } from './service/notification.service'; // Import service lokal
+import { TwilioService } from './service/twilio.service';
+import { NotificationMessageService } from './service/notification-message.service';
 
 // Definisikan tipe data yang diharapkan dari message queue dan API
 interface BaseNotificationEvent {
@@ -26,7 +28,15 @@ interface QueuePositionEvent extends BaseNotificationEvent {
     };
 }
 
-type NotificationEvent = OrderNotificationEvent | QueuePositionEvent;
+interface WhatsAppNotificationEvent extends BaseNotificationEvent {
+    type: 'WHATSAPP_PAYMENT_SUCCESS' | 'WHATSAPP_ORDER_CONFIRMATION' | 'WHATSAPP_PICKUP_REMINDER' | 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE';
+    payload: {
+        orderId: string;
+        orderStatus?: string;
+    };
+}
+
+type NotificationEvent = OrderNotificationEvent | QueuePositionEvent | WhatsAppNotificationEvent;
 
 export interface OrderDetails {
     id: string;
@@ -133,6 +143,12 @@ class NotificationWorker {
                 case 'queue_position':
                     await this.handleQueuePosition(messageData as QueuePositionEvent);
                     break;
+                case 'WHATSAPP_PAYMENT_SUCCESS':
+                case 'WHATSAPP_ORDER_CONFIRMATION':
+                case 'WHATSAPP_PICKUP_REMINDER':
+                case 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE':
+                    await this.handleWhatsAppNotification(messageData as WhatsAppNotificationEvent);
+                    break;
                 default:
                     logger.warn('Unknown message type', {
                         component: 'NotificationWorker',
@@ -230,6 +246,84 @@ class NotificationWorker {
                 component: 'NotificationWorker',
                 phone,
                 position,
+                errorMessage: error.message,
+                axiosError: error.response ? JSON.stringify(error.response.data, null, 2) : 'Not an Axios error',
+            });
+            throw error;
+        }
+    }
+
+    private async handleWhatsAppNotification(event: WhatsAppNotificationEvent) {
+        const { orderId, orderStatus } = event.payload;
+        const { type } = event;
+
+        try {
+            // 1. Generate pesan berdasarkan tipe notifikasi
+            let message: string;
+            switch (type) {
+                case 'WHATSAPP_PAYMENT_SUCCESS':
+                    message = await NotificationMessageService.generatePaymentSuccessMessage(orderId);
+                    break;
+                case 'WHATSAPP_ORDER_CONFIRMATION':
+                    message = await NotificationMessageService.generateOrderConfirmedMessage(orderId);
+                    break;
+                case 'WHATSAPP_PICKUP_REMINDER':
+                    message = await NotificationMessageService.generateReminderMessage(orderId, 'pickup');
+                    break;
+                case 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE':
+                    message = await NotificationMessageService.generateConsolidatedPaymentMessage(orderId, orderStatus || 'PENDING');
+                    break;
+                default:
+                    logger.warn('Unknown WhatsApp notification type', {
+                        component: 'NotificationWorker',
+                        type,
+                        orderId,
+                    });
+                    return;
+            }
+
+            // 2. Panggil API backend untuk mendapatkan data notifikasi (untuk nomor telepon)
+            let orderData;
+            if (orderId === 'TEST123') {
+                // Untuk test order, gunakan mock data
+                orderData = {
+                    guestCustomer: {
+                        phone: '+6283180541892'
+                    }
+                };
+                logger.info('🧪 Using mock phone data for WhatsApp test', {
+                    component: 'NotificationWorker',
+                    orderId
+                });
+            } else {
+                const response = await apiClient.get(`/orders/${orderId}/notification-data`);
+                orderData = response.data.data;
+            }
+
+            if (!orderData.guestCustomer.phone) {
+                logger.warn('Order does not have a phone number, skipping WhatsApp notification', {
+                    component: 'NotificationWorker',
+                    orderId,
+                    type,
+                });
+                return;
+            }
+
+            // 3. Kirim pesan WhatsApp menggunakan NotificationService yang sudah ada
+            await NotificationService.sendCustomWhatsAppMessage(orderData.guestCustomer.phone, message);
+
+            logger.info(`Successfully sent WhatsApp ${type} notification for order ${orderId}`, {
+                component: 'NotificationWorker',
+                orderId,
+                type,
+                phone: orderData.guestCustomer.phone
+            });
+
+        } catch (error: any) {
+            logger.error(`Failed to handle WhatsApp notification for order ${orderId}`, {
+                component: 'NotificationWorker',
+                orderId,
+                type,
                 errorMessage: error.message,
                 axiosError: error.response ? JSON.stringify(error.response.data, null, 2) : 'Not an Axios error',
             });

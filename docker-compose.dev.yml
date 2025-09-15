@@ -104,3 +104,19 @@ services:
       - "3000:3000"
     env_file:
       - .env.frontend-customer
+
+  dashboard:
+    image: ${DOCKER_USER:-pitok}/project-dashboard:development
+    pull_policy: always
+    container_name: project-boss-dashboard-dev
+    ports:
+      - "3010:3010"
+    environment:
+      NODE_ENV: development
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env.dashboard
+    networks:
+      - default

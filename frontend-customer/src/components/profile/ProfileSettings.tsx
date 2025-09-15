@@ -12,8 +12,9 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { useTranslations } from '@/hooks/useI18n';
-import { User, Phone, Sun, Moon, Monitor, Globe, Save, LogIn, Building, Heart, Receipt } from "lucide-react";
+import { User, Phone, Sun, Moon, Monitor, Globe, Save, LogIn, Building, Heart, Receipt, Bookmark } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useSavedProducts } from "@/hooks/useSavedProducts";
 import { STORAGE_PROFILE_KEY } from "@/constants";
 import { ResetModal } from "./ResetModal";
 
@@ -25,6 +26,7 @@ export default function ProfileSettings() {
     const t = useTranslations('profilePage');
     const [isResetModalShowed, setIsResetModalShowed] = useState<boolean>(false)
     const { favoriteCount } = useFavorites();
+    const { savedProductsCount } = useSavedProducts();
 
     const schema = z.object({
         fullName: z.string().min(2, t("validation.fullNameMin")),
@@ -103,8 +105,8 @@ export default function ProfileSettings() {
         window.location.href = "/favorites"
     };
 
-    const goToOrders = () => {
-        window.location.href = "/orders"
+    const goToSavedProducts = () => {
+        router.push("/saved-products")
     };
 
     const handleThemeChange = (val: string) => {
@@ -235,47 +237,40 @@ export default function ProfileSettings() {
                             {t("favorites.title")}
                         </h2>
                     </div>
-                    <div
-                        onClick={goToFavorites}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
-                    >
-                        <div className="flex items-center gap-2">
-                            <Heart className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">{t("favorites.savedOutlets")}</span>
+                    <div className="space-y-2">
+                        <div
+                            onClick={goToFavorites}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Heart className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">{t("favorites.savedOutlets")}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">
+                                    {t("favorites.count", { count: favoriteCount ? favoriteCount : 0 })}
+                                </span>
+                                <span className="text-muted-foreground">→</span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
-                                {t("favorites.count", { count: favoriteCount ? favoriteCount : 0 })}
-                            </span>
-                            <span className="text-muted-foreground">→</span>
+                        <div
+                            onClick={goToSavedProducts}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Bookmark className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">{t("savedProducts.savedItems")}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">
+                                    {t("savedProducts.count", { count: savedProductsCount ? savedProductsCount : 0 })}
+                                </span>
+                                <span className="text-muted-foreground">→</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Orders Section */}
-                {/* <div className="bg-card rounded-lg border p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Receipt className="w-5 h-5 text-primary" />
-                        <h2 className="font-medium text-card-foreground">
-                            {t("orders.title")}
-                        </h2>
-                    </div>
-                    <div
-                        onClick={goToOrders}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
-                    >
-                        <div className="flex items-center gap-2">
-                            <Receipt className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">{t("orders.orderHistory")}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
-                                {t("orders.viewAll")}
-                            </span>
-                            <span className="text-muted-foreground">→</span>
-                        </div>
-                    </div>
-                </div>   */}
                 {/* Action Buttons */}
                 <div className="space-y-3 pt-2">
                     <Button type="submit" className="w-full h-11">

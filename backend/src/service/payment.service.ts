@@ -15,6 +15,7 @@ import { mappingTransactionStatusForMidtrans } from '../utils/mapping';
 import { AppError } from '../errors/app-error';
 import { Messages } from '../constants/message';
 import { HttpStatus } from '../constants/http-status';
+import { socketUtils } from '../utils/socket.utils';
 
 // Konstanta untuk fee rates
 const TRANSACTION_FEE_RATE = 0.02;
@@ -160,14 +161,11 @@ async function createOrderAndItems(orderId: string, grossAmount: number, applica
             });
 
             if (product?.type === "GOODS") {
-                await tr.product.update({
-                    where: { id: product.id },
-                    data: {
-                        quantity: {
-                            decrement: item.quantity
-                        },
-                    },
-                });
+                // Validasi stok saja, tapi jangan kurangi quantity dulu
+                const productQuantity = product.quantity ?? 0;
+                if (item.quantity > productQuantity) {
+                    throw new AppError(Messages.PRODUCT_OUT_OF_STOCK, HttpStatus.BAD_REQUEST);
+                }
             }
 
             if (product?.type === "SERVICE") {
@@ -275,6 +273,21 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
         },
     });
 
+    // Emit notification to business outlet
+    try {
+        socketUtils.emitToBusinessOutlet(order.outletId, {
+            type: 'payment_created',
+            orderId: order.id,
+            amount: calculatedGrossAmount,
+            paymentMethod: paymentMethod,
+            customerName: order.guestCustomer.name,
+            timestamp: new Date()
+        });
+        console.log(`📡 Emitted payment_created event for outlet ${order.outletId}`);
+    } catch (socketError) {
+        console.error('❌ Error emitting payment_created event:', socketError);
+    }
+
     return transaction;
 }
 
@@ -312,6 +325,21 @@ export async function createQrisPaymentService(orderId: string) {
             expiresAt: expiresAt,
         },
     });
+
+    // Emit notification to business outlet
+    try {
+        socketUtils.emitToBusinessOutlet(order.outletId, {
+            type: 'payment_created',
+            orderId: order.id,
+            amount: order.totalAmount,
+            paymentMethod: 'qris',
+            customerName: order.guestCustomer.name,
+            timestamp: new Date()
+        });
+        console.log(`📡 Emitted payment_created event for outlet ${order.outletId}`);
+    } catch (socketError) {
+        console.error('❌ Error emitting payment_created event:', socketError);
+    }
 
     return chargeResponse;
 }
@@ -359,7 +387,24 @@ export async function createPaymentService(data: CreatePaymentPayload) {
     await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, outletId, customerDetails, inputItems, productMap);
 
     // Handle Midtrans charge
-    return await handleMidtransCharge(payload, orderId);
+    const result = await handleMidtransCharge(payload, orderId);
+
+    // Emit notification to business outlet
+    try {
+        socketUtils.emitToBusinessOutlet(outletId, {
+            type: 'payment_created',
+            orderId: orderId,
+            amount: grossAmount,
+            paymentMethod: midtransPaymentType,
+            customerName: customerDetails.name,
+            timestamp: new Date()
+        });
+        console.log(`📡 Emitted payment_created event for outlet ${outletId}`);
+    } catch (socketError) {
+        console.error('❌ Error emitting payment_created event:', socketError);
+    }
+
+    return result;
 }
 
 export async function cancelPaymentService(orderId: string) {

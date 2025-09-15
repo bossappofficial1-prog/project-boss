@@ -17,9 +17,10 @@ type ServiceOrderEvent = BaseEvent<'SERVICE_ORDER_PROCESSING' | 'SERVICE_ORDER_R
 type PaymentReminderEvent = BaseEvent<'PAYMENT_REMINDER', { orderId: string; expiresAt: Date }>;
 type VerificationEmailEvent = BaseEvent<'SEND_VERIFICATION_EMAIL', { to: string; code: string }>;
 type PaymentWebhookEvent = BaseEvent<'PAYMENT_WEBHOOK_RECEIVED', { source: 'midtrans' | 'xendit', payload: any }>;
+type WhatsAppNotificationEvent = BaseEvent<'WHATSAPP_PAYMENT_SUCCESS' | 'WHATSAPP_ORDER_CONFIRMATION' | 'WHATSAPP_PICKUP_REMINDER' | 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE', { orderId: string; orderStatus?: string }>;
 
 // Union type for all queue events, now including the email event
-export type QueueEvent = OrderNotificationEvent | ServiceOrderEvent | PaymentReminderEvent | VerificationEmailEvent | PaymentWebhookEvent;
+export type QueueEvent = OrderNotificationEvent | ServiceOrderEvent | PaymentReminderEvent | VerificationEmailEvent | PaymentWebhookEvent | WhatsAppNotificationEvent;
 
 // Exchange names as constants
 export const EXCHANGE_NAMES = {
@@ -112,6 +113,34 @@ class MessagePublisherService {
         await this.publish(EXCHANGE_NAMES.PAYMENT_WEBHOOK, '', {
             type: 'PAYMENT_WEBHOOK_RECEIVED',
             payload: { source, payload }
+        });
+    }
+
+    async publishWhatsAppPaymentSuccess(orderId: string) {
+        await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
+            type: 'WHATSAPP_PAYMENT_SUCCESS',
+            payload: { orderId }
+        });
+    }
+
+    async publishWhatsAppOrderConfirmation(orderId: string) {
+        await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
+            type: 'WHATSAPP_ORDER_CONFIRMATION',
+            payload: { orderId }
+        });
+    }
+
+    async publishWhatsAppPickupReminder(orderId: string) {
+        await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
+            type: 'WHATSAPP_PICKUP_REMINDER',
+            payload: { orderId }
+        });
+    }
+
+    async publishWhatsAppPaymentAndOrderUpdate(orderId: string, orderStatus: string) {
+        await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
+            type: 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE',
+            payload: { orderId, orderStatus }
         });
     }
 }

@@ -12,7 +12,7 @@ export const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: D
         const openMinutes = ((oper.openTime.getUTCHours() + 7) % 24) * 60 + oper.openTime.getUTCMinutes(); // Total menit waktu buka
         const closeMinutes = ((oper.closeTime.getUTCHours() + 7) % 24) * 60 + oper.closeTime.getUTCMinutes(); // Total menit waktu tutup
 
-        return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes;
+        return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes && oper.isOpen;
     });
 }
 

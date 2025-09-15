@@ -20,6 +20,7 @@ export function useNearbyOutlets(params: UseNearbyOutletsParams) {
             if (!lastPage.hasMore) return undefined;
             return allPages.length * (params.take || 10);
         },
+        staleTime: 50000,
         enabled: params.enabled !== false && !!(params.latitude && params.longitude),
         initialPageParam: 0,
     });
