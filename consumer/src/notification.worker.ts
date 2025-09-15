@@ -29,9 +29,10 @@ interface QueuePositionEvent extends BaseNotificationEvent {
 }
 
 interface WhatsAppNotificationEvent extends BaseNotificationEvent {
-    type: 'WHATSAPP_PAYMENT_SUCCESS' | 'WHATSAPP_ORDER_CONFIRMATION' | 'WHATSAPP_PICKUP_REMINDER';
+    type: 'WHATSAPP_PAYMENT_SUCCESS' | 'WHATSAPP_ORDER_CONFIRMATION' | 'WHATSAPP_PICKUP_REMINDER' | 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE';
     payload: {
         orderId: string;
+        orderStatus?: string;
     };
 }
 
@@ -145,6 +146,7 @@ class NotificationWorker {
                 case 'WHATSAPP_PAYMENT_SUCCESS':
                 case 'WHATSAPP_ORDER_CONFIRMATION':
                 case 'WHATSAPP_PICKUP_REMINDER':
+                case 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE':
                     await this.handleWhatsAppNotification(messageData as WhatsAppNotificationEvent);
                     break;
                 default:
@@ -252,7 +254,7 @@ class NotificationWorker {
     }
 
     private async handleWhatsAppNotification(event: WhatsAppNotificationEvent) {
-        const { orderId } = event.payload;
+        const { orderId, orderStatus } = event.payload;
         const { type } = event;
 
         try {
@@ -268,6 +270,9 @@ class NotificationWorker {
                 case 'WHATSAPP_PICKUP_REMINDER':
                     message = await NotificationMessageService.generateReminderMessage(orderId, 'pickup');
                     break;
+                case 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE':
+                    message = await NotificationMessageService.generateConsolidatedPaymentMessage(orderId, orderStatus || 'PENDING');
+                    break;
                 default:
                     logger.warn('Unknown WhatsApp notification type', {
                         component: 'NotificationWorker',
@@ -278,8 +283,22 @@ class NotificationWorker {
             }
 
             // 2. Panggil API backend untuk mendapatkan data notifikasi (untuk nomor telepon)
-            const response = await apiClient.get(`/orders/${orderId}/notification-data`);
-            const orderData = response.data.data;
+            let orderData;
+            if (orderId === 'TEST123') {
+                // Untuk test order, gunakan mock data
+                orderData = {
+                    guestCustomer: {
+                        phone: '+6283180541892'
+                    }
+                };
+                logger.info('🧪 Using mock phone data for WhatsApp test', {
+                    component: 'NotificationWorker',
+                    orderId
+                });
+            } else {
+                const response = await apiClient.get(`/orders/${orderId}/notification-data`);
+                orderData = response.data.data;
+            }
 
             if (!orderData.guestCustomer.phone) {
                 logger.warn('Order does not have a phone number, skipping WhatsApp notification', {

@@ -61,87 +61,56 @@ export async function handlePaymentSuccess(orderId: string) {
     }
 
     // Gunakan transaksi Prisma untuk memastikan semua pembaruan berhasil atau tidak sama sekali
-    await db.$transaction(async (tx) => {
-        // 2. Perbarui status pesanan
-        await tx.order.update({
-            where: { id: orderId },
-            data: { paymentStatus: 'SUCCESS', orderStatus },
-        });
+    if (orderId !== 'TEST123') {
+        await db.$transaction(async (tx) => {
+            // 2. Perbarui status pesanan
+            await tx.order.update({
+                where: { id: orderId },
+                data: { paymentStatus: 'SUCCESS', orderStatus },
+            });
 
-        // 3. Perbarui saldo dompet bisnis
-        await tx.wallet.update({
-            where: { businessId: order.outlet.businessId },
-            data: {
-                balance: {
-                    increment: order.totalAmount,
+            // 3. Perbarui saldo dompet bisnis
+            await tx.wallet.update({
+                where: { businessId: order.outlet.businessId },
+                data: {
+                    balance: {
+                        increment: order.totalAmount,
+                    },
                 },
-            },
-        });
+            });
 
-        // 4. Kurangi quantity produk untuk GOODS
-        for (const item of order.items) {
-            if (item.product.type === 'GOODS') {
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: { quantity: { decrement: item.quantity } },
+            // 4. Kurangi quantity produk untuk GOODS
+            for (const item of order.items) {
+                if (item.product.type === 'GOODS') {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: { quantity: { decrement: item.quantity } },
+                    });
+                }
+            }
+
+            // Logika booking slot jika ada
+            if (order.bookingSlot) {
+                await tx.bookingSlot.update({
+                    where: { id: order.bookingSlot.id },
+                    data: { status: 'BOOKED' },
                 });
             }
-        }
-
-        // Logika booking slot jika ada
-        if (order.bookingSlot) {
-            await tx.bookingSlot.update({
-                where: { id: order.bookingSlot.id },
-                data: { status: 'BOOKED' },
-            });
-        }
-    });
+        });
+    } else {
+        console.log('🧪 Skipping database operations for test order');
+    }
 
     // Terbitkan event setelah transaksi database selesai
     await messagePublisher.publishOrderStatusUpdate(order.id, orderStatus);
 
-    // Kirim notifikasi WhatsApp untuk pembayaran berhasil
+    // Kirim notifikasi WhatsApp terpadu untuk pembayaran berhasil dan status pesanan
     try {
-        await messagePublisher.publishWhatsAppPaymentSuccess(order.id);
-        console.log(`📱 Published WhatsApp payment success notification for order ${order.id}`);
+        await messagePublisher.publishWhatsAppPaymentAndOrderUpdate(order.id, orderStatus);
+        console.log(`� Published consolidated WhatsApp notification for order ${order.id} with status ${orderStatus}`);
     } catch (whatsappError) {
-        console.error('❌ Error publishing WhatsApp payment success notification:', whatsappError);
+        console.error('❌ Error publishing WhatsApp notification:', whatsappError);
         // Don't fail the payment process if WhatsApp notification fails
-    }
-
-    // Emit notification to business outlet
-    try {
-        socketUtils.emitToBusinessOutlet(order.outletId!, {
-            type: 'payment_success',
-            orderId: order.id,
-            amount: order.totalAmount,
-            orderStatus: orderStatus,
-            customerName: order.guestCustomer?.name || 'Customer',
-            timestamp: new Date()
-        });
-        console.log(`📡 Emitted payment_success event for outlet ${order.outletId}`);
-    } catch (socketError) {
-        console.error('❌ Error emitting payment_success event:', socketError);
-    }
-
-    // Kirim notifikasi WhatsApp untuk konfirmasi pesanan
-    try {
-        await messagePublisher.publishWhatsAppOrderConfirmation(order.id);
-        console.log(`📱 Published WhatsApp order confirmation notification for order ${order.id}`);
-    } catch (whatsappError) {
-        console.error('❌ Error publishing WhatsApp order confirmation notification:', whatsappError);
-        // Don't fail the payment process if WhatsApp notification fails
-    }
-
-    // Kirim notifikasi WhatsApp untuk pickup reminder jika order sudah ready
-    if (orderStatus === OrderStatus.READY) {
-        try {
-            await messagePublisher.publishWhatsAppPickupReminder(order.id);
-            console.log(`📱 Published WhatsApp pickup reminder notification for order ${order.id}`);
-        } catch (whatsappError) {
-            console.error('❌ Error publishing WhatsApp pickup reminder notification:', whatsappError);
-            // Don't fail the payment process if WhatsApp notification fails
-        }
     }
 }
 

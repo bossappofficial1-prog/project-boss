@@ -550,7 +550,7 @@ export default function DashboardPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-1">Informasi Outlet</h2>
                 <p className="text-gray-600">Belum ada outlet terdaftar. Tambahkan outlet untuk mulai berjualan.</p>
                 <div className="mt-4">
-                  <Button onClick={() => setShowAddOutletModal(true)} variant="primary">Tambah Outlet</Button>
+                  <Button onClick={() => setShowAddOutletModal(true)}>Tambah Outlet</Button>
                 </div>
               </div>
             </div>
@@ -563,7 +563,7 @@ export default function DashboardPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-1">Informasi Pemilik Rekening</h2>
             <p className="text-gray-600">Lengkapi informasi pemilik rekening untuk penarikan dana.</p>
             <div className="mt-4">
-              <Button onClick={() => setShowBankModal(true)} variant="primary">Lengkapi Informasi Rekening</Button>
+              <Button onClick={() => setShowBankModal(true)}>Lengkapi Informasi Rekening</Button>
             </div>
           </div>
         )}

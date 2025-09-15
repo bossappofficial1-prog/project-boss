@@ -30,20 +30,20 @@ router.post('/orders/update-payment-status', updatePaymentStatus);
 
 // Endpoint test untuk WhatsApp notification
 router.post('/test/whatsapp', asyncHandler(async (req: Request, res: Response) => {
-    const { orderId } = req.body;
-    console.log(`🧪 Testing WhatsApp notification for order: ${orderId}`);
+    const { orderId, phoneNumber } = req.body;
+    console.log(`🧪 Testing WhatsApp notification for order: ${orderId || 'TEST123'}`);
 
     try {
+        // Publish WhatsApp message langsung tanpa perlu data order
         await messagePublisher.publishWhatsAppPaymentSuccess(orderId || 'TEST123');
         console.log(`📱 Published WhatsApp payment success notification for test order ${orderId || 'TEST123'}`);
     } catch (error) {
         console.error('❌ Error publishing WhatsApp test notification:', error);
+        return ResponseUtil.error(res, 'Failed to send WhatsApp notification', undefined, 500);
     }
 
     return ResponseUtil.success(res, { message: 'WhatsApp test notification sent' });
-}));
-
-// Endpoint untuk mengirim notifikasi posisi antrian
+}));// Endpoint untuk mengirim notifikasi posisi antrian
 router.post('/send-queue-notification', sendQueueNotification);
 
 export default router;

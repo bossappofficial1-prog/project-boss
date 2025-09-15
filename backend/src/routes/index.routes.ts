@@ -19,6 +19,7 @@ import uploadRouter from "./upload.route";
 import securityRouter from "./security.route";
 import queueMonitoringRouter from "./queue-monitoring.route";
 import notificationRouter from "./notification.route";
+import adminRouter from "./admin.route";
 import { ResponseUtil } from "../utils";
 import { paymentMethod } from "../constants/payment-method";
 
@@ -26,6 +27,7 @@ const apiRouter = Router()
 
 apiRouter.use('/users', userRouter)
 apiRouter.use('/auth', authRouter)
+apiRouter.use('/admin', adminRouter)
 apiRouter.use('/memberships', membershipRouter)
 apiRouter.use('/products', productRouter)
 apiRouter.use('/orders', orderRouter)

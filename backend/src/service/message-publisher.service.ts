@@ -17,7 +17,7 @@ type ServiceOrderEvent = BaseEvent<'SERVICE_ORDER_PROCESSING' | 'SERVICE_ORDER_R
 type PaymentReminderEvent = BaseEvent<'PAYMENT_REMINDER', { orderId: string; expiresAt: Date }>;
 type VerificationEmailEvent = BaseEvent<'SEND_VERIFICATION_EMAIL', { to: string; code: string }>;
 type PaymentWebhookEvent = BaseEvent<'PAYMENT_WEBHOOK_RECEIVED', { source: 'midtrans' | 'xendit', payload: any }>;
-type WhatsAppNotificationEvent = BaseEvent<'WHATSAPP_PAYMENT_SUCCESS' | 'WHATSAPP_ORDER_CONFIRMATION' | 'WHATSAPP_PICKUP_REMINDER', { orderId: string }>;
+type WhatsAppNotificationEvent = BaseEvent<'WHATSAPP_PAYMENT_SUCCESS' | 'WHATSAPP_ORDER_CONFIRMATION' | 'WHATSAPP_PICKUP_REMINDER' | 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE', { orderId: string; orderStatus?: string }>;
 
 // Union type for all queue events, now including the email event
 export type QueueEvent = OrderNotificationEvent | ServiceOrderEvent | PaymentReminderEvent | VerificationEmailEvent | PaymentWebhookEvent | WhatsAppNotificationEvent;
@@ -134,6 +134,13 @@ class MessagePublisherService {
         await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
             type: 'WHATSAPP_PICKUP_REMINDER',
             payload: { orderId }
+        });
+    }
+
+    async publishWhatsAppPaymentAndOrderUpdate(orderId: string, orderStatus: string) {
+        await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
+            type: 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE',
+            payload: { orderId, orderStatus }
         });
     }
 }
