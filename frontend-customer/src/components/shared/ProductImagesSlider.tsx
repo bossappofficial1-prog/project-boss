@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import { resolveCustomerImageUrl } from '@/lib/url';
 import { ArrowLeft, ArrowRight, Pause, Play, Image as ImageIcon, X } from 'lucide-react';
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
@@ -118,7 +119,7 @@ export function ProductImagesSlider({
                             aria-hidden={i !== index}
                         >
                             <Image
-                                src={img.url}
+                                src={resolveCustomerImageUrl(img.url)}
                                 alt={img.alt || `Product image ${i + 1}`}
                                 fill
                                 priority={i === 0}
@@ -178,7 +179,7 @@ export function ProductImagesSlider({
                             )}
                         >
                             <Image
-                                src={img.url}
+                                src={resolveCustomerImageUrl(img.url)}
                                 alt={img.alt || `Thumbnail ${i + 1}`}
                                 fill
                                 sizes="80px"
@@ -192,7 +193,7 @@ export function ProductImagesSlider({
             <Lightbox
                 open={lightboxOpen}
                 close={() => setLightboxOpen(false)}
-                slides={images.map(img => ({ src: img.url }))}
+                slides={images.map(img => ({ src: resolveCustomerImageUrl(img.url) }))}
                 index={index}
                 on={{ view: ({ index: currentIndex }) => setIndex(currentIndex) }}
                 styles={{ container: { backgroundColor: "rgba(0, 0, 0, .9)" } }}

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { outletManagementApi } from '@/lib/api'
+import { outletManagementApi, uploadApi } from '@/lib/api'
 
 type Props = {
   open: boolean
@@ -23,7 +23,9 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
   const [description, setDescription] = useState('')
   const [openingHours, setOpeningHours] = useState('')
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE')
-  const [image, setImage] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [latitude, setLatitude] = useState<string>('')
   const [longitude, setLongitude] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
@@ -33,13 +35,27 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
       if (!businessId) {
         throw new Error('Silakan buat profil bisnis terlebih dahulu sebelum menambah outlet')
       }
+      // Require image file (optional) with 1MB limit; if no file, no image
+      let finalImageUrl: string | undefined = undefined
+      if (file) {
+        if (file.size > 1024 * 1024) {
+          throw new Error('Ukuran gambar melebihi 1MB.')
+        }
+        try {
+          setUploading(true)
+          const uploaded = await uploadApi.uploadImage(file, { scope: 'outlet' })
+          finalImageUrl = uploaded.url
+        } finally {
+          setUploading(false)
+        }
+      }
       // Build payload strictly with backend-supported fields to avoid 500 due to unknown args
       const payload = {
         name,
         address,
         phone,
         businessId,
-        image: image || undefined,
+        image: finalImageUrl,
         latitude: latitude ? Number(latitude) : undefined,
         longitude: longitude ? Number(longitude) : undefined,
       }
@@ -101,8 +117,31 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400">Catatan: Beberapa field opsional akan tersedia penuh setelah update backend. Saat ini data inti (nama, alamat, telepon, lokasi, gambar) akan disimpan.</p>
           <div>
-            <Label htmlFor="outlet-image">Image URL (opsional)</Label>
-            <Input id="outlet-image" placeholder="https://..." value={image} onChange={(e) => setImage(e.target.value)} />
+            <Label>Gambar Outlet (maks 1MB)</Label>
+            <div className="flex items-center gap-3 mt-1">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null
+                  if (f && f.size > 1024 * 1024) {
+                    setError('Ukuran gambar melebihi 1MB.')
+                    setFile(null)
+                  } else {
+                    setError(null)
+                    setFile(f)
+                  }
+                }}
+                className="block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+              />
+              {uploading && <span className="text-xs text-gray-500">Uploading...</span>}
+            </div>
+            {imageUrl && (
+              <div className="mt-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl} alt="Preview" className="h-16 w-16 object-cover rounded" />
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -116,7 +155,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isPending}>Batal</Button>
-            <Button onClick={() => mutate()} disabled={isPending || !name || !address || !phone || !businessId}>{isPending ? 'Menyimpan...' : 'Simpan'}</Button>
+            <Button onClick={() => mutate()} disabled={isPending || uploading || !name || !address || !phone || !businessId}>{isPending ? 'Menyimpan...' : (uploading ? 'Mengunggah...' : 'Simpan')}</Button>
           </div>
         </div>
       </DialogContent>

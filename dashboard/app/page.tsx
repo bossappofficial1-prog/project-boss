@@ -9,13 +9,22 @@ export default function Home() {
   useEffect(() => {
     // Check if user is authenticated
     const token = localStorage.getItem('token');
-    
-    if (token) {
-      // User is logged in, redirect to dashboard
-      router.push('/dashboard');
-    } else {
-      // User is not logged in, redirect to login
-      router.push('/login');
+    const userRaw = localStorage.getItem('user');
+
+    if (!token || !userRaw) {
+      router.push('/auth/login');
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userRaw);
+      if (user?.role === 'ADMIN') {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/owner/dashboard');
+      }
+    } catch {
+      router.push('/auth/login');
     }
   }, [router]);
 

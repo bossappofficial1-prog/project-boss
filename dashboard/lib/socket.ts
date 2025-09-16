@@ -12,7 +12,7 @@ export const initializeSocket = (): Socket => {
         socket.disconnect();
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:6789';
+    const backendUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:1234';
 
     socket = io(backendUrl, {
         transports: ['websocket', 'polling'],

@@ -1,4 +1,7 @@
 import xlsx from 'xlsx';
+import path from 'path';
+import fs from 'fs';
+import extract from 'extract-zip';
 import { db } from "../config/prisma";
 import { redis } from "../config/redis";
 import { HttpStatus } from "../constants/http-status";
@@ -9,6 +12,7 @@ import { CreateProductInput, UpdateProductInput, createProductSchema } from "../
 import { getOutletByIdService } from './outlet.service';
 import { generateDefaultBookingSlots } from './booking.service';
 import { BookingSlot, FeeBearer, Product, ProductType, ServiceStatus } from '@prisma/client';
+import { config } from "../config";
 
 export async function createProductService(data: CreateProductInput) {
     await getOutletByIdService(data.outletId);
@@ -108,10 +112,54 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
         throw new AppError("File tidak ditemukan.", HttpStatus.BAD_REQUEST);
     }
 
-    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet);
+    // Prepare working directory
+    const isZip = path.extname(file.path || '').toLowerCase() === '.zip';
+    const tempRoot = path.join(process.cwd(), 'tmp', 'imports');
+    if (!fs.existsSync(tempRoot)) fs.mkdirSync(tempRoot, { recursive: true });
+    const workDir = isZip ? path.join(tempRoot, path.basename(file.path, '.zip') + '-' + Date.now()) : null;
+    let excelPath: string | null = null;
+    let imagesDir: string | null = null;
+
+    try {
+        if (isZip && file.path) {
+            // Extract zip
+            fs.mkdirSync(workDir!, { recursive: true });
+            await extract(file.path, { dir: workDir! });
+
+            // Find first Excel file and images directory (convention: images/)
+            const walk = (dir: string): string[] =>
+                fs.readdirSync(dir).flatMap(name => {
+                    const p = path.join(dir, name);
+                    const stat = fs.statSync(p);
+                    return stat.isDirectory() ? walk(p) : [p];
+                });
+            const files = walk(workDir!);
+            excelPath = files.find(f => ['.xlsx', '.xls', '.csv'].includes(path.extname(f).toLowerCase())) || null;
+            imagesDir = fs.existsSync(path.join(workDir!, 'images')) ? path.join(workDir!, 'images') : null;
+            if (!excelPath) {
+                throw new AppError('Zip tidak berisi file Excel (.xlsx/.xls/.csv)', HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        // Read worksheet (from disk when zip, else from file buffer or path)
+        let worksheet: xlsx.WorkSheet;
+        if (excelPath) {
+            const workbook = xlsx.readFile(excelPath);
+            const sheetName = workbook.SheetNames[0];
+            worksheet = workbook.Sheets[sheetName];
+        } else {
+            // Non-zip: use file.path or buffer
+            if (file.path) {
+                const workbook = xlsx.readFile(file.path);
+                const sheetName = workbook.SheetNames[0];
+                worksheet = workbook.Sheets[sheetName];
+            } else {
+                const workbook = xlsx.read(file.buffer, { type: 'buffer' });
+                const sheetName = workbook.SheetNames[0];
+                worksheet = workbook.Sheets[sheetName];
+            }
+        }
+        const data = xlsx.utils.sheet_to_json(worksheet);
 
     type ParsedRow = CreateProductInput & { _rowNumber: number };
     const rows: ParsedRow[] = [];
@@ -147,7 +195,8 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
             transactionFeeBearer: rawFeeBearer as FeeBearer | undefined,
             serviceDurationMinutes: toNumber(row['Durasi Layanan (menit)']) as number | undefined,
             outletId: outletId,
-            image: row['URL Gambar'],
+            // Temporarily store the filename; we will resolve to URL later if zip provided
+            image: row['Nama File Gambar'],
             // capacity is optional, not exposed directly in template. Could map from 'Kapasitas Paralel'
             capacity: toNumber(row['Kapasitas Paralel']) as number | undefined,
         };
@@ -175,12 +224,54 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
     let createdCount = 0;
     let updatedCount = 0;
 
+    const uploadsDir = path.join(process.cwd(), 'uploads');
+    const ensureImageUrl = (filename?: string | null): string | undefined => {
+        if (!filename) return undefined;
+        const allowedExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        const ext = path.extname(filename).toLowerCase();
+        if (!allowedExt.includes(ext)) return undefined;
+
+        // Build candidate list of files to search when zip was provided
+        const findInDir = (dir: string): string | undefined => {
+            const items = fs.readdirSync(dir);
+            for (const name of items) {
+                const p = path.join(dir, name);
+                const stat = fs.statSync(p);
+                if (stat.isDirectory()) {
+                    const found = findInDir(p);
+                    if (found) return found;
+                } else if (path.basename(p).toLowerCase() === path.basename(filename).toLowerCase()) {
+                    return p;
+                }
+            }
+            return undefined;
+        };
+
+        let src: string | undefined;
+        if (workDir && fs.existsSync(workDir)) {
+            src = findInDir(workDir);
+        }
+        // If not found in zip, nothing to resolve
+        if (!src) return undefined;
+
+        const stat = fs.statSync(src);
+        if (stat.size > 1 * 1024 * 1024) {
+            // Skip oversized images per requirement
+            return undefined;
+        }
+        const unique = `image-${Date.now()}-${Math.round(Math.random()*1e9)}${ext}`;
+        const dest = path.join(uploadsDir, unique);
+        fs.copyFileSync(src, dest);
+        return `${config.BASE_URL}/uploads/${unique}`;
+    };
+
     await db.$transaction(async (tx) => {
         for (const r of rows) {
             const key = r.name.trim().toLowerCase();
             const found = byName.get(key);
 
             // Build common data payload (exclude outletId on update)
+            const resolvedImageUrl = ensureImageUrl(r.image as any);
             const commonData = {
                 name: r.name,
                 description: r.description,
@@ -192,7 +283,7 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
                 status: r.status ?? ServiceStatus.ACTIVE,
                 transactionFeeBearer: r.transactionFeeBearer ?? null,
                 serviceDurationMinutes: r.type === 'SERVICE' ? (r.serviceDurationMinutes ?? 0) : null,
-                image: r.image,
+                image: resolvedImageUrl || undefined,
             } as const;
 
             if (found) {
@@ -253,6 +344,17 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
     });
 
     return { created: createdCount, updated: updatedCount, total: rows.length };
+    } finally {
+        // Cleanup temp dir and uploaded import file
+        try {
+            if (workDir && fs.existsSync(workDir)) {
+                fs.rmSync(workDir, { recursive: true, force: true });
+            }
+        } catch {}
+        try {
+            if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        } catch {}
+    }
 }
 
 export async function searchProductsByNameService(name: string) {
@@ -272,7 +374,7 @@ export function generateProductImportTemplateService(): Buffer {
         "Status",
         "Penanggung Biaya",
         "Durasi Layanan (menit)",
-        "URL Gambar",
+    "Nama File Gambar",
         "Kapasitas Paralel"
     ];
     const worksheet = xlsx.utils.aoa_to_sheet([headers]);

@@ -88,9 +88,9 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
             >
                 {/* Image Section - flex-shrink-0 prevents image from shrinking */}
                 <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 bg-muted overflow-hidden rounded-lg">
-                    {product.image ? (
+                    { (product.image || product.images?.[0]?.url) ? (
                         <ImageRender
-                            src={product.image}
+                            src={product.image || product.images?.[0]?.url!}
                             alt={product.name}
                             className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${isOutOfStock ? "grayscale" : ""}`}
                         />

@@ -110,10 +110,21 @@ dashboard/
 │   ├── globals.css       # Global styles
 │   └── layout.tsx        # Root layout
 ├── components/            # Reusable components
+│   ├── dashboard/        # Dashboard UI pieces (clean split)
+│   │   ├── Toolbar.tsx                 # Date + socket status bar
+│   │   ├── StatsCards.tsx              # KPI cards
+│   │   ├── BusinessProfileCard.tsx     # Business profile and bank info
+│   │   ├── OutletsSection.tsx          # Outlets list + add button
+│   │   └── Skeletons.tsx               # Loading skeletons
 │   └── layout/           # Layout components
 │       ├── DashboardLayout.tsx # Main dashboard layout
 │       ├── Sidebar.tsx   # Navigation sidebar
 │       └── Header.tsx    # Top header
+├── hooks/                # Reusable hooks
+│   ├── useAuthGuard.ts        # Auth check for protected pages/layout
+│   └── useDashboardData.ts    # Encapsulates dashboard data + socket
+├── types/                # Shared types
+│   └── dashboard.ts           # Business, Outlet, Stats, etc.
 ├── public/               # Static assets
 │   └── Logo Boss.png     # BOSS logo
 ├── .env.local           # Environment variables
@@ -122,6 +133,12 @@ dashboard/
 ├── tsconfig.json        # TypeScript config
 └── package.json         # Dependencies
 ```
+
+### Clean code notes
+- Page components should be thin: only compose hooks and UI components.
+- Data fetching and side-effects live in hooks under `hooks/`.
+- Reusable, presentational UI lives under `components/dashboard/` with typed props.
+- Shared types are colocated in `types/` to avoid duplication.
 
 ## 🎨 **Design System**
 

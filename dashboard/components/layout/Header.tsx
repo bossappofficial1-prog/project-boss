@@ -35,7 +35,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('selectedOutlet');
-    router.push('/login');
+    router.push('/auth/login');
   };
 
   return (

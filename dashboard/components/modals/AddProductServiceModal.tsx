@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog'
-import { productApi } from '@/lib/api'
+import { productApi, uploadApi } from '@/lib/api'
 
 type Props = {
   open: boolean
@@ -21,7 +21,8 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
   const [unit, setUnit] = React.useState('pcs')
   const [serviceDurationMinutes, setServiceDurationMinutes] = React.useState<number | ''>('')
   const [status, setStatus] = React.useState<'ACTIVE' | 'INACTIVE'>('ACTIVE')
-  const [image, setImage] = React.useState('')
+  const [file, setFile] = React.useState<File | null>(null)
+  const [uploading, setUploading] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -35,7 +36,8 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
     setUnit('pcs')
     setServiceDurationMinutes('')
     setStatus('ACTIVE')
-    setImage('')
+  setFile(null)
+  setUploading(false)
     setError(null)
   }
 
@@ -78,7 +80,27 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
         status,
         outletId,
       }
-      if (image.trim()) payload.image = image.trim()
+      // Require image file and enforce client-side size limit (1MB)
+      if (!file) {
+        setError('Gambar wajib diupload (maksimum 1MB).')
+        setSubmitting(false)
+        return
+      }
+      if (file.size > 1 * 1024 * 1024) {
+        setError('Ukuran gambar melebihi 1MB.')
+        setSubmitting(false)
+        return
+      }
+      // Upload image and use returned URL
+      if (file) {
+        try {
+          setUploading(true)
+          const uploaded = await uploadApi.uploadImage(file, { scope: 'product' })
+          payload.image = uploaded.url
+        } finally {
+          setUploading(false)
+        }
+      }
       if (type === 'GOODS') {
         payload.quantity = Number(quantity) || 0
         payload.unit = unit || 'pcs'
@@ -219,14 +241,27 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gambar (URL opsional)</label>
-            <input
-              type="url"
-              value={image}
-              onChange={(e) => setImage(e.target.value)}
-              placeholder="https://..."
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-            />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gambar Produk (maks 1MB)</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null
+                  if (f && f.size > 1024 * 1024) {
+                    setError('Ukuran gambar melebihi 1MB.')
+                    setFile(null)
+                  } else {
+                    setError(null)
+                    setFile(f)
+                  }
+                }}
+                className="block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+              />
+              {uploading && (
+                <span className="text-xs text-gray-500">Uploading...</span>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -241,10 +276,10 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
             </DialogClose>
             <button
               type="submit"
-              disabled={submitting || !outletId}
+              disabled={submitting || uploading || !outletId}
               className={`px-4 py-2 rounded-lg text-white ${submitting || !outletId ? 'bg-gray-300' : 'bg-red-600 hover:bg-red-700'}`}
             >
-              {submitting ? 'Menyimpan...' : 'Simpan'}
+              {submitting ? 'Menyimpan...' : (uploading ? 'Mengunggah...' : 'Simpan')}
             </button>
           </div>
         </form>

@@ -25,6 +25,10 @@ export class ResponseUtil {
     }
 
     private static sanitizeBigInt(obj: any): any {
+        // Preserve Date instances as ISO strings
+        if (obj instanceof Date) {
+            return obj.toISOString();
+        }
         if (typeof obj === 'bigint') {
             // ubah ke string supaya aman
             return obj.toString();

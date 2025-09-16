@@ -1,39 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export default function DashboardLayout({ children }: LayoutProps) {
-  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Check authentication
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-
-    if (!token || !user) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      JSON.parse(user);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      router.push('/login');
-    }
-  }, [router]);
+  const { loading: isLoading } = useAuthGuard();
 
   if (isLoading) {
     return (

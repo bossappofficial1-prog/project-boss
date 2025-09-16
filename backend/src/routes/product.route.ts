@@ -14,7 +14,7 @@ import { validateSchema } from "../middleware/zod.middleware";
 import { createProductSchema, updateProductSchema } from "../schemas/product.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
-import upload from "../middleware/upload.middleware";
+import upload, { importUpload } from "../middleware/upload.middleware";
 import { getBookingSlotByOutlet } from "../controller/booking.controller";
 
 const productRouter = Router();
@@ -29,7 +29,7 @@ productRouter.get("/:productId/booking-slots", getBookingSlotByOutlet)
 productRouter.get("/template/import", getProductImportTemplateController);
 productRouter.get("/export/:outletId", protect, authorize(UserRole.OWNER), exportProductsController);
 productRouter.post("/", protect, authorize(UserRole.OWNER), validateSchema(createProductSchema), createProductController);
-productRouter.post("/bulk", protect, authorize(UserRole.OWNER), upload.single('file'), bulkCreateProductsController);
+productRouter.post("/bulk", protect, authorize(UserRole.OWNER), importUpload.single('file'), bulkCreateProductsController);
 productRouter.patch("/:id", protect, authorize(UserRole.OWNER), validateSchema(updateProductSchema), updateProductController);
 productRouter.delete("/:id", protect, authorize(UserRole.OWNER), deleteProductController);
 

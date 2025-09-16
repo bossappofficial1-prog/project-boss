@@ -20,14 +20,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         const user = localStorage.getItem('user');
 
         if (!token || !user) {
-            router.push('/login');
+            router.push('/auth/login');
             return;
         }
 
         try {
             const userData = JSON.parse(user);
             if (userData.role !== 'ADMIN') {
-                router.push('/dashboard');
+                router.push('/owner/dashboard');
                 return;
             }
             setIsLoading(false);
@@ -35,7 +35,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             console.error('Error parsing user data:', error);
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            router.push('/login');
+            router.push('/auth/login');
         }
     }, [router]);
 

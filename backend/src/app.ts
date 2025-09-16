@@ -26,9 +26,12 @@ app.use(helmet({
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'"],
             styleSrc: ["'self'"],
-            imgSrc: ["'self'", "data:", "https:"],
+            // Allow images to be fetched cross-origin by any scheme (http/https) and data URIs
+            imgSrc: ["'self'", "data:", "https:", "http:"],
         },
     },
+    // We are embedding cross-origin images from the dashboard domain, so allow resource policy to be cross-origin
+    crossOriginResourcePolicy: { policy: "cross-origin" },
     crossOriginEmbedderPolicy: false
 }))
 
@@ -58,8 +61,11 @@ if (config.NODE_ENV === "development") {
     app.use(morgan('dev')); // Output ringkas dengan warna berdasarkan status respons untuk development
 }
 
-// Serve static files (uploaded images)
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Serve static files (uploaded images) with CORP header explicitly set
+app.use('/uploads', (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+}, express.static(path.join(process.cwd(), 'uploads')));
 app.use('/', express.static(path.join(process.cwd(), 'public')));
 
 app.get("/", (req, res) => {

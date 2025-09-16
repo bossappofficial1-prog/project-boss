@@ -104,7 +104,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const menuItems = [
     {
       name: 'Dashboard',
-      href: '/dashboard',
+      href: '/owner/dashboard',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -114,7 +114,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       name: 'Produk dan Layanan',
-      href: '/dashboard/products',
+      href: '/owner/dashboard/products',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -123,7 +123,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       name: 'Stok Produk',
-      href: '/dashboard/stock',
+      href: '/owner/dashboard/stock',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h1.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H5zm0 0v8a2 2 0 002 2h8a2 2 0 002-2V8m-6 4h4" />
@@ -132,7 +132,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       name: 'Jasa',
-      href: '/dashboard/services',
+      href: '/owner/dashboard/services',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
@@ -141,7 +141,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       name: 'Pesanan',
-      href: '/dashboard/orders',
+      href: '/owner/dashboard/orders',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -150,7 +150,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       name: 'Antrian',
-      href: '/dashboard/queue',
+      href: '/owner/dashboard/queue',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -159,7 +159,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       name: 'Laporan',
-      href: '/dashboard/reports',
+      href: '/owner/dashboard/reports',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -168,7 +168,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       name: 'Pengeluaran',
-      href: '/dashboard/expenses',
+      href: '/owner/dashboard/expenses',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
@@ -177,7 +177,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       name: 'Riwayat Transaksi',
-      href: '/dashboard/transactions',
+      href: '/owner/dashboard/transactions',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -186,16 +186,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       name: 'Penarikan Dana',
-      href: '/dashboard/withdrawals',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Profile',
-      href: '/dashboard/profile',
+      href: '/owner/dashboard/withdrawals',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

@@ -73,18 +73,48 @@ const imageUpload = multer({
     storage: imageStorage,
     fileFilter: imageFileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB limit
+        fileSize: 1 * 1024 * 1024, // 1MB limit
         files: 1 // Only 1 file at a time
     }
 });
 
-// Set up storage for uploaded files (existing functionality for Excel)
-const storage = multer.memoryStorage(); // Store file in memory
+// Import uploads: allow .xlsx or .zip using disk storage to handle larger archives
+const importTempDir = path.join(process.cwd(), 'tmp', 'imports');
+if (!fs.existsSync(importTempDir)) {
+    fs.mkdirSync(importTempDir, { recursive: true });
+}
 
-// Create the multer instance for Excel files
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+const importStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, importTempDir),
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, `import-${uniqueSuffix}${ext}`);
+    }
+});
+
+const importFileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const allowed = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/vnd.ms-excel', // .xls
+        'text/csv',
+        'application/zip',
+        'application/x-zip-compressed',
+        'multipart/x-zip',
+        'application/x-zip'
+    ];
+    const allowedExt = ['.xlsx', '.xls', '.csv', '.zip'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!allowed.includes(file.mimetype) && !allowedExt.includes(ext)) {
+        return cb(new AppError('File import harus .xlsx atau .zip', HttpStatus.BAD_REQUEST));
+    }
+    cb(null, true);
+};
+
+export const importUpload = multer({
+    storage: importStorage,
+    fileFilter: importFileFilter,
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB archive max
 });
 
 // Middleware for single image upload
@@ -101,7 +131,7 @@ export const uploadMultipleImages = (fieldName: string = 'images', maxCount: num
 export const handleUploadError = (error: any, req: Request, res: any, next: any) => {
     if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
-            return next(new AppError('File too large. Maximum size is 5MB', HttpStatus.BAD_REQUEST));
+            return next(new AppError('File too large. Maximum size is 1MB', HttpStatus.BAD_REQUEST));
         }
         if (error.code === 'LIMIT_FILE_COUNT') {
             return next(new AppError('Too many files. Maximum is 5 files', HttpStatus.BAD_REQUEST));
@@ -113,4 +143,4 @@ export const handleUploadError = (error: any, req: Request, res: any, next: any)
     next(error);
 };
 
-export default upload;
+export default multer({ storage: multer.memoryStorage() });
