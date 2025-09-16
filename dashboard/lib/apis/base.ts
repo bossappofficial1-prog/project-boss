@@ -23,6 +23,7 @@ export const createHeaders = (): HeadersInit => {
   const token = getAuthToken();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   };
   
   if (token) {
