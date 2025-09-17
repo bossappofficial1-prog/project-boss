@@ -750,14 +750,12 @@ export class AdminRepository {
                     email: true,
                     phone: true,
                     role: true,
-                    status: true,
                     createdAt: true,
                     updatedAt: true,
                     business: {
                         select: {
                             id: true,
-                            name: true,
-                            status: true
+                            name: true
                         }
                     }
                 },
@@ -1188,13 +1186,13 @@ export class AdminRepository {
         return businessReports;
     }
 
-    static async createAdminLog(data: {
-        action: string;
-        details: any;
-        adminId: string;
-    }) {
-        return await db.adminLog.create({
-            data
-        });
-    }
+    // static async createAdminLog(data: {
+    //     action: string;
+    //     details: any;
+    //     adminId: string;
+    // }) {
+    //     return await db.adminLog.create({
+    //         data
+    //     });
+    // }
 }

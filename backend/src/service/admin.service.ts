@@ -577,11 +577,11 @@ export class AdminService {
 
         // For now, just log the settings update
         // In a real implementation, you'd save to database
-        await AdminRepository.createAdminLog({
-            action: 'UPDATE_PLATFORM_SETTINGS',
-            details: settings,
-            adminId
-        });
+        // await AdminRepository.createAdminLog({
+        //     action: 'UPDATE_PLATFORM_SETTINGS',
+        //     details: settings,
+        //     adminId
+        // });
 
         return {
             message: 'Platform settings updated successfully',
