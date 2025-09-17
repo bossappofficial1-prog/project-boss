@@ -14,6 +14,8 @@ interface JwtPayload {
 import { redis } from "../config/redis";
 
 export const protect = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    console.log(req);
+    
     // Get token from cookies (httpOnly)
     let token: string | undefined = req.cookies.token;
 
