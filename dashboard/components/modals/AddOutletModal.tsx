@@ -70,7 +70,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md w-[92vw]">
+      <DialogContent className="max-w-md w-[92vw] overflow-y-hidden">
         <DialogHeader>
           <DialogTitle>Tambah Outlet</DialogTitle>
           <DialogDescription>Isi informasi outlet baru Anda.</DialogDescription>

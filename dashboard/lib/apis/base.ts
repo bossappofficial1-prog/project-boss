@@ -64,6 +64,7 @@ export const getAuthToken = (): string | null => {
 export const createHeaders = (): HeadersInit => {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   };
 
   // No need to add Authorization header - cookies are sent automatically
