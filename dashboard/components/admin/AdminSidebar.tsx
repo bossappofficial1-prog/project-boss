@@ -33,6 +33,15 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
             ),
         },
         {
+            name: 'Withdrawal Management',
+            href: '/admin/withdrawals',
+            icon: (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            ),
+        },
+        {
             name: 'Analytics & Reports',
             href: '/admin/analytics',
             icon: (
@@ -93,7 +102,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     return (
         <>
             {/* Desktop Sidebar */}
-            <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="flex flex-col h-full">
                     {/* Logo */}
                     <div className="flex items-center justify-center h-16 px-4 bg-gradient-to-r from-red-500 to-red-600">
@@ -110,11 +119,11 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                                     href={item.href}
                                     onClick={onClose}
                                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${isActive
-                                            ? 'bg-red-50 text-red-700 border-r-2 border-red-500'
-                                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                        ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-r-2 border-red-500'
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                                         }`}
                                 >
-                                    <span className={`mr-3 ${isActive ? 'text-red-500' : 'text-gray-400'}`}>
+                                    <span className={`mr-3 ${isActive ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
                                         {item.icon}
                                     </span>
                                     {item.name}
@@ -124,7 +133,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     </nav>
 
                     {/* Footer */}
-                    <div className="p-4 border-t border-gray-200">
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
                                 <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
@@ -132,8 +141,8 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                                 </div>
                             </div>
                             <div className="ml-3">
-                                <p className="text-sm font-medium text-gray-700">Admin User</p>
-                                <p className="text-xs text-gray-500">Administrator</p>
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Admin User</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Administrator</p>
                             </div>
                         </div>
                     </div>

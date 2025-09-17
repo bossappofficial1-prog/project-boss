@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
+import { apiClient } from '@/lib/apis/base';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -29,29 +30,27 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // Login request
+      await apiClient.post('/auth/login', formData);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+      // Small delay to ensure cookies are set
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Fetch user data to get role
+      const meResponse = await apiClient.get('/auth/me');
+      const userRole = meResponse.data.data.user.role;
+
+      // Redirect based on role
+      if (userRole === 'OWNER') {
+        router.push('/owner/dashboard');
+      } else if (userRole === 'ADMIN') {
+        router.push('/admin/dashboard');
+      } else {
+        // Default fallback
+        router.push('/owner/dashboard');
       }
-
-      const data = await response.json();
-      
-      // Store token in localStorage
-      localStorage.setItem('token', data.data.token);
-      localStorage.setItem('user', JSON.stringify(data.data.user));
-      
-      // Redirect to dashboard
-      router.push('/owner/dashboard');
     } catch (err: any) {
-      setError(err.message || 'An error occurred during login');
+      setError(err.response?.data?.message || err.message || 'An error occurred during login');
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +62,7 @@ export default function LoginPage() {
       <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div>
-      
+
       <div className="max-w-md w-full space-y-8">
         {/* Logo and Header */}
         <div className="text-center">

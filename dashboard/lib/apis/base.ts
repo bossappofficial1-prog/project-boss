@@ -1,4 +1,5 @@
 // Shared API utilities for BOSS Dashboard (used by all API categories)
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
 
@@ -10,57 +11,77 @@ export interface ApiResponse<T> {
   path: string;
 }
 
-// Get auth token from localStorage
-export const getAuthToken = (): string | null => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
+// Create axios instance with default configuration
+export const apiClient: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true, // Include cookies in requests
+});
+
+// Request interceptor (removed auth token logic since using httpOnly cookies)
+apiClient.interceptors.request.use(
+  (config) => {
+    // No need to add Authorization header - cookies are sent automatically with withCredentials: true
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
+);
+
+// Response interceptor to handle common errors
+apiClient.interceptors.response.use(
+  (response: AxiosResponse) => {
+    return response;
+  },
+  (error) => {
+    if (error.response?.data) {
+      const backendMessage = error.response.data?.message ||
+        error.response.data?.data?.message ||
+        error.response.data?.error ||
+        error.response.data?.errors ||
+        null;
+      const message = backendMessage ?
+        (typeof backendMessage === 'string' ? backendMessage : JSON.stringify(backendMessage)) :
+        `${error.response.status} ${error.response.statusText}`;
+      throw new Error(message);
+    }
+    throw error;
+  }
+);
+
+// Get auth token from cookies (deprecated - using httpOnly cookies now)
+export const getAuthToken = (): string | null => {
+  // Token is now stored in httpOnly cookies, not accessible from JavaScript
+  // This function is kept for backward compatibility but returns null
   return null;
 };
 
-// Create headers with auth token
+// Create headers with auth token (deprecated - using cookies now)
 export const createHeaders = (): HeadersInit => {
-  const token = getAuthToken();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
-  
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  
+
+  // No need to add Authorization header - cookies are sent automatically
   return headers;
 };
 
-// Generic API call function
+// Generic API call function using axios (backward compatibility)
 export async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...createHeaders(),
-      ...options.headers,
-    },
+  const method = (options.method as any) || 'GET';
+  const data = options.body ? JSON.parse(options.body as string) : undefined;
+
+  const response = await apiClient.request({
+    url: endpoint,
+    method,
+    data,
   });
 
-  // Try to parse JSON body for success or error messages
-  const text = await response.text();
-  let parsed: any = null;
-  try {
-    parsed = text ? JSON.parse(text) : null;
-  } catch {
-    // ignore JSON parse errors
-  }
-
-  if (!response.ok) {
-    // Prefer backend-provided message if available
-    const backendMessage = parsed?.message || parsed?.data?.message || parsed?.error || parsed?.errors || null;
-    const message = backendMessage ? (typeof backendMessage === 'string' ? backendMessage : JSON.stringify(backendMessage)) : `${response.status} ${response.statusText}`;
-    throw new Error(message);
-  }
-
-  const result: ApiResponse<T> = parsed as ApiResponse<T>;
+  const result: ApiResponse<T> = response.data as ApiResponse<T>;
   if (!result) {
     throw new Error('Invalid API response');
   }

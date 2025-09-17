@@ -30,8 +30,7 @@ export const loginController = asyncHandler(async (req: Request, res: Response) 
     });
 
     return ResponseUtil.success(res, {
-        user: result.user,
-        token: result.token
+        user: result.user
     });
 });
 

@@ -54,13 +54,6 @@ export function useDashboardData(initialDate?: string) {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-        if (!token) {
-          window.location.href = '/auth/login';
-          return;
-        }
-
         const userData = await authApi.me();
         setBusiness(userData.business);
         setOutlets(userData.outlets);

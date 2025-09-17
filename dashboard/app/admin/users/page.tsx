@@ -184,8 +184,7 @@ export default function AdminUsers() {
                             <SelectContent>
                                 <SelectItem value="all">All Roles</SelectItem>
                                 <SelectItem value="ADMIN">Admin</SelectItem>
-                                <SelectItem value="BUSINESS_OWNER">Business Owner</SelectItem>
-                                <SelectItem value="CUSTOMER">Customer</SelectItem>
+                                <SelectItem value="OWNER">Business Owner</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
