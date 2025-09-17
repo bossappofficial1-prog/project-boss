@@ -247,7 +247,6 @@ export default function AdminSupport() {
                 </CardContent>
             </Card>
 
-            {/* Tickets List */}
             <Card>
                 <CardHeader>
                     <CardTitle>Support Tickets</CardTitle>
