@@ -63,7 +63,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USER }}/project-backend:development
           build-args: |
             NODE_ENV=development
-            COOKIES_DOMAIN=bossapp.id
+            COOKIES_DOMAIN=.bossapp.id
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             CLIENT_URL=${{ vars.CLIENT_URL }}
 
