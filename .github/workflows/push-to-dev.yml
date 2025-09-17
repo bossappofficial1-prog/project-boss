@@ -63,6 +63,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USER }}/project-backend:development
           build-args: |
             NODE_ENV=development
+            COOKIES_DOMAIN=bossapp.id
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             CLIENT_URL=${{ vars.CLIENT_URL }}
 
@@ -102,6 +103,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-dashboard:development
           build-args: |
+            NEXT_PUBLIC_APP_URL=https:dashboard-dev.bossapp.id
             NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_URL }}/api/v1
             NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_API_URL }}
 
