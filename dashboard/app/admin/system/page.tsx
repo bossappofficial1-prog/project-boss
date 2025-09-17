@@ -18,6 +18,7 @@ import {
     Settings,
     Shield
 } from 'lucide-react';
+import { apiClient } from '@/lib/apis/base';
 
 interface SystemHealth {
     database: string;
@@ -42,19 +43,13 @@ interface SystemLog {
 }
 
 export default function AdminSystem() {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
-
     // Fetch system health
     const { data: healthData, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
         queryKey: ['system-health'],
         queryFn: async () => {
-            const response = await fetch(`${API_BASE_URL}/admin/system/health`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            if (!response.ok) throw new Error('Failed to fetch system health');
-            return response.json();
+            const response = await apiClient.get(`/admin/system/health`);
+            if (response.status !== 200) throw new Error('Failed to fetch system health');
+            return response.data;
         },
         refetchInterval: 30000, // Refetch every 30 seconds
     });
@@ -63,13 +58,9 @@ export default function AdminSystem() {
     const { data: logsData, isLoading: logsLoading } = useQuery({
         queryKey: ['system-logs'],
         queryFn: async () => {
-            const response = await fetch(`${API_BASE_URL}/admin/system/logs`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            if (!response.ok) throw new Error('Failed to fetch system logs');
-            return response.json();
+            const response = await apiClient.get(`/admin/system/logs`);
+            if (response.status !== 200) throw new Error('Failed to fetch system logs');
+            return response.data;
         },
     });
 

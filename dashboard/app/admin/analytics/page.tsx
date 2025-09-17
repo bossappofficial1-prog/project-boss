@@ -16,6 +16,8 @@ import {
     Download,
     Filter
 } from 'lucide-react';
+import { apiCall, apiClient } from '@/lib/apis/base';
+import { formatCurrency } from '@/lib/utils';
 
 interface RevenueData {
     period: string;
@@ -41,7 +43,6 @@ export default function AdminAnalytics() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
 
     // Fetch revenue analytics
     const { data: revenueData, isLoading: revenueLoading } = useQuery({
@@ -51,13 +52,9 @@ export default function AdminAnalytics() {
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
 
-            const response = await fetch(`${API_BASE_URL}/admin/analytics/revenue?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            if (!response.ok) throw new Error('Failed to fetch revenue analytics');
-            return response.json();
+            const response = await apiClient.get(`/admin/analytics/revenue?${params}`);
+            if (response.status !== 200) throw new Error('Failed to fetch revenue analytics');
+            return response.data;
         },
     });
 
@@ -69,34 +66,14 @@ export default function AdminAnalytics() {
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
 
-            const response = await fetch(`${API_BASE_URL}/admin/analytics/transactions?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            if (!response.ok) throw new Error('Failed to fetch transaction analytics');
-            return response.json();
+            const response = await apiClient.get(`/admin/analytics/transactions?${params}`);
+            if (response.status !== 200) throw new Error('Failed to fetch transaction analytics');
+            return response.data
         },
     });
 
     const revenueStats = revenueData?.data;
     const transactionStats = transactionData?.data;
-
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-        }).format(amount);
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        });
-    };
 
     return (
         <div className="space-y-6">

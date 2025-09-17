@@ -17,6 +17,8 @@ import {
     Mail,
     Phone
 } from 'lucide-react';
+import { apiClient } from '@/lib/apis/base';
+import { formatDate } from '@/lib/withdrawals';
 
 interface User {
     id: string;
@@ -33,24 +35,12 @@ interface User {
     };
 }
 
-interface UsersResponse {
-    users: User[];
-    pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-    };
-}
-
 export default function AdminUsers() {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
-
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
     const queryClient = useQueryClient();
 
     // Fetch users
@@ -66,29 +56,18 @@ export default function AdminUsers() {
             if (roleFilter) params.append('role', roleFilter);
             if (statusFilter) params.append('status', statusFilter);
 
-            const response = await fetch(`${API_BASE_URL}/admin/users?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            if (!response.ok) throw new Error('Failed to fetch users');
-            return response.json();
+            const response = await apiClient(`/admin/users?${params}`);
+            if (response.status !== 200) throw new Error('Failed to fetch users');
+            return response.data;
         },
     });
 
     // Update user status mutation
     const updateUserStatusMutation = useMutation({
         mutationFn: async ({ userId, status, notes }: { userId: string; status: string; notes?: string }) => {
-            const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify({ status, notes }),
-            });
-            if (!response.ok) throw new Error('Failed to update user status');
-            return response.json();
+            const response = await apiClient.put(`/admin/users/${userId}/status`, { status, notes });
+            if (response.status !== 200) throw new Error('Failed to update user status');
+            return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -131,14 +110,6 @@ export default function AdminUsers() {
             userId: user.id,
             status: newStatus,
             notes: `Status updated to ${newStatus} by admin`
-        });
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
         });
     };
 
