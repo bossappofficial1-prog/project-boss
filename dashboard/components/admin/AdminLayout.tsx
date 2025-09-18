@@ -29,19 +29,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }, []);
 
     // Handle authentication and authorization
-    useEffect(() => {
-        if (!isLoading) {
-            if (isError || !userData?.user) {
-                router.push('/auth/login');
-                return;
-            }
+    // useEffect(() => {
+    //     if (!isLoading) {
+    //         if (isError || !userData?.user) {
+    //             router.push('/auth/login');
+    //             return;
+    //         }
 
-            if (userData.user.role !== 'ADMIN') {
-                router.push('/unauthorized');
-                return;
-            }
-        }
-    }, [userData, isLoading, isError, router]);
+    //         if (userData.user.role !== 'ADMIN') {
+    //             router.push('/unauthorized');
+    //             return;
+    //         }
+    //     }
+    // }, [userData, isLoading, isError, router]);
 
     // Loading state with skeleton
     if (isLoading) {
