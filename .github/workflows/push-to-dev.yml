@@ -87,6 +87,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-frontend-customer:development
           build-args: |
+            NEXT_PUBLIC_REMOTE_PATTERNS=${{ vars.NEXT_PUBLIC_REMOTE_PATTERNS }}
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_API_PREFIX=${{ vars.NEXT_PUBLIC_API_PREFIX }}
             NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_SOCKET_URL }}
