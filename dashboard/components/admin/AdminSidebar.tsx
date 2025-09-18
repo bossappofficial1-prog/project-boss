@@ -2,15 +2,37 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useUserData } from '@/hooks/useUserData';
 
 interface AdminSidebarProps {
     isOpen: boolean;
     onClose: () => void;
+    isCollapsed?: boolean;
+    onToggleCollapse?: () => void;
 }
 
-export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
+export default function AdminSidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse }: AdminSidebarProps) {
     const pathname = usePathname();
+    const { data: userData, isLoading, error } = useUserData();
+    const [internalCollapsed, setInternalCollapsed] = useState(false);
+
+    // Use external collapse state if provided, otherwise use internal state
+    const collapsed = isCollapsed !== undefined ? isCollapsed : internalCollapsed;
+    const toggleCollapse = onToggleCollapse || (() => setInternalCollapsed(!internalCollapsed));
+
+    // Auto-collapse on mobile
+    useEffect(() => {
+        const checkScreenSize = () => {
+            if (isCollapsed === undefined) {
+                setInternalCollapsed(window.innerWidth < 1024);
+            }
+        };
+
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+        return () => window.removeEventListener('resize', checkScreenSize);
+    }, [isCollapsed]);
 
     const menuItems = [
         {
@@ -78,15 +100,15 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                 </svg>
             ),
         },
-        {
-            name: 'Support Tickets',
-            href: '/admin/support',
-            icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            ),
-        },
+        // {
+        //     name: 'Support Tickets',
+        //     href: '/admin/support',
+        //     icon: (
+        //         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        //             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        //         </svg>
+        //     ),
+        // },
         {
             name: 'Platform Settings',
             href: '/admin/settings',
@@ -101,50 +123,144 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
     return (
         <>
-            {/* Desktop Sidebar */}
-            <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            {/* Mobile Overlay */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
+                    onClick={onClose}
+                />
+            )}
+
+            {/* Mobile Close Button - clear X so users know how to close the sidebar */}
+            {isOpen && (
+                <button
+                    aria-label="Close menu"
+                    title="Close menu"
+                    onClick={onClose}
+                    className="fixed top-4 right-4 z-50 lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-md bg-red-600 text-white shadow-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+                >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            )}
+
+            {/* Sidebar */}
+            <div
+                className={`fixed left-0 top-0 z-50 h-full bg-white dark:bg-gray-800 shadow-2xl border-r border-gray-200 dark:border-gray-700 transform transition-all duration-300 ease-in-out lg:translate-x-0
+                ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                ${collapsed ? 'w-16' : 'w-64'}`}
+                style={{ willChange: 'transform, width' }}
+            >
                 <div className="flex flex-col h-full">
-                    {/* Logo */}
-                    <div className="flex items-center justify-center h-16 px-4 bg-gradient-to-r from-red-500 to-red-600">
-                        <h1 className="text-xl font-bold text-white">BOSS Admin</h1>
+                    {/* Logo Section */}
+                    <div className="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 border-b border-red-500/30">
+                        <div className={`flex items-center space-x-3 transition-opacity duration-200`}>
+                            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                                </svg>
+                            </div>
+                            <h1 className={`text-lg font-bold text-white truncate ${collapsed ? 'opacity-0' : 'opacity-100'}`}>BOSS Admin</h1>
+                        </div>
                     </div>
 
-                    {/* Navigation */}
-                    <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-                        {menuItems.map((item) => {
+                    {/* Navigation Menu */}
+                    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                        {menuItems.map((item, index) => {
                             const isActive = pathname === item.href;
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
                                     onClick={onClose}
-                                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${isActive
-                                        ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-r-2 border-red-500'
-                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
-                                        }`}
+                                    className={`group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative overflow-hidden
+                                        ${isActive
+                                            ? 'text-red-700 dark:text-red-400 shadow-sm'
+                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-100'
+                                        }
+                                        ${collapsed ? 'justify-center px-2' : ''} ${!collapsed && isActive ? "border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20" : ""}`}
+                                    style={{ animationDelay: `${index * 50}ms` }}
                                 >
-                                    <span className={`mr-3 ${isActive ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                                    {/* Active indicator */}
+                                    {isActive && (
+                                        <>
+                                            {collapsed ? (
+                                                <span className="absolute right-1/3 top-1/3 -translate-y-1/2 w-3 h-3 rounded-full bg-red-600/90 shadow-sm" />
+                                            ) : (
+                                                <div className="absolute left-0 top-0 h-full w-1 bg-red-500 rounded-r-full" />
+                                            )}
+                                        </>
+                                    )}
+
+                                    {/* Icon */}
+                                    <span className={`flex-shrink-0 transition-all duration-200 flex items-center justify-center ${collapsed ? 'w-8 h-8' : 'p-1 rounded-md'}
+                                        ${isActive
+                                            ? (collapsed ? 'text-white' : 'text-white bg-red-600 shadow-md')
+                                            : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'}
+                                        `}>
                                         {item.icon}
                                     </span>
-                                    {item.name}
+
+                                    {/* Text */}
+                                    <span className={`ml-3 transition-opacity duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+                                        {item.name}
+                                    </span>
+
+                                    {/* Tooltip for collapsed state */}
+                                    {collapsed && (
+                                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                            {item.name}
+                                        </div>
+                                    )}
                                 </Link>
                             );
                         })}
                     </nav>
 
+                    {/* Floating expand handle when collapsed to make it obvious how to expand */}
+                    {/* {collapsed && (
+                        <button
+                            onClick={toggleCollapse}
+                            aria-label="Expand sidebar"
+                            title="Expand sidebar"
+                            className="hidden lg:inline-flex absolute right-0 top-1/3 -translate-x-1/2 items-center justify-center w-8 h-8 bg-white/10 text-white rounded-full shadow-md hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-red-400"
+                        >
+                            <svg className={`w-4 h-4 transition-transform ${collapsed ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    )} */}
+
                     {/* Footer */}
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-sm font-medium">A</span>
+                    <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+                        {isLoading ? (
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                                <div className={`space-y-2 transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-24"></div>
+                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32"></div>
                                 </div>
                             </div>
-                            <div className="ml-3">
-                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Admin User</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Administrator</p>
+                        ) : error ? (
+                            <div className={`text-sm text-red-600 dark:text-red-400 transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}>
+                                Error loading user data
                             </div>
-                        </div>
+                        ) : (
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                                    <span className="text-white text-sm font-semibold">
+                                        {userData?.user?.email?.charAt(0).toUpperCase() || 'A'}
+                                    </span>
+                                </div>
+                                <div className={`transition-opacity duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                        {userData?.user?.email?.split('@')[0] || 'Admin'}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Administrator</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
