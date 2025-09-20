@@ -81,6 +81,12 @@ jobs:
           file: ./consumer/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-consumer:development
+          build-args: |
+            SMTP_HOST=${{ vars.SMTP_HOST }}
+            SMTP_PORT=${{ vars.SMTP_PORT }}
+            SMTP_USER=${{  vars.SMTP_USER}}
+            SMTP_PASS=${{ vars.SMTP_PASS }}
+            SMTP_FROM=${{ vars.SMTP_FROM }}
 
       # Build dan push Frontend Customer hanya jika ada perubahan di direktori 'frontend-customer'
       - name: Build and push Frontend Customer

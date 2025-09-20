@@ -26,6 +26,8 @@ export class EmailService {
                 from: `"${config.SERVICE_NAME}" <${config.SMTP_FROM}>`,
                 ...options,
             });
+            console.log(config.SMTP_HOST);
+
             logger.info(`Email sent to ${options.to}: ${info.messageId}`, { component: 'EmailService' });
             return info;
         } catch (error) {
