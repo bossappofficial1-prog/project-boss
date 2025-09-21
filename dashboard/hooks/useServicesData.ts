@@ -72,12 +72,12 @@ export function useServicesData() {
     if (!selectedOutlet) return;
     try {
       setIsLoading(true);
-      const data = await productApi.getByOutlet(selectedOutlet, {
+      const data: any = await productApi.getByOutlet(selectedOutlet, {
         search: searchQuery || undefined,
       });
       const list: ServiceItem[] = Array.isArray(data)
-        ? (data as any)
-        : (data.products || []);
+        ? (data as ServiceItem[])
+        : (Array.isArray(data?.products) ? data.products : []);
       const onlyServices = list.filter((item: any) => item.type === 'SERVICE');
       setServices(onlyServices);
     } catch (e) {

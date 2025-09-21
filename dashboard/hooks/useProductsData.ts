@@ -93,16 +93,30 @@ export function useProductsData() {
         search: searchQuery || undefined,
       });
 
-      if (response.products) {
-        setProducts(response.products);
-        if (response.pagination) {
-          setTotalPages(response.pagination.totalPages);
-          setTotalProducts(response.pagination.total);
-        }
-      } else {
-        setProducts(response as any);
+      if (Array.isArray(response)) {
+        setProducts(response);
         setTotalPages(1);
-        setTotalProducts((response as any).length ?? 0);
+        setTotalProducts(response.length);
+      } else if (response && typeof response === 'object' && 'products' in response && Array.isArray((response as any).products)) {
+        const res = response as { products: ProductItem[]; pagination?: { totalPages: number; total: number } };
+        setProducts(res.products);
+        if (res.pagination) {
+          setTotalPages(res.pagination.totalPages);
+          setTotalProducts(res.pagination.total);
+        } else {
+          setTotalPages(1);
+          setTotalProducts(res.products.length);
+        }
+      } else if (response && typeof response === 'object' && 'id' in response) {
+        // single product returned
+        setProducts([response as ProductItem]);
+        setTotalPages(1);
+        setTotalProducts(1);
+      } else {
+        // fallback
+        setProducts([]);
+        setTotalPages(1);
+        setTotalProducts(0);
       }
     } catch (e: any) {
       console.error('Error fetching products:', e);
