@@ -5,14 +5,18 @@ FROM node:18-alpine AS base
 WORKDIR /app/dashboard
 
 ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_SOCKET_URL
+ARG NEXT_PUBLIC_APP_URL
 
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
 # Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm i
 
 # Copy the rest of the application code
 COPY . .
@@ -34,7 +38,7 @@ COPY --from=base /app/dashboard/.next ./.next
 COPY --from=base /app/dashboard/public ./public
 
 # Install only production dependencies
-RUN npm ci --only=production
+RUN npm i --only=production
 
 # Expose the port the app runs on
 EXPOSE 3010

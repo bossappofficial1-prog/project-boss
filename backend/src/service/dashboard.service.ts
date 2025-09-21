@@ -4,21 +4,28 @@ import { PaymentStatus, ProductType } from "@prisma/client";
 export async function getDashboardSummaryService(outletId: string) {
     // All metrics are scoped to the selected outlet
 
-    const [totalProducts, totalServices, totalOrders, totalRevenueAgg] = await Promise.all([
+    const [totalProducts, totalServices, totalOrders, revenueData] = await Promise.all([
         db.product.count({ where: { outletId, type: ProductType.GOODS } }),
         db.product.count({ where: { outletId, type: ProductType.SERVICE } }),
         db.order.count({ where: { outletId } }),
-        db.order.aggregate({
-            _sum: { totalAmount: true },
-            where: { outletId, paymentStatus: 'SUCCESS' }
+        db.order.findMany({
+            where: { outletId, paymentStatus: 'SUCCESS' },
+            select: { totalAmount: true, appFee: true, midtransFee: true, chargedTo: true }
         })
     ]);
+
+    // Calculate net revenue (subtract fees if charged to customer)
+    const totalRevenue = revenueData.reduce((sum, order) => {
+        const grossAmount = order.totalAmount;
+        const fees = order.chargedTo === 'CUSTOMER' ? (order.appFee + order.midtransFee) : 0;
+        return sum + (grossAmount - fees);
+    }, 0);
 
     return {
         totalProducts,
         totalServices,
         totalOrders,
-        totalRevenue: totalRevenueAgg._sum.totalAmount || 0,
+        totalRevenue,
     };
 }
 
@@ -39,6 +46,15 @@ export async function getOrderStatsService(outletId: string, period: 'week' | 'm
             },
             outletId
         },
+        select: {
+            id: true,
+            createdAt: true,
+            paymentStatus: true,
+            totalAmount: true,
+            appFee: true,
+            midtransFee: true,
+            chargedTo: true
+        },
         orderBy: {
             createdAt: 'asc',
         },
@@ -52,7 +68,9 @@ export async function getOrderStatsService(outletId: string, period: 'week' | 'm
         }
         acc[date].totalOrders += 1;
         if (order.paymentStatus === PaymentStatus.SUCCESS) {
-            acc[date].totalRevenue += order.totalAmount;
+            const grossAmount = order.totalAmount;
+            const fees = order.chargedTo === 'CUSTOMER' ? (order.appFee + order.midtransFee) : 0;
+            acc[date].totalRevenue += (grossAmount - fees);
         }
         return acc;
     }, {} as Record<string, { totalOrders: number; totalRevenue: number }>);

@@ -5,6 +5,7 @@ import { HttpStatus } from "../constants/http-status";
 import { AppError } from "../errors/app-error";
 import path from "path";
 import fs from "fs";
+import { config } from "../config";
 
 // Magic numbers for image file validation
 const IMAGE_MAGIC_NUMBERS = {
@@ -26,8 +27,8 @@ const getFileMagicNumber = (filePath: string): string => {
 // Enhanced file validation function
 const validateImageFile = (file: Express.Multer.File): void => {
     // Check file size (additional check)
-    if (file.size > 5 * 1024 * 1024) {
-        throw new AppError('File size too large. Maximum 5MB allowed.', HttpStatus.BAD_REQUEST);
+    if (file.size > 1 * 1024 * 1024) {
+        throw new AppError('File size too large. Maximum 1MB allowed.', HttpStatus.BAD_REQUEST);
     }
 
     // Get magic number from uploaded file
@@ -65,7 +66,7 @@ export const uploadImageController = asyncHandler(async (req: Request, res: Resp
     validateImageFile(file);
 
     // Generate URL for the uploaded file
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const baseUrl = config.BASE_URL;
     const relativePath = path.relative(process.cwd(), file.path);
     const imageUrl = `${baseUrl}/${relativePath.replace(/\\/g, '/')}`;
 
@@ -86,7 +87,7 @@ export const uploadMultipleImagesController = asyncHandler(async (req: Request, 
         throw new AppError('No files uploaded', HttpStatus.BAD_REQUEST);
     }
 
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const baseUrl = config.BASE_URL;
     const uploadedFiles: any[] = [];
 
     // Validate each file

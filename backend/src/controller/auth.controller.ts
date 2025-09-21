@@ -22,16 +22,15 @@ export const loginController = asyncHandler(async (req: Request, res: Response) 
 
     res.cookie("token", result.token, {
         httpOnly: true,
-        secure: config.isProduction,
-        sameSite: 'lax',
-        domain: config.isProduction ? 'bossapp.id' : 'localhost',
+        secure: !!config.COOKIES_DOMAIN,
+        sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+        domain: config.COOKIES_DOMAIN,
         maxAge: 24 * 60 * 60 * 1000, // 1 day
         path: '/'
     });
 
     return ResponseUtil.success(res, {
-        user: result.user,
-        token: result.token
+        user: result.user
     });
 });
 

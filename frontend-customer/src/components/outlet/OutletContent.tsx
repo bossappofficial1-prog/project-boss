@@ -6,6 +6,7 @@ import { Button } from "../ui/button";
 import { Heart, MapPin, Package, Phone, Share2, Store, Wrench, Clock } from "lucide-react";
 import { ShareOutlet } from "../shared/ShareOutlet";
 import { ImageRender } from "../shared/Image";
+import { resolveCustomerImageUrl } from "@/lib/url";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import ProductCard from "./ProductCard";
@@ -291,7 +292,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
             <div className="relative h-52 bg-muted -mx-4 -mt-4">
                 {outlet.image ? (
                     <ImageRender
-                        src={outlet.image}
+                        src={resolveCustomerImageUrl(outlet.image)}
                         alt={outlet.name}
                         className="object-cover w-full h-full"
                     />

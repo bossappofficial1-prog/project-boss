@@ -21,11 +21,13 @@ interface EmailOptions {
 
 export class EmailService {
     static async sendEmail(options: EmailOptions) {
+        console.log(config.SMTP_HOST);
         try {
             const info = await transporter.sendMail({
                 from: `"${config.SERVICE_NAME}" <${config.SMTP_FROM}>`,
                 ...options,
             });
+
             logger.info(`Email sent to ${options.to}: ${info.messageId}`, { component: 'EmailService' });
             return info;
         } catch (error) {

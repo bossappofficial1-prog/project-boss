@@ -5,6 +5,7 @@ import membershipRouter from "./membership.route";
 import productRouter from "./product.route";
 import orderRouter from "./order.route";
 import dashboardRouter from "./dashboard.route";
+import businessRouter from "./business.route";
 import bookingRouter from "./booking.route";
 import paymentRouter from "./payment.route";
 import homeRouter from "./home.route";
@@ -18,6 +19,7 @@ import uploadRouter from "./upload.route";
 import securityRouter from "./security.route";
 import queueMonitoringRouter from "./queue-monitoring.route";
 import notificationRouter from "./notification.route";
+import adminRouter from "./admin.route";
 import { ResponseUtil } from "../utils";
 import { paymentMethod } from "../constants/payment-method";
 
@@ -25,10 +27,12 @@ const apiRouter = Router()
 
 apiRouter.use('/users', userRouter)
 apiRouter.use('/auth', authRouter)
+apiRouter.use('/admin', adminRouter)
 apiRouter.use('/memberships', membershipRouter)
 apiRouter.use('/products', productRouter)
 apiRouter.use('/orders', orderRouter)
 apiRouter.use('/dashboard', dashboardRouter)
+apiRouter.use('/business', businessRouter)
 apiRouter.use('/bookings', bookingRouter)
 apiRouter.use('/payments', paymentRouter)
 apiRouter.use('/outlets', outletRouter)

@@ -1,6 +1,18 @@
 # Multi-stage build for consumer service
 FROM node:20-alpine AS builder
 
+ARG SMTP_HOST=smtp.ethereal.email
+ARG SMTP_PORT=587
+ARG SMTP_USER=margarete.conroy74@ethereal.email
+ARG SMTP_PASS=khesc9qqxTSTe4BSz7
+ARG SMTP_FROM
+
+ENV SMTP_HOST=$SMTP_HOST
+ENV SMTP_PORT=$SMTP_PORT
+ENV SMTP_USER=$SMTP_USER
+ENV SMTP_PASS=$SMTP_PASS
+ENV SMTP_FROM=$SMTP_FROM
+
 # Set working directory
 WORKDIR /app/consumer
 

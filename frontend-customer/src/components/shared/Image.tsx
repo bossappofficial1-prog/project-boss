@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import { resolveCustomerImageUrl, IMAGE_PLACEHOLDER } from "@/lib/url";
 
 export function ImageRender(
     { src,
@@ -19,10 +20,12 @@ export function ImageRender(
             priority?: boolean,
             onLoad?: () => void
         }) {
-    const [imgSrc, setImgSrc] = useState(src || "/assets/images/default-image.png");
+    const [imgSrc, setImgSrc] = useState(resolveCustomerImageUrl(src));
 
-    // Use smaller default dimensions and lazy loading by default to avoid
-    // blocking LCP. Consumers can pass `priority` explicitly when needed.
+    useEffect(() => {
+        setImgSrc(resolveCustomerImageUrl(src));
+    }, [src]);
+
     return (
         <Image
             width={600}
@@ -31,7 +34,7 @@ export function ImageRender(
             alt={alt}
             className={` ${className}`}
             sizes={sizes || "(max-width: 768px) 100vw, 600px"}
-            onError={() => setImgSrc("/assets/images/default-image.png")}
+            onError={() => setImgSrc(IMAGE_PLACEHOLDER)}
             onLoad={onLoad}
             {...(priority ? { priority } : { loading: "lazy" })}
         />

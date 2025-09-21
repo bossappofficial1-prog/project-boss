@@ -80,4 +80,8 @@ ${details}`;
 
         await this.sendWhatsAppMessage(order.guestCustomer.phone, message);
     }
+
+    public static async sendCustomWhatsAppMessage(phone: string, message: string) {
+        await this.sendWhatsAppMessage(phone, message);
+    }
 }

@@ -5,8 +5,9 @@
     "scripts": {
         "dev": "ts-node-dev --respawn --transpile-only -r dotenv/config --watch .env src/worker-manager.ts",
         "build": "tsc",
-        "start": "node dist/src/worker-manager.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "start": "node dist/worker-manager.js",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "test:type": "npx tsc --noEmit"
     },
     "dependencies": {
         "amqplib": "^0.10.8",

@@ -13,7 +13,7 @@ export const createProductSchema = z.object({
     transactionFeeBearer: z.nativeEnum(FeeBearer).optional(),
     serviceDurationMinutes: z.number().int().min(0).optional(),
     outletId: z.string().nonempty({ message: "ID Outlet tidak boleh kosong" }),
-    image: z.string().url({ message: "URL gambar tidak valid" }).optional(),
+    image: z.string({ message: "URL gambar tidak valid" }).optional(),
     capacity: z.number().min(-1).optional()
 });
 
@@ -30,7 +30,7 @@ export const updateProductSchema = z.object({
     status: z.nativeEnum(ServiceStatus).optional(),
     transactionFeeBearer: z.nativeEnum(FeeBearer).optional(),
     serviceDurationMinutes: z.number().int().min(0).optional(),
-    image: z.string().url({ message: "URL gambar tidak valid" }).optional(),
+    image: z.string({ message: "URL gambar tidak valid" }).optional(),
 }).refine(data => Object.keys(data).length > 0, {
     message: "Minimal satu field harus diisi untuk update",
 });

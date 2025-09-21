@@ -12,7 +12,7 @@ export const config = {
     JWT_SECRET: process.env.JWT_SECRET || "rahasia-123-!@#",
     SERVICE: process.env.SERVICE_NAME || "service-1",
     isProduction: process.env.NODE_ENV !== "development",
-
+    COOKIES_DOMAIN: process.env.COOKIES_DOMAIN || "localhost",
     // rate limit
     rateLimit: {
         WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "90000", 10),
