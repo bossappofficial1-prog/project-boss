@@ -1,0 +1,27 @@
+{
+    "name": "email-service",
+    "version": "1.0.0",
+    "main": "dist/server.js",
+    "scripts": {
+        "dev": "ts-node-dev --respawn --transpile-only -r dotenv/config src/server.ts",
+        "build": "tsc",
+        "start": "node dist/server.js",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "test:type": "npx tsc --noEmit"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "nodemailer": "^6.9.7"
+    },
+    "devDependencies": {
+        "@types/express": "^4.17.21",
+        "@types/node": "^20.10.0",
+        "@types/nodemailer": "^7.0.1",
+        "dotenv": "^16.3.1",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.3.3"
+    },
+    "author": "Pito Desri Pauzi",
+    "license": "MIT",
+    "description": "Email service to send emails via SMTP"
+}

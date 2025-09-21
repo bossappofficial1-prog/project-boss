@@ -12,14 +12,21 @@ interface JwtPayload {
     role: UserRole;
 }
 import { redis } from "../config/redis";
+import { config } from "../config";
 
 export const protect = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    // Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    let token: string | undefined;
+    console.log(req.cookies.token);
+    console.log(config.COOKIES_DOMAIN);
+    
+    // Get token from cookies (httpOnly)
+    let token: string | undefined = req.cookies.token;
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    // Fallback to Authorization header for backward compatibility (if any)
+    if (!token) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7); // Remove 'Bearer ' prefix
+        }
     }
 
     if (!token) {

@@ -10,6 +10,7 @@ import {
     getFinancialReportsController,
     getSystemLogsController,
     getSystemHealthController,
+    getRevenueChartController,
     getSupportTicketsController,
     updateTicketStatusController,
     getPlatformSettingsController,
@@ -18,7 +19,9 @@ import {
     getRevenueReportController,
     getBusinessPerformanceReportController,
     generateReportController,
-    downloadReportController
+    downloadReportController,
+    getRecentActivitiesController,
+    getAllActivitiesController
 } from '../controller/admin.controller';
 import { protect, authorize } from '../middleware/auth.middleware';
 
@@ -37,7 +40,10 @@ router.get('/businesses/:businessId', getBusinessDetailsController);
 
 // Analytics routes
 router.get('/analytics/revenue', getRevenueAnalyticsController);
+router.get('/analytics/revenue-chart', getRevenueChartController);
 router.get('/analytics/transactions', getTransactionAnalyticsController);
+router.get('/activities/recent', getRecentActivitiesController);
+router.get('/activities', getAllActivitiesController);
 
 // User management routes
 router.get('/users', getAllUsersController);

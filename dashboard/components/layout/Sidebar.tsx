@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useUserData } from '@/hooks/useUserData';
 
 interface Outlet {
   id: string;
@@ -39,65 +40,48 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [business, setBusiness] = useState<Business | null>(null);
 
+  // Use custom hook for user data
+  const {
+    data: userData,
+    isLoading,
+    error,
+    refetch
+  } = useUserData();
+
+  // Process user data when it's available
   useEffect(() => {
-    // Fetch user data including business and outlets from API
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        // Get user data with business and outlets
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (response.ok) {
-          const result = await response.json();
-          const userData = result.data;
-          
-          // Set business data
-          if (userData.business) {
-            setBusiness(userData.business);
-          }
-          
-          // Set outlets data
-          if (userData.outlets && userData.outlets.length > 0) {
-            setOutlets(userData.outlets);
-            
-            // Check if there's a previously selected outlet in localStorage
-            const savedOutletId = localStorage.getItem('selectedOutlet');
-            const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
-            
-            if (validOutlet && savedOutletId) {
-              setSelectedOutlet(savedOutletId);
-            } else {
-              // Default to first outlet
-              setSelectedOutlet(userData.outlets[0].id);
-              localStorage.setItem('selectedOutlet', userData.outlets[0].id);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
+    if (userData) {
+      // Set business data
+      if (userData.business) {
+        setBusiness(userData.business);
       }
-    };
 
-    fetchUserData();
-  }, []);
+      // Set outlets data
+      if (userData.outlets && userData.outlets.length > 0) {
+        setOutlets(userData.outlets);
+
+        // Check if there's a previously selected outlet in localStorage
+        const savedOutletId = localStorage.getItem('selectedOutlet');
+        const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
+
+        if (validOutlet && savedOutletId) {
+          setSelectedOutlet(savedOutletId);
+        } else {
+          // Default to first outlet
+          setSelectedOutlet(userData.outlets[0].id);
+          localStorage.setItem('selectedOutlet', userData.outlets[0].id);
+        }
+      }
+    }
+  }, [userData]);
 
   const handleOutletChange = (outletId: string) => {
     setSelectedOutlet(outletId);
     localStorage.setItem('selectedOutlet', outletId);
-    
+
     // Trigger a custom event to notify other components about outlet change
-    window.dispatchEvent(new CustomEvent('outletChanged', { 
-      detail: { outletId, outlet: outlets.find(o => o.id === outletId) } 
+    window.dispatchEvent(new CustomEvent('outletChanged', {
+      detail: { outletId, outlet: outlets.find(o => o.id === outletId) }
     }));
   };
 
@@ -217,13 +201,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex flex-col h-full overflow-hidden">
           {/* Logo */}
           <div className="flex items-center justify-center py-8 px-4 border-b border-red-500/30 dark:border-gray-700">
-              <Image
-                src="/Logo Boss Putih.png"
-                alt="BOSS Logo"
-                width={150}
-                height={150}
-                className="object-contain"
-              />
+            <Image
+              src="/Logo Boss Putih.png"
+              alt="BOSS Logo"
+              width={150}
+              height={150}
+              className="object-contain"
+            />
           </div>
 
           {/* Outlet Selector */}
@@ -236,23 +220,39 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </span>
               )}
             </label>
-            <select
-              value={selectedOutlet}
-              onChange={(e) => handleOutletChange(e.target.value)}
-              className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 placeholder-red-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-gray-500 focus:bg-white/20 dark:focus:bg-gray-600/50 text-sm font-medium font-poppins transition-all duration-200"
-            >
-              {outlets.length === 0 ? (
-                <option value="" className="text-gray-800">Belum ada outlet</option>
-              ) : (
-                outlets.map((outlet) => (
-                  <option key={outlet.id} value={outlet.id} className="text-gray-800">
-                    {outlet.name} - {outlet.address}
-                  </option>
-                ))
-              )}
-            </select>
-            
-           
+
+            {isLoading ? (
+              <div className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 text-sm font-medium font-poppins flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Memuat outlet...
+              </div>
+            ) : error ? (
+              <div className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-red-500/20 backdrop-blur-sm text-red-100 text-sm font-medium font-poppins flex items-center justify-between">
+                <span>Gagal memuat outlet</span>
+                <button
+                  onClick={() => refetch()}
+                  className="text-red-200 hover:text-white text-xs underline"
+                >
+                  Coba lagi
+                </button>
+              </div>
+            ) : (
+              <select
+                value={selectedOutlet}
+                onChange={(e) => handleOutletChange(e.target.value)}
+                className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 placeholder-red-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-gray-500 focus:bg-white/20 dark:focus:bg-gray-600/50 text-sm font-medium font-poppins transition-all duration-200"
+              >
+                {outlets.length === 0 ? (
+                  <option value="" className="text-gray-800">Belum ada outlet</option>
+                ) : (
+                  outlets.map((outlet) => (
+                    <option key={outlet.id} value={outlet.id} className="text-gray-800">
+                      {outlet.name} - {outlet.address}
+                    </option>
+                  ))
+                )}
+              </select>
+            )}
           </div>
 
           {/* Navigation Menu */}
@@ -263,11 +263,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${
-                    isActive
-                      ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
-                      : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
-                  }`}
+                  className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${isActive
+                    ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
+                    : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
+                    }`}
                   onClick={() => {
                     localStorage.setItem('selectedOutlet', selectedOutlet);
                     onClose();
@@ -278,22 +277,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   {isActive && (
                     <div className="absolute left-0 top-0 h-full w-1 bg-red-600 rounded-r-full"></div>
                   )}
-                  
-                  <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${
-                    isActive ? 'text-red-600 dark:text-red-400' : 'text-red-200 dark:text-gray-400'
-                  }`}>
+
+                  <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-red-600 dark:text-red-400' : 'text-red-200 dark:text-gray-400'
+                    }`}>
                     {item.icon}
                   </span>
-                  
+
                   <span className="flex-1">{item.name}</span>
-                  
+
                   {/* Hover arrow */}
-                  <svg 
-                    className={`w-4 h-4 transition-all duration-200 ${
-                      isActive ? 'opacity-100 text-red-600' : 'opacity-0 group-hover:opacity-100 text-red-200'
-                    }`} 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className={`w-4 h-4 transition-all duration-200 ${isActive ? 'opacity-100 text-red-600' : 'opacity-0 group-hover:opacity-100 text-red-200'
+                      }`}
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

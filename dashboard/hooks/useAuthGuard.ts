@@ -2,29 +2,37 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/apis/base';
 
 export function useAuthGuard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const user = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+    if (checked) return; // Prevent multiple checks
 
-    if (!token || !user) {
-      router.push('/auth/login');
-      return;
-    }
+    const checkAuth = async () => {
+      try {
+        const response = await apiClient.get('/auth/me');
+        const userData = response.data.data.user;
 
-    try {
-      JSON.parse(user);
-      setLoading(false);
-    } catch (e) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      router.push('/auth/login');
-    }
-  }, [router]);
+        // For owner dashboard, allow both OWNER and ADMIN roles
+        if (userData.role !== 'OWNER' && userData.role !== 'ADMIN') {
+          router.push('/unauthorized');
+          return;
+        }
+
+        setLoading(false);
+        setChecked(true);
+      } catch (error) {
+        router.push('/auth/login');
+      }
+    };
+
+    // Add small delay to prevent race conditions
+    setTimeout(checkAuth, 100);
+  }, [router, checked]);
 
   return { loading } as const;
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -8,11 +8,116 @@ const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-poppins",
+  display: "swap",
 });
 
+// SEO Metadata
 export const metadata: Metadata = {
-  title: "BOSS",
-  description: "Business Operations Support System Dashboard",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010'),
+  title: {
+    default: "BOSS - Business Operations Support System",
+    template: "%s | BOSS Dashboard"
+  },
+  description: "Comprehensive Business Operations Support System Dashboard for managing outlets, transactions, and business analytics with real-time insights.",
+  keywords: ["business dashboard", "operations management", "outlet management", "transaction tracking", "business analytics", "POS system", "inventory management"],
+  authors: [{ name: "BOSS Team" }],
+  creator: "BOSS Development Team",
+  publisher: "BOSS",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  robots: {
+    index: false, // Dashboard should not be indexed by search engines
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'none',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    title: "BOSS - Business Operations Support System",
+    description: "Comprehensive Business Operations Support System Dashboard for managing outlets, transactions, and business analytics.",
+    siteName: "BOSS Dashboard",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "BOSS Dashboard",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BOSS - Business Operations Support System",
+    description: "Comprehensive Business Operations Support System Dashboard for managing outlets, transactions, and business analytics.",
+    images: ["/og-image.jpg"],
+    creator: "@boss_dashboard",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180" },
+    ],
+  },
+  manifest: "/manifest.json",
+  other: {
+    "msapplication-TileColor": "#2563eb",
+    "msapplication-config": "/browserconfig.xml",
+  },
+  alternates: {
+    canonical: "/",
+  },
+};
+
+// Viewport configuration
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#1f2937" },
+  ],
+};
+
+// Structured Data for SEO
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "BOSS Dashboard",
+  "description": "Business Operations Support System Dashboard",
+  "url": process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010',
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web Browser",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "IDR"
+  },
+  "creator": {
+    "@type": "Organization",
+    "name": "BOSS Development Team"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BOSS"
+  }
 };
 
 export default function RootLayout({
@@ -21,8 +126,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${poppins.variable} font-poppins antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta charSet="utf-8" />
+        <link rel="canonical" href={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010'} />
+        <meta name="theme-color" content="#2563eb" />
+        <meta name="color-scheme" content="light dark" />
+
+        {/* Preconnect to external domains for performance */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
+        {/* Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData),
+          }}
+        />
+      </head>
+      <body className={`${poppins.variable} font-poppins antialiased min-h-screen bg-background text-foreground`}>
         <ThemeProvider>
           <QueryProvider>{children}</QueryProvider>
         </ThemeProvider>

@@ -62,7 +62,13 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-backend:development
           build-args: |
+            SMTP_HOST=${{ vars.SMTP_HOST }}
+            SMTP_PORT=${{ vars.SMTP_PORT }}
+            SMTP_USER=${{  vars.SMTP_USER}}
+            SMTP_PASS=${{ vars.SMTP_PASS }}
+            SMTP_FROM=${{ vars.SMTP_FROM }}
             NODE_ENV=development
+            COOKIES_DOMAIN=.bossapp.id
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             CLIENT_URL=${{ vars.CLIENT_URL }}
 
@@ -75,6 +81,12 @@ jobs:
           file: ./consumer/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-consumer:development
+          build-args: |
+            SMTP_HOST=${{ vars.SMTP_HOST }}
+            SMTP_PORT=${{ vars.SMTP_PORT }}
+            SMTP_USER=${{  vars.SMTP_USER}}
+            SMTP_PASS=${{ vars.SMTP_PASS }}
+            SMTP_FROM=${{ vars.SMTP_FROM }}
 
       # Build dan push Frontend Customer hanya jika ada perubahan di direktori 'frontend-customer'
       - name: Build and push Frontend Customer
@@ -86,6 +98,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-frontend-customer:development
           build-args: |
+            NEXT_PUBLIC_REMOTE_PATTERNS=${{ vars.NEXT_PUBLIC_REMOTE_PATTERNS }}
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_API_PREFIX=${{ vars.NEXT_PUBLIC_API_PREFIX }}
             NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_SOCKET_URL }}
@@ -102,6 +115,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-dashboard:development
           build-args: |
+            NEXT_PUBLIC_APP_URL=https:dashboard-dev.bossapp.id
             NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_URL }}/api/v1
             NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_API_URL }}
 

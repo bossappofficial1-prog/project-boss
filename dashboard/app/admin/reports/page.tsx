@@ -11,19 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
     FileText,
     Download,
-    Calendar,
     DollarSign,
     TrendingUp,
     TrendingDown,
-    BarChart3,
-    PieChart,
     Receipt,
-    CreditCard,
-    Building2,
-    Users,
-    Filter,
     RefreshCw
 } from 'lucide-react';
+import { apiClient } from '@/lib/apis/base';
+import { formatCurrency } from '@/lib/utils';
+import { formatDate } from '@/lib/withdrawals';
 
 interface FinancialReport {
     id: string;
@@ -33,14 +29,6 @@ interface FinancialReport {
     totalTransactions: number;
     generatedAt: string;
     status: 'completed' | 'processing' | 'failed';
-}
-
-interface RevenueReport {
-    period: string;
-    totalRevenue: number;
-    totalTransactions: number;
-    averageTransaction: number;
-    growth: number;
 }
 
 interface BusinessReport {
@@ -61,20 +49,14 @@ export default function AdminReports() {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
 
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
-
     // Fetch financial reports list
     const { data: reportsData, isLoading: reportsLoading } = useQuery({
         queryKey: ['financial-reports', page, limit],
         queryFn: async () => {
             const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
-            const response = await fetch(`${API_BASE_URL}/admin/reports?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            if (!response.ok) throw new Error('Failed to fetch reports');
-            return response.json();
+            const response = await apiClient.get(`/admin/reports?${params}`);
+            if (response.status !== 200) throw new Error('Failed to fetch reports');
+            return response.data;
         },
     });
 
@@ -86,13 +68,9 @@ export default function AdminReports() {
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
 
-            const response = await fetch(`${API_BASE_URL}/admin/reports/revenue?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            if (!response.ok) throw new Error('Failed to fetch revenue report');
-            return response.json();
+            const response = await apiClient.get(`/admin/reports/revenue?${params}`);
+            if (response.status !== 200) throw new Error('Failed to fetch revenue report');
+            return response.data;
         },
     });
 
@@ -105,34 +83,13 @@ export default function AdminReports() {
             if (endDate) params.append('endDate', endDate);
             if (businessFilter) params.append('businessId', businessFilter);
 
-            const response = await fetch(`${API_BASE_URL}/admin/reports/business-performance?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            if (!response.ok) throw new Error('Failed to fetch business report');
-            return response.json();
+            const response = await apiClient.get(`/admin/reports/business-performance?${params}`);
+            if (response.status !== 200) throw new Error('Failed to fetch business report');
+            return response.data
         },
     });
 
     const pagination = reportsData?.data?.pagination;
-
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-        }).format(amount);
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -149,22 +106,13 @@ export default function AdminReports() {
 
     const handleGenerateReport = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/reports/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify({
-                    type: reportType,
-                    period,
-                    startDate,
-                    endDate,
-                    businessId: businessFilter || undefined,
-                }),
+            const response = await apiClient.post(`/admin/reports/generate`, {
+                type: reportType,
+                period,
+                startDate,
+                endDate,
+                businessId: businessFilter || undefined,
             });
-
-            if (!response.ok) throw new Error('Failed to generate report');
 
             // Refresh reports list
             window.location.reload();
@@ -175,15 +123,13 @@ export default function AdminReports() {
 
     const handleDownloadReport = async (reportId: string) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/reports/${reportId}/download`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
+            const response = await apiClient.get(`/admin/reports/${reportId}/download`, {
+                responseType: 'blob',
             });
 
-            if (!response.ok) throw new Error('Failed to download report');
+            if (response.status !== 200) throw new Error('Failed to download report');
 
-            const blob = await response.blob();
+            const blob = response.data;
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;

@@ -18,6 +18,7 @@ import {
     Mail,
     Calendar
 } from 'lucide-react';
+import { apiClient } from '@/lib/apis/base';
 
 interface SupportTicket {
     id: string;
@@ -40,8 +41,6 @@ export default function AdminSupport() {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [priorityFilter, setPriorityFilter] = useState('');
-
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
     const queryClient = useQueryClient();
 
     // Fetch support tickets
@@ -57,29 +56,16 @@ export default function AdminSupport() {
             if (statusFilter) params.append('status', statusFilter);
             if (priorityFilter) params.append('priority', priorityFilter);
 
-            const response = await fetch(`${API_BASE_URL}/admin/support/tickets?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            if (!response.ok) throw new Error('Failed to fetch support tickets');
-            return response.json();
+            const response = await apiClient.get(`/admin/support/tickets?${params}`);
+            return response.data
         },
     });
 
     // Update ticket status mutation
     const updateTicketMutation = useMutation({
         mutationFn: async ({ ticketId, status, notes }: { ticketId: string; status: string; notes?: string }) => {
-            const response = await fetch(`${API_BASE_URL}/admin/support/tickets/${ticketId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify({ status, notes }),
-            });
-            if (!response.ok) throw new Error('Failed to update ticket status');
-            return response.json();
+            const response = await apiClient.put(`/admin/support/tickets/${ticketId}/status`, { status, notes });
+            return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['admin-support-tickets'] });
@@ -261,7 +247,6 @@ export default function AdminSupport() {
                 </CardContent>
             </Card>
 
-            {/* Tickets List */}
             <Card>
                 <CardHeader>
                     <CardTitle>Support Tickets</CardTitle>

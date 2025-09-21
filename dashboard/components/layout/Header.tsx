@@ -1,8 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { apiClient } from '@/lib/apis/base';
 import { useRouter } from 'next/navigation';
-import ThemeToggle from '@/components/ThemeToggle';
+import { useEffect, useState } from 'react';
+import ThemeToggle from '../ThemeToggle';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface User {
   id: string;
@@ -19,6 +28,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -31,11 +41,23 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('selectedOutlet');
-    router.push('/auth/login');
+  const handleLogoutClick = () => {
+    setIsDropdownOpen(false);
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear any remaining localStorage data (for backward compatibility)
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('selectedOutlet');
+      router.push('/auth/login');
+    }
   };
 
   return (
@@ -79,9 +101,8 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                   </p>
                 </div>
                 <svg
-                  className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
-                    isDropdownOpen ? 'rotate-180' : ''
-                  }`}
+                  className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''
+                    }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -101,7 +122,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                       {user?.email || 'email@example.com'}
                     </p>
                   </div>
-                  
+
                   <button
                     onClick={() => {
                       setIsDropdownOpen(false);
@@ -114,7 +135,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                     </svg>
                     Profil Saya
                   </button>
-                  
+
                   <button
                     onClick={() => {
                       setIsDropdownOpen(false);
@@ -131,10 +152,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
 
                   <div className="border-t border-gray-100 dark:border-gray-700 mt-2">
                     <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        handleLogout();
-                      }}
+                      onClick={handleLogoutClick}
                       className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center font-poppins transition-colors duration-150"
                     >
                       <svg className="w-4 h-4 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,6 +175,39 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
           onClick={() => setIsDropdownOpen(false)}
         />
       )}
+
+      {/* Logout Confirmation Modal */}
+      <Dialog open={showLogoutModal} onOpenChange={setShowLogoutModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
+              <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </div>
+            <DialogTitle className="text-center font-poppins">
+              Konfirmasi Keluar
+            </DialogTitle>
+            <DialogDescription className="text-center font-poppins">
+              Apakah Anda yakin ingin keluar dari akun Anda? Anda akan diarahkan ke halaman login.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex space-x-2 sm:space-x-2">
+            <button
+              onClick={() => setShowLogoutModal(false)}
+              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors duration-200 font-poppins"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleLogoutConfirm}
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors duration-200 font-poppins"
+            >
+              Keluar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

@@ -23,7 +23,8 @@
     "socket:test-public": "node test-socket-public.js",
     "elastic:test": "node test-elastic.js test",
     "elastic:setup": "node test-elastic.js setup",
-    "elastic:search": "node test-elastic.js search"
+    "elastic:search": "node test-elastic.js search",
+    "test:type": "npx tsc --noEmit"
   },
   "prisma": {
     "seed": "npm run db:seed"
