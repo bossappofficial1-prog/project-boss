@@ -25,8 +25,8 @@ export const createOrderSchema = z.object({
         .min(1, { message: "Pesanan harus memiliki minimal 1 item" })
         .max(50, { message: "Pesanan maksimal 50 item berbeda" }),
     bookingDate: z.string().datetime().optional(),
-    paymentMethod: z.enum(["qris", "online"], {
-        errorMap: () => ({ message: "Payment method harus 'qris' atau 'online'" })
+    paymentMethod: z.enum(["qris", "online", "cash"], {
+        errorMap: () => ({ message: "Payment method harus 'qris', 'online', atau 'cash'" })
     }).default("online"),
     bookingSlotId: z.string().uuid().optional(),
 }).refine(

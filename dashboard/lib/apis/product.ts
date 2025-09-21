@@ -8,7 +8,7 @@ export const productApi = {
     if (params?.search) searchParams.append('q', params.search);
     const qs = searchParams.toString();
     const endpoint = `/products/outlet/${outletId}${qs ? `?${qs}` : ''}`;
-    return apiCall<{ products: Array<{ id: string; name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; createdAt: string; updatedAt: string; }>; pagination?: { page: number; limit: number; total: number; totalPages: number; }; }>(endpoint);
+    return apiCall<Array<{ id: string; name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; createdAt: string; updatedAt: string; }>>(endpoint);
   },
 
   getById: (productId: string) => apiCall<{ id: string; name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; outletId: string; createdAt: string; updatedAt: string; }>(`/products/${productId}`),

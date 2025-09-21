@@ -1,18 +1,18 @@
 "use client";
 
-interface OrdersControlsProps {
+interface QueueControlsProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  statusFilter: 'all' | 'pending' | 'processing' | 'ready' | 'completed';
-  onStatusFilterChange: (status: 'all' | 'pending' | 'processing' | 'ready' | 'completed') => void;
+  statusFilter: 'all' | 'pending' | 'in_progress' | 'completed';
+  onStatusFilterChange: (status: 'all' | 'pending' | 'in_progress' | 'completed') => void;
 }
 
-export function OrdersControls({
+export function QueueControls({
   searchTerm,
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
-}: OrdersControlsProps) {
+}: QueueControlsProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-4">
       {/* Search */}
@@ -28,7 +28,7 @@ export function OrdersControls({
           </svg>
           <input
             type="text"
-            placeholder="Cari nama customer, produk, atau nomor pesanan..."
+            placeholder="Cari nama customer, layanan, atau nomor antrian..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
@@ -40,13 +40,12 @@ export function OrdersControls({
       <div className="sm:w-48">
         <select
           value={statusFilter}
-          onChange={(e) => onStatusFilterChange(e.target.value as 'all' | 'pending' | 'processing' | 'ready' | 'completed')}
+          onChange={(e) => onStatusFilterChange(e.target.value as 'all' | 'pending' | 'in_progress' | 'completed')}
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         >
           <option value="all">Semua Status</option>
-          <option value="pending">Menunggu Bayar</option>
-          <option value="processing">Diproses</option>
-          <option value="ready">Siap</option>
+          <option value="pending">Menunggu</option>
+          <option value="in_progress">Sedang Diproses</option>
           <option value="completed">Selesai</option>
         </select>
       </div>
