@@ -1,4 +1,4 @@
-import { OrderStatus, Product } from "@prisma/client";
+import { OrderStatus, Product, PaymentStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { getRabbitMQChannel } from "../config/rabbitmq";
 import { messagePublisher } from "./message-publisher.service";
@@ -82,7 +82,13 @@ export async function getServiceQueueByOutletService(
 
     const where = {
         outletId,
-        orderStatus: OrderStatus.READY,
+        // Tampilkan antrian layanan untuk beberapa status yang relevan
+        orderStatus: { in: [
+            OrderStatus.AWAITING_PAYMENT,
+            OrderStatus.PROCESSING,
+            OrderStatus.READY,
+            OrderStatus.CONFIRMED,
+        ] },
         items: { some: { product: { type: 'SERVICE' } } }
     } as const;
 
@@ -134,8 +140,8 @@ async function createOrderInDbService(data: CreateOrderInput) {
 
     // SECURITY FIX: Use transaction for atomic stock check and order creation
     return await db.$transaction(async (tx) => {
-        let subTotal = 0;
-        const productDetails: (Product & { orderQuantity: number })[] = [];
+    let subTotal = 0;
+    const productDetails: (Product & { orderQuantity: number })[] = [];
 
         // SECURITY FIX: Check stock and reserve it atomically
         for (const item of items) {
@@ -148,7 +154,8 @@ async function createOrderInDbService(data: CreateOrderInput) {
                     type: true,
                     quantity: true,
                     outletId: true,
-                    status: true
+                    status: true,
+                    serviceDurationMinutes: true
                 }
             });
 
@@ -193,7 +200,7 @@ async function createOrderInDbService(data: CreateOrderInput) {
                 description: null,
                 unit: null,
                 transactionFeeBearer: null,
-                serviceDurationMinutes: null,
+                serviceDurationMinutes: product.serviceDurationMinutes ?? null,
                 image: null,
                 createdAt: new Date(),
                 updatedAt: new Date()
@@ -220,7 +227,7 @@ async function createOrderInDbService(data: CreateOrderInput) {
             console.warn(`[SUSPICIOUS ORDER] High average item price: ${averageItemPrice} for phone: ${data.guestCustomer.phone.slice(-4)}`);
         }
 
-        const midtransFee = Math.round(subTotal * 0.01); // 1% midtrans fee
+    const midtransFee = Math.round(subTotal * 0.01); // 1% midtrans fee
         const appFee = Math.round(subTotal * 0.03); // 3% platform fee
         const feeBearer = business.defaultTransactionFeeBearer;
         let totalAmount = subTotal;
@@ -232,6 +239,83 @@ async function createOrderInDbService(data: CreateOrderInput) {
         // SECURITY: Log high-value orders for monitoring
         if (totalAmount > 5000000) { // Orders above 5 million
             console.warn(`[HIGH VALUE ORDER] Amount: ${totalAmount} for phone: ${data.guestCustomer.phone.slice(-4)}`);
+        }
+
+        // Before creating any record, validate booking overlap for SERVICE items (capacity-aware)
+        const serviceItems = productDetails.filter(p => p.type === 'SERVICE');
+        if (serviceItems.length > 0 && !bookingSlotId) {
+            // Service booking without explicit slot must provide bookingDate
+            if (!data.bookingDate) {
+                throw new AppError("Booking jasa wajib memiliki waktu booking.", HttpStatus.BAD_REQUEST);
+            }
+
+            const requestedStart = new Date(data.bookingDate);
+
+            // Utility: check overlap of two [start,end) intervals
+            const overlaps = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) => {
+                return aStart < bEnd && bStart < aEnd;
+            };
+
+            for (const svc of serviceItems) {
+                const durationMin = svc.serviceDurationMinutes ?? 60; // default 60 minutes if unspecified
+                const requestedEnd = new Date(requestedStart.getTime() + durationMin * 60_000);
+
+                // Determine allowed parallel capacity (default 1)
+                const capacityRecord = await tx.serviceCapacity.findUnique({
+                    where: { productId: svc.id }
+                });
+                const maxParallel = capacityRecord?.maxParallel ?? 1;
+
+                // Fetch potentially conflicting orders for same service product in active statuses
+                const activeStatuses = [
+                    OrderStatus.AWAITING_PAYMENT,
+                    OrderStatus.PROCESSING,
+                    OrderStatus.READY,
+                    OrderStatus.CONFIRMED,
+                ];
+
+                const existing = await tx.order.findMany({
+                    where: {
+                        outletId,
+                        orderStatus: { in: activeStatuses },
+                        items: { some: { productId: svc.id } },
+                    },
+                    include: {
+                        bookingSlot: true,
+                        items: { include: { product: { select: { id: true, serviceDurationMinutes: true, type: true } } } }
+                    }
+                });
+
+                // Count overlaps
+                let overlapping = 0;
+                for (const ex of existing) {
+                    let exStart: Date | null = null;
+                    let exEnd: Date | null = null;
+
+                    if (ex.bookingSlot) {
+                        exStart = new Date(ex.bookingSlot.startTime);
+                        exEnd = new Date(ex.bookingSlot.endTime);
+                    } else if (ex.bookingDate) {
+                        // Use duration for the same service product within that order
+                        const exItem = ex.items.find(it => it.product.id === svc.id);
+                        const exDuration = exItem?.product.serviceDurationMinutes ?? durationMin;
+                        exStart = new Date(ex.bookingDate);
+                        exEnd = new Date(exStart.getTime() + (exDuration ?? 60) * 60_000);
+                    }
+
+                    if (exStart && exEnd && overlaps(requestedStart, requestedEnd, exStart, exEnd)) {
+                        overlapping += 1;
+                        if (overlapping >= maxParallel) break;
+                    }
+                }
+
+                if (overlapping >= maxParallel) {
+                    throw new AppError(
+                        `Waktu booking bentrok untuk layanan ${svc.name}. Silakan pilih waktu lain.`,
+                        HttpStatus.CONFLICT
+                    );
+                }
+            }
         }
 
         // SECURITY: Create guest customer with sanitized data
@@ -380,11 +464,27 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
         await BookingRepository.update(slot.id, { status: "BOOKED" })
     }
 
+    // Jika payment method adalah 'cash', buat order offline tanpa Midtrans
+    if (paymentMethod === 'cash') {
+        const { order } = await createOrderInDbService(data);
+
+        const updatedOrder = await db.order.update({
+            where: { id: order.id },
+            data: {
+                paymentStatus: PaymentStatus.SUCCESS,
+                orderStatus: OrderStatus.READY,
+            },
+        });
+
+        return { order: updatedOrder, midtransTransaction: undefined as any };
+    }
+
+    // Default flow: gunakan Midtrans untuk pembayaran online/QRIS
     const { order, midtransFee, appFee, feeBearer, totalAmount } = await createOrderInDbService(data);
 
     const chargeTo = feeBearer.toLowerCase() as 'customer' | 'owner';
 
-    const midtransTransaction = await createMidtransTransactionService(order.id, totalAmount, midtransFee, appFee, paymentMethod, chargeTo);
+    const midtransTransaction = await createMidtransTransactionService(order.id, totalAmount, midtransFee, appFee, paymentMethod as 'online' | 'qris', chargeTo);
 
     const updatedOrder = await db.order.update({
         where: { id: order.id },

@@ -1,5 +1,16 @@
 import { apiCall } from './base';
 
+export interface BusinessHours {
+  id: string;
+  dayOfWeek: number;
+  openTime: string; // Time string from backend (converted from DateTime)
+  closeTime: string; // Time string from backend (converted from DateTime)
+  isOpen: boolean;
+  outletId: string;
+  // Helper properties for display
+  day: 'SUNDAY' | 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY';
+}
+
 export const outletApi = {
   getByBusiness: (businessId: string, params?: { take?: number; limit?: number; search?: string; }) => {
     const searchParams = new URLSearchParams();
@@ -9,6 +20,28 @@ export const outletApi = {
     const qs = searchParams.toString();
     const endpoint = `/outlets/business/${businessId}${qs ? `?${qs}` : ''}`;
     return apiCall<Array<{ id: string; name: string; address: string; phone?: string; imageUrl?: string; latitude?: number; longitude?: number; }>>(endpoint);
+  },
+
+  getBusinessHours: async (outletId: string): Promise<BusinessHours[]> => {
+    const response = await apiCall<Array<{
+      id: string;
+      dayOfWeek: number;
+      openTime: string;
+      closeTime: string;
+      isOpen: boolean;
+      outletId: string;
+    }>>(`/operating-hours/outlet/${outletId}`);
+
+    // Convert to our format with helper properties
+    const dayNames: BusinessHours['day'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    
+    return response.map(hour => ({
+      ...hour,
+      day: dayNames[hour.dayOfWeek],
+      // Convert DateTime strings to HH:MM format
+      openTime: hour.openTime ? new Date(hour.openTime).toTimeString().slice(0, 5) : '00:00',
+      closeTime: hour.closeTime ? new Date(hour.closeTime).toTimeString().slice(0, 5) : '00:00',
+    }));
   },
 
   getDashboard: (outletId: string) => apiCall<{

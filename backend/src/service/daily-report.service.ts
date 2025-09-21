@@ -13,8 +13,8 @@ export class DailyReportService {
         const actualStartDate = startDate || new Date(currentDate.setDate(currentDate.getDate() - 7));
 
         // Get daily transactions with revenue
-        const dailyRevenue = await db.order.groupBy({
-            by: ['createdAt'],
+        // Prisma cannot group directly by DATE(createdAt) across providers; get records and aggregate per-day in JS
+        const completedOrders = await db.order.findMany({
             where: {
                 outletId,
                 orderStatus: OrderStatus.COMPLETED,
@@ -23,17 +23,16 @@ export class DailyReportService {
                     lte: actualEndDate,
                 },
             },
-            _sum: {
-                totalAmount: true,
-            },
-            _count: {
-                id: true,
-            },
+            select: { id: true, totalAmount: true, createdAt: true },
         });
+        const dailyRevenue = completedOrders.map(o => ({
+            createdAt: o.createdAt,
+            _sum: { totalAmount: o.totalAmount },
+            _count: { id: 1 },
+        }));
 
         // Get daily expenses
-        const dailyExpenses = await db.expense.groupBy({
-            by: ['date'],
+        const expensesRaw = await db.expense.findMany({
             where: {
                 outletId,
                 date: {
@@ -41,28 +40,27 @@ export class DailyReportService {
                     lte: actualEndDate,
                 },
             },
-            _sum: {
-                amount: true,
-            },
+            select: { date: true, amount: true },
         });
+        const dailyExpenses = expensesRaw.map(e => ({ date: e.date, _sum: { amount: e.amount } }));
 
         // Create maps for revenue and expense lookups
-        const revenueMap = new Map(
-            dailyRevenue.map(rev => [
-                rev.createdAt.toISOString().split('T')[0],
-                {
-                    jumlahTransaksi: rev._count.id,
-                    totalPendapatan: rev._sum.totalAmount || 0
-                }
-            ])
-        );
+        const revenueMap = new Map<string, { jumlahTransaksi: number; totalPendapatan: number }>();
+        for (const rev of dailyRevenue) {
+            const key = rev.createdAt.toISOString().split('T')[0];
+            const existing = revenueMap.get(key) || { jumlahTransaksi: 0, totalPendapatan: 0 };
+            revenueMap.set(key, {
+                jumlahTransaksi: existing.jumlahTransaksi + rev._count.id,
+                totalPendapatan: existing.totalPendapatan + (rev._sum.totalAmount || 0),
+            });
+        }
 
-        const expenseMap = new Map(
-            dailyExpenses.map(exp => [
-                exp.date.toISOString().split('T')[0],
-                exp._sum.amount || 0
-            ])
-        );
+        const expenseMap = new Map<string, number>();
+        for (const exp of dailyExpenses) {
+            const key = exp.date.toISOString().split('T')[0];
+            const existing = expenseMap.get(key) || 0;
+            expenseMap.set(key, existing + (exp._sum.amount || 0));
+        }
 
         // Generate all dates in the range
         const dates: string[] = [];

@@ -72,3 +72,62 @@ export async function apiCall<T>(endpoint: string, options: RequestInit = {}): P
 
   return result.data;
 }
+
+// Generic paginated API call function
+export async function apiCallPaginated<T>(endpoint: string, options: RequestInit = {}): Promise<{
+  data: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...createHeaders(),
+      ...options.headers,
+    },
+  });
+
+  const text = await response.text();
+  let parsed: any = null;
+  try {
+    parsed = text ? JSON.parse(text) : null;
+  } catch {
+    // ignore JSON parse errors
+  }
+
+  if (!response.ok) {
+    const backendMessage = parsed?.message || parsed?.data?.message || parsed?.error || parsed?.errors || null;
+    const message = backendMessage ? (typeof backendMessage === 'string' ? backendMessage : JSON.stringify(backendMessage)) : `${response.status} ${response.statusText}`;
+    throw new Error(message);
+  }
+
+  const result: ApiResponse<T[]> & { 
+    pagination?: { 
+      page: number; 
+      limit: number; 
+      total: number; 
+      totalPages: number; 
+    } 
+  } = parsed;
+
+  if (!result) {
+    throw new Error('Invalid API response');
+  }
+
+  if (!result.success) {
+    throw new Error(result.message || 'API call failed');
+  }
+
+  // Handle the actual backend response structure
+  return {
+    data: result.data || [],
+    page: result.pagination?.page || 1,
+    limit: result.pagination?.limit || 20,
+    total: result.pagination?.total || 0,
+    totalPages: result.pagination?.totalPages || 1,
+  };
+}

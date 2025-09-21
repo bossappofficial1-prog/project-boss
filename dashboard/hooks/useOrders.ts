@@ -1,68 +1,246 @@
-"use client";
+import { useState, useEffect, useCallback } from 'react';
+import { orderApi, type GoodsOrder, type QueueEntry, type OrderStatus, type OrderListParams } from '@/lib/apis/order';
 
-import { useEffect, useMemo, useState } from "react";
-import { orderApi, GoodsOrder, QueueEntry } from "@/lib/apis/order";
-
-type UseOrdersParams = {
-  outletId?: string;
-  status?: string;
-  limit?: number;
-};
-
-export function useGoodsOrders({ outletId, status, limit }: UseOrdersParams) {
-  const [data, setData] = useState<GoodsOrder[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!outletId) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    orderApi
-      .getByOutlet(outletId, { status, limit })
-      .then((res) => {
-        if (!cancelled) setData(res);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err?.message || "Gagal memuat pesanan");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [outletId, status, limit]);
-
-  return { data, loading, error };
+export interface UseGoodsOrdersParams {
+  outletId: string | null;
+  status?: OrderStatus;
+  autoRefresh?: boolean;
+  refreshInterval?: number;
 }
 
-export function useOutletQueue(outletId?: string) {
-  const [data, setData] = useState<QueueEntry[] | null>(null);
+export interface UseOrdersResult<T> {
+  data: T[];
+  loading: boolean;
+  error: string | null;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    total: number;
+    limit: number;
+  };
+  refetch: () => Promise<void>;
+  setPage: (page: number) => void;
+  setStatus: (status: OrderStatus | undefined) => void;
+}
+
+export function useGoodsOrders({
+  outletId,
+  status,
+  autoRefresh = true,
+  refreshInterval = 30000, // 30 seconds
+}: UseGoodsOrdersParams): UseOrdersResult<GoodsOrder> {
+  const [data, setData] = useState<GoodsOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    total: 0,
+    limit: 20,
+  });
+  const [currentStatus, setCurrentStatus] = useState<OrderStatus | undefined>(status);
+
+  const fetchOrders = useCallback(async () => {
+    if (!outletId) {
+      setData([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params: OrderListParams = {
+        page: currentPage,
+        limit: pagination.limit,
+      };
+
+      if (currentStatus) {
+        params.status = currentStatus;
+      }
+
+      const response = await orderApi.getGoodsByOutlet(outletId, params);
+      
+      setData(response.data || []);
+      setPagination({
+        currentPage: response.page || 1,
+        totalPages: response.totalPages || 1,
+        total: response.total || 0,
+        limit: response.limit || 20,
+      });
+    } catch (err: any) {
+      console.error('Error fetching goods orders:', err);
+      setError(err.message || 'Failed to fetch orders');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [outletId, currentPage, pagination.limit, currentStatus]);
+
+  const setPage = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const setStatus = useCallback((status: OrderStatus | undefined) => {
+    setCurrentStatus(status);
+    setCurrentPage(1); // Reset to first page when filter changes
+  }, []);
+
+  // Initial fetch and fetch when dependencies change
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  // Auto-refresh
+  useEffect(() => {
+    if (!autoRefresh || !outletId) return;
+
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, refreshInterval);
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, refreshInterval, fetchOrders, outletId]);
+
+  return {
+    data,
+    loading,
+    error,
+    pagination,
+    refetch: fetchOrders,
+    setPage,
+    setStatus,
+  };
+}
+
+export interface UseQueueParams {
+  outletId: string | null;
+  autoRefresh?: boolean;
+  refreshInterval?: number;
+}
+
+export function useOutletQueue({
+  outletId,
+  autoRefresh = true,
+  refreshInterval = 15000, // 15 seconds for queue (more frequent)
+}: UseQueueParams): UseOrdersResult<QueueEntry> {
+  const [data, setData] = useState<QueueEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    total: 0,
+    limit: 50, // More items for queue
+  });
+
+  const fetchQueue = useCallback(async () => {
+    if (!outletId) {
+      setData([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        page: currentPage,
+        limit: pagination.limit,
+      };
+
+      const response = await orderApi.getQueueByOutlet(outletId, params);
+      
+      // Transform data and add queue position/number if not present
+      const transformedData = (response.data || []).map((item, index) => ({
+        ...item,
+        position: item.position ?? index + 1,
+        queueNumber: item.queueNumber ?? index + 1,
+        customerName: item.guestCustomer?.name || 'Unknown',
+        productName: item.items?.[0]?.product?.name || 'Service',
+        status: item.orderStatus || 'PROCESSING',
+      }));
+      
+      setData(transformedData);
+      setPagination({
+        currentPage: response.page || 1,
+        totalPages: response.totalPages || 1,
+        total: response.total || 0,
+        limit: response.limit || 20,
+      });
+    } catch (err: any) {
+      console.error('Error fetching queue:', err);
+      setError(err.message || 'Failed to fetch queue');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [outletId, currentPage, pagination.limit]);
+
+  const setPage = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const setStatus = useCallback((_status: OrderStatus | undefined) => {
+    // Queue doesn't filter by status, but we keep the interface consistent
+  }, []);
+
+  // Initial fetch and fetch when dependencies change
+  useEffect(() => {
+    fetchQueue();
+  }, [fetchQueue]);
+
+  // Auto-refresh
+  useEffect(() => {
+    if (!autoRefresh || !outletId) return;
+
+    const interval = setInterval(() => {
+      fetchQueue();
+    }, refreshInterval);
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, refreshInterval, fetchQueue, outletId]);
+
+  return {
+    data,
+    loading,
+    error,
+    pagination,
+    refetch: fetchQueue,
+    setPage,
+    setStatus,
+  };
+}
+
+// Hook for selected outlet ID (shared between orders and queue)
+export function useSelectedOutletId() {
+  const [outletId, setOutletId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!outletId) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    orderApi
-      .getQueue(outletId)
-      .then((res) => {
-        if (!cancelled) setData(res);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err?.message || "Gagal memuat antrian");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [outletId]);
+    // Get outlet ID from localStorage or other state management
+    const stored = localStorage.getItem('selectedOutlet');
+    setOutletId(stored);
+    setLoading(false);
 
-  return { data, loading, error };
+    // Listen for outlet changes
+    const handleOutletChange = (event: CustomEvent) => {
+      const newOutletId = (event as any).detail.outletId as string;
+      setOutletId(newOutletId);
+      localStorage.setItem('selectedOutlet', newOutletId);
+    };
+
+    window.addEventListener('outletChanged', handleOutletChange as EventListener);
+    return () => {
+      window.removeEventListener('outletChanged', handleOutletChange as EventListener);
+    };
+  }, []);
+
+  return { outletId, loading };
 }

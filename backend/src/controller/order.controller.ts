@@ -53,8 +53,10 @@ export const createOrderController = asyncHandler(async (req: Request, res: Resp
     return ResponseUtil.success(res, {
         orderId: order.id,
         totalAmount: order.totalAmount,
-        midtransTransactionToken: midtransTransaction.token,
-        midtransRedirectUrl: midtransTransaction.redirect_url,
+        ...(midtransTransaction ? {
+            midtransTransactionToken: (midtransTransaction as any).token,
+            midtransRedirectUrl: (midtransTransaction as any).redirect_url,
+        } : {}),
     });
 });
 

@@ -1,80 +1,196 @@
-import { apiCall } from './base';
+import { apiCall, apiCallPaginated } from './base';
 
-export type GoodsOrderItem = {
-  productId: string;
-  productName?: string;
-  quantity: number;
+// Types based on backend schema
+export type OrderStatus = 
+  | 'AWAITING_PAYMENT'
+  | 'PROCESSING' 
+  | 'READY'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'CONFIRMED';
+
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED';
+
+export interface GuestCustomer {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  type: 'GOODS' | 'SERVICE';
   price: number;
-  notes?: string;
-};
+}
 
-export type GoodsOrder = {
+export interface OrderItem {
   id: string;
-  outletId?: string;
-  code?: string;
-  customerName: string;
-  customerPhone: string;
-  status?: string; // legacy
-  orderStatus?: string; // backend field
-  paymentStatus?: string;
+  quantity: number;
+  priceAtTimeOfOrder: number;
+  productId: string;
+  product: Product;
+}
+
+export interface Outlet {
+  id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+}
+
+export interface Order {
+  id: string;
   totalAmount: number;
+  bookingDate?: string;
+  paymentStatus: PaymentStatus;
+  orderStatus: OrderStatus;
+  discountAmount: number;
+  guestCustomerId: string;
+  guestCustomer: GuestCustomer;
+  outletId: string;
+  outlet: Outlet;
+  items: OrderItem[];
   createdAt: string;
-  items: GoodsOrderItem[];
-};
+  updatedAt: string;
+}
 
-export type QueueEntry = {
-  id: string;
-  customerName: string;
-  position?: number; // backend field
-  queueNumber?: number; // optional alias used by UI
-  status: string;
-  estimatedTime?: number;
-  createdAt: string;
+export interface GoodsOrder extends Order {
+  // Specific for goods orders
+}
+
+export interface QueueEntry extends Order {
+  // Specific for service queue
+  position?: number;
+  queueNumber?: number;
   productName?: string;
-};
+  customerName: string;
+  status: OrderStatus;
+}
+
+export interface CreateOrderRequest {
+  guestCustomer: {
+    name: string;
+    phone: string;
+  };
+  outletId: string;
+  items: {
+    productId: string;
+    quantity: number;
+  }[];
+  bookingDate?: string;
+  paymentMethod?: 'qris' | 'online' | 'cash';
+  bookingSlotId?: string;
+}
+
+export interface OrderListParams {
+  status?: OrderStatus;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 export const orderApi = {
-  getByOutlet: async (outletId: string, params?: { status?: string; limit?: number; }) => {
+  // Get goods orders by outlet
+  async getGoodsByOutlet(
+    outletId: string, 
+    params?: OrderListParams
+  ): Promise<PaginatedResponse<GoodsOrder>> {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.append('status', params.status);
+    if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
-    const qs = searchParams.toString();
-    const endpoint = `/orders/${outletId}/goods${qs ? `?${qs}` : ''}`;
-    const raw = await apiCall<any[]>(endpoint);
-    // Map backend order shape to UI-friendly shape
-    const mapped: GoodsOrder[] = (raw || []).map((o: any) => ({
-      id: o.id,
-      outletId: o.outletId,
-      code: o.id,
-      customerName: o.guestCustomer?.name ?? '-',
-      customerPhone: o.guestCustomer?.phone ?? '-',
-      orderStatus: o.orderStatus,
-      paymentStatus: o.paymentStatus,
-      totalAmount: o.totalAmount,
-  createdAt: typeof o.createdAt === 'string' || o.createdAt instanceof Date ? (o.createdAt as any) : (o.createdAt?.toString?.() || o.createdAt),
-      items: (o.items || []).map((it: any) => ({
-        productId: it.productId,
-        productName: it.product?.name,
-        quantity: it.quantity,
-        price: it.priceAtTimeOfOrder,
-        notes: it.notes,
-      })),
-    }));
-    return mapped;
+    
+    const queryString = searchParams.toString();
+    const url = `/orders/${outletId}/goods${queryString ? `?${queryString}` : ''}`;
+    
+    return apiCallPaginated<GoodsOrder>(url);
   },
 
-  getQueue: async (outletId: string) => {
-    const raw = await apiCall<any[]>(`/orders/${outletId}/queue`);
-    const mapped: QueueEntry[] = (raw || []).map((o: any, idx: number) => ({
-      id: o.id,
-      customerName: o.guestCustomer?.name ?? '-',
-      queueNumber: o.position ?? idx + 1,
-      position: o.position ?? idx + 1,
-      status: o.orderStatus ?? o.status ?? 'READY',
-      estimatedTime: undefined,
-  createdAt: typeof o.createdAt === 'string' || o.createdAt instanceof Date ? (o.createdAt as any) : (o.createdAt?.toString?.() || o.createdAt),
-      productName: o.items?.[0]?.product?.name,
-    }));
-    return mapped;
+  // Get service queue by outlet
+  async getQueueByOutlet(
+    outletId: string,
+    params?: Omit<OrderListParams, 'status'>
+  ): Promise<PaginatedResponse<QueueEntry>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    
+    const queryString = searchParams.toString();
+    const url = `/orders/${outletId}/queue${queryString ? `?${queryString}` : ''}`;
+    
+    return apiCallPaginated<QueueEntry>(url);
+  },
+
+  // Create order (manual order)
+  async create(data: CreateOrderRequest): Promise<{
+    orderId: string;
+    totalAmount: number;
+    midtransTransactionToken?: string;
+    midtransRedirectUrl?: string;
+  }> {
+    return apiCall<{
+      orderId: string;
+      totalAmount: number;
+      midtransTransactionToken?: string;
+      midtransRedirectUrl?: string;
+    }>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update order status
+  async updateStatus(orderId: string, status: OrderStatus): Promise<Order> {
+    return apiCall<Order>(`/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  // Complete order
+  async complete(orderId: string): Promise<Order> {
+    return apiCall<Order>(`/orders/${orderId}/complete`, {
+      method: 'POST',
+    });
+  },
+
+  // Get order by ID
+  async getById(orderId: string): Promise<Order> {
+    return apiCall<Order>(`/orders/${orderId}`);
+  },
+
+  // Get order receipt
+  async getReceipt(orderId: string): Promise<Blob> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
+    
+    const response = await fetch(`${baseUrl}/orders/${orderId}/receipt`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to download receipt');
+    }
+    
+    return response.blob();
+  },
+
+  // Refund order
+  async refund(orderId: string): Promise<Order> {
+    return apiCall<Order>(`/orders/${orderId}/refund`, {
+      method: 'POST',
+    });
   },
 };
+
+export default orderApi;
