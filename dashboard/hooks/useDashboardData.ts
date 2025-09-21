@@ -16,7 +16,6 @@ export function useDashboardData(initialDate?: string) {
   const [business, setBusiness] = useState<Business | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [selectedOutlet, setSelectedOutlet] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(
     initialDate || new Date().toISOString().split('T')[0]
   );
@@ -58,7 +57,23 @@ export function useDashboardData(initialDate?: string) {
         setBusiness(userData.business);
         setOutlets(userData.outlets);
 
-        const currentOutlet = selectedOutlet || userData.outlets[0]?.id;
+        // Use the same logic as Sidebar for default outlet selection
+        let currentOutlet = '';
+
+        if (userData.outlets && userData.outlets.length > 0) {
+          // Check if there's a previously selected outlet in localStorage
+          const savedOutletId = localStorage.getItem('selectedOutlet');
+          const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
+
+          if (validOutlet && savedOutletId) {
+            currentOutlet = savedOutletId;
+          } else {
+            // Default to first outlet
+            currentOutlet = userData.outlets[0].id;
+            localStorage.setItem('selectedOutlet', currentOutlet);
+          }
+        }
+
         if (currentOutlet && currentOutlet !== selectedOutlet) {
           setSelectedOutlet(currentOutlet);
         }

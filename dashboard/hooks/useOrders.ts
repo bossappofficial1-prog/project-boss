@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { orderApi, type GoodsOrder, type QueueEntry, type OrderStatus, type OrderListParams } from '@/lib/apis/order';
+import { authApi } from '@/lib/api';
 
 export interface UseGoodsOrdersParams {
   outletId: string | null;
@@ -63,7 +64,7 @@ export function useGoodsOrders({
       }
 
       const response = await orderApi.getGoodsByOutlet(outletId, params);
-      
+
       setData(response.data || []);
       setPagination({
         currentPage: response.page || 1,
@@ -156,7 +157,7 @@ export function useOutletQueue({
       };
 
       const response = await orderApi.getQueueByOutlet(outletId, params);
-      
+
       // Transform data and add queue position/number if not present
       const transformedData = (response.data || []).map((item, index) => ({
         ...item,
@@ -166,7 +167,7 @@ export function useOutletQueue({
         productName: item.items?.[0]?.product?.name || 'Service',
         status: item.orderStatus || 'PROCESSING',
       }));
-      
+
       setData(transformedData);
       setPagination({
         currentPage: response.page || 1,
@@ -224,10 +225,52 @@ export function useSelectedOutletId() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get outlet ID from localStorage or other state management
-    const stored = localStorage.getItem('selectedOutlet');
-    setOutletId(stored);
-    setLoading(false);
+    let cancelled = false;
+
+    async function init() {
+      try {
+        // Get outlet ID from localStorage or other state management
+        const stored = localStorage.getItem('selectedOutlet');
+
+        // If we have a stored outlet, validate it exists in user's outlets
+        if (stored) {
+          try {
+            const me = await authApi.me();
+            const validOutlet = me?.outlets?.find((outlet: any) => outlet.id === stored);
+            if (validOutlet && !cancelled) {
+              setOutletId(stored);
+            } else {
+              // Stored outlet is invalid, use first available outlet
+              const firstOutlet = me?.outlets?.[0]?.id;
+              if (firstOutlet) {
+                localStorage.setItem('selectedOutlet', firstOutlet);
+                if (!cancelled) setOutletId(firstOutlet);
+              }
+            }
+          } catch (error) {
+            console.error('Error validating stored outlet:', error);
+            // On error, just use stored value as fallback
+            if (!cancelled) setOutletId(stored);
+          }
+        } else {
+          // No stored outlet, fetch first available
+          try {
+            const me = await authApi.me();
+            const firstOutlet = me?.outlets?.[0]?.id;
+            if (firstOutlet) {
+              localStorage.setItem('selectedOutlet', firstOutlet);
+              if (!cancelled) setOutletId(firstOutlet);
+            }
+          } catch (error) {
+            console.error('Error fetching first outlet:', error);
+          }
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    init();
 
     // Listen for outlet changes
     const handleOutletChange = (event: CustomEvent) => {
@@ -238,6 +281,7 @@ export function useSelectedOutletId() {
 
     window.addEventListener('outletChanged', handleOutletChange as EventListener);
     return () => {
+      cancelled = true;
       window.removeEventListener('outletChanged', handleOutletChange as EventListener);
     };
   }, []);

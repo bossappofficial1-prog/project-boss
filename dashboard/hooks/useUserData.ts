@@ -27,6 +27,7 @@ interface Business {
 interface UserData {
     user: {
         id: string;
+        name: string;
         email: string;
         role: string;
         // Add other user fields as needed

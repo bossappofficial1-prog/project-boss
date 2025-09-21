@@ -1,11 +1,10 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
-import { loginService } from "../service/auth.service";
+import { loginService, getMeService, resendVerificationService, forgotPasswordService, resetPasswordService, changePasswordService } from "../service/auth.service";
 import { ResponseUtil } from "../utils/response";
 import { createUserService, verifyUserService } from "../service/user.service";
 import { HttpStatus } from "../constants/http-status";
 import { config } from "../config";
-import { getMeService } from "../service/auth.service";
 import { JwtUtil } from "../utils";
 import { redis } from "../config/redis";
 
@@ -60,4 +59,28 @@ export const registerController = asyncHandler(async (req: Request, res: Respons
     const { verificationCode, ...user } = await createUserService(payload);
 
     return ResponseUtil.success(res, user, HttpStatus.CREATED);
+});
+
+export const resendVerificationController = asyncHandler(async (req: Request, res: Response) => {
+    const { email } = req.body;
+    await resendVerificationService(email);
+    return ResponseUtil.success(res, { message: "Email verifikasi telah dikirim ulang" });
+});
+
+export const forgotPasswordController = asyncHandler(async (req: Request, res: Response) => {
+    const { email } = req.body;
+    await forgotPasswordService(email);
+    return ResponseUtil.success(res, { message: "Email reset password telah dikirim" });
+});
+
+export const resetPasswordController = asyncHandler(async (req: Request, res: Response) => {
+    const { token, password } = req.body;
+    await resetPasswordService(token, password);
+    return ResponseUtil.success(res, { message: "Password berhasil direset" });
+});
+
+export const changePasswordController = asyncHandler(async (req: Request, res: Response) => {
+    const { currentPassword, newPassword } = req.body;
+    await changePasswordService(req.user!.id, currentPassword, newPassword);
+    return ResponseUtil.success(res, { message: "Password berhasil diubah" });
 });

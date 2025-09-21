@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     Building2,
     Search,
@@ -44,7 +45,7 @@ interface Business {
 
 export default function AdminBusinesses() {
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
     const router = useRouter();
@@ -74,7 +75,7 @@ export default function AdminBusinesses() {
                 page: pageParam.toString(),
                 limit: '12', // Load 12 businesses per page
                 ...(debouncedSearch && { search: debouncedSearch }),
-                ...(statusFilter && { status: statusFilter }),
+                ...(statusFilter && statusFilter !== 'all' && { status: statusFilter }),
             });
 
             const response = await apiClient.get(`/admin/businesses?${params}`);
@@ -178,15 +179,16 @@ export default function AdminBusinesses() {
                             </div>
                         </div>
                         <div className="sm:w-48">
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
-                            >
-                                <option value="">All Status</option>
-                                <option value="ACTIVE">Active</option>
-                                <option value="INACTIVE">Inactive</option>
-                            </select>
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500">
+                                    <SelectValue placeholder="All Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="ACTIVE">Active</SelectItem>
+                                    <SelectItem value="INACTIVE">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </CardContent>
@@ -373,20 +375,20 @@ export default function AdminBusinesses() {
                             <Building2 className="w-10 h-10 text-gray-400 dark:text-gray-500" />
                         </div>
                         <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                            {search || statusFilter ? 'No businesses found' : 'No businesses yet'}
+                            {search || (statusFilter && statusFilter !== 'all') ? 'No businesses found' : 'No businesses yet'}
                         </h3>
                         <p className="text-gray-600 dark:text-gray-400 text-center max-w-md leading-relaxed">
-                            {search || statusFilter
+                            {search || (statusFilter && statusFilter !== 'all')
                                 ? 'Try adjusting your search criteria or filter settings to find what you\'re looking for.'
                                 : 'Businesses will appear here once they register on your platform. Check back later or contact support if you\'re expecting businesses to appear.'}
                         </p>
-                        {(search || statusFilter) && (
+                        {(search || (statusFilter && statusFilter !== 'all')) && (
                             <Button
                                 variant="outline"
                                 className="mt-6 hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:border-red-800 dark:hover:text-red-400 transition-colors"
                                 onClick={() => {
                                     setSearch('');
-                                    setStatusFilter('');
+                                    setStatusFilter('all');
                                 }}
                             >
                                 Clear Filters

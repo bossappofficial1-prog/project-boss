@@ -92,3 +92,9 @@ export async function deleteUserService(userId: string) {
 
     return { ...user, password: '[REDACTED]' }
 }
+
+export async function updateUserPasswordService(userId: string, newPassword: string) {
+    const hashedPassword = await BcryptUtil.hash(newPassword);
+    const user = await UserRepository.update(userId, { password: hashedPassword });
+    return { ...user, password: '[REDACTED]' };
+}

@@ -15,7 +15,7 @@ export function useSelectedOutletId() {
         if (typeof window === 'undefined') return;
         const url = new URL(window.location.href);
         const fromQuery = url.searchParams.get('outletId') || undefined;
-        const fromStorage = localStorage.getItem('selectedOutletId') || undefined;
+        const fromStorage = localStorage.getItem('selectedOutlet') || undefined;
         const candidate = fromQuery || fromStorage;
         if (candidate) {
           if (!cancelled) setOutletId(candidate);
@@ -25,7 +25,7 @@ export function useSelectedOutletId() {
         const me = await authApi.me();
         const firstOutlet = me?.outlets?.[0]?.id;
         if (firstOutlet) {
-          localStorage.setItem('selectedOutletId', firstOutlet);
+          localStorage.setItem('selectedOutlet', firstOutlet);
           if (!cancelled) setOutletId(firstOutlet);
         }
       } finally {

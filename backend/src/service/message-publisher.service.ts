@@ -16,11 +16,13 @@ type OrderNotificationEvent = BaseEvent<'ORDER_STATUS_UPDATE', { orderId: string
 type ServiceOrderEvent = BaseEvent<'SERVICE_ORDER_PROCESSING' | 'SERVICE_ORDER_RECHECK', { orderId: string; trigger?: string }>;
 type PaymentReminderEvent = BaseEvent<'PAYMENT_REMINDER', { orderId: string; expiresAt: Date }>;
 type VerificationEmailEvent = BaseEvent<'SEND_VERIFICATION_EMAIL', { to: string; code: string }>;
+type ResendVerificationEmailEvent = BaseEvent<'RESEND_VERIFICATION_EMAIL', { to: string; code: string }>;
+type ForgotPasswordEmailEvent = BaseEvent<'FORGOT_PASSWORD_EMAIL', { to: string; resetToken: string }>;
 type PaymentWebhookEvent = BaseEvent<'PAYMENT_WEBHOOK_RECEIVED', { source: 'midtrans' | 'xendit', payload: any }>;
 type WhatsAppNotificationEvent = BaseEvent<'WHATSAPP_PAYMENT_SUCCESS' | 'WHATSAPP_ORDER_CONFIRMATION' | 'WHATSAPP_PICKUP_REMINDER' | 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE', { orderId: string; orderStatus?: string }>;
 
 // Union type for all queue events, now including the email event
-export type QueueEvent = OrderNotificationEvent | ServiceOrderEvent | PaymentReminderEvent | VerificationEmailEvent | PaymentWebhookEvent | WhatsAppNotificationEvent;
+export type QueueEvent = OrderNotificationEvent | ServiceOrderEvent | PaymentReminderEvent | VerificationEmailEvent | ResendVerificationEmailEvent | ForgotPasswordEmailEvent | PaymentWebhookEvent | WhatsAppNotificationEvent;
 
 // Exchange names as constants
 export const EXCHANGE_NAMES = {
@@ -101,6 +103,20 @@ class MessagePublisherService {
         await this.publish(EXCHANGE_NAMES.EMAIL, '', {
             type: 'SEND_VERIFICATION_EMAIL',
             payload: { to, code }
+        });
+    }
+
+    async publishResendVerificationEmail(to: string, code: string) {
+        await this.publish(EXCHANGE_NAMES.EMAIL, '', {
+            type: 'RESEND_VERIFICATION_EMAIL',
+            payload: { to, code }
+        });
+    }
+
+    async publishForgotPasswordEmail(to: string, resetToken: string) {
+        await this.publish(EXCHANGE_NAMES.EMAIL, '', {
+            type: 'FORGOT_PASSWORD_EMAIL',
+            payload: { to, resetToken }
         });
     }
 

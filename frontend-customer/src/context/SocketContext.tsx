@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import axios from 'axios';
 import { io, Socket } from 'socket.io-client';
 
 // Socket Event Types
@@ -92,15 +93,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const testUrl = `${SOCKET_CONFIG.url}${SOCKET_CONFIG.options.path}?EIO=4&transport=polling&public=true`;
             console.log('Testing URL:', testUrl);
 
-            const response = await fetch(testUrl, {
-                method: 'GET',
-                signal: AbortSignal.timeout(5000)
+            const response = await axios.get(testUrl, {
+                timeout: 5000
             });
 
-            if (response.ok) {
+            if (response.status === 200) {
                 console.log('Server is reachable via polling');
-                const text = await response.text();
-                console.log('Server response:', text.substring(0, 100));
+                console.log('Server response:', response.data?.substring(0, 100));
             } else {
                 console.warn('Server not reachable via polling:', response.status, response.statusText);
             }

@@ -30,6 +30,10 @@ export const config = {
         url: process.env.REDIS_URL!,
     },
 
+    emailService: {
+        url: process.env.EMAIL_SERVICE_URL || "http://localhost:3000",
+    },
+
     rabbitmq: {
         url: process.env.RABBITMQ_URL!,
     },

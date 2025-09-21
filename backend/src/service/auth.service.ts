@@ -3,9 +3,10 @@ import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
 import { LoginInput } from "../schemas/auth.schema";
 import { BcryptUtil, JwtUtil } from "../utils";
-import { getUserByEmailService, getUserByIdService } from "./user.service";
+import { getUserByEmailService, getUserByIdService, updateUserPasswordService } from "./user.service";
 import { redis } from "../config/redis";
 import { randomUUID } from "crypto";
+import { messagePublisher } from "./message-publisher.service";
 
 export async function loginService(data: LoginInput) {
     const user = await getUserByEmailService(data.email);
@@ -13,6 +14,8 @@ export async function loginService(data: LoginInput) {
     if (!user) {
         throw new AppError(Messages.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
     }
+
+    if (!user.isVerified) throw new AppError(Messages.ACCOUNT_INACTIVE, HttpStatus.FORBIDDEN);
 
     const isPasswordValid = await BcryptUtil.compare(data.password, user.password);
 
@@ -48,4 +51,88 @@ export async function getMeService(userId: string) {
     const { outlets, ...businessWithoutOutlets } = business
 
     return { userWithoutBusiness, outlets, business: businessWithoutOutlets };
+}
+
+export async function resendVerificationService(email: string) {
+    const user = await getUserByEmailService(email);
+
+    if (!user) {
+        throw new AppError("Email tidak ditemukan", HttpStatus.NOT_FOUND);
+    }
+
+    if (user.isVerified) {
+        throw new AppError("Akun sudah diverifikasi", HttpStatus.BAD_REQUEST);
+    }
+
+    // Check resend rate limit (3 attempts per day)
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const rateLimitKey = `resend_attempts:${email}:${today}`;
+    const maxAttempts = 3;
+
+    const currentAttempts = await redis.get(rateLimitKey);
+    const attemptCount = currentAttempts ? parseInt(currentAttempts) : 0;
+
+    if (attemptCount >= maxAttempts) {
+        throw new AppError(`Anda telah mencapai batas maksimal ${maxAttempts} kali pengiriman ulang kode verifikasi dalam sehari. Silakan coba lagi besok.`, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    // Increment attempt count (expires at end of day)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const ttlSeconds = Math.floor((tomorrow.getTime() - Date.now()) / 1000);
+
+    await redis.set(rateLimitKey, (attemptCount + 1).toString(), 'EX', ttlSeconds);
+
+    // Generate new verification code
+    const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    await redis.set(`verification:${email}`, verificationCode, 'EX', 60 * 15); // 15 minutes
+
+    // Send email via message queue
+    await messagePublisher.publishResendVerificationEmail(email, verificationCode);
+}
+
+export async function forgotPasswordService(email: string) {
+    const user = await getUserByEmailService(email);
+
+    if (!user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.BAD_REQUEST);
+
+    if (!user.isVerified) throw new AppError(Messages.ACCOUNT_INACTIVE, HttpStatus.FORBIDDEN);
+
+    // Generate reset token
+    const resetToken = randomUUID();
+    await redis.set(`reset:${resetToken}`, user.id, 'EX', 60 * 15); // 15 minutes
+
+    // Send email via message queue
+    await messagePublisher.publishForgotPasswordEmail(email, resetToken);
+}
+
+export async function resetPasswordService(token: string, newPassword: string) {
+    const userId = await redis.get(`reset:${token}`);
+
+    if (!userId) {
+        throw new AppError("Token tidak valid atau sudah expired", HttpStatus.BAD_REQUEST);
+    }
+
+    // Immediately delete the token to prevent reuse
+    await redis.del(`reset:${token}`);
+
+    // Now update the password
+    await updateUserPasswordService(userId, newPassword);
+}
+
+export async function changePasswordService(userId: string, currentPassword: string, newPassword: string) {
+    const user = await getUserByIdService(userId);
+
+    if (!user) {
+        throw new AppError("User tidak ditemukan", HttpStatus.NOT_FOUND);
+    }
+
+    const isCurrentPasswordValid = await BcryptUtil.compare(currentPassword, user.password);
+
+    if (!isCurrentPasswordValid) {
+        throw new AppError("Password saat ini salah", HttpStatus.BAD_REQUEST);
+    }
+
+    await updateUserPasswordService(userId, newPassword);
 }

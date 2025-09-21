@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import AddOutletModal from '@/components/modals/AddOutletModal';
+import DeleteOutletModal from '@/components/modals/DeleteOutletModal';
 import BusinessProfileModal from '@/components/modals/BusinessProfileModal';
 import BankAccountModal from '@/components/modals/BankAccountModal';
 import { Button } from '@/components/ui/button';
@@ -26,13 +27,36 @@ export default function DashboardPage() {
     setSelectedDate,
   } = useDashboardData();
 
-  const [showAddOutletModal, setShowAddOutletModal] = useState(false);
+  const [showOutletModal, setShowOutletModal] = useState(false);
+  const [outletModalMode, setOutletModalMode] = useState<'add' | 'edit'>('add');
+  const [showDeleteOutletModal, setShowDeleteOutletModal] = useState(false);
+  const [selectedOutletForEdit, setSelectedOutletForEdit] = useState<any>(null);
+  const [selectedOutletForDelete, setSelectedOutletForDelete] = useState<any>(null);
   const [showBankModal, setShowBankModal] = useState(false);
   const [showBusinessModal, setShowBusinessModal] = useState(false);
   const [pendingCreateBusiness, setPendingCreateBusiness] = useState<{ name: string; description?: string; defaultTransactionFeeBearer: 'CUSTOMER' | 'OWNER' } | null>(null);
 
   const handleAddOutletSuccess = () => window.location.reload();
+  const handleEditOutletSuccess = () => window.location.reload();
+  const handleDeleteOutletSuccess = () => window.location.reload();
   const handleBankAccountSuccess = () => window.location.reload();
+
+  const handleEditOutlet = (outlet: any) => {
+    setSelectedOutletForEdit(outlet);
+    setOutletModalMode('edit');
+    setShowOutletModal(true);
+  };
+
+  const handleAddOutlet = () => {
+    setSelectedOutletForEdit(null);
+    setOutletModalMode('add');
+    setShowOutletModal(true);
+  };
+
+  const handleDeleteOutlet = (outlet: any) => {
+    setSelectedOutletForDelete(outlet);
+    setShowDeleteOutletModal(true);
+  };
 
   if (isLoading) return (<DashboardLayout><PageSkeleton /></DashboardLayout>);
 
@@ -75,7 +99,9 @@ export default function DashboardPage() {
           <OutletsSection
             outlets={outlets}
             selectedOutlet={selectedOutlet}
-            onAddOutlet={() => setShowAddOutletModal(true)}
+            onAddOutlet={handleAddOutlet}
+            onEditOutlet={handleEditOutlet}
+            onDeleteOutlet={handleDeleteOutlet}
           />
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-red-50 dark:border-gray-700 animate-fade-in">
@@ -84,7 +110,7 @@ export default function DashboardPage() {
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Informasi Outlet</h2>
                 <p className="text-gray-600 dark:text-gray-400">Belum ada outlet terdaftar. Tambahkan outlet untuk mulai berjualan.</p>
                 <div className="mt-4">
-                  <Button onClick={() => setShowAddOutletModal(true)}>Tambah Outlet</Button>
+                  <Button onClick={handleAddOutlet}>Tambah Outlet</Button>
                 </div>
               </div>
             </div>
@@ -137,12 +163,22 @@ export default function DashboardPage() {
         }}
       />
 
-      {/* Add Outlet modal should still be openable, but requires an existing businessId */}
+      {/* Outlet Modal (Add/Edit) */}
       <AddOutletModal
-        open={showAddOutletModal}
-        onOpenChange={setShowAddOutletModal}
+        open={showOutletModal}
+        onOpenChange={setShowOutletModal}
+        mode={outletModalMode}
         businessId={business?.id || ''}
-        onSuccess={handleAddOutletSuccess}
+        outlet={outletModalMode === 'edit' ? selectedOutletForEdit : undefined}
+        onSuccess={outletModalMode === 'edit' ? handleEditOutletSuccess : handleAddOutletSuccess}
+      />
+
+      {/* Delete Outlet Modal */}
+      <DeleteOutletModal
+        open={showDeleteOutletModal}
+        onOpenChange={setShowDeleteOutletModal}
+        outlet={selectedOutletForDelete}
+        onSuccess={handleDeleteOutletSuccess}
       />
     </DashboardLayout>
   );

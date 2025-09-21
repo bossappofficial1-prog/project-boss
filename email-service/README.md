@@ -47,13 +47,14 @@ Make a POST request to `/send-email` with JSON body:
   "to": "recipient@example.com",
   "subject": "Test Email",
   "text": "This is a test email",
-  "html": "<p>This is a <strong>test</strong> email</p>"
+  "html": "<p>This is a <strong>test</strong> email</p>",
+  "from": "Custom Name <custom@example.com>" // optional
 }
 ```
 
 Required fields: `to`, `subject`
 
-Optional fields: `text`, `html`
+Optional fields: `text`, `html`, `from`
 
 ### Health Check
 

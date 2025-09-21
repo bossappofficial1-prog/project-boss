@@ -5,14 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import ThemeToggle from '../ThemeToggle';
 import { useUserData } from '@/hooks/useUserData';
 import { apiClient } from '@/lib/apis/base';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import ConfirmationModal from '@/components/ui/confirmation-modal';
 
 interface AdminHeaderProps {
     onToggleSidebar: () => void;
@@ -310,37 +303,21 @@ export default function AdminHeader({ onToggleSidebar, sidebarCollapsed = false,
             )}
 
             {/* Logout Confirmation Modal */}
-            <Dialog open={showLogoutModal} onOpenChange={setShowLogoutModal}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
-                            <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                        </div>
-                        <DialogTitle className="text-center">
-                            Confirm Sign Out
-                        </DialogTitle>
-                        <DialogDescription className="text-center">
-                            Are you sure you want to sign out of your admin account? You'll be redirected to the login page.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="flex space-x-2 sm:space-x-2">
-                        <button
-                            onClick={() => setShowLogoutModal(false)}
-                            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors duration-200"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleLogoutConfirm}
-                            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors duration-200"
-                        >
-                            Sign Out
-                        </button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <ConfirmationModal
+                open={showLogoutModal}
+                onOpenChange={setShowLogoutModal}
+                title="Confirm Sign Out"
+                description="Are you sure you want to sign out of your admin account? You'll be redirected to the login page."
+                confirmText="Sign Out"
+                cancelText="Cancel"
+                confirmVariant="destructive"
+                onConfirm={handleLogoutConfirm}
+                icon={
+                    <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                }
+            />
         </header>
     );
 }

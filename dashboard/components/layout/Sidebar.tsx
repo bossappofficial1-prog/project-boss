@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUserData } from '@/hooks/useUserData';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Outlet {
   id: string;
@@ -237,21 +238,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </button>
               </div>
             ) : (
-              <select
-                value={selectedOutlet}
-                onChange={(e) => handleOutletChange(e.target.value)}
-                className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 placeholder-red-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-gray-500 focus:bg-white/20 dark:focus:bg-gray-600/50 text-sm font-medium font-poppins transition-all duration-200"
-              >
-                {outlets.length === 0 ? (
-                  <option value="" className="text-gray-800">Belum ada outlet</option>
-                ) : (
-                  outlets.map((outlet) => (
-                    <option key={outlet.id} value={outlet.id} className="text-gray-800">
-                      {outlet.name} - {outlet.address}
-                    </option>
-                  ))
-                )}
-              </select>
+              <Select value={selectedOutlet} onValueChange={handleOutletChange}>
+                <SelectTrigger className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 placeholder-red-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-gray-500 focus:bg-white/20 dark:focus:bg-gray-600/50 text-sm font-medium font-poppins transition-all duration-200">
+                  <SelectValue placeholder="Pilih outlet" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                  {outlets.length === 0 ? (
+                    <SelectItem value="" disabled>
+                      Belum ada outlet
+                    </SelectItem>
+                  ) : (
+                    outlets.map((outlet) => (
+                      <SelectItem key={outlet.id} value={outlet.id} className="text-gray-900 dark:text-gray-100">
+                        {outlet.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             )}
           </div>
 

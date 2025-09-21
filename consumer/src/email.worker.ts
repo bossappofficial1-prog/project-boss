@@ -2,6 +2,7 @@ import amqplib from 'amqplib';
 import { config } from './config';
 import logger from './utils/logger';
 import { EmailService } from './service/email.service';
+import { EmailTemplates } from './templates/email.templates';
 
 const QUEUE_NAME = 'email_queue';
 const DLQ_NAME = 'email_queue_dlq';
@@ -12,10 +13,11 @@ const RETRY_EXCHANGE_NAME = 'email_retry_exchange';
 const RETRY_DELAY_MS = 60 * 1000; // 1 menit
 
 interface EmailEvent {
-    type: 'SEND_VERIFICATION_EMAIL';
+    type: 'SEND_VERIFICATION_EMAIL' | 'RESEND_VERIFICATION_EMAIL' | 'FORGOT_PASSWORD_EMAIL';
     payload: {
         to: string;
-        code: string;
+        code?: string;
+        resetToken?: string;
     };
 }
 
@@ -78,11 +80,42 @@ class EmailWorker {
 
             switch (event.type) {
                 case 'SEND_VERIFICATION_EMAIL':
+                    if (!event.payload.code) {
+                        logger.error('Missing verification code in SEND_VERIFICATION_EMAIL event', { component: 'EmailWorker' });
+                        break;
+                    }
+                    const verificationTemplate = EmailTemplates.getVerificationEmail(event.payload.code);
                     await EmailService.sendEmail({
                         to: event.payload.to,
-                        subject: 'Verifikasi Akun Anda',
-                        text: `Kode verifikasi Anda adalah: ${event.payload.code}`,
-                        html: `<p>Kode verifikasi Anda adalah: <strong>${event.payload.code}</strong></p>`,
+                        subject: verificationTemplate.subject,
+                        text: verificationTemplate.text,
+                        html: verificationTemplate.html,
+                    });
+                    break;
+                case 'RESEND_VERIFICATION_EMAIL':
+                    if (!event.payload.code) {
+                        logger.error('Missing verification code in RESEND_VERIFICATION_EMAIL event', { component: 'EmailWorker' });
+                        break;
+                    }
+                    const resendTemplate = EmailTemplates.getResendVerificationEmail(event.payload.code);
+                    await EmailService.sendEmail({
+                        to: event.payload.to,
+                        subject: resendTemplate.subject,
+                        text: resendTemplate.text,
+                        html: resendTemplate.html,
+                    });
+                    break;
+                case 'FORGOT_PASSWORD_EMAIL':
+                    if (!event.payload.resetToken) {
+                        logger.error('Missing reset token in FORGOT_PASSWORD_EMAIL event', { component: 'EmailWorker' });
+                        break;
+                    }
+                    const forgotPasswordTemplate = EmailTemplates.getForgotPasswordEmail(event.payload.resetToken);
+                    await EmailService.sendEmail({
+                        to: event.payload.to,
+                        subject: forgotPasswordTemplate.subject,
+                        text: forgotPasswordTemplate.text,
+                        html: forgotPasswordTemplate.html,
                     });
                     break;
                 default:
