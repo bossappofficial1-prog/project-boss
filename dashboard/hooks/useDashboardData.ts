@@ -60,21 +60,21 @@ export function useDashboardData(initialDate?: string) {
         // Use the same logic as Sidebar for default outlet selection
         let currentOutlet = '';
 
-          if (userData.outlets && userData.outlets.length > 0) {
-            // Check if there's a previously selected outlet in localStorage
-            const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
-            const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
+        if (userData.outlets && userData.outlets.length > 0) {
+          // Check if there's a previously selected outlet in localStorage
+          const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
+          const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
 
-            if (validOutlet && savedOutletId) {
-              currentOutlet = savedOutletId;
-            } else {
-              // Default to first outlet
-              currentOutlet = userData.outlets[0].id;
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('selectedOutlet', currentOutlet);
-              }
+          if (validOutlet && savedOutletId) {
+            currentOutlet = savedOutletId;
+          } else {
+            // Default to first outlet
+            currentOutlet = userData.outlets[0].id;
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('selectedOutlet', currentOutlet);
             }
           }
+        }
 
         if (currentOutlet && currentOutlet !== selectedOutlet) {
           setSelectedOutlet(currentOutlet);
