@@ -102,38 +102,23 @@ export async function apiCallPaginated<T>(endpoint: string, options: RequestInit
   total: number;
   totalPages: number;
 }> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...createHeaders(),
-      ...options.headers,
-    },
+  const method = (options.method as any) || 'GET';
+  const data = options.body ? JSON.parse(options.body as string) : undefined;
+
+  const response = await apiClient.request({
+    url: endpoint,
+    method,
+    data,
   });
 
-  const text = await response.text();
-  let parsed: any = null;
-  try {
-    parsed = text ? JSON.parse(text) : null;
-  } catch {
-    // ignore JSON parse errors
-  }
-
-  if (!response.ok) {
-    const backendMessage = parsed?.message || parsed?.data?.message || parsed?.error || parsed?.errors || null;
-    const message = backendMessage ? (typeof backendMessage === 'string' ? backendMessage : JSON.stringify(backendMessage)) : `${response.status} ${response.statusText}`;
-    throw new Error(message);
-  }
-
-  const result: ApiResponse<T[]> & { 
-    pagination?: { 
-      page: number; 
-      limit: number; 
-      total: number; 
-      totalPages: number; 
-    } 
-  } = parsed;
+  const result: ApiResponse<T[]> & {
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    }
+  } = response.data;
 
   if (!result) {
     throw new Error('Invalid API response');
