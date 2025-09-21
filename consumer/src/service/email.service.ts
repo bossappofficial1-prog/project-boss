@@ -1,37 +1,29 @@
-import nodemailer from 'nodemailer';
+import axios from 'axios';
 import { config } from '../config';
 import logger from '../utils/logger';
-
-const transporter = nodemailer.createTransport({
-    host: config.SMTP_HOST,
-    port: config.SMTP_PORT,
-    secure: config.SMTP_PORT === 465, // true for 465, false for other ports
-    auth: {
-        user: config.SMTP_USER,
-        pass: config.SMTP_PASS,
-    },
-});
 
 interface EmailOptions {
     to: string;
     subject: string;
     text: string;
     html?: string;
+    from?: string;
 }
 
 export class EmailService {
     static async sendEmail(options: EmailOptions) {
-        console.log(config.SMTP_HOST);
-        try {
-            const info = await transporter.sendMail({
-                from: `"${config.SERVICE_NAME}" <${config.SMTP_FROM}>`,
-                ...options,
-            });
+        const payload = {
+            ...options,
+            from: options.from || `"${config.SERVICE_NAME}" <${config.SMTP_FROM}>`,
+        };
 
-            logger.info(`Email sent to ${options.to}: ${info.messageId}`, { component: 'EmailService' });
-            return info;
-        } catch (error) {
-            logger.error(`Error sending email to ${options.to}`, { component: 'EmailService', error });
+        try {
+            const response = await axios.post(`${config.EMAIL_SERVICE_URL}/send-email`, payload);
+
+            logger.info(`Email sent to ${options.to}: ${response.data.messageId}`, { component: 'EmailService' });
+            return response.data;
+        } catch (error: any) {
+            logger.error(`Error sending email to ${options.to}`, { component: 'EmailService', error: error.response?.data || error.message });
             throw new Error('Failed to send email.');
         }
     }

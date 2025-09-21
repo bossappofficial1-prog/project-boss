@@ -11,6 +11,7 @@ const requiredEnv = [
     'SMTP_HOST',
     'SMTP_USER',
     'SMTP_PASS',
+    'EMAIL_SERVICE_URL',
     'MIDTRANS_SERVER_KEY',
     'MIDTRANS_CLIENT_KEY',
 ];
@@ -34,6 +35,7 @@ export const config = {
     SMTP_PASS: process.env.SMTP_PASS!,
     SMTP_FROM: process.env.SMTP_FROM || 'noreply@example.com',
     SERVICE_NAME: process.env.SERVICE_NAME || 'BOSS App',
+    EMAIL_SERVICE_URL: process.env.EMAIL_SERVICE_URL!,
     MIDTRANS_SERVER_KEY: process.env.MIDTRANS_SERVER_KEY!,
     MIDTRANS_IS_PRODUCTION: process.env.MIDTRANS_IS_PRODUCTION === 'true',
     MIDTRANS_CLIENT_KEY: process.env.MIDTRANS_CLIENT_KEY!,
