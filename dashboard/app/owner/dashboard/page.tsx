@@ -14,6 +14,9 @@ import OutletsSection from '@/components/owner/dashboard/OutletsSection';
 import { Toolbar } from '@/components/owner/dashboard/Toolbar';
 import { PageSkeleton } from '@/components/owner/dashboard/Skeletons';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
 export default function DashboardPage() {
   const {
     stats,
@@ -25,6 +28,7 @@ export default function DashboardPage() {
     isLoading,
     globalError,
     setSelectedDate,
+    refetch,
   } = useDashboardData();
 
   const [showOutletModal, setShowOutletModal] = useState(false);
@@ -36,10 +40,10 @@ export default function DashboardPage() {
   const [showBusinessModal, setShowBusinessModal] = useState(false);
   const [pendingCreateBusiness, setPendingCreateBusiness] = useState<{ name: string; description?: string; defaultTransactionFeeBearer: 'CUSTOMER' | 'OWNER' } | null>(null);
 
-  const handleAddOutletSuccess = () => window.location.reload();
-  const handleEditOutletSuccess = () => window.location.reload();
-  const handleDeleteOutletSuccess = () => window.location.reload();
-  const handleBankAccountSuccess = () => window.location.reload();
+  const handleAddOutletSuccess = () => refetch();
+  const handleEditOutletSuccess = () => refetch();
+  const handleDeleteOutletSuccess = () => refetch();
+  const handleBankAccountSuccess = () => refetch();
 
   const handleEditOutlet = (outlet: any) => {
     setSelectedOutletForEdit(outlet);
@@ -139,7 +143,7 @@ export default function DashboardPage() {
         onSuccess={() => {
           // if updating, just reload; if creating, handled in onCreateRequested
           if (business?.id) {
-            window.location.reload()
+            refetch()
           }
         }}
         onCreateRequested={(data) => {

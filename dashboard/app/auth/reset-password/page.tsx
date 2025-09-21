@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,7 +8,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { PasswordInput } from '@/components/ui/password-input';
 import { apiClient } from '@/lib/apis/base';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
     const [formData, setFormData] = useState({
         password: '',
         confirmPassword: '',
@@ -273,5 +273,13 @@ export default function ResetPasswordPage() {
                 </form>
             </div>
         </div>
+    );
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ResetPasswordForm />
+        </Suspense>
     );
 }

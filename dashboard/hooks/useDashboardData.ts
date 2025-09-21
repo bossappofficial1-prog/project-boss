@@ -60,9 +60,64 @@ export function useDashboardData(initialDate?: string) {
         // Use the same logic as Sidebar for default outlet selection
         let currentOutlet = '';
 
+          if (userData.outlets && userData.outlets.length > 0) {
+            // Check if there's a previously selected outlet in localStorage
+            const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
+            const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
+
+            if (validOutlet && savedOutletId) {
+              currentOutlet = savedOutletId;
+            } else {
+              // Default to first outlet
+              currentOutlet = userData.outlets[0].id;
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('selectedOutlet', currentOutlet);
+              }
+            }
+          }
+
+        if (currentOutlet && currentOutlet !== selectedOutlet) {
+          setSelectedOutlet(currentOutlet);
+        }
+
+        if (currentOutlet) {
+          await Promise.all([
+            fetchDashboardSummary(currentOutlet),
+            fetchOrderStats(currentOutlet),
+          ]);
+        }
+      } catch (e: any) {
+        console.error('Error fetching dashboard data:', e);
+        setGlobalError(e?.message || 'Gagal memuat data dashboard');
+        if (e?.message?.includes('401') || e?.message?.includes('Unauthorized')) {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('token');
+            window.location.href = '/auth/login';
+          }
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
+
+  const refetch = () => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const userData = await authApi.me();
+        setBusiness(userData.business);
+        setOutlets(userData.outlets);
+
+        // Use the same logic as Sidebar for default outlet selection
+        let currentOutlet = '';
+
         if (userData.outlets && userData.outlets.length > 0) {
           // Check if there's a previously selected outlet in localStorage
-          const savedOutletId = localStorage.getItem('selectedOutlet');
+          const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
           const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
 
           if (validOutlet && savedOutletId) {
@@ -70,7 +125,9 @@ export function useDashboardData(initialDate?: string) {
           } else {
             // Default to first outlet
             currentOutlet = userData.outlets[0].id;
-            localStorage.setItem('selectedOutlet', currentOutlet);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('selectedOutlet', currentOutlet);
+            }
           }
         }
 
@@ -89,7 +146,10 @@ export function useDashboardData(initialDate?: string) {
         setGlobalError(e?.message || 'Gagal memuat data dashboard');
         if (e?.message?.includes('401') || e?.message?.includes('Unauthorized')) {
           localStorage.removeItem('token');
-          window.location.href = '/auth/login';
+          // Use Next.js router instead of window.location
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login';
+          }
         }
       } finally {
         setIsLoading(false);
@@ -97,8 +157,7 @@ export function useDashboardData(initialDate?: string) {
     };
 
     fetchDashboardData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate]);
+  };
 
   useEffect(() => {
     if (businessEvents.length > 0 && selectedOutlet) {
@@ -118,10 +177,12 @@ export function useDashboardData(initialDate?: string) {
       }
     };
 
-    window.addEventListener('outletChanged', handleOutletChange as EventListener);
-    return () => {
-      window.removeEventListener('outletChanged', handleOutletChange as EventListener);
-    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('outletChanged', handleOutletChange as EventListener);
+      return () => {
+        window.removeEventListener('outletChanged', handleOutletChange as EventListener);
+      };
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -139,5 +200,7 @@ export function useDashboardData(initialDate?: string) {
     // setters
     setSelectedDate,
     setSelectedOutlet,
+    // actions
+    refetch,
   } as const;
 }

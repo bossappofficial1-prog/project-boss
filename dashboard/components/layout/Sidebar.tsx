@@ -62,7 +62,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         setOutlets(userData.outlets);
 
         // Check if there's a previously selected outlet in localStorage
-        const savedOutletId = localStorage.getItem('selectedOutlet');
+        const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
         const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
 
         if (validOutlet && savedOutletId) {
@@ -70,7 +70,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         } else {
           // Default to first outlet
           setSelectedOutlet(userData.outlets[0].id);
-          localStorage.setItem('selectedOutlet', userData.outlets[0].id);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('selectedOutlet', userData.outlets[0].id);
+          }
         }
       }
     }
@@ -78,12 +80,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const handleOutletChange = (outletId: string) => {
     setSelectedOutlet(outletId);
-    localStorage.setItem('selectedOutlet', outletId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedOutlet', outletId);
+    }
 
     // Trigger a custom event to notify other components about outlet change
-    window.dispatchEvent(new CustomEvent('outletChanged', {
-      detail: { outletId, outlet: outlets.find(o => o.id === outletId) }
-    }));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('outletChanged', {
+        detail: { outletId, outlet: outlets.find(o => o.id === outletId) }
+      }));
+    }
   };
 
   const menuItems = [
@@ -272,7 +278,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
                     }`}
                   onClick={() => {
-                    localStorage.setItem('selectedOutlet', selectedOutlet);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('selectedOutlet', selectedOutlet);
+                    }
                     onClose();
                   }}
                   style={{ animationDelay: `${index * 0.1}s` }}

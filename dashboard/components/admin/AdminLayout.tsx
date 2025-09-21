@@ -19,13 +19,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     // Auto-close sidebar on route change (mobile)
     useEffect(() => {
         const handleRouteChange = () => {
-            if (window.innerWidth < 1024) {
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
                 setSidebarOpen(false);
             }
         };
 
-        window.addEventListener('popstate', handleRouteChange);
-        return () => window.removeEventListener('popstate', handleRouteChange);
+        if (typeof window !== 'undefined') {
+            window.addEventListener('popstate', handleRouteChange);
+            return () => window.removeEventListener('popstate', handleRouteChange);
+        }
     }, []);
 
     // Handle authentication and authorization
