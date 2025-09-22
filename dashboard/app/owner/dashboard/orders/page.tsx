@@ -12,7 +12,7 @@ import { QuickOrderModal } from '@/components/modals/QuickOrderModal';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
 export default function OrdersPage() {
-  const { outletId } = useSelectedOutletId();
+  const { outletId } = useSelectedOutletId(); 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'processing' | 'ready' | 'completed'>('all');
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
@@ -132,20 +132,17 @@ export default function OrdersPage() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden lg:block">
-            <OrdersDesktopTable 
-              orders={filteredOrders}
-              onRefresh={refetch}
-            />
-          </div>
+          <OrdersDesktopTable 
+            orders={filteredOrders}
+            onRefresh={refetch}
+          />
 
           {/* Mobile Cards */}
-          <div className="lg:hidden">
-            <OrdersMobileCards 
+          <OrdersMobileCards
+ 
               orders={filteredOrders}
               onRefresh={refetch}
             />
-          </div>
         </>
       )}
 

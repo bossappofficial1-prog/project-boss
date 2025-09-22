@@ -127,20 +127,16 @@ export default function QueuePage() {
         ) : (
           <>
             {/* Desktop Table */}
-            <div className="hidden lg:block">
-              <QueueDesktopTable 
-                queue={filteredQueue}
-                onRefresh={refreshQueue}
-              />
-            </div>
+            <QueueDesktopTable 
+              queue={filteredQueue}
+              onRefresh={refreshQueue}
+            />
 
             {/* Mobile Cards */}
-            <div className="lg:hidden">
-              <QueueMobileCards 
-                queue={filteredQueue}
-                onRefresh={refreshQueue}
-              />
-            </div>
+            <QueueMobileCards 
+              queue={filteredQueue}
+              onRefresh={refreshQueue}
+            />
           </>
         )}
       </Suspense>

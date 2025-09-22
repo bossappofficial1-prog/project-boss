@@ -57,7 +57,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
 					<div className="flex-1 min-w-0">
 						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Pesanan</p>
 						<p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.totalOrders}</p>
-						<p className="text-sm text-orange-600 dark:text-orange-400 font-medium mt-1">Hari Ini</p>
+						<p className="text-sm text-orange-600 dark:text-orange-400 font-medium mt-1">Keseluruhan</p>
 					</div>
 					<div className="w-12 h-12 sm:w-16 sm:h-16 bg-orange-gradient rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
 						<svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

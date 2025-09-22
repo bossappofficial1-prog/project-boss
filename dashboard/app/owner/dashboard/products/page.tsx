@@ -123,30 +123,33 @@ export default function ProductsPage() {
           hasOutlet={hasOutlet}
         />
 
-  {/* No inline callout; full-page guidance covers the not-ready case when both missing */}
-
         {/* Action buttons moved into ProductsControls */}
 
-        <MobileCards
-          products={products as any}
-          onEdit={(p) => { setSelectedProduct(p); setShowEditModal(true); }}
-          onDelete={(id) => handleDeleteProduct(id)}
-          onToggleStatus={(p) => handleToggleStatus(p as any)}
-          formatCurrency={formatCurrency}
-          formatDuration={formatDuration}
-        />
-        {products.length === 0 && !isLoading && (
+        {products.length === 0 && !isLoading ? (
           <ProductsEmptyState hasOutlet={hasOutlet} onAdd={() => setShowAddModal(true)} />
-        )}
+        ) : (
+          <>
+            {/* Desktop Table */}
+            <DesktopTable
+              products={products as any}
+              onEdit={(p) => { setSelectedProduct(p); setShowEditModal(true); }}
+              onDelete={(id) => handleDeleteProduct(id)}
+              onToggleStatus={(p) => handleToggleStatus(p as any)}
+              formatCurrency={formatCurrency}
+              formatDuration={formatDuration}
+            />
 
-        <DesktopTable
-          products={products as any}
-          onEdit={(p) => { setSelectedProduct(p); setShowEditModal(true); }}
-          onDelete={(id) => handleDeleteProduct(id)}
-          onToggleStatus={(p) => handleToggleStatus(p as any)}
-          formatCurrency={formatCurrency}
-          formatDuration={formatDuration}
-        />
+            {/* Mobile Cards */}
+            <MobileCards
+              products={products as any}
+              onEdit={(p) => { setSelectedProduct(p); setShowEditModal(true); }}
+              onDelete={(id) => handleDeleteProduct(id)}
+              onToggleStatus={(p) => handleToggleStatus(p as any)}
+              formatCurrency={formatCurrency}
+              formatDuration={formatDuration}
+            />
+          </>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (

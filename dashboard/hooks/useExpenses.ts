@@ -119,4 +119,3 @@ export function useExpenses(outletId?: string | null): UseExpensesResult {
 		remove,
 	};
 }
-

@@ -25,7 +25,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-poppins relative`}>
+    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-poppins relative overflow-x-hidden`}>
       <style jsx global>{`
         @keyframes fadeInOverlay { from { opacity:0 } to { opacity:1 } }
         .animate-fadeIn { animation: fadeInOverlay 0.25s ease-out; }
@@ -51,14 +51,14 @@ export default function DashboardLayout({ children }: LayoutProps) {
       )}
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col lg:ml-64 transition-all duration-300 ${sidebarOpen ? 'lg:scale-100' : 'scale-100'}`}>
+  <div className={`flex-1 flex flex-col lg:ml-64 transition-all duration-300 ${sidebarOpen ? 'lg:scale-100' : 'scale-100'}`}>
         {/* Header */}
         <div className={`${sidebarOpen ? 'backdrop-blur-sm bg-white/60 lg:bg-transparent lg:backdrop-blur-none' : 'bg-transparent'} sticky top-0 z-20 transition-all dashboard-header`}>
           <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         </div>
 
         {/* Content */}
-        <main className={`flex-1 overflow-auto relative z-10 transition-all duration-300 ${sidebarOpen ? 'blur-[2px] lg:blur-0' : ''}`}>
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden relative z-10 transition-all duration-300 ${sidebarOpen ? 'blur-[2px] lg:blur-0' : ''}`}>
           <div className="container mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl">
             {children}
           </div>
