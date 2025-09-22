@@ -8,8 +8,8 @@ export default function Home() {
 
   useEffect(() => {
     // Check if user is authenticated
-    const token = localStorage.getItem('token');
-    const userRaw = localStorage.getItem('user');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
 
     if (!token || !userRaw) {
       router.push('/auth/login');

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     MessageSquare,
     Search,
@@ -39,8 +40,8 @@ export default function AdminSupport() {
     const [page, setPage] = useState(1);
     const [limit] = useState(10);
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
-    const [priorityFilter, setPriorityFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [priorityFilter, setPriorityFilter] = useState('all');
     const queryClient = useQueryClient();
 
     // Fetch support tickets
@@ -53,8 +54,8 @@ export default function AdminSupport() {
             });
 
             if (search) params.append('search', search);
-            if (statusFilter) params.append('status', statusFilter);
-            if (priorityFilter) params.append('priority', priorityFilter);
+            if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+            if (priorityFilter && priorityFilter !== 'all') params.append('priority', priorityFilter);
 
             const response = await apiClient.get(`/admin/support/tickets?${params}`);
             return response.data
@@ -221,28 +222,30 @@ export default function AdminSupport() {
                                 />
                             </div>
                         </div>
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                            <option value="">All Status</option>
-                            <option value="PENDING">Pending</option>
-                            <option value="PROCESSING">Processing</option>
-                            <option value="COMPLETED">Completed</option>
-                            <option value="CANCELLED">Cancelled</option>
-                        </select>
-                        <select
-                            value={priorityFilter}
-                            onChange={(e) => setPriorityFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                            <option value="">All Priority</option>
-                            <option value="LOW">Low</option>
-                            <option value="MEDIUM">Medium</option>
-                            <option value="HIGH">High</option>
-                            <option value="URGENT">Urgent</option>
-                        </select>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <SelectValue placeholder="All Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Status</SelectItem>
+                                <SelectItem value="PENDING">Pending</SelectItem>
+                                <SelectItem value="PROCESSING">Processing</SelectItem>
+                                <SelectItem value="COMPLETED">Completed</SelectItem>
+                                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                            <SelectTrigger className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <SelectValue placeholder="All Priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Priority</SelectItem>
+                                <SelectItem value="LOW">Low</SelectItem>
+                                <SelectItem value="MEDIUM">Medium</SelectItem>
+                                <SelectItem value="HIGH">High</SelectItem>
+                                <SelectItem value="URGENT">Urgent</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </CardContent>
             </Card>

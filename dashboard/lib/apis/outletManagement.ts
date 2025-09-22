@@ -1,13 +1,17 @@
 import { apiCall } from './base';
 
 export const outletManagementApi = {
-  create: (outletData: { name: string; address: string; phone: string; businessId: string; latitude?: number; longitude?: number; image?: string; email?: string; description?: string; openingHours?: string; status?: 'ACTIVE' | 'INACTIVE'; }) =>
+  create: (outletData: { name: string; address: string; phone: string; businessId: string; latitude?: number; longitude?: number; image?: string; description?: string; openingHours?: string; isOpen?: boolean; }) =>
     apiCall<{ id: string; name: string; address: string; phone: string; imageUrl?: string; latitude?: number; longitude?: number; }>(
       '/outlets', { method: 'POST', body: JSON.stringify(outletData) }
     ),
-  
-  update: (outletId: string, outletData: Partial<{ name: string; address: string; phone: string; latitude: number; longitude: number; image: string; }>) =>
+
+  getById: (outletId: string) => apiCall<any>(`/outlets/${outletId}`),
+
+  update: (outletId: string, outletData: Partial<{ name: string; address: string; phone: string; latitude: number; longitude: number; image: string; description: string; isOpen: boolean; }>) =>
     apiCall<any>(`/outlets/${outletId}`, { method: 'PATCH', body: JSON.stringify(outletData) }),
-  
+
   delete: (outletId: string) => apiCall<any>(`/outlets/${outletId}`, { method: 'DELETE' }),
+
+  getOperatingHours: (outletId: string) => apiCall<any>(`/operating-hours/outlet/${outletId}`),
 };

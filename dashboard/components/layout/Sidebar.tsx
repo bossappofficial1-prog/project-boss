@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUserData } from '@/hooks/useUserData';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Outlet {
   id: string;
@@ -61,7 +62,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         setOutlets(userData.outlets);
 
         // Check if there's a previously selected outlet in localStorage
-        const savedOutletId = localStorage.getItem('selectedOutlet');
+        const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
         const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
 
         if (validOutlet && savedOutletId) {
@@ -69,7 +70,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         } else {
           // Default to first outlet
           setSelectedOutlet(userData.outlets[0].id);
-          localStorage.setItem('selectedOutlet', userData.outlets[0].id);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('selectedOutlet', userData.outlets[0].id);
+          }
         }
       }
     }
@@ -77,12 +80,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const handleOutletChange = (outletId: string) => {
     setSelectedOutlet(outletId);
-    localStorage.setItem('selectedOutlet', outletId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedOutlet', outletId);
+    }
 
     // Trigger a custom event to notify other components about outlet change
-    window.dispatchEvent(new CustomEvent('outletChanged', {
-      detail: { outletId, outlet: outlets.find(o => o.id === outletId) }
-    }));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('outletChanged', {
+        detail: { outletId, outlet: outlets.find(o => o.id === outletId) }
+      }));
+    }
   };
 
   const menuItems = [
@@ -237,21 +244,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </button>
               </div>
             ) : (
-              <select
-                value={selectedOutlet}
-                onChange={(e) => handleOutletChange(e.target.value)}
-                className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 placeholder-red-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-gray-500 focus:bg-white/20 dark:focus:bg-gray-600/50 text-sm font-medium font-poppins transition-all duration-200"
-              >
-                {outlets.length === 0 ? (
-                  <option value="" className="text-gray-800">Belum ada outlet</option>
-                ) : (
-                  outlets.map((outlet) => (
-                    <option key={outlet.id} value={outlet.id} className="text-gray-800">
-                      {outlet.name} - {outlet.address}
-                    </option>
-                  ))
-                )}
-              </select>
+              <Select value={selectedOutlet || "outlet"} onValueChange={handleOutletChange}>
+                <SelectTrigger className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 placeholder-red-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-gray-500 focus:bg-white/20 dark:focus:bg-gray-600/50 text-sm font-medium font-poppins transition-all duration-200">
+                  <SelectValue placeholder="Pilih outlet" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                  {outlets.length === 0 ? (
+                    <SelectItem value="outlet_not_found" disabled>
+                      Belum ada outlet
+                    </SelectItem>
+                  ) : (
+                    outlets.map((outlet) => (
+                      <SelectItem key={outlet.id} value={outlet.id} className="text-gray-900 dark:text-gray-100">
+                        {outlet.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             )}
           </div>
 
@@ -268,7 +278,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
                     }`}
                   onClick={() => {
-                    localStorage.setItem('selectedOutlet', selectedOutlet);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('selectedOutlet', selectedOutlet);
+                    }
                     onClose();
                   }}
                   style={{ animationDelay: `${index * 0.1}s` }}

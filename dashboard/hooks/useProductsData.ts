@@ -79,8 +79,10 @@ export function useProductsData() {
       setCurrentPage(1);
     };
 
-    window.addEventListener('outletChanged', handleOutletChange as EventListener);
-    return () => window.removeEventListener('outletChanged', handleOutletChange as EventListener);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('outletChanged', handleOutletChange as EventListener);
+      return () => window.removeEventListener('outletChanged', handleOutletChange as EventListener);
+    }
   }, []);
 
   const fetchProducts = useCallback(async () => {

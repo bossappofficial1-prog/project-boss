@@ -1,9 +1,9 @@
-import { apiCall, apiCallPaginated } from './base';
+import { apiCall, apiCallPaginated, apiClient } from './base';
 
 // Types based on backend schema
-export type OrderStatus = 
+export type OrderStatus =
   | 'AWAITING_PAYMENT'
-  | 'PROCESSING' 
+  | 'PROCESSING'
   | 'READY'
   | 'COMPLETED'
   | 'CANCELLED'
@@ -100,17 +100,17 @@ export interface PaginatedResponse<T> {
 export const orderApi = {
   // Get goods orders by outlet
   async getGoodsByOutlet(
-    outletId: string, 
+    outletId: string,
     params?: OrderListParams
   ): Promise<PaginatedResponse<GoodsOrder>> {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.append('status', params.status);
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
-    
+
     const queryString = searchParams.toString();
     const url = `/orders/${outletId}/goods${queryString ? `?${queryString}` : ''}`;
-    
+
     return apiCallPaginated<GoodsOrder>(url);
   },
 
@@ -122,10 +122,10 @@ export const orderApi = {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
-    
+
     const queryString = searchParams.toString();
     const url = `/orders/${outletId}/queue${queryString ? `?${queryString}` : ''}`;
-    
+
     return apiCallPaginated<QueueEntry>(url);
   },
 
@@ -169,20 +169,10 @@ export const orderApi = {
 
   // Get order receipt
   async getReceipt(orderId: string): Promise<Blob> {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
-    
-    const response = await fetch(`${baseUrl}/orders/${orderId}/receipt`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+    const response = await apiClient.get(`/orders/${orderId}/receipt`, {
+      responseType: 'blob',
     });
-    
-    if (!response.ok) {
-      throw new Error('Failed to download receipt');
-    }
-    
-    return response.blob();
+    return response.data;
   },
 
   // Refund order

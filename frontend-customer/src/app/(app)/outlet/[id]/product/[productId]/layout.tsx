@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import axios from 'axios';
 import { ProductType } from "@/types";
 import { Outlet } from "@/services/outlets";
 
@@ -8,15 +9,8 @@ type Props = {
 
 async function getProduct(outletId: string, productId: string): Promise<ProductType | null> {
     try {
-        const res = await fetch(`${process.env.SERVER_API_URL}/products/${productId}`);
-        const data = await res.json().then((data) => {
-            return data.data
-        }).catch((error) => {
-            console.log(error);
-            return null
-        })
-
-        return data
+        const res = await axios.get(`${process.env.SERVER_API_URL}/products/${productId}`);
+        return res.data?.data || null;
     } catch (error) {
         console.error(`Error fetching product ${productId}:`, error);
         return null;

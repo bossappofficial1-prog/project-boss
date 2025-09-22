@@ -16,6 +16,7 @@ import {
     Shield,
     Globe
 } from 'lucide-react';
+import { apiClient } from '@/lib/apis/base';
 
 interface PlatformSettings {
     platform: {
@@ -40,7 +41,6 @@ interface PlatformSettings {
 }
 
 export default function AdminSettings() {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
     const queryClient = useQueryClient();
 
     const [settings, setSettings] = useState<PlatformSettings>({
@@ -69,29 +69,16 @@ export default function AdminSettings() {
     const { data: settingsData, isLoading } = useQuery({
         queryKey: ['platform-settings'],
         queryFn: async () => {
-            const response = await fetch(`${API_BASE_URL}/admin/settings`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            if (!response.ok) throw new Error('Failed to fetch platform settings');
-            return response.json();
+            const response = await apiClient.get('/admin/settings');
+            return response.data;
         },
     });
 
     // Update settings mutation
     const updateSettingsMutation = useMutation({
         mutationFn: async (newSettings: PlatformSettings) => {
-            const response = await fetch(`${API_BASE_URL}/admin/settings`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify({ settings: newSettings }),
-            });
-            if (!response.ok) throw new Error('Failed to update platform settings');
-            return response.json();
+            const response = await apiClient.put('/admin/settings', { settings: newSettings });
+            return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['platform-settings'] });

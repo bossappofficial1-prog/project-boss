@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const createOutletSchema = z.object({
     name: z.string().nonempty({ message: "Nama outlet tidak boleh kosong" }),
+    description: z.string().optional(),
     address: z.string(),
     phone: z.string(),
     image: z.string().url().optional(),
@@ -14,6 +15,7 @@ export type CreateOutletInput = z.infer<typeof createOutletSchema>;
 
 export const updateOutletSchema = z.object({
     name: z.string().optional(),
+    description: z.string().optional(),
     address: z.string().optional(),
     phone: z.string().optional(),
     image: z.string().url().optional(),

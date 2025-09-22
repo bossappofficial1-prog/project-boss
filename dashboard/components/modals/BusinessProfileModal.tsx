@@ -4,9 +4,10 @@ import React, { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea } from '@/components/ui/input'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { businessApi } from '@/lib/api'
+import { Textarea } from '../ui/textarea'
 
 type Props = {
   open: boolean

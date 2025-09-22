@@ -2,23 +2,10 @@
 
 import { apiClient } from '@/lib/apis/base';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import ThemeToggle from '../ThemeToggle';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+import ConfirmationModal from '@/components/ui/confirmation-modal';
+import { useUserData } from '@/hooks/useUserData';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -26,20 +13,12 @@ interface HeaderProps {
 
 export default function Header({ onToggleSidebar }: HeaderProps) {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { data: userData, isLoading: isUserLoading } = useUserData();
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-      }
-    }
-  }, []);
+  // Extract user from userData
+  const user = userData?.user || null;
 
   const handleLogoutClick = () => {
     setIsDropdownOpen(false);
@@ -88,16 +67,20 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 className="flex items-center space-x-2 sm:space-x-3 p-1.5 sm:p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 group"
               >
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200">
-                  <span className="text-white text-xs sm:text-sm font-bold font-poppins">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
+                  {isUserLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <span className="text-white text-xs sm:text-sm font-bold font-poppins">
+                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                  )}
                 </div>
                 <div className="hidden sm:block text-left">
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 font-poppins">
-                    {user?.name || 'User'}
+                    {isUserLoading ? 'Loading...' : (user?.name || 'User')}
                   </p>
                   <p className="text-xs text-red-600 dark:text-red-400 font-medium font-poppins">
-                    {user?.role || 'Owner'}
+                    {isUserLoading ? '...' : (user?.role || 'Owner')}
                   </p>
                 </div>
                 <svg
@@ -116,10 +99,10 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-2 z-50 animate-in slide-in-from-top-5 duration-200">
                   <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-100 dark:border-gray-700">
                     <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 font-poppins truncate">
-                      {user?.name || 'User'}
+                      {isUserLoading ? 'Loading...' : (user?.name || 'User')}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 font-poppins truncate">
-                      {user?.email || 'email@example.com'}
+                      {isUserLoading ? '...' : (user?.email || 'email@example.com')}
                     </p>
                   </div>
 
@@ -177,37 +160,21 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
       )}
 
       {/* Logout Confirmation Modal */}
-      <Dialog open={showLogoutModal} onOpenChange={setShowLogoutModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
-              <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </div>
-            <DialogTitle className="text-center font-poppins">
-              Konfirmasi Keluar
-            </DialogTitle>
-            <DialogDescription className="text-center font-poppins">
-              Apakah Anda yakin ingin keluar dari akun Anda? Anda akan diarahkan ke halaman login.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex space-x-2 sm:space-x-2">
-            <button
-              onClick={() => setShowLogoutModal(false)}
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors duration-200 font-poppins"
-            >
-              Batal
-            </button>
-            <button
-              onClick={handleLogoutConfirm}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors duration-200 font-poppins"
-            >
-              Keluar
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmationModal
+        open={showLogoutModal}
+        onOpenChange={setShowLogoutModal}
+        title="Konfirmasi Keluar"
+        description="Apakah Anda yakin ingin keluar dari akun Anda? Anda akan diarahkan ke halaman login."
+        confirmText="Keluar"
+        cancelText="Batal"
+        confirmVariant="destructive"
+        onConfirm={handleLogoutConfirm}
+        icon={
+          <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        }
+      />
     </header>
   );
 }

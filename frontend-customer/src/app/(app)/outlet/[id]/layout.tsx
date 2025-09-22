@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import axios from 'axios';
 import { OutletDetails } from "@/types/outlet";
 
 type Props = {
@@ -7,15 +8,8 @@ type Props = {
 
 async function getOutlet(id: string): Promise<OutletDetails | null> {
     try {
-        const res = await fetch(`${process.env.SERVER_API_URL}/outlets/${id}`);
-        const data = await res.json().then((data) => {
-            return data.data
-        }).catch((error) => {
-            console.log(error);
-            return null
-        })
-
-        return data
+        const res = await axios.get(`${process.env.SERVER_API_URL}/outlets/${id}`);
+        return res.data?.data || null;
     } catch (error) {
         console.error(`Error fetching outlet ${id}:`, error);
         return null;

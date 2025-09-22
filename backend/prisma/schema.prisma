@@ -236,19 +236,20 @@ model Business {
 
 // Model untuk cabang/outlet dari sebuah bisnis
 model Outlet {
-  id         String   @id @default(uuid())
-  name       String
-  address    String?
-  phone      String?
-  createdAt  DateTime @default(now())
-  image      String?  @default("https://press-parts-outlet.com/cdn/shop/files/non-photoproductimage_9c33376d-caaf-4116-b20a-3162aedf74f4_512x512.png?v=1687762014")
-  updatedAt  DateTime @updatedAt
-  latitude   Float?
-  longitude  Float?
-  isOpen     Boolean  @default(false)
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  address     String?
+  phone       String?
+  createdAt   DateTime @default(now())
+  image       String?  @default("https://press-parts-outlet.com/cdn/shop/files/non-photoproductimage_9c33376d-caaf-4116-b20a-3162aedf74f4_512x512.png?v=1687762014")
+  updatedAt   DateTime @updatedAt
+  latitude    Float?
+  longitude   Float?
+  isOpen      Boolean  @default(false)
   // Relasi: Setiap outlet milik satu bisnis
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   // Relasi: Satu outlet bisa memiliki banyak produk
   products Product[]
@@ -266,6 +267,7 @@ model Outlet {
   @@index([businessId])
   @@index([latitude, longitude]) // Indeks untuk query lokasi (bounding box)
   @@index([name]) // Indeks untuk pencarian nama outlet
+  @@index([description]) // Indeks untuk pencarian deskripsi outlet
 }
 
 // Model untuk produk (barang) atau jasa yang ditawarkan

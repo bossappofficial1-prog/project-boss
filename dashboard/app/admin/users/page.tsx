@@ -39,8 +39,8 @@ export default function AdminUsers() {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
     const [search, setSearch] = useState('');
-    const [roleFilter, setRoleFilter] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
     const queryClient = useQueryClient();
 
     // Fetch users
@@ -53,8 +53,8 @@ export default function AdminUsers() {
             });
 
             if (search) params.append('search', search);
-            if (roleFilter) params.append('role', roleFilter);
-            if (statusFilter) params.append('status', statusFilter);
+            if (roleFilter && roleFilter !== 'all') params.append('role', roleFilter);
+            if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
 
             const response = await apiClient(`/admin/users?${params}`);
             if (response.status !== 200) throw new Error('Failed to fetch users');

@@ -1,4 +1,4 @@
-import { apiCall, API_BASE_URL, getAuthToken } from './base';
+import { apiCall, apiClient } from './base';
 
 export interface Expense {
 	id: string;
@@ -51,22 +51,9 @@ export const expenseApi = {
 	},
 
 	async remove(id: string): Promise<null> {
-			// Use manual fetch to gracefully handle 204 No Content responses
-			const token = getAuthToken();
-			const res = await fetch(`${API_BASE_URL}/expenses/${id}`, {
-				method: 'DELETE',
-				headers: {
-					...(token ? { Authorization: `Bearer ${token}` } : {}),
-					'ngrok-skip-browser-warning': 'true',
-				},
-			});
-			if (!res.ok) {
-				const text = await res.text();
-				let msg: string | null = null;
-				try { const j = text ? JSON.parse(text) : null; msg = j?.message || j?.error || null; } catch {}
-				throw new Error(msg || `${res.status} ${res.statusText}`);
-			}
-			return null;
+		// Use apiClient to handle 204 No Content responses gracefully
+		await apiClient.delete(`/expenses/${id}`);
+		return null;
 	},
 };
 

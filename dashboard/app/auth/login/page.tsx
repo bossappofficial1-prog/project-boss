@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
+import { PasswordInput } from '@/components/ui/password-input';
+import { Input } from '@/components/ui/input';
 import { apiClient } from '@/lib/apis/base';
 
 export default function LoginPage() {
@@ -102,7 +104,7 @@ export default function LoginPage() {
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
                 Email Address
               </label>
-              <input
+              <Input
                 id="email"
                 name="email"
                 type="email"
@@ -110,7 +112,6 @@ export default function LoginPage() {
                 required
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Enter your email"
               />
             </div>
@@ -119,17 +120,20 @@ export default function LoginPage() {
               <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
                 Password
               </label>
-              <input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 autoComplete="current-password"
                 required
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 font-poppins bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Enter your password"
               />
+              <div className="mt-2 text-right">
+                <Link href="/auth/forgot-password" className="text-sm text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 transition-colors duration-200 font-poppins">
+                  Forgot Password?
+                </Link>
+              </div>
             </div>
 
             <div>

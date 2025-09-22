@@ -24,14 +24,16 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed = false, onT
     // Auto-collapse on mobile
     useEffect(() => {
         const checkScreenSize = () => {
-            if (isCollapsed === undefined) {
+            if (isCollapsed === undefined && typeof window !== 'undefined') {
                 setInternalCollapsed(window.innerWidth < 1024);
             }
         };
 
-        checkScreenSize();
-        window.addEventListener('resize', checkScreenSize);
-        return () => window.removeEventListener('resize', checkScreenSize);
+        if (typeof window !== 'undefined') {
+            checkScreenSize();
+            window.addEventListener('resize', checkScreenSize);
+            return () => window.removeEventListener('resize', checkScreenSize);
+        }
     }, [isCollapsed]);
 
     const menuItems = [
