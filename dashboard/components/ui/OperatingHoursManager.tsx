@@ -132,92 +132,91 @@ export default function OperatingHoursManager({ outletId, operatingHoursData, on
     toast.success(`Jam operasional disalin ke ${targetDays.length} hari.`)
   }
 
-  const handleSaveAll = () => {
-    if (isPreSubmitMode) {
-      // Dalam mode pre-submit, penyimpanan dilakukan di parent component
-      toast.info('Jam operasional akan disimpan bersama data outlet.')
-      return
-    }
+  if (isLoading) return (
+    <div className="p-6 sm:p-8 text-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="p-3 rounded-full bg-blue-50 dark:bg-blue-900/20">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
+        </div>
+        <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400 font-medium">Memuat jam operasional...</span>
+      </div>
+    </div>
+  )
 
-    const changedData = Object.values(currentHours).filter(
-      (current, index) => !isEqual(current, initialHours[current.dayOfWeek])
-    )
-
-    if (changedData.length === 0) return
-
-    const payload = changedData.map(data => ({
-      ...data,
-      openTime: new Date(`1970-01-01T${data.openTime}:00Z`),
-      closeTime: new Date(`1970-01-01T${data.closeTime}:00Z`),
-    }))
-
-    upsertHours(payload as any, {
-      onSuccess: (updatedData) => {
-        const updatedArray = Array.isArray(updatedData) ? updatedData : [updatedData]
-        const newInitialState = { ...initialHours }
-        updatedArray.forEach((item: any) => {
-          const day = item.dayOfWeek
-          newInitialState[day] = {
-            ...item,
-            openTime: new Date(item.openTime).toTimeString().slice(0, 5),
-            closeTime: new Date(item.closeTime).toTimeString().slice(0, 5),
-          }
-        })
-        setInitialHours(newInitialState)
-        setCurrentHours(newInitialState)
-        toast.success('Jam operasional berhasil diperbarui!')
-      },
-      onError: (e: any) => toast.error(e.message || 'Gagal menyimpan perubahan.'),
-    })
-  }
-
-  if (isLoading) return <div className="p-8 text-center"> <Loader2 className="inline-block h-6 w-6 animate-spin" /> Memuat...</div>
-  if (error) return <div className="p-8 text-center text-red-500">{error.message}</div>
+  if (error) return (
+    <div className="p-6 sm:p-8 text-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="p-3 rounded-full bg-red-50 dark:bg-red-900/20">
+          <Clock className="h-6 w-6 text-red-600 dark:text-red-400" />
+        </div>
+        <span className="text-sm sm:text-base text-red-600 dark:text-red-400 font-medium">
+          {error.message}
+        </span>
+      </div>
+    </div>
+  )
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-          Atur Jam Operasional
-        </CardTitle>
-      </CardHeader>
+    <Card className="w-full">
       <CardContent className="space-y-3">
         {DAYS_OF_WEEK.map(day => {
           const dayData = currentHours[day.value]
           const hasChanged = !isEqual(dayData, initialHours[day.value])
 
-          if (!dayData) return null // Tampilkan saat data sudah siap
+          if (!dayData) return null
 
           return (
-            <div key={day.value} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-              <div className="flex items-center gap-4">
-                {/* 4. Indikator Perubahan */}
-                <div className={`h-2 w-2 rounded-full transition-opacity ${hasChanged ? 'bg-blue-500 opacity-100' : 'opacity-0'}`} title="Ada perubahan" />
-                <Label className="w-16 font-semibold">{day.label}</Label>
-                <Switch
-                  checked={dayData.isOpen}
-                  onCheckedChange={(checked) => handleFieldChange(day.value, 'isOpen', checked)}
-                />
-                <span className={`text-sm font-medium ${dayData.isOpen ? 'text-green-600' : 'text-gray-500'}`}>
-                  {dayData.isOpen ? 'Buka' : 'Tutup'}
-                </span>
-              </div>
+            <div key={day.value} className="group relative">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-50/80 dark:from-gray-800/50 dark:to-gray-800/30 gap-3 sm:gap-4 border border-gray-100 dark:border-gray-700/50 hover:border-gray-200 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-sm">
 
-              <div className={`flex items-center gap-2 transition-opacity ${dayData.isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                <Input
-                  type="time"
-                  className="w-32"
-                  value={dayData.openTime}
-                  onChange={(e) => handleFieldChange(day.value, 'openTime', e.target.value)}
-                />
-                <span>-</span>
-                <Input
-                  type="time"
-                  className="w-32"
-                  value={dayData.closeTime}
-                  onChange={(e) => handleFieldChange(day.value, 'closeTime', e.target.value)}
-                />
-                <CopyDayPopover sourceDay={day.value} onCopyToDays={handleCopyToDays} />
+                {/* Change Indicator */}
+                {hasChanged && (
+                  <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full shadow-sm" title="Ada perubahan" />
+                )}
+
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <Label className="w-16 sm:w-20 font-semibold text-sm sm:text-base flex-shrink-0 text-gray-700 dark:text-gray-300">
+                    {day.label}
+                  </Label>
+
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={dayData.isOpen}
+                      onCheckedChange={(checked) => handleFieldChange(day.value, 'isOpen', checked)}
+                      className="data-[state=checked]:bg-green-500"
+                    />
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${dayData.isOpen
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                      }`}>
+                      <div className={`w-2 h-2 rounded-full ${dayData.isOpen ? 'bg-green-500' : 'bg-gray-400'
+                        }`} />
+                      {dayData.isOpen ? 'Buka' : 'Tutup'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`flex items-center gap-3 transition-all duration-300 ${dayData.isOpen
+                  ? 'opacity-100 translate-x-0'
+                  : 'opacity-30 pointer-events-none translate-x-2'
+                  }`}>
+                  <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-2 border border-gray-200 dark:border-gray-600 shadow-sm">
+                    <Input
+                      type="time"
+                      className="w-24 sm:w-28 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none"
+                      value={dayData.openTime}
+                      onChange={(e) => handleFieldChange(day.value, 'openTime', e.target.value)}
+                    />
+                    <span className="text-gray-400 font-medium">—</span>
+                    <Input
+                      type="time"
+                      className="w-24 sm:w-28 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none"
+                      value={dayData.closeTime}
+                      onChange={(e) => handleFieldChange(day.value, 'closeTime', e.target.value)}
+                    />
+                  </div>
+                  <CopyDayPopover sourceDay={day.value} onCopyToDays={handleCopyToDays} />
+                </div>
               </div>
             </div>
           )
@@ -239,16 +238,27 @@ function CopyDayPopover({ sourceDay, onCopyToDays }: { sourceDay: number, onCopy
   return (
     <Popover onOpenChange={() => setSelectedDays([])}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" title="Salin ke hari lain">
-          <Copy className="h-4 w-4" />
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Salin ke hari lain"
+          className="h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+        >
+          <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-56">
-        <div className="space-y-3">
-          <p className="text-sm font-semibold">Salin ke...</p>
-          <div className="space-y-2">
+      <PopoverContent className="w-52 sm:w-60 p-4 border-0 shadow-xl bg-white dark:bg-gray-800">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20">
+              <Copy className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+            </div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Salin ke hari lain</p>
+          </div>
+
+          <div className="space-y-2 max-h-40 overflow-y-auto">
             {DAYS_OF_WEEK.filter(d => d.value !== sourceDay).map(day => (
-              <div key={day.value} className="flex items-center gap-2">
+              <div key={day.value} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <Checkbox
                   id={`day-${day.value}`}
                   onCheckedChange={(checked) => {
@@ -256,13 +266,26 @@ function CopyDayPopover({ sourceDay, onCopyToDays }: { sourceDay: number, onCopy
                       checked ? [...prev, day.value] : prev.filter(d => d !== day.value)
                     )
                   }}
+                  className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                 />
-                <Label htmlFor={`day-${day.value}`} className="text-sm font-normal">{day.label}</Label>
+                <Label
+                  htmlFor={`day-${day.value}`}
+                  className="text-sm font-medium cursor-pointer text-gray-700 dark:text-gray-300 flex-1"
+                >
+                  {day.label}
+                </Label>
               </div>
             ))}
           </div>
-          <Button onClick={handleCopy} size="sm" className="w-full" disabled={selectedDays.length === 0}>
-            Terapkan
+
+          <Button
+            onClick={handleCopy}
+            size="sm"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+            disabled={selectedDays.length === 0}
+          >
+            <Copy className="h-3 w-3 mr-2" />
+            Terapkan ke {selectedDays.length} hari
           </Button>
         </div>
       </PopoverContent>

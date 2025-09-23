@@ -19,6 +19,7 @@ import { Toaster, toast } from 'sonner'
 import { useUpsertOperatingHours } from '@/hooks/useOperatingHours'
 import { outletManagementApi, uploadApi } from '@/lib/api'
 import type { OutletDetail, OperatingHours, OperatingHoursFormData } from '@/types/dashboard'
+import { isEqual } from 'lodash'
 
 /**
  * AddOutletModal Component - Optimized for Performance
@@ -59,6 +60,9 @@ type Props = {
 
 export default function AddOutletModal({ open, onOpenChange, businessId, onSuccess, mode = 'add', outlet }: Props) {
   const [operatingHoursData, setOperatingHoursData] = useState<Record<number, OperatingHoursFormData>>({})
+  const [initialOperatingHours, setInitialOperatingHours] = useState<Record<number, OperatingHoursFormData>>({})
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [operatingHoursChanged, setOperatingHoursChanged] = useState(false)
   const queryClient = useQueryClient()
 
   // Memoize form config to prevent unnecessary re-renders
@@ -93,8 +97,11 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
     staleTime: 5 * 60 * 1000, // 5 minutes
   }) as { data: OutletDetail | undefined }
 
-  // Memoize mutation function to prevent re-creation on every render
+  // Simplified mutation function - combines outlet and operating hours
   const mutationFn = useCallback(async (data: OutletFormData) => {
+    let outletResult: any
+    
+    // 1. Handle outlet creation/update
     if (mode === 'edit') {
       if (!outletDetail) {
         throw new Error('Outlet tidak ditemukan')
@@ -116,7 +123,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
         longitude: data.longitude,
         isOpen: data.status === 'ACTIVE',
       }
-      return outletManagementApi.update(outletDetail.id, payload)
+      outletResult = await outletManagementApi.update(outletDetail.id, payload)
     } else {
       // Add mode
       if (!businessId) {
@@ -139,10 +146,38 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
         latitude: data.latitude,
         longitude: data.longitude,
       }
-
-      return outletManagementApi.create(payload)
+      outletResult = await outletManagementApi.create(payload)
     }
-  }, [mode, outletDetail, businessId])
+
+    // 2. Handle operating hours if any changes exist
+    const hasOperatingHoursChanges = Object.values(operatingHoursData).some(
+      (data: OperatingHoursFormData) => data.isOpen !== undefined
+    )
+
+    if (hasOperatingHoursChanges) {
+      const operatingHoursPromises = Object.values(operatingHoursData)
+        .filter((data: OperatingHoursFormData) => data.isOpen !== undefined)
+        .map((data: OperatingHoursFormData) =>
+          upsertMutation.mutateAsync({
+            outletId: mode === 'edit' ? outletDetail!.id : outletResult.id,
+            dayOfWeek: data.dayOfWeek,
+            openTime: new Date(`1970-01-01T${data.openTime}:00`),
+            closeTime: new Date(`1970-01-01T${data.closeTime}:00`),
+            isOpen: data.isOpen
+          })
+        )
+
+      try {
+        await Promise.all(operatingHoursPromises)
+      } catch (error) {
+        // Don't fail the entire operation if operating hours fail
+        console.error('Failed to save operating hours:', error)
+        toast.warning('Outlet berhasil disimpan, tapi jam operasional gagal disimpan')
+      }
+    }
+
+    return outletResult
+  }, [mode, outletDetail, businessId, operatingHoursData, upsertMutation])
 
   // Optimized cache invalidation strategy
   const invalidateQueries = useCallback(async (outletId?: string) => {
@@ -164,38 +199,16 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
     await Promise.all(promises)
   }, [mode, queryClient])
 
-  // Memoize onSuccess callback to prevent re-creation
+  // Simplified onSuccess callback
   const onSuccessCallback = useCallback(async (outletData: any) => {
     toast.success(mode === 'edit' ? 'Outlet Berhasil Diperbarui!' : 'Outlet Berhasil Ditambahkan!')
-
-    // Update operating hours if any data exists
-    const operatingHoursPromises = Object.values(operatingHoursData)
-      .filter((data: OperatingHoursFormData) => data.isOpen !== undefined)
-      .map((data: OperatingHoursFormData) =>
-        upsertMutation.mutateAsync({
-          outletId: mode === 'edit' ? outletDetail!.id : outletData.id,
-          dayOfWeek: data.dayOfWeek,
-          openTime: new Date(`1970-01-01T${data.openTime}:00`),
-          closeTime: new Date(`1970-01-01T${data.closeTime}:00`),
-          isOpen: data.isOpen
-        })
-      )
-
-    if (operatingHoursPromises.length > 0) {
-      try {
-        await Promise.all(operatingHoursPromises)
-        toast.success('Jam operasional berhasil disimpan!')
-      } catch (error) {
-        toast.error('Outlet berhasil dibuat, tapi gagal menyimpan jam operasional')
-      }
-    }
 
     // Invalidate queries to refresh cache
     await invalidateQueries(mode === 'edit' ? outletDetail?.id : outletData.id)
 
     onSuccess?.()
     onOpenChange(false)
-  }, [mode, operatingHoursData, upsertMutation, outletDetail, invalidateQueries, onSuccess, onOpenChange])
+  }, [mode, outletDetail?.id, invalidateQueries, onSuccess, onOpenChange])
 
   const { mutate, isPending: isSubmitting } = useMutation({
     mutationFn,
@@ -204,26 +217,6 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
       toast.error(e?.message || 'Gagal menambah outlet. Coba lagi.')
     }
   })
-
-  // Memoize form population to prevent unnecessary re-renders
-  const populateForm = useCallback((outletData: OutletDetail) => {
-    console.log(outletData.isOpen);
-
-    setValue('name', outletData.name)
-    setValue('address', outletData.address || '')
-    setValue('phone', outletData.phone || '')
-    setValue('description', outletData.description || '')
-    setValue('status', outletData.isOpen ? 'ACTIVE' : 'INACTIVE')
-    setValue('latitude', outletData.latitude)
-    setValue('longitude', outletData.longitude)
-  }, [setValue])
-
-  // Populate form when outlet changes (edit mode) - optimized
-  useEffect(() => {
-    if (outletDetail && open && mode === 'edit') {
-      populateForm(outletDetail)
-    }
-  }, [outletDetail?.id, open, mode, populateForm]) // Only depend on ID to prevent unnecessary re-runs
 
   // Memoize operating hours parsing to prevent recalculation
   const parseOperatingHours = useCallback((operatingHours: OperatingHours[]) => {
@@ -255,23 +248,55 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
     return hoursMap
   }, [])
 
-  // Populate operating hours when outlet detail is loaded (edit mode) - optimized
-  useEffect(() => {
-    if (mode === 'edit' && outletDetail && open) {
-      if (outletDetail.operatingHours && outletDetail.operatingHours.length > 0) {
-        const hoursMap = parseOperatingHours(outletDetail.operatingHours)
-        setOperatingHoursData(hoursMap)
-      } else {
-        // Reset operating hours if no data
-        setOperatingHoursData({})
-      }
+  // Memoize form population to prevent unnecessary re-renders
+  const populateForm = useCallback((outletData: OutletDetail) => {
+    console.log('🏪 Populating form with outlet data:', {
+      name: outletData.name,
+      isOpen: outletData.isOpen,
+      operatingHoursCount: outletData.operatingHours?.length || 0
+    })
+
+    setValue('name', outletData.name)
+    setValue('address', outletData.address || '')
+    setValue('phone', outletData.phone || '')
+    setValue('description', outletData.description || '')
+    setValue('status', outletData.isOpen ? 'ACTIVE' : 'INACTIVE')
+    setValue('latitude', outletData.latitude)
+    setValue('longitude', outletData.longitude)
+
+    // Parse and set initial operating hours
+    if (outletData.operatingHours && outletData.operatingHours.length > 0) {
+      const hoursMap = parseOperatingHours(outletData.operatingHours)
+      console.log('⏰ Setting initial operating hours:', hoursMap)
+      setOperatingHoursData(hoursMap)
+      setInitialOperatingHours(hoursMap)
+    } else {
+      console.log('⏰ No operating hours found, setting empty')
+      const emptyHours = {}
+      setOperatingHoursData(emptyHours)
+      setInitialOperatingHours(emptyHours)
     }
-  }, [mode, open, outletDetail?.id, outletDetail?.operatingHours?.length, parseOperatingHours]) // Optimized dependencies
+    
+    // Reset unsaved changes flag
+    setHasUnsavedChanges(false)
+    setOperatingHoursChanged(false)
+    console.log('🔄 Form populated, unsaved changes reset to false')
+  }, [setValue, parseOperatingHours])
+
+  // Populate form when outlet changes (edit mode) - optimized
+  useEffect(() => {
+    if (outletDetail && open && mode === 'edit') {
+      populateForm(outletDetail)
+    }
+  }, [outletDetail?.id, open, mode, populateForm]) // Only depend on ID to prevent unnecessary re-runs
 
   // Reset form saat modal ditutup - memoized reset function
   const resetForm = useCallback(() => {
     reset()
     setOperatingHoursData({})
+    setInitialOperatingHours({})
+    setHasUnsavedChanges(false)
+    setOperatingHoursChanged(false)
   }, [reset])
 
   useEffect(() => {
@@ -312,10 +337,62 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
     mutate(data)
   }, [mutate])
 
-  // Memoize operating hours change handler
+  // Memoize operating hours change handler with change detection
   const handleOperatingHoursChange = useCallback((newData: Record<number, OperatingHoursFormData>) => {
+    console.log('🔄 Operating hours changed:', { newData, initialOperatingHours })
     setOperatingHoursData(newData)
-  }, [])
+    
+    // Simple approach: just mark as changed when operating hours are modified
+    setOperatingHoursChanged(true)
+    
+    // Also do deep comparison for detailed tracking
+    const hasChanges = !isEqual(newData, initialOperatingHours)
+    console.log('⚡ Has operating hours changes:', hasChanges)
+    setHasUnsavedChanges(hasChanges)
+  }, [initialOperatingHours])
+
+  // Watch form changes for edit mode
+  const formData = watch()
+  const hasFormChanges = useMemo(() => {
+    if (mode === 'add') return true
+    if (!outletDetail) return false
+    
+    // Compare current form data with initial outlet data
+    const currentData = {
+      name: formData.name || '',
+      address: formData.address || '',
+      phone: formData.phone || '',
+      description: formData.description || '',
+      status: formData.status || 'ACTIVE'
+    }
+    
+    const initialData = {
+      name: outletDetail.name || '',
+      address: outletDetail.address || '',
+      phone: outletDetail.phone || '',
+      description: outletDetail.description || '',
+      status: outletDetail.isOpen ? 'ACTIVE' : 'INACTIVE'
+    }
+    
+    const changes = !isEqual(currentData, initialData) || !!formData.file
+    console.log('📝 Form changes detected:', { changes, currentData, initialData })
+    return changes
+  }, [mode, formData, outletDetail])
+
+  // Check if there are unsaved changes (form or operating hours)
+  const isFormValid = useMemo(() => {
+    const formValid = isValid && (mode === 'add' ? !!businessId : true)
+    const hasChanges = hasUnsavedChanges || hasFormChanges || operatingHoursChanged
+    console.log('✅ Form validation:', { 
+      formValid, 
+      hasUnsavedChanges, 
+      hasFormChanges,
+      operatingHoursChanged,
+      hasChanges, 
+      isValid: formValid && hasChanges 
+    })
+    return formValid && hasChanges
+  }, [isValid, hasUnsavedChanges, hasFormChanges, operatingHoursChanged, mode, businessId])
 
   return (
     <>
@@ -465,7 +542,21 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Batal
               </Button>
-              <Button type="submit" disabled={isSubmitting || !isValid || (mode === 'add' && !businessId)}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || !isFormValid}
+                onClick={() => {
+                  console.log('🔴 Submit button clicked. Current state:', {
+                    isSubmitting,
+                    isFormValid,
+                    hasUnsavedChanges,
+                    hasFormChanges,
+                    operatingHoursChanged,
+                    isValid,
+                    mode
+                  })
+                }}
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

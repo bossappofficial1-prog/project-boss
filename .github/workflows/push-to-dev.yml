@@ -118,7 +118,7 @@ jobs:
             NEXT_PUBLIC_APP_URL=https:dashboard-dev.bossapp.id
             NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_URL }}/api/v1
             NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_API_URL }}
-            JWT_SECRET=$${{ secrets.JWT_SECRET }}
+            JWT_SECRET=$${{ vars.JWT_SECRET }}
 
       - name: Send Telegram Notification (Build)
         if: always()
