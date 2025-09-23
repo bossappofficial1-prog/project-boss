@@ -8,6 +8,12 @@ import dynamic from 'next/dynamic';
 // libraries into the initial bundle.
 const OnboardingModal = dynamic(() => import('../onboarding/OnboardingModal'), { ssr: false, loading: () => null });
 
+// Dynamically load PWA Install Prompt
+// const PWAInstallPrompt = dynamic(() => import('../PWAInstallPrompt'), { ssr: false, loading: () => null });
+
+// Dynamically load Online Status Indicator
+const OnlineStatusIndicator = dynamic(() => import('../OnlineStatusIndicator'), { ssr: false, loading: () => null });
+
 type RootLayoutProps = {
     children: React.ReactNode;
     fallback?: React.ReactNode;
@@ -92,6 +98,12 @@ export default function RootLayout({
                     onClose={handleCloseOnboarding}
                 />
             )}
+
+            {/* PWA Install Prompt */}
+            {/* <PWAInstallPrompt /> */}
+
+            {/* Online Status Indicator */}
+            <OnlineStatusIndicator />
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import RootLayout from "@/components/layouts/RootLayout";
 import { SocketProvider } from "@/context/SocketContext";
@@ -11,10 +11,27 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: '#000000',
+}
+
 export const metadata: Metadata = {
   title: "BOSS",
   description: "Manage your business with BOSS",
   icons: "/assets/logo/logo-bossapp.svg",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "BOSS Customer",
+    startupImage: [
+      "/assets/logo/logo-bossapp.svg",
+    ],
+  },
   openGraph: {
     title: "BOSS - Business Management Platform",
     description: "Manage your business with BOSS - Complete solution for business operations, scheduling, and customer management",
@@ -62,6 +79,15 @@ export default function Layout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning={true}>
+      <head>
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="BOSS Customer" />
+        <link rel="apple-touch-icon" href="/assets/logo/logo-bossapp.svg" />
+        <link rel="icon" type="image/svg+xml" href="/assets/logo/logo-bossapp.svg" />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body
         className={`${poppins.variable} font-poppins antialiased`}
       >

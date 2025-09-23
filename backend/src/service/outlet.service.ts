@@ -112,13 +112,13 @@ export async function getOutletByIdService(id: string, date?: Date) {
     if (!outletRaw) {
         throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    const { isOpen, operatingHours, ...outlet } = outletRaw;
+    const { operatingHours, ...outlet } = outletRaw;
 
     const isOpenOutlet = operatingHours.length > 0
         ? getIsOutletOpen(operatingHours, today)
-        : isOpen;
+        : outletRaw.isOpen;
 
-    return { ...outlet, operatingHours, isOpen: isOpenOutlet };
+    return { ...outlet, operatingHours, status: isOpenOutlet };
 }
 
 export async function getAllOutletService() {
