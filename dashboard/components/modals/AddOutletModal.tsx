@@ -100,7 +100,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
   // Simplified mutation function - combines outlet and operating hours
   const mutationFn = useCallback(async (data: OutletFormData) => {
     let outletResult: any
-    
+
     // 1. Handle outlet creation/update
     if (mode === 'edit') {
       if (!outletDetail) {
@@ -276,7 +276,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
       setOperatingHoursData(emptyHours)
       setInitialOperatingHours(emptyHours)
     }
-    
+
     // Reset unsaved changes flag
     setHasUnsavedChanges(false)
     setOperatingHoursChanged(false)
@@ -341,10 +341,10 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
   const handleOperatingHoursChange = useCallback((newData: Record<number, OperatingHoursFormData>) => {
     console.log('🔄 Operating hours changed:', { newData, initialOperatingHours })
     setOperatingHoursData(newData)
-    
+
     // Simple approach: just mark as changed when operating hours are modified
     setOperatingHoursChanged(true)
-    
+
     // Also do deep comparison for detailed tracking
     const hasChanges = !isEqual(newData, initialOperatingHours)
     console.log('⚡ Has operating hours changes:', hasChanges)
@@ -356,7 +356,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
   const hasFormChanges = useMemo(() => {
     if (mode === 'add') return true
     if (!outletDetail) return false
-    
+
     // Compare current form data with initial outlet data
     const currentData = {
       name: formData.name || '',
@@ -365,7 +365,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
       description: formData.description || '',
       status: formData.status || 'ACTIVE'
     }
-    
+
     const initialData = {
       name: outletDetail.name || '',
       address: outletDetail.address || '',
@@ -373,7 +373,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
       description: outletDetail.description || '',
       status: outletDetail.isOpen ? 'ACTIVE' : 'INACTIVE'
     }
-    
+
     const changes = !isEqual(currentData, initialData) || !!formData.file
     console.log('📝 Form changes detected:', { changes, currentData, initialData })
     return changes
@@ -383,13 +383,13 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
   const isFormValid = useMemo(() => {
     const formValid = isValid && (mode === 'add' ? !!businessId : true)
     const hasChanges = hasUnsavedChanges || hasFormChanges || operatingHoursChanged
-    console.log('✅ Form validation:', { 
-      formValid, 
-      hasUnsavedChanges, 
+    console.log('✅ Form validation:', {
+      formValid,
+      hasUnsavedChanges,
       hasFormChanges,
       operatingHoursChanged,
-      hasChanges, 
-      isValid: formValid && hasChanges 
+      hasChanges,
+      isValid: formValid && hasChanges
     })
     return formValid && hasChanges
   }, [isValid, hasUnsavedChanges, hasFormChanges, operatingHoursChanged, mode, businessId])
@@ -542,8 +542,8 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Batal
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isSubmitting || !isFormValid}
                 onClick={() => {
                   console.log('🔴 Submit button clicked. Current state:', {

@@ -98,6 +98,26 @@ export async function forgotPasswordService(email: string) {
 
     if (!user.isVerified) throw new AppError(Messages.ACCOUNT_INACTIVE, HttpStatus.FORBIDDEN);
 
+    // Check rate limit for forgot password (3 attempts per day)
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const rateLimitKey = `forgot_password_attempts:${email}:${today}`;
+    const maxAttempts = 3;
+
+    const currentAttempts = await redis.get(rateLimitKey);
+    const attemptCount = currentAttempts ? parseInt(currentAttempts) : 0;
+
+    if (attemptCount >= maxAttempts) {
+        throw new AppError(`Anda telah mencapai batas maksimal ${maxAttempts} kali permintaan reset password dalam sehari. Silakan coba lagi besok.`, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    // Increment attempt count (expires at end of day)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const ttlSeconds = Math.floor((tomorrow.getTime() - Date.now()) / 1000);
+
+    await redis.set(rateLimitKey, (attemptCount + 1).toString(), 'EX', ttlSeconds);
+
     // Generate reset token
     const resetToken = randomUUID();
     await redis.set(`reset:${resetToken}`, user.id, 'EX', 60 * 15); // 15 minutes
