@@ -28,10 +28,21 @@ export const initializeSocket = (): Socket => {
 
 export const disconnectSocket = (): void => {
     if (socket) {
+        // Leave current business outlet before disconnecting
+        if (currentBusinessOutlet) {
+            socket.emit('business:leave', currentBusinessOutlet);
+            console.log(`📤 Left business outlet room: ${currentBusinessOutlet}`);
+            currentBusinessOutlet = null;
+        }
+
         socket.disconnect();
         socket = null;
+        console.log('❌ Socket disconnected and cleaned up');
     }
 };
+
+// Track current business outlet
+let currentBusinessOutlet: string | null = null;
 
 export const joinBusinessOutlet = (outletId: string): void => {
     if (!socket) {
@@ -39,7 +50,20 @@ export const joinBusinessOutlet = (outletId: string): void => {
         return;
     }
 
+    if (!outletId || outletId.trim() === '') {
+        console.warn('Invalid outlet ID provided');
+        return;
+    }
+
+    // Leave previous business outlet if exists
+    if (currentBusinessOutlet && currentBusinessOutlet !== outletId) {
+        socket.emit('business:leave', currentBusinessOutlet);
+        console.log(`📤 Left previous business outlet room: ${currentBusinessOutlet}`);
+    }
+
+    // Join new business outlet
     socket.emit('business:outlet', outletId);
+    currentBusinessOutlet = outletId;
     console.log(`📡 Joined business outlet room: ${outletId}`);
 };
 
@@ -76,40 +100,7 @@ export const useSocket = (outletId?: string) => {
             console.log('🏢 Business event received:', payload);
             setBusinessEvents(prev => [payload, ...prev]);
 
-            // Browser notification for payment events
-            if ((payload.type === 'payment_created' || payload.type === 'payment_success' || payload.type === 'payment_failed') && 'Notification' in window) {
-                let title = 'Pembayaran';
-                let body = '';
-
-                if (payload.type === 'payment_created') {
-                    title = 'Pembayaran Dibuat!';
-                    body = `Pembayaran baru dari ${payload.customerName} - ${payload.amount ? `Rp ${payload.amount.toLocaleString('id-ID')}` : ''}`;
-                } else if (payload.type === 'payment_success') {
-                    title = 'Pembayaran Berhasil!';
-                    body = `Pembayaran berhasil dari ${payload.customerName} - Status: ${payload.orderStatus}`;
-                } else if (payload.type === 'payment_failed') {
-                    title = 'Pembayaran Gagal!';
-                    body = `Pembayaran gagal dari ${payload.customerName} - Status: ${payload.orderStatus}`;
-                }
-
-                if (Notification.permission === 'granted') {
-                    new Notification(title, {
-                        body: body,
-                        icon: '/favicon.ico',
-                        tag: `payment-${payload.type}`
-                    });
-                } else if (Notification.permission !== 'denied') {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            new Notification(title, {
-                                body: body,
-                                icon: '/favicon.ico',
-                                tag: `payment-${payload.type}`
-                            });
-                        }
-                    });
-                }
-            }
+            // Note: Browser notifications removed - now handled by SocketProvider with Sonner
         });
 
         socketInstance.on('orderEvent', (payload) => {
@@ -117,8 +108,8 @@ export const useSocket = (outletId?: string) => {
             setOrderEvents(prev => [payload, ...prev]);
         });
 
-        // Auto-join business outlet room jika outletId disediakan
-        if (outletId) {
+        // Auto-join business outlet room jika outletId disediakan dan valid
+        if (outletId && outletId.trim() !== '') {
             joinBusinessOutlet(outletId);
         }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import AddOutletModal from '@/components/modals/AddOutletModal';
 import DeleteOutletModal from '@/components/modals/DeleteOutletModal';
 import BusinessProfileModal from '@/components/modals/BusinessProfileModal';
@@ -62,10 +61,10 @@ export default function DashboardPage() {
     setShowDeleteOutletModal(true);
   };
 
-  if (isLoading) return (<DashboardLayout><PageSkeleton /></DashboardLayout>);
+  if (isLoading) return <PageSkeleton />;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6 sm:space-y-8 animate-fade-in-up">
         {globalError && (
           <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
@@ -99,27 +98,14 @@ export default function DashboardPage() {
         <StatsCards stats={stats} />
 
         {/* Outlets Section */}
-        {outlets.length > 0 ? (
-          <OutletsSection
-            outlets={outlets}
-            selectedOutlet={selectedOutlet}
-            onAddOutlet={handleAddOutlet}
-            onEditOutlet={handleEditOutlet}
-            onDeleteOutlet={handleDeleteOutlet}
-          />
-        ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-red-50 dark:border-gray-700 animate-fade-in">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Informasi Outlet</h2>
-                <p className="text-gray-600 dark:text-gray-400">Belum ada outlet terdaftar. Tambahkan outlet untuk mulai berjualan.</p>
-                <div className="mt-4">
-                  <Button onClick={handleAddOutlet}>Tambah Outlet</Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <OutletsSection
+          outlets={outlets}
+          selectedOutlet={selectedOutlet?.id} // Pass ID instead of object
+          onAddOutlet={handleAddOutlet}
+          onEditOutlet={handleEditOutlet}
+          onDeleteOutlet={handleDeleteOutlet}
+          isLoading={isLoading}
+        />
 
         {/* Bank owner info empty card if business exists but no bank */}
         {business && !(business.bankName && business.bankAccount) && (
@@ -184,6 +170,6 @@ export default function DashboardPage() {
         outlet={selectedOutletForDelete}
         onSuccess={handleDeleteOutletSuccess}
       />
-    </DashboardLayout>
+    </>
   );
 }                                                                                                                                             

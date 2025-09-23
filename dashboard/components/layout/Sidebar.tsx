@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUserData } from '@/hooks/useUserData';
+import { useOutletContext } from '@/components/providers/OutletProvider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Outlet {
@@ -37,8 +38,58 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const [selectedOutlet, setSelectedOutlet] = useState<string>('');
-  const [outlets, setOutlets] = useState<Outlet[]>([]);
+
+  // Get outlet context with safety check
+  let selectedOutlet: Outlet | null = null;
+  let outlets: Outlet[] = [];
+  let outletLoading = true;
+  let setSelectedOutlet: (outlet: Outlet | null) => void = () => {
+    console.warn('setSelectedOutlet fallback called - OutletContext not available');
+  };
+
+  try {
+    const outletContext = useOutletContext();
+    selectedOutlet = outletContext.selectedOutlet;
+    outlets = outletContext.outlets;
+    outletLoading = outletContext.isLoading;
+    setSelectedOutlet = outletContext.setSelectedOutlet;
+    console.log('OutletContext loaded successfully:', {
+      selectedOutlet: selectedOutlet?.name,
+      outletsCount: outlets.length,
+      isLoading: outletLoading
+    });
+  } catch (error) {
+    console.error('OutletContext not available in Sidebar:', error);
+
+    // Try to get from localStorage as fallback
+    if (typeof window !== 'undefined') {
+      const savedOutletId = localStorage.getItem('selectedOutletId');
+      if (savedOutletId) {
+        console.log('Sidebar: Found saved outlet ID:', savedOutletId);
+        // We can't reconstruct the full outlet without the outlets array
+        // This will be handled when outlets are loaded
+      }
+
+      // Try old format for migration
+      const oldSavedOutlet = localStorage.getItem('selectedOutlet');
+      if (oldSavedOutlet) {
+        try {
+          const parsed = JSON.parse(oldSavedOutlet);
+          if (parsed && parsed.id) {
+            selectedOutlet = parsed;
+            outlets = [parsed];
+            // Migrate to new format
+            localStorage.setItem('selectedOutletId', parsed.id);
+            localStorage.removeItem('selectedOutlet');
+            console.log('Sidebar: Migrated outlet from old format:', parsed);
+          }
+        } catch (parseError) {
+          console.error('Sidebar: Failed to parse saved outlet:', parseError);
+        }
+      }
+    }
+  }
+
   const [business, setBusiness] = useState<Business | null>(null);
 
   // Use custom hook for user data
@@ -56,39 +107,29 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       if (userData.business) {
         setBusiness(userData.business);
       }
-
-      // Set outlets data
-      if (userData.outlets && userData.outlets.length > 0) {
-        setOutlets(userData.outlets);
-
-        // Check if there's a previously selected outlet in localStorage
-        const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
-        const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
-
-        if (validOutlet && savedOutletId) {
-          setSelectedOutlet(savedOutletId);
-        } else {
-          // Default to first outlet
-          setSelectedOutlet(userData.outlets[0].id);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('selectedOutlet', userData.outlets[0].id);
-          }
-        }
-      }
+      // Note: Outlets are now managed by OutletProvider
     }
   }, [userData]);
 
   const handleOutletChange = (outletId: string) => {
-    setSelectedOutlet(outletId);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('selectedOutlet', outletId);
-    }
+    console.log('handleOutletChange called with:', outletId);
+    console.log('Available outlets:', outlets);
+    console.log('setSelectedOutlet function available:', typeof setSelectedOutlet);
 
-    // Trigger a custom event to notify other components about outlet change
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('outletChanged', {
-        detail: { outletId, outlet: outlets.find(o => o.id === outletId) }
-      }));
+    // Find the outlet object from outlets array
+    const outlet = outlets.find(o => o.id === outletId);
+    console.log('Found outlet:', outlet);
+
+    if (outlet && setSelectedOutlet && typeof setSelectedOutlet === 'function') {
+      console.log('Setting selected outlet:', outlet);
+      setSelectedOutlet(outlet);
+      // OutletProvider will handle localStorage saving automatically
+    } else {
+      console.error('Cannot set outlet:', {
+        outletFound: !!outlet,
+        setSelectedOutletAvailable: !!setSelectedOutlet,
+        setSelectedOutletType: typeof setSelectedOutlet
+      });
     }
   };
 
@@ -228,7 +269,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               )}
             </label>
 
-            {isLoading ? (
+            {isLoading || outletLoading ? (
               <div className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 text-sm font-medium font-poppins flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Memuat outlet...
@@ -244,7 +285,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </button>
               </div>
             ) : (
-              <Select value={selectedOutlet || "outlet"} onValueChange={handleOutletChange}>
+              <Select value={selectedOutlet?.id || ""} onValueChange={handleOutletChange}>
                 <SelectTrigger className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 placeholder-red-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-gray-500 focus:bg-white/20 dark:focus:bg-gray-600/50 text-sm font-medium font-poppins transition-all duration-200">
                   <SelectValue placeholder="Pilih outlet" />
                 </SelectTrigger>
@@ -278,9 +319,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
                     }`}
                   onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('selectedOutlet', selectedOutlet);
-                    }
+                    // No need to save to localStorage - OutletProvider handles it
                     onClose();
                   }}
                   style={{ animationDelay: `${index * 0.1}s` }}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useSelectedOutletId } from '@/hooks/useOutlet';
 import { useExpenses } from '@/hooks/useExpenses';
 import { ExpensesHeader } from '@/components/owner/expenses/Header';
@@ -46,7 +45,7 @@ export default function ExpensesPage() {
 	};
 
 	return (
-		<DashboardLayout>
+		<>
 			<div className="space-y-6">
 				<ExpensesHeader saldo={summary.totalPengeluaran} onRefresh={refetch} />
 
@@ -79,7 +78,7 @@ export default function ExpensesPage() {
 					onSubmit={handleSubmitModal}
 				/>
 			</div>
-		</DashboardLayout>
+		</>
 	);
 }
 

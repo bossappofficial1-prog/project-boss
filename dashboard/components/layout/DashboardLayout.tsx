@@ -4,6 +4,9 @@ import { useState } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { OutletProvider } from '@/components/providers/OutletProvider';
+import { SocketProvider } from '@/components/providers/SocketProvider';
+import { Toaster } from 'sonner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -25,45 +28,57 @@ export default function DashboardLayout({ children }: LayoutProps) {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-poppins relative`}>
-      <style jsx global>{`
-        @keyframes fadeInOverlay { from { opacity:0 } to { opacity:1 } }
-        .animate-fadeIn { animation: fadeInOverlay 0.25s ease-out; }
-      `}</style>
-      
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <OutletProvider>
+      <SocketProvider>
+        <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-poppins relative`}>
+          <style jsx global>{`
+            @keyframes fadeInOverlay { from { opacity:0 } to { opacity:1 } }
+            .animate-fadeIn { animation: fadeInOverlay 0.25s ease-out; }
+          `}</style>
 
-      {/* Mobile overlay when sidebar is open - covers entire screen */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-md lg:hidden animate-fadeIn z-30"
-          style={{ 
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            left: '0',
-            right: '0',
-            top: '0',
-            bottom: '0'
-          }}
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+          {/* Sidebar */}
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Main content */}
-      <div className={`flex-1 flex flex-col lg:ml-64 transition-all duration-300 ${sidebarOpen ? 'lg:scale-100' : 'scale-100'}`}>
-        {/* Header */}
-        <div className={`${sidebarOpen ? 'backdrop-blur-sm bg-white/60 lg:bg-transparent lg:backdrop-blur-none' : 'bg-transparent'} sticky top-0 z-20 transition-all dashboard-header`}>
-          <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+          {/* Mobile overlay when sidebar is open - covers entire screen */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black/30 backdrop-blur-md lg:hidden animate-fadeIn z-30"
+              style={{
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                left: '0',
+                right: '0',
+                top: '0',
+                bottom: '0'
+              }}
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
+          {/* Main content */}
+          <div className={`flex-1 flex flex-col lg:ml-64 transition-all duration-300 ${sidebarOpen ? 'lg:scale-100' : 'scale-100'}`}>
+            {/* Header */}
+            <div className={`${sidebarOpen ? 'backdrop-blur-sm bg-white/60 lg:bg-transparent lg:backdrop-blur-none' : 'bg-transparent'} sticky top-0 z-20 transition-all dashboard-header`}>
+              <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+            </div>
+
+            {/* Content */}
+            <main className={`flex-1 overflow-auto relative z-10 transition-all duration-300 ${sidebarOpen ? 'blur-[2px] lg:blur-0' : ''}`}>
+              <div className="container mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl">
+                {children}
+              </div>
+            </main>
+          </div>
         </div>
 
-        {/* Content */}
-        <main className={`flex-1 overflow-auto relative z-10 transition-all duration-300 ${sidebarOpen ? 'blur-[2px] lg:blur-0' : ''}`}>
-          <div className="container mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl">
-            {children}
-          </div>
-        </main>
-      </div>
-    </div>
+        {/* Sonner Toaster for custom notifications */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: Infinity, // No auto-close
+          }}
+        />
+      </SocketProvider>
+    </OutletProvider>
   );
 }

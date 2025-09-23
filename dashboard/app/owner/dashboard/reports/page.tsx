@@ -1,6 +1,5 @@
 "use client";
 
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useSelectedOutletId } from '@/hooks/useOutlet';
 import { useReports } from '@/hooks/useReports';
 import { ReportsHeader } from '@/components/owner/reports/Header';
@@ -23,7 +22,7 @@ export default function ReportsPage() {
 	};
 
 	return (
-		<DashboardLayout>
+		<>
 			<div className="space-y-6">
 				<ReportsHeader onRefresh={refetch} />
 
@@ -48,7 +47,7 @@ export default function ReportsPage() {
 					</>
 				)}
 			</div>
-		</DashboardLayout>
+		</>
 	);
 }
 

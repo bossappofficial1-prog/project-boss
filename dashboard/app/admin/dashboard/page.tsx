@@ -20,7 +20,7 @@ import {
     RecentActivityCard,
     QuickActionsCard,
     RevenueChart
-} from '@/app/components/dashboard';
+} from '@/components/dashboard';
 import { DashboardMetrics, SystemHealth } from '@/lib/types/api.types';
 
 export default function AdminDashboard() {

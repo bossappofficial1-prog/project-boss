@@ -55,8 +55,6 @@ apiClient.interceptors.response.use(
 
 // Get auth token from cookies (deprecated - using httpOnly cookies now)
 export const getAuthToken = (): string | null => {
-  // Token is now stored in httpOnly cookies, not accessible from JavaScript
-  // This function is kept for backward compatibility but returns null
   return null;
 };
 

@@ -1,10 +1,9 @@
 'use client';
 
-import DashboardLayout from '@/components/layout/DashboardLayout';
 
 export default function TransactionsPage() {
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -54,6 +53,6 @@ export default function TransactionsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

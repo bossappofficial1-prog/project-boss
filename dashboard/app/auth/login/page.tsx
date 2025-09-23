@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -9,7 +9,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Input } from '@/components/ui/input';
 import { apiClient } from '@/lib/apis/base';
 
-export default function LoginPage() {
+function LoginForm() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -17,6 +17,25 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
+  const reason = searchParams.get('reason');
+
+  // Set error message based on reason parameter
+  useEffect(() => {
+    if (reason) {
+      const errorMessages: Record<string, string> = {
+        'token_expired': 'Your session has expired. Please log in again.',
+        'invalid_token': 'Invalid authentication token. Please log in again.',
+        'invalid_role': 'Invalid user role. Please contact support.',
+        'insufficient_permissions': 'You do not have permission to access that page.',
+        'validation_error': 'Authentication validation failed. Please try again.',
+        'session_timeout': 'Your session has timed out due to inactivity.',
+      };
+
+      setError(errorMessages[reason] || 'Authentication required. Please log in.');
+    }
+  }, [reason]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -42,7 +61,20 @@ export default function LoginPage() {
       const meResponse = await apiClient.get('/auth/me');
       const userRole = meResponse.data.data.user.role;
 
-      // Redirect based on role
+      // Handle redirect - if there's a redirect URL and it's valid, use it
+      if (redirectUrl && redirectUrl !== '/' && !redirectUrl.startsWith('/auth/')) {
+        // Validate that user has permission for the redirect URL
+        const isValidRedirect =
+          (userRole === 'ADMIN' && (redirectUrl.startsWith('/admin/') || redirectUrl.startsWith('/profile') || redirectUrl.startsWith('/notifications'))) ||
+          (userRole === 'OWNER' && (redirectUrl.startsWith('/owner/') || redirectUrl.startsWith('/profile') || redirectUrl.startsWith('/notifications')));
+
+        if (isValidRedirect) {
+          router.push(redirectUrl);
+          return;
+        }
+      }
+
+      // Default redirect based on role
       if (userRole === 'OWNER') {
         router.push('/owner/dashboard');
       } else if (userRole === 'ADMIN') {
@@ -173,5 +205,57 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+function LoginPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-100 via-rose-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+
+      <div className="max-w-md w-full space-y-8">
+        {/* Logo and Header */}
+        <div className="text-center">
+          <div className="mx-auto mb-6 flex justify-center">
+            <Image
+              src="/Logo Boss.png"
+              alt="BOSS Logo"
+              width={200}
+              height={200}
+              className="object-contain"
+              priority
+            />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 font-poppins">
+            Welcome Back
+          </h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 font-poppins">
+            Sign in to your BOSS Dashboard
+          </p>
+        </div>
+
+        {/* Loading skeleton */}
+        <div className="mt-8 space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6 border border-red-100 dark:border-gray-700 animate-pulse">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageSkeleton />}>
+      <LoginForm />
+    </Suspense>
   );
 }

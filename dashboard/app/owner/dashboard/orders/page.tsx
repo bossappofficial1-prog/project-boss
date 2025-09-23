@@ -9,7 +9,6 @@ import { OrdersControls } from '@/components/owner/orders/Controls';
 import { OrdersEmptyState } from '@/components/owner/orders/EmptyState';
 import { OrdersSkeleton } from '@/components/owner/orders/Skeleton';
 import { QuickOrderModal } from '@/components/modals/QuickOrderModal';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 
 export default function OrdersPage() {
   const { outletId } = useSelectedOutletId();
@@ -32,20 +31,20 @@ export default function OrdersPage() {
   const filteredOrders = (orders || []).filter(order => {
     // Don't show completed orders unless specifically filtering for them
     if (order.orderStatus === 'COMPLETED' && statusFilter !== 'completed') return false;
-    
+
     // Status filter
-    const matchesStatus = statusFilter === 'all' || 
+    const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'pending' && order.orderStatus === 'AWAITING_PAYMENT') ||
       (statusFilter === 'processing' && order.orderStatus === 'PROCESSING') ||
       (statusFilter === 'ready' && order.orderStatus === 'READY') ||
       (statusFilter === 'completed' && order.orderStatus === 'COMPLETED');
-    
+
     // Search filter
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       order.guestCustomer?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.guestCustomer?.phone?.includes(searchQuery) ||
       order.id.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     return matchesStatus && matchesSearch;
   });
 
@@ -59,7 +58,7 @@ export default function OrdersPage() {
 
   if (!outletId) {
     return (
-      <DashboardLayout>
+      <>
         <div className="min-h-[400px] flex items-center justify-center">
           <div className="text-center">
             <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,13 +72,13 @@ export default function OrdersPage() {
             </p>
           </div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   if (error) {
     return (
-      <DashboardLayout>
+      <>
         <div className="min-h-[400px] flex items-center justify-center">
           <div className="text-center">
             <svg className="w-16 h-16 mx-auto mb-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,67 +98,67 @@ export default function OrdersPage() {
             </button>
           </div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
-      <OrdersHeader 
-        onRefresh={handleRefresh}
-        onCreateQuick={() => setShowQuickOrderModal(true)}
-      />
-
-      <OrdersControls
-        searchTerm={searchQuery}
-        onSearchChange={setSearchQuery}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-      />
-
-      {loading ? (
-        <OrdersSkeleton />
-      ) : !filteredOrders.length ? (
-        <OrdersEmptyState 
-          hasFilters={!!searchQuery || statusFilter !== 'all'}
-          onClearFilters={() => {
-            setSearchQuery('');
-            setStatusFilter('all');
-          }}
-          onCreateOrder={() => setShowQuickOrderModal(true)}
+        <OrdersHeader
+          onRefresh={handleRefresh}
+          onCreateQuick={() => setShowQuickOrderModal(true)}
         />
-      ) : (
-        <>
-          {/* Desktop Table */}
-          <div className="hidden lg:block">
-            <OrdersDesktopTable 
-              orders={filteredOrders}
-              onRefresh={refetch}
-            />
-          </div>
 
-          {/* Mobile Cards */}
-          <div className="lg:hidden">
-            <OrdersMobileCards 
-              orders={filteredOrders}
-              onRefresh={refetch}
-            />
-          </div>
-        </>
-      )}
-
-      {/* Quick Order Modal */}
-      {showQuickOrderModal && outletId && (
-        <QuickOrderModal
-          open={showQuickOrderModal}
-          onOpenChange={setShowQuickOrderModal}
-          outletId={outletId}
-          productType="GOODS"
-          onSuccess={handleQuickOrderSuccess}
+        <OrdersControls
+          searchTerm={searchQuery}
+          onSearchChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
         />
-      )}
+
+        {loading ? (
+          <OrdersSkeleton />
+        ) : !filteredOrders.length ? (
+          <OrdersEmptyState
+            hasFilters={!!searchQuery || statusFilter !== 'all'}
+            onClearFilters={() => {
+              setSearchQuery('');
+              setStatusFilter('all');
+            }}
+            onCreateOrder={() => setShowQuickOrderModal(true)}
+          />
+        ) : (
+          <>
+            {/* Desktop Table */}
+            <div className="hidden lg:block">
+              <OrdersDesktopTable
+                orders={filteredOrders}
+                onRefresh={refetch}
+              />
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="lg:hidden">
+              <OrdersMobileCards
+                orders={filteredOrders}
+                onRefresh={refetch}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Quick Order Modal */}
+        {showQuickOrderModal && outletId && (
+          <QuickOrderModal
+            open={showQuickOrderModal}
+            onOpenChange={setShowQuickOrderModal}
+            outletId={outletId}
+            productType="GOODS"
+            onSuccess={handleQuickOrderSuccess}
+          />
+        )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

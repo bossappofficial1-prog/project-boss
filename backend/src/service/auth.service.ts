@@ -23,10 +23,9 @@ export async function loginService(data: LoginInput) {
         throw new AppError(Messages.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
     }
 
-    const sessionId = randomUUID();
-    await redis.set(`session:${sessionId}`, JSON.stringify(user), 'EX', 60 * 60 * 24);
+    await redis.set(`session:${user.id}`, JSON.stringify(user), 'EX', 60 * 60 * 24);
 
-    const token = JwtUtil.generate({ sessionId });
+    const token = JwtUtil.generate({ sessionId: user.id, role: user.role });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
 
