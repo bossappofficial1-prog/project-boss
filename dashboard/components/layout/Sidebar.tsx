@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUserData } from '@/hooks/useUserData';
+import { useOutletContext } from '@/components/providers/OutletProvider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Outlet {
@@ -37,8 +38,43 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const [selectedOutlet, setSelectedOutlet] = useState<string>('');
-  const [outlets, setOutlets] = useState<Outlet[]>([]);
+
+  // Get outlet context with safety check
+  let selectedOutlet: Outlet | null = null;
+  let outlets: Outlet[] = [];
+  let outletLoading = true;
+  let setSelectedOutlet: (outlet: Outlet | null) => void = () => {
+    console.warn('setSelectedOutlet fallback called - OutletContext not available');
+  };
+
+  try {
+    const outletContext = useOutletContext();
+    selectedOutlet = outletContext.selectedOutlet;
+    outlets = outletContext.outlets;
+    outletLoading = outletContext.isLoading;
+    setSelectedOutlet = outletContext.setSelectedOutlet;
+  } catch (error) {
+    if (typeof window !== 'undefined') {
+      const oldSavedOutlet = localStorage.getItem('selectedOutletId');
+      if (oldSavedOutlet) {
+        try {
+          const parsed = JSON.parse(oldSavedOutlet);
+          if (parsed && parsed.id) {
+            selectedOutlet = parsed;
+            outlets = [parsed];
+            localStorage.setItem('selectedOutlet', parsed.id);
+            localStorage.removeItem('selectedOutletId');
+          }
+        } catch (parseError) {
+          if (oldSavedOutlet) {
+            localStorage.setItem('selectedOutlet', oldSavedOutlet);
+            localStorage.removeItem('selectedOutletId');
+          }
+        }
+      }
+    }
+  }
+
   const [business, setBusiness] = useState<Business | null>(null);
 
   // Use custom hook for user data
@@ -49,46 +85,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     refetch
   } = useUserData();
 
-  // Process user data when it's available
   useEffect(() => {
-    if (userData) {
-      // Set business data
-      if (userData.business) {
-        setBusiness(userData.business);
-      }
-
-      // Set outlets data
-      if (userData.outlets && userData.outlets.length > 0) {
-        setOutlets(userData.outlets);
-
-        // Check if there's a previously selected outlet in localStorage
-        const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
-        const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
-
-        if (validOutlet && savedOutletId) {
-          setSelectedOutlet(savedOutletId);
-        } else {
-          // Default to first outlet
-          setSelectedOutlet(userData.outlets[0].id);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('selectedOutlet', userData.outlets[0].id);
-          }
-        }
-      }
+    if (userData?.business) {
+      setBusiness(userData.business);
     }
   }, [userData]);
 
   const handleOutletChange = (outletId: string) => {
-    setSelectedOutlet(outletId);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('selectedOutlet', outletId);
-    }
-
-    // Trigger a custom event to notify other components about outlet change
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('outletChanged', {
-        detail: { outletId, outlet: outlets.find(o => o.id === outletId) }
-      }));
+    console.log(`🔄 Sidebar: handleOutletChange called with outletId: ${outletId}`);
+    const outlet = outlets.find(o => o.id === outletId);
+    if (outlet && setSelectedOutlet && typeof setSelectedOutlet === 'function') {
+      console.log(`🔄 Sidebar: Calling setSelectedOutlet with outlet:`, outlet);
+      setSelectedOutlet(outlet);
+    } else {
+      console.warn(`🔄 Sidebar: Could not find outlet or setSelectedOutlet not available`, { outlet, setSelectedOutlet });
     }
   };
 
@@ -228,7 +238,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               )}
             </label>
 
-            {isLoading ? (
+            {isLoading || outletLoading ? (
               <div className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 text-sm font-medium font-poppins flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Memuat outlet...
@@ -244,7 +254,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </button>
               </div>
             ) : (
-              <Select value={selectedOutlet || "outlet"} onValueChange={handleOutletChange}>
+              <Select value={selectedOutlet?.id || ""} onValueChange={handleOutletChange}>
                 <SelectTrigger className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 placeholder-red-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-gray-500 focus:bg-white/20 dark:focus:bg-gray-600/50 text-sm font-medium font-poppins transition-all duration-200">
                   <SelectValue placeholder="Pilih outlet" />
                 </SelectTrigger>
@@ -277,15 +287,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
                     : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
                     }`}
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('selectedOutlet', selectedOutlet);
-                    }
-                    onClose();
-                  }}
+                  onClick={onClose}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  {/* Active indicator */}
                   {isActive && (
                     <div className="absolute left-0 top-0 h-full w-1 bg-red-600 rounded-r-full"></div>
                   )}
@@ -297,7 +301,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                   <span className="flex-1">{item.name}</span>
 
-                  {/* Hover arrow */}
                   <svg
                     className={`w-4 h-4 transition-all duration-200 ${isActive ? 'opacity-100 text-red-600' : 'opacity-0 group-hover:opacity-100 text-red-200'
                       }`}

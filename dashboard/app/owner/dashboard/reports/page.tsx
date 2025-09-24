@@ -1,7 +1,6 @@
 "use client";
 
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useSelectedOutletId } from '@/hooks/useOutlet';
+import { useOutletContext } from '@/components/providers/OutletProvider';
 import { useReports } from '@/hooks/useReports';
 import { ReportsHeader } from '@/components/owner/reports/Header';
 import { ReportsControls } from '@/components/owner/reports/Controls';
@@ -12,7 +11,7 @@ import { ReportsSkeleton } from '@/components/owner/reports/Skeleton';
 import * as XLSX from 'xlsx';
 
 export default function ReportsPage() {
-	const { outletId } = useSelectedOutletId();
+	const { selectedOutletId: outletId } = useOutletContext();
 	const { rows, summary, loading, error, startDate, endDate, setRange, refetch, exportRows } = useReports(outletId);
 
 	const handleExport = () => {
@@ -23,7 +22,7 @@ export default function ReportsPage() {
 	};
 
 	return (
-		<DashboardLayout>
+		<>
 			<div className="space-y-6">
 				<ReportsHeader onRefresh={refetch} />
 
@@ -48,7 +47,7 @@ export default function ReportsPage() {
 					</>
 				)}
 			</div>
-		</DashboardLayout>
+		</>
 	);
 }
 

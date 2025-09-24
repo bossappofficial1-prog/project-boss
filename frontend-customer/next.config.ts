@@ -1,5 +1,6 @@
 import { parseRemotePatterns } from "./src/lib/utils";
 import type { NextConfig } from "next";
+import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
@@ -9,4 +10,13 @@ const nextConfig: NextConfig = {
   // allowedDevOrigins: ["http://192.168.100.248:3000"]
 };
 
-export default nextConfig;
+export default withPWA({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+})(nextConfig);

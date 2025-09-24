@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { authApi, dashboardApi } from '@/lib/api';
 import { useSocket } from '@/lib/socket';
+import { useOutletContext } from '@/components/providers/OutletProvider';
 import type { Business, DashboardStats, OrderStatsMap, Outlet } from '@/types/dashboard';
 
 export function useDashboardData(initialDate?: string) {
+  const { selectedOutlet, outlets, isLoading: outletLoading } = useOutletContext();
+
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
     totalServices: 0,
@@ -14,16 +17,19 @@ export function useDashboardData(initialDate?: string) {
   });
   const [orderStats, setOrderStats] = useState<OrderStatsMap>({});
   const [business, setBusiness] = useState<Business | null>(null);
-  const [outlets, setOutlets] = useState<Outlet[]>([]);
-  const [selectedOutlet, setSelectedOutlet] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(
     initialDate || new Date().toISOString().split('T')[0]
   );
   const [isLoading, setIsLoading] = useState(true);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
-  // Initialize socket connection
-  const { isConnected, businessEvents } = useSocket(selectedOutlet);
+  // Initialize socket connection - use selectedOutlet.id if available
+  const { isConnected, businessEvents } = useSocket(selectedOutlet?.id || '');
+
+  // Monitor outlet changes for debugging
+  useEffect(() => {
+    console.log(`🔄 useDashboardData: selectedOutlet changed to: ${selectedOutlet?.id || 'null'}`);
+  }, [selectedOutlet?.id]);
 
   const fetchDashboardSummary = async (outletId: string) => {
     try {
@@ -55,35 +61,11 @@ export function useDashboardData(initialDate?: string) {
         setIsLoading(true);
         const userData = await authApi.me();
         setBusiness(userData.business);
-        setOutlets(userData.outlets);
 
-        // Use the same logic as Sidebar for default outlet selection
-        let currentOutlet = '';
-
-        if (userData.outlets && userData.outlets.length > 0) {
-          // Check if there's a previously selected outlet in localStorage
-          const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
-          const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
-
-          if (validOutlet && savedOutletId) {
-            currentOutlet = savedOutletId;
-          } else {
-            // Default to first outlet
-            currentOutlet = userData.outlets[0].id;
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('selectedOutlet', currentOutlet);
-            }
-          }
-        }
-
-        if (currentOutlet && currentOutlet !== selectedOutlet) {
-          setSelectedOutlet(currentOutlet);
-        }
-
-        if (currentOutlet) {
+        if (selectedOutlet?.id) {
           await Promise.all([
-            fetchDashboardSummary(currentOutlet),
-            fetchOrderStats(currentOutlet),
+            fetchDashboardSummary(selectedOutlet.id),
+            fetchOrderStats(selectedOutlet.id),
           ]);
         }
       } catch (e: any) {
@@ -102,7 +84,7 @@ export function useDashboardData(initialDate?: string) {
 
     fetchDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate]);
+  }, [selectedDate, selectedOutlet?.id]); // Re-run when outlet changes
 
   const refetch = () => {
     const fetchDashboardData = async () => {
@@ -110,35 +92,12 @@ export function useDashboardData(initialDate?: string) {
         setIsLoading(true);
         const userData = await authApi.me();
         setBusiness(userData.business);
-        setOutlets(userData.outlets);
 
-        // Use the same logic as Sidebar for default outlet selection
-        let currentOutlet = '';
-
-        if (userData.outlets && userData.outlets.length > 0) {
-          // Check if there's a previously selected outlet in localStorage
-          const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
-          const validOutlet = userData.outlets.find((outlet: Outlet) => outlet.id === savedOutletId);
-
-          if (validOutlet && savedOutletId) {
-            currentOutlet = savedOutletId;
-          } else {
-            // Default to first outlet
-            currentOutlet = userData.outlets[0].id;
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('selectedOutlet', currentOutlet);
-            }
-          }
-        }
-
-        if (currentOutlet && currentOutlet !== selectedOutlet) {
-          setSelectedOutlet(currentOutlet);
-        }
-
-        if (currentOutlet) {
+        // If selectedOutlet is available, fetch dashboard data for it
+        if (selectedOutlet?.id) {
           await Promise.all([
-            fetchDashboardSummary(currentOutlet),
-            fetchOrderStats(currentOutlet),
+            fetchDashboardSummary(selectedOutlet.id),
+            fetchOrderStats(selectedOutlet.id),
           ]);
         }
       } catch (e: any) {
@@ -160,31 +119,14 @@ export function useDashboardData(initialDate?: string) {
   };
 
   useEffect(() => {
-    if (businessEvents.length > 0 && selectedOutlet) {
-      fetchDashboardSummary(selectedOutlet);
-      fetchOrderStats(selectedOutlet);
+    if (businessEvents.length > 0 && selectedOutlet?.id) {
+      fetchDashboardSummary(selectedOutlet.id);
+      fetchOrderStats(selectedOutlet.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [businessEvents, selectedOutlet]);
+  }, [businessEvents, selectedOutlet?.id]);
 
-  useEffect(() => {
-    const handleOutletChange = (event: CustomEvent) => {
-      const newOutletId = (event as any).detail.outletId as string;
-      setSelectedOutlet(newOutletId);
-      if (newOutletId) {
-        fetchDashboardSummary(newOutletId);
-        fetchOrderStats(newOutletId);
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('outletChanged', handleOutletChange as EventListener);
-      return () => {
-        window.removeEventListener('outletChanged', handleOutletChange as EventListener);
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // No need for custom event listener anymore - OutletProvider handles outlet changes
 
   return {
     // data
@@ -195,11 +137,10 @@ export function useDashboardData(initialDate?: string) {
     selectedOutlet,
     selectedDate,
     isConnected,
-    isLoading,
+    isLoading: isLoading || outletLoading, // Combined loading state
     globalError,
     // setters
     setSelectedDate,
-    setSelectedOutlet,
     // actions
     refetch,
   } as const;

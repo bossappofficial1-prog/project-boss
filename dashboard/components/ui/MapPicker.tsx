@@ -106,6 +106,13 @@ export default function MapPicker({
 
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Update currentPosition when props change
+  useEffect(() => {
+    if (latitude && longitude) {
+      setCurrentPosition(new LatLng(latitude, longitude))
+    }
+  }, [latitude, longitude])
+
   // Default position (Jakarta, Indonesia)
   const defaultPosition = new LatLng(-6.2088, 106.8456)
 

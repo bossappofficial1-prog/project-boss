@@ -274,9 +274,12 @@ export function useSelectedOutletId() {
 
     // Listen for outlet changes
     const handleOutletChange = (event: CustomEvent) => {
-      const newOutletId = (event as any).detail.outletId as string;
-      setOutletId(newOutletId);
-      localStorage.setItem('selectedOutlet', newOutletId);
+      // OutletProvider now sends outlet object, not just outletId
+      const newOutletId = (event as any).detail.outlet?.id || (event as any).detail.outletId;
+      if (newOutletId) {
+        setOutletId(newOutletId);
+        localStorage.setItem('selectedOutlet', newOutletId);
+      }
     };
 
     window.addEventListener('outletChanged', handleOutletChange as EventListener);

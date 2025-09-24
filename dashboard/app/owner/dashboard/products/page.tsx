@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import AddProductServiceModal from '@/components/modals/AddProductServiceModal';
 import ImportDataModal from '@/components/modals/ImportDataModal';
 import EditProductServiceModal from '@/components/modals/EditProductServiceModal';
@@ -45,48 +44,42 @@ export default function ProductsPage() {
   } = useProductsData();
 
   if (isLoading && products.length === 0) {
-    return (
-      <DashboardLayout>
-        <ProductsSkeleton />
-      </DashboardLayout>
-    );
+    return <ProductsSkeleton />;
   }
 
   // Guidance screen when BOTH business profile and outlets are missing
   if (!isLoading && !hasBusinessProfile && !hasOutlet) {
     return (
-      <DashboardLayout>
-        <div className="max-w-3xl mx-auto mt-10">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8 border border-amber-100 dark:border-amber-800/50">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10A8 8 0 11.001 10 8 8 0 0118 10zm-8-4a1 1 0 00-.993.883L9 7v3a1 1 0 00.883.993L10 11h.01a1 1 0 01.117 1.993L10 13H9a1 1 0 00-.117 1.993L9 15h2a1 1 0 00.117-1.993L11 13h-.01a1 1 0 01-.117-1.993L11 11h-1V7a1 1 0 00-1-1zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/></svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Lengkapi Profil Bisnis & Tambahkan Outlet</h2>
-                <p className="text-gray-600 mt-1">Untuk mulai menambah Produk dan Jasa, Anda perlu:</p>
-                <ul className="mt-3 space-y-2 text-gray-700 list-disc pl-5">
-                  <li>Lengkapi profil bisnis beserta informasi rekening</li>
-                  <li>Tambah minimal satu outlet</li>
-                </ul>
-                <div className="mt-6">
-                  <button
-                    onClick={() => (window.location.href = '/owner/dashboard')}
-                    className="inline-flex items-center px-5 py-3 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
-                  >
-                    Oke, ke Dashboard
-                  </button>
-                </div>
+      <div className="max-w-3xl mx-auto mt-10">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8 border border-amber-100 dark:border-amber-800/50">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10A8 8 0 11.001 10 8 8 0 0118 10zm-8-4a1 1 0 00-.993.883L9 7v3a1 1 0 00.883.993L10 11h.01a1 1 0 01.117 1.993L10 13H9a1 1 0 00-.117 1.993L9 15h2a1 1 0 00.117-1.993L11 13h-.01a1 1 0 01-.117-1.993L11 11h-1V7a1 1 0 00-1-1zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" /></svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Lengkapi Profil Bisnis & Tambahkan Outlet</h2>
+              <p className="text-gray-600 mt-1">Untuk mulai menambah Produk dan Jasa, Anda perlu:</p>
+              <ul className="mt-3 space-y-2 text-gray-700 list-disc pl-5">
+                <li>Lengkapi profil bisnis beserta informasi rekening</li>
+                <li>Tambah minimal satu outlet</li>
+              </ul>
+              <div className="mt-6">
+                <button
+                  onClick={() => (window.location.href = '/owner/dashboard')}
+                  className="inline-flex items-center px-5 py-3 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                >
+                  Oke, ke Dashboard
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </div>
     )
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-8">
         <ProductsHeader outletName={outlets.find(o => o.id === selectedOutlet)?.name} />
 
@@ -100,7 +93,7 @@ export default function ProductsPage() {
               <h3 className="text-sm font-medium text-red-800 dark:text-red-300">Error</h3>
               <p className="text-sm text-red-700 dark:text-red-400 mt-1">{error}</p>
             </div>
-            <button 
+            <button
               onClick={() => setError(null)}
               className="text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-300"
             >
@@ -123,33 +116,30 @@ export default function ProductsPage() {
           hasOutlet={hasOutlet}
         />
 
+        {/* No inline callout; full-page guidance covers the not-ready case when both missing */}
+
         {/* Action buttons moved into ProductsControls */}
 
-        {products.length === 0 && !isLoading ? (
+        <MobileCards
+          products={products as any}
+          onEdit={(p) => { setSelectedProduct(p); setShowEditModal(true); }}
+          onDelete={(id) => handleDeleteProduct(id)}
+          onToggleStatus={(p) => handleToggleStatus(p as any)}
+          formatCurrency={formatCurrency}
+          formatDuration={formatDuration}
+        />
+        {products.length === 0 && !isLoading && (
           <ProductsEmptyState hasOutlet={hasOutlet} onAdd={() => setShowAddModal(true)} />
-        ) : (
-          <>
-            {/* Desktop Table */}
-            <DesktopTable
-              products={products as any}
-              onEdit={(p) => { setSelectedProduct(p); setShowEditModal(true); }}
-              onDelete={(id) => handleDeleteProduct(id)}
-              onToggleStatus={(p) => handleToggleStatus(p as any)}
-              formatCurrency={formatCurrency}
-              formatDuration={formatDuration}
-            />
-
-            {/* Mobile Cards */}
-            <MobileCards
-              products={products as any}
-              onEdit={(p) => { setSelectedProduct(p); setShowEditModal(true); }}
-              onDelete={(id) => handleDeleteProduct(id)}
-              onToggleStatus={(p) => handleToggleStatus(p as any)}
-              formatCurrency={formatCurrency}
-              formatDuration={formatDuration}
-            />
-          </>
         )}
+
+        <DesktopTable
+          products={products as any}
+          onEdit={(p) => { setSelectedProduct(p); setShowEditModal(true); }}
+          onDelete={(id) => handleDeleteProduct(id)}
+          onToggleStatus={(p) => handleToggleStatus(p as any)}
+          formatCurrency={formatCurrency}
+          formatDuration={formatDuration}
+        />
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -203,11 +193,10 @@ export default function ProductsPage() {
                       <button
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          currentPage === pageNum
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === pageNum
                             ? 'z-10 bg-red-50 border-red-500 text-red-600'
                             : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>
@@ -247,6 +236,6 @@ export default function ProductsPage() {
         outletId={selectedOutlet || null}
         onImported={handleRefreshData}
       />
-    </DashboardLayout>
+    </>
   );
 }

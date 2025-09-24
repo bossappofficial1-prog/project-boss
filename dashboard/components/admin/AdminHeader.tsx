@@ -50,22 +50,16 @@ export default function AdminHeader({ onToggleSidebar, sidebarCollapsed = false,
 
     const handleLogoutConfirm = async () => {
         try {
-            await apiClient.post('/auth/logout');
+            const res = await apiClient.post('/auth/logout');
+            if (res.status == 200) window.location.href = "/auth/login"
         } catch (error) {
             console.error('Logout error:', error);
-        } finally {
-            // Clear any remaining localStorage data (for backward compatibility)
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            router.push('/auth/login');
         }
     };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            // Implement search functionality - could navigate to search results page
-            console.log('Searching for:', searchQuery);
             setShowSearch(false);
             setSearchQuery('');
         }

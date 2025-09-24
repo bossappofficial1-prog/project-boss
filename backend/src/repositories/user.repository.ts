@@ -32,7 +32,9 @@ export class UserRepository {
                             select: {
                                 id: true,
                                 name: true,
-                                businessId: true
+                                businessId: true,
+                                address: true,
+                                image: true
                             }
                         }
                     }

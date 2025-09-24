@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { authApi, productApi } from '@/lib/api';
+import { useOutletContext } from '@/components/providers/OutletProvider';
 
 export interface ProductItem {
   id: string;
@@ -26,9 +27,8 @@ export interface OutletItem {
 }
 
 export function useProductsData() {
+  const { selectedOutletId, outlets: contextOutlets, isLoading: contextLoading } = useOutletContext();
   const [products, setProducts] = useState<ProductItem[]>([]);
-  const [outlets, setOutlets] = useState<OutletItem[]>([]);
-  const [selectedOutlet, setSelectedOutlet] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -43,25 +43,12 @@ export function useProductsData() {
     const initializeData = async () => {
       try {
         const userData = await authApi.me();
-        setOutlets(userData.outlets);
 
         const hasBusiness = !!userData.business?.id;
         const hasBank = !!(userData.business?.bankName && userData.business?.accountNumber);
         setHasBusinessProfile(hasBusiness && hasBank);
         setHasOutlet(userData.outlets.length > 0);
         if (userData.outlets.length === 0) setIsLoading(false);
-
-        if (userData.outlets.length > 0) {
-          const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
-          const validSaved = savedOutletId && userData.outlets.find((o: OutletItem) => o.id === savedOutletId);
-          if (validSaved && savedOutletId) {
-            setSelectedOutlet(savedOutletId);
-          } else {
-            const firstOutletId = userData.outlets[0].id;
-            setSelectedOutlet(firstOutletId);
-            if (!savedOutletId) localStorage.setItem('selectedOutlet', firstOutletId);
-          }
-        }
       } catch (e) {
         console.error('Error fetching user data:', e);
         setError('Gagal memuat data pengguna');
@@ -72,24 +59,18 @@ export function useProductsData() {
     initializeData();
   }, []);
 
+  // Reset to page 1 when outlet changes
   useEffect(() => {
-    const handleOutletChange = (event: any) => {
-      const newOutletId = event.detail.outletId;
-      setSelectedOutlet(newOutletId);
+    if (selectedOutletId) {
       setCurrentPage(1);
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('outletChanged', handleOutletChange as EventListener);
-      return () => window.removeEventListener('outletChanged', handleOutletChange as EventListener);
     }
-  }, []);
+  }, [selectedOutletId]);
 
   const fetchProducts = useCallback(async () => {
-    if (!selectedOutlet) return;
+    if (!selectedOutletId) return;
     try {
       setIsLoading(true);
-      const response = await productApi.getByOutlet(selectedOutlet, {
+      const response = await productApi.getByOutlet(selectedOutletId, {
         page: currentPage,
         limit: itemsPerPage,
         search: searchQuery || undefined,
@@ -127,11 +108,11 @@ export function useProductsData() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, itemsPerPage, searchQuery, selectedOutlet]);
+  }, [currentPage, itemsPerPage, searchQuery, selectedOutletId]);
 
   useEffect(() => {
-    if (selectedOutlet) fetchProducts();
-  }, [selectedOutlet, currentPage, itemsPerPage, searchQuery, fetchProducts]);
+    if (selectedOutletId && !contextLoading) fetchProducts();
+  }, [selectedOutletId, currentPage, itemsPerPage, searchQuery, fetchProducts, contextLoading]);
 
   const handleSearch = (q: string) => {
     setSearchQuery(q);
@@ -161,9 +142,9 @@ export function useProductsData() {
   };
 
   const handleExportProducts = async () => {
-    if (!selectedOutlet) return;
+    if (!selectedOutletId) return;
     try {
-      const blob = await productApi.exportData(selectedOutlet, {
+      const blob = await productApi.exportData(selectedOutletId, {
         search: searchQuery || undefined,
       });
       const url = window.URL.createObjectURL(blob);
@@ -193,8 +174,8 @@ export function useProductsData() {
   return {
     // data
     products,
-    outlets,
-    selectedOutlet,
+    outlets: contextOutlets,
+    selectedOutlet: selectedOutletId,
     currentPage,
     itemsPerPage,
     totalPages,
@@ -204,8 +185,7 @@ export function useProductsData() {
     error,
     hasBusinessProfile,
     hasOutlet,
-    // setters
-    setSelectedOutlet,
+    // setters  
     setCurrentPage,
     setItemsPerPage,
     setSearchQuery,

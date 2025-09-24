@@ -38,6 +38,34 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Handle 401 Unauthorized - redirect to login
+    if (error.response?.status === 401) {
+      const isLogoutEndpoint = error.config?.url?.includes('/auth/logout');
+
+      if (isLogoutEndpoint) {
+        console.log('🔐 401 on logout endpoint - forcing redirect to login to ensure logout');
+        // Even for logout endpoint 401, redirect to login to ensure user is logged out
+        // Server may have failed to clear httpOnly cookie, but we must ensure logout succeeds
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('selectedOutlet');
+          localStorage.removeItem('selectedOutletId');
+          // Force redirect to login to complete logout process
+          window.location.href = '/auth/login?reason=logout_completed';
+        }
+        return Promise.reject(error);
+      }
+
+      console.log('🔐 401 Unauthorized - redirecting to login');
+      if (typeof window !== 'undefined') {
+        // Clear stored outlet data (token is in httpOnly cookie, handled by server)
+        localStorage.removeItem('selectedOutlet');
+        localStorage.removeItem('selectedOutletId');
+        // Redirect to login page
+        window.location.href = '/auth/login';
+      }
+      return Promise.reject(error);
+    }
+
     if (error.response?.data) {
       const backendMessage = error.response.data?.message ||
         error.response.data?.data?.message ||
@@ -55,8 +83,6 @@ apiClient.interceptors.response.use(
 
 // Get auth token from cookies (deprecated - using httpOnly cookies now)
 export const getAuthToken = (): string | null => {
-  // Token is now stored in httpOnly cookies, not accessible from JavaScript
-  // This function is kept for backward compatibility but returns null
   return null;
 };
 

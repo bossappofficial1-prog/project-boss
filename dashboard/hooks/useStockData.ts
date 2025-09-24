@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { authApi, productApi, stockApi } from '@/lib/api';
+import { useOutletContext } from '@/components/providers/OutletProvider';
 
 export interface StockItem {
   id: string;
@@ -21,9 +22,8 @@ export interface OutletItem {
 }
 
 export function useStockData() {
+  const { selectedOutletId, outlets: contextOutlets, isLoading: contextLoading } = useOutletContext();
   const [items, setItems] = useState<StockItem[]>([]);
-  const [outlets, setOutlets] = useState<OutletItem[]>([]);
-  const [selectedOutlet, setSelectedOutlet] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [isLoading, setIsLoading] = useState(true);
@@ -35,22 +35,11 @@ export function useStockData() {
     const initialize = async () => {
       try {
         const user = await authApi.me();
-        setOutlets(user.outlets);
         const hasBusiness = !!user.business?.id;
         const hasBank = !!(user.business?.bankName && user.business?.accountNumber);
         setHasBusinessProfile(hasBusiness && hasBank);
         setHasOutlet(user.outlets.length > 0);
         if (user.outlets.length === 0) setIsLoading(false);
-        if (user.outlets.length > 0) {
-          const saved = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
-          const valid = saved && user.outlets.find((o: OutletItem) => o.id === saved);
-          if (valid && saved) setSelectedOutlet(saved);
-          else {
-            const first = user.outlets[0].id;
-            setSelectedOutlet(first);
-            if (!saved) localStorage.setItem('selectedOutlet', first);
-          }
-        }
       } catch (e) {
         console.error('Error fetching user data:', e);
         setError('Gagal memuat data pengguna');
@@ -60,19 +49,11 @@ export function useStockData() {
     initialize();
   }, []);
 
-  useEffect(() => {
-    const onOutletChange = (event: any) => {
-      setSelectedOutlet(event.detail.outletId);
-    };
-    window.addEventListener('outletChanged', onOutletChange as EventListener);
-    return () => window.removeEventListener('outletChanged', onOutletChange as EventListener);
-  }, []);
-
   const fetchStock = useCallback(async () => {
-    if (!selectedOutlet) return;
+    if (!selectedOutletId) return;
     try {
       setIsLoading(true);
-      const data = await stockApi.getByOutlet(selectedOutlet, {
+      const data = await stockApi.getByOutlet(selectedOutletId, {
         type: 'GOODS',
         search: searchQuery || undefined,
         status: statusFilter === 'ALL' ? undefined : statusFilter,
@@ -86,18 +67,18 @@ export function useStockData() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedOutlet, searchQuery, statusFilter]);
+  }, [selectedOutletId, searchQuery, statusFilter]);
 
   useEffect(() => {
-    if (selectedOutlet) fetchStock();
-  }, [selectedOutlet, searchQuery, statusFilter, fetchStock]);
+    if (selectedOutletId && !contextLoading) fetchStock();
+  }, [selectedOutletId, searchQuery, statusFilter, fetchStock, contextLoading]);
 
   const handleSearchClick = () => fetchStock();
 
   const handleExport = async () => {
-    if (!selectedOutlet) return;
+    if (!selectedOutletId) return;
     try {
-      const blob = await productApi.exportData(selectedOutlet, {
+      const blob = await productApi.exportData(selectedOutletId, {
         type: 'GOODS',
         search: searchQuery || undefined,
       });
@@ -135,8 +116,8 @@ export function useStockData() {
   return {
     // data
     stockItems: visibleItems,
-    outlets,
-    selectedOutlet,
+    outlets: contextOutlets,
+    selectedOutlet: selectedOutletId,
     searchQuery,
     statusFilter,
     isLoading,

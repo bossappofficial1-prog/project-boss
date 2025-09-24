@@ -216,6 +216,8 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 onLeftClickHandler = () => router.push('/nearby');
             } else if (from === "product") {
                 onLeftClickHandler = () => router.push('/');
+            } else {
+                onLeftClickHandler = () => router.push('/');
             }
 
             setAppBar({
