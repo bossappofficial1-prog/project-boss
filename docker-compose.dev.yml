@@ -70,7 +70,6 @@ services:
       start_period: 30s
     networks:
       - default
-    
 
   consumer:
     image: ${DOCKER_USER:-pitok}/project-consumer:development
