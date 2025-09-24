@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useSelectedOutletId } from '@/hooks/useOutlet';
+import { useOutletContext } from '@/components/providers/OutletProvider';
 import { useExpenses } from '@/hooks/useExpenses';
 import { ExpensesHeader } from '@/components/owner/expenses/Header';
 import { ExpensesControls } from '@/components/owner/expenses/Controls';
@@ -13,7 +13,7 @@ import ExpenseModal from '@/components/modals/ExpenseModal';
 import { type Expense } from '@/lib/apis/expense';
 
 export default function ExpensesPage() {
-		const { outletId } = useSelectedOutletId();
+	const { selectedOutletId: outletId } = useOutletContext();
 	const { expenses, summary, loading, error, startISO, endISO, setRange, refetch, create, update, remove } = useExpenses(outletId);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<Expense | null>(null);

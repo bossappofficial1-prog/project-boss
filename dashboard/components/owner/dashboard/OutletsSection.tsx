@@ -26,8 +26,16 @@ export default function OutletsSection({
   const [selectedForAction, setSelectedForAction] = useState<string | null>(null);
 
   const handleSelectOutlet = (outlet: Outlet) => {
-    if (outlet.id === selectedOutlet) return; // Already selected
+    console.log(`🔄 OutletsSection: handleSelectOutlet called`);
+    console.log(`🔄 OutletsSection: outlet.id = ${outlet.id}, selectedOutlet prop = ${selectedOutlet}`);
+    console.log(`🔄 OutletsSection: comparison result = ${outlet.id === selectedOutlet}`);
 
+    if (outlet.id === selectedOutlet) {
+      console.log(`🔄 OutletsSection: Outlet already selected, returning early`);
+      return; // Already selected
+    }
+
+    console.log(`🔄 OutletsSection: Calling setSelectedOutlet with outlet:`, outlet);
     setSelectedOutlet(outlet);
     toast.success('Outlet berubah', {
       description: `Beralih ke ${outlet.name}`,

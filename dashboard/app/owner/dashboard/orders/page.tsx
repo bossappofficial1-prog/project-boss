@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from 'react';
-import { useGoodsOrders, useSelectedOutletId } from '@/hooks/useOrders';
+import { useGoodsOrders } from '@/hooks/useOrders';
+import { useOutletContext } from '@/components/providers/OutletProvider';
 import { OrdersDesktopTable } from '@/components/owner/orders/DesktopTable';
 import { OrdersMobileCards } from '@/components/owner/orders/MobileCards';
 import { OrdersHeader } from '@/components/owner/orders/Header';
@@ -11,7 +12,7 @@ import { OrdersSkeleton } from '@/components/owner/orders/Skeleton';
 import { QuickOrderModal } from '@/components/modals/QuickOrderModal';
 
 export default function OrdersPage() {
-  const { outletId } = useSelectedOutletId();
+  const { selectedOutletId: outletId } = useOutletContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'processing' | 'ready' | 'completed'>('all');
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);

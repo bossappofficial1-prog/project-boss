@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { authApi, productApi } from '@/lib/api';
+import { useOutletContext } from '@/components/providers/OutletProvider';
 
 export interface ServiceItem {
   id: string;
@@ -22,9 +23,8 @@ export interface OutletItem {
 }
 
 export function useServicesData() {
+  const { selectedOutletId, outlets: contextOutlets, isLoading: contextLoading } = useOutletContext();
   const [services, setServices] = useState<ServiceItem[]>([]);
-  const [outlets, setOutlets] = useState<OutletItem[]>([]);
-  const [selectedOutlet, setSelectedOutlet] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [isLoading, setIsLoading] = useState(true);
@@ -36,22 +36,11 @@ export function useServicesData() {
     const initializeData = async () => {
       try {
         const userData = await authApi.me();
-        setOutlets(userData.outlets);
         const hasBusiness = !!userData.business?.id;
         const hasBank = !!(userData.business?.bankName && userData.business?.accountNumber);
         setHasBusinessProfile(hasBusiness && hasBank);
         setHasOutlet(userData.outlets.length > 0);
         if (userData.outlets.length === 0) setIsLoading(false);
-        if (userData.outlets.length > 0) {
-          const savedOutletId = typeof window !== 'undefined' ? localStorage.getItem('selectedOutlet') : null;
-          const validSaved = savedOutletId && userData.outlets.find((o: OutletItem) => o.id === savedOutletId);
-          if (validSaved && savedOutletId) setSelectedOutlet(savedOutletId);
-          else {
-            const firstOutletId = userData.outlets[0].id;
-            setSelectedOutlet(firstOutletId);
-            if (!savedOutletId) localStorage.setItem('selectedOutlet', firstOutletId);
-          }
-        }
       } catch (e) {
         setError('Error mengambil data user. Silakan coba lagi.');
         console.error('Error fetching user data:', e);
@@ -60,19 +49,11 @@ export function useServicesData() {
     initializeData();
   }, []);
 
-  useEffect(() => {
-    const handleOutletChange = (event: any) => {
-      setSelectedOutlet(event.detail.outletId);
-    };
-    window.addEventListener('outletChanged', handleOutletChange as EventListener);
-    return () => window.removeEventListener('outletChanged', handleOutletChange as EventListener);
-  }, []);
-
   const fetchServices = useCallback(async () => {
-    if (!selectedOutlet) return;
+    if (!selectedOutletId) return;
     try {
       setIsLoading(true);
-      const data: any = await productApi.getByOutlet(selectedOutlet, {
+      const data: any = await productApi.getByOutlet(selectedOutletId, {
         search: searchQuery || undefined,
       });
       const list: ServiceItem[] = Array.isArray(data)
@@ -87,18 +68,18 @@ export function useServicesData() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedOutlet, searchQuery]);
+  }, [selectedOutletId, searchQuery]);
 
   useEffect(() => {
-    if (selectedOutlet) fetchServices();
-  }, [selectedOutlet, searchQuery, statusFilter, fetchServices]);
+    if (selectedOutletId && !contextLoading) fetchServices();
+  }, [selectedOutletId, searchQuery, statusFilter, fetchServices, contextLoading]);
 
   const handleSearchClick = () => fetchServices();
 
   const handleExportServices = async () => {
-    if (!selectedOutlet) return;
+    if (!selectedOutletId) return;
     try {
-      const blob = await productApi.exportData(selectedOutlet, {
+      const blob = await productApi.exportData(selectedOutletId, {
         type: 'SERVICE',
         search: searchQuery || undefined,
       });
@@ -129,8 +110,8 @@ export function useServicesData() {
 
   return {
     services: visibleServices,
-    outlets,
-    selectedOutlet,
+    outlets: contextOutlets,
+    selectedOutlet: selectedOutletId,
     searchQuery,
     statusFilter,
     isLoading,

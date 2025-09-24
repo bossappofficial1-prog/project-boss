@@ -46,12 +46,12 @@ let currentBusinessOutlet: string | null = null;
 
 export const joinBusinessOutlet = (outletId: string): void => {
     if (!socket) {
-        console.error('Socket not initialized');
+        console.error('❌ joinBusinessOutlet: Socket not initialized');
         return;
     }
 
     if (!outletId || outletId.trim() === '') {
-        console.warn('Invalid outlet ID provided');
+        console.warn('⚠️ joinBusinessOutlet: Invalid outlet ID provided');
         return;
     }
 
@@ -110,7 +110,10 @@ export const useSocket = (outletId?: string) => {
 
         // Auto-join business outlet room jika outletId disediakan dan valid
         if (outletId && outletId.trim() !== '') {
+            console.log(`🔄 useSocket: Joining business outlet room for outletId: ${outletId}`);
             joinBusinessOutlet(outletId);
+        } else {
+            console.log(`🔄 useSocket: No valid outletId provided (${outletId}), skipping business outlet join`);
         }
 
         // Cleanup
@@ -120,7 +123,25 @@ export const useSocket = (outletId?: string) => {
             socketInstance.off('businessEvent');
             socketInstance.off('orderEvent');
         };
-    }, [outletId]);
+    }, []); // Remove outletId from dependency
+
+    // Separate effect for outlet changes
+    useEffect(() => {
+        if (outletId && outletId.trim() !== '') {
+            console.log(`🔄 useSocket: Outlet changed, re-joining business outlet room for outletId: ${outletId}`);
+            joinBusinessOutlet(outletId);
+        } else {
+            console.log(`🔄 useSocket: Outlet changed to empty, leaving business outlet room`);
+            // Leave current business outlet if exists
+            if (currentBusinessOutlet) {
+                if (socket) {
+                    socket.emit('business:leave', currentBusinessOutlet);
+                    console.log(`📤 Left business outlet room due to outlet change: ${currentBusinessOutlet}`);
+                    currentBusinessOutlet = null;
+                }
+            }
+        }
+    }, [outletId]); // Only depend on outletId changes
 
     return {
         isConnected,

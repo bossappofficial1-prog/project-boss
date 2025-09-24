@@ -2,8 +2,8 @@
     "name": "BOSS",
     "short_name": "Customer",
     "description": "Boss Customer Application - Your best shopping companion",
-    "theme_color": "#000000",
-    "background_color": "#ffffff",
+    "theme_color": "#b22222",
+    "background_color": "#b22222",
     "display": "standalone",
     "orientation": "portrait",
     "scope": "/",
@@ -23,7 +23,7 @@
             "url": "/",
             "icons": [
                 {
-                    "src": "/assets/logo/logo-bossapp.svg",
+                    "src": "/assets/logo/logo-color.svg",
                     "sizes": "any",
                     "type": "image/svg+xml"
                 }
@@ -36,7 +36,7 @@
             "url": "/cart",
             "icons": [
                 {
-                    "src": "/assets/logo/logo-bossapp.svg",
+                    "src": "/assets/logo/logo-color.svg",
                     "sizes": "any",
                     "type": "image/svg+xml"
                 }
@@ -49,7 +49,7 @@
             "url": "/orders",
             "icons": [
                 {
-                    "src": "/assets/logo/logo-bossapp.svg",
+                    "src": "/assets/logo/logo-color.svg",
                     "sizes": "any",
                     "type": "image/svg+xml"
                 }
@@ -58,55 +58,55 @@
     ],
     "icons": [
         {
-            "src": "/assets/logo/logo-bossapp.svg",
+            "src": "/assets/logo/logo-color.svg",
             "sizes": "any",
             "type": "image/svg+xml",
             "purpose": "maskable any"
         },
         {
-            "src": "/icons/icon-192x192.svg",
+            "src": "/assets/logo/logo-color.svg",
             "sizes": "192x192",
             "type": "image/svg+xml",
             "purpose": "maskable any"
         },
         {
-            "src": "/icons/icon-512x512.svg",
+            "src": "/assets/logo/logo-color.svg",
             "sizes": "512x512",
             "type": "image/svg+xml",
             "purpose": "maskable any"
         },
         {
-            "src": "/assets/logo/logo-bossapp.svg",
+            "src": "/assets/logo/logo-color.svg",
             "sizes": "72x72",
             "type": "image/svg+xml",
             "purpose": "maskable any"
         },
         {
-            "src": "/assets/logo/logo-bossapp.svg",
+            "src": "/assets/logo/logo-color.svg",
             "sizes": "96x96",
             "type": "image/svg+xml",
             "purpose": "maskable any"
         },
         {
-            "src": "/assets/logo/logo-bossapp.svg",
+            "src": "/assets/logo/logo-color.svg",
             "sizes": "128x128",
             "type": "image/svg+xml",
             "purpose": "maskable any"
         },
         {
-            "src": "/assets/logo/logo-bossapp.svg",
+            "src": "/assets/logo/logo-color.svg",
             "sizes": "144x144",
             "type": "image/svg+xml",
             "purpose": "maskable any"
         },
         {
-            "src": "/assets/logo/logo-bossapp.svg",
+            "src": "/assets/logo/logo-color.svg",
             "sizes": "152x152",
             "type": "image/svg+xml",
             "purpose": "maskable any"
         },
         {
-            "src": "/assets/logo/logo-bossapp.svg",
+            "src": "/assets/logo/logo-color.svg",
             "sizes": "384x384",
             "type": "image/svg+xml",
             "purpose": "maskable any"

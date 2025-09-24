@@ -26,6 +26,11 @@ export function useDashboardData(initialDate?: string) {
   // Initialize socket connection - use selectedOutlet.id if available
   const { isConnected, businessEvents } = useSocket(selectedOutlet?.id || '');
 
+  // Monitor outlet changes for debugging
+  useEffect(() => {
+    console.log(`🔄 useDashboardData: selectedOutlet changed to: ${selectedOutlet?.id || 'null'}`);
+  }, [selectedOutlet?.id]);
+
   const fetchDashboardSummary = async (outletId: string) => {
     try {
       const summary = await dashboardApi.getSummary(outletId);

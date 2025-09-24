@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Suspense } from 'react';
-import { useOutletQueue, useSelectedOutletId } from '@/hooks/useOrders';
+import { useOutletQueue } from '@/hooks/useOrders';
+import { useOutletContext } from '@/components/providers/OutletProvider';
 import { QuickOrderModal } from '@/components/modals/QuickOrderModal';
 import { QueueHeader } from '@/components/owner/queue/Header';
 import { QueueControls } from '@/components/owner/queue/Controls';
@@ -12,7 +13,7 @@ import { QueueEmptyState } from '@/components/owner/queue/EmptyState';
 import { QueueSkeleton } from '@/components/owner/queue/Skeleton';
 
 export default function QueuePage() {
-  const { outletId: selectedOutletId } = useSelectedOutletId();
+  const { selectedOutletId } = useOutletContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
   const [showQuickModal, setShowQuickModal] = useState(false);

@@ -250,11 +250,6 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
 
   // Memoize form population to prevent unnecessary re-renders
   const populateForm = useCallback((outletData: OutletDetail) => {
-    console.log('🏪 Populating form with outlet data:', {
-      name: outletData.name,
-      isOpen: outletData.isOpen,
-      operatingHoursCount: outletData.operatingHours?.length || 0
-    })
 
     setValue('name', outletData.name)
     setValue('address', outletData.address || '')
@@ -267,11 +262,9 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
     // Parse and set initial operating hours
     if (outletData.operatingHours && outletData.operatingHours.length > 0) {
       const hoursMap = parseOperatingHours(outletData.operatingHours)
-      console.log('⏰ Setting initial operating hours:', hoursMap)
       setOperatingHoursData(hoursMap)
       setInitialOperatingHours(hoursMap)
     } else {
-      console.log('⏰ No operating hours found, setting empty')
       const emptyHours = {}
       setOperatingHoursData(emptyHours)
       setInitialOperatingHours(emptyHours)
@@ -280,7 +273,6 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
     // Reset unsaved changes flag
     setHasUnsavedChanges(false)
     setOperatingHoursChanged(false)
-    console.log('🔄 Form populated, unsaved changes reset to false')
   }, [setValue, parseOperatingHours])
 
   // Populate form when outlet changes (edit mode) - optimized
@@ -339,7 +331,6 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
 
   // Memoize operating hours change handler with change detection
   const handleOperatingHoursChange = useCallback((newData: Record<number, OperatingHoursFormData>) => {
-    console.log('🔄 Operating hours changed:', { newData, initialOperatingHours })
     setOperatingHoursData(newData)
 
     // Simple approach: just mark as changed when operating hours are modified
@@ -347,7 +338,6 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
 
     // Also do deep comparison for detailed tracking
     const hasChanges = !isEqual(newData, initialOperatingHours)
-    console.log('⚡ Has operating hours changes:', hasChanges)
     setHasUnsavedChanges(hasChanges)
   }, [initialOperatingHours])
 
@@ -375,7 +365,6 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
     }
 
     const changes = !isEqual(currentData, initialData) || !!formData.file
-    console.log('📝 Form changes detected:', { changes, currentData, initialData })
     return changes
   }, [mode, formData, outletDetail])
 
@@ -383,14 +372,6 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
   const isFormValid = useMemo(() => {
     const formValid = isValid && (mode === 'add' ? !!businessId : true)
     const hasChanges = hasUnsavedChanges || hasFormChanges || operatingHoursChanged
-    console.log('✅ Form validation:', {
-      formValid,
-      hasUnsavedChanges,
-      hasFormChanges,
-      operatingHoursChanged,
-      hasChanges,
-      isValid: formValid && hasChanges
-    })
     return formValid && hasChanges
   }, [isValid, hasUnsavedChanges, hasFormChanges, operatingHoursChanged, mode, businessId])
 
@@ -545,17 +526,6 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
               <Button
                 type="submit"
                 disabled={isSubmitting || !isFormValid}
-                onClick={() => {
-                  console.log('🔴 Submit button clicked. Current state:', {
-                    isSubmitting,
-                    isFormValid,
-                    hasUnsavedChanges,
-                    hasFormChanges,
-                    operatingHoursChanged,
-                    isValid,
-                    mode
-                  })
-                }}
               >
                 {isSubmitting ? (
                   <>

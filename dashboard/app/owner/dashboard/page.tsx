@@ -71,7 +71,7 @@ export default function DashboardPage() {
             {globalError}
           </div>
         )}
-        <Toolbar selectedDate={selectedDate} onDateChange={setSelectedDate} isConnected={isConnected} />
+        {/* <Toolbar selectedDate={selectedDate} onDateChange={setSelectedDate} isConnected={isConnected} /> */}
 
         {/* Business Profile Section */}
         {business ? (

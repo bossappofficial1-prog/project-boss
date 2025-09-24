@@ -6,9 +6,12 @@ import type { Outlet } from '@/types/dashboard';
 
 interface OutletContextType {
     selectedOutlet: Outlet | null;
+    selectedOutletId: string | null;
     outlets: Outlet[];
     setSelectedOutlet: (outlet: Outlet | null) => void;
     isLoading: boolean;
+    error: string | null;
+    refetch: () => Promise<void>;
 }
 
 const OutletContext = createContext<OutletContextType | null>(null);
@@ -21,139 +24,123 @@ export function OutletProvider({ children }: OutletProviderProps) {
     const [outlets, setOutlets] = useState<Outlet[]>([]);
     const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchOutlets = async () => {
-            try {
-                setIsLoading(true);
+    const fetchOutlets = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
 
-                // Use authApi.me() instead of direct apiCall
-                const response = await authApi.me();
+            const response = await authApi.me();
 
-                if (response.outlets) {
-                    console.log('OutletProvider: Outlets fetched successfully:', response.outlets.length);
-                    setOutlets(response.outlets);
+            if (response.outlets) {
+                setOutlets(response.outlets);
 
-                    // Set selected outlet from localStorage or default to first
-                    const savedOutletId = localStorage.getItem('selectedOutletId');
-                    console.log('OutletProvider: Saved outlet ID from localStorage:', savedOutletId);
+                const savedOutletId = localStorage.getItem('selectedOutlet');
 
-                    if (savedOutletId) {
-                        const savedOutlet = response.outlets.find((o: any) => o.id === savedOutletId);
-                        if (savedOutlet) {
-                            console.log('OutletProvider: Using saved outlet (found by ID):', savedOutlet);
-                            setSelectedOutlet(savedOutlet);
-                        } else {
-                            console.log('OutletProvider: Saved outlet ID not found, using first outlet');
-                            // Saved outlet doesn't exist, use first available
-                            const firstOutlet = response.outlets[0];
-                            setSelectedOutlet(firstOutlet);
-                            localStorage.setItem('selectedOutletId', firstOutlet.id);
-                        }
+                if (savedOutletId) {
+                    const savedOutlet = response.outlets.find((o: any) => o.id === savedOutletId);
+                    if (savedOutlet) {
+                        setSelectedOutlet(savedOutlet);
                     } else {
-                        // Try to migrate from old format (selectedOutlet object)
-                        const oldSavedOutlet = localStorage.getItem('selectedOutlet');
-                        if (oldSavedOutlet) {
-                            try {
+                        const firstOutlet = response.outlets[0];
+                        setSelectedOutlet(firstOutlet);
+                        localStorage.setItem('selectedOutlet', firstOutlet.id);
+                    }
+                } else {
+                    const oldSavedOutlet = localStorage.getItem('selectedOutletId');
+                    if (oldSavedOutlet) {
+                        try {
+                            const exists = response.outlets.find((o: any) => o.id === oldSavedOutlet);
+                            if (exists) {
+                                setSelectedOutlet(exists);
+                                localStorage.setItem('selectedOutlet', exists.id);
+                                localStorage.removeItem('selectedOutletId');
+                            } else {
                                 const parsed = JSON.parse(oldSavedOutlet);
-                                const exists = response.outlets.find((o: any) => o.id === parsed.id);
-                                if (exists) {
-                                    console.log('OutletProvider: Migrating from old format to outlet ID:', parsed.id);
-                                    setSelectedOutlet(exists);
-                                    localStorage.setItem('selectedOutletId', exists.id);
-                                    localStorage.removeItem('selectedOutlet'); // Clean up old format
+                                const existsParsed = response.outlets.find((o: any) => o.id === parsed.id);
+                                if (existsParsed) {
+                                    setSelectedOutlet(existsParsed);
+                                    localStorage.setItem('selectedOutlet', existsParsed.id);
+                                    localStorage.removeItem('selectedOutletId');
                                 } else {
                                     const firstOutlet = response.outlets[0];
                                     setSelectedOutlet(firstOutlet);
-                                    localStorage.setItem('selectedOutletId', firstOutlet.id);
-                                    localStorage.removeItem('selectedOutlet');
+                                    localStorage.setItem('selectedOutlet', firstOutlet.id);
+                                    localStorage.removeItem('selectedOutletId');
                                 }
-                            } catch {
-                                const firstOutlet = response.outlets[0];
-                                setSelectedOutlet(firstOutlet);
-                                localStorage.setItem('selectedOutletId', firstOutlet.id);
-                                localStorage.removeItem('selectedOutlet');
                             }
-                        } else if (response.outlets.length > 0) {
-                            console.log('OutletProvider: No saved outlet, using first outlet');
-                            // No saved outlet, use first
+                        } catch {
                             const firstOutlet = response.outlets[0];
                             setSelectedOutlet(firstOutlet);
-                            localStorage.setItem('selectedOutletId', firstOutlet.id);
+                            localStorage.setItem('selectedOutlet', firstOutlet.id);
+                            localStorage.removeItem('selectedOutletId');
                         }
-                    }
-                } else {
-                    console.log('OutletProvider: No outlets in response');
-                }
-            } catch (error) {
-                console.error('Error fetching outlets:', error);
-
-                // Fallback: check localStorage for previous outlet ID
-                const savedOutletId = localStorage.getItem('selectedOutletId');
-                if (savedOutletId) {
-                    console.log('OutletProvider: Using cached outlet ID from localStorage:', savedOutletId);
-                    // We can't reconstruct the full outlet object from just ID
-                    // Let the UI show the loading state until a proper fetch succeeds
-                }
-
-                // Try old format as fallback
-                const savedOutlet = localStorage.getItem('selectedOutlet');
-                if (savedOutlet) {
-                    try {
-                        const parsed = JSON.parse(savedOutlet);
-                        setSelectedOutlet(parsed);
-                        setOutlets([parsed]); // Set as single outlet for now
-                        // Migrate to new format
-                        localStorage.setItem('selectedOutletId', parsed.id);
-                        localStorage.removeItem('selectedOutlet');
-                        console.log('OutletProvider: Using and migrating cached outlet from localStorage');
-                    } catch {
-                        console.log('OutletProvider: No valid cached outlet found');
+                    } else if (response.outlets.length > 0) {
+                        const firstOutlet = response.outlets[0];
+                        setSelectedOutlet(firstOutlet);
+                        localStorage.setItem('selectedOutlet', firstOutlet.id);
                     }
                 }
-
-                // Don't throw error, allow app to continue
-                // The socket and other features can still work without outlet data
-            } finally {
-                setIsLoading(false);
             }
-        };
+        } catch (error) {
+            console.error('Error fetching outlets:', error);
 
+            const savedOutletOld = localStorage.getItem('selectedOutletId');
+            if (savedOutletOld) {
+                try {
+                    const parsed = JSON.parse(savedOutletOld);
+                    if (parsed && parsed.id) {
+                        setSelectedOutlet(parsed);
+                        setOutlets([parsed]);
+                        localStorage.setItem('selectedOutlet', parsed.id);
+                        localStorage.removeItem('selectedOutletId');
+                    }
+                } catch {
+                    // Handle plain ID format silently
+                }
+            }
+            setError('Failed to fetch outlets');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchOutlets();
     }, []);
 
     const handleSetSelectedOutlet = (outlet: Outlet | null) => {
-        console.log('OutletProvider: setSelectedOutlet called with:', outlet);
+        console.log(`🔄 OutletProvider: handleSetSelectedOutlet called with outlet:`, outlet?.id || 'null');
+        console.log(`🔄 OutletProvider: Previous selectedOutlet:`, selectedOutlet?.id || 'null');
+
         setSelectedOutlet(outlet);
+
+        console.log(`🔄 OutletProvider: State updated, new selectedOutlet:`, outlet?.id || 'null');
+
         if (typeof window !== 'undefined') {
             if (outlet) {
                 try {
-                    localStorage.setItem('selectedOutletId', outlet.id);
-                    console.log('OutletProvider: Outlet ID saved to localStorage successfully:', outlet.id);
-                    // Dispatch custom event for other components
-                    window.dispatchEvent(new CustomEvent('outletChanged', {
-                        detail: { outlet }
-                    }));
-                    console.log('OutletProvider: outletChanged event dispatched');
+                    localStorage.setItem('selectedOutlet', outlet.id);
+                    localStorage.removeItem('selectedOutletId');
                 } catch (error) {
-                    console.error('OutletProvider: Failed to save outlet ID to localStorage:', error);
+                    console.error('Failed to save outlet to localStorage:', error);
                 }
             } else {
-                console.log('OutletProvider: Outlet is null, removing from localStorage');
-                localStorage.removeItem('selectedOutletId');
-                // Also clean up old format
                 localStorage.removeItem('selectedOutlet');
+                localStorage.removeItem('selectedOutletId');
             }
-        } else {
-            console.warn('OutletProvider: Window not available (SSR)');
         }
     };
 
     const contextValue: OutletContextType = {
         selectedOutlet,
+        selectedOutletId: selectedOutlet?.id || null,
         outlets,
         setSelectedOutlet: handleSetSelectedOutlet,
-        isLoading
+        isLoading,
+        error,
+        refetch: fetchOutlets
     };
 
     return (

@@ -12,7 +12,6 @@ interface HeaderProps {
 }
 
 export default function Header({ onToggleSidebar }: HeaderProps) {
-  const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { data: userData, isLoading: isUserLoading } = useUserData();
@@ -27,15 +26,12 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
 
   const handleLogoutConfirm = async () => {
     try {
-      await apiClient.post('/auth/logout');
+      const res = await apiClient.post('/auth/logout');
+
+      if (res.status == 200) window.location.href = "/auth/login"
+
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      // Clear any remaining localStorage data (for backward compatibility)
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('selectedOutlet');
-      router.push('/auth/login');
     }
   };
 

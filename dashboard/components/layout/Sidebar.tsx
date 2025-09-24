@@ -53,38 +53,23 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     outlets = outletContext.outlets;
     outletLoading = outletContext.isLoading;
     setSelectedOutlet = outletContext.setSelectedOutlet;
-    console.log('OutletContext loaded successfully:', {
-      selectedOutlet: selectedOutlet?.name,
-      outletsCount: outlets.length,
-      isLoading: outletLoading
-    });
   } catch (error) {
-    console.error('OutletContext not available in Sidebar:', error);
-
-    // Try to get from localStorage as fallback
     if (typeof window !== 'undefined') {
-      const savedOutletId = localStorage.getItem('selectedOutletId');
-      if (savedOutletId) {
-        console.log('Sidebar: Found saved outlet ID:', savedOutletId);
-        // We can't reconstruct the full outlet without the outlets array
-        // This will be handled when outlets are loaded
-      }
-
-      // Try old format for migration
-      const oldSavedOutlet = localStorage.getItem('selectedOutlet');
+      const oldSavedOutlet = localStorage.getItem('selectedOutletId');
       if (oldSavedOutlet) {
         try {
           const parsed = JSON.parse(oldSavedOutlet);
           if (parsed && parsed.id) {
             selectedOutlet = parsed;
             outlets = [parsed];
-            // Migrate to new format
-            localStorage.setItem('selectedOutletId', parsed.id);
-            localStorage.removeItem('selectedOutlet');
-            console.log('Sidebar: Migrated outlet from old format:', parsed);
+            localStorage.setItem('selectedOutlet', parsed.id);
+            localStorage.removeItem('selectedOutletId');
           }
         } catch (parseError) {
-          console.error('Sidebar: Failed to parse saved outlet:', parseError);
+          if (oldSavedOutlet) {
+            localStorage.setItem('selectedOutlet', oldSavedOutlet);
+            localStorage.removeItem('selectedOutletId');
+          }
         }
       }
     }
@@ -100,36 +85,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     refetch
   } = useUserData();
 
-  // Process user data when it's available
   useEffect(() => {
-    if (userData) {
-      // Set business data
-      if (userData.business) {
-        setBusiness(userData.business);
-      }
-      // Note: Outlets are now managed by OutletProvider
+    if (userData?.business) {
+      setBusiness(userData.business);
     }
   }, [userData]);
 
   const handleOutletChange = (outletId: string) => {
-    console.log('handleOutletChange called with:', outletId);
-    console.log('Available outlets:', outlets);
-    console.log('setSelectedOutlet function available:', typeof setSelectedOutlet);
-
-    // Find the outlet object from outlets array
+    console.log(`🔄 Sidebar: handleOutletChange called with outletId: ${outletId}`);
     const outlet = outlets.find(o => o.id === outletId);
-    console.log('Found outlet:', outlet);
-
     if (outlet && setSelectedOutlet && typeof setSelectedOutlet === 'function') {
-      console.log('Setting selected outlet:', outlet);
+      console.log(`🔄 Sidebar: Calling setSelectedOutlet with outlet:`, outlet);
       setSelectedOutlet(outlet);
-      // OutletProvider will handle localStorage saving automatically
     } else {
-      console.error('Cannot set outlet:', {
-        outletFound: !!outlet,
-        setSelectedOutletAvailable: !!setSelectedOutlet,
-        setSelectedOutletType: typeof setSelectedOutlet
-      });
+      console.warn(`🔄 Sidebar: Could not find outlet or setSelectedOutlet not available`, { outlet, setSelectedOutlet });
     }
   };
 
@@ -318,13 +287,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
                     : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
                     }`}
-                  onClick={() => {
-                    // No need to save to localStorage - OutletProvider handles it
-                    onClose();
-                  }}
+                  onClick={onClose}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  {/* Active indicator */}
                   {isActive && (
                     <div className="absolute left-0 top-0 h-full w-1 bg-red-600 rounded-r-full"></div>
                   )}
@@ -336,7 +301,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                   <span className="flex-1">{item.name}</span>
 
-                  {/* Hover arrow */}
                   <svg
                     className={`w-4 h-4 transition-all duration-200 ${isActive ? 'opacity-100 text-red-600' : 'opacity-0 group-hover:opacity-100 text-red-200'
                       }`}

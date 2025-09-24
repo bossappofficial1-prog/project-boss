@@ -12,20 +12,28 @@ export function getSelectedOutletId(): string | null {
     }
 
     try {
-        const outletId = localStorage.getItem('selectedOutletId');
+        const outletId = localStorage.getItem('selectedOutlet');
         if (outletId) {
             return outletId;
         }
 
-        // Try to migrate from old format
-        const oldOutlet = localStorage.getItem('selectedOutlet');
+        // Try to migrate from old format (selectedOutletId)
+        const oldOutlet = localStorage.getItem('selectedOutletId');
         if (oldOutlet) {
-            const parsed = JSON.parse(oldOutlet);
-            if (parsed && parsed.id) {
-                // Migrate to new format
-                localStorage.setItem('selectedOutletId', parsed.id);
-                localStorage.removeItem('selectedOutlet');
-                return parsed.id;
+            try {
+                // Try as JSON first
+                const parsed = JSON.parse(oldOutlet);
+                if (parsed && parsed.id) {
+                    // Migrate to new format
+                    localStorage.setItem('selectedOutlet', parsed.id);
+                    localStorage.removeItem('selectedOutletId');
+                    return parsed.id;
+                }
+            } catch {
+                // Try as plain ID
+                localStorage.setItem('selectedOutlet', oldOutlet);
+                localStorage.removeItem('selectedOutletId');
+                return oldOutlet;
             }
         }
 
@@ -46,9 +54,9 @@ export function setSelectedOutletId(outletId: string): void {
     }
 
     try {
-        localStorage.setItem('selectedOutletId', outletId);
+        localStorage.setItem('selectedOutlet', outletId);
         // Clean up old format
-        localStorage.removeItem('selectedOutlet');
+        localStorage.removeItem('selectedOutletId');
     } catch (error) {
         console.error('Error setting selected outlet ID:', error);
     }
@@ -63,8 +71,8 @@ export function clearSelectedOutlet(): void {
     }
 
     try {
-        localStorage.removeItem('selectedOutletId');
-        localStorage.removeItem('selectedOutlet'); // Clean up old format too
+        localStorage.removeItem('selectedOutlet');
+        localStorage.removeItem('selectedOutletId'); // Clean up old format too
     } catch (error) {
         console.error('Error clearing selected outlet:', error);
     }
