@@ -37,13 +37,13 @@ const formatOperatingHours = (operatingHours: OperatingHourType[], locale: Langu
 };
 
 // Helper function to get current day status
-const getCurrentDayStatus = (operatingHours: OperatingHourType[]) => {
+const getCurrentDayStatus = (operatingHours: OperatingHourType[], outletIsOpen: boolean) => {
     if (typeof window === "undefined") return
     const today = new Date().getDay();
     const todayHours = operatingHours.find(hour => hour.dayOfWeek === today);
     const t = useTranslations("outletDetail")
 
-    if (!todayHours || !todayHours.isOpen) {
+    if (!todayHours || !todayHours.isOpen || !outletIsOpen) {
         return { isOpen: false, message: t("closedToday") };
     }
 
@@ -70,12 +70,13 @@ const getCurrentDayStatus = (operatingHours: OperatingHourType[]) => {
     }
 };
 
-const OperatingHoursTab = ({ operatingHours }: { operatingHours: OperatingHourType[] }) => {
+const OperatingHoursTab = ({ operatingHours, outletOpen }: { operatingHours: OperatingHourType[], outletOpen: boolean }) => {
     const locale = useSearchParams().get("locale") as LanguageType
     const formattedHours = formatOperatingHours(operatingHours, locale);
-    const currentStatus = getCurrentDayStatus(operatingHours);
+    const currentStatus = getCurrentDayStatus(operatingHours, outletOpen);
     const today = new Date().getDay();
     const t = useTranslations('outletDetail');
+    const isOpen = outletOpen && currentStatus?.isOpen
 
     return (
         <div className="space-y-4">
@@ -86,10 +87,10 @@ const OperatingHoursTab = ({ operatingHours }: { operatingHours: OperatingHourTy
                 </div>
                 <div className="flex items-center gap-2">
                     <Badge
-                        variant={currentStatus?.isOpen ? "default" : "secondary"}
-                        className={`${currentStatus?.isOpen ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-500 text-white"}`}
+                        variant={isOpen ? "default" : "secondary"}
+                        className={`${isOpen ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-500 text-white"}`}
                     >
-                        {currentStatus?.isOpen ? t("open") : t("closed")}
+                        {isOpen ? t("open") : t("closed")}
                     </Badge>
                     <span className="text-sm text-muted-foreground">{currentStatus?.message}</span>
                 </div>
@@ -378,7 +379,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
                     </TabsContent>
                     <TabsContent value="hours" className="mt-2 space-y-4">
                         {outlet.operatingHours && outlet.operatingHours.length > 0 ? (
-                            <OperatingHoursTab operatingHours={outlet.operatingHours} />
+                            <OperatingHoursTab operatingHours={outlet.operatingHours} outletOpen={outlet.isOpen} />
                         ) : (
                             <EmptyState
                                 title={t("noOperatingHours")}

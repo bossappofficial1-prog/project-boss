@@ -145,6 +145,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
         image: finalImageUrl,
         latitude: data.latitude,
         longitude: data.longitude,
+        isOpen: data.status === "ACTIVE"
       }
       outletResult = await outletManagementApi.create(payload)
     }

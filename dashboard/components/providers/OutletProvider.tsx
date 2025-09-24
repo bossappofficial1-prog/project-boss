@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { authApi } from '@/lib/api';
+import { useOutletsQuery } from '@/hooks/useOutlets';
 import type { Outlet } from '@/types/dashboard';
 
 interface OutletContextType {
@@ -11,7 +11,7 @@ interface OutletContextType {
     setSelectedOutlet: (outlet: Outlet | null) => void;
     isLoading: boolean;
     error: string | null;
-    refetch: () => Promise<void>;
+    refetch: () => void;
 }
 
 const OutletContext = createContext<OutletContextType | null>(null);
@@ -20,95 +20,65 @@ interface OutletProviderProps {
     children: React.ReactNode;
 }
 
-export function OutletProvider({ children }: OutletProviderProps) {
-    const [outlets, setOutlets] = useState<Outlet[]>([]);
-    const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+// Helper function to get selected outlet from localStorage and outlets array
+function getInitialSelectedOutlet(outlets: Outlet[]): Outlet | null {
+    if (!outlets?.length) return null;
 
-    const fetchOutlets = async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
+    const savedOutletId = localStorage.getItem('selectedOutlet');
 
-            const response = await authApi.me();
-
-            if (response.outlets) {
-                setOutlets(response.outlets);
-
-                const savedOutletId = localStorage.getItem('selectedOutlet');
-
-                if (savedOutletId) {
-                    const savedOutlet = response.outlets.find((o: any) => o.id === savedOutletId);
-                    if (savedOutlet) {
-                        setSelectedOutlet(savedOutlet);
-                    } else {
-                        const firstOutlet = response.outlets[0];
-                        setSelectedOutlet(firstOutlet);
-                        localStorage.setItem('selectedOutlet', firstOutlet.id);
-                    }
-                } else {
-                    const oldSavedOutlet = localStorage.getItem('selectedOutletId');
-                    if (oldSavedOutlet) {
-                        try {
-                            const exists = response.outlets.find((o: any) => o.id === oldSavedOutlet);
-                            if (exists) {
-                                setSelectedOutlet(exists);
-                                localStorage.setItem('selectedOutlet', exists.id);
-                                localStorage.removeItem('selectedOutletId');
-                            } else {
-                                const parsed = JSON.parse(oldSavedOutlet);
-                                const existsParsed = response.outlets.find((o: any) => o.id === parsed.id);
-                                if (existsParsed) {
-                                    setSelectedOutlet(existsParsed);
-                                    localStorage.setItem('selectedOutlet', existsParsed.id);
-                                    localStorage.removeItem('selectedOutletId');
-                                } else {
-                                    const firstOutlet = response.outlets[0];
-                                    setSelectedOutlet(firstOutlet);
-                                    localStorage.setItem('selectedOutlet', firstOutlet.id);
-                                    localStorage.removeItem('selectedOutletId');
-                                }
-                            }
-                        } catch {
-                            const firstOutlet = response.outlets[0];
-                            setSelectedOutlet(firstOutlet);
-                            localStorage.setItem('selectedOutlet', firstOutlet.id);
-                            localStorage.removeItem('selectedOutletId');
-                        }
-                    } else if (response.outlets.length > 0) {
-                        const firstOutlet = response.outlets[0];
-                        setSelectedOutlet(firstOutlet);
-                        localStorage.setItem('selectedOutlet', firstOutlet.id);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching outlets:', error);
-
-            const savedOutletOld = localStorage.getItem('selectedOutletId');
-            if (savedOutletOld) {
-                try {
-                    const parsed = JSON.parse(savedOutletOld);
-                    if (parsed && parsed.id) {
-                        setSelectedOutlet(parsed);
-                        setOutlets([parsed]);
-                        localStorage.setItem('selectedOutlet', parsed.id);
-                        localStorage.removeItem('selectedOutletId');
-                    }
-                } catch {
-                    // Handle plain ID format silently
-                }
-            }
-            setError('Failed to fetch outlets');
-        } finally {
-            setIsLoading(false);
+    if (savedOutletId) {
+        const savedOutlet = outlets.find(outlet => outlet.id === savedOutletId);
+        if (savedOutlet) {
+            return savedOutlet;
         }
-    };
+    }
 
+    // Check old format
+    const oldSavedOutlet = localStorage.getItem('selectedOutletId');
+    if (oldSavedOutlet) {
+        try {
+            const exists = outlets.find(outlet => outlet.id === oldSavedOutlet);
+            if (exists) {
+                localStorage.setItem('selectedOutlet', exists.id);
+                localStorage.removeItem('selectedOutletId');
+                return exists;
+            }
+
+            const parsed = JSON.parse(oldSavedOutlet);
+            const existsParsed = outlets.find(outlet => outlet.id === parsed.id);
+            if (existsParsed) {
+                localStorage.setItem('selectedOutlet', existsParsed.id);
+                localStorage.removeItem('selectedOutletId');
+                return existsParsed;
+            }
+        } catch {
+            // Invalid JSON, continue to fallback
+        }
+    }
+
+    // Fallback to first outlet
+    const firstOutlet = outlets[0];
+    if (firstOutlet) {
+        localStorage.setItem('selectedOutlet', firstOutlet.id);
+        localStorage.removeItem('selectedOutletId');
+    }
+
+    return firstOutlet;
+}
+
+export function OutletProvider({ children }: OutletProviderProps) {
+    const { data, isLoading, error, refetch } = useOutletsQuery();
+    const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
+
+    const outlets = data?.outlets || [];
+
+    // Initialize selected outlet when outlets data is available
     useEffect(() => {
-        fetchOutlets();
-    }, []);
+        if (outlets.length > 0 && !selectedOutlet) {
+            const initialOutlet = getInitialSelectedOutlet(outlets);
+            setSelectedOutlet(initialOutlet);
+        }
+    }, [outlets, selectedOutlet]);
 
     const handleSetSelectedOutlet = (outlet: Outlet | null) => {
         console.log(`🔄 OutletProvider: handleSetSelectedOutlet called with outlet:`, outlet?.id || 'null');
@@ -139,8 +109,8 @@ export function OutletProvider({ children }: OutletProviderProps) {
         outlets,
         setSelectedOutlet: handleSetSelectedOutlet,
         isLoading,
-        error,
-        refetch: fetchOutlets
+        error: error?.message || null,
+        refetch
     };
 
     return (

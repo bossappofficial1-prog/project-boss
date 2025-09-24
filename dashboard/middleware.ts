@@ -9,15 +9,16 @@ interface JwtPayload {
   exp?: number;
 }
 
+// Route configuration with Sets for O(1) lookups
 const ROUTE_CONFIG = {
-  publicRoutes: [
+  publicRoutes: new Set([
     '/auth/login',
     '/auth/register',
     '/auth/forgot-password',
     '/auth/reset-password',
     '/unauthorized'
-  ],
-  adminOnlyRoutes: [
+  ]),
+  adminOnlyRoutes: new Set([
     '/admin',
     '/admin/dashboard',
     '/admin/businesses',
@@ -28,15 +29,33 @@ const ROUTE_CONFIG = {
     '/admin/system',
     '/admin/support',
     '/admin/withdrawals'
-  ],
-  ownerOnlyRoutes: ['/owner', '/owner/dashboard'],
-  sharedRoutes: ['/profile', '/notifications']
+  ]),
+  ownerOnlyRoutes: new Set(['/owner', '/owner/dashboard']),
+  sharedRoutes: new Set(['/profile', '/notifications'])
 } as const;
 
 const DEFAULT_REDIRECTS = {
   ADMIN: '/admin/dashboard',
   OWNER: '/owner/dashboard'
 } as const;
+
+// Helper functions for route checking
+function isPublicRoute(pathname: string): boolean {
+  return ROUTE_CONFIG.publicRoutes.has(pathname) ||
+    Array.from(ROUTE_CONFIG.publicRoutes).some(route => pathname.startsWith(route));
+}
+
+function isAdminOnlyRoute(pathname: string): boolean {
+  return Array.from(ROUTE_CONFIG.adminOnlyRoutes).some(route => pathname.startsWith(route));
+}
+
+function isOwnerOnlyRoute(pathname: string): boolean {
+  return Array.from(ROUTE_CONFIG.ownerOnlyRoutes).some(route => pathname.startsWith(route));
+}
+
+function isSharedRoute(pathname: string): boolean {
+  return Array.from(ROUTE_CONFIG.sharedRoutes).some(route => pathname.startsWith(route));
+}
 
 async function verifyJWT(token: string): Promise<JwtPayload | null> {
   try {
@@ -71,27 +90,41 @@ function isTokenExpired(payload: JwtPayload): boolean {
 }
 
 function hasPermission(userRole: 'ADMIN' | 'OWNER', pathname: string): boolean {
-  if (ROUTE_CONFIG.adminOnlyRoutes.some(route => pathname.startsWith(route))) {
-    return userRole === 'ADMIN';
-  }
-  if (ROUTE_CONFIG.ownerOnlyRoutes.some(route => pathname.startsWith(route))) {
-    return userRole === 'OWNER';
-  }
-  if (ROUTE_CONFIG.sharedRoutes.some(route => pathname.startsWith(route))) {
-    return true;
-  }
-  return true;
+  if (isAdminOnlyRoute(pathname)) return userRole === 'ADMIN';
+  if (isOwnerOnlyRoute(pathname)) return userRole === 'OWNER';
+  if (isSharedRoute(pathname)) return true;
+  return true; // Default allow for other routes
 }
 
 function getRoleBasedRedirect(userRole: 'ADMIN' | 'OWNER'): string {
   return DEFAULT_REDIRECTS[userRole];
 }
 
+function createRedirectResponse(url: URL, reason?: string): NextResponse {
+  const redirectUrl = new URL(url);
+  if (reason) {
+    redirectUrl.searchParams.set('reason', reason);
+  }
+  return NextResponse.redirect(redirectUrl);
+}
+
+function createLoginRedirect(request: NextRequest, pathname: string, reason?: string): NextResponse {
+  const loginUrl = new URL('/auth/login', request.url);
+  loginUrl.searchParams.set('redirect', pathname);
+  if (reason) {
+    loginUrl.searchParams.set('reason', reason);
+  }
+
+  const response = NextResponse.redirect(loginUrl);
+  response.cookies.delete('token');
+  return response;
+}
+
 // --- Middleware ---
 export const middleware: NextMiddleware = async (request: NextRequest) => {
   const { pathname } = request.nextUrl;
 
-  // Skip static / api
+  // Skip static files and API routes
   if (
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/api/') ||
@@ -102,63 +135,43 @@ export const middleware: NextMiddleware = async (request: NextRequest) => {
   }
 
   const token = request.cookies.get('token')?.value;
-  const isPublicRoute = ROUTE_CONFIG.publicRoutes.some(
-    route => pathname === route || pathname.startsWith(route)
-  );
+  const isPublic = isPublicRoute(pathname);
 
-  // Tidak ada token & bukan public → redirect ke login
-  if (!token && !isPublicRoute) {
-    const loginUrl = new URL('/auth/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+  // No token and accessing protected route → redirect to login
+  if (!token && !isPublic) {
+    return createLoginRedirect(request, pathname);
   }
 
-  // Ada token → verifikasi
+  // Has token → validate it
   if (token) {
     const payload = await verifyJWT(token);
 
+    // Invalid or expired token → redirect to login
     if (!payload || isTokenExpired(payload)) {
-      const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      loginUrl.searchParams.set('reason', 'token_invalid_or_expired');
-
-      const response = NextResponse.redirect(loginUrl);
-      response.cookies.delete('token');
-      return response;
+      return createLoginRedirect(request, pathname, 'token_invalid_or_expired');
     }
 
-    // Kalau akses public route dengan token valid → redirect dashboard
-    if (isPublicRoute && pathname !== '/unauthorized') {
-      return NextResponse.redirect(
-        new URL(getRoleBasedRedirect(payload.role), request.url)
-      );
+    // Valid token on public route (except unauthorized) → redirect to dashboard
+    if (isPublic && pathname !== '/unauthorized') {
+      return NextResponse.redirect(new URL(getRoleBasedRedirect(payload.role), request.url));
     }
 
-    // Validasi role
+    // Invalid role → redirect to login
     if (!['ADMIN', 'OWNER'].includes(payload.role)) {
-      const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('reason', 'invalid_role');
-
-      const response = NextResponse.redirect(loginUrl);
-      response.cookies.delete('token');
-      return response;
+      return createLoginRedirect(request, pathname, 'invalid_role');
     }
 
-    // Cek permission
+    // Insufficient permissions → redirect to unauthorized
     if (!hasPermission(payload.role, pathname)) {
-      const unauthorizedUrl = new URL('/unauthorized', request.url);
-      unauthorizedUrl.searchParams.set('reason', 'insufficient_permissions');
-      return NextResponse.redirect(unauthorizedUrl);
+      return createRedirectResponse(new URL('/unauthorized', request.url), 'insufficient_permissions');
     }
 
-    // Root redirect sesuai role
+    // Root path → redirect to role-based dashboard
     if (pathname === '/') {
-      return NextResponse.redirect(
-        new URL(getRoleBasedRedirect(payload.role), request.url)
-      );
+      return NextResponse.redirect(new URL(getRoleBasedRedirect(payload.role), request.url));
     }
 
-    // Tambahkan payload ke headers agar bisa dipakai di server components
+    // Add user info to headers for server components
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-id', payload.sessionId);
     requestHeaders.set('x-user-role', payload.role);

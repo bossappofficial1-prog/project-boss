@@ -28,8 +28,6 @@ export function useAuth(): UseAuthReturn {
   // Check authentication status and load user
   const checkAuth = useCallback(async () => {
     try {
-      // Since we use HttpOnly cookies, we can't access them via JavaScript
-      // So we directly call the API to check auth status
       const response = await apiClient.get('/auth/me');
       const userData = response.data.data.user;
 
@@ -38,16 +36,12 @@ export function useAuth(): UseAuthReturn {
         email: userData.email,
         name: userData.name,
         role: userData.role as UserRole,
-        sessionId: userData.sessionId || userData.id // Use sessionId from API or fallback to id
+        sessionId: userData.sessionId || userData.id
       };
 
       setUser(fullUser);
     } catch (error) {
       console.error('Auth check failed:', error);
-      // Only clear localStorage tokens, cookies will be handled by server
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-      }
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -69,8 +63,6 @@ export function useAuth(): UseAuthReturn {
       });
 
       if (response.data.success) {
-        // Since we use HttpOnly cookies, the server will set the cookie automatically
-        // We just need to refresh user data
         await checkAuth();
         return true;
       }

@@ -77,7 +77,7 @@ export function validateRadius(radiusKm: number) {
 export function mapOutletsWithOpenStatus(outlets: any[], today: Date = new Date()) {
     return outlets.map((outlet) => ({
         ...outlet,
-        isOpen: outlet.operatingHours.length > 0
+        isOpen: outlet.isOpen && outlet.operatingHours.length > 0
             ? getIsOutletOpen(outlet.operatingHours, today)
             : outlet.isOpen
     }));

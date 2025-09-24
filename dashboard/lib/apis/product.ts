@@ -46,8 +46,9 @@ export const productApi = {
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.search) searchParams.append('q', params.search);
-    const qs = searchParams.toString();
-    const endpoint = `/products/outlet/${outletId}${qs ? `?${qs}` : ''}`;
+    searchParams.append("accessed", "OWNER")
+    const q = searchParams.toString();
+    const endpoint = `/products/outlet/${outletId}${q ? `?${q}` : ''}`;
     return apiClient.get(endpoint).then(res => res.data.data);
   },
 

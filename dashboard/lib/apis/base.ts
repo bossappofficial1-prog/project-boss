@@ -40,29 +40,10 @@ apiClient.interceptors.response.use(
   (error) => {
     // Handle 401 Unauthorized - redirect to login
     if (error.response?.status === 401) {
-      const isLogoutEndpoint = error.config?.url?.includes('/auth/logout');
+      (async () => {
+        await apiClient.post("/auth/login")
+      })()
 
-      if (isLogoutEndpoint) {
-        console.log('🔐 401 on logout endpoint - forcing redirect to login to ensure logout');
-        // Even for logout endpoint 401, redirect to login to ensure user is logged out
-        // Server may have failed to clear httpOnly cookie, but we must ensure logout succeeds
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('selectedOutlet');
-          localStorage.removeItem('selectedOutletId');
-          // Force redirect to login to complete logout process
-          window.location.href = '/auth/login?reason=logout_completed';
-        }
-        return Promise.reject(error);
-      }
-
-      console.log('🔐 401 Unauthorized - redirecting to login');
-      if (typeof window !== 'undefined') {
-        // Clear stored outlet data (token is in httpOnly cookie, handled by server)
-        localStorage.removeItem('selectedOutlet');
-        localStorage.removeItem('selectedOutletId');
-        // Redirect to login page
-        window.location.href = '/auth/login';
-      }
       return Promise.reject(error);
     }
 

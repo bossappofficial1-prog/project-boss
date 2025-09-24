@@ -1,4 +1,4 @@
-import { Product } from "@prisma/client";
+import { Product, Prisma, UserRole } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateProductInput, UpdateProductInput } from "../schemas/product.schema";
 
@@ -52,18 +52,22 @@ export class ProductRepository {
         });
     }
 
-    static async findByOutletId(outletId: string, q?: string): Promise<Product[]> {
-        const whereClause: any = { outletId };
-
-        if (q) {
-            whereClause.name = {
-                contains: q,
-                mode: 'insensitive',
-            };
-        }
-
+    static async findByOutletId(outletId: string, q?: string, accessed?: UserRole): Promise<Product[]> {
         return db.product.findMany({
-            where: whereClause,
+            where: {
+                AND: [
+                    { outletId },
+                    ...(q && q !== "" ? [{
+                        name: {
+                            contains: q,
+                            mode: 'insensitive' as Prisma.QueryMode,
+                        }
+                    }] : [{}]),
+                    ...(accessed !== "OWNER" ? [
+                        { status: "ACTIVE" } as Prisma.ProductWhereInput,
+                    ] : [])
+                ]
+            },
             orderBy: {
                 createdAt: 'desc',
             },
@@ -88,7 +92,7 @@ export class ProductRepository {
             where: {
                 name: {
                     contains: name,
-                    mode: 'insensitive', // Case-insensitive search
+                    mode: 'insensitive' as Prisma.QueryMode, // Case-insensitive search
                 },
             },
         });

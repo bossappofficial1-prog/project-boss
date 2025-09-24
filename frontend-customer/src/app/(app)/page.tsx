@@ -64,8 +64,6 @@ function HomeContent() {
 
   return (
     <div className="space-y-4">
-      {/* <AuthGreeting /> */}
-
       <NearbyOutlets />
 
       <section>

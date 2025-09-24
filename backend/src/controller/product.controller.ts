@@ -14,6 +14,7 @@ import {
     generateProductImportTemplateService,
     exportProductsToExcelService
 } from "../service/product.service";
+import { UserRole } from "@prisma/client";
 
 export const getProductImportTemplateController = asyncHandler(async (req: Request, res: Response) => {
     const buffer = generateProductImportTemplateService();
@@ -53,8 +54,8 @@ export const getProductByIdController = asyncHandler(async (req: Request, res: R
 
 export const getProductsByOutletIdController = asyncHandler(async (req: Request, res: Response) => {
     const { outletId } = req.params;
-    const { q } = req.query;
-    const products = await getProductsByOutletIdService(outletId, q as string);
+    const { q, accessed } = req.query;
+    const products = await getProductsByOutletIdService(outletId, q as string, accessed as UserRole);
     return ResponseUtil.success(res, products);
 });
 
@@ -74,16 +75,16 @@ export const deleteProductController = asyncHandler(async (req: Request, res: Re
 export const exportProductsController = asyncHandler(async (req: Request, res: Response) => {
     const { outletId } = req.params;
     const { type, search } = req.query;
-    
+
     const buffer = await exportProductsToExcelService(outletId, {
         type: type as 'GOODS' | 'SERVICE' | undefined,
         search: search as string | undefined
     });
-    
-    const filename = type === 'GOODS' ? 'data_produk.xlsx' : 
-                    type === 'SERVICE' ? 'data_jasa.xlsx' : 
-                    'data_produk_dan_jasa.xlsx';
-    
+
+    const filename = type === 'GOODS' ? 'data_produk.xlsx' :
+        type === 'SERVICE' ? 'data_jasa.xlsx' :
+            'data_produk_dan_jasa.xlsx';
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.send(buffer);

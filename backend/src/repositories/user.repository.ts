@@ -35,7 +35,8 @@ export class UserRepository {
                                 businessId: true,
                                 address: true,
                                 image: true
-                            }
+                            },
+                            orderBy: [{ createdAt: "desc" }]
                         }
                     }
                 }
