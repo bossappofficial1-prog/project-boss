@@ -44,13 +44,27 @@ export const getMeController = asyncHandler(async (req: Request, res: Response) 
 
 export const logoutController = asyncHandler(async (req: Request, res: Response) => {
     const token = req.cookies.token;
+
+    // Try to clean up Redis session if token is valid
     if (token) {
-        const decoded = JwtUtil.verify<{ sessionId: string }>(token);
-        if (decoded && decoded.sessionId) {
-            await redis.del(`session:${decoded.sessionId}`);
+        try {
+            const decoded = JwtUtil.verify<{ sessionId: string }>(token);
+            if (decoded && decoded.sessionId) {
+                await redis.del(`session:${decoded.sessionId}`);
+            }
+        } catch (error) {
+            console.log('Token verification failed during logout, but proceeding with cookie cleanup');
         }
     }
-    res.clearCookie("token");
+
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: !!config.COOKIES_DOMAIN,
+        sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+        domain: config.COOKIES_DOMAIN,
+        path: '/'
+    });
+
     return ResponseUtil.success(res, { message: "Logout berhasil" });
 });
 
