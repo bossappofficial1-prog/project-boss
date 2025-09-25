@@ -247,8 +247,8 @@ function CopyDayPopover({ sourceDay, onCopyToDays }: { sourceDay: number, onCopy
           <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-52 sm:w-60 p-0 border-0 shadow-xl bg-white dark:bg-gray-800 overflow-hidden">
-        <div className="flex flex-col h-full">
+      <PopoverContent className="w-52 sm:w-60 p-0 border-0 shadow-xl bg-white dark:bg-gray-800">
+        <div className="flex flex-col h-full min-h-0">
           <div className="flex items-center gap-2 p-4 pb-3 border-b border-gray-100 dark:border-gray-700">
             <div className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20">
               <Copy className="h-3 w-3 text-blue-600 dark:text-blue-400" />
@@ -256,8 +256,8 @@ function CopyDayPopover({ sourceDay, onCopyToDays }: { sourceDay: number, onCopy
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Salin ke hari lain</p>
           </div>
 
-          <div className="flex-1 px-4 py-2">
-            <div className="space-y-1 max-h-48 overflow-y-auto overscroll-contain custom-scrollbar">
+          <div className="flex-1 px-4 py-2 min-h-0">
+            <div className="space-y-1 overflow-y-scroll">
               {DAYS_OF_WEEK.filter(d => d.value !== sourceDay).map(day => (
                 <div key={day.value} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <Checkbox

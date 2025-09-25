@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import ImageUploader from '@/components/ui/ImageUploader'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog'
 import { productApi, uploadApi } from '@/lib/api'
 
@@ -36,8 +37,8 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
     setUnit('pcs')
     setServiceDurationMinutes('')
     setStatus('ACTIVE')
-  setFile(null)
-  setUploading(false)
+    setFile(null)
+    setUploading(false)
     setError(null)
   }
 
@@ -242,26 +243,18 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gambar Produk (maks 1MB)</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] || null
-                  if (f && f.size > 1024 * 1024) {
-                    setError('Ukuran gambar melebihi 1MB.')
-                    setFile(null)
-                  } else {
-                    setError(null)
-                    setFile(f)
-                  }
-                }}
-                className="block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
-              />
-              {uploading && (
-                <span className="text-xs text-gray-500">Uploading...</span>
-              )}
-            </div>
+            <ImageUploader onFileChange={(f) => {
+              if (f && f.size > 1024 * 1024) {
+                setError('Ukuran gambar melebihi 1MB.')
+                setFile(null)
+              } else {
+                setError(null)
+                setFile(f)
+              }
+            }} />
+            {uploading && (
+              <span className="text-xs text-gray-500">Uploading...</span>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

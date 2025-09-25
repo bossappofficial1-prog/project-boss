@@ -1,7 +1,7 @@
 'use client'
 
 import { apiClient } from '@/lib/apis/base'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet'
 import { LatLng, Icon } from 'leaflet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -89,6 +89,23 @@ function LocationMarker({ position, onPositionChange }: {
   )
 }
 
+// Helper to recenter the map when `position` changes
+function RecenterMap({ position }: { position: LatLng | null }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!position) return
+    try {
+      // animate to new position while keeping current zoom
+      map.flyTo(position, map.getZoom(), { duration: 0.8 })
+    } catch (e) {
+      // ignore if map not ready
+    }
+  }, [position, map])
+
+  return null
+}
+
 export default function MapPicker({
   latitude,
   longitude,
@@ -147,11 +164,15 @@ export default function MapPicker({
 
     setIsSearching(true)
     try {
-      const response = await apiClient.get(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=id`
-      )
-      setSearchResults(response.data)
-      setShowSearchResults(true)
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}&limit=5&countrycodes=id`)
+      if (!res.ok) {
+        console.error('Geocode proxy returned', res.status)
+        setSearchResults([])
+      } else {
+        const data = await res.json()
+        setSearchResults(data)
+        setShowSearchResults(true)
+      }
     } catch (error) {
       console.error('Error searching locations:', error)
       setSearchResults([])
@@ -296,6 +317,7 @@ export default function MapPicker({
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
+              <RecenterMap position={currentPosition} />
               <LocationMarker
                 position={currentPosition}
                 onPositionChange={onLocationChange}

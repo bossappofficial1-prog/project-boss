@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { useMutation } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { businessApi } from '@/lib/api'
+import { useDashboardData } from '@/hooks/useDashboardData'
 
 type Props = {
   open: boolean
@@ -18,14 +20,20 @@ type Props = {
 }
 
 export default function BankAccountModal({ open, onOpenChange, businessId, createPayload, onSuccess }: Props) {
-  const [bankName, setBankName] = useState('')
-  const [bankAccount, setBankAccount] = useState('')
-  const [accountHolder, setAccountHolder] = useState('')
+  const { business } = useDashboardData()
+  const [bankName, setBankName] = useState<string>('')
+  const [bankAccount, setBankAccount] = useState<string>('')
+  const [accountHolder, setAccountHolder] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  const [showBankSuggestions, setShowBankSuggestions] = useState(false)
+  const [accountError, setAccountError] = useState<string | null>(null)
+  const [highlightIndex, setHighlightIndex] = useState<number>(-1)
+  const BANK_LOGOS: Record<string, string> = require('@/data/bank_logos.json')
+  const [failedLogos, setFailedLogos] = useState<Record<string, boolean>>({})
+
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
-      // Create new business if businessId is not provided, else update bank info
       if (!businessId) {
         if (!createPayload) throw new Error('Data profil bisnis tidak lengkap')
         return businessApi.createBusiness({
@@ -43,9 +51,54 @@ export default function BankAccountModal({ open, onOpenChange, businessId, creat
     onSuccess: () => {
       onOpenChange(false)
       onSuccess?.()
+      toast.success('Informasi rekening berhasil disimpan')
     },
     onError: (e: any) => setError(e?.message || 'Gagal menyimpan informasi bank')
   })
+
+
+  const BANKS: Array<{ code: string; name: string; display: string; minLength?: number; maxLength?: number }> = require('@/data/banks.json')
+
+  const normalizedQuery = bankName.trim().toLowerCase()
+  const POPULAR_COUNT = 5
+  const searchList = normalizedQuery
+    ? BANKS.filter((b) => `${b.display} ${b.name}`.toLowerCase().includes(normalizedQuery))
+    : BANKS.slice(0, POPULAR_COUNT)
+
+  const filteredBanks = searchList
+    // sort: exact/prefix matches first when searching
+    .sort((a, b) => {
+      if (!normalizedQuery) return 0
+      const aStarts = `${a.display} ${a.name}`.toLowerCase().startsWith(normalizedQuery) ? 0 : 1
+      const bStarts = `${b.display} ${b.name}`.toLowerCase().startsWith(normalizedQuery) ? 0 : 1
+      return aStarts - bStarts
+    })
+
+  const validateAccountNumber = (value: string) => {
+    if (!value) return 'Nomor rekening harus diisi'
+    if (!/^\d+$/.test(value)) return 'Nomor rekening hanya boleh berisi angka'
+    if (value.length < 6) return 'Nomor rekening terlalu pendek'
+    if (value.length > 20) return 'Nomor rekening terlalu panjang'
+    return null
+  }
+
+  useEffect(() => {
+    setAccountError(validateAccountNumber(bankAccount))
+  }, [bankAccount])
+
+  // validate bankName against available banks
+  const isBankValid = !!BANKS.find((b) => b.display.toLowerCase() === bankName.trim().toLowerCase())
+
+
+  useEffect(() => {
+    if (!open || !businessId || !business) return;
+
+    setBankName(business?.bankName!)
+    setAccountHolder(business?.accountHolder!)
+    setBankAccount(business?.bankAccount!)
+  }, [open, businessId, business])
+
+  if (!open) return;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,11 +115,95 @@ export default function BankAccountModal({ open, onOpenChange, businessId, creat
           )}
           <div>
             <Label htmlFor="bank-name">Nama Bank</Label>
-            <Input id="bank-name" placeholder="BCA / BNI / Mandiri" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+            <div className="relative">
+              <Input
+                id="bank-name"
+                placeholder="BCA / BNI / Mandiri"
+                value={bankName}
+                onFocus={() => setShowBankSuggestions(true)}
+                onBlur={() => setTimeout(() => { setShowBankSuggestions(false); setHighlightIndex(-1) }, 150)}
+                onChange={(e) => { setBankName(e.target.value); setHighlightIndex(-1) }}
+                onKeyDown={(e) => {
+                  if (!showBankSuggestions) return
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    setHighlightIndex((i) => Math.min(i + 1, filteredBanks.length - 1))
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    setHighlightIndex((i) => Math.max(i - 1, 0))
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault()
+                    const sel = filteredBanks[highlightIndex >= 0 ? highlightIndex : 0]
+                    if (sel) { setBankName(sel.display); setShowBankSuggestions(false); setHighlightIndex(-1) }
+                  } else if (e.key === 'Escape') {
+                    setShowBankSuggestions(false); setHighlightIndex(-1)
+                  }
+                }}
+                autoComplete="off"
+              />
+              {/* Selected bank badge */}
+              {bankName && (
+                <div className="absolute -top-3 right-0">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                    <span className="font-medium">{bankName}</span>
+                  </div>
+                </div>
+              )}
+              {showBankSuggestions && filteredBanks.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full rounded-lg border bg-white shadow-lg overflow-hidden">
+                  <div className="max-h-48 overflow-y-auto">{/* compact list */}
+                    {filteredBanks.map((b, idx) => (
+                      <button
+                        key={b.code}
+                        type="button"
+                        onMouseDown={() => { setBankName(b.display); setShowBankSuggestions(false); setHighlightIndex(-1) }}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 text-sm flex items-center gap-3 ${highlightIndex === idx ? 'bg-gray-100' : ''}`}
+                      >
+                        {/* bank logo with lazy loading and onError fallback */}
+                        <div className="flex-shrink-0 h-8 w-8 rounded-full overflow-hidden bg-white flex items-center justify-center">
+                          {!failedLogos[b.code] ? (
+                            <img
+                              src={BANK_LOGOS[b.code] || `https://ui-avatars.com/api/?name=${encodeURIComponent(b.display)}&size=64&background=ffffff&color=111827&rounded=true`}
+                              alt={b.display}
+                              className="h-8 w-8 object-cover"
+                              loading="lazy"
+                              decoding="async"
+                              onError={() => setFailedLogos((p) => ({ ...p, [b.code]: true }))}
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-indigo-50 flex items-center justify-center text-xs font-semibold text-indigo-700">
+                              {b.display.split(' ').map(s => s[0]).slice(0, 2).join('')}
+                            </div>
+                          )}
+                          {/* bank validation error */}
+                          {!isBankValid && bankName && (
+                            <div className="text-xs text-red-600 mt-1">Nama bank tidak valid. Pilih dari daftar yang tersedia.</div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{b.display}</div>
+                          <div className="text-xs text-gray-500 truncate">{b.name}</div>
+                        </div>
+                        <div className="text-xs text-gray-400">{b.code}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <Label htmlFor="bank-account">Nomor Rekening</Label>
-            <Input id="bank-account" placeholder="1234567890" value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} />
+            <Input id="bank-account" placeholder="1234567890" value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} className={accountError ? 'border-red-500' : ''} />
+            {accountError && <div className="text-xs text-red-600 mt-1">{accountError}</div>}
+            {/* show bank-specific helper if bank matched */}
+            {bankName && (() => {
+              const matched = BANKS.find((b) => b.display.toLowerCase() === bankName.toLowerCase())
+              if (matched) {
+                return <div className="text-xs text-gray-500 mt-1">Panjang nomor untuk {matched.display}: {matched.minLength ?? '—'}–{matched.maxLength ?? '—'} digit</div>
+              }
+              return null
+            })()}
           </div>
           <div>
             <Label htmlFor="account-holder">Nama Pemilik Rekening</Label>
@@ -74,7 +211,7 @@ export default function BankAccountModal({ open, onOpenChange, businessId, creat
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isPending}>Batal</Button>
-            <Button onClick={() => mutate()} disabled={isPending || !bankName || !bankAccount || !accountHolder}>{isPending ? 'Menyimpan...' : 'Simpan'}</Button>
+            <Button onClick={() => mutate()} disabled={isPending || !bankName || !!accountError || !accountHolder || !isBankValid}>{isPending ? 'Menyimpan...' : 'Simpan'}</Button>
           </div>
         </div>
       </DialogContent>

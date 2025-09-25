@@ -21,23 +21,17 @@ import { outletManagementApi, uploadApi } from '@/lib/api'
 import type { OutletDetail, OperatingHours, OperatingHoursFormData } from '@/types/dashboard'
 import { isEqual } from 'lodash'
 
-/**
- * AddOutletModal Component - Optimized for Performance
- * 
- * Performance Optimizations Applied:
- * 1. useMemo for form config and query keys to prevent unnecessary object recreation
- * 2. useCallback for all handler functions to prevent child component re-renders
- * 3. Optimized dependency arrays in useEffect to minimize re-runs
- * 4. Efficient cache invalidation strategy that only invalidates specific queries
- * 5. Memoized mutation functions and callbacks
- * 6. Separated form population and operating hours parsing into reusable functions
- */
-
 // 1. Skema Validasi dengan Zod
 const outletSchema = z.object({
   name: z.string().min(1, 'Nama outlet wajib diisi'),
   address: z.string().min(1, 'Alamat wajib diisi'),
-  phone: z.string().min(10, 'Nomor telepon tidak valid').max(15, 'Nomor telepon tidak valid'),
+  phone: z.string()
+    .min(6, 'Nomor telepon tidak valid')
+    .max(20, 'Nomor telepon tidak valid')
+    .refine((v) => {
+      const re = /^(?:\+62|62|0)8[1-9][0-9]{6,10}$/
+      return re.test(v.replace(/\s|-/g, ''))
+    }, { message: 'Masukkan nomor telepon yang valid (contoh: 081234567890 atau +6281234567890)' }),
   description: z.string().optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
   latitude: z.number().optional(),
@@ -365,9 +359,20 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
       status: outletDetail.isOpen ? 'ACTIVE' : 'INACTIVE'
     }
 
-    const changes = !isEqual(currentData, initialData) || !!formData.file
+    // Also detect changes in latitude/longitude compared to outletDetail
+    const currentLat = formData.latitude
+    const currentLng = formData.longitude
+    const initialLat = outletDetail.latitude
+    const initialLng = outletDetail.longitude
+
+    const locationChanged = (typeof currentLat === 'number' && typeof initialLat === 'number' && currentLat !== initialLat)
+      || (typeof currentLng === 'number' && typeof initialLng === 'number' && currentLng !== initialLng)
+      || ((currentLat && !initialLat) || (currentLng && !initialLng))
+
+    // Operating hours changes are tracked separately via operatingHoursChanged
+    const changes = !isEqual(currentData, initialData) || !!formData.file || !!locationChanged
     return changes
-  }, [mode, formData, outletDetail])
+  }, [mode, formData, outletDetail, operatingHoursChanged])
 
   // Check if there are unsaved changes (form or operating hours)
   const isFormValid = useMemo(() => {
@@ -380,7 +385,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
     <>
       <Toaster richColors position="top-center" />
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl flex flex-col">
+        <DialogContent className="max-w-4xl overflow-hidden flex flex-col">
           <DialogHeader className="pb-4 border-b">
             <DialogTitle className="flex items-center gap-3 text-xl">
               <Store className="h-6 w-6 text-red-500" />
@@ -394,7 +399,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex-grow overflow-y-auto pr-2 -mr-4 space-y-6 py-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex-grow max-h-full overflow-y-auto pr-2 -mr-4 space-y-6 py-4">
             {!businessId && (
               <div className="flex items-start gap-3 p-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg">
                 <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />

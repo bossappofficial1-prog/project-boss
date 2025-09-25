@@ -1,0 +1,135 @@
+[
+    {
+        "code": "BCA",
+        "name": "Bank Central Asia",
+        "display": "BCA",
+        "minLength": 10,
+        "maxLength": 15
+    },
+    {
+        "code": "BNI",
+        "name": "Bank Negara Indonesia",
+        "display": "BNI",
+        "minLength": 6,
+        "maxLength": 20
+    },
+    {
+        "code": "BRI",
+        "name": "Bank Rakyat Indonesia",
+        "display": "BRI",
+        "minLength": 6,
+        "maxLength": 20
+    },
+    {
+        "code": "Mandiri",
+        "name": "Bank Mandiri",
+        "display": "Mandiri",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "CIMB",
+        "name": "CIMB Niaga",
+        "display": "CIMB Niaga",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "Permata",
+        "name": "Permata Bank",
+        "display": "Permata",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "Danamon",
+        "name": "Bank Danamon",
+        "display": "Danamon",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "Panin",
+        "name": "Bank Panin",
+        "display": "Panin",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "OCBC",
+        "name": "OCBC NISP",
+        "display": "OCBC NISP",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "HSBC",
+        "name": "HSBC Indonesia",
+        "display": "HSBC",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "BTN",
+        "name": "Bank Tabungan Negara",
+        "display": "BTN",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "Maybank",
+        "name": "Maybank Indonesia",
+        "display": "Maybank",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "BSI",
+        "name": "Bank Syariah Indonesia",
+        "display": "BSI",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "BTPN",
+        "name": "BTPN / Jenius",
+        "display": "BTPN (Jenius)",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "Mega",
+        "name": "Bank Mega",
+        "display": "Bank Mega",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "Sinarmas",
+        "name": "Bank Sinarmas",
+        "display": "Sinarmas",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "Bukopin",
+        "name": "Bank Bukopin",
+        "display": "Bukopin",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "Muamalat",
+        "name": "Bank Muamalat",
+        "display": "Muamalat",
+        "minLength": 8,
+        "maxLength": 20
+    },
+    {
+        "code": "Jago",
+        "name": "Bank Jago",
+        "display": "Bank Jago",
+        "minLength": 8,
+        "maxLength": 20
+    }
+]
