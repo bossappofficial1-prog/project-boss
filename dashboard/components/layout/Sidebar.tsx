@@ -38,6 +38,14 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const [expandedMenus, setExpandedMenus] = useState<{[key: string]: boolean}>({});
+
+  const toggleMenu = (menuName: string) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [menuName]: !prev[menuName]
+    }));
+  };
 
   // Get outlet context with safety check
   let selectedOutlet: Outlet | null = null;
@@ -142,21 +150,41 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       name: 'Pesanan',
-      href: '/owner/dashboard/orders',
+      isDropdown: true,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
         </svg>
       ),
+      subItems: [
+        {
+          name: 'Lihat Pesanan',
+          href: '/owner/dashboard/orders',
+        },
+        {
+          name: 'Tambah Pesanan Baru',
+          href: '/owner/dashboard/pos/orders',
+        }
+      ]
     },
     {
       name: 'Antrian',
-      href: '/owner/dashboard/queue',
+      isDropdown: true,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
+      subItems: [
+        {
+          name: 'Lihat Antrian',
+          href: '/owner/dashboard/queue',
+        },
+        {
+          name: 'Tambah Antrian Baru',
+          href: '/owner/dashboard/pos/queue',
+        },
+      ]
     },
     {
       name: 'Laporan',
@@ -278,15 +306,83 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           {/* Navigation Menu */}
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
             {menuItems.map((item, index) => {
+              // Handle dropdown menus
+              if (item.isDropdown && item.subItems) {
+                const isExpanded = expandedMenus[item.name];
+                const hasActiveSubItem = item.subItems.some(subItem => pathname === subItem.href);
+                
+                return (
+                  <div key={item.name}>
+                    <button
+                      onClick={() => toggleMenu(item.name)}
+                      className={`group w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${
+                        hasActiveSubItem || isExpanded
+                          ? 'bg-white/10 dark:bg-gray-700/50 text-white dark:text-white'
+                          : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white'
+                      }`}
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <div className="flex items-center">
+                        <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${
+                          hasActiveSubItem || isExpanded ? 'text-white' : 'text-red-200 dark:text-gray-400'
+                        }`}>
+                          {item.icon}
+                        </span>
+                        <span className="flex-1">{item.name}</span>
+                      </div>
+                      
+                      <svg
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          isExpanded ? 'rotate-90' : ''
+                        } ${hasActiveSubItem || isExpanded ? 'text-white' : 'text-red-200 dark:text-gray-400'}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+
+                    {/* Dropdown Items */}
+                    <div className={`ml-6 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${
+                      isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                    }`}>
+                      {item.subItems.map((subItem) => {
+                        const isActive = pathname === subItem.href;
+                        return (
+                          <Link
+                            key={subItem.href}
+                            href={subItem.href}
+                            className={`block px-4 py-2 text-sm rounded-lg transition-all duration-200 font-poppins ${
+                              isActive
+                                ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
+                                : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/30 hover:text-white dark:hover:text-white'
+                            }`}
+                            onClick={onClose}
+                          >
+                            {isActive && (
+                              <div className="absolute left-0 top-0 h-full w-1 bg-red-600 rounded-r-full"></div>
+                            )}
+                            {subItem.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Handle regular menu items
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${isActive
-                    ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
-                    : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
-                    }`}
+                  href={item.href!}
+                  className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${
+                    isActive
+                      ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
+                      : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
+                  }`}
                   onClick={onClose}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
@@ -294,16 +390,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <div className="absolute left-0 top-0 h-full w-1 bg-red-600 rounded-r-full"></div>
                   )}
 
-                  <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-red-600 dark:text-red-400' : 'text-red-200 dark:text-gray-400'
-                    }`}>
+                  <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${
+                    isActive ? 'text-red-600 dark:text-red-400' : 'text-red-200 dark:text-gray-400'
+                  }`}>
                     {item.icon}
                   </span>
 
                   <span className="flex-1">{item.name}</span>
 
                   <svg
-                    className={`w-4 h-4 transition-all duration-200 ${isActive ? 'opacity-100 text-red-600' : 'opacity-0 group-hover:opacity-100 text-red-200'
-                      }`}
+                    className={`w-4 h-4 transition-all duration-200 ${
+                      isActive ? 'opacity-100 text-red-600' : 'opacity-0 group-hover:opacity-100 text-red-200'
+                    }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -322,7 +420,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <span className="text-xs font-medium font-poppins">
-                BOSS Dashboard v1.0.0
+                BOSS Dashboard V1
               </span>
             </div>
           </div>

@@ -159,14 +159,20 @@ export function useOutletQueue({
       const response = await orderApi.getQueueByOutlet(outletId, params);
 
       // Transform data and add queue position/number if not present
-      const transformedData = (response.data || []).map((item, index) => ({
-        ...item,
-        position: item.position ?? index + 1,
-        queueNumber: item.queueNumber ?? index + 1,
-        customerName: item.guestCustomer?.name || 'Unknown',
-        productName: item.items?.[0]?.product?.name || 'Service',
-        status: item.orderStatus || 'PROCESSING',
-      }));
+      const transformedData = (response.data || []).map((item, index) => {
+        const bookingTime = item.bookingDate || (item as any).bookingSlot?.startTime || undefined;
+        return {
+          ...item,
+          // Preserve backend bookingSlot so UI can display startTime fallback
+          bookingSlot: (item as any).bookingSlot,
+          bookingDate: bookingTime as any,
+          position: item.position ?? index + 1,
+          queueNumber: item.queueNumber ?? index + 1,
+          customerName: item.guestCustomer?.name || 'Unknown',
+          productName: item.items?.[0]?.product?.name || 'Service',
+          status: item.orderStatus || 'PROCESSING',
+        };
+      });
 
       setData(transformedData);
       setPagination({

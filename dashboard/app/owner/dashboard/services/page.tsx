@@ -111,21 +111,27 @@ export default function ServicesPage() {
           onStatusChange={setStatusFilter}
         />
 
-        <ServicesMobileCards
-          services={services as any}
-          onEdit={(s) => { setSelectedService(s); setShowEditModal(true); }}
-          formatCurrency={formatCurrency}
-          formatDuration={formatDuration}
-        />
-        {services.length === 0 && !isLoading && <ServicesEmptyState />}
+        {services.length === 0 && !isLoading ? (
+          <ServicesEmptyState />
+        ) : (
+          <>
+            {/* Desktop Table */}
+            <ServicesDesktopTable
+              services={services as any}
+              onEdit={(s) => { setSelectedService(s); setShowEditModal(true); }}
+              formatCurrency={formatCurrency}
+              formatDuration={formatDuration}
+            />
 
-        <ServicesDesktopTable
-          services={services as any}
-          onEdit={(s) => { setSelectedService(s); setShowEditModal(true); }}
-          formatCurrency={formatCurrency}
-          formatDuration={formatDuration}
-        />
-        {services.length === 0 && !isLoading && <ServicesEmptyState />}
+            {/* Mobile Cards */}
+            <ServicesMobileCards
+              services={services as any}
+              onEdit={(s) => { setSelectedService(s); setShowEditModal(true); }}
+              formatCurrency={formatCurrency}
+              formatDuration={formatDuration}
+            />
+          </>
+        )}
       </div>
       <EditProductServiceModal
         open={showEditModal}

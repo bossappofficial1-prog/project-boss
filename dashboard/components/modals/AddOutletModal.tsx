@@ -380,7 +380,7 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
     <>
       <Toaster richColors position="top-center" />
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] md:min-w-fit flex flex-col">
+        <DialogContent className="max-w-4xl flex flex-col">
           <DialogHeader className="pb-4 border-b">
             <DialogTitle className="flex items-center gap-3 text-xl">
               <Store className="h-6 w-6 text-red-500" />

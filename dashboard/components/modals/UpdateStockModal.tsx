@@ -63,7 +63,7 @@ export default function UpdateStockModal({ open, onOpenChange, product, onUpdate
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm w-[92vw]">
+      <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Update Stok</DialogTitle>
           <DialogDescription>

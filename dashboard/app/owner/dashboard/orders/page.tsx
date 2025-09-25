@@ -9,13 +9,12 @@ import { OrdersHeader } from '@/components/owner/orders/Header';
 import { OrdersControls } from '@/components/owner/orders/Controls';
 import { OrdersEmptyState } from '@/components/owner/orders/EmptyState';
 import { OrdersSkeleton } from '@/components/owner/orders/Skeleton';
-import { QuickOrderModal } from '@/components/modals/QuickOrderModal';
+import Link from 'next/link';
 
 export default function OrdersPage() {
   const { selectedOutletId: outletId } = useOutletContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'processing' | 'ready' | 'completed'>('all');
-  const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
 
   const {
     data: orders,
@@ -108,7 +107,7 @@ export default function OrdersPage() {
       <div className="space-y-6">
         <OrdersHeader
           onRefresh={handleRefresh}
-          onCreateQuick={() => setShowQuickOrderModal(true)}
+          onCreateQuick={() => window.location.href = '/owner/dashboard/pos/orders'}
         />
 
         <OrdersControls
@@ -127,7 +126,7 @@ export default function OrdersPage() {
               setSearchQuery('');
               setStatusFilter('all');
             }}
-            onCreateOrder={() => setShowQuickOrderModal(true)}
+            onCreateOrder={() => window.location.href = '/owner/dashboard/pos/orders'}
           />
         ) : (
           <>
@@ -149,16 +148,6 @@ export default function OrdersPage() {
           </>
         )}
 
-        {/* Quick Order Modal */}
-        {showQuickOrderModal && outletId && (
-          <QuickOrderModal
-            open={showQuickOrderModal}
-            onOpenChange={setShowQuickOrderModal}
-            outletId={outletId}
-            productType="GOODS"
-            onSuccess={handleQuickOrderSuccess}
-          />
-        )}
       </div>
     </>
   );

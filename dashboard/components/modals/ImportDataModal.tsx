@@ -134,7 +134,7 @@ export default function ImportDataModal({ open, onOpenChange, outletId, onImport
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl w-[96vw]">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Import Data Produk & Layanan</DialogTitle>
           <DialogDescription>
