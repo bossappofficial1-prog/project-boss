@@ -8,6 +8,7 @@ import { ZodError } from "zod";
 import { MulterError } from "multer";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { HttpStatus } from "../constants/http-status";
+import { config } from "../config";
 
 export const notFound = (req: Request, res: Response): void => {
     ResponseUtil.notFound(res, `Route ${req.originalUrl} not found`);
@@ -89,6 +90,13 @@ export const errorHandler = (
         userAgent: req.get('User-Agent'),
         statusCode,
     });
+
+    if (message.includes("Email sudah terdaftar dengan akun lain.") && statusCode === HttpStatus.CONFLICT) {
+        const clientUrl = config.CLIENT_URL[0]?.trim() || 'http://localhost:3010';
+
+        return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent("Email sudah terdaftar dengan akun lain.")}`);
+
+    }
 
     // ─── Send Error Response ────────────────────────────────────────
     ResponseUtil.error(res, message, errors, statusCode);

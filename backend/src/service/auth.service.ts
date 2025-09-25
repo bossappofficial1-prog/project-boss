@@ -170,7 +170,7 @@ export async function googleOAuthService(profile: {
         // Check if email already exists (no account linking allowed)
         const existingUser = await getUserByEmailService(profile.email);
         if (existingUser) {
-            throw new AppError("Email sudah terdaftar dengan akun lain. Silakan gunakan login biasa.", HttpStatus.CONFLICT);
+            throw new AppError("Email sudah terdaftar dengan akun lain.", HttpStatus.CONFLICT);
         }
 
         // Create new user
