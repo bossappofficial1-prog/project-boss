@@ -41,7 +41,90 @@
         }
     },
     "homePage": {
-        "title": "Selamat Datang di Aplikasi Kami"
+        "title": "Selamat Datang di Aplikasi Kami",
+        "appBarTitle": "Beranda",
+        "loading": "Memuat konten beranda khusus untukmu...",
+        "error": {
+            "generic": "Kami tidak dapat memuat konten beranda saat ini. Silakan coba lagi.",
+            "network": "Periksa koneksi internet Anda lalu coba kembali."
+        },
+        "hero": {
+            "badge": "Pilihan utama",
+            "fallbackTitle": "Temukan promo menarik di sekitarmu",
+            "fallbackSubtitle": "Kami menyiapkan rekomendasi outlet dan promo sesuai preferensimu.",
+            "cta": "Lihat detail",
+            "prev": "Slide sebelumnya",
+            "next": "Slide berikutnya",
+            "defaultTitle": "Promo spesial hari ini",
+            "defaultSubtitle": "Nikmati berbagai penawaran dari mitra terpercaya."
+        },
+        "stats": {
+            "title": "Sekilas hari ini",
+            "subtitle": "Angka terbaru dari jaringan merchant kami",
+            "umkm": {
+                "label": "UMKM terverifikasi"
+            },
+            "transactions": {
+                "label": "Transaksi"
+            },
+            "memberships": {
+                "label": "Membership aktif"
+            }
+        },
+        "sections": {
+            "categories": {
+                "title": "Belanja berdasarkan kategori",
+                "subtitle": "Langsung pilih kebutuhanmu",
+                "action": "Lihat semua"
+            },
+            "featured": {
+                "title": "Direkomendasikan untukmu",
+                "subtitle": "Outlet favorit yang disukai banyak orang",
+                "action": "Lihat semua",
+                "orders": "Sudah melayani {count} pesanan",
+                "new": "Outlet baru"
+            },
+            "popular": {
+                "title": "Paling laris",
+                "subtitle": "Pilihan yang sering dipesan pelanggan lain"
+            },
+            "promos": {
+                "title": "Promo & voucher",
+                "subtitle": "Hemat lebih banyak dengan penawaran ini"
+            },
+            "quickActions": {
+                "title": "Akses cepat",
+                "subtitle": "Lanjutkan aktivitas favoritmu"
+            }
+        },
+        "empty": {
+            "categories": "Kategori akan tampil di sini segera.",
+            "outlets": "Belum ada outlet rekomendasi. Coba lagi nanti.",
+            "popular": "Item populer akan muncul setelah ada pesanan.",
+            "promos": "Belum ada promo aktif saat ini."
+        },
+        "promos": {
+            "badge": "Voucher",
+            "minPurchase": "Min. belanja {amount}",
+            "validUntil": "Berlaku hingga {date}"
+        },
+        "quickActions": {
+            "orders": {
+                "title": "Pesanan saya",
+                "description": "Lacak pesanan dan statusnya"
+            },
+            "favorites": {
+                "title": "Outlet tersimpan",
+                "description": "Akses cepat ke daftar favoritmu"
+            },
+            "nearby": {
+                "title": "Outlet terdekat",
+                "description": "Jelajahi tempat di sekitar lokasimu"
+            }
+        },
+        "badges": {
+            "sold": "{count} terjual"
+        }
     },
     "nearbyPage": {
         "title": "Outlet Terdekat",

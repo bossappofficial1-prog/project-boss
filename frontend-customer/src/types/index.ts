@@ -1,4 +1,5 @@
 export * from "./outlet"
+export * from "./home"
 
 export interface OutletType {
     id: string

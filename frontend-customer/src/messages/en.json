@@ -41,7 +41,90 @@
         }
     },
     "homePage": {
-        "title": "Welcome to our Application"
+        "title": "Welcome to our Application",
+        "appBarTitle": "Home",
+        "loading": "Loading your personalized home feed...",
+        "error": {
+            "generic": "We couldn't load the home content right now. Please try again.",
+            "network": "Please check your internet connection and try again."
+        },
+        "hero": {
+            "badge": "Featured",
+            "fallbackTitle": "Discover amazing promos near you",
+            "fallbackSubtitle": "Stay tuned for curated offers and outlets tailored to your tastes.",
+            "cta": "View details",
+            "prev": "Previous slide",
+            "next": "Next slide",
+            "defaultTitle": "Special deal of the day",
+            "defaultSubtitle": "Enjoy exciting offers from trusted merchants."
+        },
+        "stats": {
+            "title": "Today at a glance",
+            "subtitle": "Fresh numbers from our merchant network",
+            "umkm": {
+                "label": "Verified UMKM"
+            },
+            "transactions": {
+                "label": "Transactions"
+            },
+            "memberships": {
+                "label": "Active memberships"
+            }
+        },
+        "sections": {
+            "categories": {
+                "title": "Shop by category",
+                "subtitle": "Pick what you need right away",
+                "action": "Browse all"
+            },
+            "featured": {
+                "title": "Recommended for you",
+                "subtitle": "Top outlets people love around you",
+                "action": "See all",
+                "orders": "{count} orders served",
+                "new": "New outlet"
+            },
+            "popular": {
+                "title": "Popular picks",
+                "subtitle": "Favorites everyone keeps ordering"
+            },
+            "promos": {
+                "title": "Promos & vouchers",
+                "subtitle": "Save more with these limited offers"
+            },
+            "quickActions": {
+                "title": "Quick shortcuts",
+                "subtitle": "Jump back to what matters"
+            }
+        },
+        "empty": {
+            "categories": "Categories will appear here soon.",
+            "outlets": "No recommended outlets yet. Check back later.",
+            "popular": "Popular items will show up once orders roll in.",
+            "promos": "No active promos for now—stay tuned!"
+        },
+        "promos": {
+            "badge": "Voucher",
+            "minPurchase": "Min. spend {amount}",
+            "validUntil": "Valid until {date}"
+        },
+        "quickActions": {
+            "orders": {
+                "title": "My orders",
+                "description": "Track purchases and their status"
+            },
+            "favorites": {
+                "title": "Saved outlets",
+                "description": "Quick access to your bookmarks"
+            },
+            "nearby": {
+                "title": "Nearby outlets",
+                "description": "Explore places around your location"
+            }
+        },
+        "badges": {
+            "sold": "{count} sold"
+        }
     },
     "nearbyPage": {
         "title": "Nearby Outlets",
