@@ -23,6 +23,40 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
     }
   };
 
+  const getStatusOptions = (currentStatus: string) => {
+    const allStatuses = [
+      { value: 'AWAITING_PAYMENT', label: 'Menunggu Bayar' },
+      { value: 'PROCESSING', label: 'Diproses' },
+      { value: 'READY', label: 'Siap' },
+      { value: 'COMPLETED', label: 'Selesai' },
+      { value: 'CANCELLED', label: 'Dibatalkan' },
+      { value: 'CONFIRMED', label: 'Dikonfirmasi' },
+    ];
+    
+    return allStatuses;
+  };
+
+  const handleStatusChange = (orderId: string, currentStatus: string, newStatus: string) => {
+    if (newStatus === currentStatus) return;
+    
+    const statusLabels: { [key: string]: string } = {
+      'AWAITING_PAYMENT': 'Menunggu Bayar',
+      'PROCESSING': 'Diproses', 
+      'READY': 'Siap',
+      'COMPLETED': 'Selesai',
+      'CANCELLED': 'Dibatalkan',
+      'CONFIRMED': 'Dikonfirmasi'
+    };
+    
+    const confirmed = window.confirm(
+      `Apakah Anda yakin ingin mengubah status pesanan #${orderId.slice(-8)} dari "${statusLabels[currentStatus]}" menjadi "${statusLabels[newStatus]}"?`
+    );
+    
+    if (confirmed) {
+      handleStatusUpdate(orderId, newStatus as OrderStatus);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'AWAITING_PAYMENT': { label: 'Menunggu Bayar', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' },
@@ -65,6 +99,7 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
         <thead className="bg-gray-50 dark:bg-gray-800">
           <tr>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">No</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID Pesanan</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Produk</th>
@@ -76,8 +111,11 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-          {orders.map((order) => (
+          {orders.map((order, idx) => (
             <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td className="px-4 py-3">
+                <div className="text-sm text-gray-900 dark:text-gray-100">{idx + 1}</div>
+              </td>
               <td className="px-4 py-3">
                 <div className="text-sm font-mono text-gray-900 dark:text-gray-100">
                   #{order.id.slice(-8)}
@@ -112,7 +150,6 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
               </td>
               <td className="px-4 py-3">
                 <div className="text-sm text-gray-900 dark:text-gray-100">
-                  {/* TODO: Add paymentMethod to Order interface */}
                   Online
                 </div>
               </td>
@@ -122,7 +159,18 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
                 </div>
               </td>
               <td className="px-4 py-3">
-                {getStatusBadge(order.orderStatus)}
+                <select
+                  value={order.orderStatus}
+                  onChange={(e) => handleStatusChange(order.id, order.orderStatus, e.target.value)}
+                  disabled={updatingStatus === order.id}
+                  className="text-xs font-medium rounded-full px-2.5 py-0.5 border-0 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 cursor-pointer disabled:opacity-50"
+                >
+                  {getStatusOptions(order.orderStatus).map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </td>
               <td className="px-4 py-3">
                 <div className="flex items-center justify-end gap-2">
@@ -187,9 +235,9 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
                       </button>
                     )}
                   </div>
-                </td>
-              </tr>
-            ))}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

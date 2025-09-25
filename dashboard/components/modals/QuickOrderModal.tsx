@@ -281,7 +281,7 @@ export function QuickOrderModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             Tambah {productType === 'GOODS' ? 'Pesanan' : 'Antrian'} Manual
@@ -289,7 +289,7 @@ export function QuickOrderModal({
           <DialogClose />
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-120px)] space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-6 p-1">
             {/* Customer Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
