@@ -120,7 +120,7 @@ export default function AddProductServiceModal({ open, onOpenChange, outletId, o
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg w-[92vw]">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Tambah Produk atau Jasa</DialogTitle>
           <DialogDescription>Isi detail untuk menambahkan item baru ke outlet.</DialogDescription>

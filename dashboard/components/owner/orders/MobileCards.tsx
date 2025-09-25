@@ -23,6 +23,40 @@ export function OrdersMobileCards({ orders, onRefresh }: OrdersMobileCardsProps)
     }
   };
 
+  const getStatusOptions = (currentStatus: string) => {
+    const allStatuses = [
+      { value: 'AWAITING_PAYMENT', label: 'Menunggu Bayar' },
+      { value: 'PROCESSING', label: 'Diproses' },
+      { value: 'READY', label: 'Siap' },
+      { value: 'COMPLETED', label: 'Selesai' },
+      { value: 'CANCELLED', label: 'Dibatalkan' },
+      { value: 'CONFIRMED', label: 'Dikonfirmasi' },
+    ];
+    
+    return allStatuses;
+  };
+
+  const handleStatusChange = (orderId: string, currentStatus: string, newStatus: string) => {
+    if (newStatus === currentStatus) return;
+    
+    const statusLabels: { [key: string]: string } = {
+      'AWAITING_PAYMENT': 'Menunggu Bayar',
+      'PROCESSING': 'Diproses', 
+      'READY': 'Siap',
+      'COMPLETED': 'Selesai',
+      'CANCELLED': 'Dibatalkan',
+      'CONFIRMED': 'Dikonfirmasi'
+    };
+    
+    const confirmed = window.confirm(
+      `Apakah Anda yakin ingin mengubah status pesanan #${orderId.slice(-8)} dari "${statusLabels[currentStatus]}" menjadi "${statusLabels[newStatus]}"?`
+    );
+    
+    if (confirmed) {
+      handleStatusUpdate(orderId, newStatus as OrderStatus);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'AWAITING_PAYMENT': { label: 'Menunggu Bayar', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' },
@@ -61,7 +95,7 @@ export function OrdersMobileCards({ orders, onRefresh }: OrdersMobileCardsProps)
   };
 
   return (
-    <div className="sm:hidden space-y-3">
+    <div className="space-y-3">
       {orders.map((order) => (
         <div
           key={order.id}
@@ -84,7 +118,18 @@ export function OrdersMobileCards({ orders, onRefresh }: OrdersMobileCardsProps)
                 </p>
               </div>
             </div>
-            {getStatusBadge(order.orderStatus)}
+            <select
+              value={order.orderStatus}
+              onChange={(e) => handleStatusChange(order.id, order.orderStatus, e.target.value)}
+              disabled={updatingStatus === order.id}
+              className="text-xs font-medium rounded-full px-2.5 py-0.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 cursor-pointer disabled:opacity-50"
+            >
+              {getStatusOptions(order.orderStatus).map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Customer and product details */}

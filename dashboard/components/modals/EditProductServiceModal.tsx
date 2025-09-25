@@ -123,7 +123,7 @@ export default function EditProductServiceModal({ open, onOpenChange, item, onSu
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg w-[92vw]">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit {item?.type === 'SERVICE' ? 'Jasa' : 'Produk'}</DialogTitle>
           <DialogDescription>Ubah informasi dan simpan perubahan.</DialogDescription>

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Suspense } from 'react';
 import { useOutletQueue } from '@/hooks/useOrders';
 import { useOutletContext } from '@/components/providers/OutletProvider';
-import { QuickOrderModal } from '@/components/modals/QuickOrderModal';
 import { QueueHeader } from '@/components/owner/queue/Header';
 import { QueueControls } from '@/components/owner/queue/Controls';
 import { QueueDesktopTable } from '@/components/owner/queue/DesktopTable';
@@ -16,7 +15,6 @@ export default function QueuePage() {
   const { selectedOutletId } = useOutletContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
-  const [showQuickModal, setShowQuickModal] = useState(false);
 
   const {
     data: queueData,
@@ -29,10 +27,6 @@ export default function QueuePage() {
   });
 
   const handleRefresh = () => {
-    refreshQueue();
-  };
-
-  const handleQuickOrderSuccess = () => {
     refreshQueue();
   };
 
@@ -101,7 +95,7 @@ export default function QueuePage() {
       <div className="space-y-6">
         <QueueHeader
           onRefresh={handleRefresh}
-          onCreateQuick={() => setShowQuickModal(true)}
+          onCreateQuick={() => window.location.href = '/owner/dashboard/pos/queue'}
         />
 
         <QueueControls
@@ -121,7 +115,7 @@ export default function QueuePage() {
                 setSearchTerm('');
                 setStatusFilter('all');
               }}
-              onCreateQueue={() => setShowQuickModal(true)}
+              onCreateQueue={() => window.location.href = '/owner/dashboard/pos/queue'}
             />
           ) : (
             <>
@@ -143,17 +137,6 @@ export default function QueuePage() {
             </>
           )}
         </Suspense>
-
-        {/* Quick Order Modal */}
-        {showQuickModal && selectedOutletId && (
-          <QuickOrderModal
-            open={showQuickModal}
-            onOpenChange={setShowQuickModal}
-            outletId={selectedOutletId}
-            productType="SERVICE"
-            onSuccess={handleQuickOrderSuccess}
-          />
-        )}
       </div>
     </>
   );

@@ -13,7 +13,7 @@ interface OperatingHoursModalProps {
 export default function OperatingHoursModal({ open, onOpenChange, outletId, outletName }: OperatingHoursModalProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+            <DialogContent className="max-w-2xl flex flex-col">
                 <DialogHeader className="pb-4 border-b">
                     <DialogTitle className="text-xl">
                         Kelola Jam Operasional

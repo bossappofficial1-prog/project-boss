@@ -23,6 +23,40 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
     }
   };
 
+  const getStatusOptions = (currentStatus: string) => {
+    const allStatuses = [
+      { value: 'AWAITING_PAYMENT', label: 'Menunggu Bayar' },
+      { value: 'PROCESSING', label: 'Diproses' },
+      { value: 'READY', label: 'Siap' },
+      { value: 'COMPLETED', label: 'Selesai' },
+      { value: 'CANCELLED', label: 'Dibatalkan' },
+      { value: 'CONFIRMED', label: 'Dikonfirmasi' },
+    ];
+    
+    return allStatuses;
+  };
+
+  const handleStatusChange = (orderId: string, currentStatus: string, newStatus: string) => {
+    if (newStatus === currentStatus) return;
+    
+    const statusLabels: { [key: string]: string } = {
+      'AWAITING_PAYMENT': 'Menunggu Bayar',
+      'PROCESSING': 'Diproses', 
+      'READY': 'Siap',
+      'COMPLETED': 'Selesai',
+      'CANCELLED': 'Dibatalkan',
+      'CONFIRMED': 'Dikonfirmasi'
+    };
+    
+    const confirmed = window.confirm(
+      `Apakah Anda yakin ingin mengubah status pesanan #${orderId.slice(-8)} dari "${statusLabels[currentStatus]}" menjadi "${statusLabels[newStatus]}"?`
+    );
+    
+    if (confirmed) {
+      handleStatusUpdate(orderId, newStatus as OrderStatus);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'AWAITING_PAYMENT': { label: 'Menunggu Bayar', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' },
@@ -61,88 +95,85 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-900">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                ID Pesanan
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Customer
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Produk
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Total
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Pembayaran
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Waktu Pesan
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Aksi
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {orders.map((order) => (
-              <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-mono text-gray-900 dark:text-gray-100">
-                    #{order.id.slice(-8)}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {order.guestCustomer.name}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {order.guestCustomer?.phone}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {order.items?.[0]?.product?.name || 'Produk'}
-                    </div>
-                    {order.items && order.items.length > 1 && (
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        +{order.items.length - 1} item lainnya
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+    <div className="hidden sm:block overflow-x-auto rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-900">
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+        <thead className="bg-gray-50 dark:bg-gray-800">
+          <tr>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">No</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID Pesanan</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Produk</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pembayaran</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Waktu Pesan</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+            <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+          {orders.map((order, idx) => (
+            <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td className="px-4 py-3">
+                <div className="text-sm text-gray-900 dark:text-gray-100">{idx + 1}</div>
+              </td>
+              <td className="px-4 py-3">
+                <div className="text-sm font-mono text-gray-900 dark:text-gray-100">
+                  #{order.id.slice(-8)}
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <div>
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {formatCurrency(order.totalAmount)}
+                    {order.guestCustomer.name}
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900 dark:text-gray-100">
-                    {/* TODO: Add paymentMethod to Order interface */}
-                    Online
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {order.guestCustomer?.phone}
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900 dark:text-gray-100">
-                    {formatDate(order.createdAt)}
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {order.items?.[0]?.product?.name || 'Produk'}
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {getStatusBadge(order.orderStatus)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center gap-2">
+                  {order.items && order.items.length > 1 && (
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      +{order.items.length - 1} item lainnya
+                    </div>
+                  )}
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {formatCurrency(order.totalAmount)}
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <div className="text-sm text-gray-900 dark:text-gray-100">
+                  Online
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <div className="text-sm text-gray-900 dark:text-gray-100">
+                  {formatDate(order.createdAt)}
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <select
+                  value={order.orderStatus}
+                  onChange={(e) => handleStatusChange(order.id, order.orderStatus, e.target.value)}
+                  disabled={updatingStatus === order.id}
+                  className="text-xs font-medium rounded-full px-2.5 py-0.5 border-0 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 cursor-pointer disabled:opacity-50"
+                >
+                  {getStatusOptions(order.orderStatus).map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex items-center justify-end gap-2">
                     {order.orderStatus === 'AWAITING_PAYMENT' && (
                       <button
                         onClick={() => {
@@ -204,12 +235,11 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
                       </button>
                     )}
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
