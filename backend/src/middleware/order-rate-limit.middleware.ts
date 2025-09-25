@@ -34,6 +34,6 @@ export const orderManagementLimiter = rateLimit({
     },
     keyGenerator: (req) => {
         // Use user ID for authenticated requests, fallback to IP if not available
-        return (req.user?.id as string) || req.ip || '';
+        return (req.storedUser?.id as string) || req.ip || '';
     }
 });

@@ -56,5 +56,11 @@ export const config = {
         accountSid: process.env.TWILIO_ACCOUNT_SID || '',
         authToken: process.env.TWILIO_AUTH_TOKEN || '',
         phoneNumber: process.env.TWILIO_PHONE_NUMBER || ''
+    },
+
+    google: {
+        clientId: process.env.GOOGLE_CLIENT_ID || '',
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+        redirectUrl: process.env.GOOGLE_REDIRECT_URL || 'http://localhost:1234/api/v1/auth/google/callback'
     }
 } as const

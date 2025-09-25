@@ -13,7 +13,7 @@ import { ReceiptService } from "../service/receipt.service";
 
 export const getOrderReceiptController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const ownerId = req.user!.id;
+    const ownerId = req.storedUser!.id;
     const order = await getOrderByIdService(id, ownerId);
 
     if (!order) {
@@ -30,7 +30,7 @@ export const getOrderReceiptController = asyncHandler(async (req: Request, res: 
 export const updateOrderStatusController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status } = req.body;
-    const ownerId = req.user!.id;
+    const ownerId = req.storedUser!.id;
 
     // Validate ownership before update
     await getOrderByIdService(id, ownerId);
@@ -62,7 +62,7 @@ export const createOrderController = asyncHandler(async (req: Request, res: Resp
 
 export const completeOrderController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const ownerId = req.user!.id;
+    const ownerId = req.storedUser!.id;
 
     // Validate ownership before complete
     await getOrderByIdService(id, ownerId);
@@ -80,7 +80,7 @@ export const getOrderByIdController = asyncHandler(async (req: Request, res: Res
 
 export const refundOrderController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const ownerId = req.user!.id;
+    const ownerId = req.storedUser!.id;
 
     // Validate ownership before refund
     await getOrderByIdService(id, ownerId);
@@ -92,7 +92,7 @@ export const refundOrderController = asyncHandler(async (req: Request, res: Resp
 export const listGoodsOrdersByOutletController = asyncHandler(async (req: Request, res: Response) => {
     const { outletId } = req.params;
     const { status, page, limit } = req.query as any;
-    const ownerId = req.user!.id;
+    const ownerId = req.storedUser!.id;
 
     const result = await getGoodsOrdersByOutletService(
         outletId,
@@ -115,7 +115,7 @@ export const listGoodsOrdersByOutletController = asyncHandler(async (req: Reques
 export const listServiceQueueByOutletController = asyncHandler(async (req: Request, res: Response) => {
     const { outletId } = req.params;
     const { page, limit } = req.query as any;
-    const ownerId = req.user!.id;
+    const ownerId = req.storedUser!.id;
 
     const result = await getServiceQueueByOutletService(
         outletId,

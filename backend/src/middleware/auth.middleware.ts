@@ -4,15 +4,8 @@ import { AppError } from "../errors/app-error";
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { JwtUtil } from "../utils";
-import { getUserByIdService } from "../service/user.service";
 import { UserRole } from "@prisma/client";
-
-interface JwtPayload {
-    userId: string;
-    role: UserRole;
-}
 import { redis } from "../config/redis";
-import { config } from "../config";
 
 export const protect = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     // Get token from cookies (httpOnly)
@@ -41,13 +34,13 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
     }
 
     const user = JSON.parse(session);
-    req.user = user;
+    req.storedUser = user;
     next();
 });
 
 export const authorize = (...roles: UserRole[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
-        if (!req.user || !roles.includes(req.user.role)) {
+        if (!req.storedUser || !roles.includes(req.storedUser.role)) {
             return next(new AppError(Messages.UNAUTHORIZED, HttpStatus.FORBIDDEN));
         }
         next();

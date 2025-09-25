@@ -10,7 +10,6 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import StatsCards from '@/components/owner/dashboard/StatsCards';
 import BusinessProfileCard from '@/components/owner/dashboard/BusinessProfileCard';
 import OutletsSection from '@/components/owner/dashboard/OutletsSection';
-import { Toolbar } from '@/components/owner/dashboard/Toolbar';
 import { PageSkeleton } from '@/components/owner/dashboard/Skeletons';
 
 export const dynamic = 'force-dynamic';
@@ -172,4 +171,4 @@ export default function DashboardPage() {
       />
     </>
   );
-}                                                                                                                                             
+}

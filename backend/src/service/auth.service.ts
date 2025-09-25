@@ -3,7 +3,8 @@ import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
 import { LoginInput } from "../schemas/auth.schema";
 import { BcryptUtil, JwtUtil } from "../utils";
-import { getUserByEmailService, getUserByIdService, updateUserPasswordService } from "./user.service";
+import { getUserByEmailService, getUserByIdService, updateUserPasswordService, createUserWithGoogleService } from "./user.service";
+import { UserRepository } from "../repositories/user.repository";
 import { redis } from "../config/redis";
 import { randomUUID } from "crypto";
 import { messagePublisher } from "./message-publisher.service";
@@ -154,4 +155,37 @@ export async function changePasswordService(userId: string, currentPassword: str
     }
 
     await updateUserPasswordService(userId, newPassword);
+}
+
+export async function googleOAuthService(profile: {
+    googleId: string;
+    email: string;
+    name: string;
+    avatar?: string;
+}) {
+    // Check if user already exists with this Google ID
+    let user = await UserRepository.findByGoogleId(profile.googleId);
+
+    if (!user) {
+        // Check if email already exists (no account linking allowed)
+        const existingUser = await getUserByEmailService(profile.email);
+        if (existingUser) {
+            throw new AppError("Email sudah terdaftar dengan akun lain. Silakan gunakan login biasa.", HttpStatus.CONFLICT);
+        }
+
+        // Create new user
+        user = await createUserWithGoogleService(profile);
+    }
+
+    // Create session and JWT token
+    await redis.set(`session:${user.id}`, JSON.stringify(user), 'EX', 60 * 60 * 24);
+    const token = JwtUtil.generate({ sessionId: user.id, role: user.role });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = user;
+
+    return {
+        user: userWithoutPassword,
+        token,
+    };
 }

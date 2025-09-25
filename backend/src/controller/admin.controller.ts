@@ -93,11 +93,11 @@ export const updateUserStatusController = asyncHandler(async (req: Request, res:
     const { userId } = req.params;
     const { status, notes } = req.body;
 
-    if (!req.user?.id) {
+    if (!req.storedUser?.id) {
         throw new AppError('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
-    const data = await AdminService.updateUserStatus(userId, status, req.user.id);
+    const data = await AdminService.updateUserStatus(userId, status, req.storedUser.id);
     return ResponseUtil.success(res, data, HttpStatus.OK);
 });
 
@@ -214,11 +214,11 @@ export const updateTicketStatusController = asyncHandler(async (req: Request, re
     const { ticketId } = req.params;
     const { status, notes } = req.body;
 
-    if (!req.user?.id) {
+    if (!req.storedUser?.id) {
         throw new AppError('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
-    const data = await AdminService.updateTicketStatus(ticketId, status, req.user.id);
+    const data = await AdminService.updateTicketStatus(ticketId, status, req.storedUser.id);
     return ResponseUtil.success(res, data, HttpStatus.OK);
 });
 
@@ -232,11 +232,11 @@ export const getPlatformSettingsController = asyncHandler(async (req: Request, r
 export const updatePlatformSettingsController = asyncHandler(async (req: Request, res: Response) => {
     const { settings } = req.body;
 
-    if (!req.user?.id) {
+    if (!req.storedUser?.id) {
         throw new AppError('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
-    const data = await AdminService.updatePlatformSettings(settings, req.user.id);
+    const data = await AdminService.updatePlatformSettings(settings, req.storedUser.id);
     return ResponseUtil.success(res, data, HttpStatus.OK);
 });
 

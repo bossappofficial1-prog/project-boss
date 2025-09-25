@@ -31,11 +31,11 @@ export const processWithdrawalController = asyncHandler(async (req: Request, res
         throw new AppError('Invalid action. Use APPROVE or REJECT', HttpStatus.BAD_REQUEST);
     }
 
-    if (!req.user?.id) {
+    if (!req.storedUser?.id) {
         throw new AppError('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
-    const withdrawal = await processWithdrawal(withdrawalId, action, req.user.id, notes);
+    const withdrawal = await processWithdrawal(withdrawalId, action, req.storedUser.id, notes);
     return ResponseUtil.success(res, withdrawal, HttpStatus.OK);
 });
 
@@ -193,7 +193,7 @@ export const bulkProcessWithdrawalsController = asyncHandler(async (req: Request
         throw new AppError('Invalid action. Use APPROVE or REJECT', HttpStatus.BAD_REQUEST);
     }
 
-    if (!req.user?.id) {
+    if (!req.storedUser?.id) {
         throw new AppError('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
@@ -202,7 +202,7 @@ export const bulkProcessWithdrawalsController = asyncHandler(async (req: Request
 
     for (const withdrawalId of withdrawalIds) {
         try {
-            const result = await processWithdrawal(withdrawalId, action, req.user.id, notes);
+            const result = await processWithdrawal(withdrawalId, action, req.storedUser.id, notes);
             results.push(result);
         } catch (error: any) {
             errors.push({

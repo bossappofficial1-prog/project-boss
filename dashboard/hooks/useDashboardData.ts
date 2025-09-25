@@ -5,9 +5,11 @@ import { authApi, dashboardApi } from '@/lib/api';
 import { useSocket } from '@/lib/socket';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import type { Business, DashboardStats, OrderStatsMap, Outlet } from '@/types/dashboard';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function useDashboardData(initialDate?: string) {
   const { selectedOutlet, outlets, isLoading: outletLoading } = useOutletContext();
+  const query = useQueryClient()
 
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
@@ -92,6 +94,7 @@ export function useDashboardData(initialDate?: string) {
         setIsLoading(true);
         const userData = await authApi.me();
         setBusiness(userData.business);
+        query.refetchQueries({ queryKey: ["outlets"] })
 
         // If selectedOutlet is available, fetch dashboard data for it
         if (selectedOutlet?.id) {

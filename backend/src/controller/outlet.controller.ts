@@ -47,7 +47,7 @@ export const findNearbyOutletsController = asyncHandler(async (req: Request, res
 export const updateOutletLocationController = asyncHandler(async (req: Request, res: Response) => {
     const { outletId } = req.params;
     const { latitude, longitude } = req.body;
-    const ownerId = req.user!.id;
+    const ownerId = req.storedUser!.id;
 
     const outlet = await updateOutletLocationService(
         outletId,
@@ -61,7 +61,7 @@ export const updateOutletLocationController = asyncHandler(async (req: Request, 
 
 export const createOutletController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body;
-    const ownerId = req.user!.id;
+    const ownerId = req.storedUser!.id;
     const outlet = await createOutletService(payload, ownerId);
     return ResponseUtil.success(res, outlet, HttpStatus.CREATED);
 });
@@ -110,14 +110,14 @@ export const getFeaturedOutletsController = asyncHandler(async (req: Request, re
 export const updateOutletController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const payload = req.body;
-    const ownerId = req.user!.id;
+    const ownerId = req.storedUser!.id;
     const outlet = await updateOutletService(id, payload, ownerId);
     return ResponseUtil.success(res, outlet);
 });
 
 export const deleteOutletController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const ownerId = req.user!.id;
+    const ownerId = req.storedUser!.id;
     const outlet = await deleteOutletService(id, ownerId);
     return ResponseUtil.success(res, outlet);
 });

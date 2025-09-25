@@ -180,6 +180,8 @@ model User {
   verificationCode        String?
   verificationCodeExpires DateTime?
   phone                   String? // Penting untuk notifikasi WA
+  googleId                String?   @unique
+  provider                String?   @default("local")
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 

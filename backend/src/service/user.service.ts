@@ -5,6 +5,9 @@ import { UserRepository } from "../repositories/user.repository";
 import { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
 import { UserMe } from "../types/Others";
 import { BcryptUtil } from "../utils";
+import { randomUUID } from "crypto";
+import { CodeGeneratorUtil, DateUtil } from "../utils";
+import { messagePublisher } from "./message-publisher.service";
 
 export async function getAllUserService() {
     const users = await UserRepository.findAll();
@@ -23,9 +26,6 @@ export async function getUserByEmailService(email: string, ignoreUserId?: string
 
     return user
 }
-
-import { CodeGeneratorUtil, DateUtil } from "../utils";
-import { messagePublisher } from "./message-publisher.service";
 
 export async function createUserService(data: CreateUserInput) {
     data.password = (await BcryptUtil.hash(data.password))!
@@ -96,5 +96,31 @@ export async function deleteUserService(userId: string) {
 export async function updateUserPasswordService(userId: string, newPassword: string) {
     const hashedPassword = await BcryptUtil.hash(newPassword);
     const user = await UserRepository.update(userId, { password: hashedPassword });
+    return { ...user, password: '[REDACTED]' };
+}
+
+export async function createUserWithGoogleService(googleProfile: {
+    googleId: string;
+    email: string;
+    name: string;
+    avatar?: string;
+}) {
+    // Check if user with this email already exists
+    const existingUser = await getUserByEmailService(googleProfile.email);
+    if (existingUser) {
+        throw new AppError("Email sudah terdaftar dengan akun lain.", HttpStatus.CONFLICT);
+    }
+
+    // Create new user with Google data
+    const user = await UserRepository.createGoogleUser({
+        email: googleProfile.email,
+        name: googleProfile.name,
+        password: await BcryptUtil.hash(randomUUID()),
+        googleId: googleProfile.googleId,
+        provider: 'google',
+        isVerified: true,
+        role: 'OWNER' // Explicitly set role for Google OAuth users
+    });
+
     return { ...user, password: '[REDACTED]' };
 }

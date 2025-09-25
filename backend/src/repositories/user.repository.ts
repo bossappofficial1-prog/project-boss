@@ -61,6 +61,12 @@ export class UserRepository {
         });
     }
 
+    static async createGoogleUser(data: Pick<User, 'name' | 'email' | 'password' | 'googleId' | 'provider' | 'isVerified' | 'role'>): Promise<User> {
+        return db.user.create({
+            data,
+        });
+    }
+
     static async update(id: string, data: Partial<Pick<User, 'name' | 'password' | 'isVerified' | 'verificationCode' | 'verificationCodeExpires'>>): Promise<User> {
         return db.user.update({
             where: { id },
@@ -76,5 +82,11 @@ export class UserRepository {
 
     static async findAll(): Promise<User[]> {
         return db.user.findMany();
+    }
+
+    static async findByGoogleId(googleId: string): Promise<User | null> {
+        return db.user.findUnique({
+            where: { googleId },
+        });
     }
 }

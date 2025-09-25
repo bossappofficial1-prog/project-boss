@@ -2,15 +2,16 @@ import express from "express"
 import helmet from "helmet"
 import cors from "cors"
 import cookieParser from "cookie-parser"
+import session from "express-session"
 import { config } from "./config"
 import { generalLimiter } from "./middleware/rate-limit.middleware"
 import compression from "compression"
-import { requestLogger } from "./middleware/logging.middleware"
 import { errorHandler, notFound } from "./middleware/error.middleware"
 import { App } from "./constants/app"
 import apiRouter from "./routes/index.routes"
 import morgan from "morgan"
 import path from "path"
+import passport from "./config/passport"
 
 // Import rute promo
 import promoRouter from './routes/promo.route';
@@ -26,7 +27,6 @@ app.use(helmet({
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'"],
             styleSrc: ["'self'"],
-            // Allow images to be fetched cross-origin by any scheme (http/https) and data URIs
             imgSrc: ["'self'", "data:", "https:", "http:"],
         },
     },
@@ -53,12 +53,30 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }))
 // Middleware untuk mengurai cookie
 app.use(cookieParser());
 
-// Middleware kompresi - Mengompres body respons untuk pemuatan yang lebih cepat
+// Session middleware for Passport
+app.use(session({
+    secret: config.JWT_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: !!config.COOKIES_DOMAIN,
+        sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+        domain: config.COOKIES_DOMAIN,
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        path: '/'
+    }
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use(compression());
 
 // Middleware logging permintaan (Morgan)
 if (config.NODE_ENV === "development") {
-    app.use(morgan('dev')); // Output ringkas dengan warna berdasarkan status respons untuk development
+    app.use(morgan('dev'));
 }
 
 // Serve static files (uploaded images) with CORP header explicitly set

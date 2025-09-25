@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
-import { loginService, getMeService, resendVerificationService, forgotPasswordService, resetPasswordService, changePasswordService } from "../service/auth.service";
+import { loginService, getMeService, resendVerificationService, forgotPasswordService, resetPasswordService, changePasswordService, googleOAuthService } from "../service/auth.service";
 import { ResponseUtil } from "../utils/response";
 import { createUserService, verifyUserService } from "../service/user.service";
 import { HttpStatus } from "../constants/http-status";
@@ -35,7 +35,7 @@ export const loginController = asyncHandler(async (req: Request, res: Response) 
 
 
 export const getMeController = asyncHandler(async (req: Request, res: Response) => {
-    const user = await getMeService(req.user!.id);
+    const user = await getMeService(req.storedUser!.id);
 
     const { password, ...userWithoutPassword } = user.userWithoutBusiness
 
@@ -95,6 +95,39 @@ export const resetPasswordController = asyncHandler(async (req: Request, res: Re
 
 export const changePasswordController = asyncHandler(async (req: Request, res: Response) => {
     const { currentPassword, newPassword } = req.body;
-    await changePasswordService(req.user!.id, currentPassword, newPassword);
+    await changePasswordService(req.storedUser!.id, currentPassword, newPassword);
     return ResponseUtil.success(res, { message: "Password berhasil diubah" });
+});
+
+export const googleOAuthCallbackController = asyncHandler(async (req: any, res: any) => {
+    const clientUrl = config.CLIENT_URL[0]?.trim() || 'http://localhost:3010';
+
+    try {
+        const user = req.user;
+
+        if (!user) {
+            return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent("Google authentication failed")}`);
+        }
+
+        // Set JWT token as cookie
+        const token = user.token;
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: !!config.COOKIES_DOMAIN,
+            sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+            domain: config.COOKIES_DOMAIN,
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
+            path: '/'
+        });
+
+        // Redirect to dashboard with stored URL
+        const redirectUrl = (req.session as any).redirectUrl || '/owner/dashboard';
+        res.redirect(`${clientUrl}${redirectUrl}`);
+    } catch (error: any) {
+        if (error.message && error.message.includes("Email sudah terdaftar")) {
+            const errorMessage = encodeURIComponent("Email sudah terdaftar dengan akun lain.");
+            return res.redirect(`${clientUrl}/auth/login?error=${errorMessage}`);
+        }
+        return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent("Google authentication failed")}`);
+    }
 });
