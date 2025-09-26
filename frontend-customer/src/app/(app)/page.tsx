@@ -150,19 +150,25 @@ function HomeSections() {
           subtitle={t("stats.subtitle")}
           icon={<Sparkles className="h-4 w-4" />}
         />
-        <div className="grid grid-cols-3 gap-3 rounded-3xl border border-border/60 bg-card p-4 shadow-sm">
-          {stats.map((stat) => {
-            const Icon = stat.icon
-            return (
-              <div key={stat.key} className="flex flex-col gap-1 text-center">
-                <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Icon className="h-4 w-4" />
+        <div className="rounded-md border border-border/70 bg-card/95 p-4 shadow-sm">
+          <div className="grid grid-cols-1 divide-y divide-border/60 sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
+            {stats.map((stat) => {
+              const Icon = stat.icon
+              return (
+                <div key={stat.key} className="flex items-center gap-3 px-1 py-3 sm:px-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {stat.label}
+                    </p>
+                    <p className="text-lg font-semibold text-foreground">{stat.value}</p>
+                  </div>
                 </div>
-                <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
-                <p className="text-base font-semibold text-foreground">{stat.value}</p>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       </section>
 
@@ -179,13 +185,13 @@ function HomeSections() {
             {t("empty.categories")}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {summary.categories.map((category) => {
               const Icon = categoryIcons[category.slug] ?? LayoutGrid
               return (
                 <Link
                   key={category.id}
-                  href={`/search?category=${encodeURIComponent(category.slug)}`}
+                  href={`/search?q=${encodeURIComponent(category.slug)}`}
                   className="group flex flex-col gap-2 rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition hover:border-primary/50 hover:shadow-md"
                 >
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -202,6 +208,7 @@ function HomeSections() {
         )}
       </section>
 
+      {/* section featured outlet */}
       <section className="space-y-4">
         <HomeSectionHeader
           title={t("sections.featured.title")}
@@ -215,7 +222,7 @@ function HomeSections() {
             {t("empty.outlets")}
           </div>
         ) : (
-          <DivXScroll className="-mx-4 flex gap-4 pb-2 pl-4 pr-8 md:mx-0 md:pl-0 md:pr-0">
+          <DivXScroll className="flex gap-2 pb-2 pl-4 pr-8 md:mx-0 md:pl-0 md:pr-0">
             {summary.outlets.map((outlet) => {
               const ordersCount = outlet._count?.orders ?? 0
               const ordersLabel = ordersCount > 0
@@ -280,7 +287,7 @@ function HomeSections() {
             {t("empty.popular")}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {summary.popularItems.map((item) => (
               <div
                 key={item.id}
@@ -363,13 +370,14 @@ function HomeSections() {
         )}
       </section>
 
+      {/* sectin akses cepat */}
       <section className="space-y-4">
         <HomeSectionHeader
           title={t("sections.quickActions.title")}
           subtitle={t("sections.quickActions.subtitle")}
           icon={<ArrowUpRight className="h-4 w-4" />}
         />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {quickActions.map((action) => {
             const Icon = action.icon
             return (
