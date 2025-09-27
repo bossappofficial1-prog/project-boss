@@ -213,10 +213,10 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 onLeftClickHandler = () => router.replace('/search');
             } else if (prevPage == "nearby" && from == "product") {
                 onLeftClickHandler = () => router.push("/nearby");
-            } else if (from == "nearby") {
-                onLeftClickHandler = () => router.push('/nearby');
             } else if (from === "product") {
                 onLeftClickHandler = () => router.push('/');
+            } else if (from === "search" || from === "favorites" || from == "nearby") {
+                onLeftClickHandler = () => router.back();
             } else {
                 onLeftClickHandler = () => router.push('/');
             }
