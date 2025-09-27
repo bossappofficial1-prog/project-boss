@@ -61,7 +61,7 @@ services:
     ports:
       - "1234:1234"
     volumes:
-      - ./backend/uploads:/app/uploads
+      - ./uploads:/app/backend/uploads
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 1234 || exit 1"]
       interval: 10s

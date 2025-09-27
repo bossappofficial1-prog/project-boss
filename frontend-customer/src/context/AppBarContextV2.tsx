@@ -4,10 +4,11 @@ import { AppBarProps } from "@/components/shared/AppBar";
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react"
 
 const initialState: AppBarProps = {
-    title: "Boss App",
+    title: '',
+    subtitle: '',
     showBackButton: false,
     variant: "transparent"
-}
+};
 
 const AppBarrContextV2 = createContext<{ appBarConfig: AppBarProps; setAppBar: (config: Partial<AppBarProps>) => void; resetAppBar: () => void } | null>(null)
 

@@ -759,17 +759,25 @@
         }
     },
     "productDetails": {
+        "tooltips": {
+            "productUnavailable": "Produk saat ini tidak tersedia.",
+            "outletClosed": "Outlet sedang tutup saat ini."
+        },
+        "toast": {
+            "addProductSuccess": "Berhasil ditambahkan ke keranjang!",
+            "addProductError": "Gagal Menambahkan Produk",
+            "addProductErrorDesc": "Terjadi kesalahan, silakan coba lagi.",
+            "addServiceSuccess": "Layanan berhasil dipesan!",
+            "addServiceError": "Gagal Memesan Layanan",
+            "addServiceErrorDesc": "Jadwal tidak tersedia atau terjadi kesalahan.",
+            "shareErrorTitle": "Gagal Membagikan",
+            "shareErrorDesc": "Tautan produk tidak dapat dibagikan saat ini."
+        },
         "title": "Detail Produk",
         "shareText": "Lihat {type}: {name}",
         "shareType": {
             "GOODS": "produk",
             "SERVICE": "layanan"
-        },
-        "toast": {
-            "addProductError": "Tidak dapat menambahkan produk",
-            "addProductErrorDesc": "Terjadi kesalahan saat menambahkan produk ke keranjang",
-            "addServiceError": "Tidak dapat menambahkan layanan",
-            "addServiceErrorDesc": "Terjadi kesalahan saat menambahkan layanan ke keranjang"
         },
         "empty": {
             "title": "Produk tidak ditemukan"

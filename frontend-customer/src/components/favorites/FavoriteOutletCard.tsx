@@ -35,7 +35,7 @@ export default function FavoriteOutletCard({
     const isLoading = validationStatus === 'loading' || isValidating
 
     const handleCardClick = () => {
-        if (!isInvalid) router.push(`/outlet/${outlet.id}`)
+        if (!isInvalid) router.push(`/outlet/${outlet.id}?from=favorites`)
     }
     const handleRemoveFromFavorites = (e: React.MouseEvent) => {
         e.stopPropagation()

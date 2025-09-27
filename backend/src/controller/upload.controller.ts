@@ -6,6 +6,7 @@ import { AppError } from "../errors/app-error";
 import path from "path";
 import fs from "fs";
 import { config } from "../config";
+import { ImageService } from "../service/image.service";
 
 // Magic numbers for image file validation
 const IMAGE_MAGIC_NUMBERS = {
@@ -157,43 +158,14 @@ export const deleteImageController = asyncHandler(async (req: Request, res: Resp
 
 export const deleteImageByUrlController = asyncHandler(async (req: Request, res: Response) => {
     const { url } = req.body;
+    const result = ImageService.deleteImageByUrl(url);
 
-    if (!url) {
-        throw new AppError('Image URL is required', HttpStatus.BAD_REQUEST);
-    }
-
-    // Extract filename from URL
-    let filename: string;
-    try {
-        const urlObj = new URL(url);
-        filename = path.basename(urlObj.pathname);
-    } catch (error) {
-        throw new AppError('Invalid URL format', HttpStatus.BAD_REQUEST);
-    }
-
-    // Validate filename to prevent directory traversal attacks
-    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-        throw new AppError('Invalid filename in URL', HttpStatus.BAD_REQUEST);
-    }
-
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    const filePath = path.join(uploadsDir, filename);
-
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-        throw new AppError('File not found', HttpStatus.NOT_FOUND);
-    }
-
-    try {
-        // Delete the file
-        fs.unlinkSync(filePath);
-
-        return ResponseUtil.success(res, {
+    return ResponseUtil.success(
+        res,
+        {
             message: 'Image deleted successfully',
-            filename: filename,
-            url: url
-        }, HttpStatus.OK);
-    } catch (error) {
-        throw new AppError('Failed to delete file', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+            ...result,
+        },
+        HttpStatus.OK
+    );
 });

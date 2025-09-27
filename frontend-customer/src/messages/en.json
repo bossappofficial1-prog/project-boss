@@ -759,17 +759,25 @@
         }
     },
     "productDetails": {
+        "tooltips": {
+            "productUnavailable": "This product is currently unavailable.",
+            "outletClosed": "The outlet is currently closed."
+        },
+        "toast": {
+            "addProductSuccess": "Successfully added to cart!",
+            "addProductError": "Failed to Add Product",
+            "addProductErrorDesc": "An error occurred, please try again.",
+            "addServiceSuccess": "Service successfully booked!",
+            "addServiceError": "Failed to Book Service",
+            "addServiceErrorDesc": "The schedule is unavailable or an error occurred.",
+            "shareErrorTitle": "Failed to Share",
+            "shareErrorDesc": "The product link could not be shared at this time."
+        },
         "title": "Product Details",
         "shareText": "Check out {type}: {name}",
         "shareType": {
             "GOODS": "product",
             "SERVICE": "service"
-        },
-        "toast": {
-            "addProductError": "Cannot add product",
-            "addProductErrorDesc": "An error occurred while adding product to cart",
-            "addServiceError": "Cannot add service",
-            "addServiceErrorDesc": "An error occurred while adding service to cart"
         },
         "empty": {
             "title": "Product not found"

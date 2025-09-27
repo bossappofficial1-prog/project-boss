@@ -12,11 +12,10 @@ export function useLocale(): LanguageType {
     return locale;
 }
 
-type Messages = typeof enMessages; // Ambil tipe dari file JSON
-type NamespaceKeys = keyof Messages; // Ambil namespace (level pertama dari JSON)
+export type Messages = typeof enMessages;
+type NamespaceKeys = keyof Messages;
 
-// Utility untuk membuat union dari nested key
-type NestedKeyOf<ObjectType extends object> = {
+export type NestedKeyOf<ObjectType extends object> = {
     [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
     ? `${Key}.${NestedKeyOf<ObjectType[Key]>}`
     : `${Key}`;
@@ -42,19 +41,17 @@ export function useTranslations<N extends NamespaceKeys>(namespace: N) {
         key: K,
         interpolations?: Record<string, string | number>
     ): string => {
-        // Rekursif untuk mengakses nilai berdasarkan key
         const getValue = (obj: any, path: string[]): any => {
             if (!obj || path.length === 0) return undefined;
             const [currentKey, ...rest] = path;
             return rest.length === 0 ? obj[currentKey] : getValue(obj[currentKey], rest);
         };
 
-        const keys = key.split(".");
+        const keys = (key as string).split(".");
         let value = getValue(messages[namespace], keys);
 
         let result = value || key;
 
-        // Handle interpolations
         if (interpolations && typeof result === "string") {
             Object.entries(interpolations).forEach(([placeholder, replacement]) => {
                 const regex = new RegExp(`\\{${placeholder}\\}`, "g");

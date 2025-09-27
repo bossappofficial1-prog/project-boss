@@ -516,7 +516,7 @@ export default function CartPage() {
 
 
                     {Object.entries(itemsByOutlet).map(([outletId, { outletName, items: outletItems }]) => (
-                        <Card key={outletId} onClick={() => setIsSelectedOutlet(outletId)} className={`pt-0 py-0 overflow-hidden cursor-pointer transition-all ${isSelectedOutlet === outletId ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "hover:border-primary/50"}`}>
+                        <Card key={outletId} onClick={() => setIsSelectedOutlet(outletId)} className={`pt-0 py-0 gap-0 overflow-hidden cursor-pointer transition-all ${isSelectedOutlet === outletId ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "hover:border-primary/50"}`}>
                             <CardHeader className="bg-muted/50 pt-3 px-3">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <Link
@@ -549,7 +549,7 @@ export default function CartPage() {
                                     </div>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-0 divide-y">
+                            <CardContent className="p-0 mt-0 divide-y">
                                 {outletItems.map((item) => (
                                     <CartItemCard
                                         key={item.id}

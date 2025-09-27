@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import type { ReactNode } from "react"
+import React from "react"
 
 interface HomeSectionHeaderProps {
     title: string
@@ -12,7 +13,7 @@ interface HomeSectionHeaderProps {
     icon?: ReactNode
 }
 
-export function HomeSectionHeader({ title, subtitle, actionLabel, href, icon }: HomeSectionHeaderProps) {
+function HomeSectionHeader({ title, subtitle, actionLabel, href, icon }: HomeSectionHeaderProps) {
     return (
         <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
@@ -34,3 +35,5 @@ export function HomeSectionHeader({ title, subtitle, actionLabel, href, icon }: 
         </div>
     )
 }
+
+export default React.memo(HomeSectionHeader)
