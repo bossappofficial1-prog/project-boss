@@ -12,6 +12,7 @@ export interface OutletType {
     latitude: number
     longitude: number
     isOpen: boolean
+    status: boolean
     businessId: string
     operatingHours: OperatingHourType[]
     business: Pick<BusinessType, "id" | "name" | "defaultTransactionFeeBearer">

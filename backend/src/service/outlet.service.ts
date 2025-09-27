@@ -6,6 +6,7 @@ import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 import { getBusinessByOwnerIdService } from "./business.service";
 import { getIsOutletOpen, calculateDistance, validateCoordinates, calculateBoundingBox, validatePaginationParams, validateRadius, mapOutletsWithOpenStatus, removeOperatingHoursFromOutlets } from "../utils/outlet.utils";
 import Redis from "ioredis";
+import { ImageService } from "./image.service";
 
 // Redis client
 const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
@@ -114,9 +115,9 @@ export async function getOutletByIdService(id: string, date?: Date) {
     }
     const { operatingHours, ...outlet } = outletRaw;
 
-    const isOpenOutlet = operatingHours.length > 0
+    const isOpenOutlet = outlet.isOpen && operatingHours.length > 0
         ? getIsOutletOpen(operatingHours, today)
-        : outletRaw.isOpen;
+        : outlet.isOpen
 
     return { ...outlet, operatingHours, status: isOpenOutlet };
 }
@@ -154,6 +155,9 @@ export async function updateOutletService(id: string, data: UpdateOutletInput, o
         throw new AppError("Anda tidak berhak mengubah outlet ini.", HttpStatus.FORBIDDEN);
     }
     const updatedOutlet = await OutletRepository.update(id, data);
+
+    if (data.image && outlet.image) ImageService.deleteImageByUrl(outlet.image);
+
     return updatedOutlet;
 }
 
@@ -164,6 +168,7 @@ export async function deleteOutletService(id: string, ownerId: string) {
         throw new AppError("Anda tidak berhak menghapus outlet ini.", HttpStatus.FORBIDDEN);
     }
     const deletedOutlet = await OutletRepository.delete(id);
+    if (outlet.image) ImageService.deleteImageByUrl(outlet.image);
     return deletedOutlet;
 }
 

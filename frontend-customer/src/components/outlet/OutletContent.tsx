@@ -308,10 +308,10 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                     <div className="flex items-center gap-2 mb-3">
                         <Badge
-                            variant={outlet.isOpen ? "default" : "secondary"}
-                            className={`${outlet.isOpen ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-500 text-white"}`}
+                            variant={outlet.status ? "default" : "secondary"}
+                            className={`${outlet.status ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-500 text-white"}`}
                         >
-                            {outlet.isOpen ? t("open") : t("closed")}
+                            {outlet.status ? t("open") : t("closed")}
                         </Badge>
                     </div>
                     <span
