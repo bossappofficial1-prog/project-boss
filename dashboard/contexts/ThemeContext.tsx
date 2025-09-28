@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext } from 'react';
+import { ThemeProvider as NextThemeProvider, useTheme as useNextTheme } from 'next-themes';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -12,57 +13,32 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('system');
-  const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light');
+// Inner provider consumes next-themes' hook (must be rendered inside NextThemeProvider)
+function InnerThemeProvider({ children }: { children: React.ReactNode }) {
+  const { theme, systemTheme, setTheme: setNextTheme } = useNextTheme();
 
-  useEffect(() => {
-    // Load theme from localStorage
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
-      setTheme(savedTheme);
-    }
-  }, []);
+  // theme from next-themes can be 'light' | 'dark' | 'system' | undefined
+  const safeTheme = (theme as Theme) || 'system';
+  const actualTheme = (safeTheme === 'system' ? (systemTheme as 'light' | 'dark') || 'light' : safeTheme) as 'light' | 'dark';
 
-  useEffect(() => {
-    const updateActualTheme = () => {
-      if (theme === 'system') {
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        setActualTheme(systemTheme);
-      } else {
-        setActualTheme(theme);
-      }
-    };
-
-    updateActualTheme();
-
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', updateActualTheme);
-
-    return () => mediaQuery.removeEventListener('change', updateActualTheme);
-  }, [theme]);
-
-  useEffect(() => {
-    // Apply theme to document
-    const root = document.documentElement;
-    
-    if (actualTheme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [actualTheme]);
-
-  const handleSetTheme = (newTheme: Theme) => {
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
+  const setTheme = (t: Theme) => {
+    // forward to next-themes setter
+    setNextTheme(t);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: handleSetTheme, actualTheme }}>
+    <ThemeContext.Provider value={{ theme: safeTheme, setTheme, actualTheme }}>
       {children}
     </ThemeContext.Provider>
+  );
+}
+
+// Public ThemeProvider wraps next-themes provider and keeps existing useTheme API
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <NextThemeProvider attribute="class" enableSystem defaultTheme="system">
+      <InnerThemeProvider>{children}</InnerThemeProvider>
+    </NextThemeProvider>
   );
 }
 

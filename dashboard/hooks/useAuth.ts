@@ -27,6 +27,7 @@ export function useAuth(): UseAuthReturn {
 
   // Check authentication status and load user
   const checkAuth = useCallback(async () => {
+    setIsLoading(true)
     try {
       const response = await apiClient.get('/auth/me');
       const userData = response.data.data.user;
@@ -78,16 +79,14 @@ export function useAuth(): UseAuthReturn {
 
   // Logout function
   const logout = useCallback(async () => {
+    setIsLoading(true);
     try {
       // Call logout API to clear HttpOnly cookie
       await apiClient.post('/auth/logout');
     } catch (error) {
       console.error('Logout API failed:', error);
     } finally {
-      // Clear local state and localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-      }
+      setIsLoading(false);
       setUser(null);
       router.push('/auth/login');
     }
