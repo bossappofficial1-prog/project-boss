@@ -11,7 +11,7 @@ const authRouter = Router();
 
 authRouter.get("/me", protect, getMeController);
 
-authRouter.post("/logout", protect, logoutController);
+authRouter.post("/logout", logoutController);
 
 authRouter.post(
     "/login",
