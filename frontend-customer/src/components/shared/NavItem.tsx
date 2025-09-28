@@ -7,6 +7,7 @@ type NavItemProps = {
     children: React.ReactNode,
     ariaLabel?: string,
     highlight?: boolean,
+    guideTarget?: string,
 }
 
 export function NavItem({
@@ -14,12 +15,14 @@ export function NavItem({
     href,
     label,
     ariaLabel,
-    highlight
+    highlight,
+    guideTarget,
 }: NavItemProps) {
     return (
         <Link
             href={href}
             aria-label={ariaLabel ?? label}
+            data-guide-target={guideTarget}
             className={`
                 flex flex-col items-center justify-center gap-1.5 
                 p-2 rounded-xl text-xs font-medium

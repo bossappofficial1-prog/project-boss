@@ -3,6 +3,8 @@ import { Poppins } from "next/font/google";
 import RootLayout from "@/components/layouts/RootLayout";
 import { SocketProvider } from "@/context/SocketContext";
 import { ThemeProvider } from "next-themes";
+import { FeatureGuideProvider } from "@/providers/FeatureGuideProvider";
+import { FeatureGuideOverlay } from "@/components/guides/FeatureGuideOverlay";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -97,11 +99,14 @@ export default function Layout({
           enableSystem
           disableTransitionOnChange
         >
-          <SocketProvider>
-            <RootLayout>
-              {children}
-            </RootLayout>
-          </SocketProvider>
+          <FeatureGuideProvider>
+            <SocketProvider>
+              <RootLayout>
+                {children}
+              </RootLayout>
+            </SocketProvider>
+            <FeatureGuideOverlay />
+          </FeatureGuideProvider>
         </ThemeProvider>
       </body>
     </html>
