@@ -38,10 +38,9 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle 401 Unauthorized - redirect to login
     if (error.response?.status === 401) {
       (async () => {
-        await apiClient.post("/auth/login")
+        await apiClient.post("/auth/logout")
       })()
 
       return Promise.reject(error);
