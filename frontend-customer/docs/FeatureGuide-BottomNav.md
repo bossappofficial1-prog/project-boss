@@ -30,7 +30,8 @@ const menus: Menu[] = [
     icon: <Home className="w-5 h-5" />,
     guide: {
       title: "Mulai dari beranda",
-      description: "Temukan promosi terbaru dan rekomendasi layanan sejak awal.",
+      description:
+        "Temukan promosi terbaru dan rekomendasi layanan sejak awal.",
     },
   },
   {

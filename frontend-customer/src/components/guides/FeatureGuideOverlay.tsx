@@ -211,26 +211,26 @@ export function FeatureGuideOverlay() {
     const highlightBounds = rect ? clampHighlight(rect, highlightPadding) : null;
     const highlightStyle = highlightBounds
         ? {
-              top: highlightBounds.top,
-              left: highlightBounds.left,
-              width: highlightBounds.width,
-              height: highlightBounds.height,
-          }
+            top: highlightBounds.top,
+            left: highlightBounds.left,
+            width: highlightBounds.width,
+            height: highlightBounds.height,
+        }
         : null;
     const highlightDecoration = highlightStyle
         ? {
-              ...highlightStyle,
-              boxShadow: "0 0 0 9999px rgba(15,23,42,0.55)",
-              borderColor: isDark ? "rgba(240, 76, 53, 0.45)" : GUIDE_ACCENT_MUTED,
-          }
+            ...highlightStyle,
+            boxShadow: "0 0 0 9999px rgba(15,23,42,0.55)",
+            borderColor: isDark ? "rgba(240, 76, 53, 0.45)" : GUIDE_ACCENT_MUTED,
+        }
         : undefined;
 
     const tooltipStyle = rect
         ? computeTooltipPosition(rect, step, cardSize)
         : {
-              top: clamp(window.innerHeight / 2 - (cardSize.height || 200) / 2, 16, window.innerHeight - 16 - (cardSize.height || 200)),
-              left: clamp(window.innerWidth / 2 - (cardSize.width || 320) / 2, 16, window.innerWidth - 16 - (cardSize.width || 320)),
-          };
+            top: clamp(window.innerHeight / 2 - (cardSize.height || 200) / 2, 16, window.innerHeight - 16 - (cardSize.height || 200)),
+            left: clamp(window.innerWidth / 2 - (cardSize.width || 320) / 2, 16, window.innerWidth - 16 - (cardSize.width || 320)),
+        };
 
     const overlay = (
         <div className="pointer-events-none fixed inset-0 z-[999]">
@@ -251,11 +251,10 @@ export function FeatureGuideOverlay() {
 
             <div
                 ref={cardRef}
-                className={`pointer-events-auto fixed w-[min(92vw,360px)] max-w-sm rounded-[28px] p-5 shadow-[0_24px_60px_rgba(15,23,42,0.22)] backdrop-blur transition-colors ${
-                    isDark
+                className={`pointer-events-auto fixed w-[min(92vw,360px)] max-w-sm rounded-[28px] p-5 shadow-[0_24px_60px_rgba(15,23,42,0.22)] backdrop-blur transition-colors ${isDark
                         ? "bg-slate-900/95 text-slate-100"
                         : "bg-white/95 text-slate-900"
-                }`}
+                    }`}
                 style={tooltipStyle}
                 role="dialog"
                 aria-live="polite"
@@ -263,9 +262,8 @@ export function FeatureGuideOverlay() {
                 <header className="flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
                         <p
-                            className={`text-[11px] font-semibold uppercase tracking-[0.32em] ${
-                                isDark ? "text-slate-400" : "text-slate-400"
-                            }`}
+                            className={`text-[11px] font-semibold uppercase tracking-[0.32em] ${isDark ? "text-slate-400" : "text-slate-400"
+                                }`}
                         >
                             Langkah {state.stepIndex + 1} dari {totalSteps}
                         </p>
@@ -290,11 +288,10 @@ export function FeatureGuideOverlay() {
                         type="button"
                         onClick={prevStep}
                         disabled={state.stepIndex === 0}
-                        className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-300 ${
-                            isDark
+                        className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-300 ${isDark
                                 ? "border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:bg-slate-800 disabled:text-slate-500"
                                 : "border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
+                            }`}
                     >
                         Kembali
                     </button>
