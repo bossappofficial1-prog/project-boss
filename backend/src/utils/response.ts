@@ -96,20 +96,59 @@ export class ResponseUtil {
         return this.base(res, false, message, null, HttpStatus.CONFLICT);
     }
 
+    // Overload signatures for backward compatibility
     static paginated<T>(
         res: Response,
         data: T[],
         page: number,
         limit: number,
         total: number,
+        message?: any
+    ): Response<PaginatedResponse<T>>;
+
+    static paginated<T>(
+        res: Response,
+        data: T[],
+        page: number,
+        limit: number,
+        total: number,
+        extra: {
+            totalPages?: number;
+            hasNextPage?: boolean;
+            hasPrevPage?: boolean;
+        },
+        message?: any
+    ): Response<PaginatedResponse<T>>;
+
+    // Implementation
+    static paginated<T>(
+        res: Response,
+        data: T[],
+        page: number,
+        limit: number,
+        total: number,
+        extraOrMessage?: any,
         message: any = 'Success'
     ): Response<PaginatedResponse<T>> {
-        return this.base(res, true, message, data, HttpStatus.OK, undefined, {
+        let extra: { totalPages?: number; hasNextPage?: boolean; hasPrevPage?: boolean; } | undefined;
+        let finalMessage = message;
+
+        // Handle overloads
+        if (typeof extraOrMessage === 'object' && extraOrMessage !== null && !extraOrMessage.hasOwnProperty('constructor')) {
+            extra = extraOrMessage;
+        } else {
+            finalMessage = extraOrMessage || message;
+        }
+
+        const totalPages = extra?.totalPages ?? Math.ceil(total / limit);
+        return this.base(res, true, finalMessage, data, HttpStatus.OK, undefined, {
             pagination: {
                 page,
                 limit,
                 total,
-                totalPages: Math.ceil(total / limit),
+                totalPages,
+                hasNextPage: extra?.hasNextPage ?? page < totalPages,
+                hasPrevPage: extra?.hasPrevPage ?? page > 1,
             },
         });
     }

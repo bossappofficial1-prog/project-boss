@@ -229,6 +229,9 @@ model Business {
   // Relasi: Satu bisnis bisa memiliki banyak promo
   promos Promo[]
 
+  // Relasi: Satu bisnis bisa memiliki banyak banner
+  banners Banner[]
+
   // Relasi: Satu bisnis bisa memiliki banyak withdrawal
   withdrawals Withdrawal[]
 
@@ -559,6 +562,28 @@ model Promo {
 
   @@unique([businessId, code]) // Kode promo harus unik per bisnis
   @@index([businessId])
+}
+
+// Model for home page banners
+model Banner {
+  id         String  @id @default(uuid())
+  title      String
+  subtitle   String?
+  imageUrl   String
+  ctaType    String  @default("url")
+  ctaPayload String?
+  sortOrder  Int     @default(0)
+  isActive   Boolean @default(true)
+
+  // Optional relation to a business (banner scoped per business)
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([isActive, sortOrder])
 }
 
 // Model untuk membership/keanggotaan customer di suatu bisnis

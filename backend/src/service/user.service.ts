@@ -1,7 +1,7 @@
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
-import { UserRepository } from "../repositories/user.repository";
+import { UserRepository, PaginationParams, PaginatedResult, SafeUser } from "../repositories/user.repository";
 import { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
 import { UserMe } from "../types/Others";
 import { BcryptUtil } from "../utils";
@@ -9,9 +9,34 @@ import { randomUUID } from "crypto";
 import { CodeGeneratorUtil, DateUtil } from "../utils";
 import { messagePublisher } from "./message-publisher.service";
 
-export async function getAllUserService() {
+export async function getAllUserService(params?: PaginationParams): Promise<PaginatedResult<SafeUser>> {
+    if (params) {
+        return await UserRepository.findAllPaginated(params);
+    }
+
+    // Fallback for non-paginated requests (maintain backward compatibility)
     const users = await UserRepository.findAll();
-    return users.map(user => ({ ...user, password: '[REDACTED]' }))
+    const safeUsers = users.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        isVerified: user.isVerified,
+        avatar: user.avatar,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+    }));
+
+    return {
+        data: safeUsers,
+        page: 1,
+        limit: safeUsers.length,
+        total: safeUsers.length,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false
+    };
 }
 
 export async function getUserByIdService(userId: string) {

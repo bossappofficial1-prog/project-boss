@@ -10,3 +10,4 @@ export { withdrawalApi } from './apis/withdrawal';
 export { dashboardApi } from './apis/dashboard';
 export { uploadApi } from './apis/upload';
 export { outletManagementApi } from './apis/outletManagement';
+export { userApi } from './apis/user';

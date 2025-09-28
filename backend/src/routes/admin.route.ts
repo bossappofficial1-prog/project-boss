@@ -23,7 +23,15 @@ import {
     getRecentActivitiesController,
     getAllActivitiesController
 } from '../controller/admin.controller';
+import {
+    getBannersController,
+    createBannerController,
+    updateBannerController,
+    deleteBannerController
+} from '../controller/banner.controller';
 import { protect, authorize } from '../middleware/auth.middleware';
+import { validateSchema } from '../middleware/zod.middleware';
+import { createBannerSchema, updateBannerSchema } from '../schemas/banner.schema';
 
 const router = Router();
 
@@ -68,5 +76,15 @@ router.put('/support/tickets/:ticketId/status', updateTicketStatusController);
 // Platform settings
 router.get('/settings', getPlatformSettingsController);
 router.put('/settings', updatePlatformSettingsController);
+
+// Banners management
+router.get('/banners', getBannersController);
+router.post('/banners',
+    validateSchema(createBannerSchema),
+    createBannerController);
+router.put('/banners/:id',
+    validateSchema(updateBannerSchema),
+    updateBannerController);
+router.delete('/banners/:id', deleteBannerController);
 
 export default router;

@@ -56,9 +56,7 @@ export async function getMeService(userId: string) {
 export async function resendVerificationService(email: string) {
     const user = await getUserByEmailService(email);
 
-    if (!user) {
-        throw new AppError("Email tidak ditemukan", HttpStatus.NOT_FOUND);
-    }
+    if (!user) return;
 
     if (user.isVerified) {
         throw new AppError("Akun sudah diverifikasi", HttpStatus.BAD_REQUEST);
