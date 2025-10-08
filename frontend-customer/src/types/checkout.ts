@@ -1,8 +1,10 @@
 // Checkout related types
 import { CartItem } from '@/hooks/useCart';
+import type { PaymentMethod as GlobalPaymentMethod } from '.';
 
 export interface OutletSummary {
     outletName: string;
+    outletId: string;
     subtotal: number;
     transactionFee: number;
     applicationFee: number;
@@ -34,15 +36,9 @@ export interface PaymentFormData {
     checkoutData: CheckoutData;
 }
 
-export interface PaymentMethod {
-    id: string;
-    name: string;
-    description: string;
-    icon: React.ReactNode;
-    type: 'qris' | 'va' | 'credit';
-}
+export type PaymentMethod = GlobalPaymentMethod;
 
-export type PaymentMethodType = 'qris' | 'va' | 'credit';
+export type PaymentMethodType = PaymentMethod['type'];
 
 // Payment flow states
 export interface PaymentFlowState {

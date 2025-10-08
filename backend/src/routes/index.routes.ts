@@ -47,16 +47,5 @@ apiRouter.use('/security', securityRouter)
 apiRouter.use('/queue-monitoring', queueMonitoringRouter)
 apiRouter.use('/notifications', notificationRouter)
 apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
-// apiRouter.get("/test-websocket/:orderId", async (req, res) => {
-//     const { orderId } = req.params
-//     socketUtils.emitToOrder(orderId, {
-//         message: "Hello World",
-//         orderId: "ORD20250828123456",
-//         status: "test",
-//         timestamp: new Date()
-//     })
-
-//     res.json({ message: "OK" })
-// })
 
 export default apiRouter

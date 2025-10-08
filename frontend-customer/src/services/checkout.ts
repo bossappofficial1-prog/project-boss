@@ -1,8 +1,21 @@
 import { CartItem } from '@/hooks/useCart';
 import { OutletSummary, CheckoutData } from '@/types/checkout';
 import { Outlet } from './outlets';
-import { OutletType, PaymentMethodId } from '@/types';
+import { ManualPaymentResponse, PaymentMethod, PaymentMethodId } from '@/types';
 import api from '@/lib/api';
+
+type ManualPaymentStorageData = {
+    response: ManualPaymentResponse;
+    checkoutData: CheckoutData;
+    selectedPaymentMethod: PaymentMethod;
+    customerInfo: {
+        name: string;
+        phone: string;
+    };
+    createdAt: string;
+};
+
+const MANUAL_PAYMENT_STORAGE_KEY = 'manual-payment-info';
 
 export class CheckoutService {
     /**
@@ -46,6 +59,7 @@ export class CheckoutService {
 
             return {
                 outletName: group.outletName,
+                outletId: group.outletId,
                 subtotal: group.subtotal,
                 transactionFee,
                 applicationFee,
@@ -145,6 +159,37 @@ export class CheckoutService {
 
         try {
             localStorage.removeItem('payment-data');
+        } catch {
+            // Ignore storage errors
+        }
+    }
+
+    static saveManualPaymentToStorage(data: ManualPaymentStorageData): void {
+        if (typeof window === 'undefined') return;
+
+        try {
+            localStorage.setItem(MANUAL_PAYMENT_STORAGE_KEY, JSON.stringify(data));
+        } catch {
+            // Ignore storage errors
+        }
+    }
+
+    static getManualPaymentFromStorage(): ManualPaymentStorageData | null {
+        if (typeof window === 'undefined') return null;
+
+        try {
+            const stored = localStorage.getItem(MANUAL_PAYMENT_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    static clearManualPaymentFromStorage(): void {
+        if (typeof window === 'undefined') return;
+
+        try {
+            localStorage.removeItem(MANUAL_PAYMENT_STORAGE_KEY);
         } catch {
             // Ignore storage errors
         }

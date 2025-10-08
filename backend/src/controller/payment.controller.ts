@@ -1,12 +1,21 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
-import { createMidtransTransactionService, createPaymentService, createQrisPaymentService, cancelPaymentService } from "../service/payment.service";
+import {
+    createPaymentService,
+    createQrisPaymentService,
+    cancelPaymentService,
+    uploadManualPaymentProofService,
+    verifyManualPaymentService,
+    rejectManualPaymentService,
+    getManualPaymentsService
+} from "../service/payment.service";
 import { ResponseUtil } from "../utils/response";
 import { messagePublisher } from "../service/message-publisher.service";
-import { generateOrderCode } from "../utils";
-import { PaymentMethodId } from "../constants/payment-method";
 import { CreatePaymentPayload } from "../schemas/payment-v2.schema";
 import { HttpStatus } from "../constants/http-status";
+import { AppError } from "../errors/app-error";
+import { Messages } from "../constants/message";
+import { PaymentStatus } from "@prisma/client";
 
 export const createPaymentController = asyncHandler(async (req: Request, res: Response) => {
     const { customer_details, item_details, payment_method, selectedSlotId, outletId } = req.body as CreatePaymentPayload
@@ -35,5 +44,70 @@ export const handleNotificationController = asyncHandler(async (req: Request, re
 export const cancelPaymentController = asyncHandler(async (req: Request, res: Response) => {
     const { orderId } = req.params;
     const result = await cancelPaymentService(orderId);
+    return ResponseUtil.success(res, result, HttpStatus.OK);
+});
+
+export const uploadManualPaymentProofController = asyncHandler(async (req: Request, res: Response) => {
+    const { orderId } = req.params;
+
+    if (!req.file?.path) {
+        throw new AppError(Messages.REQUIRED_FIELD_MISSING, HttpStatus.BAD_REQUEST);
+    }
+
+    const result = await uploadManualPaymentProofService(orderId, req.file.path);
+    return ResponseUtil.success(res, result, HttpStatus.OK);
+});
+
+export const verifyManualPaymentController = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.storedUser?.id) {
+        throw new AppError(Messages.UNAUTHORIZED, HttpStatus.UNAUTHORIZED);
+    }
+
+    const { orderId } = req.params;
+    const result = await verifyManualPaymentService(orderId, req.storedUser.id);
+    return ResponseUtil.success(res, result, HttpStatus.OK);
+});
+
+export const rejectManualPaymentController = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.storedUser?.id) {
+        throw new AppError(Messages.UNAUTHORIZED, HttpStatus.UNAUTHORIZED);
+    }
+
+    const { orderId } = req.params;
+    const { reason } = req.body as { reason?: string };
+
+    if (!reason) {
+        throw new AppError('Alasan penolakan wajib diisi', HttpStatus.BAD_REQUEST);
+    }
+
+    const result = await rejectManualPaymentService(orderId, req.storedUser.id, reason);
+    return ResponseUtil.success(res, result, HttpStatus.OK);
+});
+
+export const listManualPaymentsController = asyncHandler(async (req: Request, res: Response) => {
+    const { status, outletId, search, page, limit } = req.query as {
+        status?: string;
+        outletId?: string;
+        search?: string;
+        page?: string;
+        limit?: string;
+    };
+
+    let statusFilters: PaymentStatus[] | undefined;
+    if (status) {
+        const requested = status.split(',').map(s => s.trim().toUpperCase());
+        statusFilters = requested.filter((value): value is PaymentStatus =>
+            Object.values(PaymentStatus).includes(value as PaymentStatus)
+        ) as PaymentStatus[];
+    }
+
+    const result = await getManualPaymentsService({
+        status: statusFilters,
+        outletId,
+        search,
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined
+    });
+
     return ResponseUtil.success(res, result, HttpStatus.OK);
 });

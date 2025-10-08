@@ -618,6 +618,7 @@
             "phoneInvalid": "Format nomor telepon tidak valid"
         },
         "errors": {
+            "errorTitle": "Terjadi Kesalahan",
             "noItems": "Tidak ada item ditemukan. Silakan kembali ke keranjang dan tambahkan item.",
             "paymentFailed": "Pembayaran gagal diproses. Silakan coba lagi."
         }

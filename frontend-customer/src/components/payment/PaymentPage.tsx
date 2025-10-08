@@ -20,8 +20,9 @@ import { CheckoutService } from '@/services/checkout';
 import { formatCurrency } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
 import { useTranslations } from '@/hooks/useI18n';
-import { PaymentMethodId } from '@/types';
+import { ManualPaymentResponse, PaymentMethodId } from '@/types';
 import { ImageRender } from '../shared/Image';
+import { Alert } from '../Base';
 
 interface PaymentPageProps {
     checkoutData: CheckoutData;
@@ -87,10 +88,10 @@ const CustomerInfoForm: React.FC<{
                     )}
                 </div>
 
-                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                    <p className="text-sm text-blue-700">
-                        <AlertCircle className="w-4 h-4 inline mr-1" />
-                        {t("customerInfo.infoMessage")}
+                <div className="rounded-lg border border-blue-200/60 bg-blue-50/80 p-3 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/60 dark:text-blue-100/80">
+                    <p className="flex items-start text-sm leading-relaxed">
+                        <AlertCircle className="mr-2 h-4 w-4 flex-shrink-0 text-blue-500 dark:text-blue-300" />
+                        <span>{t("customerInfo.infoMessage")}</span>
                     </p>
                 </div>
             </CardContent>
@@ -220,14 +221,14 @@ const PaymentButton: React.FC<{
     return (
         <Card className="sticky bottom-0 py-0 border-t shadow-lg">
             <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-4">
-                    <div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col">
                         <p className="text-sm text-muted-foreground">{t("paymentButton.totalPayment")}</p>
                         <p className="text-xl font-bold text-primary">{formatCurrency(amount)}</p>
                     </div>
                     <Button
                         size="lg"
-                        className="px-8 h-12"
+                        className="h-12 w-full px-8 sm:w-auto"
                         onClick={onPay}
                         disabled={isLoading}
                     >
@@ -244,9 +245,11 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
     const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: '', phone: '' });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
     const router = useRouter();
-    const { items: cartItems, clearCart, clearOutletItems } = useCart();
+    const { items: cartItems, clearOutletItems } = useCart();
     const t = useTranslations("paymentPage");
+    const errorTitle = t("errors.errorTitle");
 
     // Load customer info from ProfileSettings (if available)
     useEffect(() => {
@@ -287,6 +290,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             return;
         }
 
+        setPaymentError(null);
         setIsLoading(true);
 
         try {
@@ -364,8 +368,12 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             // Send to backend API
             const response = await CheckoutService.processPayment(payloadBody);
 
+            const isManualResponse = (resp: any): resp is ManualPaymentResponse => {
+                return Boolean(resp?.manual && resp.manual?.instructions && resp.manual?.fee_summary);
+            };
+
             // Save payment info for local reference
-            const paymentInfo = {
+            const basePaymentInfo = {
                 checkoutData,
                 selectedPaymentMethod,
                 customerInfo,
@@ -374,8 +382,20 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 payload: payloadBody
             };
 
-            localStorage.setItem('lastPayment', JSON.stringify(paymentInfo));
-            localStorage.setItem("paymentInfo", JSON.stringify(response))
+            if (isManualResponse(response)) {
+                CheckoutService.clearManualPaymentFromStorage();
+                CheckoutService.saveManualPaymentToStorage({
+                    response,
+                    checkoutData,
+                    selectedPaymentMethod,
+                    customerInfo,
+                    createdAt: new Date().toISOString()
+                });
+            } else {
+                CheckoutService.clearManualPaymentFromStorage();
+                localStorage.setItem('lastPayment', JSON.stringify(basePaymentInfo));
+                localStorage.setItem("paymentInfo", JSON.stringify(response));
+            }
 
             // Clear checkout and payment data
             CheckoutService.clearCheckoutDataFromStorage();
@@ -383,17 +403,33 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             clearOutletItems(outletId)
 
             // Redirect to success page
-            router.push('/payment/processing');
+            if (isManualResponse(response)) {
+                router.push('/payment/manual');
+            } else {
+                router.push('/payment/processing');
+            }
 
         } catch (error) {
             console.error('Payment failed:', error)
-            alert(error instanceof Error ? error.message : t("errors.paymentFailed"));
+            const errorMessage = error instanceof Error ? error.message : t("errors.paymentFailed");
+            setPaymentError(errorMessage);
+        } finally {
             setIsLoading(false);
         }
     };
 
     return (
         <div className="space-y-4">
+            {paymentError && (
+                <Alert
+                    type="error"
+                    title={errorTitle}
+                    message={paymentError}
+                    onClose={() => setPaymentError(null)}
+                    className="animate-in fade-in-50 slide-in-from-top-2"
+                />
+            )}
+
             {/* Customer Info Form */}
             <CustomerInfoForm
                 customerInfo={customerInfo}

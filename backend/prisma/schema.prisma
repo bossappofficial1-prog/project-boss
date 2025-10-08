@@ -27,16 +27,20 @@ enum ProductType {
 // Status pembayaran yang lebih sederhana untuk internal aplikasi
 enum PaymentStatus {
   PENDING // Menunggu pembayaran
+  PROOF_SUBMITTED // Bukti pembayaran manual telah diunggah
+  AWAITING_VERIFICATION // Menunggu verifikasi admin/owner
   SUCCESS // Pembayaran berhasil
   FAILED // Pembayaran gagal
   REFUNDED // Dana dikembalikan
   EXPIRED // Waktu pembayaran habis
   CANCELLED // Pembayaran dibatalkan
+  REJECTED_MANUAL // Bukti manual ditolak
 }
 
 // Status alur pesanan secara keseluruhan
 enum OrderStatus {
   AWAITING_PAYMENT // Menunggu pembayaran dikonfirmasi
+  AWAITING_VERIFICATION // Menunggu verifikasi manual oleh owner/admin
   PROCESSING // Pesanan sedang diproses (bisa masuk antrian Redis/RabbitMQ)
   READY // Siap diambil (untuk barang) atau siap dimulai (untuk jasa)
   COMPLETED // Pesanan selesai
@@ -85,6 +89,11 @@ enum StaffRole {
   ADMIN // Admin outlet
   INVENTORY // Staff gudang/inventory
   OTHER // Peran lainnya
+}
+
+enum ManualPaymentType {
+  QRIS_OFFLINE
+  OWNER_TRANSFER
 }
 
 // === MODELS ===
@@ -194,6 +203,9 @@ model User {
   // Relasi: Admin memproses banyak withdrawal
   withdrawalsProcessed Withdrawal[] @relation("UserProcessedWithdrawals")
 
+  // Relasi: Admin/owner yang memverifikasi transaksi manual
+  transactionsVerified Transaction[] @relation("TransactionVerifiedBy")
+
   @@index([email])
 }
 
@@ -255,6 +267,13 @@ model Outlet {
   // Relasi: Setiap outlet milik satu bisnis
   businessId  String
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Informasi pembayaran manual
+  manualBankName      String?
+  manualBankAccount   String?
+  manualAccountHolder String?
+  manualPaymentNote   String?
+  manualQrImageUrl    String?
 
   // Relasi: Satu outlet bisa memiliki banyak produk
   products Product[]
@@ -460,8 +479,17 @@ model Transaction {
   paymentMethod String? // misal: "qris", "gopay"
   status        PaymentStatus @default(PENDING)
 
+  // Penanda pembayaran manual
+  isManual        Boolean            @default(false)
+  manualMethod    ManualPaymentType?
+  paymentProofUrl String?
+  proofUploadedAt DateTime?
+  verifiedAt      DateTime?
+  verifiedById    String?
+  rejectionNote   String?
+
   // ID transaksi dari payment gateway (misal: Midtrans transaction_id atau token)
-  externalId String @unique
+  externalId String? @unique
 
   // URL untuk melakukan pembayaran (misal: Midtrans Snap redirect_url)
   paymentUrl String?
@@ -473,7 +501,13 @@ model Transaction {
   orderId String @unique
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  // Relasi ke verifikator transaksi manual
+  verifiedBy User? @relation("TransactionVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([isManual, status])
 }
 
 // Model untuk dompet virtual milik bisnis

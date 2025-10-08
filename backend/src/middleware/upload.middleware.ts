@@ -11,6 +11,11 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+const paymentProofDir = path.join(uploadsDir, 'payment-proofs');
+if (!fs.existsSync(paymentProofDir)) {
+    fs.mkdirSync(paymentProofDir, { recursive: true });
+}
+
 // Configure storage for images
 const imageStorage = multer.diskStorage({
     destination: (req: Request, file: Express.Multer.File, cb) => {
@@ -93,6 +98,15 @@ const importStorage = multer.diskStorage({
     }
 });
 
+const paymentProofStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, paymentProofDir),
+    filename: (_req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, `payment-proof-${uniqueSuffix}${ext}`);
+    }
+});
+
 const importFileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     const allowed = [
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
@@ -111,10 +125,37 @@ const importFileFilter = (req: Request, file: Express.Multer.File, cb: multer.Fi
     cb(null, true);
 };
 
+const paymentProofFileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const allowedMimes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'application/pdf'
+    ];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (!allowedMimes.includes(file.mimetype) || !allowedExtensions.includes(ext)) {
+        return cb(new AppError('Bukti pembayaran harus berupa gambar atau PDF', HttpStatus.BAD_REQUEST));
+    }
+
+    cb(null, true);
+};
+
 export const importUpload = multer({
     storage: importStorage,
     fileFilter: importFileFilter,
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB archive max
+});
+
+export const paymentProofUpload = multer({
+    storage: paymentProofStorage,
+    fileFilter: paymentProofFileFilter,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+        files: 1
+    }
 });
 
 // Middleware for single image upload
@@ -125,6 +166,10 @@ export const uploadSingleImage = (fieldName: string = 'image') => {
 // Middleware for multiple images upload
 export const uploadMultipleImages = (fieldName: string = 'images', maxCount: number = 5) => {
     return imageUpload.array(fieldName, maxCount);
+};
+
+export const uploadPaymentProof = (fieldName: string = 'proof') => {
+    return paymentProofUpload.single(fieldName);
 };
 
 // Error handler for multer errors

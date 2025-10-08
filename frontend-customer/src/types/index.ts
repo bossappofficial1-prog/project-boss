@@ -105,6 +105,7 @@ export interface PaymentData {
         quantity: number
     }>
     subtotal: number
+    transactionFee?: number
     applicationFee: number
     total: number
     paymentMethod: {
@@ -129,14 +130,64 @@ export interface PaymentData {
     timeLimit?: number
 }
 
-export type PaymentMethodId = "qris" | "bca-va" | "bni-va" | "bri-va" | "mandiri-va" | "permata-va"
-export type PaymentMethodType = "qris" | "va"
+export type PaymentMethodId =
+    | "qris"
+    | "bca-va"
+    | "bni-va"
+    | "bri-va"
+    | "mandiri-va"
+    | "permata-va"
+    | "manual-qris"
+    | "manual-transfer"
+
+export type PaymentMethodType = "qris" | "va" | "manual"
+
+export type ManualPaymentTypeLiteral = "QRIS_OFFLINE" | "OWNER_TRANSFER"
+
 export interface PaymentMethod {
     id: PaymentMethodId
     name: string
     type: PaymentMethodType
     description: string
     image_url: string
+    flow?: "midtrans" | "manual"
+    manualType?: ManualPaymentTypeLiteral
+}
+
+export interface ManualPaymentFeeSummary {
+    applicationFee: number
+    transactionFee: number
+    subtotal: number
+}
+
+export interface ManualPaymentInstructions {
+    manualType: ManualPaymentTypeLiteral
+    outletName: string
+    businessName: string
+    qrImageUrl?: string
+    bankAccount?: {
+        bankName: string
+        accountNumber: string
+        accountHolder: string
+    }
+    note?: string | null
+}
+
+export interface ManualPaymentResponse {
+    order_id: string
+    transaction_id: string
+    transaction_status: string
+    gross_amount: number
+    expiry_time: string
+    manual: {
+        type: ManualPaymentTypeLiteral
+        instructions: ManualPaymentInstructions
+        fee_summary: ManualPaymentFeeSummary
+    }
+    customer_details: {
+        name: string
+        phone: string
+    }
 }
 
 export interface PaymentResponse {

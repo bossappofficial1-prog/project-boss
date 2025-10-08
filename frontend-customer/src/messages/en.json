@@ -618,6 +618,7 @@
             "phoneInvalid": "Invalid phone number format"
         },
         "errors": {
+            "errorTitle": "Something went wrong",
             "noItems": "No items found. Please go back to cart and add items.",
             "paymentFailed": "Payment processing failed. Please try again."
         }

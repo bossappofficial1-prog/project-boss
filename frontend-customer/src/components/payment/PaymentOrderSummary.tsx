@@ -9,6 +9,14 @@ type PaymentOrderSummaryProps = {
 
 export function PaymentOrderSummary({ data }: PaymentOrderSummaryProps) {
     const t = useTranslations("paymentComponents");
+    const translateWithFallback = (key: string, fallback: string) => {
+        try {
+            const value = t(key as any);
+            return value || fallback;
+        } catch {
+            return fallback;
+        }
+    };
 
     return (
         <Card className="mb-6">
@@ -40,6 +48,12 @@ export function PaymentOrderSummary({ data }: PaymentOrderSummaryProps) {
                         <span className="text-gray-600">{t("orderSummary.subtotal")}</span>
                         <span>{formatCurrency(data.subtotal)}</span>
                     </div>
+                    {typeof data.transactionFee === "number" && data.transactionFee >= 0 && (
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">{translateWithFallback("orderSummary.transactionFee", "Biaya Transaksi")}</span>
+                            <span>{formatCurrency(data.transactionFee)}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">{t("orderSummary.applicationFee")}</span>
                         <span>{formatCurrency(data.applicationFee)}</span>

@@ -23,4 +23,17 @@ export class PaymentService {
 
         return response.data
     }
+
+    static async uploadManualPaymentProof(orderId: string, file: File) {
+        const formData = new FormData();
+        formData.append('proof', file);
+
+        const response = await api.addData(`/payments/${orderId}/manual/proof`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+
+        return response;
+    }
 }

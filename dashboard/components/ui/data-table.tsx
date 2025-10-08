@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     ChevronLeft,
@@ -277,7 +277,7 @@ export function DataTable<TData, TValue>({
                                     {actions.map((action, index) => {
                                         const Icon = action.icon;
                                         return (
-                                            <DropdownMenuCheckboxItem
+                                            <DropdownMenuItem
                                                 key={index}
                                                 onClick={() => action.onClick(row.original)}
                                                 className={cn(
@@ -287,7 +287,7 @@ export function DataTable<TData, TValue>({
                                             >
                                                 {Icon && <Icon className="mr-2 h-4 w-4" />}
                                                 {action.label}
-                                            </DropdownMenuCheckboxItem>
+                                            </DropdownMenuItem>
                                         );
                                     })}
                                 </DropdownMenuContent>

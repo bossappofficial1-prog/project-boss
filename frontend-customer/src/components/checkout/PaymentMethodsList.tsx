@@ -3,7 +3,7 @@ import { PaymentMethod } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Building2, ChevronRight, QrCode, Shield, Wallet, CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
+import { Building2, ChevronRight, QrCode, Shield, Wallet, CheckCircle2, Loader2, AlertTriangle, ClipboardCheck } from "lucide-react";
 import { Button } from "../ui/button";
 import { ImageRender } from "../shared/Image";
 import { Badge } from "../ui/badge";
@@ -12,10 +12,18 @@ import { useTranslations } from "@/hooks/useI18n";
 
 const PaymentMethodsList: React.FC<{
     onSelectPayment: (method: PaymentMethod) => void;
-    selectedPayment: PaymentMethod
+    selectedPayment?: PaymentMethod | null;
 }> = ({ onSelectPayment, selectedPayment }) => {
     const t = useTranslations("payment");
-    const [selectedCategory, setSelectedCategory] = useState<'all' | 'qris' | 'va'>('all');
+    const translateWithFallback = (key: string, fallback: string) => {
+        try {
+            const value = t(key as any);
+            return value || fallback;
+        } catch (error) {
+            return fallback;
+        }
+    };
+    const [selectedCategory, setSelectedCategory] = useState<'all' | 'qris' | 'va' | 'manual'>('all');
     const { data: paymentMethods, isLoading, error, refetch } = useQuery({
         queryKey: ["payment-methods"],
         queryFn: Order.getPaymentMethodList,
@@ -31,6 +39,7 @@ const PaymentMethodsList: React.FC<{
         { id: 'all' as const, label: t("categories.all"), icon: Wallet, count: paymentMethods?.length || 0 },
         { id: 'qris' as const, label: t("categories.qris"), icon: QrCode, count: paymentMethods?.filter(m => m.type === 'qris').length || 0 },
         { id: 'va' as const, label: t("categories.va"), icon: Building2, count: paymentMethods?.filter(m => m.type === 'va').length || 0 },
+        { id: 'manual' as const, label: translateWithFallback("categories.manual", "Manual"), icon: ClipboardCheck, count: paymentMethods?.filter(m => m.type === 'manual').length || 0 },
     ];
 
     if (error) {
@@ -101,7 +110,7 @@ const PaymentMethodsList: React.FC<{
                             />
                         ) : filteredMethods && filteredMethods.length > 0 ? (
                             filteredMethods.map((method) => {
-                                const isSelected = selectedPayment && selectedPayment.id === method.id;
+                                const isSelected = selectedPayment?.id === method.id;
 
                                 return (
                                     <button
@@ -154,9 +163,11 @@ const PaymentMethodsList: React.FC<{
                                                                     : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800'
                                                                 }`}
                                                         >
-                                                            {method.type === 'qris' ? t("types.qris") :
-                                                                method.type === 'va' ? t("types.va") :
-                                                                    'Lainnya'}
+                                                            {method.type === 'qris'
+                                                                ? t("types.qris")
+                                                                : method.type === 'va'
+                                                                    ? t("types.va")
+                                                                    : translateWithFallback("types.manual", "Manual")}
                                                         </Badge>
                                                     </div>
                                                 </div>

@@ -321,54 +321,82 @@ interface AlertProps {
     className?: string;
 }
 
-export function Alert({ type, title, message, action, onClose, className }: AlertProps) {
-    const styles = {
-        info: {
-            container: "bg-blue-50 border-blue-200",
-            icon: <Info className="w-5 h-5 text-blue-500" />,
-            title: "text-blue-800",
-            message: "text-blue-700"
-        },
-        success: {
-            container: "bg-green-50 border-green-200",
-            icon: <CheckCircle className="w-5 h-5 text-green-500" />,
-            title: "text-green-800",
-            message: "text-green-700"
-        },
-        warning: {
-            container: "bg-yellow-50 border-yellow-200",
-            icon: <AlertCircle className="w-5 h-5 text-yellow-500" />,
-            title: "text-yellow-800",
-            message: "text-yellow-700"
-        },
-        error: {
-            container: "bg-red-50 border-red-200",
-            icon: <XCircle className="w-5 h-5 text-red-500" />,
-            title: "text-red-800",
-            message: "text-red-700"
-        }
-    };
+const alertStyles = {
+    info: {
+        container: "border-blue-200/70 bg-blue-50/90 text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/70 dark:text-blue-100",
+        title: "text-blue-900 dark:text-blue-50",
+        message: "text-blue-700 dark:text-blue-100/80",
+        iconClass: "text-blue-500 dark:text-blue-300",
+        actionClass: "hover:bg-blue-100/60 dark:hover:bg-blue-900/40",
+        closeClass: "hover:bg-blue-100/60 dark:hover:bg-blue-900/40"
+    },
+    success: {
+        container: "border-green-200/70 bg-green-50/90 text-green-700 dark:border-green-900/70 dark:bg-green-950/70 dark:text-green-100",
+        title: "text-green-900 dark:text-green-50",
+        message: "text-green-700 dark:text-green-100/80",
+        iconClass: "text-green-500 dark:text-green-300",
+        actionClass: "hover:bg-green-100/60 dark:hover:bg-green-900/40",
+        closeClass: "hover:bg-green-100/60 dark:hover:bg-green-900/40"
+    },
+    warning: {
+        container: "border-yellow-200/70 bg-yellow-50/90 text-yellow-700 dark:border-yellow-900/70 dark:bg-yellow-950/70 dark:text-yellow-100",
+        title: "text-yellow-900 dark:text-yellow-50",
+        message: "text-yellow-700 dark:text-yellow-100/80",
+        iconClass: "text-yellow-500 dark:text-yellow-300",
+        actionClass: "hover:bg-yellow-100/60 dark:hover:bg-yellow-900/40",
+        closeClass: "hover:bg-yellow-100/60 dark:hover:bg-yellow-900/40"
+    },
+    error: {
+        container: "border-red-200/70 bg-red-50/90 text-red-700 dark:border-red-900/70 dark:bg-red-950/70 dark:text-red-100",
+        title: "text-red-900 dark:text-red-50",
+        message: "text-red-700 dark:text-red-100/80",
+        iconClass: "text-red-500 dark:text-red-300",
+        actionClass: "hover:bg-red-100/60 dark:hover:bg-red-900/40",
+        closeClass: "hover:bg-red-100/60 dark:hover:bg-red-900/40"
+    }
+};
 
-    const style = styles[type];
+const alertIcons = {
+    info: Info,
+    success: CheckCircle,
+    warning: AlertCircle,
+    error: XCircle
+};
+
+export function Alert({ type, title, message, action, onClose, className }: AlertProps) {
+    const IconComponent = alertIcons[type];
+    const style = alertStyles[type];
 
     return (
-        <Card className={cn("border", style.container, className)}>
-            <CardContent>
-                <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5">
-                        {style.icon}
+        <Card
+            role="alert"
+            className={cn(
+                "border shadow-sm backdrop-blur-sm transition-all duration-200",
+                "rounded-xl sm:rounded-2xl",
+                style.container,
+                className
+            )}
+        >
+            <CardContent className="p-4 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                    <div className="flex-shrink-0">
+                        <IconComponent className={cn("h-5 w-5 sm:h-6 sm:w-6", style.iconClass)} />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-1">
                         {title && (
-                            <h4 className={cn("font-medium mb-1", style.title)}>{title}</h4>
+                            <h4 className={cn("font-semibold leading-tight", style.title)}>{title}</h4>
                         )}
-                        <p className={cn("text-sm", style.message)}>{message}</p>
+                        <p className={cn("text-sm leading-relaxed", style.message)}>{message}</p>
                         {action && (
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={action.onClick}
-                                className="mt-2 p-0 h-auto font-medium hover:bg-transparent"
+                                className={cn(
+                                    "mt-1 w-fit p-0 text-sm font-medium text-current",
+                                    "focus-visible:ring-1 focus-visible:ring-offset-2",
+                                    style.actionClass
+                                )}
                             >
                                 {action.label}
                             </Button>
@@ -377,11 +405,16 @@ export function Alert({ type, title, message, action, onClose, className }: Aler
                     {onClose && (
                         <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={onClose}
-                            className="p-1 h-auto hover:bg-transparent"
+                            className={cn(
+                                "h-8 w-8 self-start rounded-full p-0",
+                                "focus-visible:ring-1 focus-visible:ring-offset-2",
+                                style.closeClass
+                            )}
+                            aria-label="Tutup pesan"
                         >
-                            <XCircle className="w-4 h-4" />
+                            <XCircle className={cn("h-4 w-4", style.iconClass)} />
                         </Button>
                     )}
                 </div>
