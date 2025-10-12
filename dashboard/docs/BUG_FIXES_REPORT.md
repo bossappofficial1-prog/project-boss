@@ -1,60 +1,67 @@
 # 🔧 Bug Fixes Report - Dashboard Refactoring
 
 **Tanggal**: 12 Oktober 2025  
-**Status**: ✅ ALL FIXED
+**Status**: ✅ ALL FIXED (Updated)
 
 ---
 
 ## 📋 Errors Ditemukan & Diperbaiki
 
-### 1. ✅ useEntityFactory.ts - React Query Callback Signature (8 errors)
+### 1. ✅ useReactQuery.ts - React Query Callback Signature (2 errors)
 
 **Masalah**: 
-- React Query v5 callbacks hanya menerima 3 parameter, bukan 4
-- Spreading `mutationOptions` menyebabkan conflict
+- React Query v5 callbacks hanya menerima 2-3 parameter
+- `UseMutationOptions` spreading menyebabkan callback expect 4 parameter
 
 **Error Messages**:
 ```
-Expected 4 arguments, but got 3.
+Expected 4 arguments, but got 3. (line 87)
+Expected 4 arguments, but got 2. (line 100) - during build
 ```
 
 **Lokasi**:
-- useCreate: onSuccess, onError callbacks
-- useUpdate: onSuccess, onError callbacks  
-- useDelete: onSuccess, onError callbacks
-- useBulkDelete: onSuccess, onError callbacks
+- createMutation: onSuccess callback (line 87)
+- createMutation: onError callback (line 100)
 
 **Perbaikan**:
 ```typescript
 // ❌ Before
-const useCreate = (mutationOptions?: Omit<UseMutationOptions<...>>) => {
-  return useMutation({
-    onSuccess: (data, variables, context) => {
-      mutationOptions?.onSuccess?.(data, variables, context); // Error!
-    },
-    ...mutationOptions, // Conflict!
-  });
+type MutationConfig<TData, TVariables, TError = unknown> = {
+    invalidateKeys?: (string | number)[];
+    toast?: ToastConfig;
+    options?: UseMutationOptions<TData, TError, TVariables>;
 };
+
+const { invalidateKeys, toast: toastConfig, options } = config || {}
+return useMutation({
+    onSuccess: (data, variables, context) => {
+        options?.onSuccess?.(data, variables, context) // Error: expects 4!
+    },
+    ...options, // Spreading causes issues
+})
 
 // ✅ After
-const useCreate = (customOptions?: {
-  onSuccess?: (data: TEntity) => void;
-  onError?: (error: any) => void;
-}) => {
-  return useMutation({
-    onSuccess: (data) => {
-      customOptions?.onSuccess?.(data); // Fixed!
-    },
-    // No spreading - clean implementation
-  });
+type MutationConfig<TData, TVariables, TError = unknown> = {
+    invalidateKeys?: (string | number)[];
+    toast?: ToastConfig;
+    onSuccess?: (data: TData, variables: TVariables) => void;
+    onError?: (error: TError, variables: TVariables) => void;
 };
+
+const { invalidateKeys, toast: toastConfig, onSuccess: customOnSuccess, onError: customOnError } = config || {}
+return useMutation({
+    onSuccess: (data, variables) => {
+        customOnSuccess?.(data, variables) // Fixed!
+    },
+    // No spreading
+})
 ```
 
-**Files Changed**: `hooks/useEntityFactory.ts`
+**Files Changed**: `hooks/useReactQuery.ts`
 
 ---
 
-### 2. ✅ DataTable.tsx - Button Variant Type Error (1 error)
+### 3. ✅ DataTable.tsx - Button Variant Type Error (1 error)
 
 **Masalah**:
 - TableAction menggunakan variant `'primary'` yang tidak ada di Button component
@@ -80,7 +87,7 @@ Type '"primary"' is not assignable to type 'ButtonVariant'
 
 ---
 
-### 3. ✅ ExampleUsersPage.tsx - Badge Variant Error (1 error)
+### 4. ✅ ExampleUsersPage.tsx - Badge Variant Error (1 error)
 
 **Masalah**:
 - Badge menggunakan variant `'success'` yang tidak ada
@@ -104,7 +111,7 @@ Type '"success"' is not assignable to type 'BadgeVariant'
 
 ---
 
-### 4. ✅ ExampleUsersPage.tsx - Filter Type Casting (2 errors)
+### 5. ✅ ExampleUsersPage.tsx - Filter Type Casting (2 errors)
 
 **Masalah**:
 - TypeScript tidak bisa infer type dari string value ke union type
@@ -129,7 +136,7 @@ table.filters.updateFilter('status', value === 'all' ? undefined : (value as 've
 
 ---
 
-### 5. ✅ ExampleUsersPage.tsx - API Response Structure (3 errors)
+### 6. ✅ ExampleUsersPage.tsx - API Response Structure (3 errors)
 
 **Masalah**:
 - useList() mengembalikan `User[]` langsung, bukan `{ data: User[], pagination: {...} }`
@@ -160,7 +167,7 @@ Property 'pagination' does not exist on type 'User[]'
 
 ---
 
-### 6. ✅ useTableFilters.ts - Missing Import (1 error)
+### 7. ✅ useTableFilters.ts - Missing Import (1 error)
 
 **Masalah**:
 - useTableState() memanggil usePagination() tapi tidak di-import
@@ -180,7 +187,7 @@ import { usePagination } from './usePagination';
 
 ---
 
-### 7. ✅ types/index.ts - Mapped Type Syntax Error (8 errors)
+### 8. ✅ types/index.ts - Mapped Type Syntax Error (8 errors)
 
 **Masalah**:
 - `FormErrors` menggunakan `interface` untuk mapped type
@@ -214,12 +221,13 @@ export type FormErrors<T = any> = {
 
 | File | Errors Found | Errors Fixed | Status |
 |------|-------------|--------------|--------|
+| `hooks/useReactQuery.ts` | 2 | 2 | ✅ |
 | `hooks/useEntityFactory.ts` | 8 | 8 | ✅ |
 | `components/shared/DataTable.tsx` | 1 | 1 | ✅ |
 | `components/shared/ExampleUsersPage.tsx` | 6 | 6 | ✅ |
 | `hooks/useTableFilters.ts` | 1 | 1 | ✅ |
 | `types/index.ts` | 8 | 8 | ✅ |
-| **TOTAL** | **24** | **24** | ✅ |
+| **TOTAL** | **26** | **26** | ✅ |
 
 ---
 
@@ -227,6 +235,7 @@ export type FormErrors<T = any> = {
 
 Semua file telah di-check ulang dan confirmed:
 
+- ✅ `hooks/useReactQuery.ts` - No errors (FIXED during build)
 - ✅ `lib/ApiClient.ts` - No errors
 - ✅ `lib/services/BaseService.ts` - No errors
 - ✅ `lib/services/UserService.ts` - No errors
@@ -273,7 +282,7 @@ Semua file telah di-check ulang dan confirmed:
 ---
 
 **Status**: ✅ **PRODUCTION READY**  
-**All 24 errors fixed successfully!**
+**All 26 errors fixed successfully!**
 
 ---
 

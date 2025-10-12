@@ -1,6 +1,5 @@
 import {
     useMutation,
-    UseMutationOptions,
     useQuery,
     useQueryClient,
     UseQueryOptions,
@@ -19,7 +18,8 @@ type ToastConfig = {
 type MutationConfig<TData, TVariables, TError = unknown> = {
     invalidateKeys?: (string | number)[];
     toast?: ToastConfig;
-    options?: UseMutationOptions<TData, TError, TVariables>;
+    onSuccess?: (data: TData, variables: TVariables) => void;
+    onError?: (error: TError, variables: TVariables) => void;
 };
 
 /**
@@ -67,11 +67,11 @@ export default function useReactQuery() {
     ) => {
         return function useGeneratedMutation() {
             const queryClient = useQueryClient()
-            const { invalidateKeys, toast: toastConfig, options } = config || {}
+            const { invalidateKeys, toast: toastConfig, onSuccess: customOnSuccess, onError: customOnError } = config || {}
 
             return useMutation<TData, TError, TVariables>({
                 mutationFn,
-                onSuccess: (data, variables, context) => {
+                onSuccess: (data, variables) => {
                     // Cache invalidation
                     if (invalidateKeys?.length) {
                         queryClient.invalidateQueries({ queryKey: invalidateKeys })
@@ -84,9 +84,9 @@ export default function useReactQuery() {
                     }
 
                     // Call user-defined success handler
-                    options?.onSuccess?.(data, variables, context)
+                    customOnSuccess?.(data, variables)
                 },
-                onError: (error, variables, context) => {
+                onError: (error, variables) => {
                     // Toast notification
                     const errorMessage = toastConfig?.error
                     if (errorMessage !== false) {
@@ -97,9 +97,8 @@ export default function useReactQuery() {
                     }
 
                     // Call user-defined error handler
-                    options?.onError?.(error, variables, context)
+                    customOnError?.(error, variables)
                 },
-                ...options,
             })
         }
     }
