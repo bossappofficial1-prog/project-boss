@@ -206,3 +206,164 @@ export async function getFeaturedOutletsService() {
 
     return result;
 }
+
+// ============================================
+// QRIS Management Services
+// ============================================
+
+/**
+ * Upload QRIS image untuk outlet
+ */
+export async function uploadQRISService(outletId: string, ownerId: string, file: Express.Multer.File) {
+    const path = await import('path');
+    const fs = await import('fs/promises');
+    
+    // Cek apakah outlet ada
+    const outlet = await OutletRepository.findById(outletId);
+
+    if (!outlet) {
+        // Hapus file yang sudah diupload
+        try {
+            await fs.unlink(file.path);
+        } catch (error) {
+            // Ignore error jika file tidak bisa dihapus
+        }
+        throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // Validasi ownership - hanya owner business yang bisa upload
+    const business = await getBusinessByOwnerIdService(ownerId);
+    if (outlet.businessId !== business.id) {
+        try {
+            await fs.unlink(file.path);
+        } catch (error) {
+            // Ignore error
+        }
+        throw new AppError(
+            'Anda tidak memiliki akses untuk mengupload QRIS outlet ini',
+            HttpStatus.FORBIDDEN
+        );
+    }
+
+    // Validasi file type (hanya gambar)
+    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedMimes.includes(file.mimetype)) {
+        try {
+            await fs.unlink(file.path);
+        } catch (error) {
+            // Ignore error
+        }
+        throw new AppError(
+            'Format file tidak valid. Hanya menerima JPG, PNG, atau WebP',
+            HttpStatus.BAD_REQUEST
+        );
+    }
+
+    // Validasi ukuran file (max 2MB)
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+        try {
+            await fs.unlink(file.path);
+        } catch (error) {
+            // Ignore error
+        }
+        throw new AppError(
+            'Ukuran file terlalu besar. Maksimal 2MB',
+            HttpStatus.BAD_REQUEST
+        );
+    }
+
+    // Jika sudah ada QRIS sebelumnya, hapus file lama
+    if (outlet.qrisImage) {
+        const oldFilePath = path.join(process.cwd(), outlet.qrisImage);
+        try {
+            await fs.access(oldFilePath);
+            await fs.unlink(oldFilePath);
+        } catch (error) {
+            // File tidak ada, skip
+        }
+    }
+
+    // Generate path relatif untuk disimpan di database
+    const relativePath = path.relative(process.cwd(), file.path).replace(/\\/g, '/');
+
+    // Update outlet dengan path QRIS baru
+    const updatedOutlet = await OutletRepository.update(outletId, {
+        qrisImage: relativePath,
+    });
+
+    return {
+        id: updatedOutlet.id,
+        name: updatedOutlet.name,
+        qrisImage: updatedOutlet.qrisImage,
+        qrisUrl: updatedOutlet.qrisImage ? `${process.env.BASE_URL}/${updatedOutlet.qrisImage}` : null,
+        updatedAt: updatedOutlet.updatedAt,
+    };
+}
+
+/**
+ * Get QRIS data outlet
+ */
+export async function getQRISService(outletId: string) {
+    const outlet = await OutletRepository.findById(outletId);
+
+    if (!outlet) {
+        throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // Build proper URL for QRIS image
+    const baseUrl = process.env.BASE_URL || 'http://localhost:1234';
+    const qrisImageUrl = outlet.qrisImage 
+        ? `${baseUrl}/${outlet.qrisImage.replace(/\\/g, '/')}` 
+        : null;
+
+    return {
+        outletId: outlet.id,
+        outletName: outlet.name,
+        businessName: outlet.business.name,
+        qrisImageUrl: qrisImageUrl,
+    };
+}
+
+/**
+ * Delete QRIS image outlet
+ */
+export async function deleteQRISService(outletId: string, ownerId: string) {
+    const path = await import('path');
+    const fs = await import('fs/promises');
+    
+    // Cek outlet dan ownership
+    const outlet = await OutletRepository.findById(outletId);
+
+    if (!outlet) {
+        throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    const business = await getBusinessByOwnerIdService(ownerId);
+    if (outlet.businessId !== business.id) {
+        throw new AppError(
+            'Anda tidak memiliki akses untuk menghapus QRIS outlet ini',
+            HttpStatus.FORBIDDEN
+        );
+    }
+
+    if (!outlet.qrisImage) {
+        throw new AppError('Outlet tidak memiliki QRIS', HttpStatus.BAD_REQUEST);
+    }
+
+    // Hapus file fisik
+    const filePath = path.join(process.cwd(), outlet.qrisImage);
+    try {
+        await fs.access(filePath);
+        await fs.unlink(filePath);
+    } catch (error) {
+        // File tidak ditemukan, lanjutkan hapus dari database
+    }
+
+    // Update database
+    await OutletRepository.update(outletId, {
+        qrisImage: null,
+    });
+
+    return true;
+}

@@ -50,7 +50,16 @@ export async function getMeService(userId: string) {
 
     const { outlets, ...businessWithoutOutlets } = business
 
-    return { userWithoutBusiness, outlets, business: businessWithoutOutlets };
+    // Transform outlets to include full QRIS URL
+    const baseUrl = process.env.BASE_URL || 'http://localhost:1234';
+    const transformedOutlets = outlets?.map((outlet: any) => ({
+        ...outlet,
+        qrisImage: outlet.qrisImage 
+            ? `${baseUrl}/${outlet.qrisImage.replace(/\\/g, '/')}` 
+            : null,
+    })) || [];
+
+    return { userWithoutBusiness, outlets: transformedOutlets, business: businessWithoutOutlets };
 }
 
 export async function resendVerificationService(email: string) {

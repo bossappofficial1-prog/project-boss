@@ -176,6 +176,7 @@ export interface Outlet {
   products?: Product[];
   createdAt: string;
   updatedAt: string;
+  qrisImage?: string | null;
 }
 
 export interface CreateOutletDto {

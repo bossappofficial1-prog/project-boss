@@ -1,4 +1,4 @@
-import { apiCall } from './base';
+import { apiCall, apiClient } from './base';
 
 export interface BusinessHours {
   id: string;
@@ -74,5 +74,27 @@ export const outletApi = {
         totalLabaBersih: number;
       };
     }>(endpoint);
+  },
+
+  // QRIS Management
+  getQRIS: (outletId: string) => apiCall<{
+    outletId: string;
+    outletName: string;
+    qrisImageUrl: string | null;
+  }>(`/outlets/${outletId}/qris`),
+
+  uploadQRIS: async (outletId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('qris', file);
+
+    const response = await apiClient.post(`/outlets/${outletId}/qris`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  },
+
+  deleteQRIS: async (outletId: string) => {
+    const response = await apiClient.delete(`/outlets/${outletId}/qris`);
+    return response.data;
   },
 };

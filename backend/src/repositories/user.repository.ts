@@ -64,7 +64,14 @@ export class UserRepository {
                                 name: true,
                                 businessId: true,
                                 address: true,
-                                image: true
+                                image: true,
+                                qrisImage: true, // ✅ Add qrisImage field
+                                phone: true,
+                                latitude: true,
+                                longitude: true,
+                                isOpen: true,
+                                createdAt: true,
+                                updatedAt: true
                             },
                             orderBy: [{ createdAt: "desc" }]
                         }
