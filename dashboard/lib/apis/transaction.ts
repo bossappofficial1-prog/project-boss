@@ -3,21 +3,57 @@ import { apiClient, ApiResponse } from './base';
 
 export interface Transaction {
   id: string;
-  orderId: string;
+  type: 'INCOME' | 'EXPENSE'; // New: transaction type
+  orderId?: string; // Optional for expenses
   amount: number;
-  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'PROOF_SUBMITTED' | 'AWAITING_VERIFICATION' | 'REFUNDED' | 'EXPIRED' | 'REJECTED_MANUAL';
+  description: string; // New: description for expenses or income
   paymentMethod?: string;
+  isManual: boolean;
+  manualMethod?: string;
+  paymentProofUrl?: string;
+  externalId?: string;
   createdAt: string;
-  updatedAt: string;
-  order?: any;
+  outlet: {
+    id: string;
+    name: string;
+    address: string;
+  };
+  order?: {
+    id: string;
+    totalAmount: number;
+    orderStatus: string;
+    paymentStatus: string;
+    customerType: string;
+    midtransFee: number;
+    appFee: number;
+    discountAmount: number;
+    createdAt: string;
+    guestCustomer: {
+      name: string;
+      phone: string;
+      email?: string;
+    };
+    items: Array<{
+      id: string;
+      quantity: number;
+      priceAtTimeOfOrder: number;
+      product: {
+        name: string;
+        price: number;
+      };
+    }>;
+  } | null; // Null for expenses
 }
 
 export interface TransactionListParams {
   page?: number;
   limit?: number;
   status?: string;
+  type?: 'INCOME' | 'EXPENSE' | 'ALL'; // New: filter by transaction type
   startDate?: string;
   endDate?: string;
+  outletId?: string; // Filter by specific outlet
 }
 
 export interface PaginatedResponse<T> {

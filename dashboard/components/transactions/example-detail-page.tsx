@@ -106,12 +106,6 @@ export default function TransactionDetailPage({ params }: { params: { id: string
                 {new Date(transaction.createdAt).toLocaleString('id-ID')}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Updated At</p>
-              <p className="text-lg">
-                {new Date(transaction.updatedAt).toLocaleString('id-ID')}
-              </p>
-            </div>
           </div>
         </CardContent>
       </Card>
