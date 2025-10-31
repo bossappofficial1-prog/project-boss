@@ -64,7 +64,17 @@ export class UserRepository {
                                 name: true,
                                 businessId: true,
                                 address: true,
-                                image: true
+                                image: true,
+                                description: true,
+                                isOpen: true,
+                                latitude: true,
+                                longitude: true,
+                                manualAccountHolder: true,
+                                manualBankAccount: true,
+                                manualBankName: true,
+                                manualPaymentNote: true,
+                                manualQrImageUrl: true,
+                                phone: true,
                             },
                             orderBy: [{ createdAt: "desc" }]
                         }

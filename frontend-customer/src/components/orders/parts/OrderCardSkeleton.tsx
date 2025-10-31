@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function OrderCardSkeleton() {
     return (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden p-0 rounded-md">
             <CardHeader className="p-4 bg-muted/50">
                 <div className="flex items-center justify-between">
                     <Skeleton className="h-4 w-24" />

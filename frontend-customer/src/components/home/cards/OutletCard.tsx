@@ -28,7 +28,7 @@ function OutletCard({ outlet, numberFormatter, t, tCommon }: OutletCardProps) {
     return (
         <Link
             href={`/outlet/${outlet.id}`}
-            className="group flex w-[220px] flex-none flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            className="group flex w-[220px] flex-none flex-col overflow-hidden rounded-md border border-border/60 bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
         >
             <div className="relative h-32 w-full overflow-hidden">
                 {outlet.image ? (

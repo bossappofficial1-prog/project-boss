@@ -241,10 +241,11 @@ export interface VaNumber {
 export const OrderStatus = {
     AWAITING_PAYMENT: "AWAITING_PAYMENT", // Menunggu pembayaran dikonfirmasi
     PROCESSING: "PROCESSING", // Pesanan sedang diproses (bisa masuk antrian Redis/RabbitMQ)
-    READY: "READY", // Siap diambil (untuk barang) atau siap dimulai (untuk jasa)
+    CONFIRMED: "CONFIRMED", // Merchant confirmed, order dijadwalkan
+    READY: "READY", // Siap diambil (goods) atau siap dimulai (service)
+    ON_GOING: "ON_GOING", // Service sedang berlangsung (service only)
     COMPLETED: "COMPLETED", // Pesanan selesai
-    CANCELLED: "CANCELLED", // Pesanan dibatalkan
-    CONFIRMED: "CONFIRMED" // Tambahkan status baru di sini
+    CANCELLED: "CANCELLED" // Pesanan dibatalkan
 } as const
 
 type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus]
@@ -272,11 +273,12 @@ export interface Item {
     id: string
     priceAtTimeOfOrder: number
     quantity: number
-    product: Pick<ProductType, "id" | "name" | "price">
+    product: Pick<ProductType, "id" | "name" | "price" | "type">
 }
 
 export interface Transaction {
     id: string
     paymentMethod: string
     status: string
+    expiryTime?: string // ISO date string for payment expiry
 }

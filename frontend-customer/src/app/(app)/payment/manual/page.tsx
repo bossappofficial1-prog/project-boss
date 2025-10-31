@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, ArrowLeft, Clock, UploadCloud } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Clock, UploadCloud, Copy, CheckCircle, X, Image as ImageIcon } from 'lucide-react';
 
 import { CheckoutService } from '@/services/checkout';
 import { PaymentService } from '@/services/paymentService';
@@ -121,6 +121,8 @@ export default function ManualPaymentPage() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         const data = CheckoutService.getManualPaymentFromStorage();
@@ -152,7 +154,8 @@ export default function ManualPaymentPage() {
                 quantity: item.quantity
             })),
             subtotal: manualData.response.manual.fee_summary.subtotal,
-            transactionFee: manualData.response.manual.fee_summary.transactionFee,
+            // Don't include transaction fee for manual payments (no payment gateway used)
+            transactionFee: 0,
             applicationFee: manualData.response.manual.fee_summary.applicationFee,
             total: manualData.response.gross_amount,
             paymentMethod: {
@@ -168,25 +171,93 @@ export default function ManualPaymentPage() {
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (file) {
-            setSelectedFile(file);
-            setUploadStatus('idle');
-            setErrorMessage(null);
+        if (!file) return;
+
+        // File size validation (10MB max)
+        const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        if (file.size > maxSize) {
+            setErrorMessage('Ukuran file terlalu besar. Maksimal 10MB.');
+            setSelectedFile(null);
+            setUploadStatus('error');
+            return;
+        }
+
+        // File type validation
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+        if (!validTypes.includes(file.type)) {
+            setErrorMessage('Format file tidak didukung. Gunakan JPG, PNG, WEBP, atau PDF.');
+            setSelectedFile(null);
+            setUploadStatus('error');
+            return;
+        }
+
+        setSelectedFile(file);
+        setUploadStatus('idle');
+        setErrorMessage(null);
+
+        // Generate preview for images
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setImagePreview(null); // PDF doesn't need preview
         }
     };
 
-    const handleUpload = async () => {
+    const handleRemoveFile = () => {
+        setSelectedFile(null);
+        setImagePreview(null);
+        setUploadStatus('idle');
+        setErrorMessage(null);
+    };
+
+    const handleCopyOrderId = () => {
+        if (manualData?.response.order_id) {
+            navigator.clipboard.writeText(manualData.response.order_id);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    const handleUpload = async (retryCount = 0) => {
         if (!manualData || !selectedFile) return;
         setUploadStatus('uploading');
         setErrorMessage(null);
+
+        const maxRetries = 2;
 
         try {
             await PaymentService.uploadManualPaymentProof(manualData.response.order_id, selectedFile);
             setUploadStatus('success');
         } catch (error) {
             console.error('Failed to upload proof:', error);
+            
+            // Check if it's a network error and retry
+            const isNetworkError = error instanceof Error && (
+                error.message.includes('network') ||
+                error.message.includes('timeout') ||
+                error.message.includes('Failed to fetch')
+            );
+
+            if (isNetworkError && retryCount < maxRetries) {
+                // Retry after delay
+                console.log(`Retrying upload... Attempt ${retryCount + 1} of ${maxRetries}`);
+                setTimeout(() => {
+                    handleUpload(retryCount + 1);
+                }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s
+                return;
+            }
+
             setUploadStatus('error');
-            setErrorMessage(error instanceof Error ? error.message : 'Gagal mengunggah bukti pembayaran.');
+            const errorMsg = error instanceof Error ? error.message : 'Gagal mengunggah bukti pembayaran.';
+            setErrorMessage(
+                retryCount >= maxRetries 
+                    ? `${errorMsg} Sudah dicoba ${maxRetries + 1}x. Periksa koneksi internet Anda.`
+                    : errorMsg
+            );
         }
     };
 
@@ -209,7 +280,21 @@ export default function ManualPaymentPage() {
                 <CardContent className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Order ID</span>
-                        <span className="font-medium">{response.order_id}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-medium">{response.order_id}</span>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={handleCopyOrderId}
+                            >
+                                {copied ? (
+                                    <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                                ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                )}
+                            </Button>
+                        </div>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Total Tagihan</span>
@@ -253,17 +338,55 @@ export default function ManualPaymentPage() {
                         </p>
                     )}
 
-                    <Input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={handleFileChange}
-                        disabled={isExpired || uploadStatus === 'uploading'}
-                    />
+                    {!selectedFile ? (
+                        <Input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={handleFileChange}
+                            disabled={isExpired || uploadStatus === 'uploading'}
+                        />
+                    ) : (
+                        <div className="space-y-3">
+                            {/* File Preview */}
+                            <div className="border rounded-lg p-4 bg-muted/30">
+                                <div className="flex items-start gap-3">
+                                    {imagePreview ? (
+                                        <div className="relative w-20 h-20 rounded-md overflow-hidden bg-muted shrink-0">
+                                            <img 
+                                                src={imagePreview} 
+                                                alt="Preview" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="w-20 h-20 rounded-md bg-muted flex items-center justify-center shrink-0">
+                                            <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                                        </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                                        </p>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 shrink-0"
+                                        onClick={handleRemoveFile}
+                                        disabled={uploadStatus === 'uploading'}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {errorMessage && (
-                        <div className="flex items-center gap-2 text-sm text-red-600">
-                            <AlertCircle className="w-4 h-4" />
-                            {errorMessage}
+                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            <span>{errorMessage}</span>
                         </div>
                     )}
 

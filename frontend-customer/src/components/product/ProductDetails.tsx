@@ -27,9 +27,9 @@ import Link from "next/link";
 import { ProductType, OutletType } from "@/types"; // pastikan ada OutletType di project
 import { ScheduleModal } from "../outlet/ScheduleModal";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
-import { useToast } from "@/components/ui/toast";
 import { Messages, NestedKeyOf, useTranslations } from "@/hooks/useI18n";
 import { ProductImagesSlider } from "../shared/ProductImagesSlider";
+import { useSnackbar } from "@/hooks/useSnackbar";
 
 type Props = {
     params: Promise<{ id: string; productId: string }>;
@@ -38,7 +38,7 @@ type Props = {
 export function ProductDetails({ params }: Props) {
     const router = useRouter();
     const { addItem } = useCart();
-    const { push: toast } = useToast();
+    const snackbar = useSnackbar()
     const { setAppBar, resetAppBar } = useAppBarV2();
     const { isProductSaved, toggleSaveProduct } = useSavedProducts();
 
@@ -125,12 +125,9 @@ export function ProductDetails({ params }: Props) {
         try {
             addItem(outlet.id, outlet.name, product, 1);
         } catch {
-            toast({
-                title: t("toast.addProductError"),
-                description: t("toast.addProductErrorDesc"),
-            });
+            snackbar.error(t("toast.addProductError"))
         }
-    }, [product, outlet, addItem, toast, t]);
+    }, [product, outlet, addItem, t]);
 
     const handleScheduleSelect = useCallback(
         (schedule: any) => {
@@ -139,13 +136,10 @@ export function ProductDetails({ params }: Props) {
                 addItem(outletId, outlet.name, product, 1, schedule);
                 setShowScheduleModal(false);
             } catch {
-                toast({
-                    title: t("toast.addServiceError"),
-                    description: t("toast.addServiceErrorDesc"),
-                });
+                snackbar.error(t("toast.addServiceErrorDesc"))
             }
         },
-        [outletId, outlet, product, addItem, toast, t]
+        [outletId, outlet, product, addItem, t]
     );
 
     // Format Deskripsi

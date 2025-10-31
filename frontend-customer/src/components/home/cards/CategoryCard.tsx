@@ -21,7 +21,7 @@ function CategoryCard({ category }: CategoryCardProps) {
     return (
         <Link
             href={`/search?q=${encodeURIComponent(category.slug)}`}
-            className="group flex flex-col gap-2 rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition hover:border-primary/50 hover:shadow-md"
+            className="group flex flex-col gap-2 rounded-md border border-border/60 bg-card p-4 transition hover:border-primary/50 hover:shadow-md"
         >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />

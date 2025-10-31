@@ -513,8 +513,8 @@
         "order_singular": "order",
         "order_plural": "orders",
         "found": "found",
-        "error_title": "Failed to Load Orders",
-        "error_message": "An error occurred while fetching your orders. Please try again later.",
+        "error_title": "No Orders Yet",
+        "error_message": "You don't have any orders yet. Start exploring outlets and order now!",
         "no_orders_title": "No Orders Yet",
         "no_orders_description": "You haven't placed any orders. Start ordering from nearby outlets!",
         "explore_outlets": "Explore Outlets",
@@ -524,12 +524,107 @@
             "browse": "Browse Outlets"
         },
         "status": {
+            "all": "All",
             "pending": "Waiting for Confirmation",
             "confirmed": "Order Confirmed",
             "preparing": "Being Prepared",
             "ready": "Ready for Pickup",
+            "on_going": "On Going",
+            "completed": "Completed",
+            "cancelled": "Cancelled",
+            "awaiting_payment": "Awaiting Payment",
+            "processing": "Processing",
+            "confirmed_label": "Confirmed",
+            "ready_label": "Ready",
+            "on_going_label": "On Going",
+            "completed_label": "Completed",
+            "cancelled_label": "Cancelled"
+        },
+        "tabs": {
+            "all": "All",
+            "awaiting_payment": "Unpaid",
+            "processing": "Processing",
+            "confirmed": "Confirmed",
+            "ready": "Ready",
+            "on_going": "On Going",
             "completed": "Completed",
             "cancelled": "Cancelled"
+        },
+        "dateGroups": {
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "thisWeek": "This Week",
+            "thisMonth": "This Month",
+            "older": "Older"
+        },
+        "actions": {
+            "pay": "Pay",
+            "cancel": "Cancel",
+            "contact": "Contact",
+            "confirm": "Confirm",
+            "reorder": "Reorder",
+            "viewDetails": "View Details",
+            "close": "Close",
+            "contactOutlet": "Contact Outlet"
+        },
+        "messages": {
+            "contactSoon": "Contact outlet feature coming soon",
+            "cancelSoon": "Cancel order feature coming soon",
+            "reorderSoon": "Reorder feature coming soon",
+            "confirmSoon": "Confirm order feature coming soon",
+            "orderIdCopied": "Order ID copied!"
+        },
+        "detail": {
+            "title": "Order Details",
+            "orderId": "Order ID",
+            "progress": "Order Progress",
+            "currentStatus": "Current",
+            "outletInfo": "Outlet Information",
+            "customerInfo": "Customer Information",
+            "itemDetails": "Item Details",
+            "paymentSummary": "Payment Summary",
+            "paymentMethod": "Payment Method",
+            "subtotal": "Subtotal",
+            "serviceFee": "Service Fee",
+            "transactionFee": "Transaction Fee",
+            "totalPayment": "Total Payment",
+            "quantity": "Quantity"
+        },
+        "timeline": {
+            "awaiting_payment": "Awaiting Payment",
+            "processing": "Processing",
+            "confirmed": "Confirmed",
+            "ready": "Ready for Pickup",
+            "on_going": "On Going",
+            "completed": "Completed"
+        },
+        "card": {
+            "orderId": "Order ID",
+            "from": "From",
+            "items": "items"
+        },
+        "search": {
+            "placeholder": "Search order ID, outlet, product...",
+            "searching": "Searching...",
+            "noResults": "No results for \"{query}\"",
+            "resultsFound": "{count} orders found",
+            "clearSearch": "Clear search"
+        },
+        "sort": {
+            "label": "Sort",
+            "newest": "Newest",
+            "oldest": "Oldest",
+            "priceHigh": "Highest Price",
+            "priceLow": "Lowest Price"
+        },
+        "timer": {
+            "timeRemaining": "Time Remaining",
+            "expired": "Expired",
+            "hours": "Hours",
+            "minutes": "Minutes",
+            "seconds": "Seconds",
+            "expiringWarning": "Complete payment soon!",
+            "urgentWarning": "Payment will expire soon!"
         }
     },
     "payment": {

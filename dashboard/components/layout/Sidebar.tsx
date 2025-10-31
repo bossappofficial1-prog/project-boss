@@ -7,16 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useUserData } from '@/hooks/useUserData';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface Outlet {
-  id: string;
-  name: string;
-  address: string;
-  phone?: string;
-  latitude?: number;
-  longitude?: number;
-  imageUrl?: string;
-}
+import { Outlet } from '@/types';
 
 interface Business {
   id: string;
@@ -38,7 +29,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const [expandedMenus, setExpandedMenus] = useState<{[key: string]: boolean}>({});
+  const [expandedMenus, setExpandedMenus] = useState<{ [key: string]: boolean }>({});
 
   const toggleMenu = (menuName: string) => {
     setExpandedMenus(prev => ({
@@ -100,10 +91,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   }, [userData]);
 
   const handleOutletChange = (outletId: string) => {
-    console.log(`🔄 Sidebar: handleOutletChange called with outletId: ${outletId}`);
     const outlet = outlets.find(o => o.id === outletId);
     if (outlet && setSelectedOutlet && typeof setSelectedOutlet === 'function') {
-      console.log(`🔄 Sidebar: Calling setSelectedOutlet with outlet:`, outlet);
       setSelectedOutlet(outlet);
     } else {
       console.warn(`🔄 Sidebar: Could not find outlet or setSelectedOutlet not available`, { outlet, setSelectedOutlet });
@@ -120,6 +109,25 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h2a2 2 0 012 2v2H8V5z" />
         </svg>
       ),
+    },
+    {
+      name: 'Outlet',
+      isDropdown: true,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5.581m0 0H9m5.581 0a2 2 0 100-4 2 2 0 000 4zM9 7h1.05A2.05 2.05 0 0012 9m0 0h3.975a2.05 2.05 0 010 4.1H12" />
+        </svg>
+      ),
+      subItems: [
+        {
+          name: 'Dashboard Outlet',
+          href: '/owner/dashboard/outlets',
+        },
+        {
+          name: 'Kelola Outlet',
+          href: '/owner/dashboard/outlets/manage',
+        }
+      ]
     },
     {
       name: 'Produk dan Layanan',
@@ -310,31 +318,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               if (item.isDropdown && item.subItems) {
                 const isExpanded = expandedMenus[item.name];
                 const hasActiveSubItem = item.subItems.some(subItem => pathname === subItem.href);
-                
+
                 return (
                   <div key={item.name}>
                     <button
                       onClick={() => toggleMenu(item.name)}
-                      className={`group w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${
-                        hasActiveSubItem || isExpanded
-                          ? 'bg-white/10 dark:bg-gray-700/50 text-white dark:text-white'
-                          : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white'
-                      }`}
+                      className={`group w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${hasActiveSubItem || isExpanded
+                        ? 'bg-white/10 dark:bg-gray-700/50 text-white dark:text-white'
+                        : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white'
+                        }`}
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <div className="flex items-center">
-                        <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${
-                          hasActiveSubItem || isExpanded ? 'text-white' : 'text-red-200 dark:text-gray-400'
-                        }`}>
+                        <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${hasActiveSubItem || isExpanded ? 'text-white' : 'text-red-200 dark:text-gray-400'
+                          }`}>
                           {item.icon}
                         </span>
                         <span className="flex-1">{item.name}</span>
                       </div>
-                      
+
                       <svg
-                        className={`w-4 h-4 transition-transform duration-200 ${
-                          isExpanded ? 'rotate-90' : ''
-                        } ${hasActiveSubItem || isExpanded ? 'text-white' : 'text-red-200 dark:text-gray-400'}`}
+                        className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''
+                          } ${hasActiveSubItem || isExpanded ? 'text-white' : 'text-red-200 dark:text-gray-400'}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -344,20 +349,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </button>
 
                     {/* Dropdown Items */}
-                    <div className={`ml-6 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${
-                      isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                    }`}>
+                    <div className={`ml-6 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                      }`}>
                       {item.subItems.map((subItem) => {
                         const isActive = pathname === subItem.href;
                         return (
                           <Link
                             key={subItem.href}
                             href={subItem.href}
-                            className={`block px-4 py-2 text-sm rounded-lg transition-all duration-200 font-poppins ${
-                              isActive
-                                ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
-                                : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/30 hover:text-white dark:hover:text-white'
-                            }`}
+                            className={`block px-4 py-2 text-sm rounded-lg transition-all duration-200 font-poppins ${isActive
+                              ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
+                              : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/30 hover:text-white dark:hover:text-white'
+                              }`}
                             onClick={onClose}
                           >
                             {isActive && (
@@ -378,11 +381,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <Link
                   key={item.name}
                   href={item.href!}
-                  className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${
-                    isActive
-                      ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
-                      : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
-                  }`}
+                  className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${isActive
+                    ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
+                    : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
+                    }`}
                   onClick={onClose}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
@@ -390,18 +392,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <div className="absolute left-0 top-0 h-full w-1 bg-red-600 rounded-r-full"></div>
                   )}
 
-                  <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${
-                    isActive ? 'text-red-600 dark:text-red-400' : 'text-red-200 dark:text-gray-400'
-                  }`}>
+                  <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-red-600 dark:text-red-400' : 'text-red-200 dark:text-gray-400'
+                    }`}>
                     {item.icon}
                   </span>
 
                   <span className="flex-1">{item.name}</span>
 
                   <svg
-                    className={`w-4 h-4 transition-all duration-200 ${
-                      isActive ? 'opacity-100 text-red-600' : 'opacity-0 group-hover:opacity-100 text-red-200'
-                    }`}
+                    className={`w-4 h-4 transition-all duration-200 ${isActive ? 'opacity-100 text-red-600' : 'opacity-0 group-hover:opacity-100 text-red-200'
+                      }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

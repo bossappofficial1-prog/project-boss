@@ -1,4 +1,7 @@
+import { OperatingHours, OperatingHoursFormData } from "@/types/dashboard";
 import { clsx, type ClassValue } from "clsx"
+import { RemotePattern } from "next/dist/shared/lib/image-config";
+import { useCallback } from "react";
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -72,4 +75,101 @@ export function formatChartDate(
             timeZone
         });
     }
+}
+
+export function parseRemotePatterns(patterns: string): RemotePattern[] {
+    // Helper to extract a RemotePattern from a URL string
+    const fromUrl = (urlStr: string): RemotePattern | null => {
+        try {
+            const url = new URL(urlStr);
+            const proto = url.protocol.replace(':', '');
+            const protocol = proto === 'http' || proto === 'https' ? (proto as 'http' | 'https') : undefined;
+            const pattern: RemotePattern = {
+                protocol,
+                hostname: url.hostname,
+                pathname: url.pathname === '/' ? '/**' : url.pathname
+            } as RemotePattern;
+            // Attach port if present
+            // @ts-ignore next RemotePattern allows optional port in runtime even if type differs
+            if (url.port) (pattern as any).port = url.port;
+            return pattern;
+        } catch {
+            return null;
+        }
+    };
+
+    const defaults: RemotePattern[] = [
+        { protocol: 'https', hostname: 'bossapp.id' },
+        { protocol: 'https', hostname: 'api.bossapp.id' },
+        { protocol: 'https', hostname: 'dashboard.bossapp.id' },
+        { protocol: 'http', hostname: 'localhost' }
+    ];
+
+    // Always include API origin if provided, so uploaded images served by API are allowed in dev/prod
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (apiUrl) {
+        const p = fromUrl(apiUrl);
+        if (p) {
+            const key = `${p.protocol || ''}//${p.hostname}:${(p as any).port || ''}`;
+            const seen = new Set(defaults.map(d => `${d.protocol || ''}//${d.hostname}:${(d as any).port || ''}`));
+            if (!seen.has(key)) defaults.push(p);
+        }
+    }
+
+    if (!patterns || patterns.trim() === '') {
+        return defaults;
+    }
+
+    try {
+        const parsed = patterns
+            .split(',')
+            .map((pattern) => {
+                const trimmed = pattern.trim();
+                if (!trimmed) return null;
+                if (trimmed.includes('://')) return fromUrl(trimmed);
+                // Hostname only -> assume https
+                return { protocol: 'https' as const, hostname: trimmed, pathname: '/**' } as RemotePattern;
+            })
+            .filter(Boolean) as RemotePattern[];
+
+        // Merge parsed with defaults (and API origin), avoiding duplicates
+        const map = new Map<string, RemotePattern>();
+        for (const p of [...defaults, ...parsed]) {
+            const key = `${p.protocol || ''}//${p.hostname}:${(p as any).port || ''}${p.pathname || ''}`;
+            map.set(key, p);
+        }
+        return Array.from(map.values());
+    } catch (error) {
+        console.warn('Error parsing remote patterns, using defaults:', error);
+        return defaults;
+    }
+}
+
+export const parseOperatingHours = (operatingHours: OperatingHours[]) => {
+    const hoursMap: Record<number, OperatingHoursFormData> = {}
+    operatingHours.forEach((hour: OperatingHours) => {
+        // Convert ISO time strings to HH:MM format
+        let openTime = '09:00'
+        let closeTime = '17:00'
+
+        if (hour.openTime) {
+            const openDate = new Date(hour.openTime)
+            openTime = openDate.toTimeString().slice(0, 5)
+        }
+
+        if (hour.closeTime) {
+            const closeDate = new Date(hour.closeTime)
+            closeTime = closeDate.toTimeString().slice(0, 5)
+        }
+
+        hoursMap[hour.dayOfWeek] = {
+            id: hour.id,
+            outletId: hour.outletId,
+            dayOfWeek: hour.dayOfWeek,
+            openTime: openTime,
+            closeTime: closeTime,
+            isOpen: hour.isOpen
+        }
+    })
+    return hoursMap
 }

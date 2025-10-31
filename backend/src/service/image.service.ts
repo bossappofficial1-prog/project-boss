@@ -1,6 +1,7 @@
 import { HttpStatus } from '../constants/http-status';
 import { AppError } from '../errors/app-error';
 import { deleteFile, fileExists, getFilePath, validateFilename } from '../utils/file.utils';
+import Console from '../utils/logger';
 import { extractFilenameFromUrl } from '../utils/url.utils';
 
 export class ImageService {
@@ -15,7 +16,8 @@ export class ImageService {
         const filePath = getFilePath(filename);
 
         if (!fileExists(filePath)) {
-            throw new AppError('File not found', HttpStatus.NOT_FOUND);
+            Console.warn(`File not found, skipping delete file`)
+            return;
         }
 
         try {

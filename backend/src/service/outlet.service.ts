@@ -156,8 +156,10 @@ export async function updateOutletService(id: string, data: UpdateOutletInput, o
     }
     const updatedOutlet = await OutletRepository.update(id, data);
 
+    // hapus gambar sebelumnya jika ada di local
     if (data.image && outlet.image) ImageService.deleteImageByUrl(outlet.image);
 
+    if (data.manualQrImageUrl && outlet.manualQrImageUrl) ImageService.deleteImageByUrl(outlet.manualQrImageUrl);
     return updatedOutlet;
 }
 

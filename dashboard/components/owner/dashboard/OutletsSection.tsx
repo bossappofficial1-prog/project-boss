@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import { toast } from 'sonner';
-import type { Outlet } from '@/types/dashboard';
+import { Outlet } from '@/types';
 
 interface OutletsSectionProps {
   outlets: Outlet[];

@@ -1,3 +1,4 @@
+import { Outlet } from '@/types';
 import { apiCall } from './base';
 
 export const outletManagementApi = {
@@ -8,7 +9,7 @@ export const outletManagementApi = {
 
   getById: (outletId: string) => apiCall<any>(`/outlets/${outletId}`),
 
-  update: (outletId: string, outletData: Partial<{ name: string; address: string; phone: string; latitude: number; longitude: number; image: string; description: string; isOpen: boolean; }>) =>
+  update: (outletId: string, outletData: Partial<Outlet>) =>
     apiCall<any>(`/outlets/${outletId}`, { method: 'PATCH', body: JSON.stringify(outletData) }),
 
   delete: (outletId: string) => apiCall<any>(`/outlets/${outletId}`, { method: 'DELETE' }),

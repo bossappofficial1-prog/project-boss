@@ -513,8 +513,8 @@
         "order_singular": "pesanan",
         "order_plural": "pesanan",
         "found": "ditemukan",
-        "error_title": "Gagal Memuat Pesanan",
-        "error_message": "Terjadi kesalahan saat mengambil pesanan Anda. Silakan coba lagi nanti.",
+        "error_title": "Belum Ada Pesanan",
+        "error_message": "Anda belum memiliki pesanan saat ini. Mulai jelajahi outlet dan pesan sekarang!",
         "no_orders_title": "Belum Ada Pesanan",
         "no_orders_description": "Anda belum pernah melakukan pesanan. Mulai pesan dari outlet terdekat!",
         "explore_outlets": "Jelajahi Outlet",
@@ -524,12 +524,107 @@
             "browse": "Lihat Outlet"
         },
         "status": {
+            "all": "Semua",
             "pending": "Menunggu Konfirmasi",
             "confirmed": "Pesanan Dikonfirmasi",
             "preparing": "Sedang Dipersiapkan",
             "ready": "Siap Diambil",
+            "on_going": "Sedang Berlangsung",
+            "completed": "Selesai",
+            "cancelled": "Dibatalkan",
+            "awaiting_payment": "Menunggu Pembayaran",
+            "processing": "Diproses",
+            "confirmed_label": "Dikonfirmasi",
+            "ready_label": "Siap Diambil",
+            "on_going_label": "Berlangsung",
+            "completed_label": "Selesai",
+            "cancelled_label": "Dibatalkan"
+        },
+        "tabs": {
+            "all": "Semua",
+            "awaiting_payment": "Belum Bayar",
+            "processing": "Diproses",
+            "confirmed": "Dikonfirmasi",
+            "ready": "Siap",
+            "on_going": "Berlangsung",
             "completed": "Selesai",
             "cancelled": "Dibatalkan"
+        },
+        "dateGroups": {
+            "today": "Hari Ini",
+            "yesterday": "Kemarin",
+            "thisWeek": "Minggu Ini",
+            "thisMonth": "Bulan Ini",
+            "older": "Lebih Lama"
+        },
+        "actions": {
+            "pay": "Bayar",
+            "cancel": "Batalkan",
+            "contact": "Hubungi",
+            "confirm": "Konfirmasi",
+            "reorder": "Pesan Lagi",
+            "viewDetails": "Lihat Detail",
+            "close": "Tutup",
+            "contactOutlet": "Hubungi Outlet"
+        },
+        "messages": {
+            "contactSoon": "Fitur hubungi outlet akan segera hadir",
+            "cancelSoon": "Fitur batalkan pesanan akan segera hadir",
+            "reorderSoon": "Fitur pesan lagi akan segera hadir",
+            "confirmSoon": "Fitur konfirmasi pesanan akan segera hadir",
+            "orderIdCopied": "Order ID disalin!"
+        },
+        "detail": {
+            "title": "Detail Pesanan",
+            "orderId": "Order ID",
+            "progress": "Progress Pesanan",
+            "currentStatus": "Saat ini",
+            "outletInfo": "Informasi Outlet",
+            "customerInfo": "Informasi Pelanggan",
+            "itemDetails": "Rincian Item",
+            "paymentSummary": "Ringkasan Pembayaran",
+            "paymentMethod": "Metode Pembayaran",
+            "subtotal": "Subtotal",
+            "serviceFee": "Biaya Layanan",
+            "transactionFee": "Biaya Transaksi",
+            "totalPayment": "Total Pembayaran",
+            "quantity": "Kuantitas"
+        },
+        "timeline": {
+            "awaiting_payment": "Menunggu Pembayaran",
+            "processing": "Diproses",
+            "confirmed": "Dikonfirmasi",
+            "ready": "Siap Diambil",
+            "on_going": "Sedang Berlangsung",
+            "completed": "Selesai"
+        },
+        "card": {
+            "orderId": "ID Pesanan",
+            "from": "Dari",
+            "items": "item"
+        },
+        "search": {
+            "placeholder": "Cari order ID, outlet, produk...",
+            "searching": "Mencari...",
+            "noResults": "Tidak ada hasil untuk \"{query}\"",
+            "resultsFound": "{count} pesanan ditemukan",
+            "clearSearch": "Hapus pencarian"
+        },
+        "sort": {
+            "label": "Urutkan",
+            "newest": "Terbaru",
+            "oldest": "Terlama",
+            "priceHigh": "Harga Tertinggi",
+            "priceLow": "Harga Terendah"
+        },
+        "timer": {
+            "timeRemaining": "Waktu Tersisa",
+            "expired": "Waktu Habis",
+            "hours": "Jam",
+            "minutes": "Menit",
+            "seconds": "Detik",
+            "expiringWarning": "Segera selesaikan pembayaran!",
+            "urgentWarning": "Pembayaran akan segera kadaluarsa!"
         }
     },
     "payment": {

@@ -50,12 +50,12 @@ const createDefaultHour = (day: number, outletId: string): OperatingHoursData =>
 export default function OperatingHoursManager({ outletId, operatingHoursData, onOperatingHoursChange }: OperatingHoursManagerProps) {
   const [initialHours, setInitialHours] = useState<Record<number, OperatingHoursData>>({})
   const [currentHours, setCurrentHours] = useState<Record<number, OperatingHoursData>>({})
+  console.log(operatingHoursData);
 
   // Mode: external state (untuk pre-submit) vs internal state (untuk existing outlet)
-  const isPreSubmitMode = operatingHoursData !== undefined && onOperatingHoursChange !== undefined
+  const isPreSubmitMode = !!operatingHoursData && !!onOperatingHoursChange
 
   const { data: fetchedHours, isLoading, error } = useOperatingHours(outletId)
-  const { mutate: upsertHours, isPending } = useUpsertOperatingHours()
 
   // 1. Inisialisasi state
   useEffect(() => {
@@ -218,12 +218,6 @@ export default function OperatingHoursManager({ outletId, operatingHoursData, on
       </div>
     )
   })
-
-  // <Card className="w-full">
-  //   <CardContent className="space-y-3">
-  //   </CardContent>
-  // </Card>
-
 }
 
 function CopyDayPopover({ sourceDay, onCopyToDays }: { sourceDay: number, onCopyToDays: (sourceDay: number, targetDays: number[]) => void }) {

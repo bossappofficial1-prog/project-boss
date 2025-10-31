@@ -169,13 +169,18 @@ export interface UpdateBusinessDto {
 export interface Outlet {
   id: string;
   name: string;
-  address?: string;
-  phone?: string;
-  businessId: string;
-  business?: Business;
-  products?: Product[];
-  createdAt: string;
-  updatedAt: string;
+  description?: string | null;
+  address: string | null;
+  phone?: string | null;
+  image?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  isOpen?: boolean;
+  manualBankName?: string | null;
+  manualBankAccount?: string | null;
+  manualAccountHolder?: string | null;
+  manualPaymentNote?: string | null;
+  manualQrImageUrl?: string | null;
 }
 
 export interface CreateOutletDto {
@@ -440,9 +445,9 @@ export interface AsyncState<T = any> {
 
 // Re-export specific types from other files for backward compatibility
 export type { PaginationResponse } from './api.type';
-export type { 
-  UserFormData, 
-  UserFormErrors, 
-  UserRowAction, 
-  UserBulkAction 
+export type {
+  UserFormData,
+  UserFormErrors,
+  UserRowAction,
+  UserBulkAction
 } from './user';

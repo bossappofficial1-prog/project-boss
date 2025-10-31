@@ -6,6 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
     User,
     Phone,
     Receipt,
@@ -246,6 +254,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+    const [hasStartedPayment, setHasStartedPayment] = useState(false);
     const router = useRouter();
     const { items: cartItems, clearOutletItems } = useCart();
     const t = useTranslations("paymentPage");
@@ -268,6 +278,20 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
         }
     }, []);
 
+    // Prevent accidental page leave during payment
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasStartedPayment && !isLoading) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasStartedPayment, isLoading]);
+
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
 
@@ -285,13 +309,16 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
         return Object.keys(newErrors).length === 0;
     };
 
-    const handlePayment = async () => {
+    const handlePayment = async (retryCount = 0) => {
         if (!validateForm()) {
             return;
         }
 
+        setHasStartedPayment(true);
         setPaymentError(null);
         setIsLoading(true);
+
+        const maxRetries = 2;
 
         try {
             // Construct payload for backend API sesuai format yang benar
@@ -411,9 +438,33 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
 
         } catch (error) {
             console.error('Payment failed:', error)
+            
+            // Check if it's a network error and should retry
+            const isNetworkError = error instanceof Error && (
+                error.message.includes('network') ||
+                error.message.includes('timeout') ||
+                error.message.includes('Failed to fetch') ||
+                error.message.includes('ERR_NETWORK')
+            );
+
+            if (isNetworkError && retryCount < maxRetries) {
+                console.log(`Retrying payment... Attempt ${retryCount + 1} of ${maxRetries}`);
+                setIsLoading(false);
+                setPaymentError(`Koneksi terputus. Mencoba ulang (${retryCount + 1}/${maxRetries})...`);
+                
+                // Retry after delay with exponential backoff
+                setTimeout(() => {
+                    handlePayment(retryCount + 1);
+                }, 1500 * (retryCount + 1)); // 1.5s, 3s
+                return;
+            }
+
             const errorMessage = error instanceof Error ? error.message : t("errors.paymentFailed");
-            setPaymentError(errorMessage);
-        } finally {
+            setPaymentError(
+                retryCount >= maxRetries
+                    ? `${errorMessage} (Sudah dicoba ${maxRetries + 1}x. Periksa koneksi internet Anda.)`
+                    : errorMessage
+            );
             setIsLoading(false);
         }
     };
@@ -449,6 +500,35 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 amount={checkoutData.grandTotal}
                 isLoading={isLoading}
             />
+
+            {/* Leave Confirmation Dialog */}
+            <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Tinggalkan Pembayaran?</DialogTitle>
+                        <DialogDescription>
+                            Pembayaran Anda belum selesai. Jika Anda meninggalkan halaman ini, progress pembayaran akan hilang dan Anda harus mengulang dari awal.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowLeaveDialog(false)}
+                        >
+                            Lanjutkan Bayar
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => {
+                                setHasStartedPayment(false);
+                                router.back();
+                            }}
+                        >
+                            Ya, Tinggalkan
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

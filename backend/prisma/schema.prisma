@@ -39,13 +39,13 @@ enum PaymentStatus {
 
 // Status alur pesanan secara keseluruhan
 enum OrderStatus {
-  AWAITING_PAYMENT // Menunggu pembayaran dikonfirmasi
-  AWAITING_VERIFICATION // Menunggu verifikasi manual oleh owner/admin
-  PROCESSING // Pesanan sedang diproses (bisa masuk antrian Redis/RabbitMQ)
-  READY // Siap diambil (untuk barang) atau siap dimulai (untuk jasa)
-  COMPLETED // Pesanan selesai
-  CANCELLED // Pesanan dibatalkan
-  CONFIRMED // Tambahkan status baru di sini
+  AWAITING_PAYMENT      
+  PROCESSING            
+  CONFIRMED             
+  READY                 
+  ON_GOING
+  COMPLETED             
+  CANCELLED             
 }
 
 enum WithdrawalStatus {

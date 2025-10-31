@@ -48,7 +48,11 @@ export function PaymentOrderSummary({ data }: PaymentOrderSummaryProps) {
                         <span className="text-gray-600">{t("orderSummary.subtotal")}</span>
                         <span>{formatCurrency(data.subtotal)}</span>
                     </div>
-                    {typeof data.transactionFee === "number" && data.transactionFee >= 0 && (
+                    {/* Hide transaction fee for manual payment methods */}
+                    {typeof data.transactionFee === "number" && 
+                     data.transactionFee > 0 && 
+                     data.paymentMethod.type !== 'QRIS_OFFLINE' && 
+                     data.paymentMethod.type !== 'OWNER_TRANSFER' && (
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-600">{translateWithFallback("orderSummary.transactionFee", "Biaya Transaksi")}</span>
                             <span>{formatCurrency(data.transactionFee)}</span>

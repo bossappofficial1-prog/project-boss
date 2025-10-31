@@ -5,6 +5,8 @@ import { SocketProvider } from "@/context/SocketContext";
 import { ThemeProvider } from "next-themes";
 import { FeatureGuideProvider } from "@/providers/FeatureGuideProvider";
 import { FeatureGuideOverlay } from "@/components/guides/FeatureGuideOverlay";
+import { SnackbarProvider } from "@/context/SnackbarContext";
+import { SnackbarContainer } from "@/components/shared/Snackbar";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -99,14 +101,17 @@ export default function Layout({
           enableSystem
           disableTransitionOnChange
         >
-          <FeatureGuideProvider>
-            <SocketProvider>
-              <RootLayout>
-                {children}
-              </RootLayout>
-            </SocketProvider>
-            <FeatureGuideOverlay />
-          </FeatureGuideProvider>
+          <SnackbarProvider>
+            <FeatureGuideProvider>
+              <SocketProvider>
+                <RootLayout>
+                  {children}
+                </RootLayout>
+              </SocketProvider>
+              <FeatureGuideOverlay />
+            </FeatureGuideProvider>
+            <SnackbarContainer />
+          </SnackbarProvider>
         </ThemeProvider>
       </body>
     </html>

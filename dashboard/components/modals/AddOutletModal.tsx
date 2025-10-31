@@ -20,6 +20,7 @@ import { useUpsertOperatingHours } from '@/hooks/useOperatingHours'
 import { outletManagementApi, uploadApi } from '@/lib/api'
 import type { OutletDetail, OperatingHours, OperatingHoursFormData } from '@/types/dashboard'
 import { isEqual } from 'lodash'
+import { parseOperatingHours } from '@/lib/utils'
 
 // 1. Skema Validasi dengan Zod
 const outletSchema = z.object({
@@ -212,36 +213,6 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
       toast.error(e?.message || 'Gagal menambah outlet. Coba lagi.')
     }
   })
-
-  // Memoize operating hours parsing to prevent recalculation
-  const parseOperatingHours = useCallback((operatingHours: OperatingHours[]) => {
-    const hoursMap: Record<number, OperatingHoursFormData> = {}
-    operatingHours.forEach((hour: OperatingHours) => {
-      // Convert ISO time strings to HH:MM format
-      let openTime = '09:00'
-      let closeTime = '17:00'
-
-      if (hour.openTime) {
-        const openDate = new Date(hour.openTime)
-        openTime = openDate.toTimeString().slice(0, 5)
-      }
-
-      if (hour.closeTime) {
-        const closeDate = new Date(hour.closeTime)
-        closeTime = closeDate.toTimeString().slice(0, 5)
-      }
-
-      hoursMap[hour.dayOfWeek] = {
-        id: hour.id,
-        outletId: hour.outletId,
-        dayOfWeek: hour.dayOfWeek,
-        openTime: openTime,
-        closeTime: closeTime,
-        isOpen: hour.isOpen
-      }
-    })
-    return hoursMap
-  }, [])
 
   // Memoize form population to prevent unnecessary re-renders
   const populateForm = useCallback((outletData: OutletDetail) => {

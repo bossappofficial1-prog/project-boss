@@ -111,6 +111,13 @@ export default function BottomNav() {
         enabled: mainRoutes.includes(pathname),
     });
 
+    // Reset CSS variable when BottomNav is hidden
+    React.useEffect(() => {
+        if (!mainRoutes.includes(pathname)) {
+            document.documentElement.style.setProperty("--bottomnav-height", "0px");
+        }
+    }, [pathname, mainRoutes]);
+
     if (!mainRoutes.includes(pathname)) return null;
     return (
         <div

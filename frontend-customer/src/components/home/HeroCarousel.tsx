@@ -24,7 +24,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
 
     if (slides.length === 0) {
         return (
-            <div className="relative overflow-hidden rounded-xl border border-border/40 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 p-8 text-primary shadow-sm">
+            <div className="relative overflow-hidden rounded-md border border-border/40 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 p-4 text-primary">
                 <div className="max-w-xl space-y-2">
                     <p className="text-sm font-semibold uppercase tracking-wide">{t("hero.badge")}</p>
                     <h2 className="text-2xl font-bold leading-tight">{t("hero.fallbackTitle")}</h2>

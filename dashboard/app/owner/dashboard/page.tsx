@@ -21,11 +21,8 @@ export default function DashboardPage() {
     business,
     outlets,
     selectedOutlet,
-    selectedDate,
-    isConnected,
     isLoading,
     globalError,
-    setSelectedDate,
     refetch,
   } = useDashboardData();
 
