@@ -75,6 +75,8 @@ export class UserRepository {
                                 manualPaymentNote: true,
                                 manualQrImageUrl: true,
                                 phone: true,
+                                createdAt: true,
+                                updatedAt: true
                             },
                             orderBy: [{ createdAt: "desc" }]
                         }

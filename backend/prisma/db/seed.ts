@@ -42,7 +42,20 @@ async function main() {
     console.log('👥 Creating users...');
     const hashedPassword = await hash('password123', 10);
     const usersData = [{ name: 'Default Owner', email: 'owner@example.com' }, { name: 'John Coffee', email: 'john@coffee.com' }, { name: 'Sarah Food', email: 'sarah@food.com' }, { name: 'Lisa Beauty', email: 'lisa@beauty.com' }, { name: 'Mike Tech', email: 'mike@tech.com' }, { name: "admin", email: "admin@gmail.com", role: UserRole.ADMIN }];
-    const users = await Promise.all(usersData.map((user, i) => prisma.user.create({ data: { ...user, phone: `+628123456789${i}`, password: hashedPassword, ...(user.role ? { role: user.role } : { role: UserRole.OWNER }), isVerified: true } })));
+    const users = await Promise.all(usersData.map(async (user, i) => {
+        // Gunakan upsert untuk handle duplicate
+        return prisma.user.upsert({
+            where: { email: user.email },
+            update: {},
+            create: { 
+                ...user, 
+                phone: `+628123456789${i}`, 
+                password: hashedPassword, 
+                ...(user.role ? { role: user.role } : { role: UserRole.OWNER }), 
+                isVerified: true 
+            }
+        });
+    }));
     console.log('✅ Users created.');
 
     // --- 2. Create Businesses ---

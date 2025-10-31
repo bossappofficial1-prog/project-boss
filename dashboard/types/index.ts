@@ -181,6 +181,12 @@ export interface Outlet {
   manualAccountHolder?: string | null;
   manualPaymentNote?: string | null;
   manualQrImageUrl?: string | null;
+  businessId: string;
+  business?: Business;
+  products?: Product[];
+  createdAt: string;
+  updatedAt: string;
+  qrisImage?: string | null;
 }
 
 export interface CreateOutletDto {

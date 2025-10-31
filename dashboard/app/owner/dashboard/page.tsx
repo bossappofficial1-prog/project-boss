@@ -100,6 +100,7 @@ export default function DashboardPage() {
           onAddOutlet={handleAddOutlet}
           onEditOutlet={handleEditOutlet}
           onDeleteOutlet={handleDeleteOutlet}
+          onQRISUpdate={refetch}
           isLoading={isLoading}
         />
 

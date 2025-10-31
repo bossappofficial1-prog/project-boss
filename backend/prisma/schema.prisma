@@ -274,6 +274,9 @@ model Outlet {
   manualAccountHolder String?
   manualPaymentNote   String?
   manualQrImageUrl    String?
+  
+  // QRIS Image untuk pembayaran
+  qrisImage           String?
 
   // Relasi: Satu outlet bisa memiliki banyak produk
   products Product[]

@@ -20,6 +20,7 @@ import securityRouter from "./security.route";
 import queueMonitoringRouter from "./queue-monitoring.route";
 import notificationRouter from "./notification.route";
 import adminRouter from "./admin.route";
+import transactionRouter from "./transaction.route";
 import { ResponseUtil } from "../utils";
 import { paymentMethod } from "../constants/payment-method";
 
@@ -46,6 +47,7 @@ apiRouter.use('/upload', uploadRouter)
 apiRouter.use('/security', securityRouter)
 apiRouter.use('/queue-monitoring', queueMonitoringRouter)
 apiRouter.use('/notifications', notificationRouter)
+apiRouter.use('/transactions', transactionRouter)
 apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
 
 export default apiRouter

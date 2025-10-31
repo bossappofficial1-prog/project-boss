@@ -7,6 +7,11 @@ import { useEffect } from 'react';
 export default function ThemeToggle() {
   const { theme, setTheme, actualTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const themes = [
     {
@@ -38,12 +43,26 @@ export default function ThemeToggle() {
     }
   ];
 
-  const currentTheme = themes.find(t => t.value === theme) || themes[0];
-  const [mounted, setMounted] = useState(false);
+  const currentTheme = themes.find(t => t.value === theme) || themes[2]; // Default to system
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Prevent hydration mismatch by not rendering dynamic content until mounted
+  if (!mounted) {
+    return (
+      <div className="relative">
+        <button
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          disabled
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
+          </svg>
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">
@@ -58,7 +77,7 @@ export default function ThemeToggle() {
         </svg>
       </button>
 
-      {mounted && isOpen && (
+      {isOpen && (
         <>
           {/* Backdrop */}
           <div

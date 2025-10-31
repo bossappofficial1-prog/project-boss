@@ -21,10 +21,11 @@ export const apiClient: AxiosInstance = axios.create({
   withCredentials: true, // Include cookies in requests
 });
 
-// Request interceptor (removed auth token logic since using httpOnly cookies)
+// Request interceptor - cookies are sent automatically with withCredentials
 apiClient.interceptors.request.use(
   (config) => {
-    // No need to add Authorization header - cookies are sent automatically with withCredentials: true
+    // Cookies (including auth token) are sent automatically with withCredentials: true
+    // No need to manually add Authorization header
     return config;
   },
   (error) => {
@@ -39,10 +40,10 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      (async () => {
-        await apiClient.post("/auth/logout")
-      })()
-
+      // Redirect to login - cookie will be cleared by backend
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
       return Promise.reject(error);
     }
 

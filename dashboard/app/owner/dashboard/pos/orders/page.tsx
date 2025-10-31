@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useOutletContext } from '@/components/providers/OutletProvider'
 import { productApi } from '@/lib/api'
 import { resolveUploadImageUrl } from '@/lib/url'
+import QRISViewModal from '@/components/modals/QRISViewModal'
 
 type Props = {}
 
@@ -18,6 +19,7 @@ export default function POSOrdersPage({}: Props) {
   const [paymentMethod, setPaymentMethod] = React.useState<'cash' | 'qris' | 'online'>('cash')
   const [loading, setLoading] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')
+  const [showQRISModal, setShowQRISModal] = React.useState(false)
 
   // Fetch products
   React.useEffect(() => {
@@ -251,13 +253,58 @@ export default function POSOrdersPage({}: Props) {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Metode Pembayaran *</label>
                   <select
                     value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'qris' | 'online')}
+                    onChange={(e) => {
+                      const method = e.target.value as 'cash' | 'qris' | 'online';
+                      setPaymentMethod(method);
+                      // Auto-show QRIS modal when QRIS is selected and outlet has QRIS
+                      if (method === 'qris' && selectedOutlet?.qrisImage) {
+                        setShowQRISModal(true);
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-base"
                   >
                     <option value="cash">Cash / Bayar di Tempat</option>
                     <option value="qris">QRIS</option>
                     <option value="online">Transfer Online</option>
                   </select>
+                  
+                  {/* QRIS Info */}
+                  {paymentMethod === 'qris' && (
+                    <div className="mt-2">
+                      {selectedOutlet?.qrisImage ? (
+                        <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span className="text-xs font-medium text-green-800 dark:text-green-300">
+                                QRIS tersedia
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowQRISModal(true)}
+                              className="text-xs text-green-600 dark:text-green-400 hover:underline font-medium"
+                            >
+                              Tampilkan QR
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                          <div className="flex items-start space-x-2">
+                            <svg className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <p className="text-xs text-yellow-800 dark:text-yellow-300">
+                              Outlet ini belum memiliki QRIS. Hubungi admin untuk setup QRIS.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -315,6 +362,15 @@ export default function POSOrdersPage({}: Props) {
           </div>
         </div>
       </div>
+
+      {/* QRIS View Modal */}
+      <QRISViewModal
+        open={showQRISModal}
+        onOpenChange={setShowQRISModal}
+        outletId={selectedOutlet?.id}
+        outletName={selectedOutlet?.name}
+        qrisImageUrl={selectedOutlet?.qrisImage}
+      />
     </div>
   )
 }
