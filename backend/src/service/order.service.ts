@@ -1,4 +1,4 @@
-import { OrderStatus, Product, PaymentStatus } from "@prisma/client";
+import { OrderStatus, PaymentStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { getRabbitMQChannel } from "../config/rabbitmq";
 import { messagePublisher } from "./message-publisher.service";
@@ -10,8 +10,12 @@ import { CreateOrderInput } from "../schemas/order.schema";
 import { createMidtransTransactionService } from './payment.service';
 import { getOutletByIdService } from "./outlet.service";
 import { getBusinessByIdService } from "./business.service"; // Impor service bisnis
-import { generateOrderCode } from "../utils";
 import { BookingRepository } from "../repositories/booking.repository";
+import { createOrderRecord } from "./helpers/order-create.helper";
+import { PaymentRepository } from "../repositories/payment.repository";
+import { SocketEmitter } from "../socket/socket-emiiter";
+import { MidtransTransactionStatus, PaymentResponse } from "../types/Others";
+import Console from "../utils/logger";
 
 // List goods orders by outlet with optional status filter and pagination
 export async function getGoodsOrdersByOutletService(
@@ -49,7 +53,12 @@ export async function getGoodsOrdersByOutletService(
             take: limit,
             include: {
                 items: { include: { product: true } },
-                guestCustomer: true
+                guestCustomer: true,
+                transaction: {
+                    select: {
+                        paymentProofUrl: true,
+                    }
+                }
             }
         })
     ]);
@@ -83,12 +92,14 @@ export async function getServiceQueueByOutletService(
     const where = {
         outletId,
         // Tampilkan antrian layanan untuk beberapa status yang relevan
-        orderStatus: { in: [
-            OrderStatus.AWAITING_PAYMENT,
-            OrderStatus.PROCESSING,
-            OrderStatus.READY,
-            OrderStatus.CONFIRMED,
-        ] },
+        orderStatus: {
+            in: [
+                OrderStatus.AWAITING_PAYMENT,
+                OrderStatus.PROCESSING,
+                OrderStatus.READY,
+                OrderStatus.CONFIRMED,
+            ]
+        },
         items: { some: { product: { type: 'SERVICE' } } }
     } as const;
 
@@ -121,288 +132,6 @@ export async function getServiceQueueByOutletService(
     };
 }
 
-async function createOrderInDbService(data: CreateOrderInput) {
-    const { items, outletId, bookingSlotId } = data;
-
-    // Validasi booking slot jika ada
-    if (bookingSlotId) {
-        const slot = await db.bookingSlot.findUnique({ where: { id: bookingSlotId } });
-        if (!slot) {
-            throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
-        }
-        if (slot.status !== 'AVAILABLE') {
-            throw new AppError(Messages.BOOKING_SLOT_UNAVAILABLE, HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    const outlet = await getOutletByIdService(outletId);
-    const business = await getBusinessByIdService(outlet.businessId);
-
-    // SECURITY FIX: Use transaction for atomic stock check and order creation
-    return await db.$transaction(async (tx) => {
-    let subTotal = 0;
-    const productDetails: (Product & { orderQuantity: number })[] = [];
-
-        // SECURITY FIX: Check stock and reserve it atomically
-        for (const item of items) {
-            const product = await tx.product.findUnique({
-                where: { id: item.productId },
-                select: {
-                    id: true,
-                    name: true,
-                    price: true,
-                    type: true,
-                    quantity: true,
-                    outletId: true,
-                    status: true,
-                    serviceDurationMinutes: true
-                }
-            });
-
-            if (!product) {
-                throw new AppError(`Produk dengan ID ${item.productId} tidak ditemukan`, HttpStatus.NOT_FOUND);
-            }
-
-            // SECURITY FIX: Validate product belongs to the outlet
-            if (product.outletId !== outletId) {
-                throw new AppError(`Produk ${product.name} tidak tersedia di outlet ini`, HttpStatus.BAD_REQUEST);
-            }
-
-            // SECURITY FIX: Check if product is active
-            if (product.status !== 'ACTIVE') {
-                throw new AppError(`Produk ${product.name} tidak aktif`, HttpStatus.BAD_REQUEST);
-            }
-
-            // SECURITY FIX: Validate quantity limits
-            if (item.quantity <= 0 || item.quantity > 1000) {
-                throw new AppError(`Quantity tidak valid untuk produk ${product.name}`, HttpStatus.BAD_REQUEST);
-            }
-
-            // SECURITY FIX: Atomic stock check and decrement
-            if (product.type === 'GOODS') {
-                if (!product.quantity || product.quantity < item.quantity) {
-                    throw new AppError(`Stok produk ${product.name} tidak mencukupi. Tersedia: ${product.quantity}`, HttpStatus.BAD_REQUEST);
-                }
-
-                // Immediately decrement stock to prevent race conditions
-                await tx.product.update({
-                    where: { id: product.id },
-                    data: { quantity: { decrement: item.quantity } },
-                });
-            }
-
-            subTotal += product.price * item.quantity;
-            productDetails.push({
-                ...product,
-                orderQuantity: item.quantity,
-                quantity: product.quantity || 0,
-                costPrice: 0,
-                description: null,
-                unit: null,
-                transactionFeeBearer: null,
-                serviceDurationMinutes: product.serviceDurationMinutes ?? null,
-                image: null,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
-        }
-
-        // SECURITY FIX: Validate minimum and maximum order amount
-        if (subTotal < 1000) { // Minimum 1000 rupiah
-            throw new AppError("Minimum order adalah Rp 1.000", HttpStatus.BAD_REQUEST);
-        }
-        if (subTotal > 50000000) { // Maximum 50 juta rupiah
-            throw new AppError("Maximum order adalah Rp 50.000.000", HttpStatus.BAD_REQUEST);
-        }
-
-        // SECURITY: Additional validation for suspicious order patterns
-        const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-        if (totalItems > 100) {
-            throw new AppError("Terlalu banyak item dalam satu pesanan", HttpStatus.BAD_REQUEST);
-        }
-
-        // SECURITY: Check if order value is suspicious (too high per item)
-        const averageItemPrice = subTotal / totalItems;
-        if (averageItemPrice > 1000000) { // Average > 1 juta per item
-            console.warn(`[SUSPICIOUS ORDER] High average item price: ${averageItemPrice} for phone: ${data.guestCustomer.phone.slice(-4)}`);
-        }
-
-    const midtransFee = Math.round(subTotal * 0.01); // 1% midtrans fee
-        const appFee = Math.round(subTotal * 0.03); // 3% platform fee
-        const feeBearer = business.defaultTransactionFeeBearer;
-        let totalAmount = subTotal;
-
-        if (feeBearer === 'CUSTOMER') {
-            totalAmount += midtransFee + appFee;
-        }
-
-        // SECURITY: Log high-value orders for monitoring
-        if (totalAmount > 5000000) { // Orders above 5 million
-            console.warn(`[HIGH VALUE ORDER] Amount: ${totalAmount} for phone: ${data.guestCustomer.phone.slice(-4)}`);
-        }
-
-        // Before creating any record, validate booking overlap for SERVICE items (capacity-aware)
-        const serviceItems = productDetails.filter(p => p.type === 'SERVICE');
-        if (serviceItems.length > 0 && !bookingSlotId) {
-            // Service booking without explicit slot must provide bookingDate
-            if (!data.bookingDate) {
-                throw new AppError("Booking jasa wajib memiliki waktu booking.", HttpStatus.BAD_REQUEST);
-            }
-
-            const requestedStart = new Date(data.bookingDate);
-
-            // Utility: check overlap of two [start,end) intervals
-            const overlaps = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) => {
-                return aStart < bEnd && bStart < aEnd;
-            };
-
-            for (const svc of serviceItems) {
-                const durationMin = svc.serviceDurationMinutes ?? 60; // default 60 minutes if unspecified
-                const requestedEnd = new Date(requestedStart.getTime() + durationMin * 60_000);
-
-                // Determine allowed parallel capacity (default 1)
-                const capacityRecord = await tx.serviceCapacity.findUnique({
-                    where: { productId: svc.id }
-                });
-                const maxParallel = capacityRecord?.maxParallel ?? 1;
-
-                // Fetch potentially conflicting orders for same service product in active statuses
-                const activeStatuses = [
-                    OrderStatus.AWAITING_PAYMENT,
-                    OrderStatus.PROCESSING,
-                    OrderStatus.READY,
-                    OrderStatus.CONFIRMED,
-                ];
-
-                const existing = await tx.order.findMany({
-                    where: {
-                        outletId,
-                        orderStatus: { in: activeStatuses },
-                        items: { some: { productId: svc.id } },
-                    },
-                    include: {
-                        bookingSlot: true,
-                        items: { include: { product: { select: { id: true, serviceDurationMinutes: true, type: true } } } }
-                    }
-                });
-
-                // Count overlaps
-                let overlapping = 0;
-                for (const ex of existing) {
-                    let exStart: Date | null = null;
-                    let exEnd: Date | null = null;
-
-                    if (ex.bookingSlot) {
-                        exStart = new Date(ex.bookingSlot.startTime);
-                        exEnd = new Date(ex.bookingSlot.endTime);
-                    } else if (ex.bookingDate) {
-                        // Use duration for the same service product within that order
-                        const exItem = ex.items.find(it => it.product.id === svc.id);
-                        const exDuration = exItem?.product.serviceDurationMinutes ?? durationMin;
-                        exStart = new Date(ex.bookingDate);
-                        exEnd = new Date(exStart.getTime() + (exDuration ?? 60) * 60_000);
-                    }
-
-                    if (exStart && exEnd && overlaps(requestedStart, requestedEnd, exStart, exEnd)) {
-                        overlapping += 1;
-                        if (overlapping >= maxParallel) break;
-                    }
-                }
-
-                if (overlapping >= maxParallel) {
-                    throw new AppError(
-                        `Waktu booking bentrok untuk layanan ${svc.name}. Silakan pilih waktu lain.`,
-                        HttpStatus.CONFLICT
-                    );
-                }
-            }
-        }
-
-        // SECURITY: Create guest customer with sanitized data
-        let customer = await tx.guestCustomer.findFirst({
-            where: { phone: data.guestCustomer.phone },
-        });
-
-        if (!customer) {
-            // SECURITY: Sanitize and validate guest customer data
-            const sanitizedGuestData = {
-                name: data.guestCustomer.name.trim().replace(/\s+/g, ' '), // Normalize whitespace
-                phone: data.guestCustomer.phone.replace(/[^\d+]/g, ''), // Keep only digits and +
-            };
-
-            // SECURITY: Additional validation
-            if (sanitizedGuestData.name.length < 2 || sanitizedGuestData.name.length > 100) {
-                throw new AppError("Nama tidak valid", HttpStatus.BAD_REQUEST);
-            }
-
-            if (sanitizedGuestData.phone.length < 10 || sanitizedGuestData.phone.length > 15) {
-                throw new AppError("Nomor telepon tidak valid", HttpStatus.BAD_REQUEST);
-            }
-
-            customer = await tx.guestCustomer.create({
-                data: sanitizedGuestData,
-            });
-
-            // SECURITY: Log new guest customer creation
-            console.log(`[NEW GUEST] Created guest customer with phone ending: ${sanitizedGuestData.phone.slice(-4)}`);
-        } else {
-            // SECURITY: Log returning guest customer
-            console.log(`[RETURNING GUEST] Found existing customer with phone ending: ${customer.phone?.slice(-4) || 'unknown'}`);
-        }
-
-        // Create order
-        const order = await tx.order.create({
-            data: {
-                id: generateOrderCode({ name: outlet.name, maxLength: 12 }, { randomLength: 6 }),
-                guestCustomerId: customer.id,
-                outletId,
-                totalAmount,
-                midtransFee: midtransFee,
-                appFee: appFee,
-                chargedTo: feeBearer,
-                bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
-            },
-        });
-
-        // Create order items
-        await tx.orderItem.createMany({
-            data: items.map((item) => ({
-                orderId: order.id,
-                productId: item.productId,
-                quantity: item.quantity,
-                priceAtTimeOfOrder: productDetails.find(p => p.id === item.productId)?.price || 0,
-            })),
-        });
-
-        // Update booking slot if exists
-        if (bookingSlotId) {
-            await tx.bookingSlot.update({
-                where: { id: bookingSlotId },
-                data: { status: 'BOOKED', orderId: order.id },
-            });
-        }
-
-        // Emit new order event dengan error handling yang lebih baik
-        try {
-            const orderData = await tx.order.findUnique({
-                where: { id: order.id },
-                include: {
-                    items: {
-                        include: { product: true }
-                    },
-                    guestCustomer: true,
-                    outlet: true
-                }
-            });
-
-        } catch (socketError) {
-            console.error('❌ Error emitting new_order event:', socketError);
-            // Tidak throw error karena order sudah berhasil dibuat
-        }
-
-        return { order, midtransFee, appFee, feeBearer, totalAmount };
-    });
-}
 
 export async function getOrderByIdService(id: string, ownerId?: string) {
     const order = await OrderRepository.findById(id);
@@ -466,7 +195,7 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
 
     // Jika payment method adalah 'cash', buat order offline tanpa Midtrans
     if (paymentMethod === 'cash') {
-        const { order } = await createOrderInDbService(data);
+        const { order } = await createOrderRecord(data);
 
         const updatedOrder = await db.order.update({
             where: { id: order.id },
@@ -480,7 +209,7 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
     }
 
     // Default flow: gunakan Midtrans untuk pembayaran online/QRIS
-    const { order, midtransFee, appFee, feeBearer, totalAmount } = await createOrderInDbService(data);
+    const { order, midtransFee, appFee, feeBearer, totalAmount } = await createOrderRecord(data);
 
     const chargeTo = feeBearer.toLowerCase() as 'customer' | 'owner';
 
@@ -504,6 +233,19 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
         throw new Error('Order not found');
     }
 
+    if (status === OrderStatus.PROCESSING) {
+        Console.log('UPDATE TRANSACTION STATUS TO SUCCESS');
+
+        if (order.transaction?.id) {
+            await db.transaction.update({
+                where: {
+                    id: order.transaction.id,
+                },
+                data: { status: PaymentStatus.SUCCESS },
+            });
+        }
+    }
+
     if (status === 'COMPLETED' && order?.bookingSlot) {
         await db.bookingSlot.update({
             where: { id: order.bookingSlot.id },
@@ -514,7 +256,10 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
     // Update pesanan dengan include data yang diperlukan
     const updatedOrder = await db.order.update({
         where: { id: orderId },
-        data: { orderStatus: status },
+        data: {
+            orderStatus: status,
+            ...(status === OrderStatus.PROCESSING ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
+        },
         include: {
             items: {
                 include: {
@@ -522,12 +267,41 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
                 }
             },
             outlet: true,
-            guestCustomer: true
+            guestCustomer: true,
+            transaction: true,
         }
     });
 
-    // Kirim notifikasi status update melalui message publisher
-    await messagePublisher.publishOrderNotification(updatedOrder.id, updatedOrder.orderStatus);
+    // // Kirim notifikasi status update melalui message publisher
+    // await messagePublisher.publishOrderNotification(updatedOrder.id, updatedOrder.orderStatus);
+
+    // Broadcast status update ke customer melalui socket
+    try {
+        const customerPhone = updatedOrder.guestCustomer?.phone;
+        if (customerPhone) {
+            const statusMessages: Partial<Record<OrderStatus, string>> = {
+                AWAITING_PAYMENT: 'Menunggu pembayaran',
+                PROCESSING: 'Pesanan sedang diproses',
+                READY: 'Pesanan siap diambil',
+                COMPLETED: 'Pesanan selesai',
+                CANCELLED: 'Pesanan dibatalkan',
+                CONFIRMED: 'Pesanan dikonfirmasi',
+            };
+
+            SocketEmitter.getInstance().emitToCustomer(customerPhone, {
+                orderId: updatedOrder.id,
+                amount: updatedOrder.totalAmount,
+                status,
+                transactionStatus: status,
+                isManual: Boolean(updatedOrder.transaction?.isManual),
+                paymentMethod: updatedOrder.transaction?.paymentMethod || 'unknown',
+                message: statusMessages[status] ?? 'Status pesanan diperbarui',
+                type: 'order_status_update'
+            });
+        }
+    } catch (customerSocketError) {
+        console.error('❌ Error emitting customer order status event:', customerSocketError);
+    }
 
     // Jika status diubah menjadi COMPLETED dan ini adalah pesanan layanan
     if (status === 'COMPLETED' && updatedOrder.items.some(item => item.product.type === 'SERVICE')) {
@@ -656,4 +430,41 @@ export async function getOrderByCustomerPhoneService(phone: string) {
     })
 
     return customerOrderMap
+}
+
+export async function expirePaymentOrder(orderId: string) {
+    const order = await OrderRepository.findById(orderId);
+
+    if (!order) throw new AppError(`Order: ${orderId} NOT FOUND`);
+
+    if (order.transaction && order.transaction.status !== 'PENDING' && order.paymentStatus !== 'PENDING') {
+        console.log(`Payment ${orderId} is already ${order.transaction.status}, skipping expiration`);
+        return;
+    };
+
+    await PaymentRepository.updatePaymentStatusByOrder(orderId, `EXPIRED`);
+    SocketEmitter.getInstance().sendTestMessage(order.outletId, 'Expire Payment')
+    SocketEmitter.getInstance().emitToCustomer(order.guestCustomer.phone!, {
+        orderId,
+        amount: order.totalAmount,
+        status: 'expired',
+        transactionStatus: 'expired',
+        paymentMethod: order.transaction?.paymentMethod || 'unknown',
+        isManual: order.transaction?.isManual || false,
+        message: 'Pembayaran kedaluwarsa',
+        type: 'payment_expired'
+    });
+}
+
+export async function getOrderDetailsService(orderId: string) {
+    const order = await OrderRepository.findById(orderId);
+
+}
+
+export const orderMapping = (order: Awaited<ReturnType<typeof OrderRepository.findById>>) => {
+    const { guestCustomer, transaction, items, outlet, bookingSlot, ...restOrder } = order!
+
+    return {
+
+    }
 }

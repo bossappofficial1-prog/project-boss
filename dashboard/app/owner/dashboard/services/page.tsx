@@ -20,7 +20,11 @@ export default function ServicesPage() {
     selectedOutlet,
     searchQuery,
     statusFilter,
+    currentPage,
+    itemsPerPage,
+    totalServices,
     isLoading,
+    isFetching,
     error,
     hasBusinessProfile,
     hasOutlet,
@@ -28,6 +32,7 @@ export default function ServicesPage() {
     setStatusFilter,
     setError,
     fetchServices,
+    handlePaginationChange,
     handleSearchClick,
     handleExportServices,
     formatCurrency,
@@ -119,8 +124,14 @@ export default function ServicesPage() {
             <ServicesDesktopTable
               services={services as any}
               onEdit={(s) => { setSelectedService(s); setShowEditModal(true); }}
+              onRefresh={fetchServices}
               formatCurrency={formatCurrency}
               formatDuration={formatDuration}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              totalServices={totalServices}
+              onPaginationChange={handlePaginationChange}
+              isFetching={isFetching}
             />
 
             {/* Mobile Cards */}

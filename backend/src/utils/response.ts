@@ -99,26 +99,26 @@ export class ResponseUtil {
     // Overload signatures for backward compatibility
     static paginated<T>(
         res: Response,
-        data: T[],
+        data: T,
         page: number,
         limit: number,
         total: number,
         message?: any
     ): Response<PaginatedResponse<T>>;
 
-    static paginated<T>(
-        res: Response,
-        data: T[],
-        page: number,
-        limit: number,
-        total: number,
-        extra: {
-            totalPages?: number;
-            hasNextPage?: boolean;
-            hasPrevPage?: boolean;
-        },
-        message?: any
-    ): Response<PaginatedResponse<T>>;
+    // static paginated<T>(
+    //     res: Response,
+    //     data: T[],
+    //     page: number,
+    //     limit: number,
+    //     total: number,
+    //     extra: {
+    //         totalPages?: number;
+    //         hasNextPage?: boolean;
+    //         hasPrevPage?: boolean;
+    //     },
+    //     message?: any
+    // ): Response<PaginatedResponse<T>>;
 
     // Implementation
     static paginated<T>(

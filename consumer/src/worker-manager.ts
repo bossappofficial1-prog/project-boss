@@ -22,7 +22,7 @@ class WorkerManager {
 
         try {
             await Promise.all([
-                this.workers.notification.start(),
+                // this.workers.notification.start(),
                 this.workers.serviceOrder.start(),
                 this.workers.email.start(), // Jalankan worker baru
                 this.workers.payment.start(), // Jalankan worker baru

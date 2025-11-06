@@ -4,6 +4,11 @@ import { config } from "./config";
 import { connectRabbitMQ } from "./config/rabbitmq";
 import { socketUtils } from "./utils/socket.utils";
 import http from "node:http"
+import { SocketEmitter } from "./socket/socket-emiiter";
+import { Server } from "socket.io";
+import { socketConfigOption } from "./config/socket";
+import { initSocket } from "./socket";
+import { setUpJobs } from "./jobs";
 
 function getNetworkAdresses(): string[] {
     const nets = networkInterfaces();
@@ -23,17 +28,15 @@ function getNetworkAdresses(): string[] {
 async function startServer(port: number) {
     try {
         const server = http.createServer(app)
-        socketUtils.init(server)
+        // socketUtils.init(server)
+
+        const io = new Server(server, socketConfigOption)
+        initSocket(io)
+        SocketEmitter.getInstance().init(io)
+
+        setUpJobs();
 
         await connectRabbitMQ();
-
-        // Initialize Elasticsearch (optional - won't crash app if ES is down)
-        // try {
-        //     const { initializeElasticsearch } = await import('./service/elastic.service');
-        //     await initializeElasticsearch();
-        // } catch (error) {
-        //     console.warn('⚠️ Elasticsearch initialization failed, continuing without search features:', error);
-        // }
 
         server.listen(port, () => {
             console.log(`• Server running on:`);

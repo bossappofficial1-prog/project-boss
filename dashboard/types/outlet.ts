@@ -78,6 +78,7 @@ export interface OrderMetrics {
     totalOrders: number;
     todayOrders: number;
     weekOrders: number;
+    monthOrders: number;
 
     byStatus: {
         status: string;
@@ -169,6 +170,82 @@ export interface ExpenseMetrics {
         amount: number;
         date: string;
     }[];
+
+    dailyTotals: {
+        date: string;
+        expenses: number;
+    }[];
+}
+
+// === OUTLET ANALYTICS RESPONSE ===
+export interface PaymentMethodBreakdown {
+    method: string;
+    amount: number;
+    count: number;
+    percentage: number;
+}
+
+export interface RevenueAnalytics {
+    totalRevenue: number;
+    todayRevenue: number;
+    weekRevenue: number;
+    monthRevenue: number;
+    lastMonthRevenue: number;
+    lastMonthAverage: number;
+    monthOverMonthGrowth: number | null;
+    lastMonthDaily: {
+        date: string;
+        amount: number;
+    }[];
+    byPaymentMethod: PaymentMethodBreakdown[];
+    dailyTrend: {
+        date: string;
+        revenue: number;
+        orders: number;
+    }[];
+}
+
+export interface ProductTypeAnalytics {
+    type: 'GOODS' | 'SERVICE';
+    count: number;
+    percentage: number;
+}
+
+export interface TopProductAnalytics {
+    id: string;
+    name: string;
+    quantity: number;
+    revenue: number;
+    type: 'GOODS' | 'SERVICE';
+}
+
+export interface LowStockProductAnalytics {
+    id: string;
+    name: string;
+    currentStock: number;
+    reorderLevel: number;
+}
+
+export interface ProductAnalytics {
+    byType: ProductTypeAnalytics[];
+    topProducts: TopProductAnalytics[];
+    lowStock: LowStockProductAnalytics[];
+}
+
+export interface ExpenseVsRevenueEntry {
+    date: string;
+    revenue: number;
+    expenses: number;
+}
+
+export interface OutletAnalyticsResponse {
+    revenue: RevenueAnalytics;
+    paymentMethods: PaymentMethodBreakdown[];
+    payments: PaymentMetrics;
+    products: ProductAnalytics;
+    orders: OrderMetrics;
+    expenses: ExpenseMetrics;
+    expenseVsRevenueData: ExpenseVsRevenueEntry[];
 }
 
 // === OUTLET DASHBOARD DATA ===

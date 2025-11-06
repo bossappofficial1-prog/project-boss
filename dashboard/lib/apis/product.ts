@@ -1,4 +1,6 @@
+import { PaginatedResponse } from '@/types';
 import { apiClient, API_BASE_URL } from './base';
+import { Product } from '@/hooks/useProducts';
 
 export const productApi = {
   // File operations (using fetch for blob handling)
@@ -41,15 +43,17 @@ export const productApi = {
   },
 
   // JSON operations (now using apiClient instead of fetch)
-  getByOutlet: (outletId: string, params?: { page?: number; limit?: number; search?: string; }) => {
+  getByOutlet: (outletId: string, params?: { page?: number; limit?: number; search?: string; type?: 'GOODS' | 'SERVICE'; status?: 'ACTIVE' | 'INACTIVE'; }, accessBy: string = 'OWNER'): Promise<PaginatedResponse<Product>> => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.search) searchParams.append('q', params.search);
-    searchParams.append("accessed", "OWNER")
+    if (params?.type) searchParams.append('type', params.type);
+    if (params?.status) searchParams.append('status', params.status);
+    searchParams.append("accessed", accessBy)
     const q = searchParams.toString();
     const endpoint = `/products/outlet/${outletId}${q ? `?${q}` : ''}`;
-    return apiClient.get(endpoint).then(res => res.data.data);
+    return apiClient.get(endpoint).then(res => res.data);
   },
 
   getById: (productId: string) =>

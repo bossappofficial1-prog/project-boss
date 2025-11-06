@@ -51,5 +51,6 @@ orderRouter.get("/:outletId/queue", protect, authorize(UserRole.OWNER), listServ
 orderRouter.get("/:id/notification-data", getOrderNotificationDataController);
 
 orderRouter.post("/create-payment", validateSchema(CreatePaymentSchema), createPaymentController)
+orderRouter.get("/:orderId/payment", createPaymentController)
 
 export default orderRouter;

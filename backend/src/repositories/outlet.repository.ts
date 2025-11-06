@@ -1,4 +1,4 @@
-import { Outlet, OutletOperatingHours } from "@prisma/client";
+import { Outlet, OutletOperatingHours, PaymentStatus, ProductType, ServiceStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 
@@ -32,7 +32,10 @@ export class OutletRepository {
                         id: true,
                         name: true,
                         description: true,
-                        defaultTransactionFeeBearer: true
+                        defaultTransactionFeeBearer: true,
+                        accountHolder: true,
+                        bankAccount: true,
+                        bankName: true
                     }
                 },
                 operatingHours: true,
@@ -273,5 +276,137 @@ export class OutletRepository {
         ]);
 
         return { outlets, total };
+    }
+
+    static async analytics(outletId: string, startMonth: Date, endMonth: Date, options?: { lowStockThreshold?: number }) {
+        const lowStockThreshold = options?.lowStockThreshold ?? 10;
+
+        const [revenueOrders, expenses, productTypeCounts, topProductItems, lowStockProducts, paymentOrders] = await db.$transaction([
+            db.order.findMany({
+                where: {
+                    AND: [
+                        { outletId },
+                        { createdAt: { gte: endMonth, lte: startMonth } },
+                        { paymentStatus: "SUCCESS" }
+                    ]
+                },
+
+                select: {
+                    totalAmount: true,
+                    createdAt: true,
+                    orderStatus: true,
+                    paymentStatus: true,
+                    appFee: true,
+                    midtransFee: true,
+
+                    transaction: {
+                        select: {
+                            paymentMethod: true,
+                            amount: true,
+                            isManual: true,
+                            manualMethod: true
+                        }
+                    }
+                },
+            }),
+
+            db.expense.findMany({
+                where: {
+                    AND: [
+                        { outletId },
+                        { createdAt: { gte: endMonth, lte: startMonth } }
+                    ]
+                },
+                select: {
+                    id: true,
+                    amount: true,
+                    date: true,
+                    description: true
+                },
+            }),
+
+            db.product.groupBy({
+                by: ['type'],
+                where: {
+                    outletId,
+                },
+                _count: {
+                    _all: true,
+                },
+                orderBy: {
+                    type: 'asc',
+                },
+            }),
+
+            db.orderItem.findMany({
+                where: {
+                    order: {
+                        outletId,
+                        createdAt: { gte: endMonth, lte: startMonth },
+                        paymentStatus: {
+                            in: [PaymentStatus.SUCCESS],
+                        },
+                    },
+                },
+                select: {
+                    productId: true,
+                    quantity: true,
+                    priceAtTimeOfOrder: true,
+                    product: {
+                        select: {
+                            name: true,
+                            type: true,
+                            status: true,
+                        },
+                    },
+                },
+            }),
+
+            db.product.findMany({
+                where: {
+                    outletId,
+                    type: ProductType.GOODS,
+                    status: ServiceStatus.ACTIVE,
+                    quantity: {
+                        lte: lowStockThreshold,
+                    },
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    quantity: true,
+                },
+                orderBy: {
+                    quantity: 'asc',
+                },
+                take: 10,
+            }),
+
+            db.order.findMany({
+                where: {
+                    outletId,
+                    createdAt: { gte: endMonth, lte: startMonth }
+                },
+                select: {
+                    id: true,
+                    totalAmount: true,
+                    paymentStatus: true,
+                    createdAt: true,
+                    appFee: true,
+                    midtransFee: true,
+                    transaction: {
+                        select: {
+                            amount: true,
+                            paymentMethod: true,
+                            isManual: true,
+                            manualMethod: true,
+                            status: true
+                        }
+                    }
+                }
+            })
+        ])
+
+        return { revenueOrders, expenses, productTypeCounts, topProductItems, lowStockProducts, paymentOrders }
     }
 }

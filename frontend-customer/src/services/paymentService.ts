@@ -1,5 +1,6 @@
 import api from "@/lib/api";
 import { CustomerInfo, PaymentMethod, PaymentResponse } from "@/types";
+import { PaymentDetailData } from "@/types/payment-detail";
 
 export class PaymentService {
     static getPaymentInformation(): PaymentResponse & { customerInfo: CustomerInfo; selectedPaymentMethod: PaymentMethod } {
@@ -35,5 +36,9 @@ export class PaymentService {
         });
 
         return response;
+    }
+
+    static async getPaymentDetail(orderId: string): Promise<PaymentDetailData> {
+        return api.getData<PaymentDetailData>(`/payments/${orderId}`);
     }
 }

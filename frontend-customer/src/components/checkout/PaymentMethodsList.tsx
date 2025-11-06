@@ -15,14 +15,6 @@ const PaymentMethodsList: React.FC<{
     selectedPayment?: PaymentMethod | null;
 }> = ({ onSelectPayment, selectedPayment }) => {
     const t = useTranslations("payment");
-    const translateWithFallback = (key: string, fallback: string) => {
-        try {
-            const value = t(key as any);
-            return value || fallback;
-        } catch (error) {
-            return fallback;
-        }
-    };
     const [selectedCategory, setSelectedCategory] = useState<'all' | 'qris' | 'va' | 'manual'>('all');
     const { data: paymentMethods, isLoading, error, refetch } = useQuery({
         queryKey: ["payment-methods"],
@@ -39,7 +31,7 @@ const PaymentMethodsList: React.FC<{
         { id: 'all' as const, label: t("categories.all"), icon: Wallet, count: paymentMethods?.length || 0 },
         { id: 'qris' as const, label: t("categories.qris"), icon: QrCode, count: paymentMethods?.filter(m => m.type === 'qris').length || 0 },
         { id: 'va' as const, label: t("categories.va"), icon: Building2, count: paymentMethods?.filter(m => m.type === 'va').length || 0 },
-        { id: 'manual' as const, label: translateWithFallback("categories.manual", "Manual"), icon: ClipboardCheck, count: paymentMethods?.filter(m => m.type === 'manual').length || 0 },
+        { id: 'manual' as const, label: t("categories.manual"), icon: ClipboardCheck, count: paymentMethods?.filter(m => m.type === 'manual').length || 0 },
     ];
 
     if (error) {
@@ -167,7 +159,7 @@ const PaymentMethodsList: React.FC<{
                                                                 ? t("types.qris")
                                                                 : method.type === 'va'
                                                                     ? t("types.va")
-                                                                    : translateWithFallback("types.manual", "Manual")}
+                                                                    : t("types.manual")}
                                                         </Badge>
                                                     </div>
                                                 </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { Button } from '@/components/ui/button';
 import type { Business } from '@/types/dashboard';
 
 interface BusinessProfileCardProps {
@@ -22,9 +23,15 @@ export default function BusinessProfileCard({ business, onEditBusiness, onEditBa
           Profil Bisnis
         </h2>
         <div className="flex items-center gap-2">
-          <button onClick={onEditBusiness} className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+          <Button
+            onClick={onEditBusiness}
+            variant="ghost"
+            size="sm"
+            type="button"
+            className="h-auto rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+          >
             Edit Profil Bisnis
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -102,11 +109,18 @@ export default function BusinessProfileCard({ business, onEditBusiness, onEditBa
                 )}
               </div>
 
-              <button onClick={onEditBank} className="flex-shrink-0 p-1.5 sm:p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors" title="Edit informasi bank">
+              <Button
+                onClick={onEditBank}
+                variant="ghost"
+                size="icon"
+                type="button"
+                className="h-auto w-auto flex-shrink-0 rounded-lg p-1.5 text-green-600 hover:bg-green-100 sm:p-2"
+                title="Edit informasi bank"
+              >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="text-center py-4">
@@ -115,9 +129,13 @@ export default function BusinessProfileCard({ business, onEditBusiness, onEditBa
               </svg>
               <p className="text-green-600 font-medium">Informasi bank belum diatur</p>
               <p className="text-green-500 text-sm mt-1">Atur rekening bank untuk menerima pembayaran</p>
-              <button onClick={onEditBank} className="mt-3 text-sm bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+              <Button
+                onClick={onEditBank}
+                type="button"
+                className="mt-3 h-auto rounded-lg bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600"
+              >
                 Atur Informasi Bank
-              </button>
+              </Button>
             </div>
           )}
         </div>

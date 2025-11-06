@@ -1,5 +1,9 @@
 "use client";
 
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search } from "lucide-react";
+
 interface ControlsProps {
   searchQuery: string;
   onSearchChange: (val: string) => void;
@@ -13,40 +17,31 @@ export default function ServicesControls({ searchQuery, onSearchChange, onSearch
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <div className="sm:col-span-2 lg:col-span-1">
         <div className="relative">
-          <svg className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
+          <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+          <Input
             type="text"
             placeholder="Cari jasa..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSearchClick()}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+            className="w-full pl-10 pr-4"
           />
         </div>
       </div>
       <div>
-        <select
+        <Select
           value={statusFilter}
-          onChange={(e) => onStatusChange(e.target.value as any)}
-          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+          onValueChange={(v) => onStatusChange(v as any)}
         >
-          <option value="ALL">Semua Status</option>
-          <option value="ACTIVE">Aktif</option>
-          <option value="INACTIVE">Tidak Aktif</option>
-        </select>
-      </div>
-      <div>
-        <button
-          onClick={onSearchClick}
-          className="w-full flex items-center justify-center px-4 py-3 bg-red-gradient text-white rounded-lg hover:shadow-lg transition-all duration-300"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          Cari
-        </button>
+          <SelectTrigger>
+            <SelectValue placeholder="Pilih Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Semua</SelectItem>
+            <SelectItem value="ACTIVE">Aktif</SelectItem>
+            <SelectItem value="INACTIVE">Tidak Aktif</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

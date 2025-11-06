@@ -633,11 +633,13 @@
         "categories": {
             "all": "All",
             "qris": "QRIS",
-            "va": "Bank Transfer"
+            "va": "Bank Transfer",
+            "manual": "Manual"
         },
         "types": {
             "qris": "QRIS",
-            "va": "Bank Transfer"
+            "va": "Bank Transfer",
+            "manual": "Manual"
         },
         "loading": "Loading payment methods...",
         "error": {
@@ -728,6 +730,78 @@
             "message": "Are you sure you want to cancel this payment? This action cannot be undone.",
             "confirm": "Yes, Cancel",
             "cancel": "No"
+        }
+    },
+    "paymentDetail": {
+        "title": "Payment Details",
+        "status": {
+            "pending": {
+                "title": "Awaiting Payment",
+                "description": "We are waiting for your payment to be completed."
+            },
+            "processing": {
+                "title": "Processing Payment",
+                "description": "Your payment is being verified by the outlet."
+            },
+            "success": {
+                "title": "Payment Successful",
+                "description": "Thank you! The outlet has received your payment."
+            },
+            "failed": {
+                "title": "Payment Failed",
+                "description": "The transaction did not go through. Please create a new payment."
+            },
+            "expired": {
+                "title": "Payment Expired",
+                "description": "The payment window has passed. Please create a new payment."
+            },
+            "cancelled": {
+                "title": "Payment Cancelled",
+                "description": "This payment has been cancelled."
+            },
+            "unknown": {
+                "title": "Payment Status",
+                "description": "We cannot determine the payment status yet."
+            }
+        },
+        "overview": {
+            "title": "Overview",
+            "method": "Payment Method",
+            "total": "Total Amount",
+            "expiry": "Expires At"
+        },
+        "method": {
+            "midtrans": "Midtrans",
+            "manual": "Manual Payment"
+        },
+        "midtrans": {
+            "vaTitle": "Virtual Account ({bank})",
+            "qrisTitle": "QRIS Payment"
+        },
+        "manual": {
+            "title": "Manual Payment Instructions",
+            "outlet": "Outlet",
+            "total": "Total Payment",
+            "qrisTitle": "Scan QR",
+            "qrisDescription": "Scan this QR code with your preferred e-wallet and pay the exact amount.",
+            "bankTitle": "Bank Transfer Details",
+            "bank": "Bank",
+            "accountNumber": "Account Number",
+            "accountName": "Account Holder",
+            "note": "Additional Notes"
+        },
+        "manualUpload": {
+            "title": "Upload Payment Proof",
+            "description": "Upload your payment receipt so the outlet can verify it faster.",
+            "hint": "Supported formats: JPG, PNG, WEBP, or PDF (max 10MB).",
+            "uploadButton": "Upload Proof",
+            "uploading": "Uploading...",
+            "success": "Payment proof uploaded. The outlet will confirm shortly.",
+            "error": "Failed to upload payment proof. Please try again.",
+            "fileTooLarge": "File is too large. Maximum size is 10MB.",
+            "invalidType": "Unsupported file type. Use JPG, PNG, WEBP, or PDF.",
+            "removeFile": "Remove File",
+            "expired": "This payment has expired so uploads are disabled."
         }
     },
     "paymentSuccess": {
@@ -848,6 +922,7 @@
             "title": "Order Summary",
             "subtotal": "Subtotal",
             "applicationFee": "Application Fee",
+            "transactionFee": "Transaction Fee",
             "total": "Total"
         },
         "footer": {

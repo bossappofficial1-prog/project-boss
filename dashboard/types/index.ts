@@ -202,10 +202,6 @@ export interface UpdateOutletDto {
   phone?: string;
 }
 
-// ============================================================================
-// PRODUCT TYPES
-// ============================================================================
-
 export enum ProductStatus {
   AVAILABLE = 'AVAILABLE',
   OUT_OF_STOCK = 'OUT_OF_STOCK',
@@ -244,10 +240,6 @@ export interface UpdateProductDto {
   image?: string;
   status?: ProductStatus;
 }
-
-// ============================================================================
-// ORDER TYPES
-// ============================================================================
 
 export enum OrderStatus {
   PENDING = 'PENDING',
@@ -288,10 +280,6 @@ export interface CreateOrderDto {
   }[];
 }
 
-// ============================================================================
-// TRANSACTION TYPES
-// ============================================================================
-
 export enum TransactionStatus {
   PENDING = 'PENDING',
   SUCCESS = 'SUCCESS',
@@ -327,10 +315,6 @@ export interface TransactionFilters extends BaseQueryParams {
   endDate?: string;
 }
 
-// ============================================================================
-// EXPENSE TYPES
-// ============================================================================
-
 export enum ExpenseCategory {
   OPERATIONAL = 'OPERATIONAL',
   INVENTORY = 'INVENTORY',
@@ -357,10 +341,6 @@ export interface CreateExpenseDto {
   outletId: string;
 }
 
-// ============================================================================
-// DASHBOARD TYPES
-// ============================================================================
-
 export interface DashboardStats {
   totalRevenue: number;
   totalOrders: number;
@@ -383,10 +363,6 @@ export interface TopProduct {
   revenue: number;
 }
 
-// ============================================================================
-// FORM TYPES
-// ============================================================================
-
 export type FormErrors<T = any> = {
   [K in keyof T]?: string;
 };
@@ -397,10 +373,6 @@ export interface FormState<T = any> {
   isSubmitting: boolean;
   isDirty: boolean;
 }
-
-// ============================================================================
-// TABLE TYPES
-// ============================================================================
 
 export interface TableColumn<T = any> {
   key: keyof T | string;
@@ -429,10 +401,6 @@ export interface TableBulkAction<T = any> {
   confirmMessage?: string;
 }
 
-// ============================================================================
-// UTILITY TYPES
-// ============================================================================
-
 export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
 export type ID = string | number;
@@ -457,3 +425,124 @@ export type {
   UserRowAction,
   UserBulkAction
 } from './user';
+
+export interface OutletAnalytics {
+  revenue: Revenue
+  paymentMethods: PaymentMethods[]
+  payments: Payments
+  products: Products
+  expenses: Expenses
+}
+
+export interface Revenue {
+  totalRevenue: number
+  todayRevenue: number
+  weekRevenue: number
+  monthRevenue: number
+  lastMonthRevenue: number
+  lastMonthAverage: number
+  lastMonthDaily: LastMonthDaily[]
+  monthOverMonthGrowth: number
+  byPaymentMethod: ByPaymentMethod[]
+}
+
+export interface LastMonthDaily {
+  date: string
+  amount: number
+}
+
+export interface ByPaymentMethod {
+  method: string
+  amount: number
+  count: number
+  percentage: number
+}
+
+export interface PaymentMethods {
+  method: string
+  amount: number
+  count: number
+  percentage: number
+}
+
+export interface Payments {
+  totalTransactions: number
+  successCount: number
+  failedCount: number
+  pendingCount: number
+  successRate: number
+  byStatus: ByStatu[]
+  byPaymentMethod: ByPaymentMethod2[]
+  manualPayments: ManualPayments
+}
+
+export interface ByStatu {
+  status: string
+  count: number
+  amount: number
+}
+
+export interface ByPaymentMethod2 {
+  method: string
+  count: number
+  amount: number
+  percentage: number
+}
+
+export interface ManualPayments {
+  totalManual: number
+  pending: number
+  verified: number
+  rejected: number
+}
+
+export interface Products {
+  byType: ByType[]
+  topProducts: TopProduct[]
+  lowStock: LowStock[]
+}
+
+export interface ByType {
+  type: "GOODS" | "SERVICE"
+  count: number
+  percentage: number
+  activeCount?: number
+}
+
+export interface TopProduct {
+  id: string
+  name: string
+  quantity: number
+  revenue: number
+  type: string
+}
+
+export interface LowStock {
+  id: string
+  name: string
+  currentStock: number
+  reorderLevel: number
+}
+
+export interface Expenses {
+  totalExpenses: number
+  todayExpenses: number
+  weekExpenses: number
+  monthExpenses: number
+  expenseVsRevenue: ExpenseVsRevenue
+  recentExpenses: RecentExpense[]
+}
+
+export interface ExpenseVsRevenue {
+  revenue: number
+  expenses: number
+  netProfit: number
+  profitMargin: number
+}
+
+export interface RecentExpense {
+  id: string
+  description: string
+  amount: number
+  date: string
+}

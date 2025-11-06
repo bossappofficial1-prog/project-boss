@@ -39,13 +39,13 @@ enum PaymentStatus {
 
 // Status alur pesanan secara keseluruhan
 enum OrderStatus {
-  AWAITING_PAYMENT      
-  PROCESSING            
-  CONFIRMED             
-  READY                 
+  AWAITING_PAYMENT
+  PROCESSING
+  CONFIRMED
+  READY
   ON_GOING
-  COMPLETED             
-  CANCELLED             
+  COMPLETED
+  CANCELLED
 }
 
 enum WithdrawalStatus {
@@ -94,6 +94,7 @@ enum StaffRole {
 enum ManualPaymentType {
   QRIS_OFFLINE
   OWNER_TRANSFER
+  CASH
 }
 
 // === MODELS ===
@@ -274,9 +275,6 @@ model Outlet {
   manualAccountHolder String?
   manualPaymentNote   String?
   manualQrImageUrl    String?
-  
-  // QRIS Image untuk pembayaran
-  qrisImage           String?
 
   // Relasi: Satu outlet bisa memiliki banyak produk
   products Product[]
@@ -490,6 +488,7 @@ model Transaction {
   verifiedAt      DateTime?
   verifiedById    String?
   rejectionNote   String?
+  rawMidtrans     Json?
 
   // ID transaksi dari payment gateway (misal: Midtrans transaction_id atau token)
   externalId String? @unique

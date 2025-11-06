@@ -5,10 +5,10 @@ import UpdateStockModal from '@/components/modals/UpdateStockModal';
 import { useStockData } from '@/hooks/useStockData';
 import StockHeader from '@/components/owner/stock/Header';
 import StockControls from '@/components/owner/stock/Controls';
-import StockMobileCards from '@/components/owner/stock/MobileCards';
 import StockDesktopTable from '@/components/owner/stock/DesktopTable';
 import StockSkeleton from '@/components/owner/stock/Skeleton';
 import StockEmptyState from '@/components/owner/stock/EmptyState';
+import { Button } from '@/components/ui/button';
 
 export default function StockPage() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -20,7 +20,11 @@ export default function StockPage() {
     selectedOutlet,
     searchQuery,
     statusFilter,
+    currentPage,
+    itemsPerPage,
+    totalItems,
     isLoading,
+    isFetching,
     error,
     hasBusinessProfile,
     hasOutlet,
@@ -28,6 +32,7 @@ export default function StockPage() {
     setStatusFilter,
     setError,
     fetchStock,
+    handlePaginationChange,
     handleSearchClick,
     handleExport,
     formatCurrency,
@@ -55,12 +60,13 @@ export default function StockPage() {
                   <li>Tambah minimal satu outlet</li>
                 </ul>
                 <div className="mt-6">
-                  <button
+                  <Button
+                    type="button"
                     onClick={() => (window.location.href = '/owner/dashboard')}
-                    className="inline-flex items-center px-5 py-3 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                    className="inline-flex items-center rounded-lg bg-red-600 px-5 py-3 text-white transition-colors hover:bg-red-700"
                   >
                     Oke, ke Dashboard
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -72,7 +78,7 @@ export default function StockPage() {
 
   return (
     <>
-      <div className="space-y-8">
+      <div className="space-y-8 w-full">
         <StockHeader outletName={outlets.find(o => o.id === selectedOutlet)?.name} onExport={handleExport} />
 
         {/* Error Banner */}
@@ -85,14 +91,17 @@ export default function StockPage() {
               <h3 className="text-sm font-medium text-red-800 dark:text-red-300">Error</h3>
               <p className="text-sm text-red-700 dark:text-red-400 mt-1">{error}</p>
             </div>
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => setError(null)}
-              className="text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-300"
+              className="text-red-400 transition-colors hover:text-red-600 dark:text-red-500 dark:hover:text-red-300"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
-            </button>
+            </Button>
           </div>
         )}
 
@@ -101,7 +110,7 @@ export default function StockPage() {
           onSearchChange={setSearchQuery}
           onSearchClick={handleSearchClick}
           statusFilter={statusFilter}
-          onStatusChange={setStatusFilter as any}
+          onStatusChange={setStatusFilter}
         />
 
         {stockItems.length === 0 && !isLoading ? (
@@ -115,15 +124,12 @@ export default function StockPage() {
               formatCurrency={formatCurrency}
               getStockStatus={getStockStatus}
               getStockStatusColor={getStockStatusColor}
-            />
-
-            {/* Mobile Cards */}
-            <StockMobileCards
-              items={stockItems as any}
-              onUpdateStock={(item) => { setSelectedProduct(item); setShowUpdateModal(true); }}
-              formatCurrency={formatCurrency}
-              getStockStatus={getStockStatus}
-              getStockStatusColor={getStockStatusColor}
+              totalItems={totalItems}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              onPaginationChange={handlePaginationChange}
+              isFetching={isFetching}
+              onRefresh={fetchStock}
             />
           </>
         )}

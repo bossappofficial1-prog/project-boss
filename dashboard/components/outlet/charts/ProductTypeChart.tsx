@@ -1,17 +1,11 @@
 'use client';
 
+import { ByType } from '@/types';
 import { useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-
-interface ProductTypeData {
-  type: 'GOODS' | 'SERVICE';
-  count: number;
-  percentage: number;
-  activeCount: number;
-}
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface ProductTypeChartProps {
-  data: ProductTypeData[];
+  data: ByType[];
 }
 
 const COLORS = {
@@ -46,22 +40,21 @@ export default function ProductTypeChart({ data }: ProductTypeChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const totalProducts = data.reduce((sum, item) => sum + item.count, 0);
-  const totalActive = data.reduce((sum, item) => sum + item.activeCount, 0);
 
   return (
-    <div className="rounded-2xl bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 p-6 shadow-xl h-full">
+    <div className="h-full rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
           Tipe Produk
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Total: {totalProducts} produk ({totalActive} aktif)
+          Total: {totalProducts} produk
         </p>
       </div>
 
       {/* Chart */}
-      <div className="w-full h-72">
+      <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -98,15 +91,14 @@ export default function ProductTypeChart({ data }: ProductTypeChartProps) {
       </div>
 
       {/* Details */}
-      <div className="grid grid-cols-2 gap-3 mt-6 pt-6 border-t border-white/10 dark:border-gray-700/50">
+      <div className="mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-sm dark:border-gray-700/50">
         {data.map((item, index) => (
           <div
             key={index}
-            className={`p-3 rounded-lg transition-all duration-200 cursor-pointer ${
-              hoveredIndex === index
-                ? 'bg-white/20 dark:bg-gray-700/50 scale-105'
-                : 'bg-white/5 dark:bg-gray-700/20'
-            }`}
+            className={`p-3 rounded-lg transition-all duration-200 cursor-pointer ${hoveredIndex === index
+              ? 'bg-white/20 dark:bg-gray-700/50 scale-105'
+              : 'bg-white/5 dark:bg-gray-700/20'
+              }`}
             onMouseEnter={() => setHoveredIndex(index)}
             onMouseLeave={() => setHoveredIndex(null)}
           >
@@ -123,7 +115,7 @@ export default function ProductTypeChart({ data }: ProductTypeChartProps) {
               {item.count}
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              {item.activeCount} aktif · {item.percentage}%
+              {item.percentage}% dari total
             </p>
           </div>
         ))}

@@ -35,10 +35,10 @@ interface OutletOperatingHours {
   isOpen: boolean
 }
 
-export default function POSQueuePage({}: Props) {
+export default function POSQueuePage({ }: Props) {
   const router = useRouter()
   const { selectedOutlet } = useOutletContext()
-  const [services, setServices] = React.useState<Service[]>([])
+  const [services, setServices] = React.useState<any[]>([])
   const [selectedService, setSelectedService] = React.useState<Service | null>(null)
   const [customerName, setCustomerName] = React.useState('')
   const [customerPhone, setCustomerPhone] = React.useState('')
@@ -85,8 +85,8 @@ export default function POSQueuePage({}: Props) {
 
   const fetchServices = async () => {
     try {
-      const data = await productApi.getByOutlet(selectedOutlet!.id, { search: searchQuery })
-      setServices(data.filter((p: any) => p.type === 'SERVICE' && p.status === 'ACTIVE'))
+      const data = (await productApi.getByOutlet(selectedOutlet!.id, { search: searchQuery })).data
+      setServices(data.filter((p) => p.type === 'SERVICE' && p.status === 'ACTIVE'))
     } catch (error) {
       console.error('Error fetching services:', error)
     }
@@ -127,46 +127,46 @@ export default function POSQueuePage({}: Props) {
 
   const isTimeWithinOperatingHours = (selectedTime: string, selectedDate: string): boolean => {
     if (!selectedTime || !selectedDate) return false
-    
+
     const date = new Date(selectedDate)
     const dayOfWeek = date.getDay()
-    
+
     const operatingHour = operatingHours.find(oh => oh.dayOfWeek === dayOfWeek && oh.isOpen)
     if (!operatingHour) return false
-    
+
     const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`)
     const openTime = new Date(`${selectedDate}T${operatingHour.openTime}`)
     const closeTime = new Date(`${selectedDate}T${operatingHour.closeTime}`)
-    
+
     // Handle next day closing time
     if (closeTime <= openTime) {
       closeTime.setDate(closeTime.getDate() + 1)
     }
-    
+
     const endDateTime = new Date(selectedDateTime.getTime() + (selectedService!.serviceDurationMinutes * 60000))
-    
+
     return selectedDateTime >= openTime && endDateTime <= closeTime
   }
 
   const getOperatingHoursText = (): string => {
     if (!bookingDate || operatingHours.length === 0) return ''
-    
+
     const date = new Date(bookingDate)
     const dayOfWeek = date.getDay()
     const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-    
+
     const operatingHour = operatingHours.find(oh => oh.dayOfWeek === dayOfWeek)
     if (!operatingHour || !operatingHour.isOpen) {
       return `${dayNames[dayOfWeek]}: Tutup`
     }
-    
+
     return `${dayNames[dayOfWeek]}: ${operatingHour.openTime.slice(0, 5)} - ${operatingHour.closeTime.slice(0, 5)}`
   }
 
   const handleTimeChange = (time: string) => {
     setBookingTime(time)
     setSelectedSlotId('') // Reset slot selection when manually entering time
-    
+
     if (selectedService && bookingDate) {
       if (!isTimeWithinOperatingHours(time, bookingDate)) {
         toast.error('Waktu booking harus dalam jam operasional outlet')
@@ -188,23 +188,23 @@ export default function POSQueuePage({}: Props) {
     if (!customerPhone.trim()) return 'Nomor telepon wajib diisi'
     if (!bookingDate) return 'Tanggal booking wajib diisi'
     if (!bookingTime) return 'Waktu booking wajib diisi'
-    
+
     // Validate phone format
     const phoneRegex = /^(\+62|62|0)8[1-9][0-9]{6,9}$/
     if (!phoneRegex.test(customerPhone.replace(/\s/g, ''))) {
       return 'Format nomor telepon tidak valid'
     }
-    
+
     // Validate name format (letters and spaces only, 2-100 chars)
     const nameRegex = /^[a-zA-Z\s]{2,100}$/
     if (!nameRegex.test(customerName.trim())) {
       return 'Nama hanya boleh berisi huruf dan spasi (2-100 karakter)'
     }
-    
+
     if (!isTimeWithinOperatingHours(bookingTime, bookingDate)) {
       return 'Waktu booking harus dalam jam operasional outlet'
     }
-    
+
     return null
   }
 
@@ -214,15 +214,15 @@ export default function POSQueuePage({}: Props) {
       toast.error(validation)
       return
     }
-    
+
     try {
       setLoading(true)
-      
+
       // Use the slot startTime to ensure consistency with queue table display
-      const bookingDateTime = selectedSlotId 
+      const bookingDateTime = selectedSlotId
         ? availableSlots.find(slot => slot.id === selectedSlotId)?.startTime
         : new Date(`${bookingDate}T${bookingTime}`).toISOString()
-      
+
       const queueData = {
         guestCustomer: {
           name: customerName.trim(),
@@ -237,14 +237,14 @@ export default function POSQueuePage({}: Props) {
         bookingSlotId: selectedSlotId || undefined,
         paymentMethod: 'cash' as 'cash' // Default for queue
       }
-      
+
       console.log('Creating queue:', queueData)
-      
+
       const { default: orderApi } = await import('@/lib/apis/order')
       const result = await orderApi.create(queueData)
-      
+
       console.log('Queue created successfully:', result)
-      
+
       // Reset form
       setSelectedService(null)
       setCustomerName('')
@@ -255,10 +255,10 @@ export default function POSQueuePage({}: Props) {
       setSelectedSlotId('')
       setAllSlots([])
       setAvailableSlots([])
-      
-      toast.success(`Antrian berhasil dibuat! Order ID: ${result.orderId}`)
+
+      toast.success(`Antrian berhasil dibuat! Order ID: ${result.order.id}`)
       router.push('/owner/dashboard/queue')
-      
+
     } catch (error: any) {
       console.error('Error creating queue:', error)
       const errorMessage = error?.message || error?.response?.data?.message || 'Gagal membuat antrian'
@@ -329,19 +329,18 @@ export default function POSQueuePage({}: Props) {
               <div className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                   {services.map((service) => (
-                    <div 
-                      key={service.id} 
-                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                        selectedService?.id === service.id
-                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:shadow-md'
-                      }`}
+                    <div
+                      key={service.id}
+                      className={`border rounded-lg p-4 cursor-pointer transition-all ${selectedService?.id === service.id
+                        ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:shadow-md'
+                        }`}
                       onClick={() => setSelectedService(service)}
                     >
                       <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg mb-3 overflow-hidden">
                         {service.image ? (
-                          <img 
-                            src={resolveUploadImageUrl(service.image) || 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png'} 
+                          <img
+                            src={resolveUploadImageUrl(service.image) || 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png'}
                             alt={service.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -443,7 +442,7 @@ export default function POSQueuePage({}: Props) {
             {(allSlots.length > 0 || (selectedService?.id && bookingDate)) && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Slot Waktu</h3>
-                
+
                 {allSlots.length > 0 && (
                   <>
                     {/* Legend */}
@@ -468,19 +467,18 @@ export default function POSQueuePage({}: Props) {
                         const timeStr = startTime.toTimeString().slice(0, 5)
                         const isAvailable = slot.status === 'AVAILABLE'
                         const isSelected = selectedSlotId === slot.id
-                        
+
                         return (
                           <button
                             key={slot.id}
                             onClick={() => isAvailable ? handleSlotSelect(slot) : null}
                             disabled={!isAvailable}
-                            className={`p-2 text-sm rounded-lg border transition-colors relative ${
-                              isSelected
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                                : isAvailable
+                            className={`p-2 text-sm rounded-lg border transition-colors relative ${isSelected
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                              : isAvailable
                                 ? 'border-green-300 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 cursor-pointer'
                                 : 'border-red-300 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 cursor-not-allowed'
-                            }`}
+                              }`}
                             title={isAvailable ? 'Klik untuk memilih slot ini' : 'Slot sudah terisi'}
                           >
                             {timeStr}
@@ -495,13 +493,13 @@ export default function POSQueuePage({}: Props) {
                     </div>
                   </>
                 )}
-                
+
                 {allSlots.length === 0 && selectedService?.id && bookingDate && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                     Tidak ada slot tersedia untuk tanggal ini
                   </p>
                 )}
-                
+
                 {(!selectedService?.id || !bookingDate) && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                     Pilih layanan dan tanggal terlebih dahulu untuk melihat slot waktu

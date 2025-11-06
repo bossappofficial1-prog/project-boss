@@ -14,7 +14,7 @@ import {
     updateOutletLocationService,
     uploadQRISService,
     getQRISService,
-    deleteQRISService
+    getOutletAnalytics
 } from "../service/outlet.service";
 
 export const findNearbyOutletsController = asyncHandler(async (req: Request, res: Response) => {
@@ -125,31 +125,14 @@ export const deleteOutletController = asyncHandler(async (req: Request, res: Res
     return ResponseUtil.success(res, outlet);
 });
 
-// ============================================
-// QRIS Management Controllers
-// ============================================
-
-/**
- * Upload QRIS image untuk outlet
- * POST /api/v1/outlets/:id/qris
- */
 export const uploadQRISController = asyncHandler(async (req: Request, res: Response) => {
     const { id: outletId } = req.params;
     const ownerId = req.storedUser!.id;
-
-    if (!req.file) {
-        return ResponseUtil.badRequest(res, 'File QRIS harus diupload');
-    }
-
-    const result = await uploadQRISService(outletId, ownerId, req.file);
+    const result = await uploadQRISService(outletId, ownerId, req.body.fileUrl);
 
     return ResponseUtil.success(res, result, HttpStatus.OK, 'QRIS berhasil diupload');
 });
 
-/**
- * Get QRIS image outlet
- * GET /api/v1/outlets/:id/qris
- */
 export const getQRISController = asyncHandler(async (req: Request, res: Response) => {
     const { id: outletId } = req.params;
 
@@ -158,15 +141,14 @@ export const getQRISController = asyncHandler(async (req: Request, res: Response
     return ResponseUtil.success(res, qrisData, HttpStatus.OK, 'Data QRIS berhasil diambil');
 });
 
-/**
- * Delete QRIS image outlet
- * DELETE /api/v1/outlets/:id/qris
- */
-export const deleteQRISController = asyncHandler(async (req: Request, res: Response) => {
-    const { id: outletId } = req.params;
-    const ownerId = req.storedUser!.id;
+export const getOutletAnalyticsController = asyncHandler(async (req: Request, res: Response) => {
+    const { outletId } = req.params
 
-    await deleteQRISService(outletId, ownerId);
+    if (!outletId) {
+        return ResponseUtil.badRequest(res, 'Outlet ID diperlukan');
+    }
 
-    return ResponseUtil.success(res, null, HttpStatus.OK, 'QRIS berhasil dihapus');
-});
+    const analytics = await getOutletAnalytics(outletId)
+
+    return ResponseUtil.success(res, analytics)
+})

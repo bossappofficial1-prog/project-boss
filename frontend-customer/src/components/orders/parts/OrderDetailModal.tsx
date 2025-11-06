@@ -107,14 +107,14 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
                             <p>{formatCurrency(order.appFee)}</p>
                         </div>
                         {/* Hide transaction fee for manual payment methods */}
-                        {order.midtransFee > 0 && 
-                         order.transaction?.paymentMethod !== 'QRIS_OFFLINE' && 
-                         order.transaction?.paymentMethod !== 'OWNER_TRANSFER' && (
-                            <div className="flex justify-between items-center text-sm">
-                                <p className="text-muted-foreground">Biaya Transaksi</p>
-                                <p>{formatCurrency(order.midtransFee)}</p>
-                            </div>
-                        )}
+                        {order.midtransFee > 0 &&
+                            order.transaction?.paymentMethod !== 'QRIS_OFFLINE' &&
+                            order.transaction?.paymentMethod !== 'OWNER_TRANSFER' && (
+                                <div className="flex justify-between items-center text-sm">
+                                    <p className="text-muted-foreground">Biaya Transaksi</p>
+                                    <p>{formatCurrency(order.midtransFee)}</p>
+                                </div>
+                            )}
                         <div className="flex justify-between items-center font-bold text-base pt-2 border-t mt-2">
                             <p>Total Pembayaran</p>
                             <p>{formatCurrency(order.totalAmount)}</p>

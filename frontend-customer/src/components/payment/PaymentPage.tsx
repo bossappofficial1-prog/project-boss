@@ -31,6 +31,7 @@ import { useTranslations } from '@/hooks/useI18n';
 import { ManualPaymentResponse, PaymentMethodId } from '@/types';
 import { ImageRender } from '../shared/Image';
 import { Alert } from '../Base';
+import { useSnackbar } from '@/hooks/useSnackbar';
 
 interface PaymentPageProps {
     checkoutData: CheckoutData;
@@ -133,20 +134,6 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkou
                                 <span className="text-muted-foreground">{t("orderSummary.subtotal")}</span>
                                 <span>{formatCurrency(outlet.subtotal)}</span>
                             </div>
-
-                            {outlet.transactionFee > 0 && (
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t("orderSummary.transactionFee")}</span>
-                                    <span>{formatCurrency(outlet.transactionFee)}</span>
-                                </div>
-                            )}
-
-                            {outlet.applicationFee > 0 && (
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t("orderSummary.applicationFee")}</span>
-                                    <span>{formatCurrency(outlet.applicationFee)}</span>
-                                </div>
-                            )}
                         </div>
                     </div>
                 ))}
@@ -157,20 +144,6 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkou
                         <span>{t("orderSummary.totalOrder")}</span>
                         <span>{formatCurrency(checkoutData.subtotal)}</span>
                     </div>
-
-                    {checkoutData.totalTransactionFee > 0 && (
-                        <div className="flex justify-between text-sm">
-                            <span>{t("orderSummary.totalTransactionFee")}</span>
-                            <span>{formatCurrency(checkoutData.totalTransactionFee)}</span>
-                        </div>
-                    )}
-
-                    {checkoutData.applicationFee > 0 && (
-                        <div className="flex justify-between text-sm">
-                            <span>{t("orderSummary.applicationFee")}</span>
-                            <span>{formatCurrency(checkoutData.applicationFee)}</span>
-                        </div>
-                    )}
 
                     <div className="flex justify-between font-semibold text-lg pt-2 border-t">
                         <span>{t("orderSummary.totalPayment")}</span>
@@ -259,7 +232,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
     const router = useRouter();
     const { items: cartItems, clearOutletItems } = useCart();
     const t = useTranslations("paymentPage");
-    const errorTitle = t("errors.errorTitle");
+    const snackbar = useSnackbar()
 
     // Load customer info from ProfileSettings (if available)
     useEffect(() => {
@@ -338,7 +311,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 }
 
                 return outlet.items.map(item => {
-                    // Untuk service products, ambil selectedSlotId
                     if (item.type === 'SERVICE' && item.selectedSlot && !selectedSlotId) {
                         selectedSlotId = item.selectedSlot;
                     }
@@ -394,6 +366,9 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
 
             // Send to backend API
             const response = await CheckoutService.processPayment(payloadBody);
+            console.log(response);
+
+            const orderId = response.order_id;
 
             const isManualResponse = (resp: any): resp is ManualPaymentResponse => {
                 return Boolean(resp?.manual && resp.manual?.instructions && resp.manual?.fee_summary);
@@ -430,15 +405,17 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             clearOutletItems(outletId)
 
             // Redirect to success page
-            if (isManualResponse(response)) {
-                router.push('/payment/manual');
-            } else {
-                router.push('/payment/processing');
-            }
+            // if (isManualResponse(response)) {
+            //     router.push('/payment/manual');
+            // } else {
+            //     router.push('/payment/processing');
+            // }
+
+            router.push(`/payment/${orderId}`)
 
         } catch (error) {
             console.error('Payment failed:', error)
-            
+
             // Check if it's a network error and should retry
             const isNetworkError = error instanceof Error && (
                 error.message.includes('network') ||
@@ -450,8 +427,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             if (isNetworkError && retryCount < maxRetries) {
                 console.log(`Retrying payment... Attempt ${retryCount + 1} of ${maxRetries}`);
                 setIsLoading(false);
-                setPaymentError(`Koneksi terputus. Mencoba ulang (${retryCount + 1}/${maxRetries})...`);
-                
+                snackbar.error(`Koneksi terputus. Mencoba ulang (${retryCount + 1}/${maxRetries})...`)
+
                 // Retry after delay with exponential backoff
                 setTimeout(() => {
                     handlePayment(retryCount + 1);
@@ -460,27 +437,15 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             }
 
             const errorMessage = error instanceof Error ? error.message : t("errors.paymentFailed");
-            setPaymentError(
-                retryCount >= maxRetries
-                    ? `${errorMessage} (Sudah dicoba ${maxRetries + 1}x. Periksa koneksi internet Anda.)`
-                    : errorMessage
-            );
+            snackbar.error(retryCount >= maxRetries
+                ? `${errorMessage} (Sudah dicoba ${maxRetries + 1}x. Periksa koneksi internet Anda.)`
+                : errorMessage)
             setIsLoading(false);
         }
     };
 
     return (
         <div className="space-y-4">
-            {paymentError && (
-                <Alert
-                    type="error"
-                    title={errorTitle}
-                    message={paymentError}
-                    onClose={() => setPaymentError(null)}
-                    className="animate-in fade-in-50 slide-in-from-top-2"
-                />
-            )}
-
             {/* Customer Info Form */}
             <CustomerInfoForm
                 customerInfo={customerInfo}

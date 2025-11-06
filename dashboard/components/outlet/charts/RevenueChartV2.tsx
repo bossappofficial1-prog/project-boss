@@ -10,14 +10,10 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
-  ComposedChart,
-  Bar,
 } from 'recharts';
 import { TimeframeFilter } from '@/types/outlet';
 import { subDays, subMonths } from 'date-fns';
-import { TrendingUp, TrendingDown, MoreVertical } from 'lucide-react';
 
 interface RevenueChartProps {
   data: Array<{
@@ -33,26 +29,38 @@ const timeframeOptions: { value: TimeframeFilter; label: string }[] = [
   { value: '3m', label: '3M' },
 ];
 
-// Custom Tooltip dengan styling minimal
+const REVENUE_COLOR = '#23b26d';
+const ORDERS_COLOR = '#1f6feb';
+
 const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload?.length) {
-    return (
-      <div className="bg-white/95 dark:bg-gray-900/95 rounded-lg p-2 shadow-lg border border-gray-200 dark:border-gray-700 text-xs">
-        <p className="font-semibold text-gray-800 dark:text-white mb-1">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} style={{ color: entry.color }} className="text-xs">
-            {entry.name}: {entry.value.toLocaleString('id-ID')}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-xl border border-gray-700 bg-gray-900/95 backdrop-blur-sm px-4 py-3 shadow-2xl">
+      <p className="font-semibold text-gray-100 mb-2 text-xs">{label}</p>
+      {payload.map((entry: any, index: number) => (
+        <div key={index} className="flex items-center justify-between gap-8 text-xs mb-1.5 last:mb-0">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-gray-400">{entry.name}</span>
+          </div>
+          <span className="font-bold text-gray-100">
+            {entry.name === 'Pendapatan'
+              ? `Rp ${entry.value.toLocaleString('id-ID')}`
+              : entry.value.toLocaleString('id-ID')}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 export default function RevenueChart({ data }: RevenueChartProps) {
   const [timeframe, setTimeframe] = useState<TimeframeFilter>('30d');
-  const [chartType, setChartType] = useState<'area' | 'line'>('area');
+  const [chartType, setChartType] = useState<'area' | 'line'>('line');
 
   const filteredData = useMemo(() => {
     const now = new Date();
@@ -61,7 +69,6 @@ export default function RevenueChart({ data }: RevenueChartProps) {
     if (timeframe === '7d') startDate = subDays(now, 7);
     else if (timeframe === '30d') startDate = subDays(now, 30);
     else if (timeframe === '3m') startDate = subMonths(now, 3);
-    console.log(startDate);
 
     return data.filter((item) => {
       const itemDate = new Date(item.date);
@@ -78,42 +85,46 @@ export default function RevenueChart({ data }: RevenueChartProps) {
     return { avgRevenue, maxRevenue, totalRevenue };
   }, [filteredData]);
 
+  const axisTickStyle = { fontSize: 11, fill: '#6b7280' } as const;
+
   return (
-    <div className="rounded-2xl bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 p-6 shadow-xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex-1">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-            Tren Pendapatan
-          </h3>
-          <div className="flex items-center gap-4 mt-2 flex-wrap">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-6 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-500">Pendapatan</p>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Tren Pendapatan</h3>
+
+          <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
             <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Total</p>
-              <p className="font-bold text-green-600 dark:text-green-400">
+              <p className="text-gray-500 dark:text-gray-400">Total periode</p>
+              <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Rp {stats.totalRevenue.toLocaleString('id-ID')}
               </p>
             </div>
-            <div className="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
             <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Rata-rata</p>
-              <p className="font-bold text-blue-600 dark:text-blue-400">
+              <p className="text-gray-500 dark:text-gray-400">Rata-rata harian</p>
+              <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Rp {stats.avgRevenue.toLocaleString('id-ID')}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500 dark:text-gray-400">Puncak pendapatan</p>
+              <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Rp {stats.maxRevenue.toLocaleString('id-ID')}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Controls - Compact */}
-        <div className="flex items-center gap-2">
-          {/* Timeframe */}
-          <div className="flex gap-1 p-1 bg-gray-200/50 dark:bg-gray-700/30 rounded-lg">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-1 py-1">
             {timeframeOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setTimeframe(option.value)}
-                className={`px-2 py-1 rounded text-xs font-semibold transition-all ${timeframe === option.value
-                    ? 'bg-white dark:bg-gray-600 text-red-600 dark:text-red-400 shadow'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${timeframe === option.value
+                  ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
                   }`}
               >
                 {option.label}
@@ -121,92 +132,157 @@ export default function RevenueChart({ data }: RevenueChartProps) {
             ))}
           </div>
 
-          {/* Chart Type */}
-          <div className="flex gap-1 p-1 bg-gray-200/50 dark:bg-gray-700/30 rounded-lg">
-            {(['area', 'line'] as const).map((type) => (
+          <div className="flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-1 py-1">
+            {(['line', 'area'] as const).map((type) => (
               <button
                 key={type}
                 onClick={() => setChartType(type)}
-                className={`px-2 py-1 rounded text-xs font-semibold transition-all ${chartType === type
-                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${chartType === type
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-100 dark:text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
                   }`}
               >
-                {type === 'area' ? 'Area' : 'Line'}
+                {type === 'line' ? 'Line' : 'Area'}
               </button>
             ))}
           </div>
-
-          <button className="p-1 hover:bg-gray-200/50 dark:hover:bg-gray-700/30 rounded-lg transition-all">
-            <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-          </button>
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="w-full h-72">
+      <div className="mt-8 h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === 'area' ? (
-            <AreaChart data={filteredData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+            <AreaChart data={filteredData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  <stop offset="0%" stopColor={REVENUE_COLOR} stopOpacity={0.4} />
+                  <stop offset="50%" stopColor={REVENUE_COLOR} stopOpacity={0.2} />
+                  <stop offset="100%" stopColor={REVENUE_COLOR} stopOpacity={0} />
                 </linearGradient>
+                <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={ORDERS_COLOR} stopOpacity={0.3} />
+                  <stop offset="100%" stopColor={ORDERS_COLOR} stopOpacity={0} />
+                </linearGradient>
+                <filter id="shadow">
+                  <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3" />
+                </filter>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-              <XAxis dataKey="date" stroke="#999" style={{ fontSize: '11px' }} />
-              <YAxis stroke="#999" style={{ fontSize: '11px' }} width={50} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+              <CartesianGrid
+                stroke="#374151"
+                strokeDasharray="3 3"
+                vertical={false}
+                opacity={0.5}
+              />
+              <XAxis
+                dataKey="date"
+                tick={axisTickStyle}
+                tickLine={false}
+                axisLine={{ stroke: '#4b5563' }}
+                interval={Math.floor(filteredData.length / 7)}
+              />
+              <YAxis
+                tick={axisTickStyle}
+                tickLine={false}
+                axisLine={{ stroke: '#4b5563' }}
+                width={70}
+                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#6b7280', strokeDasharray: '3 3' }} />
               <Area
                 type="monotone"
                 dataKey="revenue"
-                stroke="#ef4444"
-                strokeWidth={2}
+                stroke={REVENUE_COLOR}
+                strokeWidth={3}
                 fill="url(#revenueGradient)"
                 dot={false}
                 name="Pendapatan"
+                isAnimationActive={true}
+                filter="url(#shadow)"
               />
               <Area
                 type="monotone"
                 dataKey="orders"
-                stroke="#3b82f6"
+                stroke={ORDERS_COLOR}
                 strokeWidth={2}
-                fill="none"
+                fill="url(#ordersGradient)"
                 dot={false}
                 name="Pesanan"
-                yAxisId="right"
+                isAnimationActive={true}
               />
-              <YAxis yAxisId="right" orientation="right" stroke="#999" style={{ fontSize: '11px' }} width={50} />
             </AreaChart>
           ) : (
-            <LineChart data={filteredData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-              <XAxis dataKey="date" stroke="#999" style={{ fontSize: '11px' }} />
-              <YAxis stroke="#999" style={{ fontSize: '11px' }} width={50} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+            <LineChart data={filteredData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <defs>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <CartesianGrid
+                stroke="#374151"
+                strokeDasharray="3 3"
+                vertical={false}
+                opacity={0.5}
+              />
+              <XAxis
+                dataKey="date"
+                tick={axisTickStyle}
+                tickLine={false}
+                axisLine={{ stroke: '#4b5563' }}
+                interval={Math.floor(filteredData.length / 7)}
+              />
+              <YAxis
+                tick={axisTickStyle}
+                tickLine={false}
+                axisLine={{ stroke: '#4b5563' }}
+                width={70}
+                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#6b7280', strokeDasharray: '3 3' }} />
               <Line
                 type="monotone"
                 dataKey="revenue"
-                stroke="#ef4444"
+                stroke={REVENUE_COLOR}
                 strokeWidth={3}
-                dot={false}
-                isAnimationActive={false}
+                dot={{
+                  fill: REVENUE_COLOR,
+                  r: 4,
+                  strokeWidth: 2,
+                  stroke: '#065f46'
+                }}
+                activeDot={{
+                  r: 6,
+                  fill: REVENUE_COLOR,
+                  strokeWidth: 3,
+                  stroke: '#fff',
+                  filter: 'url(#glow)'
+                }}
+                isAnimationActive={true}
                 name="Pendapatan"
               />
               <Line
                 type="monotone"
                 dataKey="orders"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
+                stroke={ORDERS_COLOR}
+                strokeWidth={2.5}
+                dot={{
+                  fill: ORDERS_COLOR,
+                  r: 3,
+                  strokeWidth: 2,
+                  stroke: '#1e40af'
+                }}
+                activeDot={{
+                  r: 5,
+                  fill: ORDERS_COLOR,
+                  strokeWidth: 2,
+                  stroke: '#fff'
+                }}
+                isAnimationActive={true}
                 name="Pesanan"
-                yAxisId="right"
               />
-              <YAxis yAxisId="right" orientation="right" stroke="#999" style={{ fontSize: '11px' }} width={50} />
             </LineChart>
           )}
         </ResponsiveContainer>

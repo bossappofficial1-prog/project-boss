@@ -17,7 +17,7 @@ const CountdownTimer = dynamic(() => import("./CountdownTimer"), { ssr: false })
 interface EnhancedOrderCardProps {
     order: OrderDetail
     onClick: () => void
-    onQuickAction?: (action: 'contact' | 'cancel' | 'reorder' | 'confirm', order: OrderDetail) => void
+    onQuickAction?: (action: 'contact' | 'cancel' | 'reorder' | 'confirm' | 'pay', order: OrderDetail) => void
 }
 
 export default function EnhancedOrderCard({ order, onClick, onQuickAction }: EnhancedOrderCardProps) {
@@ -93,7 +93,7 @@ export default function EnhancedOrderCard({ order, onClick, onQuickAction }: Enh
         switch (order.orderStatus) {
             case OrderStatus.AWAITING_PAYMENT:
                 return [
-                    { label: t('actions.pay'), icon: null, action: 'reorder' as const, variant: "default" as const },
+                    { label: t('actions.pay'), icon: null, action: 'pay' as const, variant: "default" as const },
                     { label: t('actions.cancel'), icon: null, action: 'cancel' as const, variant: "outline" as const },
                 ]
             case OrderStatus.PROCESSING:

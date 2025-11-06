@@ -65,4 +65,104 @@ export interface MidtransPayload {
     bank_transfer?: {
         bank: string
     };
+    gopay?: {
+        enable_callback?: boolean;
+        callback_url?: string;
+    };
+    qris?: Record<string, unknown>;
+}
+
+
+export interface PaymentResponse {
+    status_code?: string
+    status_message?: string
+    transaction_id: string
+    order_id: string
+    merchant_id?: string
+    gross_amount: number
+    currency?: string
+    payment_type: string
+    transaction_time: Date
+    payment_amounts?: { paid_at: string, amount: string }[]
+    transaction_status: MidtransTransactionStatus
+    fraud_status?: string
+    actions?: Action[]
+    acquirer?: string
+    qr_string?: string
+    expiry_time: Date
+    va_numbers?: VaNumber[]
+    transaction_type?: string //'off-us'
+    pdf_url?: string
+}
+
+export type MidtransTransactionStatus =
+    | "capture"
+    | "settlement"
+    | "pending"
+    | "deny"
+    | "cancel"
+    | "expire"
+    | "failure";
+
+
+export interface CustomerInfo {
+    name: string,
+    phone: string
+}
+
+export interface Action {
+    name: string
+    method: string
+    url: string
+}
+
+export interface VaNumber {
+    bank: string
+    va_number: string
+}
+
+type PaymentStatus = "PENDING"
+    | "PROOF_SUBMITTED"
+    | "AWAITING_VERIFICATION"
+    | "SUCCESS"
+    | "FAILED"
+    | "REFUNDED"
+    | "EXPIRED"
+    | "CANCELLED"
+    | "REJECTED_MANUAL"
+
+export interface TransactionDetail {
+    id: string;
+    status: PaymentStatus;
+    totalAmount: number;
+    discountAmount: number;
+    finalAmount: number;
+    payment: {
+        status: PaymentStatus,
+        method: string,
+        isManual: boolean,
+        midtrans: {
+            transaction_id: string,
+            order_id: string,
+            gross_amount: number,
+            transaction_status: string,
+            payment_type: string,
+            qr_string: string,
+            expiry_time: Date,
+        },
+
+    },
+    customer: {
+        name: string,
+        phone: string
+    },
+    items: [
+        {
+            id: string,
+            name: string,
+            price: number,
+            quantity: number,
+            subtotal: number
+        }
+    ]
 }

@@ -31,7 +31,6 @@ export function ScheduleModal({
     const [scheduleSlots, setScheduleSlots] = useState<BookingSlot[]>([])
     const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null)
     const { getSelectedSlot, getServiceInCart, checkTimeConflict } = useCart()
-
     const selectedSlotIdInCart = getSelectedSlot(selectedSlot?.id!)
 
     // Check if this service is already in cart for the same outlet
@@ -186,8 +185,22 @@ export function ScheduleModal({
                                 ? <LoadingState />
                                 : scheduleSlots.length > 0 ? (
                                     <div className="grid grid-cols-2 gap-3">
-                                        {scheduleSlots.map((slot) => (
-                                            <Button
+                                        {scheduleSlots.map((slot) => {
+                                            const now = new Date();
+                                            const isSameDayAsToday = selectedDate ? selectedDate.toDateString() === now.toDateString() : false;
+
+                                            // Disable slots that already passed for the selected day
+                                            let isPastSlot = false;
+                                            if (isSameDayAsToday && selectedDate) {
+                                                const [hoursStr, minutesStr] = slot.startTime.split(/[:.]/);
+                                                const slotStart = new Date(selectedDate);
+                                                const hours = Number(hoursStr ?? 0);
+                                                const minutes = Number(minutesStr ?? 0);
+                                                slotStart.setHours(hours, minutes, 0, 0);
+                                                isPastSlot = slotStart.getTime() <= now.getTime();
+                                            }
+
+                                            return (<Button
                                                 key={slot.id}
                                                 variant={
                                                     slot.status === "BOOKED"
@@ -196,7 +209,7 @@ export function ScheduleModal({
                                                             ? "default"
                                                             : "outline"
                                                 }
-                                                disabled={slot.status === "BOOKED" || slot.status === "BLOCKED" || slot.id === selectedSlotIdInCart}
+                                                disabled={slot.status === "BOOKED" || slot.status === "BLOCKED" || slot.id === selectedSlotIdInCart || isPastSlot}
                                                 className={`flex flex-col items-center p-3 text-sm 
                                                 ${selectedSlot?.id === slot.id && "bg-green-500 text-white hover:bg-green-600"} ${slot.id === selectedSlotIdInCart && "bg-orange-500"}`}
                                                 onClick={() => handleSlotSelect(slot)}
@@ -205,7 +218,8 @@ export function ScheduleModal({
                                                     {slot.startTime} - {slot.endTime}
                                                 </span>
                                             </Button>
-                                        ))}
+                                            )
+                                        })}
                                     </div>
                                 ) : (
                                     <EmptyState

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import RootLayout from "@/components/layouts/RootLayout";
+import { CustomerSocketListener } from "@/components/socket/CustomerSocketListener";
 import { SocketProvider } from "@/context/SocketContext";
 import { ThemeProvider } from "next-themes";
 import { FeatureGuideProvider } from "@/providers/FeatureGuideProvider";
@@ -104,6 +105,7 @@ export default function Layout({
           <SnackbarProvider>
             <FeatureGuideProvider>
               <SocketProvider>
+                <CustomerSocketListener />
                 <RootLayout>
                   {children}
                 </RootLayout>

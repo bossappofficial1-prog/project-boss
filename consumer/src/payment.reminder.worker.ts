@@ -95,7 +95,6 @@ function startReminderWorker() {
         event: 'worker_start'
     });
     checkExpiringPayments(); // Jalankan sekali saat mulai
-    setInterval(checkExpiringPayments, CHECK_INTERVAL_MS);
 }
 
 // Mulai worker

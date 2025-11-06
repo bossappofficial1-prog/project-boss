@@ -7,7 +7,8 @@ import {
     uploadManualPaymentProofService,
     verifyManualPaymentService,
     rejectManualPaymentService,
-    getManualPaymentsService
+    getManualPaymentsService,
+    getPaymentOrderService
 } from "../service/payment.service";
 import { ResponseUtil } from "../utils/response";
 import { messagePublisher } from "../service/message-publisher.service";
@@ -16,6 +17,7 @@ import { HttpStatus } from "../constants/http-status";
 import { AppError } from "../errors/app-error";
 import { Messages } from "../constants/message";
 import { PaymentStatus } from "@prisma/client";
+import { processMidtransPaymentNotification } from "../service/payment-update.service";
 
 export const createPaymentController = asyncHandler(async (req: Request, res: Response) => {
     const { customer_details, item_details, payment_method, selectedSlotId, outletId } = req.body as CreatePaymentPayload
@@ -23,6 +25,12 @@ export const createPaymentController = asyncHandler(async (req: Request, res: Re
     const result = await createPaymentService({ customer_details, item_details, payment_method, outletId, selectedSlotId })
 
     return ResponseUtil.success(res, result, HttpStatus.CREATED)
+})
+
+export const getPaymentOrderController = asyncHandler(async (req: Request, res: Response) => {
+    const { orderId } = req.params
+    const result = await getPaymentOrderService(orderId)
+    return ResponseUtil.success(res, result)
 })
 
 export const createQrisPaymentController = asyncHandler(async (req: Request, res: Response) => {
@@ -36,6 +44,12 @@ export const handleNotificationController = asyncHandler(async (req: Request, re
 
     // Terbitkan seluruh payload notifikasi ke RabbitMQ
     await messagePublisher.publishPaymentWebhookReceived(notificationPayload, 'midtrans');
+
+    try {
+        await processMidtransPaymentNotification(notificationPayload);
+    } catch (error) {
+        console.error('❌ Failed to process Midtrans payment notification:', error);
+    }
 
     // Langsung balas 200 OK
     return ResponseUtil.success(res, { message: "Webhook received and queued" });
@@ -111,3 +125,10 @@ export const listManualPaymentsController = asyncHandler(async (req: Request, re
 
     return ResponseUtil.success(res, result, HttpStatus.OK);
 });
+
+// export const getOrderPaymentController = asyncHandler(async (req: Request, res: Response) => {
+//     const { orderId } = req.params;
+//     const orderData = await getorder(orderId);
+
+//     return ResponseUtil.success(res, orderData);
+// })

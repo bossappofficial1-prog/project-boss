@@ -14,7 +14,7 @@ import {
     updateOutletLocationController,
     uploadQRISController,
     getQRISController,
-    deleteQRISController
+    getOutletAnalyticsController
 } from "../controller/outlet.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOutletSchema, updateOutletSchema, updateOutletLocationSchema } from "../schemas/outlet.schema";
@@ -67,7 +67,6 @@ outletRouter.post(
     "/:id/qris",
     protect,
     authorize(UserRole.OWNER),
-    qrisUpload.single('qris'),
     uploadQRISController
 );
 
@@ -76,11 +75,6 @@ outletRouter.get(
     getQRISController
 );
 
-outletRouter.delete(
-    "/:id/qris",
-    protect,
-    authorize(UserRole.OWNER),
-    deleteQRISController
-);
+outletRouter.get("/:outletId/analytics", getOutletAnalyticsController)
 
 export default outletRouter;

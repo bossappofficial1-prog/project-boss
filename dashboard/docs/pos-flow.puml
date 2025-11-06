@@ -1,0 +1,109 @@
+@startuml pos_per_outlet_flow
+' POS per-outlet flow overview
+!pragma useVerticalIf on
+skinparam monochrome true
+skinparam handwritten false
+skinparam defaultFontName "Inter"
+skinparam activity {
+  BackgroundColor<<Kasir>> LightGray
+  BackgroundColor<<Sistem>> White
+}
+
+title POS Per Outlet - Flow Operasional
+
+start
+partition "Kasir" <<Kasir>> {
+  :Buka halaman POS dashboard;
+  if (Outlet sudah dipilih?) then (Tidak)
+    :Pilih outlet terlebih dahulu;
+  endif
+}
+partition "Sistem" <<Sistem>> {
+  :Set context outlet terpilih;
+  :Ambil preferensi outlet
+  (konfigurasi QRIS/manual, fee bearer,
+  mode collect data pelanggan, staff service);
+  :Muat katalog produk goods & layanan
+  dengan stok, status, slot layanan;
+}
+partition "Kasir" <<Kasir>> {
+  :Input / scan nomor HP atau tekan "Lewati";
+}
+partition "Sistem" <<Sistem>> {
+  if (Nomor HP diberikan?) then (Ya)
+    :Lookup GuestCustomer + Membership;
+    if (Membership aktif ditemukan?) then (Ya)
+      :Isi otomatis nama pelanggan;
+      :Ambil diskon membership + catatan;
+    else (Tidak)
+      :Siapkan GuestCustomer baru;
+    endif
+  else (Tidak)
+    :Gunakan profil Walk-in default;
+  endif
+}
+partition "Kasir" <<Kasir>> {
+  repeat
+    :Cari produk/layanan
+    dengan pencarian atau kategori;
+    :Tambahkan ke keranjang;
+    if (Item adalah layanan SERVICE?) then (Ya)
+      :Pilih tanggal & jam mulai;
+      :Pilih slot tersedia atau mode antrian walk-in;
+    else (Tidak)
+      :Sesuaikan kuantitas goods;
+    endif
+  repeat while (Tambah item lagi?)
+}
+partition "Sistem" <<Sistem>> {
+  :Validasi stok goods dan kapasitas layanan;
+  :Hitung subtotal, diskon membership,
+  promo kode, fee Midtrans/app sesuai FeeBearer;
+  :Perlihatkan ringkasan total real-time;
+}
+partition "Kasir" <<Kasir>> {
+  if (Perlu ubah data pelanggan?) then (Ya)
+    :Edit nama/HP/email/member code;
+  endif
+  :Pilih metode pembayaran
+  (cash, QRIS, online gateway, transfer manual);
+}
+partition "Sistem" <<Sistem>> {
+  if (Metode = cash) then (Cash)
+    :Set status Transaction SUCCESS;
+  elseif (Metode = QRIS) then (QRIS)
+    :Tampilkan modal QR outlet;
+    :Start countdown expiry;
+    :Set Transaction PENDING & isManual=false;
+  elseif (Metode = online gateway) then (Online)
+    :Panggil Midtrans Snap;
+    :Terima token & redirect URL;
+    :Set Transaction PENDING & simpan expiresAt;
+  else (Transfer Manual)
+    :Minta upload bukti atau catat referensi;
+    :Set Transaction AWAITING_VERIFICATION
+    dengan isManual=true;
+  endif
+  :Buat / hubungkan GuestCustomer;
+  :Simpan Order + OrderItem terkait outlet;
+  if (Layanan SERVICE dengan slot) then (Ya)
+    :Reservasi BookingSlot dan assign staff;
+  endif
+  :Simpan Transaction terkait Order;
+}
+partition "Kasir" <<Kasir>> {
+  :Terima notifikasi sukses/gagal;
+  if (Pembayaran manual perlu verifikasi?) then (Ya)
+    :Informasikan status "Menunggu Verifikasi";
+  endif
+  :Tampilkan ringkasan struk digital;
+  :Opsional kirim struk via WA/email
+  atau cetak printer thermal;
+  if (Order layanan) then (Ya)
+    :Kirim pelanggan ke halaman queue monitoring;
+  endif
+  :Siap memproses transaksi berikutnya;
+}
+stop
+
+@enduml

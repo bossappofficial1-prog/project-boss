@@ -1,4 +1,5 @@
 import { apiCall, apiClient } from './base';
+import type { OutletAnalyticsResponse } from '@/types/outlet';
 
 export interface BusinessHours {
   id: string;
@@ -34,7 +35,7 @@ export const outletApi = {
 
     // Convert to our format with helper properties
     const dayNames: BusinessHours['day'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-    
+
     return response.map(hour => ({
       ...hour,
       day: dayNames[hour.dayOfWeek],
@@ -48,6 +49,8 @@ export const outletApi = {
     totalSales: number; totalOrders: number; totalExpenses: number; profit: number;
     topProducts: Array<{ productId: string; name: string; quantity: number; revenue: number; }>;
   }>(`/dashboard/outlet/${outletId}`),
+
+  getAnalytics: (outletId: string) => apiCall<OutletAnalyticsResponse>(`/outlets/${outletId}/analytics`),
 
   getDailyReport: (
     outletId: string,
@@ -83,13 +86,8 @@ export const outletApi = {
     qrisImageUrl: string | null;
   }>(`/outlets/${outletId}/qris`),
 
-  uploadQRIS: async (outletId: string, file: File) => {
-    const formData = new FormData();
-    formData.append('qris', file);
-
-    const response = await apiClient.post(`/outlets/${outletId}/qris`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+  uploadQRIS: async (outletId: string, fileUrl: string) => {
+    const response = await apiClient.post(`/outlets/${outletId}/qris`, { fileUrl });
     return response.data.data;
   },
 

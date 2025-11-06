@@ -12,9 +12,38 @@ import {
     getFilteredRowModel,
     VisibilityState,
     RowSelectionState,
-    Row,
+    PaginationState,
+    Updater
 } from "@tanstack/react-table";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import type { LucideIcon } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import type { ComponentProps, ReactNode } from "react";
+
+type CsvExportConfig<TData> = {
+    enabled?: boolean;
+    filename?: string;
+    includeHeaders?: boolean;
+    customMapping?: (row: TData) => Record<string, any>;
+};
+
+type PdfExportConfig<TData> = {
+    enabled?: boolean;
+    filename?: string;
+    title?: string;
+    includeStats?: boolean;
+    customMapping?: (row: TData) => Record<string, any>;
+};
+
+type RowAction<TData> = {
+    label?: string;
+    onClick?: (row: TData) => void;
+    icon?: LucideIcon | React.ComponentType<{ className?: string }>;
+    variant?: ComponentProps<typeof Button>['variant'];
+    className?: string;
+    disabled?: boolean;
+    keepOpenOnSelect?: boolean;
+    render?: (row: TData) => ReactNode;
+};
 import {
     Table,
     TableBody,
@@ -31,8 +60,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-    ChevronLeft,
-    ChevronRight,
     Search,
     Filter,
     Download,
@@ -41,9 +68,6 @@ import {
     ArrowUp,
     ArrowDown,
     RefreshCw,
-    Trash2,
-    Eye,
-    EyeOff,
     X,
     FileSpreadsheet,
     FileText,
@@ -63,6 +87,10 @@ interface DataTableProps<TData, TValue> {
     searchKey?: string;
     searchPlaceholder?: string;
     globalFilter?: boolean;
+    serverSideSearch?: boolean;
+    onSearchChange?: (value: string) => void;
+    searchValue?: string;
+    searchDebounceMs?: number;
 
     // Selection
     enableRowSelection?: boolean;
@@ -72,6 +100,12 @@ interface DataTableProps<TData, TValue> {
     pagination?: boolean;
     pageSize?: number;
     pageSizeOptions?: number[];
+    // Server-side pagination
+    serverSidePagination?: boolean; // when true, component will expect server-controlled pages
+    totalItems?: number; // total items on server (used for info and pageCount)
+    serverPage?: number; // current page from server (1-based)
+    serverLimit?: number; // current limit/pageSize from server
+    onPaginationChange?: (params: { page: number; limit: number }) => void; // called when user changes page or page size
 
     // Loading & States
     isLoading?: boolean;
@@ -83,19 +117,8 @@ interface DataTableProps<TData, TValue> {
     exportFilename?: string;
     exportTitle?: string;
     exportConfig?: {
-        csv?: {
-            enabled?: boolean;
-            filename?: string;
-            includeHeaders?: boolean;
-            customMapping?: (row: TData) => Record<string, any>;
-        };
-        pdf?: {
-            enabled?: boolean;
-            filename?: string;
-            title?: string;
-            includeStats?: boolean;
-            customMapping?: (row: TData) => Record<string, any>;
-        };
+        csv?: CsvExportConfig<TData>;
+        pdf?: PdfExportConfig<TData>;
     };
     onExportStart?: (format: 'csv' | 'pdf') => void;
     onExportComplete?: (format: 'csv' | 'pdf', recordCount: number) => void;
@@ -110,12 +133,9 @@ interface DataTableProps<TData, TValue> {
     density?: 'compact' | 'normal' | 'comfortable';
 
     // Row Actions
-    rowActions?: (row: TData) => Array<{
-        label: string;
-        onClick: (row: TData) => void;
-        icon?: React.ComponentType<{ className?: string }>;
-        variant?: 'default' | 'destructive';
-    }>;
+    rowActions?: (row: TData) => Array<RowAction<TData>>;
+    labelAction?: string
+    actionViewType?: "dropdown" | "flex"
 
     // Bulk Actions
     bulkActions?: Array<{
@@ -153,11 +173,20 @@ export function DataTable<TData, TValue>({
     searchKey,
     searchPlaceholder = "Search...",
     globalFilter = true,
+    serverSideSearch = false,
+    onSearchChange,
+    searchValue,
+    searchDebounceMs,
     enableRowSelection = false,
     onRowSelectionChange,
     pagination = true,
     pageSize = 10,
     pageSizeOptions = [5, 10, 20, 50, 100],
+    serverSidePagination = false,
+    totalItems,
+    serverPage,
+    serverLimit,
+    onPaginationChange,
     isLoading = false,
     isRefreshing = false,
     onRefresh,
@@ -168,6 +197,7 @@ export function DataTable<TData, TValue>({
     onExportStart,
     onExportComplete,
     onExportError,
+    labelAction,
     title,
     description,
     emptyMessage = "No results found.",
@@ -177,8 +207,8 @@ export function DataTable<TData, TValue>({
     rowActions,
     bulkActions,
     enableColumnResizing = false,
+    actionViewType = 'flex',
     enableSorting = true,
-    enableFiltering = true,
     stickyHeader = false,
     striped = true,
     bordered = true,
@@ -195,8 +225,16 @@ export function DataTable<TData, TValue>({
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-    const [globalFilterValue, setGlobalFilterValue] = useState("");
-    const [currentPageSize, setCurrentPageSize] = useState(pageSize);
+    const [globalFilterValue, setGlobalFilterValue] = useState(() => searchValue ?? "");
+    const [paginationState, setPaginationState] = useState<PaginationState>(() => ({
+        pageIndex: serverSidePagination && typeof serverPage === "number" ? Math.max(0, serverPage - 1) : 0,
+        pageSize: serverSidePagination && typeof serverLimit === "number" ? serverLimit : pageSize,
+    }));
+    const pageSizePropRef = useRef(pageSize);
+    const pendingPaginationRef = useRef<null | { pageIndex: number; pageSize: number }>(null);
+    const searchDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const suppressSearchEffectRef = useRef(false);
+    const previousSearchValueRef = useRef(searchValue);
     const [isMobile, setIsMobile] = useState(false);
 
     // Table Settings State
@@ -213,6 +251,89 @@ export function DataTable<TData, TValue>({
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, [mobileBreakpoint]);
+
+    useEffect(() => {
+        if (serverSidePagination) {
+            pageSizePropRef.current = pageSize;
+            return;
+        }
+
+        if (pageSizePropRef.current !== pageSize) {
+            pageSizePropRef.current = pageSize;
+            setPaginationState(prev => ({ ...prev, pageSize }));
+        }
+    }, [pageSize, serverSidePagination]);
+
+    useEffect(() => {
+        if (!serverSidePagination) {
+            return;
+        }
+
+        if (typeof serverPage === 'number') {
+            const normalized = Math.max(0, serverPage - 1);
+            setPaginationState(prev =>
+                prev.pageIndex === normalized ? prev : { ...prev, pageIndex: normalized }
+            );
+        }
+    }, [serverSidePagination, serverPage]);
+
+    useEffect(() => {
+        if (!serverSidePagination) {
+            return;
+        }
+
+        if (typeof serverLimit === 'number') {
+            setPaginationState(prev =>
+                prev.pageSize === serverLimit ? prev : { ...prev, pageSize: serverLimit }
+            );
+        }
+    }, [serverSidePagination, serverLimit]);
+
+    useEffect(() => {
+        if (!serverSideSearch) {
+            return;
+        }
+
+        if (typeof searchValue !== 'string') {
+            return;
+        }
+
+        if (previousSearchValueRef.current === searchValue) {
+            return;
+        }
+
+        previousSearchValueRef.current = searchValue;
+        suppressSearchEffectRef.current = true;
+        setGlobalFilterValue(searchValue);
+    }, [serverSideSearch, searchValue, globalFilterValue]);
+
+    useEffect(() => {
+        if (!serverSideSearch || !onSearchChange) {
+            return;
+        }
+
+        if (suppressSearchEffectRef.current) {
+            suppressSearchEffectRef.current = false;
+            return;
+        }
+
+        if (searchDebounceTimeoutRef.current) {
+            clearTimeout(searchDebounceTimeoutRef.current);
+        }
+
+        const delay = typeof searchDebounceMs === 'number' ? Math.max(searchDebounceMs, 0) : 300;
+        searchDebounceTimeoutRef.current = setTimeout(() => {
+            onSearchChange(globalFilterValue);
+            searchDebounceTimeoutRef.current = null;
+        }, delay);
+
+        return () => {
+            if (searchDebounceTimeoutRef.current) {
+                clearTimeout(searchDebounceTimeoutRef.current);
+                searchDebounceTimeoutRef.current = null;
+            }
+        };
+    }, [serverSideSearch, onSearchChange, globalFilterValue, searchDebounceMs]);
 
     // Enhanced columns with selection and validation
     const enhancedColumns = useMemo(() => {
@@ -259,11 +380,11 @@ export function DataTable<TData, TValue>({
             if (!hasActionsColumn) {
                 cols.push({
                     id: "actions",
-                    header: "Actions",
+                    header: labelAction || "Actions",
                     cell: ({ row }) => {
                         const actions = rowActions(row.original);
-                        return (
-                            <DropdownMenu>
+                        if (actionViewType === 'dropdown') {
+                            return <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="ghost"
@@ -276,23 +397,73 @@ export function DataTable<TData, TValue>({
                                 <DropdownMenuContent align="end">
                                     {actions.map((action, index) => {
                                         const Icon = action.icon;
+                                        const shouldKeepOpen = action.keepOpenOnSelect ?? Boolean(action.render);
+
                                         return (
                                             <DropdownMenuItem
                                                 key={index}
-                                                onClick={() => action.onClick(row.original)}
+                                                disabled={action.disabled}
+                                                onSelect={(event) => {
+                                                    if (shouldKeepOpen) {
+                                                        event.preventDefault();
+                                                    }
+
+                                                    if (!action.render) {
+                                                        action.onClick?.(row.original);
+                                                    }
+                                                }}
                                                 className={cn(
-                                                    "cursor-pointer",
-                                                    action.variant === 'destructive' && "text-red-600 focus:text-red-600"
+                                                    action.render ? "cursor-default" : "cursor-pointer",
+                                                    action.variant === 'destructive' && "text-red-600 focus:text-red-600",
+                                                    action.className
                                                 )}
                                             >
-                                                {Icon && <Icon className="mr-2 h-4 w-4" />}
-                                                {action.label}
+                                                {action.render ? (
+                                                    action.render(row.original)
+                                                ) : (
+                                                    <div className="flex items-center gap-2">
+                                                        {Icon && <Icon className={cn("h-4 w-4", action.variant === 'destructive' && "text-red-600 focus:text-red-600")} />}
+                                                        <span>{action.label}</span>
+                                                    </div>
+                                                )}
                                             </DropdownMenuItem>
                                         );
                                     })}
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                        );
+                        }
+                        if (actionViewType === 'flex') {
+                            return (
+                                <div className="flex flex-wrap gap-2">
+                                    {actions.map((action, index) => {
+                                        const Icon = action.icon;
+                                        if (action.render) {
+                                            return (
+                                                <div key={index} className={cn("flex items-center", action.className)}>
+                                                    {action.render(row.original)}
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={index}
+                                                variant={action.variant ?? 'outline'}
+                                                size="sm"
+                                                className={cn("gap-1", action.className)}
+                                                onClick={() => action.onClick?.(row.original)}
+                                                disabled={action.disabled}
+                                            >
+                                                {Icon && <Icon className="h-4 w-4" />}
+                                                {action.label}
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        }
+
+                        return null;
                     },
                     enableSorting: false,
                     enableHiding: false,
@@ -311,7 +482,44 @@ export function DataTable<TData, TValue>({
         }
 
         return cols;
-    }, [columns, enableRowSelection, rowActions]);
+    }, [columns, enableRowSelection, rowActions, actionViewType, labelAction]);
+
+    const handleTablePaginationChange = useCallback((updater: Updater<PaginationState>) => {
+        setPaginationState(prev => {
+            const baseState = prev;
+            const nextState = typeof updater === 'function' ? updater(baseState) : updater;
+            const nextPageIndex = nextState.pageIndex ?? baseState.pageIndex;
+            const nextPageSize = nextState.pageSize ?? baseState.pageSize;
+            const pageSizeChanged = nextPageSize !== baseState.pageSize;
+            const normalizedPageIndex = pageSizeChanged ? 0 : nextPageIndex;
+            pendingPaginationRef.current = {
+                pageIndex: normalizedPageIndex,
+                pageSize: nextPageSize,
+            };
+
+            return {
+                pageIndex: normalizedPageIndex,
+                pageSize: nextPageSize,
+            };
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!serverSidePagination) {
+            pendingPaginationRef.current = null;
+            return;
+        }
+
+        const pending = pendingPaginationRef.current;
+        if (!pending) {
+            return;
+        }
+
+        if (pending.pageIndex === paginationState.pageIndex && pending.pageSize === paginationState.pageSize) {
+            pendingPaginationRef.current = null;
+            onPaginationChange?.({ page: pending.pageIndex + 1, limit: pending.pageSize });
+        }
+    }, [paginationState, serverSidePagination, onPaginationChange]);
 
     // Table instance with enhanced features
     const table = useReactTable({
@@ -322,13 +530,14 @@ export function DataTable<TData, TValue>({
             columnFilters,
             columnVisibility,
             rowSelection,
-            globalFilter: globalFilterValue,
+            globalFilter: serverSideSearch ? "" : globalFilterValue,
+            pagination: paginationState,
         },
-        initialState: {
-            pagination: {
-                pageSize: currentPageSize,
-            },
-        },
+        manualPagination: serverSidePagination,
+        manualFiltering: serverSideSearch,
+        pageCount: serverSidePagination
+            ? Math.max(1, Math.ceil((totalItems ?? data.length) / Math.max(1, paginationState.pageSize)))
+            : undefined,
         enableRowSelection,
         enableColumnResizing,
         enableSorting,
@@ -343,16 +552,24 @@ export function DataTable<TData, TValue>({
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: (updater) => {
             setRowSelection(updater);
-            const newSelection = typeof updater === 'function' ? updater(rowSelection) : updater;
             const selectedRows = table.getSelectedRowModel().rows.map(row => row.original);
             onRowSelectionChange?.(selectedRows);
         },
-        onGlobalFilterChange: setGlobalFilterValue,
+        onPaginationChange: handleTablePaginationChange,
+        onGlobalFilterChange: serverSideSearch ? undefined : setGlobalFilterValue,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
     });
+
+    const tablePagination = table.getState().pagination;
+    const effectiveRowModel = serverSideSearch ? table.getRowModel() : table.getFilteredRowModel();
+    const totalRowCount = serverSidePagination ? (totalItems ?? data.length) : effectiveRowModel.rows.length;
+    const pageStart = totalRowCount === 0 ? 0 : tablePagination.pageIndex * tablePagination.pageSize + 1;
+    const pageEnd = totalRowCount === 0 ? 0 : Math.min((tablePagination.pageIndex + 1) * tablePagination.pageSize, totalRowCount);
+    const pageStartLabel = totalRowCount === 0 ? 0 : pageStart;
+    const pageEndLabel = totalRowCount === 0 ? 0 : pageEnd;
 
     // Helper functions
     const selectedRows = table.getSelectedRowModel().rows.map(row => row.original);
@@ -360,14 +577,94 @@ export function DataTable<TData, TValue>({
 
     const handleExport = useCallback((format: 'csv' | 'pdf') => {
         try {
+            const csvConfig = exportConfig?.csv;
+            const pdfConfig = exportConfig?.pdf;
+
+            if (format === 'csv' && csvConfig?.enabled === false) {
+                onExportError?.(format, 'CSV export is disabled.');
+                return;
+            }
+
+            if (format === 'pdf' && pdfConfig?.enabled === false) {
+                onExportError?.(format, 'PDF export is disabled.');
+                return;
+            }
+
             onExportStart?.(format);
 
-            // Built-in export implementation
             const dataToExport = table.getFilteredRowModel().rows.map(row => row.original);
-            const filename = `${exportFilename}.${format}`;
+            const mapRow = format === 'csv' ? csvConfig?.customMapping : pdfConfig?.customMapping;
+
+            const defaultAccessorKeys = columns.map((col, index) => {
+                const key = (col as any).accessorKey || (col as any).id;
+                return key ?? `column_${index}`;
+            });
+
+            const getHeaderLabel = (col: ColumnDef<TData, TValue>, index: number) => {
+                const metaLabel = (col as any).meta?.label;
+                if (typeof metaLabel === 'string' && metaLabel.trim().length > 0) {
+                    return metaLabel;
+                }
+                const header = col.header as unknown;
+                if (typeof header === 'string') {
+                    return header;
+                }
+                if (typeof header === 'number') {
+                    return String(header);
+                }
+                if (typeof header === 'object' && header && 'toString' in header) {
+                    const text = String(header);
+                    if (text !== '[object Object]') {
+                        return text;
+                    }
+                }
+                const accessor = (col as any).accessorKey || (col as any).id;
+                return accessor ?? `Column ${index + 1}`;
+            };
+
+            const buildRows = () => {
+                if (mapRow) {
+                    const mapped = dataToExport.map(mapRow);
+                    const headerKeys = Array.from(
+                        new Set(
+                            mapped.flatMap(item => Object.keys(item ?? {}))
+                        )
+                    );
+                    return {
+                        headerLabels: headerKeys,
+                        rows: mapped.map(item => headerKeys.map(key => item?.[key] ?? '')),
+                    };
+                }
+
+                const headerLabels = columns.map(getHeaderLabel);
+                const rows = dataToExport.map(row =>
+                    defaultAccessorKeys.map(key => {
+                        const value = key ? (row as any)?.[key] : '';
+                        return value ?? '';
+                    })
+                );
+                return { headerLabels, rows };
+            };
+
+            const { headerLabels, rows } = buildRows();
+            const recordCount = rows.length;
 
             if (format === 'pdf') {
-                // Create a temporary div for PDF content
+                const resolvedTitle = pdfConfig?.title ?? exportTitle ?? pdfConfig?.filename ?? exportFilename;
+                const statsSection = pdfConfig?.includeStats
+                    ? `<p style="margin-bottom: 12px; font-size: 12px; color: #555;">Rows exported: ${recordCount}</p>`
+                    : '';
+
+                const tableHeader = headerLabels.map(label =>
+                    `<th style="border: 1px solid #ccc; padding: 8px; background: #f5f5f5; text-align: left;">${label}</th>`
+                ).join('');
+
+                const tableRows = rows.map(cells =>
+                    `<tr>${cells.map(value =>
+                        `<td style="border: 1px solid #ccc; padding: 8px;">${String(value ?? '')}</td>`
+                    ).join('')}</tr>`
+                ).join('');
+
                 const printDiv = document.createElement('div');
                 printDiv.style.position = 'absolute';
                 printDiv.style.left = '-9999px';
@@ -377,54 +674,48 @@ export function DataTable<TData, TValue>({
                 printDiv.style.padding = '20px';
                 printDiv.style.fontFamily = 'Arial, sans-serif';
 
-                // Create table HTML
-                const headers = columns.map(col => col.header as string).join('</th><th style="border: 1px solid #ccc; padding: 8px; background: #f5f5f5;">');
-                const rows = dataToExport.map(row => {
-                    const cells = columns.map(col => {
-                        const accessorKey = (col as any).accessorKey || (col as any).id;
-                        const value = accessorKey ? (row as any)[accessorKey] || '' : '';
-                        return String(value);
-                    }).join('</td><td style="border: 1px solid #ccc; padding: 8px;">');
-                    return `<tr><td style="border: 1px solid #ccc; padding: 8px;">${cells}</td></tr>`;
-                }).join('');
-
                 printDiv.innerHTML = `
-                    <h2 style="margin-bottom: 20px;">${exportFilename}</h2>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                        <thead>
-                            <tr><th style="border: 1px solid #ccc; padding: 8px; background: #f5f5f5;">${headers}</th></tr>
-                        </thead>
-                        <tbody>
-                            ${rows}
-                        </tbody>
-                    </table>
+                    <div>
+                        <h2 style="margin-bottom: 12px;">${resolvedTitle}</h2>
+                        ${statsSection}
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>${tableHeader}</tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
                 `;
 
                 document.body.appendChild(printDiv);
 
-                // Open print dialog
                 const originalContents = document.body.innerHTML;
                 document.body.innerHTML = printDiv.innerHTML;
                 window.print();
                 document.body.innerHTML = originalContents;
-
-                // Clean up
                 document.body.removeChild(printDiv);
             } else {
-                // CSV export
-                const headers = columns.map(col => col.header as string).join(',');
-                const rows = dataToExport.map(row =>
-                    columns.map(col => {
-                        const accessorKey = (col as any).accessorKey || (col as any).id;
-                        const value = accessorKey ? (row as any)[accessorKey] : '';
-                        // Escape quotes and wrap in quotes if contains comma or quote
-                        const stringValue = String(value);
-                        return stringValue.includes(',') || stringValue.includes('"')
-                            ? `"${stringValue.replace(/"/g, '""')}"`
-                            : stringValue;
-                    }).join(',')
-                ).join('\n');
-                const csv = `${headers}\n${rows}`;
+                const includeHeaders = csvConfig?.includeHeaders ?? true;
+                const filename = `${csvConfig?.filename ?? exportFilename}.csv`;
+
+                const formatCsvValue = (value: unknown) => {
+                    const stringValue = String(value ?? '');
+                    return stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')
+                        ? `"${stringValue.replace(/"/g, '""')}"`
+                        : stringValue;
+                };
+
+                const csvLines = rows.map(cells =>
+                    cells.map(formatCsvValue).join(',')
+                );
+
+                if (includeHeaders) {
+                    csvLines.unshift(headerLabels.map(formatCsvValue).join(','));
+                }
+
+                const csv = csvLines.join('\n');
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -434,18 +725,21 @@ export function DataTable<TData, TValue>({
                 URL.revokeObjectURL(url);
             }
 
-            onExportComplete?.(format, dataToExport.length);
+            onExportComplete?.(format, recordCount);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Export failed';
             onExportError?.(format, errorMessage);
         }
-    }, [data, table, exportFilename, columns, onExportStart, onExportComplete, onExportError]);
+    }, [table, columns, exportFilename, exportTitle, exportConfig, onExportStart, onExportComplete, onExportError]);
 
     const densityStyles = {
         compact: "text-xs [&_td]:py-1 [&_th]:py-1",
         normal: "text-sm [&_td]:py-2 [&_th]:py-2",
         comfortable: "text-sm [&_td]:py-3 [&_th]:py-3"
     };
+
+    const csvExportDisabled = exportConfig?.csv?.enabled === false;
+    const pdfExportDisabled = exportConfig?.pdf?.enabled === false;
 
     // Loading skeleton
     if (isLoading) {
@@ -462,7 +756,7 @@ export function DataTable<TData, TValue>({
     }
 
     return (
-        <div className="space-y-4" role="region" aria-label={ariaLabel} aria-description={ariaDescription}>
+        <div className="space-y-4 bg-background shadow-lg p-3 rounded-md" role="region" aria-label={ariaLabel} aria-description={ariaDescription}>
             {/* Header Section */}
             {(title || description) && (
                 <div className="space-y-1">
@@ -488,8 +782,11 @@ export function DataTable<TData, TValue>({
                                 <Input
                                     placeholder={searchPlaceholder}
                                     value={globalFilterValue}
-                                    onChange={(event) => setGlobalFilterValue(event.target.value)}
-                                    className="pl-8 w-full sm:w-[250px]"
+                                    onChange={(event) => {
+                                        const nextValue = event.target.value;
+                                        setGlobalFilterValue(nextValue);
+                                    }}
+                                    className="pl-8 w-full h-9 sm:w-[250px]"
                                 />
                             </div>
                         )}
@@ -501,9 +798,13 @@ export function DataTable<TData, TValue>({
                                 <Input
                                     placeholder={`Filter by ${searchKey}...`}
                                     value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-                                    onChange={(event) =>
-                                        table.getColumn(searchKey)?.setFilterValue(event.target.value)
-                                    }
+                                    onChange={(event) => {
+                                        const value = event.target.value;
+                                        table.getColumn(searchKey)?.setFilterValue(value);
+                                        if (serverSideSearch) {
+                                            setGlobalFilterValue(value);
+                                        }
+                                    }}
                                     className="pl-8 w-full sm:w-[200px]"
                                 />
                             </div>
@@ -546,14 +847,30 @@ export function DataTable<TData, TValue>({
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Export as</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuCheckboxItem onClick={() => handleExport('csv')}>
+                                    <DropdownMenuItem
+                                        disabled={csvExportDisabled}
+                                        onSelect={() => {
+                                            if (!csvExportDisabled) {
+                                                handleExport('csv');
+                                            }
+                                        }}
+                                        className={cn(!csvExportDisabled && "cursor-pointer")}
+                                    >
                                         <FileSpreadsheet className="mr-2 h-4 w-4" />
                                         CSV
-                                    </DropdownMenuCheckboxItem>
-                                    <DropdownMenuCheckboxItem onClick={() => handleExport('pdf')}>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        disabled={pdfExportDisabled}
+                                        onSelect={() => {
+                                            if (!pdfExportDisabled) {
+                                                handleExport('pdf');
+                                            }
+                                        }}
+                                        className={cn(!pdfExportDisabled && "cursor-pointer")}
+                                    >
                                         <FileText className="mr-2 h-4 w-4" />
                                         PDF
-                                    </DropdownMenuCheckboxItem>
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         )}
@@ -584,7 +901,7 @@ export function DataTable<TData, TValue>({
                                                         column.toggleVisibility(!!value)
                                                     }
                                                 >
-                                                    {column.id}
+                                                    {column.columnDef.header?.toString() || column.id}
                                                 </DropdownMenuCheckboxItem>
                                             );
                                         })}
@@ -672,11 +989,6 @@ export function DataTable<TData, TValue>({
                     {table.getRowModel().rows.map((row) => (
                         <div
                             key={row.id}
-                            className={cn(
-                                "p-4 border rounded-lg bg-card",
-                                row.getIsSelected() && "ring-2 ring-primary",
-                                onRowClick && "cursor-pointer hover:bg-muted/50"
-                            )}
                             onClick={() => onRowClick?.(row.original)}
                         >
                             {mobileCardRender(row.original)}
@@ -802,16 +1114,11 @@ export function DataTable<TData, TValue>({
                 {showTableInfo && (
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div>
-                            Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-                            {Math.min(
-                                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                                table.getFilteredRowModel().rows.length
-                            )}{' '}
-                            of {table.getFilteredRowModel().rows.length} result(s)
+                            Showing {pageStartLabel} to {pageEndLabel} of {totalRowCount} result(s)
                         </div>
                         {hasSelectedRows && (
                             <div>
-                                {selectedRows.length} of {table.getFilteredRowModel().rows.length} row(s) selected
+                                {selectedRows.length} of {effectiveRowModel.rows.length} row(s) selected
                             </div>
                         )}
                     </div>
@@ -828,7 +1135,6 @@ export function DataTable<TData, TValue>({
                                 onValueChange={(value) => {
                                     const newSize = Number(value);
                                     table.setPageSize(newSize);
-                                    setCurrentPageSize(newSize);
                                 }}
                             >
                                 <SelectTrigger className="h-8 w-[70px]">

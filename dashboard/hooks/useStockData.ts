@@ -26,7 +26,12 @@ export function useStockData() {
   const [items, setItems] = useState<StockItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasBusinessProfile, setHasBusinessProfile] = useState(false);
   const [hasOutlet, setHasOutlet] = useState(false);
@@ -52,28 +57,52 @@ export function useStockData() {
   const fetchStock = useCallback(async () => {
     if (!selectedOutletId) return;
     try {
-      setIsLoading(true);
-      const data = await stockApi.getByOutlet(selectedOutletId, {
+      setIsFetching(true);
+      const response = await stockApi.getByOutlet(selectedOutletId, {
+        page: currentPage,
+        limit: itemsPerPage,
         type: 'GOODS',
         search: searchQuery || undefined,
         status: statusFilter === 'ALL' ? undefined : statusFilter,
       });
-      // Ensure GOODS only
-      setItems((data || []).filter((i: any) => i.type === 'GOODS'));
+      const data = Array.isArray(response.data) ? response.data : [];
+      // Ensure GOODS only for safety
+      const goodsOnly = data.filter((item) => item.type === 'GOODS');
+      setItems(goodsOnly);
+      setTotalItems(response.pagination?.total ?? goodsOnly.length);
+      setTotalPages(response.pagination?.totalPages ?? 1);
     } catch (e: any) {
       console.error('Error fetching stock:', e);
       setItems([]);
       setError(e?.message || 'Gagal memuat data stok');
     } finally {
+      setIsFetching(false);
       setIsLoading(false);
     }
-  }, [selectedOutletId, searchQuery, statusFilter]);
+  }, [currentPage, itemsPerPage, searchQuery, statusFilter, selectedOutletId]);
 
   useEffect(() => {
-    if (selectedOutletId && !contextLoading) fetchStock();
-  }, [selectedOutletId, searchQuery, statusFilter, fetchStock, contextLoading]);
+    if (selectedOutletId && !contextLoading) {
+      fetchStock();
+    }
+  }, [selectedOutletId, currentPage, itemsPerPage, searchQuery, statusFilter, fetchStock, contextLoading]);
 
   const handleSearchClick = () => fetchStock();
+
+  const handlePaginationChange = useCallback(({ page, limit }: { page: number; limit: number }) => {
+    setCurrentPage(page);
+    setItemsPerPage(limit);
+  }, []);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  }, []);
+
+  const handleStatusChange = useCallback((value: 'ALL' | 'ACTIVE' | 'INACTIVE') => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  }, []);
 
   const handleExport = async () => {
     if (!selectedOutletId) return;
@@ -118,18 +147,26 @@ export function useStockData() {
     stockItems: visibleItems,
     outlets: contextOutlets,
     selectedOutlet: selectedOutletId,
+    currentPage,
+    itemsPerPage,
+    totalItems,
+    totalPages,
     searchQuery,
     statusFilter,
     isLoading,
+    isFetching,
     error,
     hasBusinessProfile,
     hasOutlet,
     // setters
-    setSearchQuery,
-    setStatusFilter,
+    setSearchQuery: handleSearchChange,
+    setStatusFilter: handleStatusChange,
     setError,
+    setCurrentPage,
+    setItemsPerPage,
     // actions
     fetchStock,
+    handlePaginationChange,
     handleSearchClick,
     handleExport,
     // formatters

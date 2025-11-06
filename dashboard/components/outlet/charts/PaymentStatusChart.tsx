@@ -6,7 +6,6 @@ import {
   Pie,
   Cell,
   ResponsiveContainer,
-  Legend,
   Tooltip,
 } from 'recharts';
 
@@ -31,27 +30,24 @@ const COLORS = {
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload?.length) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-lg p-3 shadow-xl border border-gray-200 dark:border-gray-700">
-        <p className="text-sm font-semibold text-gray-800 dark:text-white mb-1">
-          {data.status}
+  if (!active || !payload?.length) return null;
+
+  const data = payload[0].payload;
+  return (
+    <div className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2 text-xs shadow-sm">
+      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{data.status}</p>
+      <div className="mt-2 space-y-1 text-[11px] text-gray-600 dark:text-gray-400">
+        <p className="flex justify-between">
+          <span>Jumlah</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{data.count}</span>
         </p>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          Jumlah: <span className="font-medium">{data.count}</span>
-        </p>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          Nominal: <span className="font-medium">Rp {data.amount.toLocaleString('id-ID')}</span>
+        <p className="flex justify-between">
+          <span>Nominal</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">Rp {data.amount.toLocaleString('id-ID')}</span>
         </p>
       </div>
-    );
-  }
-  return null;
-};
-
-const renderLabel = (entry: any) => {
-  return `${entry.percentage}%`;
+    </div>
+  );
 };
 
 export default function PaymentStatusChart({
@@ -64,33 +60,23 @@ export default function PaymentStatusChart({
   const total = data.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <div className="rounded-2xl bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 p-6 shadow-xl h-full">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-              Status Pembayaran
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Total: Rp {total.toLocaleString('id-ID')}
-            </p>
-          </div>
+    <div className="h-full rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-500">Pembayaran</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Status Pembayaran</h3>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Total transaksi: Rp {total.toLocaleString('id-ID')}
+          </p>
+        </div>
 
-          {/* Success Rate Badge */}
-          <div className="text-center px-4 py-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl border border-green-500/30">
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-              Tingkat Sukses
-            </p>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {successRate}%
-            </p>
-          </div>
+        <div className="rounded-lg border border-emerald-200 bg-emerald-100/60 px-4 py-2 text-right dark:border-emerald-900/40 dark:bg-emerald-900/20">
+          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Tingkat sukses</p>
+          <p className="text-xl font-semibold text-emerald-600 dark:text-emerald-300">{successRate}%</p>
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="w-full h-72">
+      <div className="mt-6 h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -98,10 +84,9 @@ export default function PaymentStatusChart({
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={renderLabel}
-              outerRadius={100}
-              innerRadius={60}
-              fill="#8884d8"
+              label={({ percentage }) => `${percentage}%`}
+              outerRadius={102}
+              innerRadius={64}
               dataKey="amount"
               onMouseEnter={(_, index) => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
@@ -109,65 +94,44 @@ export default function PaymentStatusChart({
               {data.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={
-                    COLORS[entry.status as keyof typeof COLORS] || '#6b7280'
-                  }
-                  opacity={
-                    hoveredIndex === null || hoveredIndex === index ? 1 : 0.5
-                  }
+                  fill={COLORS[entry.status as keyof typeof COLORS] || '#94a3b8'}
+                  opacity={hoveredIndex === null || hoveredIndex === index ? 1 : 0.45}
                   style={{
-                    filter:
-                      hoveredIndex === index ? 'brightness(1.2)' : 'brightness(1)',
-                    transition: 'all 0.3s ease',
+                    transition: 'opacity 0.2s ease, transform 0.2s ease',
+                    transform: hoveredIndex === index ? 'scale(1.02)' : 'scale(1)',
+                    transformOrigin: 'center',
                   }}
                 />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
-            <Legend
-              verticalAlign="bottom"
-              height={36}
-              formatter={(value, entry: any) => {
-                const item = data?.[entry?.index];
-                if (!item) return value;
-                return `${item.status} (${item.count})`;
-              }}
-            />
           </PieChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Details */}
-      <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-white/10 dark:border-gray-700/50">
+      <div className="mt-6 grid grid-cols-1 gap-3 border-t border-gray-100 pt-3 text-sm dark:border-gray-800 sm:grid-cols-3">
         {data.map((item, index) => (
-          <div
+          <button
             key={index}
-            className={`p-3 rounded-lg transition-all duration-200 cursor-pointer ${hoveredIndex === index
-                ? 'bg-white/20 dark:bg-gray-700/50 scale-105'
-                : 'bg-white/5 dark:bg-gray-700/20'
+            type="button"
+            className={`text-left rounded-lg border px-3 py-3 transition-all ${hoveredIndex === index
+              ? 'border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
+              : 'border-transparent bg-white dark:bg-gray-950'
               }`}
             onMouseEnter={() => setHoveredIndex(index)}
             onMouseLeave={() => setHoveredIndex(null)}
           >
-            <div className="flex items-center gap-2 mb-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{
-                  backgroundColor:
-                    COLORS[item.status as keyof typeof COLORS] || '#6b7280',
-                }}
-              />
-              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                {item.status}
-              </p>
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+              <span>{item.status}</span>
+              <span>{item.percentage}%</span>
             </div>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">
-              {item.count}
+            <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {item.count} transaksi
             </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
-              {item.percentage}%
+            <p className="text-xs text-gray-500 dark:text-gray-500">
+              Rp {item.amount.toLocaleString('id-ID')}
             </p>
-          </div>
+          </button>
         ))}
       </div>
     </div>

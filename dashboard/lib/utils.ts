@@ -15,7 +15,7 @@ export function cn(...inputs: ClassValue[]) {
  * @returns Formatted currency string
  */
 export function formatCurrency(
-    value: number,
+    value: number | string,
     options: {
         currency?: string;
         locale?: string;
@@ -35,7 +35,7 @@ export function formatCurrency(
         currency,
         minimumFractionDigits,
         maximumFractionDigits,
-    }).format(value);
+    }).format(value as number);
 }
 
 /**

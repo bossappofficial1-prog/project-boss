@@ -6,7 +6,8 @@ import {
 	uploadManualPaymentProofController,
 	verifyManualPaymentController,
 	rejectManualPaymentController,
-	listManualPaymentsController
+	listManualPaymentsController,
+	getPaymentOrderController
 } from "../controller/payment.controller";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
@@ -54,5 +55,7 @@ paymentRouter.get(
 
 // Rute untuk webhook notifikasi dari Midtrans
 paymentRouter.post("/notification/webhooks/midtrans", handleNotificationController);
+
+paymentRouter.get('/:orderId', getPaymentOrderController)
 
 export default paymentRouter;

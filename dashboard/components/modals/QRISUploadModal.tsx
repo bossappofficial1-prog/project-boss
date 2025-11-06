@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { outletApi } from '@/lib/apis/outlet';
+import { uploadApi } from '@/lib/api';
 
 interface QRISUploadModalProps {
   open: boolean;
@@ -76,7 +77,8 @@ export default function QRISUploadModal({
     setIsLoading(true);
 
     try {
-      await outletApi.uploadQRIS(outlet.id, selectedFile);
+      const fileUrl = (await uploadApi.uploadImage(selectedFile)).url
+      await outletApi.uploadQRIS(outlet.id, fileUrl);
 
       toast.success('QRIS berhasil diupload');
       onSuccess?.();

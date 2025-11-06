@@ -52,39 +52,39 @@
 
 10. **Order ID (Nomor fraktur)**
 
-   - Format urut berdasarkan tanggal + angka urut.
-   - Contoh: `2906202501`.
+- Format urut berdasarkan tanggal + angka urut.
+- Contoh: `2906202501`.
 
 11. **Transaksi**
 
-   - Bisa pilih metode pembayaran (cash/digital).
-   - Laporan bisa filter berdasarkan metode.
+- Bisa pilih metode pembayaran (cash/digital).
+- Laporan bisa filter berdasarkan metode.
 
 12. **Refund**
 
-   - Sistem refund khusus admin.
-   - Proses refund offline, tapi status dicatat si sistem.
+- Sistem refund khusus admin.
+- Proses refund offline, tapi status dicatat si sistem.
 
 13. **On/Off layanan yang disediakan**
 
-   - Layanan bisa di-off, disembunyikan, atau nonaktif di jam tertentu.
+- Layanan bisa di-off, disembunyikan, atau nonaktif di jam tertentu.
 
 14. **Data Member UMKM**
 
-   - Member didata offline.
-   - Diskon khusus member via dashboard UMKM.
+- Member didata offline.
+- Diskon khusus member via dashboard UMKM.
 
 15. **Fee Cas**
 
-   - Fee cas bisa ditentukan saat tambah produk (apakah dibebankan ke customer atau owner).
+- Fee cas bisa ditentukan saat tambah produk (apakah dibebankan ke customer atau owner).
 
 16. **Notifikasi via whatsapp**
 
-   - Setelah pesan layanan, notifikasi masuk via chat WA admin ke nomor customer.
+- Setelah pesan layanan, notifikasi masuk via chat WA admin ke nomor customer.
 
 17. **Print Transaksi**
 
-   - Tambahkan opsi cetak transaksi di menu owner.
+- Tambahkan opsi cetak transaksi di menu owner.
 
 ---
 
@@ -111,3 +111,45 @@
    - Notifikasi via whatsapp (16) [butuh riset terkait biaya dll]
    - Print struk transaksi (17) [butuh riset terkait integrasi dengan thermal printer]
 
+---
+
+01/11/2025
+
+## **POS Per Outlet**
+
+### Perencanaan & Desain
+
+- [ ] Validasi flow POS di `dashboard/docs/pos-flow.puml` dengan stakeholder.
+- [ ] Susun wireframe low-fi untuk layar kasir goods dan layanan.
+- [ ] Definisikan kontrak API POS (produk, order, transaksi, booking) beserta skema respons baku.
+- [ ] Rancang model saldo tunai (cash drawer) dan alur buka/tutup kasir per outlet.
+
+### Backend
+
+- [ ] Endpoint agregasi produk/layanan per outlet dengan dukungan pencarian, filter stok, dan status.
+- [ ] Endpoint create/update guest customer serta lookup membership berdasarkan nomor HP.
+- [ ] Endpoint pembuatan order goods/service yang menangani diskon membership, promo, dan fee bearer.
+- [ ] Endpoint transaksi multi-metode (cash, QRIS, online Midtrans, transfer manual) termasuk upload bukti.
+- [ ] Endpoint manajemen booking slot dan antrian layanan (list, reserve, release, assign staff).
+- [ ] Endpoint cash drawer: buka kasir, catat setoran awal, pencatatan pengeluaran tunai, tutup kasir dengan rekonsiliasi.
+- [ ] Event/notification (socket/RabbitMQ) untuk order baru, perubahan status pembayaran, dan update queue.
+
+### Frontend Dashboard (POS Kasir)
+
+- [ ] Implementasi context POS per outlet (state keranjang, pelanggan, preferensi outlet).
+- [ ] Halaman katalog goods/service dengan UI touch-friendly dan mode dark default.
+- [ ] Form pelanggan dengan opsi lewati, lookup membership otomatis, dan preset walk-in.
+- [ ] Keranjang interaktif dengan kalkulasi subtotal, diskon, promo kode, dan fee real-time.
+- [ ] Integrasi form metode pembayaran termasuk modal QRIS, upload bukti manual, dan pengambilan token Midtrans.
+- [ ] Flow booking/antrian layanan: pemilihan slot, validasi jam operasional, assign staff, status queue.
+- [ ] Modul saldo tunai: setoran awal, transaksi tunai masuk/keluar, penutupan kasir.
+- [ ] Ringkasan order + struk digital (Preview, cetak, kirim via WA/email bila tersedia kontak).
+- [ ] Histori transaksi harian dengan filter metode bayar dan status verifikasi manual.
+
+### Testing & Dokumentasi
+
+- [ ] Unit test backend untuk kalkulasi order, penanganan fee, dan booking slot.
+- [ ] Integration/E2E test POS flow (goods dan layanan) menggunakan Playwright atau Cypress dashboard.
+- [ ] Simulasi manual cash drawer (buka-tutup kasir) untuk memastikan saldo sesuai.
+- [ ] Dokumentasi operasional POS untuk kasir dan owner (panduan singkat + FAQ).
+- [ ] Update README/dashboard docs dengan petunjuk setup fitur POS baru.

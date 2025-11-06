@@ -183,7 +183,7 @@ export default function OrdersPage() {
     };
 
     // Handle order actions
-    const handleOrderAction = (action: 'contact' | 'cancel' | 'reorder' | 'confirm', order: OrderDetail) => {
+    const handleOrderAction = (action: 'contact' | 'cancel' | 'reorder' | 'confirm' | `pay`, order: OrderDetail) => {
         switch (action) {
             case 'contact':
                 snackbar.info(t('messages.contactSoon'));
@@ -197,6 +197,7 @@ export default function OrdersPage() {
             case 'confirm':
                 snackbar.info(t('messages.confirmSoon'));
                 break;
+            case 'pay': router.push(`/payment/${order.id}`); break;
         }
     };
 

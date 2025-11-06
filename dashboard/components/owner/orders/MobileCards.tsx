@@ -32,26 +32,26 @@ export function OrdersMobileCards({ orders, onRefresh }: OrdersMobileCardsProps)
       { value: 'CANCELLED', label: 'Dibatalkan' },
       { value: 'CONFIRMED', label: 'Dikonfirmasi' },
     ];
-    
+
     return allStatuses;
   };
 
   const handleStatusChange = (orderId: string, currentStatus: string, newStatus: string) => {
     if (newStatus === currentStatus) return;
-    
+
     const statusLabels: { [key: string]: string } = {
       'AWAITING_PAYMENT': 'Menunggu Bayar',
-      'PROCESSING': 'Diproses', 
+      'PROCESSING': 'Diproses',
       'READY': 'Siap',
       'COMPLETED': 'Selesai',
       'CANCELLED': 'Dibatalkan',
       'CONFIRMED': 'Dikonfirmasi'
     };
-    
+
     const confirmed = window.confirm(
       `Apakah Anda yakin ingin mengubah status pesanan #${orderId.slice(-8)} dari "${statusLabels[currentStatus]}" menjadi "${statusLabels[newStatus]}"?`
     );
-    
+
     if (confirmed) {
       handleStatusUpdate(orderId, newStatus as OrderStatus);
     }
@@ -68,7 +68,7 @@ export function OrdersMobileCards({ orders, onRefresh }: OrdersMobileCardsProps)
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || { label: status, className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400' };
-    
+
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
         {config.label}
@@ -143,7 +143,7 @@ export function OrdersMobileCards({ orders, onRefresh }: OrdersMobileCardsProps)
                 {order.guestCustomer.phone}
               </p>
             </div>
-            
+
             <div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Produk:</span>
               <p className="text-gray-900 dark:text-gray-100 mt-1">
@@ -155,7 +155,7 @@ export function OrdersMobileCards({ orders, onRefresh }: OrdersMobileCardsProps)
                 )}
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total:</span>
@@ -166,33 +166,59 @@ export function OrdersMobileCards({ orders, onRefresh }: OrdersMobileCardsProps)
               <div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pembayaran:</span>
                 <p className="text-sm text-gray-900 dark:text-gray-100">
-                  Online
+                  {(() => {
+                    const anyOrder = order as any;
+                    const paymentMethod = anyOrder.paymentMethod || anyOrder.transaction?.paymentMethod || (anyOrder.midtrans ? 'online' : (anyOrder.paymentMethod === 'manual_transfer' ? 'manual' : 'online'));
+                    return String(paymentMethod).charAt(0).toUpperCase() + String(paymentMethod).slice(1);
+                  })()}
                 </p>
+                {(() => {
+                  const anyOrder = order as any;
+                  const proofUrl = anyOrder.paymentProofUrl || anyOrder.transaction?.paymentProofUrl || anyOrder.transaction?.midtrans?.qrUrl || anyOrder.payment?.proofUrl || null;
+                  if (!proofUrl) return null;
+                  return (
+                    <a href={proofUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Lihat bukti</a>
+                  );
+                })()}
               </div>
             </div>
           </div>
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-            {order.orderStatus === 'AWAITING_PAYMENT' && (
-              <button
-                onClick={() => handleStatusUpdate(order.id, 'PROCESSING')}
-                disabled={updatingStatus === order.id}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50 transition-colors"
-              >
-                {updatingStatus === order.id ? (
-                  <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                )}
-                <span className="text-sm font-medium">Konfirmasi Bayar</span>
-              </button>
-            )}
-            
+            {(() => {
+              const anyOrder = order as any;
+              const proofUrl = anyOrder.paymentProofUrl || anyOrder.transaction?.paymentProofUrl || anyOrder.transaction?.midtrans?.qrUrl || anyOrder.payment?.proofUrl || null;
+              const isManualMethod = (anyOrder.paymentMethod === 'manual_transfer') || Boolean(anyOrder.transaction?.isManual) || String(anyOrder.paymentMethod || '').toLowerCase().includes('manual');
+              const awaitingVerification = (String(anyOrder.paymentStatus || '').toUpperCase() === 'AWAITING_VERIFICATION') || (String(order.orderStatus || '').toUpperCase() === 'AWAITING_VERIFICATION');
+              const showConfirm = order.orderStatus === 'AWAITING_PAYMENT' || (isManualMethod && (proofUrl || awaitingVerification));
+              if (!showConfirm) return null;
+
+              return (
+                <button
+                  onClick={() => {
+                    const proofNote = proofUrl ? `\nBukti pembayaran ditemukan: buka untuk verifikasi.` : '\nTidak ada bukti pembayaran terlampir.';
+                    const ok = window.confirm(`Pesanan ini berstatus Menunggu Bayar (QRIS/Transfer/Manual).\n\nCustomer: ${order.guestCustomer.name}\nTotal: ${formatCurrency(order.totalAmount)}${proofNote}\n\nApakah yakin ingin memproses sekarang? Status akan diubah menjadi Diproses.`);
+                    if (!ok) return;
+                    handleStatusUpdate(order.id, 'PROCESSING');
+                  }}
+                  disabled={updatingStatus === order.id}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50 transition-colors"
+                >
+                  {updatingStatus === order.id ? (
+                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  <span className="text-sm font-medium">Konfirmasi Bayar</span>
+                </button>
+              );
+            })()}
+
             {order.orderStatus === 'PROCESSING' && (
               <button
                 onClick={() => handleStatusUpdate(order.id, 'READY')}
@@ -211,7 +237,7 @@ export function OrdersMobileCards({ orders, onRefresh }: OrdersMobileCardsProps)
                 <span className="text-sm font-medium">Tandai Siap</span>
               </button>
             )}
-            
+
             {order.orderStatus === 'READY' && (
               <button
                 onClick={() => handleStatusUpdate(order.id, 'COMPLETED')}

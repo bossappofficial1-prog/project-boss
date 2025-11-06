@@ -11,16 +11,21 @@ import { OutletRepository } from '../repositories/outlet.repository';
 import { ProductRepository } from '../repositories/product.repository';
 import { generateOrderCode } from '../utils';
 import Console from '../utils/logger';
-import { MidtransItem, MidtransPayload, MidtransWebhookPayloadType } from '../types/Others';
+import { MidtransItem, MidtransPayload, MidtransWebhookPayloadType, PaymentResponse } from '../types/Others';
 import { mappingTransactionStatusForMidtrans } from '../utils/mapping';
 import { AppError } from '../errors/app-error';
 import { Messages } from '../constants/message';
 import { HttpStatus } from '../constants/http-status';
 import { socketUtils } from '../utils/socket.utils';
 import { ManualPaymentRepository } from '../repositories/manual-payment.repository';
+import { buildMidtransCorePayload } from '../utils/midtrans-core.utils';
+import { SocketEmitter } from '../socket/socket-emiiter';
+import { paymentQueue, schedulePaymentExpiration } from '../queues/payment.queue';
+import { PaymentRepository } from '../repositories/payment.repository';
 
 // Konstanta untuk fee rates
 const TRANSACTION_FEE_RATE = 0.02;
+const TRANSACTION_BANK_FEE_RATE = 4000;
 const APPLICATION_FEE_RATE = 0.03;
 
 type OrderWithDetails = Order & {
@@ -80,14 +85,23 @@ async function validateItemsAndPrepareData(inputItems: any[], outletId: string) 
 }
 
 // Sub-fungsi untuk hitung biaya
-function calculateFees(totalProductPrice: number, outlet: any) {
-    const transactionFeeTotal =
-        outlet.business.defaultTransactionFeeBearer === "CUSTOMER" ?
-            Math.floor(totalProductPrice * TRANSACTION_FEE_RATE) :
-            0;
+function calculateFees(totalProductPrice: number, outlet: any, payment_method: string) {
+    let transactionFeeTotal: number = 0;
+    let applicationFee: number = 0;
+    let grossAmount: number = 0;
 
-    const applicationFee = Math.floor(totalProductPrice * APPLICATION_FEE_RATE);
-    const grossAmount = totalProductPrice + transactionFeeTotal + applicationFee;
+    if (payment_method.startsWith('qris') || payment_method.endsWith('-va')) {
+        transactionFeeTotal =
+            outlet.business.defaultTransactionFeeBearer === "CUSTOMER" ? (payment_method.endsWith('-va')
+                ? TRANSACTION_BANK_FEE_RATE
+                : Math.floor(totalProductPrice * TRANSACTION_FEE_RATE))
+                : 0;
+
+        applicationFee = Math.floor(totalProductPrice * APPLICATION_FEE_RATE);
+    }
+    grossAmount = totalProductPrice + transactionFeeTotal + applicationFee;
+
+    console.log(grossAmount, totalProductPrice);
 
     return { transactionFeeTotal, applicationFee, grossAmount };
 }
@@ -115,16 +129,16 @@ function buildManualInstructions(outlet: OutletWithBusiness, manualType: ManualP
     }
 
     if (manualType === ManualPaymentType.OWNER_TRANSFER) {
-        if (!outlet.manualBankAccount || !outlet.manualBankName || !outlet.manualAccountHolder) {
+        if (!outlet.business.bankAccount || !outlet.business.bankName || !outlet.business.accountHolder) {
             throw new AppError(Messages.MANUAL_TRANSFER_NOT_CONFIGURED, HttpStatus.BAD_REQUEST);
         }
 
         return {
             ...baseInstruction,
             bankAccount: {
-                bankName: outlet.manualBankName,
-                accountNumber: outlet.manualBankAccount,
-                accountHolder: outlet.manualAccountHolder
+                bankName: outlet.business.bankName,
+                accountNumber: outlet.business.bankAccount,
+                accountHolder: outlet.business.accountHolder
             }
         };
     }
@@ -189,33 +203,6 @@ function formatManualPaymentResponse(options: {
             phone: options.order.guestCustomer.phone
         }
     };
-}
-
-// Sub-fungsi untuk build payload Midtrans
-function buildMidtransPayload(orderId: string, grossAmount: number, itemDetails: MidtransItem[], customerDetails: any, midtransPaymentType: string) {
-    const payload: MidtransPayload = {
-        transaction_details: {
-            order_id: orderId,
-            gross_amount: grossAmount,
-        },
-        customer_details: {
-            first_name: customerDetails.name,
-            phone: customerDetails.phone,
-        },
-        item_details: itemDetails,
-        payment_type: "",
-    };
-
-    if (midtransPaymentType.endsWith("_va")) {
-        payload.payment_type = "bank_transfer";
-        payload.bank_transfer = {
-            bank: midtransPaymentType.replace("_va", ""),
-        };
-    } else {
-        payload.payment_type = "qris";
-    }
-
-    return payload;
 }
 
 // Sub-fungsi untuk create order dan items
@@ -295,6 +282,9 @@ async function createOrderAndItems(orderId: string, grossAmount: number, applica
 async function handleMidtransCharge(payload: MidtransPayload, orderId: string) {
     try {
         const midtransResponse = await coreApi.charge(payload) as MidtransWebhookPayloadType;
+        const expiresAt = midtransResponse.expiry_time
+            ? new Date(midtransResponse.expiry_time)
+            : new Date(Date.now() + 15 * 60 * 1000);
 
         await db.transaction.create({
             data: {
@@ -302,9 +292,10 @@ async function handleMidtransCharge(payload: MidtransPayload, orderId: string) {
                 externalId: midtransResponse.transaction_id,
                 amount: Number(midtransResponse.gross_amount),
                 paymentMethod: midtransResponse.payment_type,
-                expiresAt: new Date(midtransResponse.expiry_time),
+                expiresAt,
                 orderId: orderId,
                 status: mappingTransactionStatusForMidtrans(midtransResponse.transaction_status),
+                rawMidtrans: midtransResponse
             },
         });
 
@@ -352,8 +343,6 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
         });
     }
 
-    // Hitung gross_amount final dari item_details yang sudah lengkap
-    // untuk memastikan tidak ada selisih.
     const calculatedGrossAmount = itemDetails.reduce((acc, item) => {
         return acc + (item.price * item.quantity);
     }, 0);
@@ -365,8 +354,7 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
         },
         customer_details: {
             first_name: order.guestCustomer.name,
-            phone: order.guestCustomer.phone,
-            email: 'noreply@bossin.id', // Default email untuk Midtrans
+            phone: order.guestCustomer.phone
         },
         item_details: itemDetails,
         expiry: {
@@ -381,13 +369,15 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
     await db.transaction.create({
         data: {
             orderId: order.id,
-            amount: calculatedGrossAmount, // Gunakan juga di sini untuk konsistensi
+            amount: calculatedGrossAmount,
             status: PaymentStatus.PENDING,
-            externalId: transaction.token, // Snap token
-            paymentUrl: transaction.redirect_url, // URL pembayaran
+            externalId: transaction.token,
+            paymentUrl: transaction.redirect_url,
             expiresAt: expiresAt,
         },
     });
+
+    await schedulePaymentExpiration(order.id, expiresAt);
 
     // Emit notification to business outlet
     try {
@@ -436,22 +426,22 @@ export async function createQrisPaymentService(orderId: string) {
             amount: order.totalAmount,
             status: PaymentStatus.PENDING,
             externalId: chargeResponse.transaction_id,
-            // Untuk QRIS, tidak ada URL redirect langsung, tapi kita bisa simpan link ke gambar QR
             paymentUrl: chargeResponse.actions?.find((a: any) => a.name === 'deeplink-redirect')?.url || chargeResponse.actions?.find((a: any) => a.name === 'generate-qr-code')?.url,
             expiresAt: expiresAt,
         },
     });
 
+    await schedulePaymentExpiration(order.id, expiresAt);
+
     // Emit notification to business outlet
     try {
-        socketUtils.emitToBusinessOutlet(order.outletId, {
-            type: 'payment_created',
-            orderId: order.id,
+        SocketEmitter.getInstance().emitToBusinessOutlet(order.outletId, {
             amount: order.totalAmount,
-            paymentMethod: 'qris',
+            orderId: order.id,
             customerName: order.guestCustomer.name,
+            paymentMethod: 'qris',
             timestamp: new Date()
-        });
+        })
         console.log(`📡 Emitted payment_created event for outlet ${order.outletId}`);
     } catch (socketError) {
         console.error('❌ Error emitting payment_created event:', socketError);
@@ -473,7 +463,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
     const { productMap, outlet, itemDetails: baseItemDetails, totalProductPrice } = await validateItemsAndPrepareData(inputItems, outletId);
 
     // Hitung biaya
-    const { transactionFeeTotal, applicationFee, grossAmount } = calculateFees(totalProductPrice, outlet);
+    const { transactionFeeTotal, applicationFee, grossAmount } = calculateFees(totalProductPrice, outlet, payment_method);
 
     // Tambahkan item biaya ke detail
     const itemDetails = [...baseItemDetails];
@@ -514,7 +504,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
 
     if (isManualFlow && manualType) {
         try {
-            const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
             const transaction = await createManualTransactionRecord({
                 orderId,
                 amount: grossAmount,
@@ -548,8 +538,10 @@ export async function createPaymentService(data: CreatePaymentPayload) {
             const instructions = buildManualInstructions(outlet, manualType);
 
             try {
-                socketUtils.emitToBusinessOutlet(outletId, {
-                    type: 'manual_payment_created',
+                await paymentQueue.add({ orderId }, {
+                    delay: new Date(expiresAt).getTime()
+                })
+                SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
                     orderId,
                     amount: grossAmount,
                     paymentMethod: manualType,
@@ -586,18 +578,26 @@ export async function createPaymentService(data: CreatePaymentPayload) {
         throw new AppError(Messages.PAYMENT_METHOD_NOT_SUPPORTED, HttpStatus.BAD_REQUEST);
     }
 
-    const payload = buildMidtransPayload(orderId, grossAmount, itemDetails, customerDetails, midtransPaymentType);
+    const payload = buildMidtransCorePayload({
+        orderId,
+        grossAmount,
+        itemDetails,
+        customer: {
+            name: customerDetails.name,
+            phone: customerDetails.phone,
+        },
+        paymentType: midtransPaymentType,
+    });
 
     // Handle Midtrans charge
     const result = await handleMidtransCharge(payload, orderId);
 
     // Emit notification to business outlet
     try {
-        socketUtils.emitToBusinessOutlet(outletId, {
-            type: 'payment_created',
-            orderId: orderId,
+        SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
+            orderId,
             amount: grossAmount,
-            paymentMethod: midtransPaymentType,
+            paymentMethod: payment_method,
             customerName: customerDetails.name,
             timestamp: new Date()
         });
@@ -703,18 +703,18 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
     await db.order.update({
         where: { id: orderId },
         data: {
-            orderStatus: OrderStatus.AWAITING_VERIFICATION,
+            orderStatus: OrderStatus.AWAITING_PAYMENT,
             paymentStatus: PaymentStatus.AWAITING_VERIFICATION
         }
     });
 
     try {
-        socketUtils.emitToBusinessOutlet(transaction.order.outletId, {
-            type: 'manual_payment_proof_uploaded',
+        SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
             orderId,
             amount: transaction.amount,
-            paymentMethod: transaction.manualMethod,
-            timestamp: new Date()
+            customerName: transaction.order.guestCustomer.name,
+            paymentMethod: transaction.paymentMethod as string,
+            timestamp: transaction.createdAt
         });
     } catch (socketError) {
         console.error('❌ Error emitting manual_payment_proof_uploaded event:', socketError);
@@ -745,7 +745,7 @@ export async function verifyManualPaymentService(orderId: string, verifierId: st
         where: { id: orderId },
         data: {
             paymentStatus: PaymentStatus.SUCCESS,
-            orderStatus: OrderStatus.PROCESSING
+            orderStatus: OrderStatus.CONFIRMED
         }
     });
 
@@ -763,6 +763,24 @@ export async function verifyManualPaymentService(orderId: string, verifierId: st
 
     await messagePublisher.publishOrderStatusUpdate(orderId, OrderStatus.PROCESSING);
     await messagePublisher.publishWhatsAppPaymentSuccess(orderId);
+
+    try {
+        const customerPhone = transaction.order.guestCustomer?.phone;
+        if (customerPhone) {
+            SocketEmitter.getInstance().emitToCustomer(customerPhone, {
+                orderId,
+                amount: transaction.amount,
+                status: 'settlement',
+                transactionStatus: 'settlement',
+                isManual: true,
+                paymentMethod: transaction.manualMethod ?? 'manual',
+                message: 'Pembayaran manual telah diverifikasi',
+                type: 'payment_success'
+            });
+        }
+    } catch (customerSocketError) {
+        console.error('❌ Error emitting customer manual payment success event:', customerSocketError);
+    }
 
     return updatedTransaction;
 }
@@ -806,6 +824,24 @@ export async function rejectManualPaymentService(orderId: string, verifierId: st
         console.error('❌ Error emitting manual_payment_rejected event:', socketError);
     }
 
+    try {
+        const customerPhone = transaction.order.guestCustomer?.phone;
+        if (customerPhone) {
+            SocketEmitter.getInstance().emitToCustomer(customerPhone, {
+                orderId,
+                amount: transaction.amount,
+                status: 'rejected',
+                transactionStatus: 'REJECTED_MANUAL',
+                isManual: true,
+                paymentMethod: transaction.manualMethod ?? 'manual',
+                message: `Pembayaran manual ditolak: ${reason}`,
+                type: 'payment_failed'
+            });
+        }
+    } catch (customerSocketError) {
+        console.error('❌ Error emitting customer manual payment rejected event:', customerSocketError);
+    }
+
     return updatedTransaction;
 }
 
@@ -817,4 +853,69 @@ export async function getManualPaymentsService(options?: {
     limit?: number;
 }) {
     return ManualPaymentRepository.listManualTransactions(options);
+}
+
+export async function getPaymentOrderService(orderId: string) {
+    const data = await PaymentRepository.getByOrderId(orderId)
+
+    if (!data) throw new AppError(`Orderid tidak ditemukan`, HttpStatus.NOT_FOUND);
+
+    const { order: rawOrder, ...transaction } = data
+    const { guestCustomer, items, outlet, ...order } = rawOrder
+
+    const convertMidtrans = transaction.rawMidtrans as unknown as PaymentResponse | null;
+
+    return {
+        id: transaction.orderId,
+        status: order.orderStatus,
+        totalAmount: transaction.amount,
+        payment: {
+            status: transaction.status,
+            method: convertMidtrans ? `MIDTRANS` : `MANUAL`,
+            isManual: transaction.isManual,
+            midtrans: convertMidtrans ? {
+                transaction_id: convertMidtrans?.transaction_id ?? null,
+                order_id: convertMidtrans?.order_id ?? null,
+                gross_amount: convertMidtrans?.gross_amount ?? null,
+                transaction_status: convertMidtrans?.transaction_status ?? null,
+                payment_type: convertMidtrans?.payment_type,
+                expiry_time: convertMidtrans?.expiry_time,
+                actions: convertMidtrans?.actions ?? null,
+                va_numbers: convertMidtrans?.va_numbers ?? null,
+                currency: 'IDR'
+            } : null,
+            manual: transaction.isManual ? {
+                type: transaction.paymentMethod,
+                paymentProofUrl: transaction.paymentProofUrl,
+                intruction: {
+                    manualType: transaction.paymentMethod,
+                    outletName: outlet.name,
+                    businessName: outlet.business.name,
+                    note: null,
+                    qrImageUrl: outlet.manualQrImageUrl,
+                    expiry_time: transaction.expiresAt,
+                    bankAccount: transaction.paymentMethod === 'bank_transfer' ? {
+                        bankName: outlet.business.bankName,
+                        accountNumber: outlet.business.bankAccount,
+                        accountHolder: outlet.business.accountHolder
+                    } : null
+                }
+            } : null
+        },
+        customerDetails: {
+            name: guestCustomer.name,
+            phone: guestCustomer.phone
+        },
+        feeDetail: {
+            appFee: order.appFee,
+            transactionFee: order.midtransFee
+        },
+        items: items.map((item) => ({
+            id: item.id,
+            name: item.product.name,
+            price: item.product.price,
+            quantity: item.quantity,
+            subtotal: item.product.price * item.quantity
+        }))
+    }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Copy, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,15 +13,16 @@ import {
     DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { useOperatingHours } from '@/hooks/useOperatingHours';
+import { useOperatingHours, useUpsertOperatingHours } from '@/hooks/useOperatingHours';
 import OperatingHoursManager from './ui/OperatingHoursManager';
-import { OperatingHours } from '@/types/dashboard';
+import { OperatingHours, OperatingHoursFormData } from '@/types/dashboard';
 import { parseOperatingHours } from '@/lib/utils';
 
 interface OperatingHoursModalProps {
     isOpen: boolean;
     onClose: () => void;
     outletId: string;
+    onSuccess?: () => void;
 }
 
 const DAYS = [
@@ -37,11 +38,13 @@ const DAYS = [
 export default function OperatingHoursModal({
     isOpen,
     onClose,
-    outletId
+    outletId,
+    onSuccess
 }: OperatingHoursModalProps) {
-    const [operatingHours, setOperatingHours] = useState<OperatingHours[] | null>(null);
+    const [operatingHoursData, setOperatingHoursData] = useState<Record<number, OperatingHoursFormData>>({});
     const [isSaving, setIsSaving] = useState(false);
     const { data, isLoading, error } = useOperatingHours(outletId);
+    const upsertMutation = useUpsertOperatingHours();
 
     // Fetch data saat modal dibuka
     useEffect(() => {
@@ -49,7 +52,8 @@ export default function OperatingHoursModal({
 
         // Jika data berhasil dimuat
         if (data && Array.isArray(data)) {
-            setOperatingHours(data as unknown as OperatingHours[]);
+            const hoursMap = parseOperatingHours(data as unknown as OperatingHours[]);
+            setOperatingHoursData(hoursMap);
         }
     }, [data, isLoading, isOpen]);
 
@@ -58,10 +62,10 @@ export default function OperatingHoursModal({
     };
 
     const handleSave = async () => {
-        if (!operatingHours) return;
+        if (!operatingHoursData || Object.keys(operatingHoursData).length === 0) return;
 
         // Validasi
-        for (const hour of operatingHours) {
+        for (const hour of Object.values(operatingHoursData)) {
             if (hour.isOpen && hour.openTime >= hour.closeTime) {
                 toast.error(`Jam buka harus lebih kecil dari jam tutup untuk ${getDayLabel(hour.dayOfWeek)}`);
                 return;
@@ -70,10 +74,37 @@ export default function OperatingHoursModal({
 
         setIsSaving(true);
         try {
-            // if (onSave) {
-            //     await onSave(operatingHours);
-            // }
+            // 2. Handle operating hours if any changes exist
+            const hasOperatingHoursChanges = Object.values(operatingHoursData).some(
+                (data: OperatingHoursFormData) => data.isOpen !== undefined
+            )
+
+            if (hasOperatingHoursChanges) {
+                const operatingHoursPromises = Object.values(operatingHoursData)
+                    .filter((data: OperatingHoursFormData) => data.isOpen !== undefined)
+                    .map((data: OperatingHoursFormData) =>
+                        upsertMutation.mutateAsync({
+                            outletId,
+                            dayOfWeek: data.dayOfWeek,
+                            openTime: new Date(`1970-01-01T${data.openTime}:00`),
+                            closeTime: new Date(`1970-01-01T${data.closeTime}:00`),
+                            isOpen: data.isOpen
+                        })
+                    )
+
+                try {
+                    await Promise.all(operatingHoursPromises)
+                } catch (error) {
+                    // Don't fail the entire operation if operating hours fail
+                    console.error('Failed to save operating hours:', error)
+                    toast.error('Gagal menyimpan jam operasional')
+                    setIsSaving(false);
+                    return;
+                }
+            }
+
             toast.success('Jam operasional berhasil disimpan');
+            onSuccess?.();
             onClose();
         } catch (error) {
             toast.error('Gagal menyimpan jam operasional');
@@ -114,11 +145,11 @@ export default function OperatingHoursModal({
                     )}
 
                     {/* Content */}
-                    {!isLoading && operatingHours && (
+                    {!isLoading && Object.keys(operatingHoursData).length > 0 && (
                         <OperatingHoursManager
                             outletId={outletId}
-                            onOperatingHoursChange={(data) => { console.log(data) }}
-                            operatingHoursData={parseOperatingHours(operatingHours)} />
+                            onOperatingHoursChange={(data) => setOperatingHoursData(data)}
+                            operatingHoursData={operatingHoursData} />
                     )}
                 </div>
 

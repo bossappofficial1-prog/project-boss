@@ -1,4 +1,4 @@
-import { Product, Outlet } from "@prisma/client";
+import { Product, Outlet, PaymentStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreatePaymentInput } from "../schemas/payment.schema";
 
@@ -92,5 +92,58 @@ export class PaymentRepository {
         }
 
         return customer;
+    }
+
+    static async updatePaymentStatusByOrder(orderId: string, status: PaymentStatus) {
+        const order = await db.order.findUnique({ where: { id: orderId }, select: { items: true } })
+
+        if (order?.items) {
+            for (const item of order?.items) {
+                await db.product.update({
+                    where: { id: item.productId },
+                    data: {
+                        quantity: {
+                            increment: item.quantity
+                        }
+                    }
+                })
+            }
+        }
+
+        return await db.transaction.update({
+            where: { orderId },
+            data: {
+                status,
+                order: {
+                    update: {
+                        paymentStatus: status,
+                        orderStatus: 'CANCELLED',
+                    }
+                }
+            }
+        })
+    }
+
+    static async getByOrderId(orderId: string) {
+        return await db.transaction.findUnique({
+            where: { orderId },
+            include: {
+                order: {
+                    include: {
+                        guestCustomer: true,
+                        items: {
+                            include: {
+                                product: true
+                            }
+                        },
+                        outlet: {
+                            include: {
+                                business: true
+                            }
+                        },
+                    }
+                }
+            }
+        })
     }
 }

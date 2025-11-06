@@ -1,22 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import AddProductServiceModal from '@/components/modals/AddProductServiceModal';
 import ImportDataModal from '@/components/modals/ImportDataModal';
-import EditProductServiceModal from '@/components/modals/EditProductServiceModal';
 import ProductsHeader from '@/components/owner/products/Header';
 import ProductsControls from '@/components/owner/products/Controls';
 import ProductsSkeleton from '@/components/owner/products/Skeleton';
-import ProductsEmptyState from '@/components/owner/products/EmptyState';
-import MobileCards from '@/components/owner/products/MobileCards';
 import DesktopTable from '@/components/owner/products/DesktopTable';
 import { useProductsData } from '@/hooks/useProductsData';
+import ConfirmationModal from '@/components/ui/confirmation-modal';
+import { toast } from 'sonner';
+import AddOrEditProductServiceModal from '@/components/modals/AddProductServiceModal';
+import { Product } from '@/hooks/useProducts';
 
 export default function ProductsPage() {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddOrEditModal, setShowAddOrEditModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [actionLoading, setActionLoading] = useState(false)
+  const [action, setAction] = useState<'add' | 'edit'>('add')
 
   const {
     products,
@@ -39,9 +41,19 @@ export default function ProductsPage() {
     handleToggleStatus,
     handleExportProducts,
     handleRefreshData,
-    formatCurrency,
     formatDuration,
   } = useProductsData();
+
+  const handleDelete = async (productId: string) => {
+    try {
+      setActionLoading(true)
+      await handleDeleteProduct(productId)
+      setShowDeleteModal(false)
+      toast.success(`Berhasil mengapus produk`)
+    } catch (error) {
+      toast.error((error as any).message || `Gagal menghapus produk`)
+    } finally { setActionLoading(false) }
+  }
 
   if (isLoading && products.length === 0) {
     return <ProductsSkeleton />;
@@ -107,135 +119,67 @@ export default function ProductsPage() {
         <ProductsControls
           searchQuery={searchQuery}
           onSearchChange={handleSearch}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
-          onRefresh={handleRefreshData}
-          onAdd={() => setShowAddModal(true)}
+          onAdd={() => { setShowAddOrEditModal(true); setAction('add') }}
           onImport={() => setShowImportModal(true)}
           onExport={handleExportProducts}
           hasOutlet={hasOutlet}
         />
 
-        {/* No inline callout; full-page guidance covers the not-ready case when both missing */}
-
-        {/* Action buttons moved into ProductsControls */}
-
-        <MobileCards
-          products={products as any}
-          onEdit={(p) => { setSelectedProduct(p); setShowEditModal(true); }}
-          onDelete={(id) => handleDeleteProduct(id)}
-          onToggleStatus={(p) => handleToggleStatus(p as any)}
-          formatCurrency={formatCurrency}
-          formatDuration={formatDuration}
-        />
-        {products.length === 0 && !isLoading && (
-          <ProductsEmptyState hasOutlet={hasOutlet} onAdd={() => setShowAddModal(true)} />
-        )}
+        {/* {products.length === 0 && !isLoading && (
+          <ProductsEmptyState hasOutlet={hasOutlet} onAdd={() => setShowAddOrEditModal(true)} />
+        )} */}
 
         <DesktopTable
           products={products as any}
-          onEdit={(p) => { setSelectedProduct(p); setShowEditModal(true); }}
-          onDelete={(id) => handleDeleteProduct(id)}
+          onEdit={(p) => { setSelectedProduct(p); setAction('edit'); setShowAddOrEditModal(true) }}
+          onDelete={(product) => { setShowDeleteModal(true); setSelectedProduct(product) }}
           onToggleStatus={(p) => handleToggleStatus(p as any)}
-          formatCurrency={formatCurrency}
           formatDuration={formatDuration}
+          onRefresh={handleRefreshData}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          totalProducts={totalProducts}
+          isFetching={isLoading}
+          onPaginationChange={({ page, limit }) => {
+            setItemsPerPage(limit);
+            setCurrentPage(page);
+          }}
+          searchValue={searchQuery}
+          onSearchChange={handleSearch}
+          searchPlaceholder="Cari produk..."
+          serverSideSearch
+          searchDebounceMs={300}
         />
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Menampilkan{' '}
-                  <span className="font-medium">
-                    {(currentPage - 1) * itemsPerPage + 1}
-                  </span>{' '}
-                  sampai{' '}
-                  <span className="font-medium">
-                    {Math.min(currentPage * itemsPerPage, totalProducts)}
-                  </span>{' '}
-                  dari{' '}
-                  <span className="font-medium">{totalProducts}</span> produk
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                  {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                    const pageNum = i + Math.max(1, currentPage - 2);
-                    if (pageNum > totalPages) return null;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === pageNum
-                            ? 'z-10 bg-red-50 border-red-500 text-red-600'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                          }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       {/* Modals */}
-      <AddProductServiceModal
-        open={showAddModal}
-        onOpenChange={setShowAddModal}
+      <AddOrEditProductServiceModal
+        action={action}
+        open={showAddOrEditModal}
+        onOpenChange={setShowAddOrEditModal}
         outletId={selectedOutlet || null}
-        onSuccess={() => { /* refresh */ handleRefreshData(); }}
+        data={selectedProduct}
+        onSuccess={() => { handleRefreshData(); action == 'edit' && setSelectedProduct(null); }}
       />
-      <EditProductServiceModal
-        open={showEditModal}
-        onOpenChange={setShowEditModal}
-        item={selectedProduct as any}
-        onSuccess={() => { setSelectedProduct(null); handleRefreshData(); }}
-      />
+
       <ImportDataModal
         open={showImportModal}
         onOpenChange={setShowImportModal}
         outletId={selectedOutlet || null}
         onImported={handleRefreshData}
       />
+
+      {showDeleteModal && selectedProduct &&
+        <ConfirmationModal
+          open={showDeleteModal}
+          onOpenChange={setShowDeleteModal}
+          description={`Yakin ingin mengapus product '${selectedProduct.name}' ini?, tindakan tidak dapat dibatalkan`}
+          title="Konfirmasi Hapus"
+          onConfirm={() => handleDelete(selectedProduct.id)}
+          confirmVariant='destructive'
+          loading={actionLoading}
+        />
+      }
     </>
   );
 }

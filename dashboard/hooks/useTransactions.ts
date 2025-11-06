@@ -16,7 +16,7 @@ export const useTransactions = () => {
   // Query: Get all transactions with pagination
   const useTransactionList = (params?: TransactionListParams) => {
     const queryKey = ['transactions', JSON.stringify(params || {})] as (string | number)[];
-    return createQuery<PaginatedResponse<Transaction>>(
+    return createQuery(
       queryKey,
       () => transactionApi.getAll(params)
     )();
@@ -44,7 +44,7 @@ export const useTransactions = () => {
 
   // Mutation: Reject payment
   const useRejectPayment = createMutation(
-    ({ id, reason }: { id: string; reason?: string }) => 
+    ({ id, reason }: { id: string; reason?: string }) =>
       transactionApi.reject(id, reason),
     {
       invalidateKeys: ['transactions'],

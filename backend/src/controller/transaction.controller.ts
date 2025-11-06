@@ -2,59 +2,52 @@ import { Request, Response } from "express";
 import { getTransactionListService } from "../service/transaction.service";
 import { ResponseUtil } from "../utils";
 import { HttpStatus } from "../constants/http-status";
+import { asyncHandler } from "../middleware/error.middleware";
 
 /**
  * Get list of transactions with filters
  * Support filtering by outlet, status, date range, and pagination
  */
-export const getTransactionListController = async (req: Request, res: Response) => {
-    try {
-        const userId = (req as any).storedUser?.id;
-        
-        if (!userId) {
-            return ResponseUtil.unauthorized(res, "Unauthorized");
-        }
+export const getTransactionListController = asyncHandler(async (req: Request, res: Response) => {
+    const userId = (req as any).storedUser?.id;
 
-        const {
-            outletId,
-            status,
-            type, // 'INCOME', 'EXPENSE', or 'ALL'
-            startDate,
-            endDate,
-            page = "1",
-            limit = "10",
-        } = req.query;
-
-        const result = await getTransactionListService({
-            userId,
-            outletId: outletId as string | undefined,
-            status: status as string | undefined,
-            type: type as string | undefined,
-            startDate: startDate as string | undefined,
-            endDate: endDate as string | undefined,
-            page: parseInt(page as string),
-            limit: parseInt(limit as string),
-        });
-
-        // Return with pagination using custom response format
-        return res.status(200).json({
-            success: true,
-            message: "Berhasil mengambil daftar transaksi",
-            data: result.data,
-            pagination: result.pagination,
-            timestamp: new Date().toISOString(),
-            path: req.originalUrl
-        });
-    } catch (error: any) {
-        console.error("Error in getTransactionListController:", error);
-        return ResponseUtil.error(
-            res, 
-            error.message || "Gagal mengambil daftar transaksi", 
-            undefined,
-            error.statusCode || HttpStatus.INTERNAL_SERVER_ERROR
-        );
+    if (!userId) {
+        return ResponseUtil.unauthorized(res, "Unauthorized");
     }
-};
+
+    const {
+        outletId,
+        status,
+        type, // 'INCOME', 'EXPENSE', or 'ALL'
+        startDate,
+        endDate,
+        page = "1",
+        limit = "10",
+        q: query
+    } = req.query;
+
+    const result = await getTransactionListService({
+        userId,
+        outletId: outletId as string | undefined,
+        status: status as string | undefined,
+        type: type as string | undefined,
+        startDate: startDate as string | undefined,
+        endDate: endDate as string | undefined,
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        query: query as string
+    });
+
+
+    return ResponseUtil.paginated<{ totals: any, items: any[] }>(
+        res,
+        { totals: result.totals, items: result.data },
+        result.pagination.page,
+        result.pagination.limit,
+        result.pagination.total,
+        "Berhasil mengambil daftar transaksi",
+    )
+});
 
 /**
  * Get transaction by ID
@@ -73,8 +66,8 @@ export const getTransactionByIdController = async (req: Request, res: Response) 
     } catch (error: any) {
         console.error("Error in getTransactionByIdController:", error);
         return ResponseUtil.error(
-            res, 
-            error.message || "Gagal mengambil detail transaksi", 
+            res,
+            error.message || "Gagal mengambil detail transaksi",
             undefined,
             error.statusCode || HttpStatus.INTERNAL_SERVER_ERROR
         );

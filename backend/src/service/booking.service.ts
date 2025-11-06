@@ -176,6 +176,7 @@ export async function generateSlotsForDate({ productId, operatingHours, serviceD
             endTime: slotEnd,
             status: 'AVAILABLE',
         });
+        console.log(productId);
 
         slotStart = slotEnd;
     }

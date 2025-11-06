@@ -70,7 +70,7 @@ export function OutletProvider({ children }: OutletProviderProps) {
     const { data, isLoading, error, refetch } = useOutletsQuery();
     const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
 
-    const outlets = data?.outlets || [];
+    const outlets = (data?.outlets || []) as Outlet[];
 
     // Initialize selected outlet when outlets data is available
     useEffect(() => {

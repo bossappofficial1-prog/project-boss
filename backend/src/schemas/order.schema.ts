@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { OrderStatus } from "@prisma/client";
 
+export const onlinePaymentChannelSchema = z.enum([
+    "qris_dynamic",
+    "va_bca",
+    "ewallet_gopay"
+]);
+
 const orderItemSchema = z.object({
     productId: z.string(),
     quantity: z.number()
@@ -28,7 +34,9 @@ export const createOrderSchema = z.object({
     paymentMethod: z.enum(["qris", "online", "cash"], {
         errorMap: () => ({ message: "Payment method harus 'qris', 'online', atau 'cash'" })
     }).default("online"),
+    onlinePaymentChannel: onlinePaymentChannelSchema.optional(),
     bookingSlotId: z.string().uuid().optional(),
+    orderSource: z.enum(["CUSTOMER", "POS"]).default("CUSTOMER"),
 }).refine(
     (data) => {
         // Validate total quantity doesn't exceed reasonable limits
@@ -62,9 +70,21 @@ export const createOrderSchema = z.object({
             message: "Booking slot harus punya tanggal booking",
             path: ["bookingDate"]
         }
+    ).refine(
+        (data) => {
+            if (data.paymentMethod === "online") {
+                return Boolean(data.onlinePaymentChannel);
+            }
+            return true;
+        },
+        {
+            message: "Online payment channel wajib diisi untuk pembayaran online",
+            path: ["onlinePaymentChannel"]
+        }
     );
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
+export type OnlinePaymentChannel = z.infer<typeof onlinePaymentChannelSchema>;
 
 export const updateOrderStatusSchema = z.object({
     status: z.nativeEnum(OrderStatus),

@@ -248,7 +248,7 @@ export const OrderStatus = {
     CANCELLED: "CANCELLED" // Pesanan dibatalkan
 } as const
 
-type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus]
+export type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus]
 
 export interface OrderDetail {
     id: string

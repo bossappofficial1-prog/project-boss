@@ -1,84 +1,156 @@
 "use client";
 
+import { PenBox } from 'lucide-react';
+import type { ColumnDef } from '@tanstack/react-table';
+import { useMemo } from 'react';
+
+import { DataTable } from '@/components/ui/data-table';
 import { ServiceItem } from '@/hooks/useServicesData';
 import { resolveUploadImageUrl } from '@/lib/url';
 
 interface DesktopTableProps {
   services: ServiceItem[];
   onEdit: (s: ServiceItem) => void;
+  onRefresh: () => void;
   formatCurrency: (n: number) => string;
   formatDuration: (n?: number) => string;
+  currentPage: number;
+  itemsPerPage: number;
+  totalServices: number;
+  onPaginationChange: (params: { page: number; limit: number }) => void;
+  isFetching?: boolean;
 }
 
-export default function ServicesDesktopTable({ services, onEdit, formatCurrency, formatDuration }: DesktopTableProps) {
+export default function ServicesDesktopTable({
+  services,
+  onEdit,
+  onRefresh,
+  formatCurrency,
+  formatDuration,
+  currentPage,
+  itemsPerPage,
+  totalServices,
+  onPaginationChange,
+  isFetching,
+}: DesktopTableProps) {
+  const pageSizeOptions = useMemo(() => {
+    const base = [5, 10, 20, 50, 100];
+    if (!base.includes(itemsPerPage)) {
+      base.push(itemsPerPage);
+    }
+    return base.sort((a, b) => a - b);
+  }, [itemsPerPage]);
+
+  const columns = useMemo<ColumnDef<ServiceItem>[]>(() => {
+    return [
+      {
+        id: 'no',
+        header: 'No',
+        enableSorting: false,
+        enableHiding: false,
+        size: 60,
+        cell: ({ row }) => {
+          const rowNumber = (currentPage - 1) * itemsPerPage + row.index + 1;
+          return <span className="text-sm text-muted-foreground">{rowNumber}</span>;
+        },
+      },
+      {
+        accessorKey: 'name',
+        header: 'Jasa',
+        enableSorting: false,
+        cell: ({ row }) => {
+          const service = row.original;
+
+          return (
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="h-12 w-12 rounded-lg object-cover"
+                src={resolveUploadImageUrl(service.image) || 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png'}
+                alt={service.name}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png';
+                }}
+              />
+              <div>
+                <div className="text-sm font-medium text-foreground">{service.name}</div>
+                {service.description && (
+                  <div className="text-xs text-muted-foreground line-clamp-1">{service.description}</div>
+                )}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'price',
+        header: 'Harga',
+        cell: ({ row }) => {
+          const service = row.original;
+
+          return (
+            <div className="space-y-1 text-sm">
+              <div className="font-medium text-foreground">{formatCurrency(service.price)}</div>
+              <div className="text-xs text-muted-foreground">Modal: {formatCurrency(service.costPrice)}</div>
+            </div>
+          );
+        },
+      },
+      {
+        id: 'duration',
+        header: 'Durasi',
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span className="text-sm text-foreground">{formatDuration(row.original.serviceDurationMinutes)}</span>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        enableSorting: false,
+        cell: ({ row }) => {
+          const service = row.original;
+          const isActive = service.status === 'ACTIVE';
+          return (
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}
+            >
+              {isActive ? 'Aktif' : 'Tidak Aktif'}
+            </span>
+          );
+        },
+      },
+    ];
+  }, [currentPage, formatCurrency, formatDuration, itemsPerPage]);
+
   return (
-    <div className="hidden sm:block overflow-x-auto rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-900">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-        <thead className="bg-gray-50 dark:bg-gray-800">
-          <tr>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">No</th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jasa</th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Harga</th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durasi</th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-            <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-          {services.map((service, index) => (
-            <tr key={service.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-              <td className="px-4 py-3">
-                <div className="text-sm text-gray-900 dark:text-gray-100">{index + 1}</div>
-              </td>
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="w-12 h-12 rounded-lg object-cover"
-                    src={resolveUploadImageUrl(service.image) || 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png'}
-                    alt={service.name}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png';
-                    }}
-                  />
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{service.name}</div>
-                    {service.description && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{service.description}</div>
-                    )}
-                  </div>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-sm">
-                <div className="text-gray-900 dark:text-gray-100">{formatCurrency(service.price)}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Modal: {formatCurrency(service.costPrice)}</div>
-              </td>
-              <td className="px-4 py-3">
-                <div className="text-sm text-gray-900 dark:text-gray-100">{formatDuration(service.serviceDurationMinutes)}</div>
-              </td>
-              <td className="px-4 py-3">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${service.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {service.status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif'}
-                </span>
-              </td>
-              <td className="px-4 py-3">
-                <div className="flex items-center justify-end gap-2">
-                  <button 
-                    onClick={() => onEdit(service)} 
-                    className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-900 px-2 py-1 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/20" 
-                    title="Edit"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Edit
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="hidden sm:block">
+      <DataTable
+        data={services}
+        columns={columns}
+        globalFilter={false}
+        showColumnVisibility
+        emptyMessage="Belum ada jasa."
+        labelAction="Aksi"
+        serverSidePagination
+        totalItems={totalServices}
+        serverPage={currentPage}
+        serverLimit={itemsPerPage}
+        onPaginationChange={onPaginationChange}
+        pageSizeOptions={pageSizeOptions}
+        onRefresh={onRefresh}
+        isRefreshing={isFetching}
+        rowActions={(service) => [
+          {
+            label: 'Edit',
+            onClick: () => onEdit(service),
+            icon: PenBox,
+            variant: 'ghost',
+            className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50',
+          },
+        ]}
+      />
     </div>
   );
 }

@@ -83,9 +83,9 @@ export default function CountdownTimer({ expiryTime, onExpire, className, compac
         return (
             <div className={cn(
                 "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium",
-                isCritical 
+                isCritical
                     ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
-                    : isUrgent 
+                    : isUrgent
                         ? "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400"
                         : "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
                 className
@@ -113,7 +113,7 @@ export default function CountdownTimer({ expiryTime, onExpire, className, compac
         )}>
             <div className="flex items-center gap-2">
                 <Clock className={cn(
-                    "w-5 h-5",
+                    "w-4 h-4",
                     isCritical
                         ? "text-red-600 dark:text-red-400"
                         : isUrgent
@@ -218,7 +218,7 @@ export default function CountdownTimer({ expiryTime, onExpire, className, compac
                         : "text-orange-700 dark:text-orange-400"
                 )}>
                     <AlertTriangle className="w-3 h-3" />
-                    {isCritical 
+                    {isCritical
                         ? t('timer.urgentWarning')
                         : t('timer.expiringWarning')
                     }

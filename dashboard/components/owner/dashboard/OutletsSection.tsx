@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import { toast } from 'sonner';
 import { Outlet } from '@/types';
@@ -33,16 +34,11 @@ export default function OutletsSection({
   const [selectedOutletForQRIS, setSelectedOutletForQRIS] = useState<Outlet | null>(null);
 
   const handleSelectOutlet = (outlet: Outlet) => {
-    console.log(`🔄 OutletsSection: handleSelectOutlet called`);
-    console.log(`🔄 OutletsSection: outlet.id = ${outlet.id}, selectedOutlet prop = ${selectedOutlet}`);
-    console.log(`🔄 OutletsSection: comparison result = ${outlet.id === selectedOutlet}`);
 
     if (outlet.id === selectedOutlet) {
       console.log(`🔄 OutletsSection: Outlet already selected, returning early`);
       return; // Already selected
     }
-
-    console.log(`🔄 OutletsSection: Calling setSelectedOutlet with outlet:`, outlet);
     setSelectedOutlet(outlet);
     toast.success('Outlet berubah', {
       description: `Beralih ke ${outlet.name}`,
@@ -79,15 +75,16 @@ export default function OutletsSection({
           <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
             Tambahkan outlet pertama Anda untuk mulai menjual produk dan layanan
           </p>
-          <button
+          <Button
             onClick={onAddOutlet}
-            className="bg-red-gradient hover:bg-red-gradient-dark text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+            type="button"
+            className="bg-red-gradient hover:bg-red-gradient-dark rounded-xl px-6 py-3 font-medium text-white shadow-lg transition-all duration-300 hover:shadow-xl"
           >
             <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             Tambah Outlet Pertama
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -98,7 +95,7 @@ export default function OutletsSection({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3 sm:gap-0">
         <div className="flex items-center">
-          <div className="w-10 h-10 bg-red-gradient rounded-lg flex items-center justify-center mr-3">
+          <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center mr-3">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
@@ -113,10 +110,10 @@ export default function OutletsSection({
           </div>
         </div>
 
-        <button
+        <Button
           onClick={onAddOutlet}
           disabled={isLoading}
-          className="bg-blue-gradient hover:bg-blue-gradient-dark text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
+          type="button"
         >
           {isLoading ? (
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -126,7 +123,7 @@ export default function OutletsSection({
             </svg>
           )}
           Tambah Outlet
-        </button>
+        </Button>
       </div>
 
       {/* Outlets Grid */}
@@ -156,42 +153,45 @@ export default function OutletsSection({
               <div className={`absolute top-3 right-3 flex space-x-1 transition-all duration-200 ${isActionSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
                 }`}>
                 {/* QRIS Button */}
-                <button
+                <Button
                   onClick={(e) => handleQRISClick(e, outlet)}
-                  className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                  type="button"
+                  className="h-auto rounded-lg bg-green-500 p-2 text-white shadow-lg transition-all duration-200 hover:bg-green-600 hover:shadow-xl"
                   title="Upload QRIS"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                   </svg>
-                </button>
+                </Button>
                 {onEditOutlet && (
-                  <button
+                  <Button
                     onClick={(e) => {
                       e.stopPropagation();
                       onEditOutlet(outlet);
                     }}
-                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                    type="button"
+                    className="h-auto rounded-lg bg-blue-500 p-2 text-white shadow-lg transition-all duration-200 hover:bg-blue-600 hover:shadow-xl"
                     title="Edit Outlet"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                  </button>
+                  </Button>
                 )}
                 {onDeleteOutlet && (
-                  <button
+                  <Button
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleteOutlet(outlet);
                     }}
-                    className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                    type="button"
+                    className="h-auto rounded-lg bg-red-500 p-2 text-white shadow-lg transition-all duration-200 hover:bg-red-600 hover:shadow-xl"
                     title="Hapus Outlet"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -275,16 +275,18 @@ export default function OutletsSection({
 
                   {/* QRIS Indicator */}
                   {outlet.manualQrImageUrl && (
-                    <button
+                    <Button
                       onClick={(e) => handleViewQRISClick(e, outlet)}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                      variant="secondary"
+                      type="button"
+                      className="inline-flex h-auto items-center rounded-full border border-green-200 bg-green-100 px-3 py-1 text-xs font-medium text-green-800 transition-colors hover:bg-green-200 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50"
                     >
                       <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                       Lihat QRIS
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

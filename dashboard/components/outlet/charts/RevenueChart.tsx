@@ -15,8 +15,8 @@ import {
     ComposedChart,
     Bar,
 } from 'recharts';
-import { TimeframeFilter, TimeframeRange } from '@/types/outlet';
-import { subDays, subMonths, format } from 'date-fns';
+import { TimeframeFilter } from '@/types/outlet';
+import { subDays, subMonths } from 'date-fns';
 import { Button } from '@/components/ui/button';
 
 interface RevenueChartProps {
@@ -33,36 +33,41 @@ const timeframeOptions: { value: TimeframeFilter; label: string }[] = [
     { value: '3m', label: '3 Bulan' },
 ];
 
-// Custom Tooltip dengan styling modern
-const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload?.length) {
-        return (
-            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-gray-200 dark:border-gray-700">
-                <p className="text-sm font-semibold text-gray-800 dark:text-white mb-2">
-                    {label}
-                </p>
-                {payload.map((entry: any, index: number) => (
-                    <p
-                        key={index}
-                        className="text-xs"
-                        style={{ color: entry.color }}
-                    >
-                        <span className="font-medium">{entry.name}:</span> {entry.value.toLocaleString('id-ID')}
-                    </p>
-                ))}
-            </div>
-        );
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string }>;
+    label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+    if (!active || !payload?.length) {
+        return null;
     }
-    return null;
+
+    return (
+        <div className="rounded-xl border border-slate-200 bg-white/95 px-4 py-3 text-xs shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/90">
+            <p className="mb-2 text-sm font-semibold text-slate-900 dark:text-white">
+                {label}
+            </p>
+            {payload.map((entry) => (
+                <p key={entry.name} className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: entry.color }}
+                    />
+                    <span className="font-medium">{entry.name}:</span>
+                    <span>{entry.value.toLocaleString('id-ID')}</span>
+                </p>
+            ))}
+        </div>
+    );
 };
 
 export default function RevenueChart({ data }: RevenueChartProps) {
     const [timeframe, setTimeframe] = useState<TimeframeFilter>('30d');
     const [chartType, setChartType] = useState<'area' | 'line' | 'composed'>('area');
 
-    // Gradient definitions
     const gradientId = 'revenueGradient';
-    const gradientIdOrders = 'ordersGradient';
 
     const filteredData = useMemo(() => {
         const now = new Date();
@@ -90,182 +95,210 @@ export default function RevenueChart({ data }: RevenueChartProps) {
         return { avgRevenue, maxRevenue, totalRevenue };
     }, [filteredData]);
 
+    const frameButtonClass = (isActive: boolean) =>
+        isActive
+            ? 'bg-slate-900 text-white shadow-sm hover:bg-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-100'
+            : 'border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white';
+
+    const chartButtonClass = (isActive: boolean) =>
+        isActive
+            ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-600 dark:bg-blue-500 dark:hover:bg-blue-500'
+            : 'border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white';
+
+    const isEmpty = filteredData.length === 0;
+
+    const renderChart = () => {
+        if (chartType === 'area') {
+            return (
+                <AreaChart data={filteredData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0.02} />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.25)" vertical={false} />
+                    <XAxis
+                        dataKey="date"
+                        stroke="#64748b"
+                        tickMargin={8}
+                        style={{ fontSize: '12px' }}
+                    />
+                    <YAxis stroke="#64748b" tickMargin={8} style={{ fontSize: '12px' }} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#64748b" tickMargin={8} style={{ fontSize: '12px' }} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                    <Legend wrapperStyle={{ paddingTop: 12 }} />
+                    <Area
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="#ef4444"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill={`url(#${gradientId})`}
+                        dot={{ fill: '#ef4444', r: 4 }}
+                        activeDot={{ r: 6, fill: '#dc2626' }}
+                        name="Pendapatan (Rp)"
+                    />
+                    <Area
+                        type="monotone"
+                        dataKey="orders"
+                        stroke="#2563eb"
+                        strokeWidth={2}
+                        fillOpacity={0.1}
+                        fill="#2563eb"
+                        dot={{ fill: '#2563eb', r: 4 }}
+                        activeDot={{ r: 6, fill: '#1d4ed8' }}
+                        name="Jumlah Pesanan"
+                        yAxisId="right"
+                    />
+                </AreaChart>
+            );
+        }
+
+        if (chartType === 'line') {
+            return (
+                <LineChart data={filteredData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.25)" vertical={false} />
+                    <XAxis
+                        dataKey="date"
+                        stroke="#64748b"
+                        tickMargin={8}
+                        style={{ fontSize: '12px' }}
+                    />
+                    <YAxis stroke="#64748b" tickMargin={8} style={{ fontSize: '12px' }} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#64748b" tickMargin={8} style={{ fontSize: '12px' }} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                    <Legend wrapperStyle={{ paddingTop: 12 }} />
+                    <Line
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="#ef4444"
+                        strokeWidth={2.5}
+                        dot={{ fill: '#ef4444', r: 4 }}
+                        activeDot={{ r: 6, fill: '#dc2626' }}
+                        name="Pendapatan (Rp)"
+                    />
+                    <Line
+                        type="monotone"
+                        dataKey="orders"
+                        stroke="#2563eb"
+                        strokeWidth={2}
+                        dot={{ fill: '#2563eb', r: 3.5 }}
+                        activeDot={{ r: 6, fill: '#1d4ed8' }}
+                        name="Jumlah Pesanan"
+                        yAxisId="right"
+                    />
+                </LineChart>
+            );
+        }
+
+        return (
+            <ComposedChart data={filteredData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.25)" vertical={false} />
+                <XAxis
+                    dataKey="date"
+                    stroke="#64748b"
+                    tickMargin={8}
+                    style={{ fontSize: '12px' }}
+                />
+                <YAxis stroke="#64748b" tickMargin={8} style={{ fontSize: '12px' }} />
+                <YAxis yAxisId="right" orientation="right" stroke="#64748b" tickMargin={8} style={{ fontSize: '12px' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                <Legend wrapperStyle={{ paddingTop: 12 }} />
+                <Bar dataKey="revenue" fill="#ef4444" radius={[6, 6, 0, 0]} name="Pendapatan (Rp)" />
+                <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="orders"
+                    stroke="#2563eb"
+                    strokeWidth={2}
+                    dot={{ fill: '#2563eb', r: 4 }}
+                    name="Jumlah Pesanan"
+                />
+            </ComposedChart>
+        );
+    };
+
     return (
-        <div className="rounded-2xl bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 p-6 shadow-xl">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-lg transition dark:border-slate-800/70 dark:bg-slate-950">
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1">
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
                         Tren Pendapatan
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Total: Rp {stats.totalRevenue.toLocaleString('id-ID')} | Rata-rata: Rp {stats.avgRevenue.toLocaleString('id-ID')}
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Total {stats.totalRevenue.toLocaleString('id-ID')} • Rata-rata {stats.avgRevenue.toLocaleString('id-ID')} • Puncak {stats.maxRevenue.toLocaleString('id-ID')}
                     </p>
                 </div>
 
-                {/* Controls */}
                 <div className="flex flex-wrap gap-2">
-                    {/* Timeframe Filter */}
-                    <div className="flex gap-2 p-1 bg-white/10 dark:bg-gray-700/50 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-600/50">
-                        {timeframeOptions.map((option) => (
-                            <button
-                                key={option.value}
-                                onClick={() => setTimeframe(option.value)}
-                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ${timeframe === option.value
-                                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
-                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                    }`}
-                            >
-                                {option.label}
-                            </button>
-                        ))}
+                    <div className="flex gap-2">
+                        {timeframeOptions.map((option) => {
+                            const isActive = timeframe === option.value;
+                            return (
+                                <Button
+                                    key={option.value}
+                                    size="sm"
+                                    variant={isActive ? 'default' : 'outline'}
+                                    onClick={() => setTimeframe(option.value)}
+                                    className={`rounded-full px-3 font-medium transition ${frameButtonClass(isActive)}`}
+                                >
+                                    {option.label}
+                                </Button>
+                            );
+                        })}
                     </div>
 
-                    {/* Chart Type Toggle */}
-                    <div className="flex gap-1 p-1 bg-white/10 dark:bg-gray-700/50 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-600/50">
-                        {(['area', 'line', 'composed'] as const).map((type) => (
-                            <button
-                                key={type}
-                                onClick={() => setChartType(type)}
-                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 capitalize ${chartType === type
-                                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
-                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                    }`}
-                            >
-                                {type}
-                            </button>
-                        ))}
+                    <div className="flex gap-2">
+                        {(['area', 'line', 'composed'] as const).map((type) => {
+                            const isActive = chartType === type;
+                            return (
+                                <Button
+                                    key={type}
+                                    size="sm"
+                                    variant={isActive ? 'default' : 'outline'}
+                                    onClick={() => setChartType(type)}
+                                    className={`rounded-full px-3 capitalize transition ${chartButtonClass(isActive)}`}
+                                >
+                                    {type}
+                                </Button>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
 
-            {/* Chart */}
-            <div className="w-full h-96 mb-4">
-                <ResponsiveContainer width="100%" height="100%">
-                    {chartType === 'area' ? (
-                        <AreaChart data={filteredData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0.01} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" vertical={false} />
-                            <XAxis
-                                dataKey="date"
-                                stroke="#999"
-                                style={{ fontSize: '12px' }}
-                            />
-                            <YAxis stroke="#999" style={{ fontSize: '12px' }} />
-                            <YAxis yAxisId="right" orientation="right" stroke="#999" style={{ fontSize: '12px' }} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Area
-                                type="monotone"
-                                dataKey="revenue"
-                                stroke="#ef4444"
-                                strokeWidth={3}
-                                fillOpacity={1}
-                                fill={`url(#${gradientId})`}
-                                dot={{ fill: '#ef4444', r: 5 }}
-                                activeDot={{ r: 7, fill: '#dc2626' }}
-                                name="Pendapatan (Rp)"
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="orders"
-                                stroke="#3b82f6"
-                                strokeWidth={2}
-                                fillOpacity={0.2}
-                                fill="#3b82f6"
-                                dot={{ fill: '#3b82f6', r: 4 }}
-                                activeDot={{ r: 6, fill: '#2563eb' }}
-                                name="Jumlah Pesanan"
-                                yAxisId="right"
-                            />
-                        </AreaChart>
-                    ) : chartType === 'line' ? (
-                        <LineChart data={filteredData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" vertical={false} />
-                            <XAxis
-                                dataKey="date"
-                                stroke="#999"
-                                style={{ fontSize: '12px' }}
-                            />
-                            <YAxis stroke="#999" style={{ fontSize: '12px' }} />
-                            <YAxis yAxisId="right" orientation="right" stroke="#999" style={{ fontSize: '12px' }} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Line
-                                type="monotone"
-                                dataKey="revenue"
-                                stroke="#ef4444"
-                                strokeWidth={3}
-                                dot={{ fill: '#ef4444', r: 5 }}
-                                activeDot={{ r: 7, fill: '#dc2626' }}
-                                name="Pendapatan (Rp)"
-                                isAnimationActive={true}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="orders"
-                                stroke="#3b82f6"
-                                strokeWidth={2}
-                                dot={{ fill: '#3b82f6', r: 4 }}
-                                activeDot={{ r: 6, fill: '#2563eb' }}
-                                name="Jumlah Pesanan"
-                                yAxisId="right"
-                            />
-                        </LineChart>
-                    ) : (
-                        <ComposedChart data={filteredData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" vertical={false} />
-                            <XAxis
-                                dataKey="date"
-                                stroke="#999"
-                                style={{ fontSize: '12px' }}
-                            />
-                            <YAxis stroke="#999" style={{ fontSize: '12px' }} />
-                            <YAxis yAxisId="right" orientation="right" stroke="#999" style={{ fontSize: '12px' }} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Bar
-                                dataKey="revenue"
-                                fill="#ef4444"
-                                opacity={0.7}
-                                name="Pendapatan (Rp)"
-                            />
-                            <Line
-                                yAxisId="right"
-                                type="monotone"
-                                dataKey="orders"
-                                stroke="#3b82f6"
-                                strokeWidth={2}
-                                dot={{ fill: '#3b82f6', r: 4 }}
-                                name="Jumlah Pesanan"
-                            />
-                        </ComposedChart>
-                    )}
-                </ResponsiveContainer>
+            <div className="w-full">
+                {isEmpty ? (
+                    <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-400">
+                        <span className="font-medium">Belum ada data tren untuk rentang ini</span>
+                        <span className="text-xs">Pilih rentang tanggal berbeda atau tunggu transaksi baru</span>
+                    </div>
+                ) : (
+                    <div className="h-96">
+                        <ResponsiveContainer width="100%" height="100%">
+                            {renderChart()}
+                        </ResponsiveContainer>
+                    </div>
+                )}
             </div>
 
-            {/* Stats Footer */}
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/10 dark:border-gray-700/50">
-                <div className="text-center">
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Total</p>
-                    <p className="font-bold text-red-600 dark:text-red-400">
+            <div className="mt-6 grid gap-4 border-t border-slate-200 pt-4 text-center text-sm dark:border-slate-800 md:grid-cols-3">
+                <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Total</p>
+                    <p className="text-lg font-semibold text-slate-900 dark:text-white">
                         Rp {stats.totalRevenue.toLocaleString('id-ID')}
                     </p>
                 </div>
-                <div className="text-center">
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Rata-rata</p>
-                    <p className="font-bold text-blue-600 dark:text-blue-400">
+                <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Rata-rata</p>
+                    <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
                         Rp {stats.avgRevenue.toLocaleString('id-ID')}
                     </p>
                 </div>
-                <div className="text-center">
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Puncak</p>
-                    <p className="font-bold text-green-600 dark:text-green-400">
+                <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Puncak</p>
+                    <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
                         Rp {stats.maxRevenue.toLocaleString('id-ID')}
                     </p>
                 </div>

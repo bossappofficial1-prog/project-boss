@@ -633,11 +633,13 @@
         "categories": {
             "all": "Semua",
             "qris": "QRIS",
-            "va": "Transfer Bank"
+            "va": "Transfer Bank",
+            "manual": "Manual"
         },
         "types": {
             "qris": "QRIS",
-            "va": "Transfer Bank"
+            "va": "Transfer Bank",
+            "manual": "Manual"
         },
         "loading": "Sedang memuat metode pembayaran...",
         "error": {
@@ -728,6 +730,78 @@
             "message": "Apakah Anda yakin ingin membatalkan pembayaran ini? Tindakan ini tidak dapat dibatalkan.",
             "confirm": "Ya, Batalkan",
             "cancel": "Tidak"
+        }
+    },
+    "paymentDetail": {
+        "title": "Detail Pembayaran",
+        "status": {
+            "pending": {
+                "title": "Menunggu Pembayaran",
+                "description": "Kami masih menunggu pembayaranmu diselesaikan."
+            },
+            "processing": {
+                "title": "Pembayaran Diproses",
+                "description": "Pembayaranmu sedang diverifikasi oleh outlet."
+            },
+            "success": {
+                "title": "Pembayaran Berhasil",
+                "description": "Terima kasih! Outlet telah menerima pembayaranmu."
+            },
+            "failed": {
+                "title": "Pembayaran Gagal",
+                "description": "Transaksi tidak berhasil. Silakan buat pembayaran baru."
+            },
+            "expired": {
+                "title": "Pembayaran Kedaluwarsa",
+                "description": "Batas waktu pembayaran telah lewat. Silakan buat pembayaran baru."
+            },
+            "cancelled": {
+                "title": "Pembayaran Dibatalkan",
+                "description": "Pembayaran ini telah dibatalkan."
+            },
+            "unknown": {
+                "title": "Status Pembayaran",
+                "description": "Status pembayaran belum dapat ditentukan."
+            }
+        },
+        "overview": {
+            "title": "Ringkasan",
+            "method": "Metode Pembayaran",
+            "total": "Total Tagihan",
+            "expiry": "Berakhir Pada"
+        },
+        "method": {
+            "midtrans": "Midtrans",
+            "manual": "Pembayaran Manual"
+        },
+        "midtrans": {
+            "vaTitle": "Virtual Account ({bank})",
+            "qrisTitle": "Pembayaran QRIS"
+        },
+        "manual": {
+            "title": "Instruksi Pembayaran Manual",
+            "outlet": "Outlet",
+            "total": "Total Pembayaran",
+            "qrisTitle": "Scan QR",
+            "qrisDescription": "Scan QR ini menggunakan e-wallet favoritmu dan bayar sesuai nominalnya.",
+            "bankTitle": "Detail Transfer Bank",
+            "bank": "Bank",
+            "accountNumber": "Nomor Rekening",
+            "accountName": "Nama Pemilik",
+            "note": "Catatan Tambahan"
+        },
+        "manualUpload": {
+            "title": "Unggah Bukti Pembayaran",
+            "description": "Unggah bukti pembayaran agar outlet dapat memverifikasi lebih cepat.",
+            "hint": "Format yang didukung: JPG, PNG, WEBP, atau PDF (maks 10MB).",
+            "uploadButton": "Unggah Bukti",
+            "uploading": "Mengunggah...",
+            "success": "Bukti pembayaran berhasil diunggah. Outlet akan segera memverifikasi.",
+            "error": "Gagal mengunggah bukti pembayaran. Silakan coba lagi.",
+            "fileTooLarge": "Ukuran file terlalu besar. Maksimal 10MB.",
+            "invalidType": "Jenis file tidak didukung. Gunakan JPG, PNG, WEBP, atau PDF.",
+            "removeFile": "Hapus File",
+            "expired": "Pembayaran ini telah kedaluwarsa sehingga unggah dinonaktifkan."
         }
     },
     "paymentSuccess": {
@@ -848,6 +922,7 @@
             "title": "Ringkasan Pesanan",
             "subtotal": "Subtotal",
             "applicationFee": "Biaya Aplikasi",
+            "transactionFee": "Biaya Transaksi",
             "total": "Total"
         },
         "footer": {

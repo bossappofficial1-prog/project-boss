@@ -23,6 +23,7 @@ import adminRouter from "./admin.route";
 import transactionRouter from "./transaction.route";
 import { ResponseUtil } from "../utils";
 import { paymentMethod } from "../constants/payment-method";
+import { SocketEmitter } from "../socket/socket-emiiter";
 
 const apiRouter = Router()
 
@@ -49,5 +50,11 @@ apiRouter.use('/queue-monitoring', queueMonitoringRouter)
 apiRouter.use('/notifications', notificationRouter)
 apiRouter.use('/transactions', transactionRouter)
 apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
+apiRouter.get('/test-event/:outletId', (req, res) => {
+
+    const outletId = req.params.outletId;
+    SocketEmitter.getInstance().sendTestMessage(outletId, `Ada pesanan baru`)
+    return ResponseUtil.success(res, {})
+})
 
 export default apiRouter

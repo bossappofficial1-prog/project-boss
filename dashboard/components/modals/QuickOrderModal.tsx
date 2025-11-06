@@ -32,7 +32,7 @@ export function QuickOrderModal({
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [businessHours, setBusinessHours] = useState<BusinessHours[]>([]);
-  
+
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
@@ -50,18 +50,18 @@ export function QuickOrderModal({
     const fetchData = async () => {
       try {
         // Fetch products
-        const response = await productApi.getByOutlet(outletId, { 
+        const response = await productApi.getByOutlet(outletId, {
           limit: 100,
         });
-        
+
         // Backend returns products directly as array
-        const productList = response || [];
-        
+        const productList = response.data || [];
+
         // Filter by product type
         const filteredProducts = productList.filter(
           (product: Product) => product.type === productType
         );
-        
+
         setProducts(filteredProducts as Product[]);
 
         // Fetch business hours for service booking validation
@@ -96,7 +96,7 @@ export function QuickOrderModal({
   const handleItemChange = (index: number, field: 'productId' | 'quantity', value: string | number) => {
     setFormData(prev => ({
       ...prev,
-      items: prev.items.map((item, i) => 
+      items: prev.items.map((item, i) =>
         i === index ? { ...item, [field]: value } : item
       )
     }));
@@ -112,54 +112,54 @@ export function QuickOrderModal({
   const isTimeWithinBusinessHours = (date: string, time: string): boolean => {
     // For GOODS orders, no business hours validation needed
     if (productType === 'GOODS') return true;
-    
+
     // For SERVICE orders, validate booking time must be within business hours
     if (productType !== 'SERVICE' || !date || !time) return true;
-    
+
     const selectedDate = new Date(date);
     const dayOfWeek = selectedDate.getDay();
-    
+
     // Convert day of week to our format
     const dayNames: BusinessHours['day'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
     const dayName = dayNames[dayOfWeek];
-    
+
     const dayHours = businessHours.find(h => h.day === dayName);
-    
+
     if (!dayHours || !dayHours.isOpen) {
       return false; // Outlet is closed on this day
     }
-    
+
     if (!dayHours.openTime || !dayHours.closeTime) {
       return false; // No operating hours defined
     }
-    
+
     const selectedTime = time;
     return selectedTime >= dayHours.openTime && selectedTime <= dayHours.closeTime;
   };
 
   const getBusinessHoursForDate = (date: string) => {
     if (!date) return null;
-    
+
     const selectedDate = new Date(date);
     const dayOfWeek = selectedDate.getDay();
-    
+
     const dayNames: BusinessHours['day'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
     const dayName = dayNames[dayOfWeek];
-    
+
     return businessHours.find(h => h.day === dayName);
   };
 
   const getBusinessHoursText = (date: string) => {
     const dayHours = getBusinessHoursForDate(date);
-    
+
     if (!dayHours || !dayHours.isOpen) {
       return 'Outlet tutup pada hari ini';
     }
-    
+
     if (!dayHours.openTime || !dayHours.closeTime) {
       return 'Jam operasional belum ditentukan';
     }
-    
+
     return `Jam operasional: ${dayHours.openTime} - ${dayHours.closeTime}`;
   };
 
@@ -189,34 +189,34 @@ export function QuickOrderModal({
       });
     }
 
-      // Booking validation when creating service queue
-      if (productType === 'SERVICE') {
-        if (!formData.bookingDate) {
-          newErrors.bookingDate = 'Tanggal booking wajib diisi';
+    // Booking validation when creating service queue
+    if (productType === 'SERVICE') {
+      if (!formData.bookingDate) {
+        newErrors.bookingDate = 'Tanggal booking wajib diisi';
+      }
+      if (!formData.bookingTime) {
+        newErrors.bookingTime = 'Jam booking wajib diisi';
+      }
+
+      // Validate booking time within business hours
+      if (formData.bookingDate && formData.bookingTime) {
+        const dayHours = getBusinessHoursForDate(formData.bookingDate);
+
+        if (!dayHours || !dayHours.isOpen) {
+          newErrors.bookingTime = 'Outlet tutup pada tanggal yang dipilih';
+        } else if (!dayHours.openTime || !dayHours.closeTime) {
+          newErrors.bookingTime = 'Jam operasional belum ditentukan untuk hari ini';
+        } else if (!isTimeWithinBusinessHours(formData.bookingDate, formData.bookingTime)) {
+          newErrors.bookingTime = `Jam booking harus antara ${dayHours.openTime} - ${dayHours.closeTime}`;
         }
-        if (!formData.bookingTime) {
-          newErrors.bookingTime = 'Jam booking wajib diisi';
-        }
-        
-        // Validate booking time within business hours
-        if (formData.bookingDate && formData.bookingTime) {
-          const dayHours = getBusinessHoursForDate(formData.bookingDate);
-          
-          if (!dayHours || !dayHours.isOpen) {
-            newErrors.bookingTime = 'Outlet tutup pada tanggal yang dipilih';
-          } else if (!dayHours.openTime || !dayHours.closeTime) {
-            newErrors.bookingTime = 'Jam operasional belum ditentukan untuk hari ini';
-          } else if (!isTimeWithinBusinessHours(formData.bookingDate, formData.bookingTime)) {
-            newErrors.bookingTime = `Jam booking harus antara ${dayHours.openTime} - ${dayHours.closeTime}`;
-          }
-        }
-      }    setErrors(newErrors);
+      }
+    } setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
@@ -243,7 +243,7 @@ export function QuickOrderModal({
       }
 
       await orderApi.create(orderData);
-      
+
       // Reset form
       setFormData({
         customerName: '',
@@ -253,7 +253,7 @@ export function QuickOrderModal({
         bookingDate: '',
         bookingTime: '',
       });
-      
+
       onSuccess?.();
       onOpenChange(false);
     } catch (error: any) {
@@ -450,7 +450,7 @@ export function QuickOrderModal({
 
             {/* Booking fields for Service queue */}
             {productType === 'SERVICE' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Tanggal Booking *
@@ -486,7 +486,7 @@ export function QuickOrderModal({
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.bookingTime}</p>
                   )}
                 </div>
-                </div>
+              </div>
             )}
 
             {/* Payment Method */}

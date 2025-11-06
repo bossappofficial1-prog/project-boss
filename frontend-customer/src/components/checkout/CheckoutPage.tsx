@@ -131,7 +131,7 @@ const CheckoutButton: React.FC<{
     );
 };
 
-const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransactionFee, applicationFee, grandTotal }) => {
+const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, grandTotal }) => {
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
     const router = useRouter();
 
@@ -152,7 +152,7 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
         // Different fee structure based on payment method
         if (selectedPaymentMethod.type === 'qris') {
             // QRIS typically has lower transaction fees
-            transactionFee = subtotal * 0.007; // 0.7%
+            transactionFee = subtotal * 0.02; // 2%
             appFee = subtotal * 0.03; // 3%
         } else if (selectedPaymentMethod.type === 'va') {
             // Virtual Account has fixed fees
@@ -160,7 +160,7 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
             appFee = subtotal * 0.03; // 3%
         } else if (selectedPaymentMethod.type === 'manual') {
             transactionFee = 0;
-            appFee = subtotal * 0.03; // Hanya biaya aplikasi
+            appFee = subtotal * 0;
         }
 
         return {
@@ -201,8 +201,8 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
             <OrderSummary
                 outlets={outlets}
                 subtotal={subtotal}
-                totalTransactionFee={totalTransactionFee}
-                applicationFee={applicationFee}
+                totalTransactionFee={dynamicTransactionFee}
+                applicationFee={dynamicApplicationFee}
                 grandTotal={grandTotal}
                 selectedPaymentMethod={selectedPaymentMethod}
                 dynamicTransactionFee={dynamicTransactionFee}
@@ -215,40 +215,6 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
                 onSelectPayment={handleSelectPayment}
                 selectedPayment={selectedPaymentMethod}
             />
-
-            {/* Payment Method Info */}
-            {selectedPaymentMethod && (
-                <Card className="border-blue-200 bg-blue-50/50">
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span className="text-sm font-medium text-blue-700">
-                                Biaya untuk {selectedPaymentMethod.name}
-                            </span>
-                        </div>
-                        <div className="text-xs text-blue-600 space-y-1">
-                            {selectedPaymentMethod.type === 'qris' && (
-                                <>
-                                    <p>• Biaya transaksi: 0.7% dari total belanja</p>
-                                    <p>• Biaya aplikasi: 3% dari total belanja</p>
-                                </>
-                            )}
-                            {selectedPaymentMethod.type === 'va' && (
-                                <>
-                                    <p>• Biaya transaksi: Rp 4.000 (flat)</p>
-                                    <p>• Biaya aplikasi: 3% dari total belanja</p>
-                                </>
-                            )}
-                            {selectedPaymentMethod.type === 'manual' && (
-                                <>
-                                    <p>• Tidak ada biaya admin Midtrans</p>
-                                    <p>• Biaya aplikasi: 3% dari total belanja</p>
-                                </>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
 
             {/* Checkout Button */}
             <CheckoutButton

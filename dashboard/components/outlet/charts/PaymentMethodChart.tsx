@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   Cell,
 } from 'recharts';
@@ -60,7 +59,7 @@ export default function PaymentMethodChart({ data }: PaymentMethodChartProps) {
   const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <div className="rounded-2xl bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 p-6 shadow-xl">
+    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
@@ -72,8 +71,8 @@ export default function PaymentMethodChart({ data }: PaymentMethodChartProps) {
       </div>
 
       {/* Chart */}
-      <div className="w-full h-72">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="h-72 w-full">
+        <ResponsiveContainer width="100%" minHeight={430}>
           <BarChart
             data={data}
             margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
@@ -121,15 +120,14 @@ export default function PaymentMethodChart({ data }: PaymentMethodChartProps) {
       </div>
 
       {/* Details Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/10 dark:border-gray-700/50">
+      <div className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-3 text-sm dark:border-gray-700/50 lg:grid-cols-4">
         {data.map((item, index) => (
           <div
             key={index}
-            className={`p-3 rounded-lg transition-all duration-200 cursor-pointer ${
-              hoveredIndex === index
-                ? 'bg-white/20 dark:bg-gray-700/50 scale-105'
-                : 'bg-white/5 dark:bg-gray-700/20'
-            }`}
+            className={`p-3 rounded-lg transition-all duration-200 cursor-pointer ${hoveredIndex === index
+              ? 'bg-white/20 dark:bg-gray-700/50 scale-105'
+              : 'bg-white/5 dark:bg-gray-700/20'
+              }`}
             onMouseEnter={() => setHoveredIndex(index)}
             onMouseLeave={() => setHoveredIndex(null)}
           >
@@ -155,6 +153,6 @@ export default function PaymentMethodChart({ data }: PaymentMethodChartProps) {
           </div>
         ))}
       </div>
-    </div>
+    </div >
   );
 }

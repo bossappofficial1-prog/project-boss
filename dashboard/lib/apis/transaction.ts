@@ -54,10 +54,11 @@ export interface TransactionListParams {
   startDate?: string;
   endDate?: string;
   outletId?: string; // Filter by specific outlet
+  q?: string
 }
 
 export interface PaginatedResponse<T> {
-  data: T[];
+  data: T;
   pagination: {
     page: number;
     limit: number;
@@ -74,23 +75,29 @@ export const transactionApi = {
   /**
    * Mendapatkan daftar transaksi dengan pagination
    */
-  getAll: async (params?: TransactionListParams): Promise<PaginatedResponse<Transaction>> => {
-    const response = await apiClient.get<ApiResponse<Transaction[]> & {
-      pagination?: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
+  getAll: async (params?: TransactionListParams): Promise<PaginatedResponse<{
+    items: Transaction[],
+    totals: {
+      "total_revenue": number,
+      "total_expense": number,
+      "total_margin_pendapatan": number
+    }
+  }>> => {
+    const response = await apiClient.get<PaginatedResponse<{
+      items: Transaction[],
+      totals: {
+        "total_revenue": number,
+        "total_expense": number,
+        "total_margin_pendapatan": number
       }
-    }>('/transactions', {
+    }>>('/transactions', {
       params
     });
-
     // Extract data and pagination from backend response
     const { data, pagination } = response.data;
-    
+
     return {
-      data: data || [],
+      data: data,
       pagination: pagination || {
         page: params?.page || 1,
         limit: params?.limit || 10,

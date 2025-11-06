@@ -31,6 +31,7 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link';
 import { useTranslations } from "@/hooks/useI18n";
 import { useAppBarV2 } from '@/context/AppBarContextV2';
+import { useSnackbar } from '@/hooks/useSnackbar';
 
 function formatSelectedSlot(dateStr: string, startTimeStr: string, endTimeStr: string) {
     const date = parseISO(dateStr);
@@ -211,18 +212,20 @@ function OrderSummary({ totalPrice, totalItems, outletCount, hasUnscheduledServi
     const router = useRouter();
     const { items } = useCart();
     const t = useTranslations("cart");
+    const snackbar = useSnackbar()
 
     const handleCheckout = async () => {
         if (hasUnscheduledServices) return;
 
         // Validasi: hanya satu outlet yang dipilih
         if (!selectedOutletId) {
-            alert(t("validation.selectOutlet"));
+            snackbar.success(t("validation.selectOutlet"))
             return;
         }
 
         try {
             const selectedOutletItems = items.filter(item => item.outletId === selectedOutletId);
+            localStorage.setItem('selectedOutletIdCheckoutItem', JSON.stringify(selectedOutletItems))
             const checkoutData = await CheckoutService.prepareCheckoutData(selectedOutletItems);
             CheckoutService.saveCheckoutDataToStorage(checkoutData);
             router.push('/checkout');
@@ -490,8 +493,8 @@ export default function CartPage() {
             <div className="grid lg:grid-cols-3 gap-4 items-start">
                 <div className="lg:col-span-2 space-y-2">
                     {/* Cart summary dengan validasi */}
-                    <Card className="bg-blue-50 border border-blue-200 dark:bg-blue-900/40 dark:border-blue-700 rounded-lg shadow-sm transition-colors duration-300">
-                        <CardContent>
+                    <Card className="bg-blue-50 border p-0 border-blue-200 dark:bg-blue-900/40 dark:border-blue-700 rounded-lg shadow-sm transition-colors duration-300">
+                        <CardContent className='p-3'>
                             <div className="flex items-start gap-3">
                                 <div>
                                     <h3 className="font-semibold text-blue-900 dark:text-blue-200 text-sm">
@@ -515,7 +518,7 @@ export default function CartPage() {
                     </Card>
 
 
-                    {Object.entries(itemsByOutlet).map(([outletId, { outletName, items: outletItems }]) => (
+                    {Object.entries(itemsByOutlet).reverse().map(([outletId, { outletName, items: outletItems }]) => (
                         <Card key={outletId} onClick={() => setIsSelectedOutlet(outletId)} className={`pt-0 py-0 gap-0 overflow-hidden cursor-pointer transition-all ${isSelectedOutlet === outletId ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "hover:border-primary/50"}`}>
                             <CardHeader className="bg-muted/50 pt-3 px-3">
                                 <CardTitle className="text-base flex items-center gap-2">

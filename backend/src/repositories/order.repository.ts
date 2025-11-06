@@ -70,9 +70,10 @@ export class OrderRepository {
                         product: true,
                     },
                 },
-                guestCustomer: true, // <-- SELALU SERTAKAN INI
+                guestCustomer: true,
                 outlet: true,
                 bookingSlot: true,
+                transaction: true,
             },
         });
     }

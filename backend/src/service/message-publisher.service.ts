@@ -1,6 +1,7 @@
 import { verifyMidtransSignature } from '../config/midtrans';
 import { getRabbitMQChannel } from '../config/rabbitmq';
 import { AppError } from '../errors/app-error';
+import { SocketEmitter } from '../socket/socket-emiiter';
 import { MidtransWebhookPayloadType } from '../types/Others';
 import { socketUtils } from '../utils/socket.utils';
 import logger from '../utils/winston.logger';
@@ -124,8 +125,7 @@ class MessagePublisherService {
         const isValid = verifyMidtransSignature(payload.order_id, payload.status_code, payload.gross_amount, payload.signature_key)
 
         if (!isValid) throw new AppError("Invalid signature", 403)
-
-        socketUtils.emitToOrder(payload.order_id, payload)
+        SocketEmitter.getInstance().emitToOrder(payload.order_id, payload)
         await this.publish(EXCHANGE_NAMES.PAYMENT_WEBHOOK, '', {
             type: 'PAYMENT_WEBHOOK_RECEIVED',
             payload: { source, payload }

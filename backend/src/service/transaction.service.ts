@@ -1,6 +1,6 @@
-import { db } from "../config/prisma";
 import { AppError } from "../errors/app-error";
-import { PaymentStatus } from "@prisma/client";
+import { getUserByIdService } from "./user.service";
+import { findTransactionsByFilter, findExpensesByFilter, computeTotalsByFilter, computeCountsByFilter } from "../repositories/transaction.repository";
 
 interface TransactionListParams {
     userId: string;
@@ -11,6 +11,7 @@ interface TransactionListParams {
     endDate?: string;
     page: number;
     limit: number;
+    query?: string;
 }
 
 /**
@@ -26,21 +27,10 @@ export async function getTransactionListService(params: TransactionListParams) {
         endDate,
         page = 1,
         limit = 10,
+        query
     } = params;
 
-    // Validate user exists and get their business
-    const user = await db.user.findUnique({
-        where: { id: userId },
-        include: {
-            business: {
-                include: {
-                    outlets: {
-                        select: { id: true }
-                    }
-                }
-            }
-        }
-    });
+    const user = await getUserByIdService(userId)
 
     if (!user || !user.business) {
         throw new AppError("User tidak memiliki bisnis", 404);
@@ -66,65 +56,9 @@ export async function getTransactionListService(params: TransactionListParams) {
 
     // Fetch transactions (INCOME) if type is 'ALL' or 'INCOME'
     if (type === 'ALL' || type === 'INCOME') {
-        const transactionWhere: any = {
-            order: {
-                outletId: outletId ? outletId : { in: userOutletIds }
-            }
-        };
+        // Filtering is delegated to repository (findTransactionsByFilter)
 
-        // Filter by status if provided
-        if (status && status !== 'ALL') {
-            transactionWhere.status = status as PaymentStatus;
-        }
-
-        // Filter by date range
-        if (startDate || endDate) {
-            transactionWhere.createdAt = {};
-            
-            if (startDate) {
-                transactionWhere.createdAt.gte = new Date(startDate);
-            }
-            
-            if (endDate) {
-                const endDateTime = new Date(endDate);
-                endDateTime.setHours(23, 59, 59, 999);
-                transactionWhere.createdAt.lte = endDateTime;
-            }
-        }
-
-        const transactions = await db.transaction.findMany({
-            where: transactionWhere,
-            include: {
-                order: {
-                    include: {
-                        outlet: {
-                            select: {
-                                id: true,
-                                name: true,
-                                address: true
-                            }
-                        },
-                        guestCustomer: {
-                            select: {
-                                name: true,
-                                phone: true,
-                                email: true
-                            }
-                        },
-                        items: {
-                            include: {
-                                product: {
-                                    select: {
-                                        name: true,
-                                        price: true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        const transactions = await findTransactionsByFilter({ outletId, userOutletIds, status, startDate, endDate, query });
 
         // Transform transactions to combined format
         const transformedTransactions = transactions.map(transaction => ({
@@ -172,11 +106,11 @@ export async function getTransactionListService(params: TransactionListParams) {
         // Filter by date range
         if (startDate || endDate) {
             expenseWhere.date = {};
-            
+
             if (startDate) {
                 expenseWhere.date.gte = new Date(startDate);
             }
-            
+
             if (endDate) {
                 const endDateTime = new Date(endDate);
                 endDateTime.setHours(23, 59, 59, 999);
@@ -184,18 +118,7 @@ export async function getTransactionListService(params: TransactionListParams) {
             }
         }
 
-        const expenses = await db.expense.findMany({
-            where: expenseWhere,
-            include: {
-                outlet: {
-                    select: {
-                        id: true,
-                        name: true,
-                        address: true
-                    }
-                }
-            }
-        });
+        const expenses = await findExpensesByFilter({ outletId, userOutletIds, startDate, endDate, query });
 
         // Transform expenses to combined format
         const transformedExpenses = expenses.map(expense => ({
@@ -222,8 +145,31 @@ export async function getTransactionListService(params: TransactionListParams) {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-    // Apply pagination
-    const total = combinedData.length;
+    // Calculate totals on DB level for performance. Default: only count INCOME with status 'SUCCESS' unless caller provided a specific status filter.
+    let revenueStatuses: string[] | undefined = undefined;
+    if (!status || status === 'ALL') {
+        // default revenue definition: only SUCCESS transactions
+        revenueStatuses = ['SUCCESS'];
+    }
+
+    // If caller provided a specific status (and not 'ALL'), the repository will use it.
+    const totals = await computeTotalsByFilter({ outletId, userOutletIds, status, startDate, endDate, query }, revenueStatuses);
+
+    const total_revenue = totals.total_revenue;
+    const total_expense = totals.total_expense;
+    const total_margin_pendapatan = totals.total_margin_pendapatan;
+
+    // Use DB counts for total/pagination to avoid loading counts from memory
+    const counts = await computeCountsByFilter({ outletId, userOutletIds, status, startDate, endDate, query });
+    let total = 0;
+    if (type === 'ALL') {
+        total = counts.transactionCount + counts.expenseCount;
+    } else if (type === 'INCOME') {
+        total = counts.transactionCount;
+    } else if (type === 'EXPENSE') {
+        total = counts.expenseCount;
+    }
+
     const totalPages = Math.ceil(total / limit);
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
@@ -231,6 +177,11 @@ export async function getTransactionListService(params: TransactionListParams) {
 
     return {
         data: paginatedData,
+        totals: {
+            total_revenue,
+            total_expense,
+            total_margin_pendapatan
+        },
         pagination: {
             page,
             limit,

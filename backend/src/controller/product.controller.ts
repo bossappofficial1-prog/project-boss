@@ -15,6 +15,7 @@ import {
     exportProductsToExcelService
 } from "../service/product.service";
 import { UserRole } from "@prisma/client";
+import Console from "../utils/logger";
 
 export const getProductImportTemplateController = asyncHandler(async (req: Request, res: Response) => {
     const buffer = generateProductImportTemplateService();
@@ -54,9 +55,22 @@ export const getProductByIdController = asyncHandler(async (req: Request, res: R
 
 export const getProductsByOutletIdController = asyncHandler(async (req: Request, res: Response) => {
     const { outletId } = req.params;
-    const { q, accessed } = req.query;
-    const products = await getProductsByOutletIdService(outletId, q as string, accessed as UserRole);
-    return ResponseUtil.success(res, products);
+    const { q, accessed, page, limit, type: productType } = req.query;
+    const pageNumber = Math.max(parseInt(page as string, 10) || 1, 1);
+    const defaultLimit = 10;
+    const parsedLimit = parseInt(limit as string, 10);
+    const limitNumber = Math.min(Math.max(parsedLimit || defaultLimit, 1), 100);
+    const accessedRole = typeof accessed === 'string' ? accessed : undefined;
+    const searchQuery = typeof q === 'string' ? q : undefined;
+
+    const { data, total } = await getProductsByOutletIdService(outletId, productType as any, {
+        q: searchQuery,
+        accessed: accessedRole,
+        page: pageNumber,
+        limit: limitNumber
+    });
+
+    return ResponseUtil.paginated(res, data, pageNumber, limitNumber, total);
 });
 
 export const updateProductController = asyncHandler(async (req: Request, res: Response) => {

@@ -6,16 +6,12 @@ export interface OutletSummary {
     outletName: string;
     outletId: string;
     subtotal: number;
-    transactionFee: number;
-    applicationFee: number;
     items: CartItem[];
 }
 
 export interface CheckoutData {
     outlets: OutletSummary[];
-    subtotal: number;        // Total subtotal semua outlet
-    totalTransactionFee: number;  // Total biaya transaksi
-    applicationFee: number;  // Biaya aplikasi
+    subtotal: number;
     grandTotal: number;      // Total keseluruhan
     selectedPaymentMethod?: PaymentMethod; // Untuk flow ke payment
 }
@@ -23,8 +19,8 @@ export interface CheckoutData {
 export interface CheckoutProps {
     outlets: OutletSummary[];
     subtotal: number;
-    totalTransactionFee: number;
-    applicationFee: number;
+    totalTransactionFee?: number;
+    applicationFee?: number;
     grandTotal: number;
 }
 

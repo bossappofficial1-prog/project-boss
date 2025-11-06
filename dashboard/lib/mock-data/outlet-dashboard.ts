@@ -38,7 +38,7 @@ export const mockOutletDashboard: OutletDashboardData = {
             { date: '2025-10-27', revenue: 3500000, orders: 48 },
             { date: '2025-10-28', revenue: 3200000, orders: 44 },
             { date: '2025-10-29', revenue: 4000000, orders: 55 },
-            { date: '2025-10-30', revenue: 3750000, orders: 50 },
+            { date: '2025-10-30', revenue: 37500000, orders: 50 },
         ],
     },
 
@@ -70,6 +70,7 @@ export const mockOutletDashboard: OutletDashboardData = {
         totalOrders: 1250,
         todayOrders: 50,
         weekOrders: 350,
+        monthOrders: 480,
 
         byStatus: [
             { status: 'COMPLETED', count: 1100, percentage: 88 },
@@ -176,6 +177,16 @@ export const mockOutletDashboard: OutletDashboardData = {
             { id: 'exp_3', description: 'Gaji Staff (bulan Oktober)', amount: 5000000, date: '2025-10-28' },
             { id: 'exp_4', description: 'Pemeliharaan Mesin Kopi', amount: 1500000, date: '2025-10-27' },
             { id: 'exp_5', description: 'Pembelian Supplies', amount: 800000, date: '2025-10-26' },
+        ],
+
+        dailyTotals: [
+            { date: '2025-10-24', expenses: 420000 },
+            { date: '2025-10-25', expenses: 560000 },
+            { date: '2025-10-26', expenses: 480000 },
+            { date: '2025-10-27', expenses: 640000 },
+            { date: '2025-10-28', expenses: 520000 },
+            { date: '2025-10-29', expenses: 610000 },
+            { date: '2025-10-30', expenses: 700000 },
         ],
     },
 };

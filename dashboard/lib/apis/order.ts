@@ -4,10 +4,11 @@ import { apiCall, apiCallPaginated, apiClient } from './base';
 export type OrderStatus =
   | 'AWAITING_PAYMENT'
   | 'PROCESSING'
+  | 'CONFIRMED'
   | 'READY'
+  | 'ON_GOING'
   | 'COMPLETED'
-  | 'CANCELLED'
-  | 'CONFIRMED';
+  | 'CANCELLED';
 
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED';
 
@@ -32,6 +33,42 @@ export interface OrderItem {
   product: Product;
 }
 
+export type OnlinePaymentChannel = 'qris_dynamic' | 'va_bca' | 'ewallet_gopay';
+
+export interface MidtransInstruction {
+  title: string;
+  steps: string[];
+}
+
+export interface MidtransOnlineDetail {
+  channel: OnlinePaymentChannel;
+  amount: number;
+  currency?: string;
+  expiredAt?: string;
+  referenceId?: string;
+  qrString?: string;
+  qrUrl?: string;
+  deeplinkUrl?: string;
+  paymentCode?: string;
+  accountName?: string;
+  vaNumbers?: {
+    bank: string;
+    vaNumber: string;
+  }[];
+  instructions?: MidtransInstruction[];
+}
+
+export interface TransactionSummary {
+  id: string;
+  status: PaymentStatus;
+  isManual: boolean;
+  paymentMethod: 'cash' | 'qris' | 'online' | 'manual_transfer';
+  paymentUrl?: string | null;
+  midtrans?: MidtransOnlineDetail | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Outlet {
   id: string;
   name: string;
@@ -46,6 +83,10 @@ export interface Order {
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
   discountAmount: number;
+  appFee?: number;
+  midtransFee?: number;
+  chargedTo?: 'CUSTOMER' | 'OWNER';
+  paymentMethod?: 'cash' | 'qris' | 'online' | 'manual_transfer';
   guestCustomerId: string;
   guestCustomer: GuestCustomer;
   outletId: string;
@@ -81,6 +122,12 @@ export interface CreateOrderRequest {
   bookingDate?: string;
   paymentMethod?: 'qris' | 'online' | 'cash';
   bookingSlotId?: string;
+  onlinePaymentChannel?: OnlinePaymentChannel;
+}
+
+export interface CreateOrderResponse {
+  order: Order;
+  transaction: TransactionSummary;
 }
 
 export interface OrderListParams {
@@ -130,18 +177,8 @@ export const orderApi = {
   },
 
   // Create order (manual order)
-  async create(data: CreateOrderRequest): Promise<{
-    orderId: string;
-    totalAmount: number;
-    midtransTransactionToken?: string;
-    midtransRedirectUrl?: string;
-  }> {
-    return apiCall<{
-      orderId: string;
-      totalAmount: number;
-      midtransTransactionToken?: string;
-      midtransRedirectUrl?: string;
-    }>('/orders', {
+  async create(data: CreateOrderRequest): Promise<CreateOrderResponse> {
+    return apiCall<CreateOrderResponse>('/internal/pos/orders', {
       method: 'POST',
       body: JSON.stringify(data),
     });

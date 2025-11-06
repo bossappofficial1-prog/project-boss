@@ -14,37 +14,38 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageRender } from '@/components/shared/Image';
 import { Input } from '@/components/ui/input';
+import CountdownTimer from '@/components/orders/parts/CountdownTimer';
 
 type ManualPaymentStorage = ReturnType<typeof CheckoutService.getManualPaymentFromStorage>;
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
-function useCountdown(expiryTime?: string) {
-    const [secondsLeft, setSecondsLeft] = useState<number>(0);
+// function useCountdown(expiryTime?: string) {
+//     const [secondsLeft, setSecondsLeft] = useState<number>(0);
 
-    useEffect(() => {
-        if (!expiryTime) return;
-        const expiry = new Date(expiryTime).getTime();
+//     useEffect(() => {
+//         if (!expiryTime) return;
+//         const expiry = new Date(expiryTime).getTime();
 
-        const tick = () => {
-            const diff = Math.max(0, Math.floor((expiry - Date.now()) / 1000));
-            setSecondsLeft(diff);
-        };
+//         const tick = () => {
+//             const diff = Math.max(0, Math.floor((expiry - Date.now()) / 1000));
+//             setSecondsLeft(diff);
+//         };
 
-        tick();
-        const interval = setInterval(tick, 1000);
-        return () => clearInterval(interval);
-    }, [expiryTime]);
+//         tick();
+//         const interval = setInterval(tick, 1000);
+//         return () => clearInterval(interval);
+//     }, [expiryTime]);
 
-    const minutes = Math.floor(secondsLeft / 60);
-    const seconds = secondsLeft % 60;
+//     const minutes = Math.floor(secondsLeft / 60);
+//     const seconds = secondsLeft % 60;
 
-    return {
-        secondsLeft,
-        minutes,
-        seconds
-    };
-}
+//     return {
+//         secondsLeft,
+//         minutes,
+//         seconds
+//     };
+// }
 
 function ManualInstructions({ instructions, manualType }: { instructions: ManualPaymentInstructions; manualType: ManualPaymentTypeLiteral }) {
     return (
@@ -70,8 +71,8 @@ function ManualInstructions({ instructions, manualType }: { instructions: Manual
 
                 {manualType === 'QRIS_OFFLINE' && instructions.qrImageUrl && (
                     <div className="space-y-3">
-                        <div className="rounded-lg border bg-white p-4 flex flex-col items-center gap-3">
-                            <ImageRender src={instructions.qrImageUrl} alt="QRIS Outlet" className="w-40 h-40 object-contain" />
+                        <div className="rounded-lg border bg-gray-200/20 p-4 flex flex-col items-center gap-3">
+                            <ImageRender src={instructions.qrImageUrl} alt="QRIS Outlet" className="w-40 h-40 rounded-lg object-contain" />
                             <p className="text-sm text-muted-foreground text-center">
                                 Scan QR statis outlet menggunakan aplikasi pembayaran favoritmu, lalu masukkan nominal sesuai total tagihan.
                             </p>
@@ -134,7 +135,6 @@ export default function ManualPaymentPage() {
         setIsMounted(true);
     }, [router]);
 
-    const countdown = useCountdown(manualData?.response.expiry_time);
     const isExpired = manualData ? new Date(manualData.response.expiry_time).getTime() < Date.now() : false;
 
     const paymentSummary = useMemo<PaymentData | null>(() => {
@@ -156,7 +156,7 @@ export default function ManualPaymentPage() {
             subtotal: manualData.response.manual.fee_summary.subtotal,
             // Don't include transaction fee for manual payments (no payment gateway used)
             transactionFee: 0,
-            applicationFee: manualData.response.manual.fee_summary.applicationFee,
+            applicationFee: 0,
             total: manualData.response.gross_amount,
             paymentMethod: {
                 type: manualData.selectedPaymentMethod.type,
@@ -234,7 +234,7 @@ export default function ManualPaymentPage() {
             setUploadStatus('success');
         } catch (error) {
             console.error('Failed to upload proof:', error);
-            
+
             // Check if it's a network error and retry
             const isNetworkError = error instanceof Error && (
                 error.message.includes('network') ||
@@ -254,7 +254,7 @@ export default function ManualPaymentPage() {
             setUploadStatus('error');
             const errorMsg = error instanceof Error ? error.message : 'Gagal mengunggah bukti pembayaran.';
             setErrorMessage(
-                retryCount >= maxRetries 
+                retryCount >= maxRetries
                     ? `${errorMsg} Sudah dicoba ${maxRetries + 1}x. Periksa koneksi internet Anda.`
                     : errorMsg
             );
@@ -304,14 +304,12 @@ export default function ManualPaymentPage() {
                         <span className="text-muted-foreground">Metode</span>
                         <span className="font-medium">{selectedPaymentMethod.name}</span>
                     </div>
-                    <div className="flex items-center justify-between text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
-                        <span>Batas waktu unggah bukti</span>
-                        <span className="font-semibold">
-                            {countdown.minutes.toString().padStart(2, '0')}:{countdown.seconds.toString().padStart(2, '0')}
-                        </span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                        Pastikan kamu mengunggah bukti sebelum {new Date(response.expiry_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB.
+                    <div className='flex items-center justify-between text-sm'>
+                        <span className='text-muted-foreground'>Expire</span>
+                        <CountdownTimer
+                            expiryTime={response.expiry_time}
+                            compact
+                        />
                     </div>
                 </CardContent>
             </Card>
@@ -352,9 +350,9 @@ export default function ManualPaymentPage() {
                                 <div className="flex items-start gap-3">
                                     {imagePreview ? (
                                         <div className="relative w-20 h-20 rounded-md overflow-hidden bg-muted shrink-0">
-                                            <img 
-                                                src={imagePreview} 
-                                                alt="Preview" 
+                                            <img
+                                                src={imagePreview}
+                                                alt="Preview"
                                                 className="w-full h-full object-cover"
                                             />
                                         </div>
@@ -392,7 +390,7 @@ export default function ManualPaymentPage() {
 
                     <Button
                         className="w-full"
-                        onClick={handleUpload}
+                        onClick={() => handleUpload()}
                         disabled={!selectedFile || uploadStatus === 'uploading' || isExpired}
                     >
                         {uploadStatus === 'uploading' ? (

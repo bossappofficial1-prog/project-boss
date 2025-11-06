@@ -88,4 +88,10 @@ export class BookingRepository {
             where: { id },
         });
     }
+
+    static async deleteByProductId(productId: string) {
+        return db.bookingSlot.deleteMany({
+            where: { productId }
+        })
+    }
 }

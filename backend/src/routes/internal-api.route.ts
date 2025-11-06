@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { UserRole } from '@prisma/client';
 import {
     getExpiringTransactions,
     markReminderSent,
@@ -10,11 +11,24 @@ import { sendQueueNotification } from '../controller/queue-notification.controll
 import { asyncHandler } from '../middleware/error.middleware';
 import { messagePublisher } from '../service/message-publisher.service';
 import { ResponseUtil } from '../utils/response';
+import { createPosOrderController } from '../controller/pos-order.controller';
+import { validateSchema } from '../middleware/zod.middleware';
+import { createPosOrderSchema } from '../schemas/pos-order.schema';
+import { authorize, protect } from '../middleware/auth.middleware';
 
 const router = Router();
 
 // Endpoint untuk mendapatkan transaksi yang akan kedaluwarsa
 router.get('/expiring-transactions', getExpiringTransactions);
+
+// Endpoint POS untuk kasir dashboard
+router.post(
+    '/pos/orders',
+    protect,
+    authorize(UserRole.OWNER, UserRole.ADMIN),
+    validateSchema(createPosOrderSchema),
+    createPosOrderController,
+);
 
 // Endpoint untuk menandai bahwa pengingat telah dikirim
 router.post('/order/:orderId/mark-reminder-sent', markReminderSent);

@@ -22,12 +22,6 @@ export class CheckoutService {
      * Transform cart items to checkout data format
      */
     static async prepareCheckoutData(cartItems: CartItem[]): Promise<CheckoutData> {
-        // Validasi: Pastikan hanya ada satu outlet
-        const uniqueOutlets = [...new Set(cartItems.map(item => item.outletId))];
-        if (uniqueOutlets.length > 1) {
-            throw new Error('Checkout hanya dapat dilakukan untuk satu outlet saja');
-        }
-
         // Validasi: Pastikan hanya ada satu jenis produk
         const uniqueProductTypes = [...new Set(cartItems.map(item => item.type))];
         if (uniqueProductTypes.length > 1) {
@@ -54,15 +48,10 @@ export class CheckoutService {
         const outletPromises = Object.values(outletGroups).map(async (group) => {
             const outlet = await Outlet.getDetail(group.outletId);
 
-            const transactionFee = outlet.business.defaultTransactionFeeBearer === "CUSTOMER" ? (group.subtotal * 0.02) : 0;
-            const applicationFee = group.subtotal * 0.03;
-
             return {
                 outletName: group.outletName,
                 outletId: group.outletId,
                 subtotal: group.subtotal,
-                transactionFee,
-                applicationFee,
                 items: group.items
             };
         });
@@ -71,16 +60,13 @@ export class CheckoutService {
 
         // Calculate totals
         const subtotal = outlets.reduce((total, outlet) => total + outlet.subtotal, 0);
-        const totalTransactionFee = outlets.reduce((total, outlet) => total + outlet.transactionFee, 0);
-        const applicationFee = outlets.reduce((total, outlet) => total + outlet.applicationFee, 0);
-        const grandTotal = subtotal + totalTransactionFee + applicationFee;
+        const grandTotal = subtotal;
 
         return {
             outlets,
             subtotal,
-            totalTransactionFee,
-            applicationFee,
-            grandTotal
+            grandTotal,
+
         };
     }
 
