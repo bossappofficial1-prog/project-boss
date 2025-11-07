@@ -32,7 +32,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: check-changes
         with:
-          base: "develop"
+          base: ${{ github.event.before }}
           filters: |
             backend:
               - 'backend/**'
