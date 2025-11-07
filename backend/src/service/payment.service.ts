@@ -536,10 +536,12 @@ export async function createPaymentService(data: CreatePaymentPayload) {
             });
 
             const instructions = buildManualInstructions(outlet, manualType);
+            const expireTime = new Date(expiresAt).getTime()
+            const delay = Math.max(0, (expireTime - new Date().getTime()))
 
             try {
                 await paymentQueue.add({ orderId }, {
-                    delay: new Date(expiresAt).getTime()
+                    delay
                 })
                 SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
                     orderId,

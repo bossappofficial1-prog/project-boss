@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
             {/* Content */}
             <main className={`flex-1 overflow-auto relative z-10 transition-all duration-300 ${sidebarOpen ? 'blur-[2px] lg:blur-0' : ''}`}>
-              <div className="container mx-auto p-6 max-w-[95dvw] md:max-w-[75dvw]">
+              <div className="container mx-auto p-3 md:p-6 max-w-[100dvw] md:max-w-[75dvw]">
                 {children}
               </div>
             </main>

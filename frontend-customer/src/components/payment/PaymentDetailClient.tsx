@@ -342,7 +342,7 @@ export function PaymentDetailClient({ orderId, payment }: PaymentDetailClientPro
                         <span className="text-muted-foreground">{t('overview.total')}</span>
                         <span className="font-semibold text-primary">{formatCurrency(paymentData.totalAmount)}</span>
                     </div>
-                    {expiryTime && payment.payment.status !== 'SUCCESS' && (
+                    {expiryTime && (payment.payment.status == 'PENDING' || payment.payment.status == 'WAITING_VERIFICATION') && (
                         <>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-muted-foreground">{t('overview.expiry')}</span>

@@ -16,6 +16,7 @@ import { PaymentRepository } from "../repositories/payment.repository";
 import { SocketEmitter } from "../socket/socket-emiiter";
 import { MidtransTransactionStatus, PaymentResponse } from "../types/Others";
 import Console from "../utils/logger";
+import { paymentQueue } from "../queues/payment.queue";
 
 type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>>;
 type CustomerOrderRecord = Awaited<ReturnType<typeof OrderRepository.getOrderByCustomerPhone>>[number];
@@ -647,6 +648,7 @@ export async function cancelOrderByCustomerService(orderId: string, phone: strin
     const orderRecord = order as OrderWithRelations;
 
     assertCustomerOwnsOrder(orderRecord, phone);
+    (await paymentQueue.getJob(orderId))?.remove()
 
     const cancellableStatuses: OrderStatus[] = [OrderStatus.AWAITING_PAYMENT, OrderStatus.PROCESSING, OrderStatus.CONFIRMED];
 
@@ -776,6 +778,8 @@ export async function expirePaymentOrder(orderId: string) {
         message: 'Pembayaran kedaluwarsa',
         type: 'payment_expired'
     });
+
+    (await paymentQueue.getJob(orderId))?.remove()
 }
 
 export async function getOrderDetailsService(orderId: string) {
