@@ -154,18 +154,18 @@ jobs:
       - name: Create project directory on VPS if it does not exist
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ vars.VPS_SSH_HOST }}
-          username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_SSH_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
           script: |
             mkdir -p ~/projects/boss-project/prod
 
       - name: Copy docker-compose file to VPS
         uses: appleboy/scp-action@master
         with:
-          host: ${{ vars.VPS_SSH_HOST }}
-          username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_SSH_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
           source: "./docker-compose.prod.yml"
           target: "~/projects/boss-project/prod"
 
@@ -173,9 +173,9 @@ jobs:
         if: needs.build_and_push.outputs.backend_changed == 'true'
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ vars.VPS_SSH_HOST }}
-          username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_SSH_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
             echo "Pulling backend image..."
@@ -185,9 +185,9 @@ jobs:
         if: needs.build_and_push.outputs.consumer_changed == 'true'
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ vars.VPS_SSH_HOST }}
-          username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_SSH_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
             echo "Pulling consumer image..."
@@ -197,9 +197,9 @@ jobs:
         if: needs.build_and_push.outputs.frontend_customer_changed == 'true'
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ vars.VPS_SSH_HOST }}
-          username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_SSH_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
             echo "Pulling frontend-customer image..."
@@ -209,9 +209,9 @@ jobs:
         if: needs.build_and_push.outputs.dashboard_changed == 'true'
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ vars.VPS_SSH_HOST }}
-          username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_SSH_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
             echo "Pulling dashboard image..."
@@ -220,9 +220,9 @@ jobs:
       - name: Start Docker Compose Services
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ vars.VPS_SSH_HOST }}
-          username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_SSH_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
             echo "Starting Docker Compose services..."
