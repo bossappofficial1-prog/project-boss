@@ -90,7 +90,7 @@ export default function OutletsSection({
           <Button
             onClick={onAddOutlet}
             type="button"
-            className="rounded-xl bg-red-gradient px-6 py-3 font-medium text-white shadow-lg transition-shadow duration-300 hover:bg-red-gradient-dark hover:shadow-xl"
+            className="shadow-md transition-shadow duration-300"
           >
             <Plus className="mr-2 inline h-5 w-5" />
             Tambah Outlet Pertama

@@ -25,26 +25,26 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "BOSS",
-  description: "Manage your business with BOSS",
-  icons: "/assets/logo/logo-bossapp.svg",
+  title: "BOSS - Platform Manajemen Bisnis",
+  description: "Urus operasional usaha, atur jadwal, dan jaga pelanggan kamu lebih gampang bareng BOSS.",
+  icons: "/assets/logo/favicon.ico",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "BOSS Customer",
     startupImage: [
-      "/assets/logo/logo-bossapp.svg",
+      "/assets/logo/favicon.ico",
     ],
   },
   openGraph: {
-    title: "BOSS - Business Management Platform",
-    description: "Manage your business with BOSS - Complete solution for business operations, scheduling, and customer management",
+    title: "BOSS - Platform Manajemen Bisnis",
+    description: "BOSS bantu kamu merapikan operasional bisnis, jadwal layanan, sampai urusan pelanggan dalam satu tempat.",
     url: "https://bossapp.id",
     siteName: "BOSS",
     images: [
       {
-        url: "/assets/logo/logo-bossapp.svg",
+        url: "/assets/logo/favicon.ico",
         width: 1200,
         height: 630,
         alt: "BOSS Business Management Platform",
@@ -55,9 +55,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "BOSS - Business Management Platform",
-    description: "Manage your business with BOSS - Complete solution for business operations",
-    images: ["/assets/logo/logo-bossapp.svg"],
+    title: "BOSS - Platform Manajemen Bisnis",
+    description: "Optimalkan operasional, jadwal, dan pengalaman pelanggan bisnis kamu cukup lewat BOSS.",
+    images: ["/assets/logo/favicon.ico"],
   },
   robots: {
     index: true,
@@ -89,8 +89,8 @@ export default function Layout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="BOSS Customer" />
-        <link rel="apple-touch-icon" href="/assets/logo/logo-bossapp.svg" />
-        <link rel="icon" type="image/svg+xml" href="/assets/logo/logo-bossapp.svg" />
+        <link rel="apple-touch-icon" href="/assets/logo/favicon.ico" />
+        <link rel="icon" type="image/svg+xml" href="/assets/logo/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body
