@@ -168,11 +168,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       href: '/owner/dashboard/stock',
       icon: <Box className="w-5 h-5" />,
     },
-    {
-      name: 'Jasa',
-      href: '/owner/dashboard/services',
-      icon: <Wrench className="w-5 h-5" />,
-    },
+    // {
+    //   name: 'Jasa',
+    //   href: '/owner/dashboard/services',
+    //   icon: <Wrench className="w-5 h-5" />,
+    // },
     {
       name: 'POS',
       href: '/owner/dashboard/pos/orders',

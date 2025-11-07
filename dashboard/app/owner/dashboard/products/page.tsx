@@ -26,7 +26,6 @@ export default function ProductsPage() {
     selectedOutlet,
     currentPage,
     itemsPerPage,
-    totalPages,
     totalProducts,
     searchQuery,
     isLoading,

@@ -75,7 +75,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
         <Toaster
           position="top-right"
           toastOptions={{
-            duration: Infinity, // No auto-close
+            duration: 5000, // No auto-close
           }}
         />
       </SocketProvider>

@@ -1,10 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Save, X, Upload, MapPin, Phone, Mail, DollarSign, Clock, Image as ImageIcon } from 'lucide-react';
+import { Save, X, Upload, MapPin, Phone, Clock, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import Image from 'next/image';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import MapPicker from '@/components/ui/MapPicker';
@@ -221,12 +220,11 @@ export default function ManageOutletsPage() {
               {/* Image Preview */}
               <div className="relative h-64 bg-gray-100 dark:bg-gray-900 overflow-hidden">
                 {imagePreview && (
-                  <Image
+                  <img
                     src={imagePreview}
                     alt="Outlet"
                     loading='lazy'
-                    fill
-                    className="object-cover"
+                    className="w-full h-full object-cover"
                   />
                 )}
                 {isEditing && (
@@ -406,11 +404,10 @@ export default function ManageOutletsPage() {
                 <div>
                   <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                     {qrisPreview &&
-                      <Image
+                      <img
                         src={qrisPreview}
                         alt="QRIS"
-                        fill
-                        className="object-cover"
+                        className="w-full h-full object-cover"
                         loading='lazy'
                       />
                     }
@@ -421,12 +418,11 @@ export default function ManageOutletsPage() {
                 <div>
                   {qrisPreview ? (
                     <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                      <Image
+                      <img
                         src={qrisPreview}
                         alt="QRIS"
-                        fill
                         loading='lazy'
-                        className="object-cover"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   ) : (
