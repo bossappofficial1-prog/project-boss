@@ -1,13 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUserData } from '@/hooks/useUserData';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  LayoutDashboard,
+  Store,
+  Package,
+  Box,
+  Wrench,
+  ShoppingBag,
+  Clock,
+  FileText,
+  TrendingDown,
+  Receipt,
+  Banknote,
+  ChevronRight,
+  AlertCircle,
+  RefreshCw,
+  Zap
+} from 'lucide-react';
 import { Outlet } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface Business {
   id: string;
@@ -25,6 +46,15 @@ interface Business {
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface MenuItem {
+  name: string;
+  href?: string;
+  icon: React.ReactNode;
+  isDropdown?: boolean;
+  subItems?: { name: string; href: string; badge?: string }[];
+  badge?: string;
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -90,342 +120,370 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     }
   }, [userData]);
 
+  // Auto-expand menu if a sub-item is active
+  useEffect(() => {
+    menuItems.forEach(item => {
+      if (item.isDropdown && item.subItems) {
+        const hasActiveSubItem = item.subItems.some(subItem => pathname === subItem.href);
+        if (hasActiveSubItem && !expandedMenus[item.name]) {
+          setExpandedMenus(prev => ({ ...prev, [item.name]: true }));
+        }
+      }
+    });
+  }, [pathname]);
+
   const handleOutletChange = (outletId: string) => {
     const outlet = outlets.find(o => o.id === outletId);
     if (outlet && setSelectedOutlet && typeof setSelectedOutlet === 'function') {
       setSelectedOutlet(outlet);
-    } else {
-      console.warn(`🔄 Sidebar: Could not find outlet or setSelectedOutlet not available`, { outlet, setSelectedOutlet });
+      // Close sidebar on mobile after selection
+      if (window.innerWidth < 1024) {
+        onClose();
+      }
     }
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = useMemo(() => [
     {
       name: 'Dashboard',
       href: '/owner/dashboard',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h2a2 2 0 012 2v2H8V5z" />
-        </svg>
-      ),
+      icon: <LayoutDashboard className="w-5 h-5" />,
     },
     {
       name: 'Outlet',
       isDropdown: true,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5.581m0 0H9m5.581 0a2 2 0 100-4 2 2 0 000 4zM9 7h1.05A2.05 2.05 0 0012 9m0 0h3.975a2.05 2.05 0 010 4.1H12" />
-        </svg>
-      ),
+      icon: <Store className="w-5 h-5" />,
       subItems: [
-        {
-          name: 'Dashboard Outlet',
-          href: '/owner/dashboard/outlets',
-        },
-        {
-          name: 'Kelola Outlet',
-          href: '/owner/dashboard/outlets/manage',
-        }
+        { name: 'Dashboard Outlet', href: '/owner/dashboard/outlets' },
+        { name: 'Kelola Outlet', href: '/owner/dashboard/outlets/manage' }
       ]
     },
     {
       name: 'Produk dan Layanan',
       href: '/owner/dashboard/products',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-      ),
+      icon: <Package className="w-5 h-5" />,
     },
     {
       name: 'Stok Produk',
       href: '/owner/dashboard/stock',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h1.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H5zm0 0v8a2 2 0 002 2h8a2 2 0 002-2V8m-6 4h4" />
-        </svg>
-      ),
+      icon: <Box className="w-5 h-5" />,
     },
     {
       name: 'Jasa',
       href: '/owner/dashboard/services',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-        </svg>
-      ),
+      icon: <Wrench className="w-5 h-5" />,
     },
     {
-      name: 'Pesanan',
-      isDropdown: true,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-        </svg>
-      ),
-      subItems: [
-        {
-          name: 'Lihat Pesanan',
-          href: '/owner/dashboard/orders',
-        },
-        {
-          name: 'Tambah Pesanan Baru',
-          href: '/owner/dashboard/pos/orders',
-        }
-      ]
+      name: 'POS',
+      href: '/owner/dashboard/pos/orders',
+      icon: <ShoppingBag className="w-5 h-5" />
     },
     {
-      name: 'Antrian',
-      isDropdown: true,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-      subItems: [
-        {
-          name: 'Lihat Antrian',
-          href: '/owner/dashboard/queue',
-        },
-        {
-          name: 'Tambah Antrian Baru',
-          href: '/owner/dashboard/pos/queue',
-        },
-      ]
+      name: 'Lihat Pesanan',
+      isDropdown: false,
+      href: '/owner/dashboard/orders',
+      icon: <ShoppingBag className="w-5 h-5" />,
+    },
+    {
+      name: 'Lihat Antrian',
+      isDropdown: false,
+      icon: <Clock className="w-5 h-5" />,
+      href: '/owner/dashboard/queue',
+      // subItems: [
+      //   { name: 'Lihat Antrian', href: '/owner/dashboard/queue' },
+      //   { name: 'Tambah Antrian Baru', href: '/owner/dashboard/pos/queue' }
+      // ]
     },
     {
       name: 'Laporan',
       href: '/owner/dashboard/reports',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
+      icon: <FileText className="w-5 h-5" />,
     },
     {
       name: 'Pengeluaran',
       href: '/owner/dashboard/expenses',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-        </svg>
-      ),
+      icon: <TrendingDown className="w-5 h-5" />,
     },
     {
       name: 'Riwayat Transaksi',
       href: '/owner/dashboard/transactions',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-        </svg>
-      ),
+      icon: <Receipt className="w-5 h-5" />,
     },
     {
       name: 'Penarikan Dana',
       href: '/owner/dashboard/withdrawals',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      icon: <Banknote className="w-5 h-5" />,
     },
-  ];
+  ], []);
+
+  const renderOutletSelector = () => {
+    if (isLoading || outletLoading) {
+      return (
+        <div className="w-full px-4 py-3 border-0 rounded-xl shadow-sm bg-white/10 dark:bg-red-900/40 backdrop-blur-sm text-white dark:text-white text-sm font-medium flex items-center">
+          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+          <span>Memuat outlet...</span>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="w-full px-4 py-3 border-0 rounded-xl shadow-sm bg-red-500/20 dark:bg-red-900/50 backdrop-blur-sm text-red-100 dark:text-red-100 text-sm font-medium">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <AlertCircle className="w-4 h-4 mr-2" />
+              <span>Gagal memuat</span>
+            </div>
+            <Button
+              onClick={() => refetch()}
+              variant="ghost"
+              size="sm"
+              className="h-auto p-1 text-red-200 hover:text-white hover:bg-red-500/30 dark:hover:bg-red-800/50"
+            >
+              <RefreshCw className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <Select value={selectedOutlet?.id || ""} onValueChange={handleOutletChange}>
+        <SelectTrigger className="w-full px-4 py-3 border-0 rounded-xl shadow-sm bg-white/10 dark:bg-red-900/40 backdrop-blur-sm text-white dark:text-white placeholder:text-red-200 dark:placeholder:text-red-200 focus:outline-none focus:ring-2 focus:ring-white/30 dark:focus:ring-red-300/50 hover:bg-white/15 dark:hover:bg-red-900/50 text-sm font-medium transition-all duration-200">
+          <SelectValue placeholder="Pilih outlet" />
+        </SelectTrigger>
+        <SelectContent className="bg-white dark:bg-red-950 border-gray-200 dark:border-red-800">
+          {outlets.length === 0 ? (
+            <SelectItem value="outlet_not_found" disabled>
+              Belum ada outlet
+            </SelectItem>
+          ) : (
+            outlets.map((outlet) => (
+              <SelectItem
+                key={outlet.id}
+                value={outlet.id}
+                className="text-gray-900 dark:text-red-50 cursor-pointer dark:focus:bg-red-900/50"
+              >
+                {outlet.name}
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
+    );
+  };
+
+  const renderMenuItem = (item: MenuItem, index: number) => {
+    if (item.isDropdown && item.subItems) {
+      const isExpanded = expandedMenus[item.name];
+      const hasActiveSubItem = item.subItems.some(subItem => pathname === subItem.href);
+
+      return (
+        <div key={item.name} className="space-y-1">
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => toggleMenu(item.name)}
+                  className={cn(
+                    "group w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative",
+                    hasActiveSubItem || isExpanded
+                      ? 'bg-white/15 dark:bg-red-800/50 text-white shadow-sm'
+                      : 'text-red-100 dark:text-red-100 hover:bg-white/10 dark:hover:bg-red-800/30 hover:text-white'
+                  )}
+                >
+                  <div className="flex items-center min-w-0 flex-1">
+                    <span className={cn(
+                      "mr-3 transition-all duration-200 flex-shrink-0",
+                      hasActiveSubItem || isExpanded
+                        ? 'text-white scale-110'
+                        : 'text-red-200 dark:text-red-200 group-hover:scale-110'
+                    )}>
+                      {item.icon}
+                    </span>
+                    <span className="truncate">{item.name}</span>
+                  </div>
+                  <ChevronRight className={cn(
+                    "w-4 h-4 transition-transform duration-200 flex-shrink-0 ml-2",
+                    isExpanded && 'rotate-90',
+                    hasActiveSubItem || isExpanded
+                      ? 'text-white'
+                      : 'text-red-200 dark:text-red-200'
+                  )} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="lg:hidden">
+                <p>{item.name}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <div className={cn(
+            "ml-4 pl-4 border-l-2 border-white/20 dark:border-red-400/30 space-y-1 overflow-hidden transition-all duration-300",
+            isExpanded ? 'max-h-96 opacity-100 mt-1' : 'max-h-0 opacity-0'
+          )}>
+            {item.subItems.map((subItem) => {
+              const isActive = pathname === subItem.href;
+              return (
+                <Link
+                  key={subItem.href}
+                  href={subItem.href}
+                  onClick={onClose}
+                  className={cn(
+                    "block px-4 py-2.5 text-sm rounded-lg transition-all duration-200 relative group",
+                    isActive
+                      ? 'bg-white dark:bg-red-700/60 text-red-600 dark:text-white font-medium shadow-sm'
+                      : 'text-red-100 dark:text-red-100 hover:bg-white/10 dark:hover:bg-red-800/30 hover:text-white hover:pl-5'
+                  )}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/4 bg-red-600 dark:bg-red-300 rounded-r-full" />
+                  )}
+                  <span className="flex items-center justify-between">
+                    <span>{subItem.name}</span>
+                    {subItem.badge && (
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        {subItem.badge}
+                      </Badge>
+                    )}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    const isActive = pathname === item.href;
+    return (
+      <TooltipProvider key={item.name} delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href={item.href!}
+              onClick={onClose}
+              className={cn(
+                "group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative",
+                isActive
+                  ? 'bg-white dark:bg-red-700/60 text-red-600 dark:text-white shadow-md'
+                  : 'text-red-100 dark:text-red-100 hover:bg-white/10 dark:hover:bg-red-800/30 hover:text-white'
+              )}
+            >
+              {isActive && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/4 bg-red-600 dark:bg-red-300 rounded-r-full" />
+              )}
+              <span className={cn(
+                "mr-3 transition-all duration-200",
+                isActive
+                  ? 'text-red-600 dark:text-white scale-110'
+                  : 'text-red-200 dark:text-red-200 group-hover:scale-110'
+              )}>
+                {item.icon}
+              </span>
+              <span className="flex-1 truncate">{item.name}</span>
+              {item.badge && (
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  {item.badge}
+                </Badge>
+              )}
+              <ChevronRight className={cn(
+                "w-4 h-4 transition-all duration-200 ml-2",
+                isActive
+                  ? 'opacity-100 text-red-600 dark:text-white'
+                  : 'opacity-0 group-hover:opacity-100 text-red-200'
+              )} />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="lg:hidden">
+            <p>{item.name}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
 
   return (
     <>
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
           onClick={onClose}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
-      <div
-        className={`fixed left-0 top-0 z-50 h-full w-64 bg-gradient-to-b from-red-700 to-red-900 dark:from-gray-800 dark:to-gray-900 shadow-2xl transform transition-transform duration-300 ease-out lg:translate-x-0 lg:z-auto
-        ${isOpen ? 'translate-x-0 opacity-100 scale-100' : '-translate-x-full opacity-0 scale-95'}
-        lg:opacity-100 lg:scale-100
-        `}
-        style={{ willChange: 'transform, opacity' }}
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-50 h-full w-72 bg-gradient-to-b from-red-700 to-red-900 dark:from-red-800 dark:to-red-950 shadow-2xl transform transition-all duration-300 ease-out lg:translate-x-0",
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+        aria-label="Sidebar Navigation"
       >
-        {/* Sidebar container is fixed and full-height */}
         <div className="flex flex-col h-full overflow-hidden">
           {/* Logo */}
-          <div className="flex items-center justify-center py-8 px-4 border-b border-red-500/30 dark:border-gray-700">
+          <div className="flex items-center justify-center py-6 px-4 border-b border-red-500/20 dark:border-red-400/20">
             <Image
               src="/Logo Boss Putih.png"
               alt="BOSS Logo"
-              width={150}
-              height={150}
+              width={140}
+              height={140}
               className="object-contain"
+              priority
             />
           </div>
 
           {/* Outlet Selector */}
-          <div className="px-4 py-6 border-b border-red-500/30 dark:border-gray-700">
-            <label className="flex items-center text-sm font-semibold text-red-100 dark:text-gray-300 mb-3 font-poppins">
-              Pilih Outlet
+          <div className="px-4 py-4 border-b border-red-500/20 dark:border-red-400/20">
+            <label className="flex items-center justify-between text-xs font-semibold text-red-100 dark:text-red-100 mb-2 uppercase tracking-wide">
+              <span>Pilih Outlet</span>
               {outlets.length > 0 && (
-                <span className="ml-2 bg-white/20 text-xs px-2 py-1 rounded-full">
+                <Badge variant="secondary" className="bg-white/20 text-white text-xs px-2 py-0.5">
                   {outlets.length}
-                </span>
+                </Badge>
               )}
             </label>
-
-            {isLoading || outletLoading ? (
-              <div className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 text-sm font-medium font-poppins flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Memuat outlet...
-              </div>
-            ) : error ? (
-              <div className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-red-500/20 backdrop-blur-sm text-red-100 text-sm font-medium font-poppins flex items-center justify-between">
-                <span>Gagal memuat outlet</span>
-                <button
-                  onClick={() => refetch()}
-                  className="text-red-200 hover:text-white text-xs underline"
-                >
-                  Coba lagi
-                </button>
-              </div>
-            ) : (
-              <Select value={selectedOutlet?.id || ""} onValueChange={handleOutletChange}>
-                <SelectTrigger className="w-full px-4 py-3 border-0 rounded-xl shadow-lg bg-white/10 dark:bg-gray-700/50 backdrop-blur-sm text-white dark:text-gray-200 placeholder-red-200 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-gray-500 focus:bg-white/20 dark:focus:bg-gray-600/50 text-sm font-medium font-poppins transition-all duration-200">
-                  <SelectValue placeholder="Pilih outlet" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                  {outlets.length === 0 ? (
-                    <SelectItem value="outlet_not_found" disabled>
-                      Belum ada outlet
-                    </SelectItem>
-                  ) : (
-                    outlets.map((outlet) => (
-                      <SelectItem key={outlet.id} value={outlet.id} className="text-gray-900 dark:text-gray-100">
-                        {outlet.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            )}
+            {renderOutletSelector()}
           </div>
 
           {/* Navigation Menu */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
-            {menuItems.map((item, index) => {
-              // Handle dropdown menus
-              if (item.isDropdown && item.subItems) {
-                const isExpanded = expandedMenus[item.name];
-                const hasActiveSubItem = item.subItems.some(subItem => pathname === subItem.href);
-
-                return (
-                  <div key={item.name}>
-                    <button
-                      onClick={() => toggleMenu(item.name)}
-                      className={`group w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${hasActiveSubItem || isExpanded
-                        ? 'bg-white/10 dark:bg-gray-700/50 text-white dark:text-white'
-                        : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white'
-                        }`}
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <div className="flex items-center">
-                        <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${hasActiveSubItem || isExpanded ? 'text-white' : 'text-red-200 dark:text-gray-400'
-                          }`}>
-                          {item.icon}
-                        </span>
-                        <span className="flex-1">{item.name}</span>
-                      </div>
-
-                      <svg
-                        className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''
-                          } ${hasActiveSubItem || isExpanded ? 'text-white' : 'text-red-200 dark:text-gray-400'}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-
-                    {/* Dropdown Items */}
-                    <div className={`ml-6 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                      }`}>
-                      {item.subItems.map((subItem) => {
-                        const isActive = pathname === subItem.href;
-                        return (
-                          <Link
-                            key={subItem.href}
-                            href={subItem.href}
-                            className={`block px-4 py-2 text-sm rounded-lg transition-all duration-200 font-poppins ${isActive
-                              ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
-                              : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/30 hover:text-white dark:hover:text-white'
-                              }`}
-                            onClick={onClose}
-                          >
-                            {isActive && (
-                              <div className="absolute left-0 top-0 h-full w-1 bg-red-600 rounded-r-full"></div>
-                            )}
-                            {subItem.name}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              }
-
-              // Handle regular menu items
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href!}
-                  className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 font-poppins relative overflow-hidden ${isActive
-                    ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-lg transform scale-105'
-                    : 'text-red-100 dark:text-gray-300 hover:bg-white/10 dark:hover:bg-gray-700/50 hover:text-white dark:hover:text-white hover:transform hover:scale-102'
-                    }`}
-                  onClick={onClose}
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  {isActive && (
-                    <div className="absolute left-0 top-0 h-full w-1 bg-red-600 rounded-r-full"></div>
-                  )}
-
-                  <span className={`mr-4 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-red-600 dark:text-red-400' : 'text-red-200 dark:text-gray-400'
-                    }`}>
-                    {item.icon}
-                  </span>
-
-                  <span className="flex-1">{item.name}</span>
-
-                  <svg
-                    className={`w-4 h-4 transition-all duration-200 ${isActive ? 'opacity-100 text-red-600' : 'opacity-0 group-hover:opacity-100 text-red-200'
-                      }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              );
-            })}
+          <nav
+            className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
+            aria-label="Main Navigation"
+          >
+            {menuItems.map((item, index) => renderMenuItem(item, index))}
           </nav>
 
           {/* Footer */}
-          <div className="px-4 py-6 border-t border-red-500/30">
-            <div className="flex items-center justify-center space-x-2 text-red-200 bg-white/5 rounded-xl p-3">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span className="text-xs font-medium font-poppins">
-                BOSS Dashboard V1
+          <div className="px-4 py-4 border-t border-red-500/20 dark:border-red-400/20">
+            <div className="flex items-center justify-center space-x-2 text-red-100 dark:text-red-100 bg-white/5 dark:bg-red-900/30 rounded-xl p-3 hover:bg-white/10 dark:hover:bg-red-900/40 transition-colors duration-200">
+              <Zap className="w-4 h-4" />
+              <span className="text-xs font-medium">
+                BOSS Dashboard v1.0
               </span>
             </div>
           </div>
         </div>
-      </div>
+      </aside>
+
+      {/* Custom Scrollbar Styles */}
+      <style jsx global>{`
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 6px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 3px;
+        }
+        .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.3);
+        }
+      `}</style>
     </>
   );
 }

@@ -5,7 +5,7 @@ import { HttpStatus } from "../constants/http-status";
 import {
     getOrderByIdService, refundOrderService,
     createOrderAndMidtransTransactionService,
-    updateOrderStatusService, completeServiceOrderService,
+    updateOrderStatusService, updateServiceQueueStatusService, completeServiceOrderService,
     getGoodsOrdersByOutletService, getServiceQueueByOutletService,
     getOrderByCustomerPhoneService,
     cancelOrderByCustomerService,
@@ -38,6 +38,15 @@ export const updateOrderStatusController = asyncHandler(async (req: Request, res
     await getOrderByIdService(id, ownerId);
 
     const order = await updateOrderStatusService(id, status);
+    return ResponseUtil.success(res, order);
+});
+
+export const updateServiceOrderStatusController = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const ownerId = req.storedUser!.id;
+
+    const order = await updateServiceQueueStatusService(id, ownerId, status);
     return ResponseUtil.success(res, order);
 });
 

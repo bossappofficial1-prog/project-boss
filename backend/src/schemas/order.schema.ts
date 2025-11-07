@@ -94,6 +94,22 @@ export const updateOrderStatusSchema = z.object({
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
 
+const serviceQueueStatuses = [
+    OrderStatus.AWAITING_PAYMENT,
+    OrderStatus.CONFIRMED,
+    OrderStatus.PROCESSING,
+    OrderStatus.READY,
+    OrderStatus.ON_GOING,
+    OrderStatus.COMPLETED,
+    OrderStatus.CANCELLED,
+] as const;
+
+export const updateServiceQueueStatusSchema = z.object({
+    status: z.enum(serviceQueueStatuses.map((status) => status) as [typeof serviceQueueStatuses[number], ...typeof serviceQueueStatuses[number][]]),
+});
+
+export type UpdateServiceQueueStatusInput = z.infer<typeof updateServiceQueueStatusSchema>;
+
 export const customerCancelOrderSchema = z.object({
     phone: phoneSchema,
     reason: z.string().max(250).optional(),

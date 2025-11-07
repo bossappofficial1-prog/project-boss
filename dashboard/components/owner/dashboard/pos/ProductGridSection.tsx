@@ -133,11 +133,11 @@ export function ProductGridSection({
                                         <CardContent className="space-y-2 p-4">
                                             <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-900">
                                                 {productImage ? (
-                                                    <Image
+                                                    <img
                                                         src={productImage}
                                                         alt={product.name}
-                                                        fill
-                                                        className="object-cover"
+                                                        loading='lazy'
+                                                        className="object-cover w-full h-full"
                                                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                                         onError={(event) => {
                                                             const target = event.currentTarget as HTMLImageElement;

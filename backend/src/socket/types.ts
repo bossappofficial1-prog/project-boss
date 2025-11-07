@@ -15,7 +15,8 @@ export const SOCKET_EVENT = {
     CUSTOMER_NOTIFICATION: "customer:notification",
 
     ORDER_UPDATE_STATUS: "order:updateStatus",
-    ORDER_STATUS_CHANGED: "order:statusChanged"
+    ORDER_STATUS_CHANGED: "order:statusChanged",
+    QUEUE_UPDATED: "queue:updated"
 } as const
 
 export type PaymentSubmitPayload = { orderId: string; outletId: string; amount: number };
@@ -34,6 +35,12 @@ export type CustomerNotificationPayload = {
 };
 export type JoinOutletPayload = { outletId: string };
 export type JoinUserPayload = { userId: string };
+export type QueueUpdatedPayload = {
+    outletId: string;
+    queue: any[];
+    updatedOrderId?: string;
+    generatedAt: string;
+};
 
 export interface ClientToServerEvents {
     [SOCKET_EVENT.JOIN_OUTLET]: (payload: JoinOutletPayload) => void;
@@ -50,4 +57,5 @@ export interface ServerToClientEvents {
     [SOCKET_EVENT.ORDER_OTHER_EVENT]: (payload: MidtransWebhookPayloadType) => void;
     [SOCKET_EVENT.CUSTOMER_NOTIFICATION]: (payload: CustomerNotificationPayload) => void;
     [SOCKET_EVENT.ORDER_STATUS_CHANGED]: (payload: OrderStatusChangedPayload) => void;
+    [SOCKET_EVENT.QUEUE_UPDATED]: (payload: QueueUpdatedPayload) => void;
 }

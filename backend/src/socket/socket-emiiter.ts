@@ -73,4 +73,18 @@ export class SocketEmitter {
         io.to(orderId).emit(SOCKET_EVENT.ORDER_EVENT, payload)
         io.to(orderId).emit(SOCKET_EVENT.ORDER_OTHER_EVENT, payload)
     }
+
+    emitQueueUpdate(outletId: string, data: {
+        queue: any[];
+        updatedOrderId?: string;
+        generatedAt?: string;
+    }) {
+        const io = this.getIO();
+        io.to(outletId).emit(SOCKET_EVENT.QUEUE_UPDATED, {
+            outletId,
+            updatedOrderId: data.updatedOrderId,
+            generatedAt: data.generatedAt ?? new Date().toISOString(),
+            queue: data.queue,
+        });
+    }
 }

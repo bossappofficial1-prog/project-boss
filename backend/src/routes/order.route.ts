@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
-import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController, cancelOrderByCustomerController, confirmOrderByCustomerController } from "../controller/order.controller";
+import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, updateServiceOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController, cancelOrderByCustomerController, confirmOrderByCustomerController } from "../controller/order.controller";
 import { validateSchema } from "../middleware/zod.middleware";
-import { createOrderSchema, updateOrderStatusSchema, customerCancelOrderSchema, customerConfirmOrderSchema } from "../schemas/order.schema";
+import { createOrderSchema, updateOrderStatusSchema, updateServiceQueueStatusSchema, customerCancelOrderSchema, customerConfirmOrderSchema } from "../schemas/order.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
 import { orderCreationLimiter, orderManagementLimiter } from "../middleware/order-rate-limit.middleware";
@@ -41,6 +41,7 @@ orderRouter.get("/:id/receipt", protect, authorize(UserRole.OWNER), getOrderRece
 
 // Rute yang dilindungi untuk memperbarui status pesanan
 orderRouter.patch("/:id/status", protect, authorize(UserRole.OWNER), validateSchema(updateOrderStatusSchema), updateOrderStatusController);
+orderRouter.patch("/:id/service-status", protect, authorize(UserRole.OWNER), validateSchema(updateServiceQueueStatusSchema), updateServiceOrderStatusController);
 
 // Rute yang dilindungi untuk menyelesaikan pesanan
 orderRouter.post("/:id/complete", protect, authorize(UserRole.OWNER), completeOrderController);

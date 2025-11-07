@@ -1,3 +1,5 @@
+import type { QueueEntry } from '@/lib/apis/order';
+
 export const SOCKET_EVENT = {
     JOIN_OUTLET: "join:outlet",
     JOIN_USER: "join:user",
@@ -6,7 +8,8 @@ export const SOCKET_EVENT = {
     PAYMENT_NEW: "payment:new",
 
     ORDER_UPDATE_STATUS: "order:updateStatus",
-    ORDER_STATUS_CHANGED: "order:statusChanged"
+    ORDER_STATUS_CHANGED: "order:statusChanged",
+    QUEUE_UPDATED: "queue:updated"
 } as const
 
 export type EventNames = typeof SOCKET_EVENT[keyof typeof SOCKET_EVENT];
@@ -40,6 +43,12 @@ export interface SocketEvents {
         orderId: string;
         status: string;
         message?: string;
+    };
+    [SOCKET_EVENT.QUEUE_UPDATED]: {
+        outletId: string;
+        queue: QueueEntry[];
+        updatedOrderId?: string;
+        generatedAt: string;
     };
     'user-disconnected': {
         userId: string;

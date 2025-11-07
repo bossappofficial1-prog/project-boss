@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
   return (
     <OutletProvider>
       <SocketProvider>
-        <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-poppins relative`}>
+        <div className={`min-h-screen max-w-full bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-poppins`}>
           <style jsx global>{`
             @keyframes fadeInOverlay { from { opacity:0 } to { opacity:1 } }
             .animate-fadeIn { animation: fadeInOverlay 0.25s ease-out; }
@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
             {/* Content */}
             <main className={`flex-1 overflow-auto relative z-10 transition-all duration-300 ${sidebarOpen ? 'blur-[2px] lg:blur-0' : ''}`}>
-              <div className="container mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl">
+              <div className="container mx-auto p-6 max-w-[95dvw] md:max-w-[75dvw]">
                 {children}
               </div>
             </main>

@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppBarV2 } from '@/context/AppBarContextV2';
 import { EmptyState, ErrorState } from '@/components/Base';
 import { ConfirmationModal } from '@/components/base/ConfirmationModal';
@@ -151,11 +151,24 @@ export type SortOption = 'newest' | 'oldest' | 'price-high' | 'price-low';
 
 type OrderAction = 'contact' | 'cancel' | 'reorder' | 'confirm' | 'pay' | 'calendar';
 
+type CustomerNotificationPayload = {
+    orderId?: string;
+    status?: string;
+    transactionStatus?: string;
+    type?: string;
+};
+
+const isOrderStatusValue = (value: string | undefined | null): value is OrderStatusType => {
+    if (!value) return false;
+    return (Object.values(OrderStatus) as OrderStatusType[]).includes(value as OrderStatusType);
+};
+
 export default function OrdersPage() {
     const { setAppBar, resetAppBar } = useAppBarV2();
     const router = useRouter();
     const t = useTranslations('orders');
     const snackbar = useSnackbar();
+    const queryClient = useQueryClient();
     const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<OrderStatusType | 'ALL'>('ALL');
@@ -167,6 +180,7 @@ export default function OrdersPage() {
     const { profileUser } = useProfileInfo()
     const addItem = useCart(state => state.addItem);
     const clearOutletItems = useCart(state => state.clearOutletItems);
+    const socketRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Debounce search query
     const debouncedSearch = useDebounce(searchQuery, 300)
@@ -175,6 +189,21 @@ export default function OrdersPage() {
         queryKey: ['orders'],
         queryFn: Order.getOrderDetails
     });
+
+    const scheduleSocketRefetch = useCallback(() => {
+        if (socketRefreshTimeoutRef.current) {
+            return;
+        }
+
+        socketRefreshTimeoutRef.current = setTimeout(async () => {
+            socketRefreshTimeoutRef.current = null;
+            try {
+                await refetch();
+            } catch (socketRefetchError) {
+                console.error('Failed to refresh orders after socket update', socketRefetchError);
+            }
+        }, 800);
+    }, [refetch]);
 
     useEffect(() => {
         setAppBar({
@@ -191,6 +220,62 @@ export default function OrdersPage() {
 
         return () => resetAppBar();
     }, [setAppBar, resetAppBar, t, refetch, isLoading]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const handleNotification = (event: Event) => {
+            const detail = (event as CustomEvent<CustomerNotificationPayload>).detail;
+            if (!detail?.orderId) {
+                scheduleSocketRefetch();
+                return;
+            }
+
+            const nextStatusRaw = detail.status ?? detail.transactionStatus;
+            const normalisedStatus = typeof nextStatusRaw === 'string' ? nextStatusRaw.toUpperCase() : undefined;
+
+            if (isOrderStatusValue(normalisedStatus)) {
+                const safeStatus = normalisedStatus;
+                queryClient.setQueryData<OrderDetail[]>(['orders'], (previous) => {
+                    if (!previous) {
+                        return previous;
+                    }
+
+                    const index = previous.findIndex((order) => order.id === detail.orderId);
+                    if (index === -1) {
+                        return previous;
+                    }
+
+                    const existing = previous[index];
+                    const updatedOrder: OrderDetail = {
+                        ...existing,
+                        orderStatus: safeStatus,
+                        queueMeta: existing.queueMeta
+                            ? { ...existing.queueMeta, status: safeStatus }
+                            : existing.queueMeta,
+                    };
+
+                    const nextOrders = [...previous];
+                    nextOrders[index] = updatedOrder;
+                    return nextOrders;
+                });
+            }
+
+            scheduleSocketRefetch();
+        };
+
+        window.addEventListener('customer-notification', handleNotification as EventListener);
+
+        return () => {
+            window.removeEventListener('customer-notification', handleNotification as EventListener);
+            if (socketRefreshTimeoutRef.current) {
+                clearTimeout(socketRefreshTimeoutRef.current);
+                socketRefreshTimeoutRef.current = null;
+            }
+        };
+    }, [queryClient, scheduleSocketRefetch]);
 
     const handleOrderClick = (order: OrderDetail) => {
         setSelectedOrder(order);

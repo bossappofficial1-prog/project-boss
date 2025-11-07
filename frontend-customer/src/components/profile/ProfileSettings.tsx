@@ -195,7 +195,7 @@ export default function ProfileSettings() {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
                 {/* Quick Actions */}
                 <div className="bg-card rounded-md border p-4">
                     <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">

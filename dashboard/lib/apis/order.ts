@@ -212,6 +212,14 @@ export const orderApi = {
     });
   },
 
+  // Update service queue order status with validation
+  async updateServiceStatus(orderId: string, status: OrderStatus): Promise<QueueEntry> {
+    return apiCall<QueueEntry>(`/orders/${orderId}/service-status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
   // Complete order
   async complete(orderId: string): Promise<Order> {
     return apiCall<Order>(`/orders/${orderId}/complete`, {

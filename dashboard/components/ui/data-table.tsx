@@ -756,7 +756,7 @@ export function DataTable<TData, TValue>({
     }
 
     return (
-        <div className="space-y-4 bg-background shadow-lg p-3 rounded-md" role="region" aria-label={ariaLabel} aria-description={ariaDescription}>
+        <div className="space-y-4 bg-background shadow-md p-6 rounded-md" role="region" aria-label={ariaLabel} aria-description={ariaDescription}>
             {/* Header Section */}
             {(title || description) && (
                 <div className="space-y-1">

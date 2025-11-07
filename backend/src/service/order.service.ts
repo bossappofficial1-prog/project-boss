@@ -28,6 +28,16 @@ const SERVICE_QUEUE_STATUSES: OrderStatus[] = [
     OrderStatus.ON_GOING,
 ];
 
+const SERVICE_QUEUE_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
+    [OrderStatus.AWAITING_PAYMENT]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+    [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+    [OrderStatus.PROCESSING]: [OrderStatus.READY, OrderStatus.CANCELLED],
+    [OrderStatus.READY]: [OrderStatus.ON_GOING, OrderStatus.COMPLETED, OrderStatus.CANCELLED],
+    [OrderStatus.ON_GOING]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
+    [OrderStatus.COMPLETED]: [],
+    [OrderStatus.CANCELLED]: [],
+};
+
 interface QueueMetaPayload {
     position: number;
     totalAhead: number;
@@ -421,6 +431,19 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
         console.error('❌ Error emitting customer order status event:', customerSocketError);
     }
 
+    // Broadcast updated queue snapshot to outlet listeners
+    try {
+        if (hasServiceProduct(updatedOrder)) {
+            const snapshot = await buildServiceQueueSnapshot(updatedOrder.outletId);
+            SocketEmitter.getInstance().emitQueueUpdate(updatedOrder.outletId, {
+                updatedOrderId: updatedOrder.id,
+                queue: snapshot.map(serializeQueueOrder),
+            });
+        }
+    } catch (queueSocketError) {
+        console.error('❌ Error emitting outlet queue snapshot:', queueSocketError);
+    }
+
     // Jika status diubah menjadi COMPLETED dan ini adalah pesanan layanan
     if (status === 'COMPLETED' && updatedOrder.items.some(item => item.product.type === 'SERVICE')) {
         // Dapatkan antrian untuk outlet yang sama
@@ -688,6 +711,27 @@ export async function cancelOrderByCustomerService(orderId: string, phone: strin
     });
 
     return mapPublicOrderResponse(updatedOrder as OrderWithRelations);
+}
+
+export async function updateServiceQueueStatusService(orderId: string, ownerId: string, nextStatus: OrderStatus) {
+    const order = await getOrderByIdService(orderId, ownerId);
+    const orderRecord = order as OrderWithRelations;
+
+    if (!hasServiceProduct(orderRecord)) {
+        throw new AppError("Perubahan status hanya berlaku untuk pesanan layanan", HttpStatus.BAD_REQUEST);
+    }
+
+    if (orderRecord.orderStatus === nextStatus) {
+        return orderRecord;
+    }
+
+    const allowedNext = SERVICE_QUEUE_TRANSITIONS[orderRecord.orderStatus] ?? [];
+    if (!allowedNext.includes(nextStatus)) {
+        throw new AppError("Transisi status tidak valid untuk pesanan ini", HttpStatus.BAD_REQUEST);
+    }
+
+    const updatedOrder = await updateOrderStatusService(orderId, nextStatus);
+    return updatedOrder;
 }
 
 export async function confirmOrderByCustomerService(orderId: string, phone: string) {
