@@ -366,7 +366,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
 
             // Send to backend API
             const response = await CheckoutService.processPayment(payloadBody);
-            console.log(response);
 
             const orderId = response.order_id;
 
@@ -439,7 +438,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             const errorMessage = error instanceof Error ? error.message : t("errors.paymentFailed");
             snackbar.error(retryCount >= maxRetries
                 ? `${errorMessage} (Sudah dicoba ${maxRetries + 1}x. Periksa koneksi internet Anda.)`
-                : errorMessage)
+                : `Periksa input anda`)
             setIsLoading(false);
         }
     };

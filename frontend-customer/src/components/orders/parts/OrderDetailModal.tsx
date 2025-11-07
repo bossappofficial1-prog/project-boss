@@ -4,7 +4,7 @@ import { OrderDetail } from "@/types"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Clock, CreditCard, CheckCircle, XCircle, Hourglass, PackageCheck, Store, User, Phone } from "lucide-react"
+import { Clock, CreditCard, CheckCircle, XCircle, Hourglass, PackageCheck, Store, User, Phone, ListOrdered } from "lucide-react"
 import { useTranslations } from "@/hooks/useI18n"
 import { cn, formatCurrency, formatDateTime } from "@/lib/utils"
 
@@ -29,6 +29,10 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
     if (!order) return null
 
     const currentStatus = statusConfig[order.orderStatus] || statusConfig.PROCESSING
+    const hasServiceProduct = order.items.some(item => item.product.type === "SERVICE")
+    const queueMeta = order.queueMeta ?? null
+    const scheduledStart = order.queueMeta?.scheduledStart ?? order.bookingSlot?.startTime ?? order.bookingDate ?? null
+    const scheduleLabel = scheduledStart ? formatDateTime(scheduledStart) : null
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -77,6 +81,37 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
                             <span className="text-sm">{order.customerDetails.phone}</span>
                         </div>
                     </div>
+
+                    <Separator />
+
+                    {hasServiceProduct && (
+                        <div className="space-y-4">
+                            <h3 className="font-semibold">{t('detail.serviceQueue')}</h3>
+                            <div className="border rounded-md p-3 space-y-2 bg-muted/40">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <ListOrdered className="w-4 h-4" />
+                                        <span>{t('queue.positionLabel')}</span>
+                                    </div>
+                                    <span className="text-base font-semibold">
+                                        {queueMeta?.position ? `#${queueMeta.position}` : t('queue.positionPending')}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>
+                                        {queueMeta?.totalAhead && queueMeta.totalAhead > 0
+                                            ? t('queue.peopleAhead', { count: queueMeta.totalAhead })
+                                            : t('queue.noOneAhead')}
+                                    </span>
+                                    <span>
+                                        {scheduleLabel
+                                            ? t('queue.estimatedStart', { date: scheduleLabel })
+                                            : t('queue.schedulePending')}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <Separator />
 

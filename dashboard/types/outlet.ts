@@ -267,3 +267,22 @@ export interface TimeframeRange {
     endDate: Date;
     label: string;
 }
+
+export interface OutletRevenueTrendResponse {
+    timeframe: TimeframeFilter;
+    range: {
+        startDate: string;
+        endDate: string;
+    };
+    totals: {
+        revenue: number;
+        orders: number;
+        averageRevenue: number;
+        maxRevenue: number;
+    };
+    data: Array<{
+        date: string;
+        revenue: number;
+        orders: number;
+    }>;
+}

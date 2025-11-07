@@ -11,6 +11,8 @@ interface QueueDesktopTableProps {
 export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
+  const getQueuePosition = (item: QueueEntry) => item.queueMeta?.position ?? item.position ?? item.queueNumber ?? 0;
+
   const getStatusOptions = (currentStatus: string) => {
     const statusMap = {
       'AWAITING_PAYMENT': { label: 'Menunggu Bayar', value: 'AWAITING_PAYMENT' },
@@ -51,7 +53,7 @@ export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) 
 
     const statusLabels = {
       'AWAITING_PAYMENT': 'Menunggu Bayar',
-      'CONFIRMED': 'Dikonfirmasi', 
+      'CONFIRMED': 'Dikonfirmasi',
       'PROCESSING': 'Menunggu',
       'READY': 'Siap',
       'COMPLETED': 'Selesai',
@@ -86,6 +88,15 @@ export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) 
     });
   };
 
+  const formatSchedule = (item: QueueEntry) => {
+    const scheduled = item.scheduledStart
+      ?? item.queueMeta?.scheduledStart
+      ?? item.bookingSlot?.startTime
+      ?? item.bookingDate;
+
+    return scheduled ? formatDate(scheduled) : '-';
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -115,11 +126,16 @@ export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) 
                 <div className="text-sm text-gray-900 dark:text-gray-100">{idx + 1}</div>
               </td>
               <td className="px-4 py-3">
-                <div className="flex items-center">
+                <div className="flex items-center gap-3">
                   <div className="flex-shrink-0 w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
                     <span className="text-sm font-semibold text-red-600 dark:text-red-400">
-                      {item.queueNumber || item.position || '-'}
+                      {getQueuePosition(item) || '-'}
                     </span>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {item.queueMeta?.totalAhead && item.queueMeta.totalAhead > 0
+                      ? `${item.queueMeta.totalAhead} antrean di depan`
+                      : 'Giliran berikutnya'}
                   </div>
                 </div>
               </td>
@@ -152,11 +168,7 @@ export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) 
               </td>
               <td className="px-4 py-3">
                 <div className="text-sm text-gray-900 dark:text-gray-100">
-                  {item.bookingDate
-                    ? formatDate(item.bookingDate)
-                    : (item as any).bookingSlot?.startTime
-                      ? formatDate((item as any).bookingSlot.startTime as unknown as string)
-                      : '-'}
+                  {formatSchedule(item)}
                 </div>
               </td>
               <td className="px-4 py-3">

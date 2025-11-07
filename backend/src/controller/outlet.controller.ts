@@ -14,7 +14,8 @@ import {
     updateOutletLocationService,
     uploadQRISService,
     getQRISService,
-    getOutletAnalytics
+    getOutletAnalytics,
+    getOutletRevenueTrend
 } from "../service/outlet.service";
 
 export const findNearbyOutletsController = asyncHandler(async (req: Request, res: Response) => {
@@ -139,6 +140,28 @@ export const getQRISController = asyncHandler(async (req: Request, res: Response
     const qrisData = await getQRISService(outletId);
 
     return ResponseUtil.success(res, qrisData, HttpStatus.OK, 'Data QRIS berhasil diambil');
+});
+
+type RevenueTimeframe = '7d' | '30d' | '3m' | 'custom';
+
+export const getOutletRevenueTrendController = asyncHandler(async (req: Request, res: Response) => {
+    const { outletId } = req.params;
+    if (!outletId) {
+        return ResponseUtil.badRequest(res, 'Outlet ID diperlukan');
+    }
+
+    const timeframeParam = (req.query.timeframe as string) ?? '30d';
+    const allowedTimeframes: RevenueTimeframe[] = ['7d', '30d', '3m', 'custom'];
+    const timeframe = allowedTimeframes.includes(timeframeParam as RevenueTimeframe)
+        ? (timeframeParam as RevenueTimeframe)
+        : '30d';
+
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+
+    const trend = await getOutletRevenueTrend(outletId, { timeframe, startDate, endDate });
+
+    return ResponseUtil.success(res, trend);
 });
 
 export const getOutletAnalyticsController = asyncHandler(async (req: Request, res: Response) => {

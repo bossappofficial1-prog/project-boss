@@ -107,10 +107,13 @@ const PaymentMethodsList: React.FC<{
                                 return (
                                     <button
                                         key={method.id}
+                                        disabled={method.disable}
                                         onClick={() => onSelectPayment(method)}
                                         className={`w-full p-3 border-2 rounded-lg transition-all duration-300 group relative overflow-hidden min-h-[60px] ${isSelected
                                             ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-md ring-1 ring-primary/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/2 dark:hover:bg-primary/5 hover:shadow-sm'
+                                            : method.disable
+                                                ? 'border-gray-200 dark:border-gray-700 opacity-60 grayscale cursor-not-allowed'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/2 dark:hover:bg-primary/5 hover:shadow-sm'
                                             }`}
                                     >
                                         {/* Selection Indicator */}
@@ -145,7 +148,7 @@ const PaymentMethodsList: React.FC<{
                                                     </div>
 
                                                     {/* Payment Type Badge */}
-                                                    <div className="mt-1.5">
+                                                    <div className="mt-1.5 flex items-center gap-3">
                                                         <Badge
                                                             variant="outline"
                                                             className={`text-xs px-1.5 py-0.5 ${method.type === 'qris'
@@ -161,6 +164,7 @@ const PaymentMethodsList: React.FC<{
                                                                     ? t("types.va")
                                                                     : t("types.manual")}
                                                         </Badge>
+                                                        {method.disable && <p className="text-xs">Akan tersedia segera</p>}
                                                     </div>
                                                 </div>
                                             </div>

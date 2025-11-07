@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useAppBarV2 } from '@/context/AppBarContextV2';
 import { EmptyState, ErrorState } from '@/components/Base';
+import { ConfirmationModal } from '@/components/base/ConfirmationModal';
 import OrderCardSkeleton from './parts/OrderCardSkeleton';
 import { Order } from '@/services/order';
 import { OrderDetail, OrderStatus } from '@/types';
@@ -18,6 +19,107 @@ import { AxiosError } from 'axios';
 import { groupOrdersByDate, sortOrdersByDate } from '@/lib/dateGrouping';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useCart } from '@/hooks/useCart';
+import { Product } from '@/services/product';
+
+const DEFAULT_SERVICE_DURATION_MINUTES = 60;
+
+const escapeICSValue = (value: string) =>
+    value
+        .replace(/\\/g, '\\\\')
+        .replace(/\n/g, '\\n')
+        .replace(/,/g, '\\,')
+        .replace(/;/g, '\\;');
+
+const formatICSDate = (date: Date) => {
+    const iso = date.toISOString().replace(/[-:]/g, '');
+    const [base] = iso.split('.');
+    return `${base}Z`;
+};
+
+const getOrderScheduleWindow = (order: OrderDetail) => {
+    const startCandidate = order.bookingSlot?.startTime
+        ?? order.queueMeta?.scheduledStart
+        ?? order.bookingDate
+        ?? null;
+
+    if (!startCandidate) {
+        return { start: null as Date | null, end: null as Date | null };
+    }
+
+    const start = new Date(startCandidate);
+    if (Number.isNaN(start.getTime())) {
+        return { start: null, end: null };
+    }
+
+    const endCandidate = order.bookingSlot?.endTime ?? order.queueMeta?.scheduledEnd ?? null;
+    if (endCandidate) {
+        const end = new Date(endCandidate);
+        return Number.isNaN(end.getTime()) ? { start: null, end: null } : { start, end };
+    }
+
+    const duration = order.items.find(item => item.product.type === 'SERVICE')?.product.serviceDurationMinutes ?? DEFAULT_SERVICE_DURATION_MINUTES;
+    const fallbackEnd = new Date(start);
+    fallbackEnd.setMinutes(fallbackEnd.getMinutes() + duration);
+    return { start, end: fallbackEnd };
+};
+
+const generateIcsContent = (order: OrderDetail) => {
+    const { start, end } = getOrderScheduleWindow(order);
+    if (!start || !end) {
+        return null;
+    }
+
+    const primaryItem = order.items.find(item => item.product.type === 'SERVICE') ?? order.items[0];
+    const summary = primaryItem ? `${primaryItem.product.name} – ${order.outlet.name}` : `Booking – ${order.outlet.name}`;
+
+    const details = [
+        `Order ID: ${order.id}`,
+        `Customer: ${order.customerDetails.name}`,
+        `Phone: ${order.customerDetails.phone}`,
+        `Outlet: ${order.outlet.name}`,
+    ];
+
+    const description = details.join('\n');
+    const location = order.outlet.address || order.outlet.name;
+
+    const lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//ProjectBoss//CustomerApp//EN',
+        'CALSCALE:GREGORIAN',
+        'BEGIN:VEVENT',
+        `UID:${order.id}@projectboss`,
+        `DTSTAMP:${formatICSDate(new Date())}`,
+        `DTSTART:${formatICSDate(start)}`,
+        `DTEND:${formatICSDate(end)}`,
+        `SUMMARY:${escapeICSValue(summary)}`,
+        `DESCRIPTION:${escapeICSValue(description)}`,
+        `LOCATION:${escapeICSValue(location)}`,
+        'END:VEVENT',
+        'END:VCALENDAR',
+    ];
+
+    return lines.join('\r\n');
+};
+
+const triggerCalendarDownload = (order: OrderDetail) => {
+    const ics = generateIcsContent(order);
+    if (!ics) {
+        return false;
+    }
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `order-${order.id}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    return true;
+};
 
 // Dynamic imports
 const EnhancedOrderCard = dynamic(() => import('./parts/EnhancedOrderCard'), {
@@ -47,6 +149,8 @@ const SortMenu = dynamic(() => import('./parts/SortMenu'), {
 
 export type SortOption = 'newest' | 'oldest' | 'price-high' | 'price-low';
 
+type OrderAction = 'contact' | 'cancel' | 'reorder' | 'confirm' | 'pay' | 'calendar';
+
 export default function OrdersPage() {
     const { setAppBar, resetAppBar } = useAppBarV2();
     const router = useRouter();
@@ -54,12 +158,15 @@ export default function OrdersPage() {
     const snackbar = useSnackbar();
     const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [visibleCount, setVisibleCount] = useState(10);
     const [activeTab, setActiveTab] = useState<OrderStatusType | 'ALL'>('ALL');
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<SortOption>('newest');
+    const [actionInProgress, setActionInProgress] = useState<{ orderId: string; action: OrderAction } | null>(null);
+    const [confirmationState, setConfirmationState] = useState<{ order: OrderDetail; action: Extract<OrderAction, 'cancel' | 'confirm'> } | null>(null);
     const { profileUser } = useProfileInfo()
+    const addItem = useCart(state => state.addItem);
+    const clearOutletItems = useCart(state => state.clearOutletItems);
 
     // Debounce search query
     const debouncedSearch = useDebounce(searchQuery, 300)
@@ -68,9 +175,6 @@ export default function OrdersPage() {
         queryKey: ['orders'],
         queryFn: Order.getOrderDetails
     });
-
-    console.log(error);
-
 
     useEffect(() => {
         setAppBar({
@@ -100,6 +204,54 @@ export default function OrdersPage() {
 
     const handleBrowseOutlets = () => {
         router.push('/nearby');
+    };
+
+    const normalizePhoneNumber = (phone?: string | null) => {
+        if (!phone) return '';
+        const digitsOnly = phone.replace(/[^0-9]/g, '');
+        if (digitsOnly.startsWith('62')) return digitsOnly;
+        if (digitsOnly.startsWith('0')) return `62${digitsOnly.slice(1)}`;
+        return digitsOnly;
+    };
+
+    const getErrorMessage = (err: unknown, fallback: string) => {
+        if (err instanceof AxiosError) {
+            const statusCode = err.response?.status;
+            if (statusCode === 404) {
+                return t('messages.errors.orderNotFound');
+            }
+
+            const responseMessage = (err.response?.data as any)?.message;
+            if (typeof responseMessage === 'string') {
+                const serverMessageHandlers: Record<string, () => string> = {
+                    'Pesanan tidak ditemukan': () => t('messages.errors.orderNotFound'),
+                    'Pesanan tidak ditemukan untuk nomor telepon ini': () => t('messages.errors.ownershipMismatch'),
+                    'Pesanan tidak dapat dibatalkan pada status saat ini': () => t('messages.errors.notCancellable'),
+                    'Konfirmasi hanya diperbolehkan untuk pesanan delivery': () => t('messages.errors.confirmDeliveryOnly'),
+                    'Pesanan belum siap untuk dikonfirmasi': () => t('messages.errors.confirmNotReady'),
+                };
+
+                const handler = serverMessageHandlers[responseMessage];
+                if (handler) {
+                    return handler();
+                }
+            }
+
+            if (err.message === 'Network Error') {
+                return t('messages.errors.generic');
+            }
+        }
+
+        if (err instanceof Error && err.message) {
+            if (['PROFILE_NOT_FOUND', 'PHONE_NOT_FOUND'].includes(err.message)) {
+                return t('messages.missingPhone');
+            }
+            if (err.message === 'FAILED_TO_ADD_ITEM') {
+                return t('messages.reorderError');
+            }
+        }
+
+        return fallback;
     };
 
     // Filter orders by status
@@ -182,23 +334,138 @@ export default function OrdersPage() {
         });
     };
 
-    // Handle order actions
-    const handleOrderAction = (action: 'contact' | 'cancel' | 'reorder' | 'confirm' | `pay`, order: OrderDetail) => {
-        switch (action) {
-            case 'contact':
-                snackbar.info(t('messages.contactSoon'));
-                break;
-            case 'cancel':
-                snackbar.info(t('messages.cancelSoon'));
-                break;
-            case 'reorder':
-                snackbar.info(t('messages.reorderSoon'));
-                break;
-            case 'confirm':
-                snackbar.info(t('messages.confirmSoon'));
-                break;
-            case 'pay': router.push(`/payment/${order.id}`); break;
+    const performOrderAction = async (action: OrderAction, order: OrderDetail) => {
+        if (action === 'pay') {
+            router.push(`/payment/${order.id}`);
+            return;
         }
+
+        if (action === 'contact') {
+            const phone = order.outlet.phone || '';
+            const normalized = normalizePhoneNumber(phone);
+
+            if (!normalized) {
+                snackbar.error(t('messages.contactUnavailable'));
+                return;
+            }
+
+            const messageTemplate = t('messages.contactMessage')
+                .replace('{orderId}', order.id)
+                .replace('{outletName}', order.outlet.name);
+
+            const waUrl = `https://wa.me/${normalized}?text=${encodeURIComponent(messageTemplate)}`;
+            window.open(waUrl, '_blank', 'noopener,noreferrer');
+            snackbar.info(t('messages.contactRedirect'));
+            return;
+        }
+
+        if (action === 'calendar') {
+            try {
+                const created = triggerCalendarDownload(order);
+                if (created) {
+                    snackbar.success(t('messages.calendarSuccess'));
+                } else {
+                    snackbar.info(t('messages.calendarMissingSchedule'));
+                }
+            } catch (calendarError) {
+                console.error('Failed to download calendar event', calendarError);
+                snackbar.error(t('messages.calendarError'));
+            }
+            return;
+        }
+
+        if (!profileUser?.phone) {
+            snackbar.error(t('messages.missingPhone'));
+            return;
+        }
+
+        const customerPhone = normalizePhoneNumber(profileUser.phone);
+
+        if (!customerPhone) {
+            snackbar.error(t('messages.missingPhone'));
+            return;
+        }
+
+        const shouldSetLoading = ['cancel', 'confirm', 'reorder'].includes(action);
+
+        try {
+            if (shouldSetLoading) {
+                setActionInProgress({ orderId: order.id, action });
+            }
+
+            switch (action) {
+                case 'cancel': {
+                    await Order.cancelOrder(order.id, { phone: customerPhone });
+                    snackbar.success(t('messages.cancelSuccess'));
+                    await refetch();
+                    handleCloseModal();
+                    break;
+                }
+                case 'confirm': {
+                    await Order.confirmOrder(order.id, { phone: customerPhone });
+                    snackbar.success(t('messages.confirmSuccess'));
+                    await refetch();
+                    handleCloseModal();
+                    break;
+                }
+                case 'reorder': {
+                    if (order.items.length === 0) {
+                        snackbar.info(t('messages.reorderEmpty'));
+                        return;
+                    }
+
+                    const hasServiceItem = order.items.some(item => item.product.type === 'SERVICE');
+                    if (hasServiceItem) {
+                        snackbar.info(t('messages.reorderServiceUnsupported'));
+                        return;
+                    }
+
+                    clearOutletItems(order.outletId);
+
+                    for (const item of order.items) {
+                        const productDetail = await Product.getDetail(item.product.id);
+                        const added = addItem(order.outletId, order.outlet.name, productDetail, item.quantity);
+
+                        if (!added) {
+                            throw new Error('FAILED_TO_ADD_ITEM');
+                        }
+                    }
+
+                    snackbar.success(t('messages.reorderSuccess'));
+                    handleCloseModal();
+                    router.push('/cart');
+                    break;
+                }
+            }
+        } catch (err) {
+            const fallbackKey = action === 'cancel'
+                ? 'messages.cancelError'
+                : action === 'confirm'
+                    ? 'messages.confirmError'
+                    : 'messages.reorderError';
+
+            snackbar.error(getErrorMessage(err, t(fallbackKey)));
+        } finally {
+            if (shouldSetLoading) {
+                setActionInProgress(null);
+            }
+        }
+    };
+
+    const handleOrderAction = (action: OrderAction, order: OrderDetail) => {
+        if (action === 'cancel' || action === 'confirm') {
+            setConfirmationState({ action, order });
+            return;
+        }
+
+        void performOrderAction(action, order);
+    };
+
+    const handleConfirmModal = () => {
+        if (!confirmationState) return;
+        const { action, order } = confirmationState;
+        setConfirmationState(null);
+        void performOrderAction(action, order);
     };
 
     const renderContent = () => {
@@ -215,15 +482,26 @@ export default function OrdersPage() {
             );
         }
 
-        if (error && (error as AxiosError).status == 404) {
+        if (error) {
+            const axiosError = error as AxiosError;
+
+            if (axiosError.response?.status === 404) {
+                return (
+                    <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+                        <EmptyState
+                            title={t('error_title')}
+                            description={t('error_message')}
+                            icon={<Receipt className="w-6 h-6 text-muted-foreground" />}
+                        />
+                    </div>
+                );
+            }
+
             return (
-                <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-                    <EmptyState
-                        title={t('error_title')}
-                        description={t('error_message')}
-                        icon={<Receipt className="w-6 h-6 text-muted-foreground" />}
-                    />
-                </div>
+                <ErrorState
+                    title={t('messages.errors.genericTitle')}
+                    message={getErrorMessage(error, t('messages.errors.generic'))}
+                />
             );
         }
 
@@ -265,6 +543,7 @@ export default function OrdersPage() {
                                             order={order}
                                             onClick={() => handleOrderClick(order)}
                                             onQuickAction={handleOrderAction}
+                                            pendingAction={actionInProgress}
                                         />
                                     ))}
                                 </div>
@@ -275,6 +554,28 @@ export default function OrdersPage() {
             </div>
         );
     };
+
+    const confirmationConfig = confirmationState
+        ? confirmationState.action === 'cancel'
+            ? {
+                title: t('messages.confirmations.cancel.title'),
+                message: t('messages.confirmations.cancel.message'),
+                confirmText: t('messages.confirmations.cancel.confirm'),
+                cancelText: t('messages.confirmations.cancel.cancel'),
+                variant: 'destructive' as const,
+            }
+            : {
+                title: t('messages.confirmations.confirm.title'),
+                message: t('messages.confirmations.confirm.message'),
+                confirmText: t('messages.confirmations.confirm.confirm'),
+                cancelText: t('messages.confirmations.confirm.cancel'),
+                variant: 'default' as const,
+            }
+        : null;
+
+    const confirmationLoading = confirmationState
+        ? actionInProgress?.orderId === confirmationState.order.id && actionInProgress?.action === confirmationState.action
+        : false;
 
     return (
         <div className="space-y-4">
@@ -336,6 +637,19 @@ export default function OrdersPage() {
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 onAction={handleOrderAction}
+                pendingAction={actionInProgress}
+            />
+
+            <ConfirmationModal
+                isOpen={Boolean(confirmationState)}
+                onClose={() => setConfirmationState(null)}
+                onConfirm={handleConfirmModal}
+                title={confirmationConfig?.title ?? ''}
+                message={confirmationConfig?.message ?? ''}
+                confirmText={confirmationConfig?.confirmText}
+                cancelText={confirmationConfig?.cancelText}
+                variant={confirmationConfig?.variant ?? 'default'}
+                isLoading={confirmationLoading}
             />
         </div>
     );

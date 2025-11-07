@@ -13,14 +13,10 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { TimeframeFilter } from '@/types/outlet';
-import { subDays, subMonths } from 'date-fns';
+import { useOutletRevenueTrend } from '@/hooks/useOutletRevenueTrend';
 
 interface RevenueChartProps {
-  data: Array<{
-    date: string;
-    revenue: number;
-    orders: number;
-  }>;
+  outletId?: string;
 }
 
 const timeframeOptions: { value: TimeframeFilter; label: string }[] = [
@@ -58,34 +54,44 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export default function RevenueChart({ data }: RevenueChartProps) {
+export default function RevenueChart({ outletId }: RevenueChartProps) {
   const [timeframe, setTimeframe] = useState<TimeframeFilter>('30d');
   const [chartType, setChartType] = useState<'area' | 'line'>('line');
 
-  const filteredData = useMemo(() => {
-    const now = new Date();
-    let startDate = now;
+  const { data: trend, isPending, error } = useOutletRevenueTrend(outletId, { timeframe });
 
-    if (timeframe === '7d') startDate = subDays(now, 7);
-    else if (timeframe === '30d') startDate = subDays(now, 30);
-    else if (timeframe === '3m') startDate = subMonths(now, 3);
-
-    return data.filter((item) => {
-      const itemDate = new Date(item.date);
-      return itemDate >= startDate;
-    });
-  }, [data, timeframe]);
+  const filteredData = trend?.data ?? [];
 
   const stats = useMemo(() => {
+    if (trend?.totals) {
+      return {
+        totalRevenue: trend.totals.revenue,
+        avgRevenue: trend.totals.averageRevenue,
+        maxRevenue: trend.totals.maxRevenue,
+      };
+    }
+
     if (filteredData.length === 0) return { avgRevenue: 0, maxRevenue: 0, totalRevenue: 0 };
+
     const revenues = filteredData.map((d) => d.revenue);
     const totalRevenue = revenues.reduce((a, b) => a + b, 0);
     const avgRevenue = Math.round(totalRevenue / revenues.length);
     const maxRevenue = Math.max(...revenues);
     return { avgRevenue, maxRevenue, totalRevenue };
-  }, [filteredData]);
+  }, [trend?.totals, filteredData]);
+
+  const hasData = filteredData.length > 0;
+  const isErrored = Boolean(error);
 
   const axisTickStyle = { fontSize: 11, fill: '#6b7280' } as const;
+
+  if (!outletId) {
+    return (
+      <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-6 shadow-sm">
+        <div className="text-sm text-gray-500 dark:text-gray-400">Pilih outlet untuk melihat tren pendapatan.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-6 shadow-sm">
@@ -150,142 +156,150 @@ export default function RevenueChart({ data }: RevenueChartProps) {
       </div>
 
       <div className="mt-8 h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          {chartType === 'area' ? (
-            <AreaChart data={filteredData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={REVENUE_COLOR} stopOpacity={0.4} />
-                  <stop offset="50%" stopColor={REVENUE_COLOR} stopOpacity={0.2} />
-                  <stop offset="100%" stopColor={REVENUE_COLOR} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={ORDERS_COLOR} stopOpacity={0.3} />
-                  <stop offset="100%" stopColor={ORDERS_COLOR} stopOpacity={0} />
-                </linearGradient>
-                <filter id="shadow">
-                  <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3" />
-                </filter>
-              </defs>
-              <CartesianGrid
-                stroke="#374151"
-                strokeDasharray="3 3"
-                vertical={false}
-                opacity={0.5}
-              />
-              <XAxis
-                dataKey="date"
-                tick={axisTickStyle}
-                tickLine={false}
-                axisLine={{ stroke: '#4b5563' }}
-                interval={Math.floor(filteredData.length / 7)}
-              />
-              <YAxis
-                tick={axisTickStyle}
-                tickLine={false}
-                axisLine={{ stroke: '#4b5563' }}
-                width={70}
-                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#6b7280', strokeDasharray: '3 3' }} />
-              <Area
-                type="monotone"
-                dataKey="revenue"
-                stroke={REVENUE_COLOR}
-                strokeWidth={3}
-                fill="url(#revenueGradient)"
-                dot={false}
-                name="Pendapatan"
-                isAnimationActive={true}
-                filter="url(#shadow)"
-              />
-              <Area
-                type="monotone"
-                dataKey="orders"
-                stroke={ORDERS_COLOR}
-                strokeWidth={2}
-                fill="url(#ordersGradient)"
-                dot={false}
-                name="Pesanan"
-                isAnimationActive={true}
-              />
-            </AreaChart>
-          ) : (
-            <LineChart data={filteredData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <defs>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                  <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <CartesianGrid
-                stroke="#374151"
-                strokeDasharray="3 3"
-                vertical={false}
-                opacity={0.5}
-              />
-              <XAxis
-                dataKey="date"
-                tick={axisTickStyle}
-                tickLine={false}
-                axisLine={{ stroke: '#4b5563' }}
-                interval={Math.floor(filteredData.length / 7)}
-              />
-              <YAxis
-                tick={axisTickStyle}
-                tickLine={false}
-                axisLine={{ stroke: '#4b5563' }}
-                width={70}
-                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#6b7280', strokeDasharray: '3 3' }} />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke={REVENUE_COLOR}
-                strokeWidth={3}
-                dot={{
-                  fill: REVENUE_COLOR,
-                  r: 4,
-                  strokeWidth: 2,
-                  stroke: '#065f46'
-                }}
-                activeDot={{
-                  r: 6,
-                  fill: REVENUE_COLOR,
-                  strokeWidth: 3,
-                  stroke: '#fff',
-                  filter: 'url(#glow)'
-                }}
-                isAnimationActive={true}
-                name="Pendapatan"
-              />
-              <Line
-                type="monotone"
-                dataKey="orders"
-                stroke={ORDERS_COLOR}
-                strokeWidth={2.5}
-                dot={{
-                  fill: ORDERS_COLOR,
-                  r: 3,
-                  strokeWidth: 2,
-                  stroke: '#1e40af'
-                }}
-                activeDot={{
-                  r: 5,
-                  fill: ORDERS_COLOR,
-                  strokeWidth: 2,
-                  stroke: '#fff'
-                }}
-                isAnimationActive={true}
-                name="Pesanan"
-              />
-            </LineChart>
-          )}
-        </ResponsiveContainer>
+        {isPending ? (
+          <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">Memuat data pendapatan…</div>
+        ) : isErrored ? (
+          <div className="flex h-full items-center justify-center text-sm text-red-500 dark:text-red-400">Gagal memuat data pendapatan.</div>
+        ) : !hasData ? (
+          <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">Belum ada data pendapatan pada periode ini.</div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            {chartType === 'area' ? (
+              <AreaChart data={filteredData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={REVENUE_COLOR} stopOpacity={0.4} />
+                    <stop offset="50%" stopColor={REVENUE_COLOR} stopOpacity={0.2} />
+                    <stop offset="100%" stopColor={REVENUE_COLOR} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={ORDERS_COLOR} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={ORDERS_COLOR} stopOpacity={0} />
+                  </linearGradient>
+                  <filter id="shadow">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3" />
+                  </filter>
+                </defs>
+                <CartesianGrid
+                  stroke="#374151"
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  opacity={0.5}
+                />
+                <XAxis
+                  dataKey="date"
+                  tick={axisTickStyle}
+                  tickLine={false}
+                  axisLine={{ stroke: '#4b5563' }}
+                  interval={Math.floor(filteredData.length / 7)}
+                />
+                <YAxis
+                  tick={axisTickStyle}
+                  tickLine={false}
+                  axisLine={{ stroke: '#4b5563' }}
+                  width={70}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#6b7280', strokeDasharray: '3 3' }} />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke={REVENUE_COLOR}
+                  strokeWidth={3}
+                  fill="url(#revenueGradient)"
+                  dot={false}
+                  name="Pendapatan"
+                  isAnimationActive={true}
+                  filter="url(#shadow)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="orders"
+                  stroke={ORDERS_COLOR}
+                  strokeWidth={2}
+                  fill="url(#ordersGradient)"
+                  dot={false}
+                  name="Pesanan"
+                  isAnimationActive={true}
+                />
+              </AreaChart>
+            ) : (
+              <LineChart data={filteredData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                    <feMerge>
+                      <feMergeNode in="coloredBlur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                <CartesianGrid
+                  stroke="#374151"
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  opacity={0.5}
+                />
+                <XAxis
+                  dataKey="date"
+                  tick={axisTickStyle}
+                  tickLine={false}
+                  axisLine={{ stroke: '#4b5563' }}
+                  interval={Math.floor(filteredData.length / 7)}
+                />
+                <YAxis
+                  tick={axisTickStyle}
+                  tickLine={false}
+                  axisLine={{ stroke: '#4b5563' }}
+                  width={70}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#6b7280', strokeDasharray: '3 3' }} />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke={REVENUE_COLOR}
+                  strokeWidth={3}
+                  dot={{
+                    fill: REVENUE_COLOR,
+                    r: 4,
+                    strokeWidth: 2,
+                    stroke: '#065f46'
+                  }}
+                  activeDot={{
+                    r: 6,
+                    fill: REVENUE_COLOR,
+                    strokeWidth: 3,
+                    stroke: '#fff',
+                    filter: 'url(#glow)'
+                  }}
+                  isAnimationActive={true}
+                  name="Pendapatan"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="orders"
+                  stroke={ORDERS_COLOR}
+                  strokeWidth={2.5}
+                  dot={{
+                    fill: ORDERS_COLOR,
+                    r: 3,
+                    strokeWidth: 2,
+                    stroke: '#1e40af'
+                  }}
+                  activeDot={{
+                    r: 5,
+                    fill: ORDERS_COLOR,
+                    strokeWidth: 2,
+                    stroke: '#fff'
+                  }}
+                  isAnimationActive={true}
+                  name="Pesanan"
+                />
+              </LineChart>
+            )}
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { OrderStatus, PaymentStatus } from "@prisma/client";
+import { BookingSlotStatus, OrderStatus, PaymentStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { getRabbitMQChannel } from "../config/rabbitmq";
 import { messagePublisher } from "./message-publisher.service";
@@ -16,6 +16,154 @@ import { PaymentRepository } from "../repositories/payment.repository";
 import { SocketEmitter } from "../socket/socket-emiiter";
 import { MidtransTransactionStatus, PaymentResponse } from "../types/Others";
 import Console from "../utils/logger";
+
+type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>>;
+type CustomerOrderRecord = Awaited<ReturnType<typeof OrderRepository.getOrderByCustomerPhone>>[number];
+
+const SERVICE_QUEUE_STATUSES: OrderStatus[] = [
+    OrderStatus.AWAITING_PAYMENT,
+    OrderStatus.PROCESSING,
+    OrderStatus.CONFIRMED,
+    OrderStatus.READY,
+    OrderStatus.ON_GOING,
+];
+
+interface QueueMetaPayload {
+    position: number;
+    totalAhead: number;
+    totalOrders: number;
+    scheduledStart: string | null;
+    scheduledEnd: string | null;
+    status: OrderStatus;
+}
+
+interface QueueSnapshotEntry {
+    order: OrderWithRelations;
+    position: number;
+    scheduledStart: Date | null;
+    scheduledEnd: Date | null;
+    total: number;
+}
+
+const queueOrderInclude = {
+    items: { include: { product: true } },
+    guestCustomer: true,
+    bookingSlot: true,
+    outlet: true,
+    transaction: true,
+} as const;
+
+const hasServiceProduct = (order: Pick<OrderWithRelations, 'items'> | CustomerOrderRecord) =>
+    (order.items ?? []).some((item: any) => item.product?.type === 'SERVICE');
+
+const computeQueueSchedule = (order: OrderWithRelations) => {
+    const slotStart = order.bookingSlot?.startTime ? new Date(order.bookingSlot.startTime) : null;
+    const slotEnd = order.bookingSlot?.endTime ? new Date(order.bookingSlot.endTime) : null;
+    const bookingDate = order.bookingDate ? new Date(order.bookingDate) : null;
+    const baseStartSource = slotStart ?? bookingDate ?? order.createdAt;
+    const start = new Date(baseStartSource);
+
+    if (!slotEnd) {
+        const durationMinutes = order.items.find((item) => item.product.type === 'SERVICE')?.product?.serviceDurationMinutes ?? 60;
+        const derivedEnd = new Date(start);
+        derivedEnd.setMinutes(derivedEnd.getMinutes() + durationMinutes);
+        return { start, end: derivedEnd };
+    }
+
+    return { start, end: new Date(slotEnd) };
+};
+
+async function buildServiceQueueSnapshot(outletId: string): Promise<QueueSnapshotEntry[]> {
+    const queueOrders = await db.order.findMany({
+        where: {
+            outletId,
+            orderStatus: { in: SERVICE_QUEUE_STATUSES },
+            items: { some: { product: { type: 'SERVICE' } } },
+        },
+        include: queueOrderInclude,
+    }) as OrderWithRelations[];
+
+    if (!queueOrders.length) {
+        return [];
+    }
+
+    const enriched = queueOrders.map((order) => {
+        const schedule = computeQueueSchedule(order);
+        const sortAnchor = schedule.start ?? new Date(order.createdAt);
+        return {
+            order,
+            schedule,
+            sortValue: sortAnchor.getTime(),
+        };
+    });
+
+    enriched.sort((a, b) => {
+        if (a.sortValue !== b.sortValue) {
+            return a.sortValue - b.sortValue;
+        }
+        return a.order.createdAt.getTime() - b.order.createdAt.getTime();
+    });
+
+    const total = enriched.length;
+
+    return enriched.map((entry, index) => ({
+        order: entry.order,
+        position: index + 1,
+        scheduledStart: entry.schedule.start,
+        scheduledEnd: entry.schedule.end,
+        total,
+    }));
+}
+
+async function resolveQueueMetaForOrder(
+    order: OrderWithRelations | CustomerOrderRecord,
+    cache: Map<string, QueueSnapshotEntry[]>
+): Promise<QueueMetaPayload | null> {
+    const status = order.orderStatus as OrderStatus;
+    if (!hasServiceProduct(order) || !SERVICE_QUEUE_STATUSES.includes(status)) {
+        return null;
+    }
+
+    if (!cache.has(order.outletId)) {
+        cache.set(order.outletId, await buildServiceQueueSnapshot(order.outletId));
+    }
+
+    const snapshot = cache.get(order.outletId)!;
+    const entry = snapshot.find((item) => item.order.id === order.id);
+
+    if (!entry) {
+        return null;
+    }
+
+    return {
+        position: entry.position,
+        totalAhead: Math.max(0, entry.position - 1),
+        totalOrders: snapshot.length,
+        scheduledStart: entry.scheduledStart ? entry.scheduledStart.toISOString() : null,
+        scheduledEnd: entry.scheduledEnd ? entry.scheduledEnd.toISOString() : null,
+        status,
+    };
+}
+
+const serializeQueueOrder = (entry: QueueSnapshotEntry) => {
+    const { order, position, scheduledStart, scheduledEnd, total } = entry;
+
+    const queueMeta: QueueMetaPayload = {
+        position,
+        totalAhead: Math.max(0, position - 1),
+        totalOrders: total,
+        scheduledStart: scheduledStart ? scheduledStart.toISOString() : null,
+        scheduledEnd: scheduledEnd ? scheduledEnd.toISOString() : null,
+        status: order.orderStatus,
+    };
+
+    return {
+        ...order,
+        position,
+        queueNumber: position,
+        queueMeta,
+    } as OrderWithRelations & { position: number; queueNumber: number; queueMeta: QueueMetaPayload };
+};
 
 // List goods orders by outlet with optional status filter and pagination
 export async function getGoodsOrdersByOutletService(
@@ -89,42 +237,12 @@ export async function getServiceQueueByOutletService(
         throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
     }
 
-    const where = {
-        outletId,
-        // Tampilkan antrian layanan untuk beberapa status yang relevan
-        orderStatus: {
-            in: [
-                OrderStatus.AWAITING_PAYMENT,
-                OrderStatus.PROCESSING,
-                OrderStatus.READY,
-                OrderStatus.CONFIRMED,
-            ]
-        },
-        items: { some: { product: { type: 'SERVICE' } } }
-    } as const;
-
-    const [total, orders] = await db.$transaction([
-        db.order.count({ where: where as any }),
-        db.order.findMany({
-            where: where as any,
-            orderBy: { createdAt: 'asc' },
-            skip,
-            take: limit,
-            include: {
-                items: { include: { product: true } },
-                guestCustomer: true,
-                bookingSlot: true
-            }
-        })
-    ]);
-
-    const data = orders.map((o, idx) => ({
-        position: skip + idx + 1,
-        ...o
-    }));
+    const snapshot = await buildServiceQueueSnapshot(outletId);
+    const total = snapshot.length;
+    const pageEntries = snapshot.slice(skip, skip + limit).map(serializeQueueOrder);
 
     return {
-        data,
+        data: pageEntries,
         total,
         page,
         limit,
@@ -416,20 +534,180 @@ export async function completeServiceOrderService(orderId: string) {
 }
 
 export async function getOrderByCustomerPhoneService(phone: string) {
-    const customerOrder = await OrderRepository.getOrderByCustomerPhone(phone)
+    const customerOrder = await OrderRepository.getOrderByCustomerPhone(phone);
 
     if (!customerOrder || customerOrder.length === 0) throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-    const customerOrderMap = customerOrder.map((order) => {
-        const { guestCustomer, ...otherOrder } = order
+    const queueCache = new Map<string, QueueSnapshotEntry[]>();
 
-        return {
-            ...otherOrder,
-            customerDetails: guestCustomer
+    const mappedOrders = await Promise.all(customerOrder.map(async (order) => {
+        const queueMeta = await resolveQueueMetaForOrder(order, queueCache);
+        return mapPublicOrderResponse(order, queueMeta);
+    }));
+
+    return mappedOrders;
+}
+
+const normalizePhoneNumber = (phone?: string | null) => {
+    if (!phone) return "";
+    const digitsOnly = phone.replace(/[^0-9]/g, "");
+    if (digitsOnly.startsWith("62")) return digitsOnly;
+    if (digitsOnly.startsWith("0")) return `62${digitsOnly.slice(1)}`;
+    return digitsOnly;
+};
+
+const mapPublicOrderResponse = (
+    order: OrderWithRelations | CustomerOrderRecord,
+    queueMeta?: QueueMetaPayload | null
+) => {
+    const { guestCustomer, transaction, items, outlet, bookingSlot, ...otherOrder } = order as OrderWithRelations & CustomerOrderRecord;
+
+    const mappedTransaction = transaction
+        ? {
+            ...transaction,
+            expiryTime: transaction.expiresAt
+                ? transaction.expiresAt instanceof Date
+                    ? transaction.expiresAt.toISOString()
+                    : transaction.expiresAt
+                : (transaction as any).expiryTime ?? null,
         }
-    })
+        : null;
 
-    return customerOrderMap
+    const mappedItems = (items ?? []).map((item: any) => ({
+        ...item,
+        product: {
+            ...item.product,
+        },
+    }));
+
+    const mappedBookingSlot = bookingSlot
+        ? {
+            ...bookingSlot,
+            startTime: bookingSlot.startTime instanceof Date ? bookingSlot.startTime.toISOString() : bookingSlot.startTime,
+            endTime: bookingSlot.endTime instanceof Date ? bookingSlot.endTime.toISOString() : bookingSlot.endTime,
+            date: bookingSlot.date instanceof Date ? bookingSlot.date.toISOString() : bookingSlot.date,
+        }
+        : null;
+
+    const normalizedOrder = {
+        ...otherOrder,
+        bookingDate: otherOrder.bookingDate instanceof Date ? otherOrder.bookingDate.toISOString() : otherOrder.bookingDate ?? null,
+        createdAt: otherOrder.createdAt instanceof Date ? otherOrder.createdAt.toISOString() : otherOrder.createdAt,
+        updatedAt: otherOrder.updatedAt instanceof Date ? otherOrder.updatedAt.toISOString() : otherOrder.updatedAt,
+    };
+
+    return {
+        ...normalizedOrder,
+        bookingSlot: mappedBookingSlot,
+        outlet: outlet ? { ...outlet } : null,
+        transaction: mappedTransaction,
+        items: mappedItems,
+        customerDetails: guestCustomer ? { ...guestCustomer } : null,
+        queueMeta: queueMeta ?? null,
+    };
+};
+
+const assertCustomerOwnsOrder = (order: OrderWithRelations, phone: string) => {
+    const providedPhone = normalizePhoneNumber(phone);
+    const orderPhone = normalizePhoneNumber(order?.guestCustomer?.phone);
+
+    if (!providedPhone || !orderPhone || providedPhone !== orderPhone) {
+        throw new AppError("Pesanan tidak ditemukan untuk nomor telepon ini", HttpStatus.FORBIDDEN);
+    }
+};
+
+export async function cancelOrderByCustomerService(orderId: string, phone: string, reason?: string) {
+    const order = await OrderRepository.findById(orderId);
+
+    if (!order) throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    const orderRecord = order as OrderWithRelations;
+
+    assertCustomerOwnsOrder(orderRecord, phone);
+
+    const cancellableStatuses: OrderStatus[] = [OrderStatus.AWAITING_PAYMENT, OrderStatus.PROCESSING, OrderStatus.CONFIRMED];
+
+    if (!cancellableStatuses.includes(orderRecord.orderStatus)) {
+        throw new AppError("Pesanan tidak dapat dibatalkan pada status saat ini", HttpStatus.BAD_REQUEST);
+    }
+
+    if (reason) {
+        Console.log(`[CUSTOMER CANCEL] Order ${orderId} cancellation reason: ${reason}`);
+    }
+
+    const updatedOrder = await db.$transaction(async (tx) => {
+        for (const item of orderRecord.items) {
+            if (item.product.type === 'GOODS') {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: {
+                        quantity: {
+                            increment: item.quantity,
+                        },
+                    },
+                });
+            }
+        }
+
+        if (orderRecord.bookingSlot) {
+            await tx.bookingSlot.update({
+                where: { id: orderRecord.bookingSlot.id },
+                data: {
+                    status: BookingSlotStatus.AVAILABLE,
+                    orderId: null,
+                },
+            });
+        }
+
+        if (orderRecord.transaction) {
+            await tx.transaction.update({
+                where: { id: orderRecord.transaction.id },
+                data: {
+                    status: PaymentStatus.CANCELLED,
+                },
+            });
+        }
+
+        return tx.order.update({
+            where: { id: orderId },
+            data: {
+                orderStatus: OrderStatus.CANCELLED,
+                paymentStatus: PaymentStatus.CANCELLED,
+            },
+            include: {
+                items: {
+                    include: {
+                        product: true,
+                    },
+                },
+                guestCustomer: true,
+                outlet: true,
+                transaction: true,
+            },
+        });
+    });
+
+    return mapPublicOrderResponse(updatedOrder as OrderWithRelations);
+}
+
+export async function confirmOrderByCustomerService(orderId: string, phone: string) {
+    const order = await OrderRepository.findById(orderId);
+
+    if (!order) throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    const orderRecord = order as OrderWithRelations;
+
+    assertCustomerOwnsOrder(orderRecord, phone);
+
+    const confirmableStatuses: OrderStatus[] = [OrderStatus.READY, OrderStatus.ON_GOING];
+
+    if (!confirmableStatuses.includes(orderRecord.orderStatus)) {
+        throw new AppError("Pesanan belum dapat dikonfirmasi", HttpStatus.BAD_REQUEST);
+    }
+
+    const updatedOrder = await updateOrderStatusService(orderId, OrderStatus.COMPLETED);
+
+    return mapPublicOrderResponse(updatedOrder as OrderWithRelations);
 }
 
 export async function expirePaymentOrder(orderId: string) {

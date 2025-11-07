@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
-import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController } from "../controller/order.controller";
+import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController, cancelOrderByCustomerController, confirmOrderByCustomerController } from "../controller/order.controller";
 import { validateSchema } from "../middleware/zod.middleware";
-import { createOrderSchema, updateOrderStatusSchema } from "../schemas/order.schema";
+import { createOrderSchema, updateOrderStatusSchema, customerCancelOrderSchema, customerConfirmOrderSchema } from "../schemas/order.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
 import { orderCreationLimiter, orderManagementLimiter } from "../middleware/order-rate-limit.middleware";
@@ -22,6 +22,10 @@ orderRouter.post("/",
 );
 
 orderRouter.get("/details/:phone", getOrderByCustomerPhoneController)
+orderRouter.post("/:id/customer/cancel", validateSchema(customerCancelOrderSchema), cancelOrderByCustomerController);
+orderRouter.post("/:id/customer/confirm", validateSchema(customerConfirmOrderSchema), confirmOrderByCustomerController);
+orderRouter.post("/customer/:id/cancel", validateSchema(customerCancelOrderSchema), cancelOrderByCustomerController);
+orderRouter.post("/customer/:id/confirm", validateSchema(customerConfirmOrderSchema), confirmOrderByCustomerController);
 
 // SECURITY FIX: Add rate limiting for owner order management
 orderRouter.use(orderManagementLimiter);

@@ -6,6 +6,7 @@ import { Messages } from "../constants/message";
 import { JwtUtil } from "../utils";
 import { UserRole } from "@prisma/client";
 import { redis } from "../config/redis";
+import { config } from "../config";
 
 export const protect = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     // Get token from cookies (httpOnly)
@@ -25,11 +26,25 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
 
     const decoded = JwtUtil.verify<{ sessionId: string }>(token);
     if (!decoded || !decoded.sessionId) {
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: !!config.COOKIES_DOMAIN,
+            sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+            domain: config.COOKIES_DOMAIN,
+            path: '/'
+        });
         return next(new AppError(Messages.INVALID_TOKEN, HttpStatus.UNAUTHORIZED));
     }
 
     const session = await redis.get(`session:${decoded.sessionId}`);
     if (!session) {
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: !!config.COOKIES_DOMAIN,
+            sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+            domain: config.COOKIES_DOMAIN,
+            path: '/'
+        });
         return next(new AppError(Messages.INVALID_TOKEN, HttpStatus.UNAUTHORIZED));
     }
 

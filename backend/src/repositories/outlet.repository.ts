@@ -278,6 +278,38 @@ export class OutletRepository {
         return { outlets, total };
     }
 
+    static async getRevenueOrdersWithinRange(outletId: string, startDate: Date, endDate: Date) {
+        return db.order.findMany({
+            where: {
+                outletId,
+                paymentStatus: PaymentStatus.SUCCESS,
+                createdAt: {
+                    gte: startDate,
+                    lte: endDate,
+                },
+            },
+            select: {
+                totalAmount: true,
+                createdAt: true,
+                orderStatus: true,
+                paymentStatus: true,
+                appFee: true,
+                midtransFee: true,
+                transaction: {
+                    select: {
+                        paymentMethod: true,
+                        amount: true,
+                        isManual: true,
+                        manualMethod: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'asc',
+            },
+        });
+    }
+
     static async analytics(outletId: string, startMonth: Date, endMonth: Date, options?: { lowStockThreshold?: number }) {
         const lowStockThreshold = options?.lowStockThreshold ?? 10;
 

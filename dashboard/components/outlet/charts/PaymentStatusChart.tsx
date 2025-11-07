@@ -1,5 +1,6 @@
 'use client';
 
+import { PieChartIcon } from 'lucide-react';
 import { useState } from 'react';
 import {
   PieChart,
@@ -8,6 +9,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts';
+import { EmptyChart } from './EmptyChart';
 
 interface PaymentStatusData {
   status: string;
@@ -77,36 +79,40 @@ export default function PaymentStatusChart({
       </div>
 
       <div className="mt-6 h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ percentage }) => `${percentage}%`}
-              outerRadius={102}
-              innerRadius={64}
-              dataKey="amount"
-              onMouseEnter={(_, index) => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
-              {data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={COLORS[entry.status as keyof typeof COLORS] || '#94a3b8'}
-                  opacity={hoveredIndex === null || hoveredIndex === index ? 1 : 0.45}
-                  style={{
-                    transition: 'opacity 0.2s ease, transform 0.2s ease',
-                    transform: hoveredIndex === index ? 'scale(1.02)' : 'scale(1)',
-                    transformOrigin: 'center',
-                  }}
-                />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-          </PieChart>
-        </ResponsiveContainer>
+        {data.length > 0
+          ?
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ percentage }) => `${percentage}%`}
+                outerRadius={102}
+                innerRadius={64}
+                dataKey="amount"
+                onMouseEnter={(_, index) => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              >
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[entry.status as keyof typeof COLORS] || '#94a3b8'}
+                    opacity={hoveredIndex === null || hoveredIndex === index ? 1 : 0.45}
+                    style={{
+                      transition: 'opacity 0.2s ease, transform 0.2s ease',
+                      transform: hoveredIndex === index ? 'scale(1.02)' : 'scale(1)',
+                      transformOrigin: 'center',
+                    }}
+                  />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          : <EmptyChart icon={PieChartIcon} />
+        }
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-3 border-t border-gray-100 pt-3 text-sm dark:border-gray-800 sm:grid-cols-3">

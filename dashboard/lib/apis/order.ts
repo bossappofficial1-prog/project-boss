@@ -94,10 +94,28 @@ export interface Order {
   items: OrderItem[];
   createdAt: string;
   updatedAt: string;
+  bookingSlot?: {
+    id: string;
+    date?: string | null;
+    startTime?: string | null;
+    endTime?: string | null;
+    status?: string;
+    productId?: string;
+    staffId?: string | null;
+  } | null;
 }
 
 export interface GoodsOrder extends Order {
   // Specific for goods orders
+}
+
+export interface QueueMeta {
+  position: number;
+  totalAhead: number;
+  totalOrders: number;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  status: OrderStatus;
 }
 
 export interface QueueEntry extends Order {
@@ -107,6 +125,8 @@ export interface QueueEntry extends Order {
   productName?: string;
   customerName: string;
   status: OrderStatus;
+  queueMeta?: QueueMeta | null;
+  scheduledStart?: string | null;
 }
 
 export interface CreateOrderRequest {

@@ -1,5 +1,5 @@
 import { apiCall, apiClient } from './base';
-import type { OutletAnalyticsResponse } from '@/types/outlet';
+import type { OutletAnalyticsResponse, OutletRevenueTrendResponse, TimeframeFilter } from '@/types/outlet';
 
 export interface BusinessHours {
   id: string;
@@ -51,6 +51,15 @@ export const outletApi = {
   }>(`/dashboard/outlet/${outletId}`),
 
   getAnalytics: (outletId: string) => apiCall<OutletAnalyticsResponse>(`/outlets/${outletId}/analytics`),
+
+  getRevenueTrend: (outletId: string, params?: { timeframe?: TimeframeFilter; startDate?: string; endDate?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.timeframe) searchParams.append('timeframe', params.timeframe);
+    if (params?.startDate) searchParams.append('startDate', params.startDate);
+    if (params?.endDate) searchParams.append('endDate', params.endDate);
+    const qs = searchParams.toString();
+    return apiCall<OutletRevenueTrendResponse>(`/outlets/${outletId}/revenue-trend${qs ? `?${qs}` : ''}`);
+  },
 
   getDailyReport: (
     outletId: string,

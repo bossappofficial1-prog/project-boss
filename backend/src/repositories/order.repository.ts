@@ -92,22 +92,41 @@ export class OrderRepository {
                                 id: true,
                                 name: true,
                                 price: true,
+                                type: true,
+                                image: true,
+                                unit: true,
+                                serviceDurationMinutes: true,
+                                outletId: true,
                             }
                         }
+                    }
+                },
+                bookingSlot: {
+                    select: {
+                        id: true,
+                        date: true,
+                        startTime: true,
+                        endTime: true,
+                        status: true,
+                        productId: true,
+                        staffId: true,
                     }
                 },
                 guestCustomer: { select: { name: true, phone: true, id: true } },
                 outlet: {
                     select: {
                         id: true,
-                        name: true
+                        name: true,
+                        phone: true,
+                        address: true,
                     }
                 },
                 transaction: {
                     select: {
                         id: true,
                         paymentMethod: true,
-                        status: true
+                        status: true,
+                        expiresAt: true,
                     }
                 }
             },

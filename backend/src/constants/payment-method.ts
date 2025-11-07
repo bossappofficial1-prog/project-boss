@@ -9,7 +9,8 @@ export const paymentMethod = [
         type: "qris",
         description: "Bayar pakai QRIS (ShopeePay, GoPay, OVO, Dana, LinkAja, dll)",
         image_url: `${config.BASE_URL}/icons/qris.png`,
-        flow: "midtrans" as const
+        flow: "midtrans" as const,
+        disable: true
     },
     {
         id: "bca-va",
@@ -17,7 +18,8 @@ export const paymentMethod = [
         type: "va",
         description: "Bayar via transfer Virtual Account BCA",
         image_url: `${config.BASE_URL}/icons/bca-va.png`,
-        flow: "midtrans" as const
+        flow: "midtrans" as const,
+        disable: true
     },
     {
         id: "bni-va",
@@ -25,7 +27,8 @@ export const paymentMethod = [
         type: "va",
         description: "Bayar via transfer Virtual Account BNI",
         image_url: `${config.BASE_URL}/icons/bni-va.png`,
-        flow: "midtrans" as const
+        flow: "midtrans" as const,
+        disable: true
     },
     {
         id: "bri-va",
@@ -33,7 +36,8 @@ export const paymentMethod = [
         type: "va",
         description: "Bayar via transfer Virtual Account BRI",
         image_url: `${config.BASE_URL}/icons/bri-va.png`,
-        flow: "midtrans" as const
+        flow: "midtrans" as const,
+        disable: true
     },
     {
         id: "mandiri-va",
@@ -41,7 +45,8 @@ export const paymentMethod = [
         type: "va",
         description: "Bayar via transfer Virtual Account Mandiri",
         image_url: `${config.BASE_URL}/icons/mandiri-va.png`,
-        flow: "midtrans" as const
+        flow: "midtrans" as const,
+        disable: true
     },
     {
         id: "permata-va",
@@ -49,7 +54,8 @@ export const paymentMethod = [
         type: "va",
         description: "Bayar via transfer Virtual Account Permata",
         image_url: `${config.BASE_URL}/icons/permata-va.png`,
-        flow: "midtrans" as const
+        flow: "midtrans" as const,
+        disable: true
     },
     {
         id: "manual-qris",
@@ -58,16 +64,18 @@ export const paymentMethod = [
         description: "Bayar dengan scan QR statis outlet lalu unggah bukti transfer",
         image_url: `${config.BASE_URL}/icons/qris.png`,
         flow: "manual" as const,
-        manualType: "QRIS_OFFLINE" as ManualPaymentTypeLiteral
+        manualType: "QRIS_OFFLINE" as ManualPaymentTypeLiteral,
+        disable: false
     },
     {
         id: "manual-transfer",
         name: "Transfer ke Rekening Owner",
         type: "manual",
         description: "Transfer langsung ke rekening owner dan unggah bukti pembayaran",
-        image_url: `${config.BASE_URL}/icons/manual-transfer.svg`,
+        image_url: `${config.BASE_URL}/icons/manual-transfer.png`,
         flow: "manual" as const,
-        manualType: "OWNER_TRANSFER" as ManualPaymentTypeLiteral
+        manualType: "OWNER_TRANSFER" as ManualPaymentTypeLiteral,
+        disable: false
     },
 ] as const
 

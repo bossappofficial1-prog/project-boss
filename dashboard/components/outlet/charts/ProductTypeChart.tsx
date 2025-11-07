@@ -3,6 +3,8 @@
 import { ByType } from '@/types';
 import { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { EmptyChart } from './EmptyChart';
+import { PieChartIcon } from 'lucide-react';
 
 interface ProductTypeChartProps {
   data: ByType[];
@@ -55,39 +57,44 @@ export default function ProductTypeChart({ data }: ProductTypeChartProps) {
 
       {/* Chart */}
       <div className="h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ percentage }) => `${percentage}%`}
-              outerRadius={100}
-              innerRadius={60}
-              fill="#8884d8"
-              dataKey="count"
-              onMouseEnter={(_, index) => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
-              {data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={COLORS[entry.type]}
-                  opacity={
-                    hoveredIndex === null || hoveredIndex === index ? 1 : 0.5
-                  }
-                  style={{
-                    filter:
-                      hoveredIndex === index ? 'brightness(1.2)' : 'brightness(1)',
-                    transition: 'all 0.3s ease',
-                  }}
-                />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-          </PieChart>
-        </ResponsiveContainer>
+        {
+          data.length > 0
+
+            ? <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ percentage }) => `${percentage}%`}
+                  outerRadius={100}
+                  innerRadius={60}
+                  fill="#8884d8"
+                  dataKey="count"
+                  onMouseEnter={(_, index) => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
+                  {data.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[entry.type]}
+                      opacity={
+                        hoveredIndex === null || hoveredIndex === index ? 1 : 0.5
+                      }
+                      style={{
+                        filter:
+                          hoveredIndex === index ? 'brightness(1.2)' : 'brightness(1)',
+                        transition: 'all 0.3s ease',
+                      }}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            : <EmptyChart icon={PieChartIcon} />
+        }
       </div>
 
       {/* Details */}

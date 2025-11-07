@@ -221,10 +221,10 @@ export default function ManageOutletsPage() {
               {/* Image Preview */}
               <div className="relative h-64 bg-gray-100 dark:bg-gray-900 overflow-hidden">
                 {imagePreview && (
-                  <Image
+                  <img
                     src={imagePreview}
                     alt="Outlet"
-                    fill
+                    loading='lazy'
                     className="object-cover"
                   />
                 )}
@@ -405,11 +405,11 @@ export default function ManageOutletsPage() {
                 <div>
                   <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                     {qrisPreview &&
-                      <Image
+                      <img
                         src={qrisPreview}
                         alt="QRIS"
-                        fill
-                        className="object-cover"
+                        className="w-full h-full object-cover"
+                        loading='lazy'
                       />
                     }
                   </div>
@@ -419,11 +419,11 @@ export default function ManageOutletsPage() {
                 <div>
                   {qrisPreview ? (
                     <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                      <Image
+                      <img
                         src={qrisPreview}
                         alt="QRIS"
-                        fill
-                        className="object-cover"
+                        loading='lazy'
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   ) : (

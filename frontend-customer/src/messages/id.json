@@ -563,16 +563,52 @@
             "contact": "Hubungi",
             "confirm": "Konfirmasi",
             "reorder": "Pesan Lagi",
+            "addToCalendar": "Tambah ke kalender",
             "viewDetails": "Lihat Detail",
             "close": "Tutup",
             "contactOutlet": "Hubungi Outlet"
         },
         "messages": {
-            "contactSoon": "Fitur hubungi outlet akan segera hadir",
-            "cancelSoon": "Fitur batalkan pesanan akan segera hadir",
-            "reorderSoon": "Fitur pesan lagi akan segera hadir",
-            "confirmSoon": "Fitur konfirmasi pesanan akan segera hadir",
-            "orderIdCopied": "Order ID disalin!"
+            "contactRedirect": "Membuka WhatsApp...",
+            "contactUnavailable": "Nomor telepon outlet belum tersedia.",
+            "contactMessage": "Halo {outletName}, saya ingin menanyakan status pesanan dengan ID {orderId}.",
+            "missingPhone": "Silakan atur nomor telepon Anda di profil sebelum menggunakan aksi ini.",
+            "cancelSuccess": "Pesanan berhasil dibatalkan.",
+            "cancelError": "Pesanan gagal dibatalkan. Silakan coba lagi.",
+            "confirmSuccess": "Terima kasih! Pesanan ditandai selesai.",
+            "confirmError": "Pesanan gagal dikonfirmasi. Silakan coba lagi.",
+            "reorderEmpty": "Pesanan ini tidak memiliki item untuk dipesan kembali.",
+            "reorderServiceUnsupported": "Fitur pesan lagi saat ini hanya tersedia untuk produk barang.",
+            "reorderSuccess": "Item berhasil ditambahkan ke keranjang. Periksa sebelum checkout.",
+            "reorderError": "Item gagal ditambahkan ke keranjang. Silakan coba lagi.",
+            "genericError": "Pesanan tidak dapat dimuat. Silakan coba lagi.",
+            "orderIdCopied": "Order ID disalin!",
+            "calendarSuccess": "Event kalender berhasil diunduh.",
+            "calendarError": "Event kalender gagal dibuat. Silakan coba lagi.",
+            "calendarMissingSchedule": "Jadwal belum tersedia. Silakan cek kembali nanti.",
+            "errors": {
+                "orderNotFound": "Pesanan tidak ditemukan.",
+                "ownershipMismatch": "Pesanan ini tidak terkait dengan nomor telepon Anda.",
+                "notCancellable": "Pesanan ini sudah tidak dapat dibatalkan.",
+                "confirmDeliveryOnly": "Konfirmasi hanya tersedia untuk pesanan delivery.",
+                "confirmNotReady": "Pesanan belum siap dikonfirmasi.",
+                "genericTitle": "Gagal memuat pesanan",
+                "generic": "Terjadi kesalahan. Silakan coba lagi."
+            },
+            "confirmations": {
+                "cancel": {
+                    "title": "Batalkan pesanan ini?",
+                    "message": "Tindakan ini tidak dapat dibatalkan. Pesanan Anda akan dibatalkan permanen.",
+                    "confirm": "Ya, batalkan",
+                    "cancel": "Jangan batalkan"
+                },
+                "confirm": {
+                    "title": "Tandai pesanan selesai?",
+                    "message": "Konfirmasi hanya setelah Anda menerima pesanan dari outlet.",
+                    "confirm": "Konfirmasi pesanan",
+                    "cancel": "Belum"
+                }
+            }
         },
         "detail": {
             "title": "Detail Pesanan",
@@ -581,6 +617,7 @@
             "currentStatus": "Saat ini",
             "outletInfo": "Informasi Outlet",
             "customerInfo": "Informasi Pelanggan",
+            "serviceQueue": "Antrian Layanan",
             "itemDetails": "Rincian Item",
             "paymentSummary": "Ringkasan Pembayaran",
             "paymentMethod": "Metode Pembayaran",
@@ -589,6 +626,14 @@
             "transactionFee": "Biaya Transaksi",
             "totalPayment": "Total Pembayaran",
             "quantity": "Kuantitas"
+        },
+        "queue": {
+            "positionLabel": "Posisi antrian",
+            "positionPending": "Menunggu",
+            "peopleAhead": "{count} orang di depan",
+            "noOneAhead": "Giliran Anda berikutnya",
+            "estimatedStart": "Perkiraan mulai {date}",
+            "schedulePending": "Jadwal belum ditetapkan"
         },
         "timeline": {
             "awaiting_payment": "Menunggu Pembayaran",

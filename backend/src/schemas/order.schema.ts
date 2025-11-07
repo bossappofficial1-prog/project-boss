@@ -15,16 +15,18 @@ const orderItemSchema = z.object({
         .max(1000, { message: "Quantity maksimal 1000" }),
 });
 
+const phoneSchema = z.string()
+    .min(10, { message: "Nomor telepon minimal 10 digit" })
+    .max(15, { message: "Nomor telepon maksimal 15 digit" })
+    .regex(/^[0-9+\-\s()]+$/, { message: "Format nomor telepon tidak valid" });
+
 export const createOrderSchema = z.object({
     guestCustomer: z.object({
         name: z.string()
             .min(2, { message: "Nama minimal 2 karakter" })
             .max(100, { message: "Nama maksimal 100 karakter" })
             .regex(/^[a-zA-Z\s]+$/, { message: "Nama hanya boleh mengandung huruf dan spasi" }),
-        phone: z.string()
-            .min(10, { message: "Nomor telepon minimal 10 digit" })
-            .max(15, { message: "Nomor telepon maksimal 15 digit" })
-            .regex(/^[0-9+\-\s()]+$/, { message: "Format nomor telepon tidak valid" }),
+        phone: phoneSchema,
     }),
     outletId: z.string(),
     items: z.array(orderItemSchema)
@@ -91,3 +93,15 @@ export const updateOrderStatusSchema = z.object({
 });
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
+
+export const customerCancelOrderSchema = z.object({
+    phone: phoneSchema,
+    reason: z.string().max(250).optional(),
+});
+
+export const customerConfirmOrderSchema = z.object({
+    phone: phoneSchema,
+});
+
+export type CustomerCancelOrderInput = z.infer<typeof customerCancelOrderSchema>;
+export type CustomerConfirmOrderInput = z.infer<typeof customerConfirmOrderSchema>;

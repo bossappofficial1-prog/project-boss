@@ -8,6 +8,7 @@ import TopProductsChart from '@/components/outlet/charts/TopProductsChart';
 import PaymentMethodChart from '@/components/outlet/charts/PaymentMethodChart';
 import ProductTypeChart from '@/components/outlet/charts/ProductTypeChart';
 import ExpenseVsRevenueChart from '@/components/outlet/charts/ExpenseVsRevenueChart';
+import RevenueChart from '@/components/outlet/charts/RevenueChartV2';
 import { DollarSign, AlertCircle, ShoppingCart, TrendingUp, CreditCard, MapPin, Phone } from 'lucide-react';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import { useOutletAnalytics } from '@/hooks/useOutletAnalytics';
@@ -141,29 +142,6 @@ export default function OutletsDashboard() {
           { label: 'Pesanan bulan ini', value: monthOrders.toLocaleString('id-ID') },
         ],
       });
-
-      const lowStockCount = dashboardData.products?.lowStock?.length ?? 0;
-      if (lowStockCount > 0) {
-        const totalProductsCount = productTypeData.reduce((sum, item) => sum + item.count, 0);
-        const lowStockPercentage = totalProductsCount > 0
-          ? Math.round((lowStockCount / totalProductsCount) * 100)
-          : undefined;
-
-        cards.push({
-          title: 'Produk Perlu Restok',
-          value: lowStockCount.toLocaleString('id-ID'),
-          icon: <AlertCircle className="h-5 w-5" />,
-          accentColor: 'text-amber-600 dark:text-amber-400',
-          accentBackground: 'bg-amber-100/60 dark:bg-amber-900/30',
-          description: lowStockPercentage
-            ? `${lowStockPercentage}% dari katalog di bawah batas minimum`
-            : 'Periksa stok untuk menjaga ketersediaan',
-          comparison: lowStockProducts.slice(0, 2).map((item) => ({
-            label: item.name,
-            value: `Sisa ${item.currentStock}`,
-          })),
-        });
-      }
     }
 
     const manualPayments = dashboardData.payments?.manualPayments;
@@ -240,6 +218,12 @@ export default function OutletsDashboard() {
       <section>
         <KpiCards kpis={kpiCards} />
       </section>
+
+      {selectedOutlet?.id && (
+        <section>
+          <RevenueChart outletId={selectedOutlet.id} />
+        </section>
+      )}
 
       <section className="space-y-3">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

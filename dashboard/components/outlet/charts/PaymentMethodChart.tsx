@@ -11,6 +11,8 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import { EmptyChart } from './EmptyChart';
+import { BarChart2Icon } from 'lucide-react';
 
 interface PaymentMethod {
   method: string;
@@ -72,51 +74,55 @@ export default function PaymentMethodChart({ data }: PaymentMethodChartProps) {
 
       {/* Chart */}
       <div className="h-72 w-full">
-        <ResponsiveContainer width="100%" minHeight={430}>
-          <BarChart
-            data={data}
-            margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" vertical={false} />
-            <XAxis
-              dataKey="method"
-              angle={-45}
-              textAnchor="end"
-              height={100}
-              interval={0}
-              tick={{ fontSize: 12 }}
-              stroke="#999"
-            />
-            <YAxis stroke="#999" style={{ fontSize: '12px' }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar
-              dataKey="amount"
-              fill="#10b981"
-              radius={[8, 8, 0, 0]}
-              onMouseEnter={(_, index) => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-              isAnimationActive={true}
-            >
-              {data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={
-                    METHOD_COLORS[entry.method as keyof typeof METHOD_COLORS] ||
-                    '#6b7280'
-                  }
-                  opacity={
-                    hoveredIndex === null || hoveredIndex === index ? 1 : 0.5
-                  }
-                  style={{
-                    filter:
-                      hoveredIndex === index ? 'brightness(1.2)' : 'brightness(1)',
-                    transition: 'all 0.3s ease',
-                  }}
+        {
+          data.length > 0
+            ? <ResponsiveContainer width="100%" minHeight={430}>
+              <BarChart
+                data={data}
+                margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" vertical={false} />
+                <XAxis
+                  dataKey="method"
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                  interval={0}
+                  tick={{ fontSize: 12 }}
+                  stroke="#999"
                 />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+                <YAxis stroke="#999" style={{ fontSize: '12px' }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar
+                  dataKey="amount"
+                  fill="#10b981"
+                  radius={[8, 8, 0, 0]}
+                  onMouseEnter={(_, index) => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  isAnimationActive={true}
+                >
+                  {data.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={
+                        METHOD_COLORS[entry.method as keyof typeof METHOD_COLORS] ||
+                        '#6b7280'
+                      }
+                      opacity={
+                        hoveredIndex === null || hoveredIndex === index ? 1 : 0.5
+                      }
+                      style={{
+                        filter:
+                          hoveredIndex === index ? 'brightness(1.2)' : 'brightness(1)',
+                        transition: 'all 0.3s ease',
+                      }}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            : <EmptyChart icon={BarChart2Icon} />
+        }
       </div>
 
       {/* Details Grid */}

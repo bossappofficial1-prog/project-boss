@@ -61,7 +61,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="space-y-6 sm:space-y-8 animate-fade-in-up">
+      <div className="space-y-3 animate-fade-in-up">
         {globalError && (
           <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
             {globalError}

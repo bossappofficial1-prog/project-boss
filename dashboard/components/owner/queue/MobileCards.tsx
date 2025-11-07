@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { orderApi, type QueueEntry, type OrderStatus } from '@/lib/apis/order';
+import { ListOrdered } from 'lucide-react';
 
 interface QueueMobileCardsProps {
   queue: QueueEntry[];
@@ -10,6 +11,8 @@ interface QueueMobileCardsProps {
 
 export function QueueMobileCards({ queue, onRefresh }: QueueMobileCardsProps) {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+
+  const getQueuePosition = (item: QueueEntry) => item.queueMeta?.position ?? item.position ?? item.queueNumber ?? 0;
 
   const getStatusOptions = (currentStatus: string) => {
     const statusMap = {
@@ -51,7 +54,7 @@ export function QueueMobileCards({ queue, onRefresh }: QueueMobileCardsProps) {
 
     const statusLabels = {
       'AWAITING_PAYMENT': 'Menunggu Bayar',
-      'CONFIRMED': 'Dikonfirmasi', 
+      'CONFIRMED': 'Dikonfirmasi',
       'PROCESSING': 'Menunggu',
       'READY': 'Siap',
       'COMPLETED': 'Selesai',
@@ -86,6 +89,14 @@ export function QueueMobileCards({ queue, onRefresh }: QueueMobileCardsProps) {
     });
   };
 
+  const formatSchedule = (item: QueueEntry) => {
+    const raw = item.scheduledStart
+      ?? item.queueMeta?.scheduledStart
+      ?? item.bookingSlot?.startTime
+      ?? item.bookingDate;
+    return raw ? formatDate(raw) : '-';
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -106,7 +117,7 @@ export function QueueMobileCards({ queue, onRefresh }: QueueMobileCardsProps) {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
                 <span className="text-lg font-bold text-red-600 dark:text-red-400">
-                  {item.queueNumber || item.position || '-'}
+                  {getQueuePosition(item) || '-'}
                 </span>
               </div>
               <div>
@@ -116,6 +127,14 @@ export function QueueMobileCards({ queue, onRefresh }: QueueMobileCardsProps) {
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {item.guestCustomer?.phone}
                 </p>
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <ListOrdered className="w-3 h-3" />
+                  <span>
+                    {item.queueMeta?.totalAhead && item.queueMeta.totalAhead > 0
+                      ? `${item.queueMeta.totalAhead} antrean di depan`
+                      : 'Giliran berikutnya'}
+                  </span>
+                </div>
               </div>
             </div>
             <select
@@ -145,7 +164,7 @@ export function QueueMobileCards({ queue, onRefresh }: QueueMobileCardsProps) {
                 )}
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total:</span>
@@ -156,11 +175,7 @@ export function QueueMobileCards({ queue, onRefresh }: QueueMobileCardsProps) {
               <div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Booking:</span>
                 <p className="text-sm text-gray-900 dark:text-gray-100">
-                  {item.bookingDate
-                    ? formatDate(item.bookingDate)
-                    : (item as any).bookingSlot?.startTime
-                      ? formatDate((item as any).bookingSlot.startTime as unknown as string)
-                      : '-'}
+                  {formatSchedule(item)}
                 </p>
               </div>
             </div>

@@ -158,20 +158,38 @@ export function useOutletQueue({
 
       const response = await orderApi.getQueueByOutlet(outletId, params);
 
-      // Transform data and add queue position/number if not present
-      const transformedData = (response.data || []).map((item, index) => {
-        const bookingTime = item.bookingDate || (item as any).bookingSlot?.startTime || undefined;
+      const sortKey = (entry: QueueEntry) => {
+        const raw = entry.queueMeta?.scheduledStart
+          ?? entry.bookingSlot?.startTime
+          ?? entry.bookingDate
+          ?? entry.createdAt;
+        const date = raw ? new Date(raw) : null;
+        return date && !Number.isNaN(date.getTime()) ? date.getTime() : Number.MAX_SAFE_INTEGER;
+      };
+
+      const sorted = [...(response.data || [])].sort((a, b) => {
+        const diff = sortKey(a) - sortKey(b);
+        if (diff !== 0) return diff;
+        const posA = a.queueMeta?.position ?? a.position ?? 0;
+        const posB = b.queueMeta?.position ?? b.position ?? 0;
+        return posA - posB;
+      });
+
+      const transformedData = sorted.map((item, index) => {
+        const scheduledStart = item.queueMeta?.scheduledStart
+          ?? item.bookingSlot?.startTime
+          ?? item.bookingDate
+          ?? item.createdAt;
+
         return {
           ...item,
-          // Preserve backend bookingSlot so UI can display startTime fallback
-          bookingSlot: (item as any).bookingSlot,
-          bookingDate: bookingTime as any,
-          position: item.position ?? index + 1,
-          queueNumber: item.queueNumber ?? index + 1,
+          scheduledStart: scheduledStart ?? null,
+          position: item.queueMeta?.position ?? item.position ?? index + 1,
+          queueNumber: item.queueNumber ?? item.queueMeta?.position ?? index + 1,
           customerName: item.guestCustomer?.name || 'Unknown',
           productName: item.items?.[0]?.product?.name || 'Service',
           status: item.orderStatus || 'PROCESSING',
-        };
+        } as QueueEntry;
       });
 
       setData(transformedData);

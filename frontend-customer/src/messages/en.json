@@ -563,16 +563,52 @@
             "contact": "Contact",
             "confirm": "Confirm",
             "reorder": "Reorder",
+            "addToCalendar": "Add to calendar",
             "viewDetails": "View Details",
             "close": "Close",
             "contactOutlet": "Contact Outlet"
         },
         "messages": {
-            "contactSoon": "Contact outlet feature coming soon",
-            "cancelSoon": "Cancel order feature coming soon",
-            "reorderSoon": "Reorder feature coming soon",
-            "confirmSoon": "Confirm order feature coming soon",
-            "orderIdCopied": "Order ID copied!"
+            "contactRedirect": "Opening WhatsApp chat...",
+            "contactUnavailable": "Outlet phone number is unavailable.",
+            "contactMessage": "Hello {outletName}, I would like to ask about my order with ID {orderId}.",
+            "missingPhone": "Please set your phone number in your profile before using this action.",
+            "cancelSuccess": "Your order has been cancelled.",
+            "cancelError": "We could not cancel the order. Please try again.",
+            "confirmSuccess": "Thank you! The order has been marked as completed.",
+            "confirmError": "We could not confirm the order. Please try again.",
+            "reorderEmpty": "This order has no items to reorder.",
+            "reorderServiceUnsupported": "Reorder is currently available for goods items only.",
+            "reorderSuccess": "Items added to your cart. Review them before checkout.",
+            "reorderError": "We could not add the items to your cart. Please try again.",
+            "genericError": "We could not load your orders. Please try again.",
+            "orderIdCopied": "Order ID copied!",
+            "calendarSuccess": "Calendar event downloaded.",
+            "calendarError": "We could not create the calendar event. Please try again.",
+            "calendarMissingSchedule": "Schedule is not available yet. Please check again later.",
+            "errors": {
+                "orderNotFound": "We couldn't find this order.",
+                "ownershipMismatch": "This order does not belong to your phone number.",
+                "notCancellable": "This order can no longer be cancelled.",
+                "confirmDeliveryOnly": "Only delivery orders can be confirmed using this action.",
+                "confirmNotReady": "This order is not ready to be confirmed yet.",
+                "genericTitle": "Unable to load orders",
+                "generic": "Something went wrong. Please try again."
+            },
+            "confirmations": {
+                "cancel": {
+                    "title": "Cancel this order?",
+                    "message": "This action cannot be undone. Your order will be permanently cancelled.",
+                    "confirm": "Yes, cancel",
+                    "cancel": "Keep order"
+                },
+                "confirm": {
+                    "title": "Mark order as completed?",
+                    "message": "Confirm only after you have received your order from the outlet.",
+                    "confirm": "Confirm order",
+                    "cancel": "Not yet"
+                }
+            }
         },
         "detail": {
             "title": "Order Details",
@@ -581,6 +617,7 @@
             "currentStatus": "Current",
             "outletInfo": "Outlet Information",
             "customerInfo": "Customer Information",
+            "serviceQueue": "Service Queue",
             "itemDetails": "Item Details",
             "paymentSummary": "Payment Summary",
             "paymentMethod": "Payment Method",
@@ -589,6 +626,14 @@
             "transactionFee": "Transaction Fee",
             "totalPayment": "Total Payment",
             "quantity": "Quantity"
+        },
+        "queue": {
+            "positionLabel": "Queue position",
+            "positionPending": "Pending",
+            "peopleAhead": "{count} ahead",
+            "noOneAhead": "You're next",
+            "estimatedStart": "Est. start {date}",
+            "schedulePending": "Schedule pending"
         },
         "timeline": {
             "awaiting_payment": "Awaiting Payment",

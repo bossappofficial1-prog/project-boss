@@ -14,7 +14,8 @@ import {
     updateOutletLocationController,
     uploadQRISController,
     getQRISController,
-    getOutletAnalyticsController
+    getOutletAnalyticsController,
+    getOutletRevenueTrendController
 } from "../controller/outlet.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOutletSchema, updateOutletSchema, updateOutletLocationSchema } from "../schemas/outlet.schema";
@@ -74,6 +75,8 @@ outletRouter.get(
     "/:id/qris",
     getQRISController
 );
+
+outletRouter.get("/:outletId/revenue-trend", getOutletRevenueTrendController);
 
 outletRouter.get("/:outletId/analytics", getOutletAnalyticsController)
 

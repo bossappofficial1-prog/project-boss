@@ -1,6 +1,7 @@
 "use client"
 
-import { OrderDetail, OrderStatus } from "@/types"
+import type { ComponentType } from "react"
+import { OrderDetail, OrderStatus, type OrderStatusType } from "@/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,19 +9,30 @@ import { Progress } from "@/components/ui/progress"
 import { cn, formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
-import { Store, Phone, RefreshCw, CheckCircle2, XCircle, Clock, Hourglass, PackageCheck, ChevronRight, Play } from "lucide-react"
+import { Store, Phone, RefreshCw, CheckCircle2, XCircle, Clock, Hourglass, PackageCheck, ChevronRight, Play, Loader2, CalendarPlus, ListOrdered } from "lucide-react"
 import { useTranslations } from "@/hooks/useI18n"
 import dynamic from "next/dynamic"
 
 const CountdownTimer = dynamic(() => import("./CountdownTimer"), { ssr: false })
 
+type QuickActionType = 'contact' | 'cancel' | 'reorder' | 'confirm' | 'pay' | 'calendar'
+
 interface EnhancedOrderCardProps {
     order: OrderDetail
     onClick: () => void
-    onQuickAction?: (action: 'contact' | 'cancel' | 'reorder' | 'confirm' | 'pay', order: OrderDetail) => void
+    onQuickAction?: (action: QuickActionType, order: OrderDetail) => void
+    pendingAction?: { orderId: string; action: QuickActionType } | null
 }
 
-export default function EnhancedOrderCard({ order, onClick, onQuickAction }: EnhancedOrderCardProps) {
+
+type QuickActionConfig = {
+    label: string
+    icon: ComponentType<{ className?: string }> | null
+    action: QuickActionType
+    variant: 'default' | 'outline'
+}
+
+export default function EnhancedOrderCard({ order, onClick, onQuickAction, pendingAction }: EnhancedOrderCardProps) {
     const t = useTranslations('orders')
 
     const statusConfig = {
@@ -89,7 +101,7 @@ export default function EnhancedOrderCard({ order, onClick, onQuickAction }: Enh
     const formattedTime = format(new Date(order.createdAt), "HH:mm", { locale: id })
     const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0)
 
-    const getQuickActions = () => {
+    const getQuickActions = (): QuickActionConfig[] => {
         switch (order.orderStatus) {
             case OrderStatus.AWAITING_PAYMENT:
                 return [
@@ -123,7 +135,21 @@ export default function EnhancedOrderCard({ order, onClick, onQuickAction }: Enh
         }
     }
 
+    const hasServiceProduct = order.items.some(item => item.product.type === 'SERVICE')
+    const queueMeta = order.queueMeta ?? null
+    const isCalendarEligibleStatus = (status: OrderStatusType) =>
+        status === OrderStatus.CONFIRMED || status === OrderStatus.READY || status === OrderStatus.ON_GOING
+
     const quickActions = getQuickActions()
+
+    if (hasServiceProduct && isCalendarEligibleStatus(order.orderStatus)) {
+        quickActions.unshift({
+            label: t('actions.addToCalendar'),
+            icon: CalendarPlus,
+            action: 'calendar' as const,
+            variant: "outline" as const,
+        })
+    }
 
     return (
         <Card className="overflow-hidden shadow-none transition-all p-0 rounded-md" style={{ borderLeftColor: currentStatus.color.replace('bg-', '#') }}>
@@ -186,6 +212,34 @@ export default function EnhancedOrderCard({ order, onClick, onQuickAction }: Enh
                             </div>
                         )}
 
+                        {hasServiceProduct && queueMeta && (
+                            <div className="border rounded-md px-3 py-2 flex flex-col gap-1 bg-muted/30">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <ListOrdered className="w-4 h-4 text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground">
+                                            {t('queue.positionLabel')}
+                                        </span>
+                                    </div>
+                                    <span className="text-sm font-semibold">#{queueMeta.position}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>
+                                        {queueMeta.totalAhead > 0
+                                            ? t('queue.peopleAhead', { count: queueMeta.totalAhead })
+                                            : t('queue.noOneAhead')}
+                                    </span>
+                                    <span>
+                                        {queueMeta.scheduledStart
+                                            ? t('queue.estimatedStart', {
+                                                date: format(new Date(queueMeta.scheduledStart), "d MMM yyyy HH:mm", { locale: id }),
+                                            })
+                                            : t('queue.schedulePending')}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Price and ID */}
                         <div className="flex items-center justify-between pt-2 border-t">
                             <span className="text-xs text-muted-foreground">
@@ -203,6 +257,8 @@ export default function EnhancedOrderCard({ order, onClick, onQuickAction }: Enh
                     <div className="px-4 pb-3 flex gap-2">
                         {quickActions.map((action, idx) => {
                             const ActionIcon = action.icon
+                            const isBusy = pendingAction?.orderId === order.id
+                            const isLoading = isBusy && pendingAction?.action === action.action
                             return (
                                 <Button
                                     key={idx}
@@ -213,9 +269,14 @@ export default function EnhancedOrderCard({ order, onClick, onQuickAction }: Enh
                                         e.stopPropagation()
                                         onQuickAction?.(action.action, order)
                                     }}
+                                    disabled={isBusy}
                                 >
-                                    {ActionIcon && <ActionIcon className="w-4 h-4 mr-1.5" />}
-                                    {action.label}
+                                    {isLoading ? (
+                                        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                                    ) : ActionIcon ? (
+                                        <ActionIcon className="w-4 h-4 mr-1.5" />
+                                    ) : null}
+                                    <span>{action.label}</span>
                                 </Button>
                             )
                         })}

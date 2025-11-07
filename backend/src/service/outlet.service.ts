@@ -311,6 +311,8 @@ type LowStockProduct = {
     quantity: number | null;
 };
 
+type RevenueTimeframe = '7d' | '30d' | '3m' | 'custom';
+
 function toDate(value: Date | string): Date {
     return value instanceof Date ? value : new Date(value);
 }
@@ -533,6 +535,92 @@ function aggregatePaymentMethods(orders: AnalyticsOrder[], totalRevenue: number)
             percentage: totalRevenue > 0 ? Math.round((item.amount / totalRevenue) * 100) : 0,
         }))
         .sort((a, b) => b.amount - a.amount);
+}
+
+function resolveRevenueDateRange(timeframe: RevenueTimeframe, endInput?: string, startInput?: string) {
+    const endDate = endInput ? new Date(endInput) : new Date();
+    if (Number.isNaN(endDate.getTime())) {
+        throw new AppError('Tanggal akhir tidak valid', HttpStatus.BAD_REQUEST);
+    }
+
+    const endBoundary = new Date(endDate);
+    endBoundary.setHours(23, 59, 59, 999);
+
+    let startBoundary: Date;
+
+    if (timeframe === 'custom') {
+        if (!startInput) {
+            throw new AppError('Tanggal mulai diperlukan untuk rentang custom', HttpStatus.BAD_REQUEST);
+        }
+
+        const parsedStart = new Date(startInput);
+        if (Number.isNaN(parsedStart.getTime())) {
+            throw new AppError('Tanggal mulai tidak valid', HttpStatus.BAD_REQUEST);
+        }
+        startBoundary = parsedStart;
+    } else {
+        startBoundary = new Date(endBoundary);
+
+        switch (timeframe) {
+            case '7d':
+                startBoundary.setDate(startBoundary.getDate() - 7);
+                break;
+            case '30d':
+                startBoundary.setDate(startBoundary.getDate() - 30);
+                break;
+            case '3m':
+                startBoundary.setMonth(startBoundary.getMonth() - 3);
+                break;
+            default:
+                startBoundary.setDate(startBoundary.getDate() - 30);
+        }
+    }
+
+    startBoundary.setHours(0, 0, 0, 0);
+
+    if (startBoundary > endBoundary) {
+        throw new AppError('Tanggal mulai tidak boleh setelah tanggal akhir', HttpStatus.BAD_REQUEST);
+    }
+
+    return { startBoundary, endBoundary };
+}
+
+export async function getOutletRevenueTrend(outletId: string, options?: { timeframe?: RevenueTimeframe; startDate?: string; endDate?: string }) {
+    const timeframe = (options?.timeframe ?? '30d') as RevenueTimeframe;
+
+    const outlet = await OutletRepository.findById(outletId);
+    if (!outlet) {
+        throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    const { startBoundary, endBoundary } = resolveRevenueDateRange(timeframe, options?.endDate, options?.startDate);
+
+    const orders = await OutletRepository.getRevenueOrdersWithinRange(outletId, startBoundary, endBoundary);
+    const dailyRevenue = aggregateDailyRevenue(orders as AnalyticsOrder[]);
+
+    const totals = dailyRevenue.reduce<{ revenue: number; orders: number; maxRevenue: number }>((acc, item) => {
+        acc.revenue += item.revenue;
+        acc.orders += item.orders;
+        acc.maxRevenue = Math.max(acc.maxRevenue, item.revenue);
+        return acc;
+    }, { revenue: 0, orders: 0, maxRevenue: 0 });
+
+    const averageRevenue = dailyRevenue.length > 0 ? Math.round(totals.revenue / dailyRevenue.length) : 0;
+
+    return {
+        timeframe,
+        range: {
+            startDate: startBoundary.toISOString(),
+            endDate: endBoundary.toISOString(),
+        },
+        totals: {
+            revenue: totals.revenue,
+            orders: totals.orders,
+            averageRevenue,
+            maxRevenue: totals.maxRevenue,
+        },
+        data: dailyRevenue,
+    };
 }
 
 export async function getOutletAnalytics(outletId: string, options?: { lowStockThreshold?: number }) {

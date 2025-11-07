@@ -152,6 +152,7 @@ export interface PaymentMethod {
     image_url: string
     flow?: "midtrans" | "manual"
     manualType?: ManualPaymentTypeLiteral
+    disable: boolean
 }
 
 export interface ManualPaymentFeeSummary {
@@ -253,7 +254,7 @@ export type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus]
 export interface OrderDetail {
     id: string
     totalAmount: number
-    bookingDate: any
+    bookingDate: string | null
     customerType: string
     paymentStatus: string
     paymentReminderSent: boolean
@@ -264,16 +265,37 @@ export interface OrderDetail {
     createdAt: string
     updatedAt: string
     items: Item[]
-    outlet: Pick<OutletType, "id" | "name">
-    transaction: Transaction
+    outlet: Pick<OutletType, "id" | "name" | "phone" | "address">
+    transaction: Transaction | null
     customerDetails: CustomerInfo & { id: string }
+    bookingSlot?: OrderBookingSlot | null
+    queueMeta?: OrderQueueMeta | null
 }
 
 export interface Item {
     id: string
     priceAtTimeOfOrder: number
     quantity: number
-    product: Pick<ProductType, "id" | "name" | "price" | "type">
+    product: Pick<ProductType, "id" | "name" | "price" | "type" | "image" | "unit" | "serviceDurationMinutes" | "outletId">
+}
+
+export interface OrderQueueMeta {
+    position: number
+    totalAhead: number
+    totalOrders: number
+    scheduledStart: string | null
+    scheduledEnd: string | null
+    status: OrderStatusType
+}
+
+export interface OrderBookingSlot {
+    id: string
+    date: string | null
+    startTime: string | null
+    endTime: string | null
+    status: BookingSlotStatus
+    productId: string
+    staffId?: string | null
 }
 
 export interface Transaction {

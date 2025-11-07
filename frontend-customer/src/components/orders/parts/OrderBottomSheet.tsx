@@ -1,6 +1,6 @@
 "use client"
 
-import { OrderDetail, OrderStatus } from "@/types"
+import { OrderDetail, OrderStatus, type OrderStatusType } from "@/types"
 import {
     Sheet,
     SheetContent,
@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn, formatCurrency, formatDateTime } from "@/lib/utils"
 import {
     Clock, CreditCard, CheckCircle, XCircle, Hourglass, PackageCheck,
-    Store, User, Phone, Copy, RefreshCw, MessageCircle, Play
+    Store, User, Phone, Copy, RefreshCw, MessageCircle, Play, Loader2, CalendarPlus, ListOrdered
 } from "lucide-react"
 import { useSnackbar } from "@/hooks/useSnackbar"
 import { useTranslations } from "@/hooks/useI18n"
@@ -23,10 +23,11 @@ interface OrderBottomSheetProps {
     order: OrderDetail | null
     isOpen: boolean
     onClose: () => void
-    onAction?: (action: 'contact' | 'cancel' | 'reorder' | 'confirm', order: OrderDetail) => void
+    onAction?: (action: 'contact' | 'cancel' | 'reorder' | 'confirm' | 'pay' | 'calendar', order: OrderDetail) => void
+    pendingAction?: { orderId: string; action: 'contact' | 'cancel' | 'reorder' | 'confirm' | 'pay' | 'calendar' } | null
 }
 
-export default function OrderBottomSheet({ order, isOpen, onClose, onAction }: OrderBottomSheetProps) {
+export default function OrderBottomSheet({ order, isOpen, onClose, onAction, pendingAction }: OrderBottomSheetProps) {
     const snackbar = useSnackbar()
     const t = useTranslations('orders')
 
@@ -77,6 +78,11 @@ export default function OrderBottomSheet({ order, isOpen, onClose, onAction }: O
 
     // Check if order contains any service products
     const hasServiceProduct = order?.items.some(item => item.product.type === "SERVICE") ?? false
+    const queueMeta = order?.queueMeta ?? null
+    const scheduledStart = order?.queueMeta?.scheduledStart ?? order?.bookingSlot?.startTime ?? order?.bookingDate ?? null
+    const scheduleLabel = scheduledStart ? formatDateTime(scheduledStart) : null
+    const isCalendarEligibleStatus = (status: OrderStatusType) =>
+        status === OrderStatus.CONFIRMED || status === OrderStatus.READY || status === OrderStatus.ON_GOING
 
     // Timeline for GOODS
     const goodsTimelineSteps = [
@@ -204,6 +210,35 @@ export default function OrderBottomSheet({ order, isOpen, onClose, onAction }: O
                             </div>
                         )}
 
+                        {hasServiceProduct && (
+                            <div className="space-y-3">
+                                <h3 className="font-semibold text-sm">{t('detail.serviceQueue')}</h3>
+                                <div className="border rounded-md p-3 space-y-2 bg-muted/40">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <ListOrdered className="w-4 h-4" />
+                                            <span>{t('queue.positionLabel')}</span>
+                                        </div>
+                                        <span className="text-base font-semibold">
+                                            {queueMeta?.position ? `#${queueMeta.position}` : t('queue.positionPending')}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                        <span>
+                                            {queueMeta?.totalAhead && queueMeta.totalAhead > 0
+                                                ? t('queue.peopleAhead', { count: queueMeta.totalAhead })
+                                                : t('queue.noOneAhead')}
+                                        </span>
+                                        <span>
+                                            {scheduleLabel
+                                                ? t('queue.estimatedStart', { date: scheduleLabel })
+                                                : t('queue.schedulePending')}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <Separator />
 
                         {/* Outlet Info */}
@@ -269,14 +304,14 @@ export default function OrderBottomSheet({ order, isOpen, onClose, onAction }: O
                                     <span>{formatCurrency(order.appFee)}</span>
                                 </div>
                                 {/* Hide transaction fee for manual payment methods */}
-                                {order.midtransFee > 0 && 
-                                 order.transaction?.paymentMethod !== 'QRIS_OFFLINE' && 
-                                 order.transaction?.paymentMethod !== 'OWNER_TRANSFER' && (
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">{t('detail.transactionFee')}</span>
-                                        <span>{formatCurrency(order.midtransFee)}</span>
-                                    </div>
-                                )}
+                                {order.midtransFee > 0 &&
+                                    order.transaction?.paymentMethod !== 'QRIS_OFFLINE' &&
+                                    order.transaction?.paymentMethod !== 'OWNER_TRANSFER' && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">{t('detail.transactionFee')}</span>
+                                            <span>{formatCurrency(order.midtransFee)}</span>
+                                        </div>
+                                    )}
                                 <Separator className="my-2" />
                                 <div className="flex justify-between font-bold text-base pt-1">
                                     <span>{t('detail.totalPayment')}</span>
@@ -300,11 +335,22 @@ export default function OrderBottomSheet({ order, isOpen, onClose, onAction }: O
 
                         {/* Action Buttons */}
                         <div className="grid grid-cols-2 gap-3 pt-4">
+                            {hasServiceProduct && order.orderStatus && isCalendarEligibleStatus(order.orderStatus) && (
+                                <Button
+                                    variant="outline"
+                                    className="w-full col-span-2"
+                                    onClick={() => onAction?.('calendar', order)}
+                                >
+                                    <CalendarPlus className="w-4 h-4 mr-2" />
+                                    {t('actions.addToCalendar')}
+                                </Button>
+                            )}
                             {order.orderStatus !== OrderStatus.CANCELLED && order.orderStatus !== OrderStatus.COMPLETED && (
                                 <Button
                                     variant="outline"
                                     className="w-full"
                                     onClick={() => onAction?.('contact', order)}
+                                    disabled={pendingAction?.orderId === order.id}
                                 >
                                     <MessageCircle className="w-4 h-4 mr-2" />
                                     {t('actions.contactOutlet')}
@@ -315,8 +361,13 @@ export default function OrderBottomSheet({ order, isOpen, onClose, onAction }: O
                                     variant="outline"
                                     className="w-full col-span-2"
                                     onClick={() => onAction?.('reorder', order)}
+                                    disabled={pendingAction?.orderId === order.id}
                                 >
-                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                    {pendingAction?.orderId === order.id && pendingAction?.action === 'reorder' ? (
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="w-4 h-4 mr-2" />
+                                    )}
                                     {t('actions.reorder')}
                                 </Button>
                             )}

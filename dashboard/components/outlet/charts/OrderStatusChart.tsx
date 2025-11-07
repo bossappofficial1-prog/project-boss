@@ -12,6 +12,8 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import { EmptyChart } from './EmptyChart';
+import { BarChart2Icon } from 'lucide-react';
 
 interface OrderStatusData {
   status: string;
@@ -90,39 +92,43 @@ export default function OrderStatusChart({
       </div>
 
       <div className="mt-6 h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%" minHeight={300}>
-          <BarChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="4 4" stroke="#e5e7eb" vertical={false} />
-            <XAxis
-              dataKey="status"
-              interval={0}
-              tick={{ fontSize: 12, fill: '#6b7280' }}
-              stroke="#e5e7eb"
-              tickFormatter={value => formatStatusPesanan(value)}
-            />
-            <YAxis stroke="#e5e7eb" tick={{ fontSize: 12, fill: '#6b7280' }} />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9', opacity: 0.6 }} />
-            <Bar
-              dataKey="count"
-              radius={[6, 6, 0, 0]}
-              onMouseEnter={(_, index) => setHoveredIndex(getOriginalIndex(index))}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={STATUS_COLORS[entry.status as keyof typeof STATUS_COLORS] || '#94a3b8'}
-                  opacity={hoveredIndex === null || hoveredIndex === getOriginalIndex(index) ? 1 : 0.35}
-                  style={{
-                    transition: 'opacity 0.2s ease, transform 0.2s ease',
-                    transform: hoveredIndex === getOriginalIndex(index) ? 'scale(1.02)' : 'scale(1)',
-                    transformOrigin: 'bottom',
-                  }}
+        {
+          chartData.length > 0
+            ? <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+              <BarChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="4 4" stroke="#e5e7eb" vertical={false} />
+                <XAxis
+                  dataKey="status"
+                  interval={0}
+                  tick={{ fontSize: 12, fill: '#6b7280' }}
+                  stroke="#e5e7eb"
+                  tickFormatter={value => formatStatusPesanan(value)}
                 />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+                <YAxis stroke="#e5e7eb" tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9', opacity: 0.6 }} />
+                <Bar
+                  dataKey="count"
+                  radius={[6, 6, 0, 0]}
+                  onMouseEnter={(_, index) => setHoveredIndex(getOriginalIndex(index))}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={STATUS_COLORS[entry.status as keyof typeof STATUS_COLORS] || '#94a3b8'}
+                      opacity={hoveredIndex === null || hoveredIndex === getOriginalIndex(index) ? 1 : 0.35}
+                      style={{
+                        transition: 'opacity 0.2s ease, transform 0.2s ease',
+                        transform: hoveredIndex === getOriginalIndex(index) ? 'scale(1.02)' : 'scale(1)',
+                        transformOrigin: 'bottom',
+                      }}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            : <EmptyChart icon={BarChart2Icon} />
+        }
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-3 border-t border-gray-100 pt-3 text-sm dark:border-gray-800 sm:grid-cols-3 lg:grid-cols-3">
