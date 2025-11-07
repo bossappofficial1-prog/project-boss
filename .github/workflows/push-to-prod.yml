@@ -156,7 +156,7 @@ jobs:
         with:
           host: ${{ vars.VPS_SSH_HOST }}
           username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             mkdir -p ~/projects/boss-project/prod
 
@@ -165,7 +165,7 @@ jobs:
         with:
           host: ${{ vars.VPS_SSH_HOST }}
           username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           source: "./docker-compose.prod.yml"
           target: "~/projects/boss-project/prod"
 
@@ -175,7 +175,7 @@ jobs:
         with:
           host: ${{ vars.VPS_SSH_HOST }}
           username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
             echo "Pulling backend image..."
@@ -187,7 +187,7 @@ jobs:
         with:
           host: ${{ vars.VPS_SSH_HOST }}
           username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
             echo "Pulling consumer image..."
@@ -199,7 +199,7 @@ jobs:
         with:
           host: ${{ vars.VPS_SSH_HOST }}
           username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
             echo "Pulling frontend-customer image..."
@@ -211,7 +211,7 @@ jobs:
         with:
           host: ${{ vars.VPS_SSH_HOST }}
           username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
             echo "Pulling dashboard image..."
@@ -222,7 +222,7 @@ jobs:
         with:
           host: ${{ vars.VPS_SSH_HOST }}
           username: ${{ vars.VPS_SSH_USER }}
-          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
             echo "Starting Docker Compose services..."
