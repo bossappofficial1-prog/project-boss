@@ -1,105 +1,110 @@
 services:
-  backend:
-    image: ${DOCKER_USERNAME}/project-boss-backend:latest # Menggunakan image yang sudah di-push
-    build: # Pertahankan bagian build agar `docker compose pull` tetap bisa fallback ke build jika image tidak ditemukan
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "4444:4444"
-    environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_DATABASE}?schema=public
-      PORT: 4444
-      NODE_ENV: production
-      BASE_URL: ${BASE_URL}
-      JWT_SECRET: ${JWT_SECRET}
-      MIDTRANS_MERCHANT_ID: ${MIDTRANS_MERCHANT_ID}
-      MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY}
-      MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
-      MIDTRANS_NOTIFICATION_CALLBACK_URL: ${MIDTRANS_NOTIFICATION_CALLBACK_URL}
-      MIDTRANS_EXPIRE_UNIT: ${MIDTRANS_EXPIRE_UNIT}
-      MIDTRANS_EXPIRE_DURATION: ${MIDTRANS_EXPIRE_DURATION}
-      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS}
-      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT}
-      SMTP_SECURE: ${SMTP_SECURE}
-      SMTP_PASS: ${SMTP_PASS}
-      SMTP_USER: ${SMTP_USER}
-
-    networks:
-      - traefik-network
-
-    labels: # Label Traefik untuk produksi
-      - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${BACKEND_DOMAIN}`)"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      # - "traefik.http.routers.backend.tls=true"
-      - "traefik.http.routers.backend.tls.certresolver=mytlschallenge"
-      # - "traefik.http.middlewares.security-headers.headers.SSLRedirect=true"
-      - "traefik.http.middlewares.security-headers.headers.STSSeconds=315360000"
-      - "traefik.http.middlewares.security-headers.headers.browserXSSFilter=true"
-      - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=true"
-      - "traefik.http.middlewares.security-headers.headers.STSIncludeSubdomains=true"
-      - "traefik.http.middlewares.security-headers.headers.STSPreload=true"
-      - "traefik.http.routers.backend.middlewares=security-headers@docker"
-      - "traefik.http.services.backend.loadbalancer.server.port=4444"
-
-  frontend:
-    image: ${DOCKER_USERNAME}/project-boss-frontend:latest # Menggunakan image yang sudah di-push
-    ports:
-      - "3000:3000"
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    environment:
-      NUXT_PUBLIC_API_BASE: http://backend:4444
-      NUXT_HOST: 0.0.0.0
-      NUXT_PORT: 3000
-      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN} # Diambil dari .env di VPS
-      NODE_ENV: production
-
-    networks:
-      - traefik-network
-
-    labels: # Label Traefik untuk produksi
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_DOMAIN}`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      # - "traefik.http.routers.frontend.tls=true"
-      - "traefik.http.routers.frontend.tls.certresolver=mytlschallenge"
-      # - "traefik.http.middlewares.security-headers.headers.SSLRedirect=true"
-      - "traefik.http.middlewares.security-headers.headers.STSSeconds=315360000"
-      - "traefik.http.middlewares.security-headers.headers.browserXSSFilter=true"
-      - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=true"
-      - "traefik.http.middlewares.security-headers.headers.STSIncludeSubdomains=true"
-      - "traefik.http.middlewares.security-headers.headers.STSPreload=true"
-      - "traefik.http.routers.frontend.middlewares=security-headers@docker"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+  redis:
+    image: redis:7-alpine
+    container_name: project-boss-redis-dev
+    restart: always
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl if http://localhost:3000/_nuxt/builds/meta/stats.json || exit 1",
-        ]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: project-boss-rabbitmq-dev
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 3s
       retries: 5
       start_period: 30s
-
-  consumer:
-    image: ${DOCKER_USERNAME}/project-boss-consumer:latest
-    build:
-      context: .
-      dockerfile: consumer/Dockerfile
-    environment:
-      NODE_ENV: production
     networks:
       - default
 
-networks:
-  traefik-network:
-    external: true
+  backend:
+    image: ${DOCKER_USER:-pitok}/project-backend:production
+    pull_policy: always
+    container_name: bossapp-backend
+    env_file:
+      - .env.backend
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      PORT: 1234
+    ports:
+      - "1234:1234"
+    volumes:
+      - ./uploads:/app/backend/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 1234 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - default
+
+  consumer:
+    image: ${DOCKER_USER:-pitok}/project-consumer:production
+    pull_policy: always
+    container_name: consumer-dev
+    env_file:
+      - .env.consumer
+    environment:
+      - BACKEND_API_URL=http://backend:1234/api/v1
+      - RABBITMQ_URL=amqp://rabbitmq
+      - NODE_ENV=production
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
+  frontend-customer:
+    image: ${DOCKER_USER:-pitok}/project-frontend-customer:production
+    pull_policy: always
+    container_name: frontend-customer-dev
+    restart: always
+    environment:
+      NODE_ENV: production
+      SERVER_API_URL: http://backend:1234/api/v1
+
+    depends_on:
+      backend:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.frontend-customer
+
+  dashboard:
+    image: ${DOCKER_USER:-pitok}/project-dashboard:production
+    pull_policy: always
+    container_name: project-boss-dashboard-dev
+    ports:
+      - "3010:3010"
+    environment:
+      NODE_ENV: production
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env.dashboard
+    networks:
+      - default

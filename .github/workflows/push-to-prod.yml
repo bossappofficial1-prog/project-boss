@@ -1,0 +1,250 @@
+name: "Push to Prod"
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      any_changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' || steps.check-changes.outputs.dashboard == 'true' }}
+      backend_changed: ${{ steps.check-changes.outputs.backend }}
+      consumer_changed: ${{ steps.check-changes.outputs.consumer }}
+      frontend_customer_changed: ${{ steps.check-changes.outputs.frontend-customer }}
+      dashboard_changed: ${{ steps.check-changes.outputs.dashboard }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Login to Docker
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: check-changes
+        with:
+          base: "develop"
+          filters: |
+            backend:
+              - 'backend/**'
+            consumer:
+              - 'consumer/**'
+            frontend-customer:
+              - 'frontend-customer/**'
+            dashboard:
+              - 'dashboard/**'
+
+      # Langkah debugging untuk melihat output dari paths-filter
+      - name: Debug paths filter output
+        run: |
+          echo "Backend changed: ${{ steps.check-changes.outputs.backend }}"
+          echo "Consumer changed: ${{ steps.check-changes.outputs.consumer }}"
+          echo "Frontend customer changed: ${{ steps.check-changes.outputs.frontend-customer }}"
+          echo "Dashboard changed: ${{ steps.check-changes.outputs.dashboard }}"
+          echo "Any service changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' || steps.check-changes.outputs.dashboard == 'true' }}"
+
+      # Build dan push Backend hanya jika ada perubahan di direktori 'backend'
+      - name: Build and push Backend
+        if: steps.check-changes.outputs.backend == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/project-backend:production
+          build-args: |
+            SMTP_HOST=${{ vars.SMPT_HOST }}
+            SMTP_PORT=${{ vars.SMTP_PORT }}
+            SMTP_USER=${{ vars.SMTP_USER}}
+            SMTP_PASS=${{ vars.SMTP_PASS }}
+            SMTP_FROM=${{ vars.SMTP_FROM }}
+            NODE_ENV=production
+            COOKIES_DOMAIN=.bossapp.id
+            DATABASE_URL=${{ vars.DATABASE_URL }}
+            CLIENT_URL=${{ vars.CLIENT_URL }}
+
+      # Build dan push Consumer hanya jika ada perubahan di direktori 'consumer'
+      - name: Build and push Consumer
+        if: steps.check-changes.outputs.consumer == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: ./consumer
+          file: ./consumer/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/project-consumer:production
+          build-args: |
+            SMTP_HOST=${{ vars.SMPT_HOST }}
+            SMTP_PORT=${{ vars.SMTP_PORT }}
+            SMTP_USER=${{ vars.SMTP_USER }}
+            SMTP_PASS=${{ vars.SMTP_PASS }}
+            SMTP_FROM=${{ vars.SMTP_FROM }}
+
+      # Build dan push Frontend Customer hanya jika ada perubahan di direktori 'frontend-customer'
+      - name: Build and push Frontend Customer
+        if: steps.check-changes.outputs.frontend-customer == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend-customer
+          file: ./frontend-customer/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/project-frontend-customer:production
+          build-args: |
+            NEXT_PUBLIC_REMOTE_PATTERNS=${{ vars.NEXT_PUBLIC_REMOTE_PATTERNS }}
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_PREFIX=${{ vars.NEXT_PUBLIC_API_PREFIX }}
+            NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_DASHBOARD_LOGIN_URL=${{ vars.NEXT_PUBLIC_DASHBOARD_LOGIN_URL }}
+            NEXT_PUBLIC_DASHBOARD_REGISTER_URL=${{ vars.NEXT_PUBLIC_DASHBOARD_REGISTER_URL }}
+
+      # Build dan push Dashboard hanya jika ada perubahan di direktori 'dashboard'
+      - name: Build and push Dashboard
+        if: steps.check-changes.outputs.dashboard == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: ./dashboard
+          file: ./dashboard/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/project-dashboard:production
+          build-args: |
+            NEXT_PUBLIC_APP_URL=https://dashboard.bossapp.id
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_URL }}/api/v1
+            NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            JWT_SECRET=$${{ vars.JWT_SECRET }}
+
+      - name: Send Telegram Notification (Build)
+        if: always()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            🚀 **Build Status for Main Branch**
+
+            **Status:** ${{ job.status }}
+            **Triggered by:** ${{ github.actor }}
+            **Commit:** ${{ github.sha }}
+            **Changes:**
+            - Backend: ${{ steps.check-changes.outputs.backend }}
+            - Consumer: ${{ steps.check-changes.outputs.consumer }}
+            - Frontend Customer: ${{ steps.check-changes.outputs.frontend-customer }}
+            - Dashboard: ${{ steps.check-changes.outputs.dashboard }}
+
+            [View Commit](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+
+  deploy_to_vps:
+    environment: production
+    needs: build_and_push
+    if: needs.build_and_push.outputs.any_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Create project directory on VPS if it does not exist
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.VPS_SSH_HOST }}
+          username: ${{ vars.VPS_SSH_USER }}
+          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            mkdir -p ~/projects/boss-project/prod
+
+      - name: Copy docker-compose file to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ vars.VPS_SSH_HOST }}
+          username: ${{ vars.VPS_SSH_USER }}
+          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          source: "./docker-compose.prod.yml"
+          target: "~/projects/boss-project/prod"
+
+      - name: Pull Backend Image
+        if: needs.build_and_push.outputs.backend_changed == 'true'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.VPS_SSH_HOST }}
+          username: ${{ vars.VPS_SSH_USER }}
+          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/prod
+            echo "Pulling backend image..."
+            docker compose -f docker-compose.prod.yml pull backend
+
+      - name: Pull Consumer Image
+        if: needs.build_and_push.outputs.consumer_changed == 'true'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.VPS_SSH_HOST }}
+          username: ${{ vars.VPS_SSH_USER }}
+          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/prod
+            echo "Pulling consumer image..."
+            docker compose -f docker-compose.prod.yml pull consumer
+
+      - name: Pull Frontend Customer Image
+        if: needs.build_and_push.outputs.frontend_customer_changed == 'true'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.VPS_SSH_HOST }}
+          username: ${{ vars.VPS_SSH_USER }}
+          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/prod
+            echo "Pulling frontend-customer image..."
+            docker compose -f docker-compose.prod.yml pull frontend-customer
+
+      - name: Pull Dashboard Image
+        if: needs.build_and_push.outputs.dashboard_changed == 'true'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.VPS_SSH_HOST }}
+          username: ${{ vars.VPS_SSH_USER }}
+          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/prod
+            echo "Pulling dashboard image..."
+            docker compose -f docker-compose.prod.yml pull dashboard
+
+      - name: Start Docker Compose Services
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.VPS_SSH_HOST }}
+          username: ${{ vars.VPS_SSH_USER }}
+          key: ${{ vars.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/prod
+            echo "Starting Docker Compose services..."
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            echo "Docker Compose started successfully"
+
+      - name: Send Telegram Notification (Deploy)
+        if: always()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            🚀 **Deploy Status to Production VPS**
+
+            **Status:** ${{ job.status }}
+            **Triggered by:** ${{ github.actor }}
+            **Commit:** ${{ github.sha }}
+            **Services Updated:**
+            - Backend: ${{ needs.build_and_push.outputs.backend_changed }}
+            - Consumer: ${{ needs.build_and_push.outputs.consumer_changed }}
+            - Frontend Customer: ${{ needs.build_and_push.outputs.frontend_customer_changed }}
+            - Dashboard: ${{ needs.build_and_push.outputs.dashboard_changed }}
+
+            [View Commit](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
