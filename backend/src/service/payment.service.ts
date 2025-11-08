@@ -469,7 +469,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
 
     if (isManualFlow && manualType) {
         try {
-            const expiresAt = new Date(Date.now() + 60 * 1000);
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
             const transaction = await createManualTransactionRecord({
                 orderId,
                 amount: grossAmount,
