@@ -206,76 +206,41 @@ function formatManualPaymentResponse(options: {
 }
 
 // Sub-fungsi untuk create order dan items
+// Delegates to repository which already wraps operations in a DB transaction.
 async function createOrderAndItems(orderId: string, grossAmount: number, applicationFee: number, transactionFeeTotal: number, selectedSlotId: string | undefined, outletId: string, customerDetails: any, inputItems: any[], productMap: Map<string, Product>) {
-    await db.$transaction(async (tr) => {
-        await tr.order.create({
-            data: {
-                id: orderId,
-                totalAmount: grossAmount,
-                appFee: applicationFee,
-                midtransFee: transactionFeeTotal,
-                chargedTo: FeeBearer.CUSTOMER,
-                ...(selectedSlotId && {
-                    bookingSlot: {
-                        connect: {
-                            id: selectedSlotId
-                        }
-                    },
-                }),
-                guestCustomer: {
-                    create: {
-                        name: customerDetails.name,
-                        phone: customerDetails.phone,
-                    },
-                },
-                outlet: {
-                    connect: {
-                        id: outletId
-                    },
-                },
-            },
+    try {
+        await PaymentRepository.createOrderWithItems({
+            orderId,
+            grossAmount,
+            appFee: applicationFee,
+            midtransFee: transactionFeeTotal,
+            selectedSlotId: selectedSlotId ?? null,
+            outletId,
+            customer: { name: customerDetails.name, phone: customerDetails.phone },
+            items: inputItems.map((it) => ({ productId: it.productId, quantity: it.quantity }))
         });
+    } catch (err: any) {
+        const msg = (err && err.message) ? String(err.message).toLowerCase() : '';
 
-        for (const item of inputItems) {
-            const product = productMap.get(item.productId);
-
-            if (product?.type === "GOODS") {
-                const productQuantity = product.quantity ?? 0;
-                if (item.quantity > productQuantity) {
-                    throw new AppError(Messages.PRODUCT_OUT_OF_STOCK, HttpStatus.BAD_REQUEST);
-                }
-            } else if (product?.type === "SERVICE" && selectedSlotId) {
-                const bookingSlot = await tr.bookingSlot.findUnique({
-                    where: { id: selectedSlotId },
-                });
-
-                if (!bookingSlot) throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
-                if (bookingSlot.status === "BOOKED" || bookingSlot.status === "BLOCKED") throw new AppError(Messages.BOOKING_SLOT_ALREADY_BOOKED, HttpStatus.BAD_REQUEST);
-
-            } else if (product?.type === "SERVICE" && !selectedSlotId) throw new AppError(Messages.BOOKING_SLOT_REQUIRED, HttpStatus.BAD_REQUEST);
-
-            await tr.orderItem.create({
-                data: {
-                    orderId,
-                    productId: product?.id!,
-                    quantity: item.quantity,
-                    priceAtTimeOfOrder: product?.price!,
-                },
-            });
-
-            if (product?.type === "GOODS") {
-                // Validasi stok saja, tapi jangan kurangi quantity dulu
-                const productQuantity = product.quantity ?? 0;
-                if (item.quantity > productQuantity) {
-                    throw new AppError(Messages.PRODUCT_OUT_OF_STOCK, HttpStatus.BAD_REQUEST);
-                }
-            }
-
-            if (product?.type === "SERVICE") {
-                await tr.bookingSlot.update({ where: { id: selectedSlotId }, data: { status: "BOOKED" } });
-            }
+        if (msg.includes('stok') || msg.includes('stok tidak') || msg.includes('stock')) {
+            throw new AppError(Messages.PRODUCT_OUT_OF_STOCK, HttpStatus.BAD_REQUEST);
         }
-    });
+
+        if (msg.includes('booking slot required') || msg.includes('booking slot')) {
+            throw new AppError(Messages.BOOKING_SLOT_REQUIRED, HttpStatus.BAD_REQUEST);
+        }
+
+        if (msg.includes('already booked') || msg.includes('booked') || msg.includes('blocked')) {
+            throw new AppError(Messages.BOOKING_SLOT_ALREADY_BOOKED, HttpStatus.BAD_REQUEST);
+        }
+
+        if (msg.includes('product not found')) {
+            throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
+        }
+
+        // Re-throw unknown errors
+        throw err;
+    }
 }
 
 // Sub-fungsi untuk handle Midtrans charge
@@ -531,7 +496,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
                 where: { id: orderId },
                 data: {
                     orderStatus: OrderStatus.AWAITING_PAYMENT,
-                    paymentStatus: PaymentStatus.PENDING
+                    paymentStatus: PaymentStatus.PENDING,
                 }
             });
 
@@ -540,9 +505,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
             const delay = Math.max(0, (expireTime - new Date().getTime()))
 
             try {
-                await paymentQueue.add({ orderId }, {
-                    delay
-                })
+                await paymentQueue.add({ orderId }, { delay })
                 SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
                     orderId,
                     amount: grossAmount,
@@ -640,27 +603,13 @@ export async function cancelPaymentService(orderId: string) {
         }
     }
 
-    // Update status transaksi di database
-    await db.transaction.update({
-        where: { id: transaction.id },
-        data: { status: PaymentStatus.CANCELLED },
-    });
-
-    // Rollback stok untuk produk GOODS
-    await db.$transaction(async (tr) => {
-        for (const item of transaction.order.items) {
-            if (item.product.type === "GOODS") {
-                await tr.product.update({
-                    where: { id: item.product.id },
-                    data: {
-                        quantity: {
-                            increment: item.quantity
-                        },
-                    },
-                });
-            }
-        }
-    });
+    // Delegate restock and cancellation logic to repository (transactional)
+    try {
+        await PaymentRepository.restockAndCancelOrder(orderId);
+    } catch (err) {
+        Console.error('Error restocking or cancelling order:', err);
+        throw new AppError('Gagal membatalkan pembayaran', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
     return { message: "Pembayaran berhasil dibatalkan", orderId };
 }
