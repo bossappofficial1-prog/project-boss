@@ -413,7 +413,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             router.push(`/payment/${orderId}`)
 
         } catch (error) {
-            console.error('Payment failed:', error)
 
             // Check if it's a network error and should retry
             const isNetworkError = error instanceof Error && (
@@ -435,10 +434,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 return;
             }
 
-            const errorMessage = error instanceof Error ? error.message : t("errors.paymentFailed");
-            snackbar.error(retryCount >= maxRetries
-                ? `${errorMessage} (Sudah dicoba ${maxRetries + 1}x. Periksa koneksi internet Anda.)`
-                : `Periksa input anda`)
+            const errorMessage = (error as any).response.data.message;
+            snackbar.error(errorMessage)
             setIsLoading(false);
         }
     };

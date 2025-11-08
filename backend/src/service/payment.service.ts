@@ -465,10 +465,12 @@ export async function createPaymentService(data: CreatePaymentPayload) {
     }
 
     // Create order dan items terlebih dahulu
-    await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, outletId, customerDetails, inputItems, productMap);
 
     if (isManualFlow && manualType) {
+        const instructions = buildManualInstructions(outlet, manualType);
+
         try {
+            await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, outletId, customerDetails, inputItems, productMap);
             const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
             const transaction = await createManualTransactionRecord({
                 orderId,
@@ -500,7 +502,6 @@ export async function createPaymentService(data: CreatePaymentPayload) {
                 }
             });
 
-            const instructions = buildManualInstructions(outlet, manualType);
             const expireTime = new Date(expiresAt).getTime()
             const delay = Math.max(0, (expireTime - new Date().getTime()))
 
@@ -532,10 +533,20 @@ export async function createPaymentService(data: CreatePaymentPayload) {
                 }
             });
         } catch (error) {
-            await db.order.delete({ where: { id: orderId } });
+            try {
+                await PaymentRepository.restockAndCancelOrder(orderId);
+                await db.order.delete({ where: { id: orderId } });
+            } catch (cleanupError) {
+                const message = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+                if (!message.toLowerCase().includes('order not found')) {
+                    Console.error('Failed to rollback manual payment order', cleanupError);
+                }
+            }
             throw error;
         }
     }
+
+    await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, outletId, customerDetails, inputItems, productMap);
 
     const midtransPaymentType = paymentMethodMapping[paymentMethodId];
 
@@ -654,7 +665,7 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
     await db.order.update({
         where: { id: orderId },
         data: {
-            orderStatus: OrderStatus.PROCESSING,
+            orderStatus: OrderStatus.AWAITING_PAYMENT,
             paymentStatus: PaymentStatus.AWAITING_VERIFICATION
         }
     });
