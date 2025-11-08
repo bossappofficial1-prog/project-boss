@@ -30,10 +30,10 @@ ENV SITE_URL=$SITE_URL
 ENV NEXT_PUBLIC_DASHBOARD_LOGIN_URL=$NEXT_PUBLIC_DASHBOARD_LOGIN_URL
 ENV NEXT_PUBLIC_DASHBOARD_REGISTER_URL=$NEXT_PUBLIC_DASHBOARD_REGISTER_URL
 
-# Debug: Print environment variables during build
-RUN echo "NEXT_PUBLIC_API_URL during build: $NEXT_PUBLIC_API_URL"
-
 RUN npm run build
+
+# Drop devDependencies after build so runtime image stays lean
+RUN npm prune --omit=dev
 
 # Stage 3: Production image
 FROM node:20-alpine AS runner
@@ -44,11 +44,8 @@ ENV NODE_ENV=production
 COPY --from=builder /app/frontend-customer/.next ./.next
 COPY --from=builder /app/frontend-customer/public ./public
 COPY --from=builder /app/frontend-customer/package.json ./
+COPY --from=builder /app/frontend-customer/package-lock.json ./
 COPY --from=builder /app/frontend-customer/node_modules ./node_modules
-COPY --from=builder /app/frontend-customer/next.config.ts ./
-COPY --from=builder /app/frontend-customer/next-env.d.ts ./
-COPY --from=builder /app/frontend-customer/tsconfig.json ./
-COPY --from=builder /app/frontend-customer/src ./src
 
 EXPOSE 3000
 CMD ["npm", "start"]

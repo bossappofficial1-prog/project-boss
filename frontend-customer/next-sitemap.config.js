@@ -34,13 +34,36 @@ module.exports = {
         };
     },
     additionalPaths: async (config) => {
-        const outlets = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/outlets/ids`).then((res) => res.json());
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-        return outlets.data.map((outlet) => ({
-            loc: `/outlet/${outlet.id}`,
-            lastmod: new Date().toISOString(),
-            changefreq: 'weekly',
-            priority: 0.7,
-        }));
+        if (!apiUrl) {
+            console.warn('[next-sitemap] NEXT_PUBLIC_API_URL tidak terisi, lewati penambahan outlet dinamis.');
+            return [];
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}/api/v1/outlets/ids`);
+
+            if (!response.ok) {
+                console.warn(`{next-sitemap} Gagal fetch outlet IDs (status ${response.status}), lewati penambahan dinamis.`);
+                return [];
+            }
+
+            const outlets = await response.json();
+
+            if (!outlets?.data?.length) {
+                return [];
+            }
+
+            return outlets.data.map((outlet) => ({
+                loc: `/outlet/${outlet.id}`,
+                lastmod: new Date().toISOString(),
+                changefreq: 'weekly',
+                priority: 0.7,
+            }));
+        } catch (error) {
+            console.warn('[next-sitemap] Gagal mengambil outlets dinamis:', error);
+            return [];
+        }
     },
 };
