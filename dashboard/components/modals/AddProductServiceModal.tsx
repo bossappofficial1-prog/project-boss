@@ -43,8 +43,8 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
     setType('GOODS')
     setName('')
     setDescription('')
-    setCostPrice('')
-    setPrice('')
+    setCostPrice(0)
+    setPrice(0)
     setQuantity('')
     setUnit('pcs')
     setServiceDurationMinutes('')
@@ -101,6 +101,7 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
     if (!name.trim()) { setError('Nama wajib diisi.'); return; }
 
     if (price === '' || Number(price) <= 0) { setError('Harga jual harus lebih dari 0.'); return }
+    console.log(costPrice);
 
     if (costPrice === '' || Number(costPrice) < 0) { setError('Harga modal tidak boleh negatif.'); return }
 
