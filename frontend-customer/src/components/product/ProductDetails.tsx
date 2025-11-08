@@ -88,6 +88,7 @@ export function ProductDetails({ params }: Props) {
             subtitle: product.name,
             centerTitle: true,
             showBackButton: true,
+            showThemeToggle: false,
             onLeftClick:
                 from === "saved-products"
                     ? () => router.back()

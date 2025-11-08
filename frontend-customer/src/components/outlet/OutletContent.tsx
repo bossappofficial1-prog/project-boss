@@ -226,6 +226,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 subtitle: outletData.name,
                 showBackButton: true,
                 centerTitle: true,
+                showThemeToggle: false,
                 ...(onLeftClickHandler ? { onLeftClick: onLeftClickHandler } : {})
             });
         }

@@ -35,10 +35,7 @@ export class ManualPaymentRepository {
     static async updateManualTransaction(id: string, data: Prisma.TransactionUncheckedUpdateInput) {
         return db.transaction.update({
             where: { id },
-            data: {
-                ...data,
-                status: 'SUCCESS'
-            }
+            data
         });
     }
 

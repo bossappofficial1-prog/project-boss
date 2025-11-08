@@ -307,8 +307,8 @@ export function PaymentDetailClient({ orderId, payment }: PaymentDetailClientPro
     const paymentMethodLabel = derivePaymentMethodLabel(paymentData.payment.method, t);
 
     return (
-        <div className="space-y-4 pb-16">
-            <Card className={cn('border-2', 'p-0', TONE_CLASSES[statusPresentation.tone])}>
+        <div className="space-y-2 pb-16">
+            <Card className={cn('border-2', 'p-0 rounded-md', TONE_CLASSES[statusPresentation.tone])}>
                 <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                         <div className="mt-0.5">
@@ -326,7 +326,7 @@ export function PaymentDetailClient({ orderId, payment }: PaymentDetailClientPro
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className='rounded-md'>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center justify-between">
                         <span>{t('overview.title')}</span>

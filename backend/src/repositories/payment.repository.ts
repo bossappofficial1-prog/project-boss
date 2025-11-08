@@ -117,6 +117,11 @@ export class PaymentRepository {
                 order: {
                     update: {
                         paymentStatus: status,
+                        bookingSlot: {
+                            update: {
+                                status: 'AVAILABLE'
+                            }
+                        },
                         orderStatus: 'CANCELLED',
                     }
                 }

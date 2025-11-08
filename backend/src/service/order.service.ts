@@ -781,16 +781,3 @@ export async function expirePaymentOrder(orderId: string) {
 
     (await paymentQueue.getJob(orderId))?.remove()
 }
-
-export async function getOrderDetailsService(orderId: string) {
-    const order = await OrderRepository.findById(orderId);
-
-}
-
-export const orderMapping = (order: Awaited<ReturnType<typeof OrderRepository.findById>>) => {
-    const { guestCustomer, transaction, items, outlet, bookingSlot, ...restOrder } = order!
-
-    return {
-
-    }
-}

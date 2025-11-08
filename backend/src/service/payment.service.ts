@@ -705,12 +705,15 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
     await db.order.update({
         where: { id: orderId },
         data: {
-            orderStatus: OrderStatus.AWAITING_PAYMENT,
+            orderStatus: OrderStatus.PROCESSING,
             paymentStatus: PaymentStatus.AWAITING_VERIFICATION
         }
     });
 
     try {
+        const job = await paymentQueue.getJob(transaction.orderId);
+        if (job) job.remove()
+
         SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
             orderId,
             amount: transaction.amount,

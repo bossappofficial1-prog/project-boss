@@ -69,6 +69,20 @@ export default function ProfileSettings() {
         }
     }, []);
 
+    useEffect(() => {
+        const syncTheme = (event: Event) => {
+            const detail = (event as CustomEvent<string>).detail;
+            if (!detail) return;
+            setValue('theme', detail as FormValues['theme'], { shouldDirty: false });
+        };
+
+        window.addEventListener('prefs:theme-changed', syncTheme);
+
+        return () => {
+            window.removeEventListener('prefs:theme-changed', syncTheme);
+        };
+    }, [setValue]);
+
     const watchedTheme = watch('theme');
     useEffect(() => {
         if (watchedTheme) setAppTheme(watchedTheme);
