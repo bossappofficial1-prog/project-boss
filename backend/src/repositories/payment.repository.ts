@@ -96,10 +96,11 @@ export class PaymentRepository {
     }
 
     static async updatePaymentStatusByOrder(orderId: string, status: PaymentStatus) {
-        const order = await db.order.findUnique({ where: { id: orderId }, select: { items: true } })
+        // Load order with items and bookingSlot to decide conditional updates
+        const order = await db.order.findUnique({ where: { id: orderId }, include: { items: true, bookingSlot: true } });
 
         if (order?.items) {
-            for (const item of order?.items) {
+            for (const item of order.items) {
                 await db.product.update({
                     where: { id: item.productId },
                     data: {
@@ -111,23 +112,28 @@ export class PaymentRepository {
             }
         }
 
-        return await db.transaction.update({
-            where: { orderId },
-            data: {
-                status,
-                order: {
-                    update: {
-                        paymentStatus: status,
-                        bookingSlot: {
-                            update: {
-                                status: 'AVAILABLE'
-                            }
-                        },
-                        orderStatus: 'CANCELLED',
-                    }
-                }
-            }
-        })
+        // Build conditional nested update for bookingSlot only when present
+        const orderUpdateData: any = {
+            paymentStatus: status,
+            orderStatus: 'CANCELLED'
+        };
+
+        if (order?.bookingSlot && order.bookingSlot.id) {
+            orderUpdateData.bookingSlot = { update: { status: 'AVAILABLE' } };
+        }
+
+        // Update transaction(s) status first
+        await db.transaction.updateMany({ where: { orderId }, data: { status } });
+
+        // If there's a booking slot, free it
+        if (order?.bookingSlot && order.bookingSlot.id) {
+            await db.bookingSlot.update({ where: { id: order.bookingSlot.id }, data: { status: 'AVAILABLE' } });
+        }
+
+        // Update order status/payment status
+        await db.order.update({ where: { id: orderId }, data: orderUpdateData });
+
+        return true;
     }
 
     static async getByOrderId(orderId: string) {

@@ -767,7 +767,7 @@ export async function expirePaymentOrder(orderId: string) {
     };
 
     await PaymentRepository.updatePaymentStatusByOrder(orderId, `EXPIRED`);
-    SocketEmitter.getInstance().sendTestMessage(order.outletId, 'Expire Payment')
+    SocketEmitter.getInstance().emitToOrder(orderId, { message: `Payment for ${orderId} has expired`, order_id: orderId })
     SocketEmitter.getInstance().emitToCustomer(order.guestCustomer.phone!, {
         orderId,
         amount: order.totalAmount,

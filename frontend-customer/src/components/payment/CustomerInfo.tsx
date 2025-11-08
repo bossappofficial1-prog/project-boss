@@ -17,11 +17,11 @@ export function CustomerInfo({ name, phone }: CustomerInfoProps) {
             <CardContent>
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">{t("customerInfo.name")}</span>
+                        <span className="text-muted-foreground">{t("customerInfo.name")}</span>
                         <span className="font-medium">{name}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">{t("customerInfo.phone")}</span>
+                        <span className="text-muted-foreground">{t("customerInfo.phone")}</span>
                         <span className="font-medium">{phone}</span>
                     </div>
                 </div>

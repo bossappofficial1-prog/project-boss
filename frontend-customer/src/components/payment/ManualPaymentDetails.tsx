@@ -26,7 +26,7 @@ export function ManualPaymentDetails({ manual, totalAmount }: ManualPaymentDetai
     const bankAccount = instructions?.bankAccount;
     const manualType = (instructions?.manualType ?? manual.type)?.toLowerCase();
     const isQris = Boolean(
-        instructions?.qrImageUrl ||
+        instructions?.qrImageUrl &&
         (manualType ? manualType.includes('qris') : false)
     );
 

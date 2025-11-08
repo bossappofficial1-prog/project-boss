@@ -469,7 +469,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
 
     if (isManualFlow && manualType) {
         try {
-            const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+            const expiresAt = new Date(Date.now() + 60 * 1000);
             const transaction = await createManualTransactionRecord({
                 orderId,
                 amount: grossAmount,
@@ -848,7 +848,7 @@ export async function getPaymentOrderService(orderId: string) {
                     note: null,
                     qrImageUrl: outlet.manualQrImageUrl,
                     expiry_time: transaction.expiresAt,
-                    bankAccount: transaction.paymentMethod === 'bank_transfer' ? {
+                    bankAccount: transaction.paymentMethod === 'manual-transfer' ? {
                         bankName: outlet.business.bankName,
                         accountNumber: outlet.business.bankAccount,
                         accountHolder: outlet.business.accountHolder
