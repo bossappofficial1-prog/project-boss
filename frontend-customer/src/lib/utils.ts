@@ -7,6 +7,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function parseRemotePatterns(patterns: string): RemotePattern[] {
+    console.log(patterns);
+
     // Helper to extract a RemotePattern from a URL string
     const fromUrl = (urlStr: string): RemotePattern | null => {
         try {
