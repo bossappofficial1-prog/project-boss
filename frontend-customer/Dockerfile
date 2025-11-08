@@ -46,6 +46,8 @@ COPY --from=builder /app/frontend-customer/public ./public
 COPY --from=builder /app/frontend-customer/package.json ./
 COPY --from=builder /app/frontend-customer/package-lock.json ./
 COPY --from=builder /app/frontend-customer/node_modules ./node_modules
+# Next.js tetap membaca konfigurasi saat runtime, jadi biarkan file ini tersalin
+COPY --from=builder /app/frontend-customer/next.config.ts ./
 
 EXPOSE 3000
 CMD ["npm", "start"]
