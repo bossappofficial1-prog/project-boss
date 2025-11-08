@@ -21,6 +21,10 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
     return outlet;
 }
 
+export async function getOutletIdsService() {
+    return await OutletRepository.getOutletIds()
+}
+
 export async function findNearbyOutletsService(
     latitude: number,
     longitude: number,

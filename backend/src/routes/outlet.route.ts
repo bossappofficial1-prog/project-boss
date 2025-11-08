@@ -15,7 +15,8 @@ import {
     uploadQRISController,
     getQRISController,
     getOutletAnalyticsController,
-    getOutletRevenueTrendController
+    getOutletRevenueTrendController,
+    getOutletIdsController
 } from "../controller/outlet.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOutletSchema, updateOutletSchema, updateOutletLocationSchema } from "../schemas/outlet.schema";
@@ -54,6 +55,7 @@ const qrisUpload = multer({
 outletRouter.get("/", getAllOutletsController);
 outletRouter.get("/featured", getFeaturedOutletsController);
 outletRouter.get("/nearby", findNearbyOutletsController);
+outletRouter.get("/ids", getOutletIdsController);
 outletRouter.get("/:id", getOutletByIdController);
 outletRouter.get("/business/:businessId", getOutletsByBusinessIdController);
 

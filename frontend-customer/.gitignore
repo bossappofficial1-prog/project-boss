@@ -19,6 +19,9 @@ package-lock.json
 /.next/
 /out/
 /public/sitemap**.xml
+/public/sw.js
+/public/swe-**.js
+/public/workbox-**.js
 
 # production
 /build
