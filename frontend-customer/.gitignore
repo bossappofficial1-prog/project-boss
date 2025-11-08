@@ -19,6 +19,7 @@ package-lock.json
 /.next/
 /out/
 /public/sitemap**.xml
+/public/robots.txt
 /public/sw.js
 /public/swe-**.js
 /public/workbox-**.js

@@ -27,14 +27,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "BOSS - Platform Manajemen Bisnis",
   description: "Urus operasional usaha, atur jadwal, dan jaga pelanggan kamu lebih gampang bareng BOSS.",
-  icons: "/assets/logo/favicon.ico",
+  icons: "/assets/logo/og-img.png",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "BOSS Customer",
     startupImage: [
-      "/assets/logo/favicon.ico",
+      "/assets/logo/og-img.png",
     ],
   },
   openGraph: {
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     siteName: "BOSS",
     images: [
       {
-        url: "/assets/logo/favicon.ico",
+        url: "/assets/logo/og-img.png",
         width: 1200,
         height: 630,
         alt: "BOSS Business Management Platform",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "BOSS - Platform Manajemen Bisnis",
     description: "Optimalkan operasional, jadwal, dan pengalaman pelanggan bisnis kamu cukup lewat BOSS.",
-    images: ["/assets/logo/favicon.ico"],
+    images: ["/assets/logo/og-img.png"],
   },
   robots: {
     index: true,
