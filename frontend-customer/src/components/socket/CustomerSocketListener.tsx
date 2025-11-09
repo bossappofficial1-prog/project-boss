@@ -121,19 +121,6 @@ export function CustomerSocketListener() {
     }, [isConnected, customerIdentifier, joinCustomerRoom]);
 
     useEffect(() => {
-        if (typeof window === 'undefined' && !Notification) return;
-        if (Notification.permission === "default") {
-            Notification.requestPermission().then((permission) => {
-                if (permission === "granted") {
-                    console.log("Izin notifikasi diberikan!");
-                } else {
-                    console.log("Izin notifikasi ditolak.");
-                }
-            });
-        }
-    }, [])
-
-    useEffect(() => {
         if (!isConnected) return;
 
         const unsubscribe = onEvent(events.CUSTOMER_NOTIFICATION, (payload: CustomerNotificationPayload) => {
@@ -141,11 +128,7 @@ export function CustomerSocketListener() {
 
             const tone = mapStatusToTone(payload.transactionStatus ?? payload.status);
             const message = buildNotificationMessage(payload);
-
-            if (Notification.permission === "granted") {
-                new Notification("Pemberitahuan", { body: message });
-            }
-
+            
             showSnackbar(message, tone, 5000);
             if (typeof window !== "undefined") {
                 window.dispatchEvent(new CustomEvent("customer-notification", { detail: payload }));
