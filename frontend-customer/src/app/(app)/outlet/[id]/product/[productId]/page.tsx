@@ -3,13 +3,15 @@ import { ProductDetails } from "@/components/product/ProductDetails";
 
 type Params = { id?: string; productId?: string };
 
-export default function ProductDetailPage({ params }: { params: Params }) {
-    const outletId = typeof params?.id === "string" ? params.id : undefined;
-    const productId = typeof params?.productId === "string" ? params.productId : undefined;
+export default async function ProductDetailPage({ params }: { params: Promise<Params> }) {
+    const { id, productId } = await params
 
-    if (!outletId || !productId) {
+    const outletId = typeof id === "string" ? id : undefined;
+    const productIdValid = typeof productId === "string" ? productId : undefined;
+
+    if (!outletId || !productIdValid) {
         notFound();
     }
 
-    return <ProductDetails outletId={outletId} productId={productId} />;
+    return <ProductDetails outletId={outletId} productId={productIdValid} />;
 }
