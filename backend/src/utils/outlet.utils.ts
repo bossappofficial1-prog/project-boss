@@ -1,18 +1,61 @@
 import { OutletOperatingHours } from "@prisma/client";
 
+const WIB_OFFSET_MINUTES = 7 * 60; // UTC+7
+
+function convertToOffsetMinutes(date: Date, offsetMinutes: number) {
+    const totalUtcMinutes = date.getUTCHours() * 60 + date.getUTCMinutes();
+    const totalWithOffset = totalUtcMinutes + offsetMinutes;
+    let minutesOfDay = totalWithOffset % 1440;
+    if (minutesOfDay < 0) {
+        minutesOfDay += 1440;
+    }
+    const dayOffset = Math.floor((totalUtcMinutes + offsetMinutes) / 1440);
+    return { minutesOfDay, dayOffset };
+}
+
+function getWibMinutes(date: Date) {
+    return convertToOffsetMinutes(date, WIB_OFFSET_MINUTES).minutesOfDay;
+}
+
+function getWibDay(date: Date) {
+    const utcDay = date.getUTCDay();
+    const { dayOffset } = convertToOffsetMinutes(date, WIB_OFFSET_MINUTES);
+    const wibDay = (utcDay + dayOffset) % 7;
+    return wibDay < 0 ? wibDay + 7 : wibDay;
+}
+
 export interface Location {
     latitude: number;
     longitude: number;
 }
 
 export const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: Date) => {
-    const wibHours = (today.getUTCHours() + 7) % 24;
-    return operatingHours.some((oper) => {
-        const todayMinutes = wibHours * 60 + today.getUTCMinutes(); // Total menit saat ini
-        const openMinutes = ((oper.openTime.getUTCHours() + 7) % 24) * 60 + oper.openTime.getUTCMinutes(); // Total menit waktu buka
-        const closeMinutes = ((oper.closeTime.getUTCHours() + 7) % 24) * 60 + oper.closeTime.getUTCMinutes(); // Total menit waktu tutup
+    const todayMinutes = getWibMinutes(today);
+    const todayDay = getWibDay(today);
 
-        return oper.dayOfWeek === today.getDay() && todayMinutes >= openMinutes && todayMinutes <= closeMinutes && oper.isOpen;
+    return operatingHours.some((oper) => {
+        if (!oper.isOpen) return false;
+
+        const openMinutes = getWibMinutes(oper.openTime);
+        const closeMinutes = getWibMinutes(oper.closeTime);
+        const scheduleDay = oper.dayOfWeek;
+        const sameDay = scheduleDay === todayDay;
+
+        // 24 jam (open == close) dianggap selalu buka di hari tersebut
+        if (openMinutes === closeMinutes) {
+            return sameDay;
+        }
+
+        if (closeMinutes > openMinutes) {
+            // Tutup di hari yang sama
+            return sameDay && todayMinutes >= openMinutes && todayMinutes < closeMinutes;
+        }
+
+        // Tutup lewat tengah malam (closeMinutes < openMinutes)
+        const nextDay = (scheduleDay + 1) % 7;
+        const isLateSameDay = sameDay && todayMinutes >= openMinutes;
+        const isEarlyNextDay = todayDay === nextDay && todayMinutes < closeMinutes;
+        return isLateSameDay || isEarlyNextDay;
     });
 }
 
@@ -77,9 +120,11 @@ export function validateRadius(radiusKm: number) {
 export function mapOutletsWithOpenStatus(outlets: any[], today: Date = new Date()) {
     return outlets.map((outlet) => ({
         ...outlet,
-        isOpen: outlet.isOpen && outlet.operatingHours.length > 0
-            ? getIsOutletOpen(outlet.operatingHours, today)
-            : outlet.isOpen
+        isOpen: outlet.isOpen && (
+            outlet.operatingHours.length > 0
+                ? getIsOutletOpen(outlet.operatingHours, today)
+                : false
+        )
     }));
 }
 

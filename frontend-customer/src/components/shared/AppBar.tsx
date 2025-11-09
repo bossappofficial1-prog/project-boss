@@ -228,7 +228,7 @@ export default function AppBar({
                         </Button>
                     )}
 
-                    {showThemeToggle && <ThemeModeToggle />}
+                    {showThemeToggle && !isSearchActive && <ThemeModeToggle />}
 
                     {rightContent}
 

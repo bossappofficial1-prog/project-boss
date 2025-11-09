@@ -123,7 +123,7 @@ const CheckoutButton: React.FC<{
                         onClick={onCheckout}
                         disabled={disabled}
                     >
-                        {disabled ? "Pilih Metode Pembayaran" : t("checkoutButton.createOrder")}
+                        {t("checkoutButton.createOrder")}
                     </Button>
                 </div>
             </CardContent>
