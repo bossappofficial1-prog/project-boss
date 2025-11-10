@@ -3,9 +3,7 @@ import axios from 'axios';
 import { OutletDetails } from "@/types/outlet";
 import { resolveCustomerImageUrl } from "@/lib/url";
 
-type Props = {
-    params: { id?: string };
-};
+type Params = Promise<{ id: string }>;
 
 async function getOutlet(id: string): Promise<OutletDetails | null> {
     try {
@@ -17,8 +15,9 @@ async function getOutlet(id: string): Promise<OutletDetails | null> {
     }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const id = typeof params?.id === "string" ? params.id : "";
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+    const resolvedParams = await params;
+    const id = typeof resolvedParams?.id === "string" ? resolvedParams.id : "";
     if (!id) {
         return {
             title: "Outlet Tidak Ditemukan - Boss App",
@@ -114,8 +113,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
 }
 
-export default async function Layout({ children, params }: { children: React.ReactNode; params: { id?: string } }) {
-    const id = typeof params?.id === "string" ? params.id : "";
+export default async function Layout({ children, params }: { children: React.ReactNode; params: Params }) {
+    const resolvedParams = await params;
+    const id = typeof resolvedParams?.id === "string" ? resolvedParams.id : "";
     let structuredData: string | null = null;
 
     if (id) {
