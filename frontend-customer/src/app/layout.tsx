@@ -27,7 +27,15 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "BOSS - Platform Manajemen Bisnis",
   description: "Urus operasional usaha, atur jadwal, dan jaga pelanggan kamu lebih gampang bareng BOSS.",
-  icons: "/assets/logo/og-image.png",
+  icons: {
+    icon: [
+      { url: "/assets/logo/favicon.ico", type: "image/x-icon" },
+      { url: "/assets/logo/web-icon-192x192.png", type: "image/png", sizes: "192x192" },
+      { url: "/assets/logo/web-icon-512x512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: "/assets/logo/web-icon-192x192.png",
+    shortcut: "/assets/logo/favicon.ico",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -89,8 +97,9 @@ export default function Layout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="BOSS Customer" />
-        <link rel="apple-touch-icon" href="/assets/logo/favicon.ico" />
-        <link rel="icon" type="image/svg+xml" href="/assets/logo/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/assets/logo/icon-192x192.png" />
+        <link rel="icon" type="image/x-icon" href="/assets/logo/favicon.ico" />
+        <link rel="shortcut icon" href="/assets/logo/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#eb2525" />
         <meta name="color-scheme" content="light dark" />
