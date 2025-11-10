@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import axios from 'axios';
 import { OutletDetails } from "@/types/outlet";
+import { resolveCustomerImageUrl } from "@/lib/url";
 
 type Props = {
-    params: Promise<{ id: string }>;
+    params: { id?: string };
 };
 
 async function getOutlet(id: string): Promise<OutletDetails | null> {
@@ -17,7 +18,19 @@ async function getOutlet(id: string): Promise<OutletDetails | null> {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { id } = await params;
+    const id = typeof params?.id === "string" ? params.id : "";
+    if (!id) {
+        return {
+            title: "Outlet Tidak Ditemukan - Boss App",
+            description: "Outlet yang Anda cari tidak ditemukan.",
+            robots: {
+                index: false,
+                follow: false,
+            },
+        };
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://bossapp.id";
     const outlet = await getOutlet(id);
 
     // Default metadata when outlet is not found
@@ -44,6 +57,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     }
 
+    const safeImage = resolveCustomerImageUrl(outlet.image);
+    const absoluteImage = safeImage
+        ? (safeImage.startsWith("http") ? safeImage : `${baseUrl}${safeImage}`)
+        : undefined;
+
     return {
         title: `${outlet.name} | ${outlet.business?.name ?? "Boss App"}`,
         description: outlet.description || `Kunjungi ${outlet.name} untuk layanan terbaik. ${outlet.address ? `Berlokasi di ${outlet.address}` : ''}`,
@@ -59,24 +77,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         openGraph: {
             title: `${outlet.name} | ${outlet.business?.name ?? "Boss App"}`,
             description: `Kunjungi ${outlet.name} untuk layanan terbaik. ${outlet.address ? `Berlokasi di ${outlet.address}` : ''}`,
-            images: outlet.image ? [
+            images: absoluteImage ? [
                 {
-                    url: outlet.image,
+                    url: absoluteImage,
                     width: 1200,
                     height: 630,
                     alt: `${outlet.name} - ${outlet.business?.name || "Boss App"}`,
                 }
-            ] : [],
+            ] : undefined,
             type: "website",
             siteName: outlet.business?.name || "Boss App",
             locale: "id_ID",
-            url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://bossapp.id'}/outlet/${id}`,
+            url: `${baseUrl}/outlet/${id}`,
         },
         twitter: {
             card: "summary_large_image",
             title: `${outlet.name} | ${outlet.business?.name ?? "Boss App"}`,
             description: outlet.description || `Kunjungi ${outlet.name} untuk layanan terbaik.`,
-            images: outlet.image ? [outlet.image] : [],
+            images: absoluteImage ? [absoluteImage] : undefined,
             site: "@bossapp",
         },
         robots: {
@@ -91,11 +109,49 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             },
         },
         alternates: {
-            canonical: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://bossapp.id'}/outlet/${id}`,
+            canonical: `${baseUrl}/outlet/${id}`,
         },
     };
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-    return children;
+export default async function Layout({ children, params }: { children: React.ReactNode; params: { id?: string } }) {
+    const id = typeof params?.id === "string" ? params.id : "";
+    let structuredData: string | null = null;
+
+    if (id) {
+        const outlet = await getOutlet(id);
+        if (outlet) {
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://bossapp.id";
+            const safeImage = resolveCustomerImageUrl(outlet.image);
+            const absoluteImage = safeImage
+                ? (safeImage.startsWith("http") ? safeImage : `${baseUrl}${safeImage}`)
+                : undefined;
+
+            structuredData = JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'LocalBusiness',
+                name: outlet.name,
+                description: outlet.description || undefined,
+                image: absoluteImage,
+                url: `${baseUrl}/outlet/${id}`,
+                telephone: outlet.phone || undefined,
+                address: outlet.address ? {
+                    '@type': 'PostalAddress',
+                    streetAddress: outlet.address,
+                } : undefined,
+            });
+        }
+    }
+
+    return (
+        <>
+            {structuredData && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: structuredData }}
+                />
+            )}
+            {children}
+        </>
+    );
 }
