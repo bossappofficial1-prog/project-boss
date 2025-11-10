@@ -145,7 +145,7 @@ export default function OperatingHoursModal({
                     )}
 
                     {/* Content */}
-                    {!isLoading && Object.keys(operatingHoursData).length > 0 && (
+                    {!isLoading && (
                         <OperatingHoursManager
                             outletId={outletId}
                             onOperatingHoursChange={(data) => setOperatingHoursData(data)}

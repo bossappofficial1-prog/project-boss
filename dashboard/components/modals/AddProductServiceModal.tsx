@@ -81,14 +81,10 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
             setFile(null)
             return
         }
-
-        if (action === 'add') {
-            reset()
-        }
     }, [action, data, open, reset])
 
     const handleClose = (nextOpen: boolean) => {
-        if (!nextOpen) {
+        if (!nextOpen && action === 'edit') {
             reset()
         }
         onOpenChange(nextOpen)
@@ -150,6 +146,7 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
                 await productApi.update(data?.id!, payload)
             }
             onSuccess?.()
+            reset()
             handleClose(false)
         } catch (err: any) {
             setError(err?.message || 'Gagal menyimpan produk/jasa')

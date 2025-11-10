@@ -23,6 +23,7 @@ package-lock.json
 /public/sw.js
 /public/swe-**.js
 /public/workbox-**.js
+/public/fallback-ce627215c0e4a9af.js
 
 # production
 /build

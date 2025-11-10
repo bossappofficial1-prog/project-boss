@@ -51,9 +51,9 @@ apiRouter.use('/notifications', notificationRouter)
 apiRouter.use('/transactions', transactionRouter)
 apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
 apiRouter.get('/test-event/:outletId', (req, res) => {
-
     const outletId = req.params.outletId;
-    SocketEmitter.getInstance().sendTestMessage(outletId, `Ada pesanan baru`)
+    // SocketEmitter.getInstance().sendTestMessage(outletId, `Ada pesanan baru`);
+    SocketEmitter.getInstance().emitNotificationToOutlet(outletId, { message: 'Test', timestamp: new Date() })
     return ResponseUtil.success(res, {})
 })
 

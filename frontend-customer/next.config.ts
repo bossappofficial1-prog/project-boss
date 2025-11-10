@@ -83,7 +83,10 @@ export default withPWA({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
+  register: true,
+  fallbacks: {
+    document: '/offline.html'
+  },
   workboxOptions: {
     disableDevLogs: true,
   },

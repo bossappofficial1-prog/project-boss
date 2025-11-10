@@ -712,6 +712,7 @@ export async function cancelOrderByCustomerService(orderId: string, phone: strin
         });
     });
 
+    SocketEmitter.getInstance().emitNotificationToOutlet(order.outletId, { message: `Pesanan ${orderId}, telah dibatalkan customer`, timestamp: new Date() })
     return mapPublicOrderResponse(updatedOrder as OrderWithRelations);
 }
 
@@ -768,6 +769,7 @@ export async function expirePaymentOrder(orderId: string) {
 
     await PaymentRepository.updatePaymentStatusByOrder(orderId, `EXPIRED`);
     SocketEmitter.getInstance().emitToOrder(orderId, { message: `Payment for ${orderId} has expired`, order_id: orderId })
+    SocketEmitter.getInstance().emitNotificationToOutlet(order.outletId, { message: `Pembayaran untuk OrderID: ${orderId}, telah kadaluarsa`, 'timestamp': new Date() })
     SocketEmitter.getInstance().emitToCustomer(order.guestCustomer.phone!, {
         orderId,
         amount: order.totalAmount,
