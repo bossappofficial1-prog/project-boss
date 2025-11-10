@@ -515,7 +515,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
                     timestamp: new Date()
                 });
                 SocketEmitter.getInstance().emitNotificationToOutlet(outletId, {
-                    message: `Terdapat pembayaran manual yang perlu diverifikasi, OrderID: ${orderId}. Expire dalam: 10 menit`,
+                    message: `Pesanan baru, Order ID: ${orderId}`,
                     timestamp: new Date()
                 })
                 console.log(`📡 Emitted manual_payment_created event for outlet ${outletId}`);
@@ -677,8 +677,12 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
 
     try {
         const job = await paymentQueue.getJob(transaction.orderId);
-        if (job) job.remove()
+        if (job) job.remove();
 
+        SocketEmitter.getInstance().emitNotificationToOutlet(transaction.order.outletId, {
+            message: `Pesanan ${orderId}, telah mengirim bukti pembayarannya.`,
+            timestamp: new Date()
+        })
         SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
             orderId,
             amount: transaction.amount,
