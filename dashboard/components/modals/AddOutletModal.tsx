@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -18,11 +18,10 @@ import OperatingHoursManager from '@/components/ui/OperatingHoursManager'
 import { Toaster, toast } from 'sonner'
 import { useUpsertOperatingHours } from '@/hooks/useOperatingHours'
 import { outletManagementApi, uploadApi } from '@/lib/api'
-import type { OutletDetail, OperatingHours, OperatingHoursFormData } from '@/types/dashboard'
+import type { OutletDetail, OperatingHoursFormData } from '@/types/dashboard'
 import { isEqual } from 'lodash'
 import { parseOperatingHours } from '@/lib/utils'
 
-// 1. Skema Validasi dengan Zod
 const outletSchema = z.object({
   name: z.string().min(1, 'Nama outlet wajib diisi'),
   address: z.string().min(1, 'Alamat wajib diisi'),
@@ -53,107 +52,89 @@ type Props = {
   outlet?: OutletDetail | null
 }
 
-export default function AddOutletModal({ open, onOpenChange, businessId, onSuccess, mode = 'add', outlet }: Props) {
+export default function AddOutletModal({
+  open,
+  onOpenChange,
+  businessId,
+  onSuccess,
+  mode = 'add',
+  outlet
+}: Props) {
+  const queryClient = useQueryClient()
   const [operatingHoursData, setOperatingHoursData] = useState<Record<number, OperatingHoursFormData>>({})
   const [initialOperatingHours, setInitialOperatingHours] = useState<Record<number, OperatingHoursFormData>>({})
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [operatingHoursChanged, setOperatingHoursChanged] = useState(false)
-  const queryClient = useQueryClient()
 
-  // Memoize form config to prevent unnecessary re-renders
-  const formConfig = useMemo(() => ({
-    resolver: zodResolver(outletSchema),
-    mode: 'onChange' as const
-  }), [])
+  const form = useForm<OutletFormData>({
+    resolver: zodResolver(outletSchema) as any,
+    mode: 'onChange',
+    defaultValues: { status: 'ACTIVE' }
+  })
 
-  const {
-    register,
-    handleSubmit,
+  const { register, handleSubmit, control, reset, formState: { errors, isValid } } = form
+  const watchedFields = useWatch({
     control,
-    setValue,
-    reset,
-    watch,
-    formState: { errors, isValid }
-  } = useForm(formConfig)
+    name: ['name', 'address', 'phone', 'description', 'status', 'latitude', 'longitude', 'file']
+  })
 
   const upsertMutation = useUpsertOperatingHours()
+  const outletQueryKey = useMemo(() => ['outlet-detail', outlet?.id], [outlet?.id])
 
-  // Memoize query key to prevent unnecessary re-fetches
-  const outletQueryKey = useMemo(() =>
-    ['outlet-detail', outlet?.id],
-    [outlet?.id]
-  )
-
-  // Fetch outlet detail for edit mode
   const { data: outletDetail } = useQuery({
     queryKey: outletQueryKey,
     queryFn: () => outletManagementApi.getById(outlet!.id),
     enabled: !!outlet?.id && open && mode === 'edit',
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000
   }) as { data: OutletDetail | undefined }
 
-  // Simplified mutation function - combines outlet and operating hours
   const mutationFn = useCallback(async (data: OutletFormData) => {
     let outletResult: any
-
-    // 1. Handle outlet creation/update
     if (mode === 'edit') {
-      if (!outletDetail) {
-        throw new Error('Outlet tidak ditemukan')
-      }
+      if (!outletDetail) throw new Error('Outlet tidak ditemukan')
 
-      let finalImageUrl: string | undefined = outletDetail.image
+      let imageUrl = outletDetail.image
       if (data.file) {
         const uploaded = await uploadApi.uploadImage(data.file, { scope: 'outlet' })
-        finalImageUrl = uploaded.url
+        imageUrl = uploaded.url
       }
 
-      const payload = {
+      outletResult = await outletManagementApi.update(outletDetail.id, {
         name: data.name,
         address: data.address,
         phone: data.phone,
-        ...(data.description && { description: data.description }),
-        image: finalImageUrl,
+        description: data.description || undefined,
+        image: imageUrl,
         latitude: data.latitude,
         longitude: data.longitude,
-        isOpen: data.status === 'ACTIVE',
-      }
-      outletResult = await outletManagementApi.update(outletDetail.id, payload)
+        isOpen: data.status === 'ACTIVE'
+      })
     } else {
-      // Add mode
-      if (!businessId) {
-        throw new Error('Silakan buat profil bisnis terlebih dahulu.')
-      }
+      if (!businessId) throw new Error('Profil bisnis belum dibuat.')
 
-      let finalImageUrl: string | undefined = undefined
+      let imageUrl: string | undefined
       if (data.file) {
         const uploaded = await uploadApi.uploadImage(data.file, { scope: 'outlet' })
-        finalImageUrl = uploaded.url
+        imageUrl = uploaded.url
       }
 
-      const payload = {
+      outletResult = await outletManagementApi.create({
         name: data.name,
         address: data.address,
         phone: data.phone,
-        ...(data.description && { description: data.description }),
+        description: data.description || undefined,
         businessId,
-        image: finalImageUrl,
+        image: imageUrl,
         latitude: data.latitude,
         longitude: data.longitude,
-        isOpen: data.status === "ACTIVE"
-      }
-      outletResult = await outletManagementApi.create(payload)
+        isOpen: data.status === 'ACTIVE'
+      })
     }
 
-    // 2. Handle operating hours if any changes exist
-    const hasOperatingHoursChanges = Object.values(operatingHoursData).some(
-      (data: OperatingHoursFormData) => data.isOpen !== undefined
-    )
-
-    if (hasOperatingHoursChanges) {
-      const operatingHoursPromises = Object.values(operatingHoursData)
-        .filter((data: OperatingHoursFormData) => data.isOpen !== undefined)
-        .map((data: OperatingHoursFormData) =>
+    const changedHours = Object.values(operatingHoursData).filter(d => d.isOpen !== undefined)
+    if (changedHours.length > 0) {
+      try {
+        await Promise.all(changedHours.map(data =>
           upsertMutation.mutateAsync({
             outletId: mode === 'edit' ? outletDetail!.id : outletResult.id,
             dayOfWeek: data.dayOfWeek,
@@ -161,94 +142,37 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
             closeTime: new Date(`1970-01-01T${data.closeTime}:00`),
             isOpen: data.isOpen
           })
-        )
-
-      try {
-        await Promise.all(operatingHoursPromises)
-      } catch (error) {
-        // Don't fail the entire operation if operating hours fail
-        console.error('Failed to save operating hours:', error)
-        toast.warning('Outlet berhasil disimpan, tapi jam operasional gagal disimpan')
+        ))
+      } catch {
+        toast.warning('Outlet disimpan, tapi jam operasional gagal disimpan')
       }
     }
 
     return outletResult
   }, [mode, outletDetail, businessId, operatingHoursData, upsertMutation])
 
-  // Optimized cache invalidation strategy
   const invalidateQueries = useCallback(async (outletId?: string) => {
-    const promises = []
-
-    if (mode === 'edit' && outletId) {
-      // Only invalidate specific outlet detail when editing
-      promises.push(
-        queryClient.invalidateQueries({ queryKey: ['outlet-detail', outletId] })
-      )
-    }
-
-    // Always invalidate outlets list and dashboard
-    promises.push(
+    const tasks = [
       queryClient.invalidateQueries({ queryKey: ['outlets'] }),
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-    )
-
-    await Promise.all(promises)
+    ]
+    if (mode === 'edit' && outletId)
+      tasks.push(queryClient.invalidateQueries({ queryKey: ['outlet-detail', outletId] }))
+    await Promise.all(tasks)
   }, [mode, queryClient])
-
-  // Simplified onSuccess callback
-  const onSuccessCallback = useCallback(async (outletData: any) => {
-    toast.success(mode === 'edit' ? 'Outlet Berhasil Diperbarui!' : 'Outlet Berhasil Ditambahkan!')
-
-    // Invalidate queries to refresh cache
-    await invalidateQueries(mode === 'edit' ? outletDetail?.id : outletData.id)
-
-    onSuccess?.()
-    onOpenChange(false)
-  }, [mode, outletDetail?.id, invalidateQueries, onSuccess, onOpenChange])
 
   const { mutate, isPending: isSubmitting } = useMutation({
     mutationFn,
-    onSuccess: onSuccessCallback,
-    onError: (e: any) => {
-      toast.error(e?.message || 'Gagal menambah outlet. Coba lagi.')
-    }
+    onSuccess: async (data: any) => {
+      toast.success(mode === 'edit' ? 'Outlet diperbarui!' : 'Outlet berhasil ditambahkan!')
+      await invalidateQueries(mode === 'edit' ? outletDetail?.id : data.id)
+      onSuccess?.()
+      resetForm()
+      onOpenChange(false)
+    },
+    onError: (e: any) => toast.error(e?.message || 'Gagal menyimpan outlet')
   })
 
-  // Memoize form population to prevent unnecessary re-renders
-  const populateForm = useCallback((outletData: OutletDetail) => {
-
-    setValue('name', outletData.name)
-    setValue('address', outletData.address || '')
-    setValue('phone', outletData.phone || '')
-    setValue('description', outletData.description || '')
-    setValue('status', outletData.isOpen ? 'ACTIVE' : 'INACTIVE')
-    setValue('latitude', outletData.latitude)
-    setValue('longitude', outletData.longitude)
-
-    // Parse and set initial operating hours
-    if (outletData.operatingHours && outletData.operatingHours.length > 0) {
-      const hoursMap = parseOperatingHours(outletData.operatingHours)
-      setOperatingHoursData(hoursMap)
-      setInitialOperatingHours(hoursMap)
-    } else {
-      const emptyHours = {}
-      setOperatingHoursData(emptyHours)
-      setInitialOperatingHours(emptyHours)
-    }
-
-    // Reset unsaved changes flag
-    setHasUnsavedChanges(false)
-    setOperatingHoursChanged(false)
-  }, [setValue, parseOperatingHours])
-
-  // Populate form when outlet changes (edit mode) - optimized
-  useEffect(() => {
-    if (outletDetail && open && mode === 'edit') {
-      populateForm(outletDetail)
-    }
-  }, [outletDetail?.id, open, mode, populateForm]) // Only depend on ID to prevent unnecessary re-runs
-
-  // Reset form saat modal ditutup - memoized reset function
   const resetForm = useCallback(() => {
     reset()
     setOperatingHoursData({})
@@ -257,100 +181,74 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
     setOperatingHoursChanged(false)
   }, [reset])
 
+  const populateForm = useCallback((outletData: OutletDetail) => {
+    reset({
+      name: outletData.name,
+      address: outletData.address || '',
+      phone: outletData.phone || '',
+      description: outletData.description || '',
+      status: outletData.isOpen ? 'ACTIVE' : 'INACTIVE',
+      latitude: outletData.latitude,
+      longitude: outletData.longitude,
+    })
+
+    const hours = outletData.operatingHours?.length
+      ? parseOperatingHours(outletData.operatingHours)
+      : {}
+    setOperatingHoursData(hours)
+    setInitialOperatingHours(hours)
+    setHasUnsavedChanges(false)
+    setOperatingHoursChanged(false)
+  }, [reset])
+
   useEffect(() => {
-    if (!open) {
-      resetForm()
-    }
-  }, [open, resetForm])
+    if (outletDetail && open && mode === 'edit') populateForm(outletDetail)
+  }, [outletDetail?.id, open, mode, populateForm])
 
-  // Memoize location select handler to prevent re-creation
-  const handleLocationSelect = useCallback(async (lat: number, lng: number) => {
-    setValue('latitude', lat, { shouldValidate: true })
-    setValue('longitude', lng, { shouldValidate: true })
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'ProjectBoss/1.0'
-          }
-        }
-      )
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.display_name) {
-          // Auto-fill address with reverse geocoding result
-          setValue('address', data.display_name, { shouldValidate: true })
-        }
-      }
-    } catch (error) {
-      console.error('Reverse geocoding failed:', error)
-    }
-  }, [setValue])
-
-  // Memoize submit handler
-  const onSubmit = useCallback((data: OutletFormData) => {
-    mutate(data)
-  }, [mutate])
-
-  // Memoize operating hours change handler with change detection
   const handleOperatingHoursChange = useCallback((newData: Record<number, OperatingHoursFormData>) => {
     setOperatingHoursData(newData)
-
-    // Simple approach: just mark as changed when operating hours are modified
-    setOperatingHoursChanged(true)
-
-    // Also do deep comparison for detailed tracking
     const hasChanges = !isEqual(newData, initialOperatingHours)
-    setHasUnsavedChanges(hasChanges)
+    setOperatingHoursChanged(hasChanges)
   }, [initialOperatingHours])
 
-  // Watch form changes for edit mode
-  const formData = watch()
+  const handleLocationSelect = useCallback(async (lat: number, lng: number) => {
+    form.setValue('latitude', lat, { shouldValidate: true })
+    form.setValue('longitude', lng, { shouldValidate: true })
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+        headers: { 'User-Agent': 'ProjectBoss/1.0' }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.display_name) form.setValue('address', data.display_name, { shouldValidate: true })
+      }
+    } catch (e) { console.error('Reverse geocoding failed:', e) }
+  }, [form])
+
   const hasFormChanges = useMemo(() => {
     if (mode === 'add') return true
     if (!outletDetail) return false
 
-    // Compare current form data with initial outlet data
-    const currentData = {
-      name: formData.name || '',
-      address: formData.address || '',
-      phone: formData.phone || '',
-      description: formData.description || '',
-      status: formData.status || 'ACTIVE'
-    }
+    const [name, address, phone, description, status, latitude, longitude, file] = watchedFields
 
-    const initialData = {
+    const initial = {
       name: outletDetail.name || '',
       address: outletDetail.address || '',
       phone: outletDetail.phone || '',
       description: outletDetail.description || '',
-      status: outletDetail.isOpen ? 'ACTIVE' : 'INACTIVE'
+      status: outletDetail.isOpen ? 'ACTIVE' : 'INACTIVE',
+      latitude: outletDetail.latitude,
+      longitude: outletDetail.longitude
     }
 
-    // Also detect changes in latitude/longitude compared to outletDetail
-    const currentLat = formData.latitude
-    const currentLng = formData.longitude
-    const initialLat = outletDetail.latitude
-    const initialLng = outletDetail.longitude
+    const current = { name, address, phone, description, status, latitude, longitude }
+    return !isEqual(current, initial) || !!file
+  }, [mode, watchedFields, outletDetail])
 
-    const locationChanged = (typeof currentLat === 'number' && typeof initialLat === 'number' && currentLat !== initialLat)
-      || (typeof currentLng === 'number' && typeof initialLng === 'number' && currentLng !== initialLng)
-      || ((currentLat && !initialLat) || (currentLng && !initialLng))
-
-    // Operating hours changes are tracked separately via operatingHoursChanged
-    const changes = !isEqual(currentData, initialData) || !!formData.file || !!locationChanged
-    return changes
-  }, [mode, formData, outletDetail, operatingHoursChanged])
-
-  // Check if there are unsaved changes (form or operating hours)
   const isFormValid = useMemo(() => {
-    const formValid = isValid && (mode === 'add' ? !!businessId : true)
-    const hasChanges = hasUnsavedChanges || hasFormChanges || operatingHoursChanged
-    return formValid && hasChanges
-  }, [isValid, hasUnsavedChanges, hasFormChanges, operatingHoursChanged, mode, businessId])
+    if (mode === 'add') return isValid && !!businessId
+    return isValid && (hasFormChanges || operatingHoursChanged)
+  }, [mode, isValid, hasFormChanges, operatingHoursChanged, businessId])
 
   return (
     <>
@@ -363,26 +261,23 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
               {mode === 'edit' ? 'Edit Outlet' : 'Tambah Outlet Baru'}
             </DialogTitle>
             <DialogDescription>
-              {mode === 'edit'
-                ? 'Perbarui informasi outlet dan atur jam operasional Anda.'
-                : 'Lengkapi informasi outlet dan atur jam operasional Anda.'
-              }
+              {mode === 'edit' ? 'Perbarui informasi outlet dan jam operasional Anda.' : 'Lengkapi informasi outlet dan jam operasional Anda.'}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex-grow max-h-full overflow-y-auto pr-2 -mr-4 space-y-6 py-4">
+          <form onSubmit={handleSubmit(data => mutate(data as any))} className="flex-grow overflow-y-auto pr-2 -mr-4 space-y-6 py-4">
             {!businessId && (
               <div className="flex items-start gap-3 p-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg">
-                <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="h-5 w-5 mt-0.5" />
                 <div>
                   <p className="font-semibold">Bisnis Belum Dibuat</p>
-                  <p className="text-xs mt-1">Anda perlu membuat profil bisnis terlebih dahulu.</p>
+                  <p className="text-xs mt-1">Silakan buat profil bisnis terlebih dahulu.</p>
                 </div>
               </div>
             )}
 
-            {/* Section: Informasi Dasar */}
-            <div className="space-y-4">
+            {/* Informasi Dasar */}
+            <section className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">Informasi Dasar</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
@@ -390,128 +285,81 @@ export default function AddOutletModal({ open, onOpenChange, businessId, onSucce
                   <Input id="name" placeholder="Contoh: Outlet Utama" {...register('name')} />
                   {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
                 </div>
-
-                <div className="md:col-span-1">
-                  <Label htmlFor="status">Status Outlet</Label>
-                  <Controller
-                    control={control}
-                    name="status"
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger className='w-full'>
-                          <SelectValue placeholder="Pilih status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ACTIVE">Aktif</SelectItem>
-                          <SelectItem value="INACTIVE">Tidak Aktif</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-
-                <div className="md:col-span-3">
-                  <Label htmlFor="description">Deskripsi</Label>
-                  <Textarea id="description" placeholder="Deskripsi singkat tentang outlet" {...register('description')} />
-                </div>
-              </div>
-            </div>
-
-            {/* Section: Informasi Kontak */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Informasi Kontak</h3>
-              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label htmlFor="phone">No. Telepon</Label>
-                  <Input id="phone" placeholder="08xxxxxxxxxx" {...register('phone')} />
-                  {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
+                  <Label htmlFor="status">Status</Label>
+                  <Controller control={control} name="status" render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger><SelectValue placeholder="Pilih status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ACTIVE">Aktif</SelectItem>
+                        <SelectItem value="INACTIVE">Tidak Aktif</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )} />
                 </div>
               </div>
-            </div>
+              <div>
+                <Label htmlFor="description">Deskripsi</Label>
+                <Textarea id="description" placeholder="Deskripsi singkat outlet" {...register('description')} />
+              </div>
+            </section>
 
-            {/* Section: Jam Operasional */}
-            <div className="space-y-4">
+            {/* Kontak */}
+            <section className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">Informasi Kontak</h3>
+              <div>
+                <Label htmlFor="phone">No. Telepon</Label>
+                <Input id="phone" placeholder="08xxxxxxxxxx" {...register('phone')} />
+                {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
+              </div>
+            </section>
+
+            {/* Jam Operasional */}
+            <section className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">Jam Operasional</h3>
               <OperatingHoursManager
-                outletId={mode === 'edit' ? outletDetail?.id || "" : ""}
+                outletId={mode === 'edit' ? outletDetail?.id || '' : ''}
                 operatingHoursData={operatingHoursData}
                 onOperatingHoursChange={handleOperatingHoursChange}
               />
-            </div>
+            </section>
 
-            {/* Section: Lokasi */}
-            <div className="space-y-4">
+            {/* Lokasi */}
+            <section className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">Lokasi</h3>
-              <div>
-                <Label htmlFor="address">Alamat</Label>
-                <Input id="address" placeholder="Alamat lengkap outlet" {...register('address')} />
-                {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address.message}</p>}
-              </div>
-              <Controller
-                control={control}
-                name="latitude"
-                render={({ field }) => {
-                  const lat = field.value
-                  const lng = watch('longitude')
-
-                  return (
-                    <MapPicker
-                      latitude={lat}
-                      longitude={lng}
-                      onLocationChange={handleLocationSelect}
-                      placeholder="Cari lokasi atau klik pada peta..."
-                      className="w-full"
-                    />
-                  )
-                }}
-              />
-            </div>
-
-            {/* Section: Media */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Media</h3>
-              <div>
-                <Label>Gambar Outlet</Label>
-                <p className="text-xs text-gray-500 mb-2">Ukuran file maksimal 1MB.</p>
-
-                {mode === 'edit' && outletDetail?.image && (
-                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mb-3">
-                    <div className="flex items-center gap-3">
-                      <img src={outletDetail.image} alt="Current outlet image" className="h-12 w-12 object-cover rounded-md" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Gambar saat ini</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Upload gambar baru untuk mengganti</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <Controller
-                  control={control}
-                  name="file"
-                  render={({ field }) => <ImageUploader onFileChange={field.onChange} />}
+              <Label htmlFor="address">Alamat</Label>
+              <Input id="address" placeholder="Alamat lengkap" {...register('address')} />
+              {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address.message}</p>}
+              <Controller control={control} name="latitude" render={({ field }) => (
+                <MapPicker
+                  latitude={field.value}
+                  longitude={form.watch('longitude')}
+                  onLocationChange={handleLocationSelect}
                 />
-                {errors.file && <p className="text-xs text-red-500 mt-1">{errors.file.message}</p>}
-              </div>
-            </div>
+              )} />
+            </section>
 
-            {/* Footer Actions */}
+            {/* Media */}
+            <section className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">Media</h3>
+              {mode === 'edit' && outletDetail?.image && (
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-md border">
+                  <img src={outletDetail.image} alt="Outlet" className="h-12 w-12 object-cover rounded-md" />
+                  <div>
+                    <p className="text-sm font-medium">Gambar saat ini</p>
+                    <p className="text-xs text-gray-500">Upload gambar baru untuk mengganti</p>
+                  </div>
+                </div>
+              )}
+              <Controller control={control} name="file" render={({ field }) => <ImageUploader onFileChange={field.onChange} />} />
+              {errors.file && <p className="text-xs text-red-500 mt-1">{errors.file.message}</p>}
+            </section>
+
+            {/* Footer */}
             <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting || !isFormValid}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Menyimpan...
-                  </>
-                ) : (
-                  mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Outlet'
-                )}
+              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Batal</Button>
+              <Button type="submit" disabled={isSubmitting || !isFormValid}>
+                {isSubmitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</>) : (mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Outlet')}
               </Button>
             </div>
           </form>

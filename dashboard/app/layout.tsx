@@ -130,7 +130,7 @@ export default function RootLayout({
       <head>
         <meta charSet="utf-8" />
         <link rel="canonical" href={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010'} />
-        <meta name="theme-color" content="#2563eb" />
+        <meta name="theme-color" content="#eb2525" />
         <meta name="color-scheme" content="light dark" />
 
         {/* Preconnect to external domains for performance */}

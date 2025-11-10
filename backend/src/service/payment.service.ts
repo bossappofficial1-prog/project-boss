@@ -502,8 +502,8 @@ export async function createPaymentService(data: CreatePaymentPayload) {
                 }
             });
 
-            const expireTime = new Date(expiresAt).getTime()
-            const delay = Math.max(0, (expireTime - new Date().getTime()))
+            const expireTime = new Date(expiresAt)
+            const delay = Math.max(0, (expireTime.getTime() - new Date().getTime()))
 
             try {
                 await paymentQueue.add({ orderId }, { delay })
@@ -514,6 +514,10 @@ export async function createPaymentService(data: CreatePaymentPayload) {
                     customerName: customerDetails.name,
                     timestamp: new Date()
                 });
+                SocketEmitter.getInstance().emitNotificationToOutlet(outletId, {
+                    message: `Pesanan baru, Order ID: ${orderId}`,
+                    timestamp: new Date()
+                })
                 console.log(`📡 Emitted manual_payment_created event for outlet ${outletId}`);
             } catch (socketError) {
                 console.error('❌ Error emitting manual_payment_created event:', socketError);
@@ -570,6 +574,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
 
     // Emit notification to business outlet
     try {
+        SocketEmitter.getInstance().emitNotificationToOutlet(outletId, { message: `Ada pesanan baru, OrderID: ${orderId}`, timestamp: new Date() })
         SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
             orderId,
             amount: grossAmount,
@@ -672,8 +677,12 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
 
     try {
         const job = await paymentQueue.getJob(transaction.orderId);
-        if (job) job.remove()
+        if (job) job.remove();
 
+        SocketEmitter.getInstance().emitNotificationToOutlet(transaction.order.outletId, {
+            message: `Pesanan ${orderId}, telah mengirim bukti pembayarannya.`,
+            timestamp: new Date()
+        })
         SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
             orderId,
             amount: transaction.amount,

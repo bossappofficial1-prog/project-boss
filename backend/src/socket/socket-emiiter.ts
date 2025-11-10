@@ -87,4 +87,13 @@ export class SocketEmitter {
             queue: data.queue,
         });
     }
+
+    emitNotificationToOutlet(outletId: string, payload: {
+        message: string;
+        timestamp: Date;
+    }) {
+        const io = this.getIO();
+        io.to(outletId).emit(SOCKET_EVENT.NOTIFICATION_UPDATE, payload)
+        Console.log(`Send Event To Outlet:`, outletId)
+    }
 }

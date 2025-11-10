@@ -57,7 +57,7 @@ export default function TransactionsPage() {
     // Untuk transaksi yang terhubung dengan order, gunakan orderStatus sebagai referensi
     const orderStatus = transaction.order?.orderStatus;
     const transactionStatus = transaction.status;
-    
+
     // Jika order masih AWAITING_PAYMENT, maka pembayaran belum dikonfirmasi
     // Meskipun transaction.status adalah SUCCESS (untuk transaksi offline)
     let displayStatus = transactionStatus;
@@ -94,7 +94,7 @@ export default function TransactionsPage() {
     const isManual = transaction.isManual;
     const method = transaction.manualMethod || transaction.paymentMethod || 'Online';
     const hasProof = Boolean(transaction.paymentProofUrl);
-    
+
     return (
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
@@ -147,7 +147,7 @@ export default function TransactionsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 font-poppins">Riwayat Transaksi</h1>
+          <h1 className="text-2xl font-bold text-foreground font-poppins">Riwayat Transaksi</h1>
           <p className="mt-1 text-sm text-gray-500 font-poppins">
             Lihat dan kelola semua transaksi bisnis Anda
           </p>

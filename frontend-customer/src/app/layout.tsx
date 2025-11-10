@@ -27,14 +27,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "BOSS - Platform Manajemen Bisnis",
   description: "Urus operasional usaha, atur jadwal, dan jaga pelanggan kamu lebih gampang bareng BOSS.",
-  icons: "/assets/logo/og-img.png",
+  icons: "/assets/logo/og-image.png",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "BOSS Customer",
     startupImage: [
-      "/assets/logo/og-img.png",
+      "/assets/logo/og-image.png",
     ],
   },
   openGraph: {
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     siteName: "BOSS",
     images: [
       {
-        url: "/assets/logo/og-img.png",
+        url: "/assets/logo/og-image.png",
         width: 1200,
         height: 630,
         alt: "BOSS Business Management Platform",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "BOSS - Platform Manajemen Bisnis",
     description: "Optimalkan operasional, jadwal, dan pengalaman pelanggan bisnis kamu cukup lewat BOSS.",
-    images: ["/assets/logo/og-img.png"],
+    images: ["/assets/logo/og-image.png"],
   },
   robots: {
     index: true,
@@ -92,6 +92,8 @@ export default function Layout({
         <link rel="apple-touch-icon" href="/assets/logo/favicon.ico" />
         <link rel="icon" type="image/svg+xml" href="/assets/logo/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#eb2525" />
+        <meta name="color-scheme" content="light dark" />
       </head>
       <body
         className={`${poppins.variable} font-poppins antialiased`}
