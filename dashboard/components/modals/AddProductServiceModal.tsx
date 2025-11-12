@@ -96,6 +96,8 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
 
         if (!name.trim()) { setError('Nama wajib diisi.'); return; }
 
+        if (type === 'SERVICE' && serviceDurationMinutes as number < 10) { setError(`Durasi layanan minimal 10 menit`); return }
+
         if (price === '' || Number(price) <= 0) { setError('Harga jual harus lebih dari 0.'); return }
         console.log(costPrice);
 
@@ -291,7 +293,8 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
                             <Label >Durasi Layanan (menit)</Label>
                             <Input
                                 type="number"
-                                min={0}
+                                min={10}
+                                placeholder='Durasi layanan minimal 10 menit'
                                 value={serviceDurationMinutes}
                                 onChange={(e) => setServiceDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
                                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
