@@ -38,6 +38,7 @@ export const createOrderSchema = z.object({
     }).default("online"),
     onlinePaymentChannel: onlinePaymentChannelSchema.optional(),
     bookingSlotId: z.string().uuid().optional(),
+    staffId: z.string().uuid().optional(),
     orderSource: z.enum(["CUSTOMER", "POS"]).default("CUSTOMER"),
 }).refine(
     (data) => {
@@ -82,6 +83,20 @@ export const createOrderSchema = z.object({
         {
             message: "Online payment channel wajib diisi untuk pembayaran online",
             path: ["onlinePaymentChannel"]
+        }
+    ).refine(
+        (data) => {
+            if (data.bookingSlotId) {
+                return Boolean(data.staffId);
+            }
+            if (data.staffId) {
+                return Boolean(data.bookingSlotId);
+            }
+            return true;
+        },
+        {
+            message: "Staff wajib dipilih ketika menggunakan slot booking",
+            path: ["staffId"]
         }
     );
 

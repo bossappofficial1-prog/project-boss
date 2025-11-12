@@ -207,7 +207,7 @@ function formatManualPaymentResponse(options: {
 
 // Sub-fungsi untuk create order dan items
 // Delegates to repository which already wraps operations in a DB transaction.
-async function createOrderAndItems(orderId: string, grossAmount: number, applicationFee: number, transactionFeeTotal: number, selectedSlotId: string | undefined, outletId: string, customerDetails: any, inputItems: any[], productMap: Map<string, Product>) {
+async function createOrderAndItems(orderId: string, grossAmount: number, applicationFee: number, transactionFeeTotal: number, selectedSlotId: string | undefined, staffId: string | undefined, outletId: string, customerDetails: any, inputItems: any[], productMap: Map<string, Product>) {
     try {
         await PaymentRepository.createOrderWithItems({
             orderId,
@@ -215,6 +215,7 @@ async function createOrderAndItems(orderId: string, grossAmount: number, applica
             appFee: applicationFee,
             midtransFee: transactionFeeTotal,
             selectedSlotId: selectedSlotId ?? null,
+            staffId: staffId ?? null,
             outletId,
             customer: { name: customerDetails.name, phone: customerDetails.phone },
             items: inputItems.map((it) => ({ productId: it.productId, quantity: it.quantity }))
@@ -421,6 +422,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
         item_details: inputItems,
         payment_method,
         selectedSlotId,
+        staffId,
         outletId,
     } = data;
 
@@ -470,7 +472,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
         const instructions = buildManualInstructions(outlet, manualType);
 
         try {
-            await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, outletId, customerDetails, inputItems, productMap);
+            await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, staffId, outletId, customerDetails, inputItems, productMap);
             const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
             const transaction = await createManualTransactionRecord({
                 orderId,
@@ -550,7 +552,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
         }
     }
 
-    await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, outletId, customerDetails, inputItems, productMap);
+    await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, staffId, outletId, customerDetails, inputItems, productMap);
 
     const midtransPaymentType = paymentMethodMapping[paymentMethodId];
 

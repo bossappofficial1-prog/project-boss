@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ProductType } from '@/types';
+import { SelectedSchedule } from '@/types/booking-slots';
 
 export interface CartItem {
     id: string;
@@ -21,6 +22,8 @@ export interface CartItem {
     slotStartTime?: string; // For time conflict checking
     slotEndTime?: string; // For time conflict checking
     slotDate?: string; // For date-specific conflict checking
+    staffId?: string;
+    staffName?: string;
 }
 
 interface CartState {
@@ -28,7 +31,7 @@ interface CartState {
     isOpen: boolean;
 
     // Actions
-    addItem: (outletId: string, outletName: string, product: ProductType, quantity?: number, selectedSlot?: any) => boolean;
+    addItem: (outletId: string, outletName: string, product: ProductType, quantity?: number, selectedSchedule?: SelectedSchedule) => boolean;
     removeItem: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
     updateItem: (itemId: string, updates: Partial<CartItem>) => void;
@@ -52,8 +55,10 @@ export const useCart = create<CartState>()(
             items: [],
             isOpen: false,
 
-            addItem: (outletId: string, outletName: string, product: ProductType, quantity = 1, selectedSlot) => {
+            addItem: (outletId: string, outletName: string, product: ProductType, quantity = 1, selectedSchedule) => {
                 const { items } = get();
+                const slotInfo = selectedSchedule?.slot;
+                const staffInfo = selectedSchedule?.staff;
 
                 // Validasi: Dalam satu outlet, tidak boleh ada campuran GOODS dan SERVICE
                 const existingItemsInOutlet = items.filter(item => item.outletId === outletId);
@@ -65,11 +70,11 @@ export const useCart = create<CartState>()(
                 }
 
                 // Check for time conflicts for SERVICE items
-                if (product.type === 'SERVICE' && selectedSlot) {
+                if (product.type === 'SERVICE' && slotInfo) {
                     const conflict = get().checkTimeConflict(outletId, {
-                        startTime: selectedSlot.startTime,
-                        endTime: selectedSlot.endTime,
-                        date: selectedSlot.date
+                        startTime: slotInfo.startTime,
+                        endTime: slotInfo.endTime,
+                        date: slotInfo.date
                     });
 
                     if (conflict) {
@@ -92,10 +97,12 @@ export const useCart = create<CartState>()(
                         // For services, update the selected slot instead of quantity
                         updatedItems[existingItemIndex] = {
                             ...existingItem,
-                            selectedSlot: selectedSlot?.id,
-                            slotStartTime: selectedSlot?.startTime,
-                            slotEndTime: selectedSlot?.endTime,
-                            slotDate: selectedSlot?.date
+                            selectedSlot: slotInfo?.id,
+                            slotStartTime: slotInfo?.startTime,
+                            slotEndTime: slotInfo?.endTime,
+                            slotDate: slotInfo?.date,
+                            staffId: staffInfo?.id,
+                            staffName: staffInfo?.name
                         };
                     } else {
                         // For goods, update quantity
@@ -132,10 +139,12 @@ export const useCart = create<CartState>()(
                         unit: product.unit || undefined,
                         maxQuantity: product.type === 'GOODS' ? product.quantity || undefined : undefined,
                         serviceDurationMinutes: product.type === 'SERVICE' ? product.serviceDurationMinutes || undefined : undefined,
-                        selectedSlot: product.type === 'SERVICE' ? selectedSlot?.id : undefined,
-                        slotStartTime: product.type === 'SERVICE' ? selectedSlot?.startTime : undefined,
-                        slotEndTime: product.type === 'SERVICE' ? selectedSlot?.endTime : undefined,
-                        slotDate: product.type === 'SERVICE' ? selectedSlot?.date : undefined
+                        selectedSlot: product.type === 'SERVICE' ? slotInfo?.id : undefined,
+                        slotStartTime: product.type === 'SERVICE' ? slotInfo?.startTime : undefined,
+                        slotEndTime: product.type === 'SERVICE' ? slotInfo?.endTime : undefined,
+                        slotDate: product.type === 'SERVICE' ? slotInfo?.date : undefined,
+                        staffId: product.type === 'SERVICE' ? staffInfo?.id : undefined,
+                        staffName: product.type === 'SERVICE' ? staffInfo?.name : undefined
                     };
 
                     set({ items: [...items, newItem] });

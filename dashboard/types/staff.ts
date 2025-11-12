@@ -1,0 +1,64 @@
+export type BookingSlotStatus = 'AVAILABLE' | 'BOOKED' | 'BLOCKED';
+
+export type StaffRole = 'SERVICE' | 'CASHIER' | 'ADMIN' | 'INVENTORY' | 'OTHER';
+export type StaffStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+
+export interface StaffMember {
+    id: string;
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
+    notes?: string | null;
+    status: StaffStatus;
+    role: StaffRole;
+    outletId: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateStaffPayload {
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
+    notes?: string | null;
+    role: StaffRole;
+    status: StaffStatus;
+    outletId: string;
+}
+
+export interface UpdateStaffPayload {
+    name?: string;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
+    notes?: string | null;
+    role?: StaffRole;
+    status?: StaffStatus;
+}
+
+export interface StaffAvailability {
+    id: string;
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+    role: string;
+    isAvailable: boolean;
+    conflicts: Array<{
+        slotId: string;
+        startTime: string;
+        endTime: string;
+        status: BookingSlotStatus;
+    }>;
+}
+
+export interface StaffAvailabilityResponse {
+    staff: StaffAvailability[];
+    window: {
+        startTime: string;
+        endTime: string;
+    };
+    slotId: string | null;
+}

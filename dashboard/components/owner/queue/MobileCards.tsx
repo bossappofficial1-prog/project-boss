@@ -56,6 +56,10 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+const resolveStaffName = (item: QueueEntry) => {
+  return item.assignedStaff?.name ?? item.bookingSlot?.staff?.name ?? null;
+};
+
 export function QueueMobileCards({ queue, pendingQueueId, onStatusChange, onPrimaryAction, getPrimaryAction }: QueueMobileCardsProps) {
   const getQueuePosition = (item: QueueEntry) => item.queueMeta?.position ?? item.position ?? item.queueNumber ?? 0;
 
@@ -158,6 +162,13 @@ export function QueueMobileCards({ queue, pendingQueueId, onStatusChange, onPrim
                     {formatSchedule(item)}
                   </p>
                 </div>
+              </div>
+
+              <div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Staff:</span>
+                <p className="text-sm text-gray-900 dark:text-gray-100">
+                  {resolveStaffName(item) ?? '-'}
+                </p>
               </div>
             </div>
 

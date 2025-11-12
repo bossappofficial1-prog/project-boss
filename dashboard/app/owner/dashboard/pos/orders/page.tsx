@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { orderApi, productApi } from '@/lib/api'
-import type { CreateOrderRequest, OnlinePaymentChannel } from '@/lib/apis/order'
+import type { CreateOrderRequest, OnlinePaymentChannel, PosCashSummary } from '@/lib/apis/order'
 import { useSocketContext } from '@/components/providers/SocketProvider'
 import { usePosOnlinePayment } from '@/hooks/usePosOnlinePayment'
 import { ONLINE_PAYMENT_LABELS } from '@/constants/pos'
@@ -75,6 +75,7 @@ export default function POSOrdersPage() {
     product: POSProduct
     selection?: ServiceScheduleSelection | null
   } | null>(null)
+  const [cashSummary, setCashSummary] = React.useState<PosCashSummary | null>(null)
 
   const outletId = selectedOutlet?.id
   const qrisImage = selectedOutlet?.manualQrImageUrl || selectedOutlet?.qrisImage
@@ -114,6 +115,20 @@ export default function POSOrdersPage() {
     searchQuery,
   })
 
+  const fetchCashSummary = React.useCallback(async () => {
+    if (!outletId) {
+      setCashSummary(null)
+      return
+    }
+
+    try {
+      const summary = await orderApi.getPosCashSummary(outletId)
+      setCashSummary(summary)
+    } catch (error) {
+      console.error('Gagal memuat ringkasan kas POS:', error)
+    }
+  }, [outletId])
+
   const handleSearch = React.useCallback(() => {
     fetchProducts(searchQuery)
   }, [fetchProducts, searchQuery])
@@ -133,7 +148,12 @@ export default function POSOrdersPage() {
     if (outletId) {
       fetchProducts()
     }
-  }, [fetchProducts, outletId])
+    fetchCashSummary()
+  }, [fetchProducts, fetchCashSummary, outletId])
+
+  React.useEffect(() => {
+    fetchCashSummary()
+  }, [fetchCashSummary])
 
   const cartQuantities = React.useMemo(() => {
     const map: Record<string, number> = {}
@@ -155,7 +175,16 @@ export default function POSOrdersPage() {
   const cartItems = React.useMemo(() => Object.values(cart), [cart])
 
   const hasUnscheduledService = React.useMemo(
-    () => cartItems.some((line) => line.product.type === 'SERVICE' && (!line.bookingSlotId || !line.bookingStart || !line.bookingEnd)),
+    () =>
+      cartItems.some(
+        (line) =>
+          line.product.type === 'SERVICE' && (
+            !line.bookingSlotId ||
+            !line.bookingStart ||
+            !line.bookingEnd ||
+            !line.staffId
+          )
+      ),
     [cartItems]
   )
 
@@ -192,11 +221,13 @@ export default function POSOrdersPage() {
       }
 
       const existingLine = cart[product.id]
-      const selection = existingLine?.bookingSlotId && existingLine.bookingStart && existingLine.bookingEnd
+      const selection = existingLine?.bookingSlotId && existingLine.bookingStart && existingLine.bookingEnd && existingLine.staffId && existingLine.staffName
         ? {
           slotId: existingLine.bookingSlotId,
           startTimeIso: existingLine.bookingStart,
           endTimeIso: existingLine.bookingEnd,
+          staffId: existingLine.staffId,
+          staffName: existingLine.staffName,
         }
         : null
 
@@ -267,11 +298,13 @@ export default function POSOrdersPage() {
   }
 
   const openScheduleEditor = (line: POSCartLine) => {
-    const selection = line.bookingSlotId && line.bookingStart && line.bookingEnd
+    const selection = line.bookingSlotId && line.bookingStart && line.bookingEnd && line.staffId && line.staffName
       ? {
         slotId: line.bookingSlotId,
         startTimeIso: line.bookingStart,
         endTimeIso: line.bookingEnd,
+        staffId: line.staffId,
+        staffName: line.staffName,
       }
       : null
 
@@ -293,6 +326,8 @@ export default function POSOrdersPage() {
         bookingSlotId: selection.slotId,
         bookingStart: selection.startTimeIso,
         bookingEnd: selection.endTimeIso,
+        staffId: selection.staffId,
+        staffName: selection.staffName,
       },
     }))
 
@@ -392,6 +427,10 @@ export default function POSOrdersPage() {
       toast.error('Pilih jadwal layanan sebelum membuat pesanan')
       return
     }
+    if (serviceLine && !serviceLine.staffId) {
+      toast.error('Pilih staff layanan sebelum membuat pesanan')
+      return
+    }
 
     try {
       setIsSubmitting(true)
@@ -413,6 +452,7 @@ export default function POSOrdersPage() {
       if (serviceLine) {
         payload.bookingSlotId = serviceLine.bookingSlotId
         payload.bookingDate = serviceLine.bookingStart
+        payload.staffId = serviceLine.staffId
       }
 
       const response = await orderApi.create(payload)
@@ -432,6 +472,7 @@ export default function POSOrdersPage() {
 
       // Tetap pada halaman POS agar kasir dapat memproses transaksi berikutnya
       fetchProducts()
+      await fetchCashSummary()
     } catch (error: unknown) {
       console.error('Gagal membuat pesanan POS:', error)
       toast.error('Gagal membuat pesanan, coba lagi')
@@ -473,6 +514,20 @@ export default function POSOrdersPage() {
             </Badge>
           </div>
         </header>
+
+        {cashSummary && (
+          <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+            <CardContent className="flex flex-col gap-1 py-4">
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Kas tunai hari ini</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                Rp {currencyFormatter.format(cashSummary.totalAmount)}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {cashSummary.transactionsCount} transaksi cash • {new Date(cashSummary.startTime).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
           <ProductGridSection
@@ -567,6 +622,11 @@ export default function POSOrdersPage() {
                                     <Clock className="h-3 w-3" />
                                     {scheduleTime}
                                   </p>
+                                  {line.staffName && (
+                                    <p className="mt-1 text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                      Staff: {line.staffName}
+                                    </p>
+                                  )}
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-2 rounded-md border border-dashed border-amber-400 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">

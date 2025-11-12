@@ -21,7 +21,10 @@ export const setUpJobs = () => {
         Console.warn(`Job ${job.id} stalled`)
     })
 
-    paymentProofCleanupQueue.process(processPaymentProofCleanup);
+    paymentProofCleanupQueue.process('daily-cleanup', processPaymentProofCleanup);
+    paymentProofCleanupQueue.on('completed', (job) => {
+        Console.log(`✅ Job ${job.id} (${job.name}) completed`);
+    });
 
     paymentProofCleanupQueue.on('failed', (job, error) => {
         Console.error(`Payment proof cleanup job ${job.id} failed`, error);

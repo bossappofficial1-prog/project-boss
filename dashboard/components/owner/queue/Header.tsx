@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 interface QueueHeaderProps {
   onRefresh: () => void;
   onCreateQuick: () => void;
@@ -16,7 +18,7 @@ export function QueueHeader({ onRefresh, onCreateQuick }: QueueHeaderProps) {
           Kelola antrian layanan jasa customer
         </p>
       </div>
-      
+
       <div className="flex items-center gap-3">
         <button
           onClick={onRefresh}
@@ -28,16 +30,15 @@ export function QueueHeader({ onRefresh, onCreateQuick }: QueueHeaderProps) {
           </svg>
           <span className="hidden sm:inline">Refresh</span>
         </button>
-        
-        <button
+
+        <Button
           onClick={onCreateQuick}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           <span>Tambah Antrian</span>
-        </button>
+        </Button>
       </div>
     </div>
   );

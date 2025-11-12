@@ -91,6 +91,40 @@ async function fetchOrder(orderId: string): Promise<OrderWithRelations> {
     return assertOrder(order);
 }
 
+export async function getPosCashSummaryService(params: { outletId: string; date?: string }) {
+    const { outletId, date } = params;
+
+    const referenceDate = date ? new Date(date) : new Date();
+    const validReference = Number.isNaN(referenceDate.getTime()) ? new Date() : referenceDate;
+
+    const startTime = new Date(validReference);
+    startTime.setHours(0, 0, 0, 0);
+
+    const endTime = new Date(startTime);
+    endTime.setDate(endTime.getDate() + 1);
+
+    const { totalAmount, transactionsCount } = await ManualPaymentRepository.sumManualTransactions({
+        outletId,
+        paymentMethod: 'cash',
+        status: [PaymentStatus.SUCCESS],
+        startTime,
+        endTime,
+    });
+
+    const localDate = new Date(startTime.getTime() - startTime.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split('T')[0];
+
+    return {
+        outletId,
+        totalAmount,
+        transactionsCount,
+        date: localDate,
+        startTime,
+        endTime,
+    };
+}
+
 export async function createPosOrderService(input: CreatePosOrderInput): Promise<CreatePosOrderResult> {
     const orderPayload: CreateOrderInput = {
         guestCustomer: input.guestCustomer,
@@ -98,6 +132,7 @@ export async function createPosOrderService(input: CreatePosOrderInput): Promise
         items: input.items,
         bookingDate: input.bookingDate,
         bookingSlotId: input.bookingSlotId,
+        staffId: input.staffId,
         paymentMethod: input.paymentMethod,
         onlinePaymentChannel: input.onlinePaymentChannel,
         orderSource: 'POS',
@@ -128,7 +163,11 @@ async function handleCashOrder(orderPayload: CreateOrderInput): Promise<CreatePo
         where: { id: order.id },
         data: {
             paymentStatus: PaymentStatus.SUCCESS,
-            orderStatus: OrderStatus.PROCESSING,
+            ...(orderPayload.bookingSlotId ? {
+                orderStatus: OrderStatus.CONFIRMED,
+            } : {
+                orderStatus: OrderStatus.COMPLETED
+            }),
         },
     });
 

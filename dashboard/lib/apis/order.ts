@@ -76,6 +76,14 @@ export interface Outlet {
   phone?: string;
 }
 
+export interface StaffSummary {
+  id: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  role?: string | null;
+}
+
 export interface Order {
   id: string;
   totalAmount: number;
@@ -102,7 +110,10 @@ export interface Order {
     status?: string;
     productId?: string;
     staffId?: string | null;
+    staff?: StaffSummary | null;
   } | null;
+  assignedStaffId?: string | null;
+  assignedStaff?: StaffSummary | null;
 }
 
 export interface GoodsOrder extends Order {
@@ -142,12 +153,22 @@ export interface CreateOrderRequest {
   bookingDate?: string;
   paymentMethod?: 'qris' | 'online' | 'cash';
   bookingSlotId?: string;
+  staffId?: string;
   onlinePaymentChannel?: OnlinePaymentChannel;
 }
 
 export interface CreateOrderResponse {
   order: Order;
   transaction: TransactionSummary;
+}
+
+export interface PosCashSummary {
+  outletId: string;
+  totalAmount: number;
+  transactionsCount: number;
+  date: string;
+  startTime: string;
+  endTime: string;
 }
 
 export interface OrderListParams {
@@ -194,6 +215,16 @@ export const orderApi = {
     const url = `/orders/${outletId}/queue${queryString ? `?${queryString}` : ''}`;
 
     return apiCallPaginated<QueueEntry>(url);
+  },
+
+  async getPosCashSummary(outletId: string, date?: string): Promise<PosCashSummary> {
+    const searchParams = new URLSearchParams({ outletId });
+    if (date) {
+      searchParams.append('date', date);
+    }
+
+    const url = `/internal/pos/orders/cash-summary?${searchParams.toString()}`;
+    return apiCall<PosCashSummary>(url);
   },
 
   // Create order (manual order)

@@ -17,7 +17,8 @@ export class StaffRepository {
 
     static async findByOutletId(outletId: string): Promise<Staff[]> {
         return db.staff.findMany({
-            where: { outletId }
+            where: { outletId },
+            orderBy: { name: "asc" }
         });
     }
 

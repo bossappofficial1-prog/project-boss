@@ -25,6 +25,7 @@ export const createPosOrderSchema = z.object({
         .max(50, { message: 'Pesanan maksimal 50 item berbeda' }),
     bookingDate: z.string().datetime().optional(),
     bookingSlotId: z.string().uuid().optional(),
+    staffId: z.string().uuid().optional(),
     paymentMethod: z.enum(['cash', 'qris', 'online'], {
         errorMap: () => ({ message: "Payment method harus 'cash', 'qris', atau 'online'" }),
     }),
@@ -39,6 +40,31 @@ export const createPosOrderSchema = z.object({
     {
         message: 'Online payment channel wajib diisi untuk pembayaran online',
         path: ['onlinePaymentChannel'],
+    },
+).refine(
+    (data) => {
+        if (data.bookingSlotId) {
+            return Boolean(data.bookingDate);
+        }
+        return true;
+    },
+    {
+        message: 'Booking slot harus punya tanggal booking',
+        path: ['bookingDate'],
+    },
+).refine(
+    (data) => {
+        if (data.bookingSlotId) {
+            return Boolean(data.staffId);
+        }
+        if (data.staffId) {
+            return Boolean(data.bookingSlotId);
+        }
+        return true;
+    },
+    {
+        message: 'Staff wajib dipilih ketika menggunakan slot booking',
+        path: ['staffId'],
     },
 );
 

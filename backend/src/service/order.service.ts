@@ -18,8 +18,8 @@ import { MidtransTransactionStatus, PaymentResponse } from "../types/Others";
 import Console from "../utils/logger";
 import { paymentQueue } from "../queues/payment.queue";
 
-type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>>;
-type CustomerOrderRecord = Awaited<ReturnType<typeof OrderRepository.getOrderByCustomerPhone>>[number];
+type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> & Record<string, any>;
+type CustomerOrderRecord = Awaited<ReturnType<typeof OrderRepository.getOrderByCustomerPhone>>[number] & Record<string, any>;
 
 const SERVICE_QUEUE_STATUSES: OrderStatus[] = [
     OrderStatus.AWAITING_PAYMENT,
@@ -59,9 +59,14 @@ interface QueueSnapshotEntry {
 const queueOrderInclude = {
     items: { include: { product: true } },
     guestCustomer: true,
-    bookingSlot: true,
+    bookingSlot: {
+        include: {
+            staff: true,
+        },
+    },
     outlet: true,
     transaction: true,
+    assignedStaff: true,
 } as const;
 
 const hasServiceProduct = (order: Pick<OrderWithRelations, 'items'> | CustomerOrderRecord) =>
@@ -317,9 +322,18 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
 
         if (!slot) throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
         if (slot.status === "BOOKED") throw new AppError(Messages.BOOKING_SLOT_ALREADY_BOOKED, HttpStatus.CONFLICT);
+        if (slot.product.outletId !== data.outletId) {
+            throw new AppError('Slot tidak berada pada outlet ini.', HttpStatus.FORBIDDEN);
+        }
+        if (slot.staffId && data.staffId && slot.staffId !== data.staffId) {
+            throw new AppError('Slot ini sudah dialokasikan ke staff lain.', HttpStatus.CONFLICT);
+        }
 
         // Lock slot untuk mencegah race condition
-        await BookingRepository.update(slot.id, { status: "BOOKED" })
+        await BookingRepository.update(slot.id, {
+            status: "BOOKED",
+            staffId: data.staffId ?? slot.staffId ?? null,
+        })
     }
 
     // Jika payment method adalah 'cash', buat order offline tanpa Midtrans
@@ -584,7 +598,7 @@ const mapPublicOrderResponse = (
     order: OrderWithRelations | CustomerOrderRecord,
     queueMeta?: QueueMetaPayload | null
 ) => {
-    const { guestCustomer, transaction, items, outlet, bookingSlot, ...otherOrder } = order as OrderWithRelations & CustomerOrderRecord;
+    const { guestCustomer, transaction, items, outlet, bookingSlot, assignedStaff, ...otherOrder } = order as OrderWithRelations & CustomerOrderRecord;
 
     const mappedTransaction = transaction
         ? {
@@ -610,6 +624,7 @@ const mapPublicOrderResponse = (
             startTime: bookingSlot.startTime instanceof Date ? bookingSlot.startTime.toISOString() : bookingSlot.startTime,
             endTime: bookingSlot.endTime instanceof Date ? bookingSlot.endTime.toISOString() : bookingSlot.endTime,
             date: bookingSlot.date instanceof Date ? bookingSlot.date.toISOString() : bookingSlot.date,
+            staff: bookingSlot.staff ? { ...bookingSlot.staff } : null,
         }
         : null;
 
@@ -627,6 +642,7 @@ const mapPublicOrderResponse = (
         transaction: mappedTransaction,
         items: mappedItems,
         customerDetails: guestCustomer ? { ...guestCustomer } : null,
+        assignedStaff: assignedStaff ? { ...assignedStaff } : null,
         queueMeta: queueMeta ?? null,
     };
 };

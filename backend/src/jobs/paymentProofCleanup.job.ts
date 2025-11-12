@@ -19,7 +19,7 @@ function resolveLocalPath(publicUrl: string): string | null {
     return path.join(process.cwd(), relativePath);
 }
 
-export async function processPaymentProofCleanup(job: Job) {
+export async function processPaymentProofCleanup() {
     const thresholdDate = subDays(new Date(), 3);
     Console.log(`Running payment proof cleanup job for files older than ${thresholdDate.toISOString()}`);
 

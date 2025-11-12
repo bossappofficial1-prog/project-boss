@@ -20,9 +20,9 @@ import { PaymentStatus } from "@prisma/client";
 import { processMidtransPaymentNotification } from "../service/payment-update.service";
 
 export const createPaymentController = asyncHandler(async (req: Request, res: Response) => {
-    const { customer_details, item_details, payment_method, selectedSlotId, outletId } = req.body as CreatePaymentPayload
+    const { customer_details, item_details, payment_method, selectedSlotId, staffId, outletId } = req.body as CreatePaymentPayload
 
-    const result = await createPaymentService({ customer_details, item_details, payment_method, outletId, selectedSlotId })
+    const result = await createPaymentService({ customer_details, item_details, payment_method, outletId, selectedSlotId, staffId })
 
     return ResponseUtil.success(res, result, HttpStatus.CREATED)
 })

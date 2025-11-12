@@ -11,7 +11,7 @@ import { sendQueueNotification } from '../controller/queue-notification.controll
 import { asyncHandler } from '../middleware/error.middleware';
 import { messagePublisher } from '../service/message-publisher.service';
 import { ResponseUtil } from '../utils/response';
-import { createPosOrderController } from '../controller/pos-order.controller';
+import { createPosOrderController, getPosCashSummaryController } from '../controller/pos-order.controller';
 import { validateSchema } from '../middleware/zod.middleware';
 import { createPosOrderSchema } from '../schemas/pos-order.schema';
 import { authorize, protect } from '../middleware/auth.middleware';
@@ -28,6 +28,13 @@ router.post(
     authorize(UserRole.OWNER, UserRole.ADMIN),
     validateSchema(createPosOrderSchema),
     createPosOrderController,
+);
+
+router.get(
+    '/pos/orders/cash-summary',
+    protect,
+    authorize(UserRole.OWNER, UserRole.ADMIN),
+    getPosCashSummaryController,
 );
 
 // Endpoint untuk menandai bahwa pengingat telah dikirim
