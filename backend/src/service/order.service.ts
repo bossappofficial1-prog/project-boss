@@ -80,7 +80,7 @@ const computeQueueSchedule = (order: OrderWithRelations) => {
     const start = new Date(baseStartSource);
 
     if (!slotEnd) {
-        const durationMinutes = order.items.find((item) => item.product.type === 'SERVICE')?.product?.serviceDurationMinutes ?? 60;
+        const durationMinutes = order.items.find((item: any) => item.product.type === 'SERVICE')?.product?.serviceDurationMinutes ?? 60;
         const derivedEnd = new Date(start);
         derivedEnd.setMinutes(derivedEnd.getMinutes() + durationMinutes);
         return { start, end: derivedEnd };
@@ -370,10 +370,63 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
 }
 
 export async function updateOrderStatusService(orderId: string, status: OrderStatus) {
-    const order = await getOrderByIdService(orderId);
+    // Get order with all relations needed
+    const orderData = await db.order.findUnique({
+        where: { id: orderId },
+        include: {
+            items: { include: { product: true } },
+            guestCustomer: true,
+            bookingSlot: { include: { staff: true } },
+            outlet: true,
+            transaction: true,
+        }
+    });
 
-    if (!order) {
+    if (!orderData) {
         throw new Error('Order not found');
+    }
+
+    const order = orderData as OrderWithRelations;
+
+    // Handle CANCELLED status - release resources
+    if (status === OrderStatus.CANCELLED) {
+        await db.$transaction(async (tx) => {
+            // Release booking slot and staff
+            if (order.bookingSlot) {
+                await tx.bookingSlot.update({
+                    where: { id: order.bookingSlot.id },
+                    data: {
+                        status: BookingSlotStatus.AVAILABLE,
+                        staffId: null, // Release staff
+                        orderId: null,
+                    },
+                });
+            }
+
+            // Cancel transaction if exists
+            if (order.transaction?.id) {
+                await tx.transaction.update({
+                    where: { id: order.transaction.id },
+                    data: { 
+                        status: PaymentStatus.CANCELLED 
+                    },
+                });
+            }
+
+            // Return stock for GOODS items
+            for (const item of order.items) {
+                if (item.product.type === 'GOODS') {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            quantity: {
+                                increment: item.quantity,
+                            },
+                        },
+                    });
+                }
+            }
+        });
     }
 
     if (status === OrderStatus.PROCESSING) {
@@ -392,7 +445,10 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
     if (status === 'COMPLETED' && order?.bookingSlot) {
         await db.bookingSlot.update({
             where: { id: order.bookingSlot.id },
-            data: { status: 'AVAILABLE' },
+            data: { 
+                status: 'AVAILABLE',
+                staffId: null, // Release staff when service is completed
+            },
         });
     }
 
@@ -402,6 +458,7 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
         data: {
             orderStatus: status,
             ...(status === OrderStatus.PROCESSING ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
+            ...(status === OrderStatus.CANCELLED ? { paymentStatus: PaymentStatus.CANCELLED } : {}),
         },
         include: {
             items: {
@@ -695,6 +752,7 @@ export async function cancelOrderByCustomerService(orderId: string, phone: strin
                 where: { id: orderRecord.bookingSlot.id },
                 data: {
                     status: BookingSlotStatus.AVAILABLE,
+                    staffId: null, // Release staff when order is cancelled
                     orderId: null,
                 },
             });
@@ -774,9 +832,17 @@ export async function confirmOrderByCustomerService(orderId: string, phone: stri
 }
 
 export async function expirePaymentOrder(orderId: string) {
-    const order = await OrderRepository.findById(orderId);
+    const orderData = await db.order.findUnique({
+        where: { id: orderId },
+        include: {
+            guestCustomer: true,
+            transaction: true,
+        }
+    });
 
-    if (!order) throw new AppError(`Order: ${orderId} NOT FOUND`);
+    if (!orderData) throw new AppError(`Order: ${orderId} NOT FOUND`);
+
+    const order = orderData as OrderWithRelations;
 
     if (order.transaction && order.transaction.status !== 'PENDING' && order.paymentStatus !== 'PENDING') {
         console.log(`Payment ${orderId} is already ${order.transaction.status}, skipping expiration`);
@@ -786,7 +852,7 @@ export async function expirePaymentOrder(orderId: string) {
     await PaymentRepository.updatePaymentStatusByOrder(orderId, `EXPIRED`);
     SocketEmitter.getInstance().emitToOrder(orderId, { message: `Payment for ${orderId} has expired`, order_id: orderId })
     SocketEmitter.getInstance().emitNotificationToOutlet(order.outletId, { message: `Pembayaran untuk OrderID: ${orderId}, telah kadaluarsa`, 'timestamp': new Date() })
-    SocketEmitter.getInstance().emitToCustomer(order.guestCustomer.phone!, {
+    SocketEmitter.getInstance().emitToCustomer(order.guestCustomer!.phone!, {
         orderId,
         amount: order.totalAmount,
         status: 'expired',
