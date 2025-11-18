@@ -32,7 +32,7 @@ const ROUTE_CONFIG = {
     '/admin/withdrawals'
   ]),
   ownerOnlyRoutes: new Set(['/owner', '/owner/dashboard']),
-  cashierRoutes: new Set(['/cashier', '/cashier/pos']),
+  cashierRoutes: new Set(['/cashier', '/cashier/pos', '/cashier/queue']),
   sharedRoutes: new Set(['/profile', '/notifications'])
 } as const;
 

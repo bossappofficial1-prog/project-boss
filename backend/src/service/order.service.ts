@@ -239,18 +239,27 @@ export async function getGoodsOrdersByOutletService(
 // List service queue by outlet (READY orders with SERVICE items), ordered by createdAt asc and position
 export async function getServiceQueueByOutletService(
     outletId: string,
-    ownerId: string,
-    options?: { page?: number; limit?: number }
+    userIdentifier: string,
+    options?: { page?: number; limit?: number },
+    validateAsOwner: boolean = true
 ) {
     const page = Math.max(1, options?.page || 1);
     const limit = Math.min(100, Math.max(1, options?.limit || 50));
     const skip = (page - 1) * limit;
 
-    // Ownership validation
-    const outlet = await getOutletByIdService(outletId);
-    const business = await getBusinessByIdService(outlet.businessId);
-    if (business.ownerId !== ownerId) {
-        throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+    // Ownership/Access validation
+    if (validateAsOwner) {
+        // Validasi untuk owner - userIdentifier adalah ownerId
+        const outlet = await getOutletByIdService(outletId);
+        const business = await getBusinessByIdService(outlet.businessId);
+        if (business.ownerId !== userIdentifier) {
+            throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+        }
+    } else {
+        // Validasi untuk kasir - userIdentifier adalah outletId dari session kasir
+        if (userIdentifier !== outletId) {
+            throw new AppError("Anda hanya bisa mengakses antrian outlet Anda sendiri.", HttpStatus.FORBIDDEN);
+        }
     }
 
     const snapshot = await buildServiceQueueSnapshot(outletId);
@@ -790,8 +799,33 @@ export async function cancelOrderByCustomerService(orderId: string, phone: strin
     return mapPublicOrderResponse(updatedOrder as OrderWithRelations);
 }
 
-export async function updateServiceQueueStatusService(orderId: string, ownerId: string, nextStatus: OrderStatus) {
-    const order = await getOrderByIdService(orderId, ownerId);
+export async function updateServiceQueueStatusService(
+    orderId: string, 
+    userIdentifier: string, 
+    nextStatus: OrderStatus,
+    validateAsOwner: boolean = true
+) {
+    // Ambil order terlebih dahulu
+    const order = await OrderRepository.findById(orderId);
+    if (!order) {
+        throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // Validasi akses
+    if (validateAsOwner) {
+        // Validasi untuk owner
+        const outlet = await getOutletByIdService(order.outletId);
+        const business = await getBusinessByIdService(outlet.businessId);
+        if (business.ownerId !== userIdentifier) {
+            throw new AppError("Anda tidak berhak mengakses pesanan ini.", HttpStatus.FORBIDDEN);
+        }
+    } else {
+        // Validasi untuk kasir - userIdentifier adalah outletId
+        if (order.outletId !== userIdentifier) {
+            throw new AppError("Anda hanya bisa mengakses pesanan outlet Anda sendiri.", HttpStatus.FORBIDDEN);
+        }
+    }
+
     const orderRecord = order as OrderWithRelations;
 
     if (!hasServiceProduct(orderRecord)) {
