@@ -14,7 +14,7 @@ import { ResponseUtil } from '../utils/response';
 import { createPosOrderController, getPosCashSummaryController } from '../controller/pos-order.controller';
 import { validateSchema } from '../middleware/zod.middleware';
 import { createPosOrderSchema } from '../schemas/pos-order.schema';
-import { authorize, protect } from '../middleware/auth.middleware';
+import { authorize, protect, authorizeOwnerOrCashier } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -25,7 +25,7 @@ router.get('/expiring-transactions', getExpiringTransactions);
 router.post(
     '/pos/orders',
     protect,
-    authorize(UserRole.OWNER, UserRole.ADMIN),
+    authorizeOwnerOrCashier,
     validateSchema(createPosOrderSchema),
     createPosOrderController,
 );
@@ -33,7 +33,7 @@ router.post(
 router.get(
     '/pos/orders/cash-summary',
     protect,
-    authorize(UserRole.OWNER, UserRole.ADMIN),
+    authorizeOwnerOrCashier,
     getPosCashSummaryController,
 );
 

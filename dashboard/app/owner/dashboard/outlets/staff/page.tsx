@@ -12,6 +12,7 @@ import {
     NotebookPen,
     Edit2,
     Trash2,
+    KeyRound,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -42,6 +43,7 @@ type StaffFormState = {
     notes: string
     role: StaffRole
     status: StaffStatus
+    password: string
 }
 
 const DEFAULT_FORM: StaffFormState = {
@@ -52,6 +54,7 @@ const DEFAULT_FORM: StaffFormState = {
     notes: '',
     role: 'SERVICE',
     status: 'ACTIVE',
+    password: '',
 }
 
 const ROLE_OPTIONS: Array<{ value: StaffRole; label: string }> = [
@@ -174,6 +177,7 @@ export default function StaffManagementPage() {
             notes: member.notes ?? '',
             role: member.role,
             status: member.status,
+            password: '',
         })
         setIsModalOpen(true)
     }
@@ -189,6 +193,21 @@ export default function StaffManagementPage() {
 
         if (formState.phone && !/^([+]?\d){6,15}$/.test(formState.phone.trim())) {
             return 'Nomor telepon tidak valid'
+        }
+
+        // Validasi untuk kasir
+        if (formState.role === 'CASHIER') {
+            if (!formState.email?.trim()) {
+                return 'Email wajib diisi untuk akun kasir'
+            }
+
+            if (modalMode === 'create' && !formState.password?.trim()) {
+                return 'Password wajib diisi untuk akun kasir'
+            }
+
+            if (formState.password && formState.password.trim().length > 0 && formState.password.trim().length < 6) {
+                return 'Password minimal 6 karakter'
+            }
         }
 
         return null
@@ -211,7 +230,8 @@ export default function StaffManagementPage() {
             email: sanitizeOptional(formState.email),
             address: sanitizeOptional(formState.address),
             notes: sanitizeOptional(formState.notes),
-        } satisfies UpdateStaffPayload & Pick<CreateStaffPayload, 'name' | 'role' | 'status' | 'phone' | 'email' | 'address' | 'notes'>
+            password: sanitizeOptional(formState.password),
+        } satisfies UpdateStaffPayload & Pick<CreateStaffPayload, 'name' | 'role' | 'status' | 'phone' | 'email' | 'address' | 'notes' | 'password'>
 
         try {
             setIsSubmitting(true)
@@ -376,7 +396,21 @@ export default function StaffManagementPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge className={`${ROLE_BADGE_CLASS[member.role]} font-medium`}>{ROLE_LABEL[member.role]}</Badge>
+                                        <div className="flex flex-col gap-1">
+                                            <Badge className={`${ROLE_BADGE_CLASS[member.role]} font-medium`}>{ROLE_LABEL[member.role]}</Badge>
+                                            {member.role === 'CASHIER' && member.email && (
+                                                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                                                    <KeyRound className="h-3 w-3" />
+                                                    <span>Akun login aktif</span>
+                                                </div>
+                                            )}
+                                            {member.role === 'CASHIER' && !member.email && (
+                                                <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                                                    <KeyRound className="h-3 w-3" />
+                                                    <span>Belum ada akun</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         <Badge className={`${STATUS_BADGE_CLASS[member.status]} font-medium`}>{STATUS_LABEL[member.status]}</Badge>
@@ -420,7 +454,7 @@ export default function StaffManagementPage() {
                         <DialogTitle>{modalMode === 'create' ? 'Tambah Staff Baru' : 'Edit Data Staff'}</DialogTitle>
                         <DialogDescription>
                             {modalMode === 'create'
-                                ? 'Masukkan informasi staff untuk outlet ini. Staff aktif dapat dijadwalkan pada slot layanan.'
+                                ? 'Masukkan informasi staff untuk outlet ini. Untuk kasir, email dan password wajib diisi agar bisa login ke sistem POS.'
                                 : `Perbarui informasi ${editingStaff?.name} sesuai kebutuhan.`}
                         </DialogDescription>
                     </DialogHeader>
@@ -514,6 +548,34 @@ export default function StaffManagementPage() {
                                 placeholder="Informasi tambahan seperti keahlian atau jadwal khusus"
                             />
                         </div>
+
+                        {formState.role === 'CASHIER' && (
+                            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+                                <div className="mb-3 flex items-center gap-2">
+                                    <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                    <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">Akun Login Kasir</h4>
+                                </div>
+                                <p className="mb-3 text-xs text-blue-700 dark:text-blue-300">
+                                    Kasir memerlukan akun login untuk mengakses sistem POS. {modalMode === 'edit' && 'Kosongkan jika tidak ingin mengubah password.'}
+                                </p>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                                        Password {modalMode === 'create' && '*'}
+                                    </label>
+                                    <Input
+                                        type="password"
+                                        value={formState.password}
+                                        onChange={(event) => setFormState((prev) => ({ ...prev, password: event.target.value }))}
+                                        placeholder={modalMode === 'create' ? 'Minimal 6 karakter' : 'Kosongkan jika tidak diubah'}
+                                    />
+                                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                        Password akan digunakan oleh kasir untuk login ke sistem POS
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <DialogFooter className="gap-2 sm:gap-3">

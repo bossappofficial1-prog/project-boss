@@ -146,6 +146,9 @@ model Staff {
   address String?
   notes   String?
 
+  // Password untuk login kasir (nullable - hanya untuk kasir yang butuh login)
+  password String?
+
   // Relasi ke outlet
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)

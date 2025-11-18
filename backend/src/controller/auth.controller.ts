@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
-import { loginService, getMeService, resendVerificationService, forgotPasswordService, resetPasswordService, changePasswordService, googleOAuthService } from "../service/auth.service";
+import { loginService, getMeService, resendVerificationService, forgotPasswordService, resetPasswordService, changePasswordService, googleOAuthService, cashierLoginService, getCashierMeService } from "../service/auth.service";
 import { ResponseUtil } from "../utils/response";
 import { createUserService, verifyUserService } from "../service/user.service";
 import { HttpStatus } from "../constants/http-status";
@@ -130,4 +130,29 @@ export const googleOAuthCallbackController = asyncHandler(async (req: any, res: 
         }
         return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent("Google authentication failed")}`);
     }
+});
+
+export const cashierLoginController = asyncHandler(async (req: Request, res: Response) => {
+    const payload = req.body;
+    const result = await cashierLoginService(payload);
+
+    res.cookie("cashier_token", result.token, {
+        httpOnly: true,
+        secure: !!config.COOKIES_DOMAIN,
+        sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+        domain: config.COOKIES_DOMAIN,
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        path: '/'
+    });
+
+    return ResponseUtil.success(res, {
+        staff: result.staff,
+        message: "Login kasir berhasil"
+    });
+});
+
+export const getCashierMeController = asyncHandler(async (req: Request, res: Response) => {
+    const staff = await getCashierMeService(req.storedUser!.id);
+
+    return ResponseUtil.success(res, staff);
 });

@@ -26,6 +26,7 @@ export interface CreateStaffPayload {
     role: StaffRole;
     status: StaffStatus;
     outletId: string;
+    password?: string | null;
 }
 
 export interface UpdateStaffPayload {
@@ -36,6 +37,7 @@ export interface UpdateStaffPayload {
     notes?: string | null;
     role?: StaffRole;
     status?: StaffStatus;
+    password?: string | null;
 }
 
 export interface StaffAvailability {

@@ -1,10 +1,11 @@
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
-import { LoginInput } from "../schemas/auth.schema";
+import { LoginInput, CashierLoginInput } from "../schemas/auth.schema";
 import { BcryptUtil, JwtUtil } from "../utils";
 import { getUserByEmailService, getUserByIdService, updateUserPasswordService, createUserWithGoogleService } from "./user.service";
 import { UserRepository } from "../repositories/user.repository";
+import { StaffRepository } from "../repositories/staff.repository";
 import { redis } from "../config/redis";
 import { randomUUID } from "crypto";
 import { messagePublisher } from "./message-publisher.service";
@@ -34,6 +35,67 @@ export async function loginService(data: LoginInput) {
         user: userWithoutPassword,
         token,
     };
+}
+
+export async function cashierLoginService(data: CashierLoginInput) {
+    const staff = await StaffRepository.findByEmail(data.email);
+
+    if (!staff) {
+        throw new AppError(Messages.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
+    }
+
+    // Pastikan staff memiliki password (sudah disetup sebagai kasir)
+    if (!staff.password) {
+        throw new AppError("Akun kasir belum diaktifkan. Hubungi owner untuk mengaktifkan akun.", HttpStatus.FORBIDDEN);
+    }
+
+    const isPasswordValid = await BcryptUtil.compare(data.password, staff.password);
+
+    if (!isPasswordValid) {
+        throw new AppError(Messages.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
+    }
+
+    // Simpan session kasir di Redis
+    const staffSession = {
+        id: staff.id,
+        email: staff.email,
+        name: staff.name,
+        role: staff.role,
+        outletId: staff.outletId,
+        businessId: staff.outlet?.businessId,
+        userType: 'CASHIER' // Penanda bahwa ini adalah kasir
+    };
+
+    await redis.set(`session:cashier:${staff.id}`, JSON.stringify(staffSession), 'EX', 60 * 60 * 24);
+
+    const token = JwtUtil.generate({ 
+        sessionId: staff.id, 
+        role: 'CASHIER',
+        userType: 'CASHIER',
+        outletId: staff.outletId,
+        businessId: staff.outlet?.businessId
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...staffWithoutPassword } = staff;
+
+    return {
+        staff: staffWithoutPassword,
+        token,
+    };
+}
+
+export async function getCashierMeService(staffId: string) {
+    const staff = await StaffRepository.findById(staffId);
+    
+    if (!staff) {
+        throw new AppError("Staff tidak ditemukan", HttpStatus.NOT_FOUND);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...staffWithoutPassword } = staff;
+
+    return staffWithoutPassword;
 }
 
 export async function getMeService(userId: string) {

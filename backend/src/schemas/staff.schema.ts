@@ -18,6 +18,11 @@ export const createStaffSchema = z.object({
     role: z.nativeEnum(StaffRole).default(StaffRole.SERVICE),
     status: z.nativeEnum(StaffStatus).default(StaffStatus.ACTIVE),
     outletId: z.string().uuid("ID outlet tidak valid"),
+    password: nullableString(
+        z.string()
+            .min(6, "Password minimal 6 karakter")
+            .max(100, "Password maksimal 100 karakter")
+    ),
 });
 
 export const updateStaffSchema = z.object({
@@ -28,6 +33,11 @@ export const updateStaffSchema = z.object({
     notes: nullableString(z.string().max(500, "Catatan maksimal 500 karakter")),
     role: z.nativeEnum(StaffRole).optional(),
     status: z.nativeEnum(StaffStatus).optional(),
+    password: nullableString(
+        z.string()
+            .min(6, "Password minimal 6 karakter")
+            .max(100, "Password maksimal 100 karakter")
+    ),
 });
 
 export type CreateStaffInput = z.infer<typeof createStaffSchema>;
