@@ -17,7 +17,7 @@ export class StaffRepository {
         });
     }
 
-    static async findById(id: string): Promise<Staff | null> {
+    static async findById(id: string) {
         return db.staff.findUnique({
             where: { id },
             include: {
@@ -53,7 +53,7 @@ export class StaffRepository {
         });
     }
 
-    static async findByEmail(email: string): Promise<Staff | null> {
+    static async findByEmail(email: string) {
         return db.staff.findUnique({
             where: { email },
             include: {

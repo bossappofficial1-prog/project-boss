@@ -58,7 +58,7 @@ export const resetPasswordSchema = z.object({
         }),
 });
 
-export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export const cashierLoginSchema = z.object({
     email: z
