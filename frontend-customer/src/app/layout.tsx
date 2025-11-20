@@ -85,6 +85,29 @@ export const metadata: Metadata = {
   category: "business",
 };
 
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "BOSS Customer",
+  "description": "Dashboard dukungan operasional bisnis",
+  "url": process.env.SITE_URL || 'http://localhost:3010',
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web Browser",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "IDR"
+  },
+  "creator": {
+    "@type": "Organization",
+    "name": "BOSS Development Team"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BOSS"
+  }
+};
+
 export default function Layout({
   children,
 }: {
@@ -103,6 +126,7 @@ export default function Layout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#eb2525" />
         <meta name="color-scheme" content="light dark" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       </head>
       <body
         className={`${poppins.variable} font-poppins antialiased`}

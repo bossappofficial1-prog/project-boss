@@ -3,7 +3,7 @@ import { db } from "../config/prisma";
 import { CreateBookingSlotInput, UpdateBookingSlotInput } from "../schemas/booking.schema";
 
 export class BookingRepository {
-    static async create(data: CreateBookingSlotInput): Promise<Pick<BookingSlot, "id" | "date" | "startTime" | "endTime" | "status">> {
+    static async create(data: CreateBookingSlotInput): Promise<Pick<BookingSlot, "id" | "date" | "startTime" | "endTime" | "status" | "staffId">> {
         return db.bookingSlot.create({
             data: {
                 ...data,
@@ -17,6 +17,7 @@ export class BookingRepository {
                 endTime: true,
                 date: true,
                 status: true,
+                staffId: true,
             }
         });
     }
@@ -61,7 +62,8 @@ export class BookingRepository {
             where: {
                 AND: [
                     { productId },
-                    { date }
+                    { date },
+                    { orderId: null }
                 ]
             },
             select: {
@@ -69,11 +71,35 @@ export class BookingRepository {
                 startTime: true,
                 endTime: true,
                 date: true,
-                status: true
+                status: true,
+                staffId: true,
+                staff: {
+                    select: {
+                        id: true,
+                        name: true,
+                        status: true,
+                        role: true,
+                    }
+                }
             }
         })
 
         return slots
+    }
+
+    static async findWithProduct(slotId: string) {
+        return db.bookingSlot.findUnique({
+            where: { id: slotId },
+            include: {
+                product: {
+                    select: {
+                        id: true,
+                        name: true,
+                        outletId: true,
+                    }
+                },
+            },
+        });
     }
 
     static async update(id: string, data: UpdateBookingSlotInput): Promise<BookingSlot> {

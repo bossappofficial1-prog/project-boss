@@ -18,8 +18,8 @@ import { MidtransTransactionStatus, PaymentResponse } from "../types/Others";
 import Console from "../utils/logger";
 import { paymentQueue } from "../queues/payment.queue";
 
-type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>>;
-type CustomerOrderRecord = Awaited<ReturnType<typeof OrderRepository.getOrderByCustomerPhone>>[number];
+type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> & Record<string, any>;
+type CustomerOrderRecord = Awaited<ReturnType<typeof OrderRepository.getOrderByCustomerPhone>>[number] & Record<string, any>;
 
 const SERVICE_QUEUE_STATUSES: OrderStatus[] = [
     OrderStatus.AWAITING_PAYMENT,
@@ -59,9 +59,14 @@ interface QueueSnapshotEntry {
 const queueOrderInclude = {
     items: { include: { product: true } },
     guestCustomer: true,
-    bookingSlot: true,
+    bookingSlot: {
+        include: {
+            staff: true,
+        },
+    },
     outlet: true,
     transaction: true,
+    assignedStaff: true,
 } as const;
 
 const hasServiceProduct = (order: Pick<OrderWithRelations, 'items'> | CustomerOrderRecord) =>
@@ -75,7 +80,7 @@ const computeQueueSchedule = (order: OrderWithRelations) => {
     const start = new Date(baseStartSource);
 
     if (!slotEnd) {
-        const durationMinutes = order.items.find((item) => item.product.type === 'SERVICE')?.product?.serviceDurationMinutes ?? 60;
+        const durationMinutes = order.items.find((item: any) => item.product.type === 'SERVICE')?.product?.serviceDurationMinutes ?? 60;
         const derivedEnd = new Date(start);
         derivedEnd.setMinutes(derivedEnd.getMinutes() + durationMinutes);
         return { start, end: derivedEnd };
@@ -234,18 +239,27 @@ export async function getGoodsOrdersByOutletService(
 // List service queue by outlet (READY orders with SERVICE items), ordered by createdAt asc and position
 export async function getServiceQueueByOutletService(
     outletId: string,
-    ownerId: string,
-    options?: { page?: number; limit?: number }
+    userIdentifier: string,
+    options?: { page?: number; limit?: number },
+    validateAsOwner: boolean = true
 ) {
     const page = Math.max(1, options?.page || 1);
     const limit = Math.min(100, Math.max(1, options?.limit || 50));
     const skip = (page - 1) * limit;
 
-    // Ownership validation
-    const outlet = await getOutletByIdService(outletId);
-    const business = await getBusinessByIdService(outlet.businessId);
-    if (business.ownerId !== ownerId) {
-        throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+    // Ownership/Access validation
+    if (validateAsOwner) {
+        // Validasi untuk owner - userIdentifier adalah ownerId
+        const outlet = await getOutletByIdService(outletId);
+        const business = await getBusinessByIdService(outlet.businessId);
+        if (business.ownerId !== userIdentifier) {
+            throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+        }
+    } else {
+        // Validasi untuk kasir - userIdentifier adalah outletId dari session kasir
+        if (userIdentifier !== outletId) {
+            throw new AppError("Anda hanya bisa mengakses antrian outlet Anda sendiri.", HttpStatus.FORBIDDEN);
+        }
     }
 
     const snapshot = await buildServiceQueueSnapshot(outletId);
@@ -317,9 +331,18 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
 
         if (!slot) throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
         if (slot.status === "BOOKED") throw new AppError(Messages.BOOKING_SLOT_ALREADY_BOOKED, HttpStatus.CONFLICT);
+        if (slot.product.outletId !== data.outletId) {
+            throw new AppError('Slot tidak berada pada outlet ini.', HttpStatus.FORBIDDEN);
+        }
+        if (slot.staffId && data.staffId && slot.staffId !== data.staffId) {
+            throw new AppError('Slot ini sudah dialokasikan ke staff lain.', HttpStatus.CONFLICT);
+        }
 
         // Lock slot untuk mencegah race condition
-        await BookingRepository.update(slot.id, { status: "BOOKED" })
+        await BookingRepository.update(slot.id, {
+            status: "BOOKED",
+            staffId: data.staffId ?? slot.staffId ?? null,
+        })
     }
 
     // Jika payment method adalah 'cash', buat order offline tanpa Midtrans
@@ -356,10 +379,63 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
 }
 
 export async function updateOrderStatusService(orderId: string, status: OrderStatus) {
-    const order = await getOrderByIdService(orderId);
+    // Get order with all relations needed
+    const orderData = await db.order.findUnique({
+        where: { id: orderId },
+        include: {
+            items: { include: { product: true } },
+            guestCustomer: true,
+            bookingSlot: { include: { staff: true } },
+            outlet: true,
+            transaction: true,
+        }
+    });
 
-    if (!order) {
+    if (!orderData) {
         throw new Error('Order not found');
+    }
+
+    const order = orderData as OrderWithRelations;
+
+    // Handle CANCELLED status - release resources
+    if (status === OrderStatus.CANCELLED) {
+        await db.$transaction(async (tx) => {
+            // Release booking slot and staff
+            if (order.bookingSlot) {
+                await tx.bookingSlot.update({
+                    where: { id: order.bookingSlot.id },
+                    data: {
+                        status: BookingSlotStatus.AVAILABLE,
+                        staffId: null, // Release staff
+                        orderId: null,
+                    },
+                });
+            }
+
+            // Cancel transaction if exists
+            if (order.transaction?.id) {
+                await tx.transaction.update({
+                    where: { id: order.transaction.id },
+                    data: { 
+                        status: PaymentStatus.CANCELLED 
+                    },
+                });
+            }
+
+            // Return stock for GOODS items
+            for (const item of order.items) {
+                if (item.product.type === 'GOODS') {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            quantity: {
+                                increment: item.quantity,
+                            },
+                        },
+                    });
+                }
+            }
+        });
     }
 
     if (status === OrderStatus.PROCESSING) {
@@ -378,7 +454,10 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
     if (status === 'COMPLETED' && order?.bookingSlot) {
         await db.bookingSlot.update({
             where: { id: order.bookingSlot.id },
-            data: { status: 'AVAILABLE' },
+            data: { 
+                status: 'AVAILABLE',
+                staffId: null, // Release staff when service is completed
+            },
         });
     }
 
@@ -388,6 +467,7 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
         data: {
             orderStatus: status,
             ...(status === OrderStatus.PROCESSING ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
+            ...(status === OrderStatus.CANCELLED ? { paymentStatus: PaymentStatus.CANCELLED } : {}),
         },
         include: {
             items: {
@@ -584,7 +664,7 @@ const mapPublicOrderResponse = (
     order: OrderWithRelations | CustomerOrderRecord,
     queueMeta?: QueueMetaPayload | null
 ) => {
-    const { guestCustomer, transaction, items, outlet, bookingSlot, ...otherOrder } = order as OrderWithRelations & CustomerOrderRecord;
+    const { guestCustomer, transaction, items, outlet, bookingSlot, assignedStaff, ...otherOrder } = order as OrderWithRelations & CustomerOrderRecord;
 
     const mappedTransaction = transaction
         ? {
@@ -610,6 +690,7 @@ const mapPublicOrderResponse = (
             startTime: bookingSlot.startTime instanceof Date ? bookingSlot.startTime.toISOString() : bookingSlot.startTime,
             endTime: bookingSlot.endTime instanceof Date ? bookingSlot.endTime.toISOString() : bookingSlot.endTime,
             date: bookingSlot.date instanceof Date ? bookingSlot.date.toISOString() : bookingSlot.date,
+            staff: bookingSlot.staff ? { ...bookingSlot.staff } : null,
         }
         : null;
 
@@ -627,6 +708,7 @@ const mapPublicOrderResponse = (
         transaction: mappedTransaction,
         items: mappedItems,
         customerDetails: guestCustomer ? { ...guestCustomer } : null,
+        assignedStaff: assignedStaff ? { ...assignedStaff } : null,
         queueMeta: queueMeta ?? null,
     };
 };
@@ -679,6 +761,7 @@ export async function cancelOrderByCustomerService(orderId: string, phone: strin
                 where: { id: orderRecord.bookingSlot.id },
                 data: {
                     status: BookingSlotStatus.AVAILABLE,
+                    staffId: null, // Release staff when order is cancelled
                     orderId: null,
                 },
             });
@@ -716,8 +799,33 @@ export async function cancelOrderByCustomerService(orderId: string, phone: strin
     return mapPublicOrderResponse(updatedOrder as OrderWithRelations);
 }
 
-export async function updateServiceQueueStatusService(orderId: string, ownerId: string, nextStatus: OrderStatus) {
-    const order = await getOrderByIdService(orderId, ownerId);
+export async function updateServiceQueueStatusService(
+    orderId: string, 
+    userIdentifier: string, 
+    nextStatus: OrderStatus,
+    validateAsOwner: boolean = true
+) {
+    // Ambil order terlebih dahulu
+    const order = await OrderRepository.findById(orderId);
+    if (!order) {
+        throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // Validasi akses
+    if (validateAsOwner) {
+        // Validasi untuk owner
+        const outlet = await getOutletByIdService(order.outletId);
+        const business = await getBusinessByIdService(outlet.businessId);
+        if (business.ownerId !== userIdentifier) {
+            throw new AppError("Anda tidak berhak mengakses pesanan ini.", HttpStatus.FORBIDDEN);
+        }
+    } else {
+        // Validasi untuk kasir - userIdentifier adalah outletId
+        if (order.outletId !== userIdentifier) {
+            throw new AppError("Anda hanya bisa mengakses pesanan outlet Anda sendiri.", HttpStatus.FORBIDDEN);
+        }
+    }
+
     const orderRecord = order as OrderWithRelations;
 
     if (!hasServiceProduct(orderRecord)) {
@@ -758,9 +866,17 @@ export async function confirmOrderByCustomerService(orderId: string, phone: stri
 }
 
 export async function expirePaymentOrder(orderId: string) {
-    const order = await OrderRepository.findById(orderId);
+    const orderData = await db.order.findUnique({
+        where: { id: orderId },
+        include: {
+            guestCustomer: true,
+            transaction: true,
+        }
+    });
 
-    if (!order) throw new AppError(`Order: ${orderId} NOT FOUND`);
+    if (!orderData) throw new AppError(`Order: ${orderId} NOT FOUND`);
+
+    const order = orderData as OrderWithRelations;
 
     if (order.transaction && order.transaction.status !== 'PENDING' && order.paymentStatus !== 'PENDING') {
         console.log(`Payment ${orderId} is already ${order.transaction.status}, skipping expiration`);
@@ -770,7 +886,7 @@ export async function expirePaymentOrder(orderId: string) {
     await PaymentRepository.updatePaymentStatusByOrder(orderId, `EXPIRED`);
     SocketEmitter.getInstance().emitToOrder(orderId, { message: `Payment for ${orderId} has expired`, order_id: orderId })
     SocketEmitter.getInstance().emitNotificationToOutlet(order.outletId, { message: `Pembayaran untuk OrderID: ${orderId}, telah kadaluarsa`, 'timestamp': new Date() })
-    SocketEmitter.getInstance().emitToCustomer(order.guestCustomer.phone!, {
+    SocketEmitter.getInstance().emitToCustomer(order.guestCustomer!.phone!, {
         orderId,
         amount: order.totalAmount,
         status: 'expired',

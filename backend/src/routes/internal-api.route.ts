@@ -11,10 +11,10 @@ import { sendQueueNotification } from '../controller/queue-notification.controll
 import { asyncHandler } from '../middleware/error.middleware';
 import { messagePublisher } from '../service/message-publisher.service';
 import { ResponseUtil } from '../utils/response';
-import { createPosOrderController } from '../controller/pos-order.controller';
+import { createPosOrderController, getPosCashSummaryController } from '../controller/pos-order.controller';
 import { validateSchema } from '../middleware/zod.middleware';
 import { createPosOrderSchema } from '../schemas/pos-order.schema';
-import { authorize, protect } from '../middleware/auth.middleware';
+import { authorize, protect, authorizeOwnerOrCashier } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -25,9 +25,16 @@ router.get('/expiring-transactions', getExpiringTransactions);
 router.post(
     '/pos/orders',
     protect,
-    authorize(UserRole.OWNER, UserRole.ADMIN),
+    authorizeOwnerOrCashier,
     validateSchema(createPosOrderSchema),
     createPosOrderController,
+);
+
+router.get(
+    '/pos/orders/cash-summary',
+    protect,
+    authorizeOwnerOrCashier,
+    getPosCashSummaryController,
 );
 
 // Endpoint untuk menandai bahwa pengingat telah dikirim

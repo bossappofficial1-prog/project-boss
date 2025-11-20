@@ -6,6 +6,7 @@ import api from '@/lib/api';
 
 type ManualPaymentStorageData = {
     response: ManualPaymentResponse;
+    staffId?: string;
     checkoutData: CheckoutData;
     selectedPaymentMethod: PaymentMethod;
     customerInfo: {

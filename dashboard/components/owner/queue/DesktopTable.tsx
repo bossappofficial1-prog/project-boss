@@ -55,6 +55,10 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+const resolveStaffName = (item: QueueEntry) => {
+  return item.assignedStaff?.name ?? item.bookingSlot?.staff?.name ?? null;
+};
+
 export function QueueDesktopTable({ queue, pendingQueueId, onStatusChange, onPrimaryAction, getPrimaryAction }: QueueDesktopTableProps) {
   const getQueuePosition = (item: QueueEntry) => item.queueMeta?.position ?? item.position ?? item.queueNumber ?? 0;
 
@@ -93,6 +97,7 @@ export function QueueDesktopTable({ queue, pendingQueueId, onStatusChange, onPri
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Layanan</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Waktu Booking</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Staff</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
           </tr>
         </thead>
@@ -150,6 +155,11 @@ export function QueueDesktopTable({ queue, pendingQueueId, onStatusChange, onPri
                 <td className="px-4 py-3">
                   <div className="text-sm text-gray-900 dark:text-gray-100">
                     {formatSchedule(item)}
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="text-sm text-gray-900 dark:text-gray-100">
+                    {resolveStaffName(item) ?? '-'}
                   </div>
                 </td>
                 <td className="px-4 py-3">

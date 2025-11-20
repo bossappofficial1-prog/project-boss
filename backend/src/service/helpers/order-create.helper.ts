@@ -1,4 +1,4 @@
-import { FeeBearer, Order, OrderStatus, Product } from '@prisma/client';
+import { FeeBearer, Order, OrderStatus, Product, StaffStatus } from '@prisma/client';
 import { db } from '../../config/prisma';
 import { AppError } from '../../errors/app-error';
 import { Messages } from '../../constants/message';
@@ -7,6 +7,7 @@ import { getOutletByIdService } from '../outlet.service';
 import { getBusinessByIdService } from '../business.service';
 import { generateOrderCode } from '../../utils';
 import { CreateOrderInput } from '../../schemas/order.schema';
+import { getStaffAvailabilityForWindow } from '../staff.service';
 
 export interface OrderCreationResult {
     order: Order;
@@ -17,15 +18,140 @@ export interface OrderCreationResult {
 }
 
 export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCreationResult> {
-    const { items, outletId, bookingSlotId } = data;
+    const { items, outletId, bookingSlotId, staffId } = data;
+
+    const slot = bookingSlotId
+        ? await db.bookingSlot.findUnique({
+            where: { id: bookingSlotId },
+            include: { staff: true, product: true },
+        })
+        : null;
 
     if (bookingSlotId) {
-        const slot = await db.bookingSlot.findUnique({ where: { id: bookingSlotId } });
         if (!slot) {
             throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
         }
-        if (slot.status !== 'AVAILABLE') {
+        if (slot.status === 'BLOCKED') {
             throw new AppError(Messages.BOOKING_SLOT_UNAVAILABLE, HttpStatus.BAD_REQUEST);
+        }
+        if (slot.product.outletId !== outletId) {
+            throw new AppError('Slot booking tidak berada pada outlet ini.', HttpStatus.FORBIDDEN);
+        }
+    }
+
+    if (staffId) {
+        const staff = await db.staff.findUnique({
+            where: { id: staffId },
+            select: {
+                id: true,
+                status: true,
+                role: true,
+                outletId: true,
+            },
+        });
+
+        if (!staff) {
+            throw new AppError('Staff tidak ditemukan.', HttpStatus.NOT_FOUND);
+        }
+
+        if (staff.outletId !== outletId) {
+            throw new AppError('Staff tidak berasal dari outlet ini.', HttpStatus.FORBIDDEN);
+        }
+
+        if (staff.status !== StaffStatus.ACTIVE) {
+            throw new AppError('Staff sedang tidak aktif.', HttpStatus.BAD_REQUEST);
+        }
+
+        if (slot && slot.staffId && slot.staffId !== staff.id) {
+            throw new AppError('Slot ini sudah dialokasikan ke staff lain.', HttpStatus.CONFLICT);
+        }
+    }
+
+    const assignedStaffId = staffId ?? slot?.staffId ?? null;
+
+    if (slot?.staffId && staffId && slot.staffId !== staffId) {
+        throw new AppError('Slot ini sudah dialokasikan ke staff lain.', HttpStatus.CONFLICT);
+    }
+
+    if (slot?.staffId && !staffId) {
+        const slotStaff = slot.staff ?? await db.staff.findUnique({
+            where: { id: slot.staffId },
+            select: {
+                id: true,
+                status: true,
+                role: true,
+                outletId: true,
+            },
+        });
+
+        if (!slotStaff) {
+            throw new AppError('Staff pada slot ini tidak ditemukan.', HttpStatus.NOT_FOUND);
+        }
+
+        if (slotStaff.outletId !== outletId) {
+            throw new AppError('Staff slot tidak berasal dari outlet ini.', HttpStatus.FORBIDDEN);
+        }
+
+        if (slotStaff.status !== StaffStatus.ACTIVE) {
+            throw new AppError('Staff pada slot sedang tidak aktif.', HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    const slotStart = slot ? new Date(slot.startTime) : null;
+    const slotEnd = slot ? new Date(slot.endTime) : null;
+    let slotMaxParallel: number | null = null;
+
+    if (slot) {
+        if (!slotStart || !slotEnd) {
+            throw new AppError('Slot booking tidak memiliki rentang waktu yang valid.', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        const staffAvailability = await getStaffAvailabilityForWindow({
+            outletId,
+            startTime: slotStart,
+            endTime: slotEnd,
+        });
+
+        const totalStaffCount = staffAvailability.length;
+        const availableStaffCount = staffAvailability.filter((member) => member.isAvailable).length;
+
+        if (totalStaffCount <= 0) {
+            throw new AppError('Belum ada staff yang ditugaskan untuk layanan ini.', HttpStatus.CONFLICT);
+        }
+
+        if (availableStaffCount <= 0) {
+            throw new AppError('Tidak ada staff yang tersedia untuk slot ini.', HttpStatus.CONFLICT);
+        }
+
+        const capacityRecord = await db.serviceCapacity.findUnique({
+            where: { productId: slot.productId },
+        });
+
+        const configuredCapacity = capacityRecord?.maxParallel ?? totalStaffCount;
+        const maxParallel = Math.max(Math.min(configuredCapacity, totalStaffCount), 1);
+        slotMaxParallel = maxParallel;
+
+        const activeBookings = await db.bookingSlot.count({
+            where: {
+                productId: slot.productId,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                orderId: { not: null },
+            },
+        });
+
+        if (activeBookings >= maxParallel) {
+            throw new AppError('Slot ini sudah penuh.', HttpStatus.CONFLICT);
+        }
+
+        if (assignedStaffId) {
+            const isStaffAvailable = staffAvailability.some(
+                (member) => member.id === assignedStaffId && member.isAvailable,
+            );
+
+            if (!isStaffAvailable) {
+                throw new AppError('Staff tidak tersedia pada waktu yang dipilih.', HttpStatus.CONFLICT);
+            }
         }
     }
 
@@ -111,12 +237,14 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
             console.warn(`[SUSPICIOUS ORDER] High average item price: ${averageItemPrice} for phone: ${data.guestCustomer.phone.slice(-4)}`);
         }
 
-        const midtransFee = Math.ceil(subTotal * 0.02);
-        const appFee = Math.ceil(subTotal * 0.03);
+        const isDigitalPayment = data.paymentMethod === 'online'
+            || (data.paymentMethod === 'qris' && Boolean(data.onlinePaymentChannel));
+        const midtransFee = isDigitalPayment ? Math.ceil(subTotal * 0.02) : 0;
+        const appFee = isDigitalPayment ? Math.ceil(subTotal * 0.03) : 0;
         const feeBearer = business.defaultTransactionFeeBearer;
         let totalAmount = subTotal;
 
-        if (feeBearer === 'CUSTOMER') {
+        if (feeBearer === 'CUSTOMER' && isDigitalPayment) {
             totalAmount += midtransFee + appFee;
         }
 
@@ -162,6 +290,7 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
                 });
 
                 let overlapping = 0;
+                let staffConflict = false;
                 for (const ex of existing) {
                     let exStart: Date | null = null;
                     let exEnd: Date | null = null;
@@ -178,12 +307,22 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
 
                     if (exStart && exEnd && overlaps(requestedStart, requestedEnd, exStart, exEnd)) {
                         overlapping += 1;
+                        if (assignedStaffId) {
+                            const existingStaffId = ex.bookingSlot?.staffId ?? ex.assignedStaffId ?? null;
+                            if (existingStaffId === assignedStaffId) {
+                                staffConflict = true;
+                            }
+                        }
                         if (overlapping >= maxParallel) break;
                     }
                 }
 
                 if (overlapping >= maxParallel) {
                     throw new AppError(`Waktu booking bentrok untuk layanan ${svc.name}. Silakan pilih waktu lain.`, HttpStatus.CONFLICT);
+                }
+
+                if (staffConflict) {
+                    throw new AppError('Staff tidak tersedia pada waktu yang dipilih.', HttpStatus.CONFLICT);
                 }
             }
         }
@@ -225,8 +364,9 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
                 appFee,
                 chargedTo: feeBearer,
                 paymentStatus: `SUCCESS`,
-                bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
-                orderStatus: (!data.bookingSlotId && (data.paymentMethod == "cash" || data.paymentMethod == 'qris') ? "COMPLETED" : "CONFIRMED")
+                bookingDate: slotStart ?? (data.bookingDate ? new Date(data.bookingDate) : null),
+                orderStatus: (!data.bookingSlotId && (data.paymentMethod == "cash" || data.paymentMethod == 'qris') ? "COMPLETED" : "CONFIRMED"),
+                assignedStaffId: assignedStaffId,
             },
         });
 
@@ -239,10 +379,47 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
             })),
         });
 
-        if (bookingSlotId) {
-            await tx.bookingSlot.update({
-                where: { id: bookingSlotId },
-                data: { status: 'BOOKED', orderId: order.id },
+        if (slot) {
+            const activeBookingsForTx = await tx.bookingSlot.count({
+                where: {
+                    productId: slot.productId,
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                    orderId: { not: null },
+                },
+            });
+
+            const maxParallelForTx = slotMaxParallel ?? 1;
+
+            if (activeBookingsForTx >= maxParallelForTx) {
+                throw new AppError('Slot ini sudah penuh.', HttpStatus.CONFLICT);
+            }
+
+            if (assignedStaffId) {
+                const conflictingStaffBooking = await tx.bookingSlot.findFirst({
+                    where: {
+                        staffId: assignedStaffId,
+                        startTime: slot.startTime,
+                        endTime: slot.endTime,
+                        status: { in: ['BOOKED', 'BLOCKED'] },
+                    },
+                });
+
+                if (conflictingStaffBooking) {
+                    throw new AppError('Staff tidak tersedia pada waktu yang dipilih.', HttpStatus.CONFLICT);
+                }
+            }
+
+            await tx.bookingSlot.create({
+                data: {
+                    productId: slot.productId,
+                    date: new Date(slot.date),
+                    startTime: slotStart!,
+                    endTime: slotEnd!,
+                    status: 'BOOKED',
+                    orderId: order.id,
+                    staffId: assignedStaffId ?? slot.staffId ?? null,
+                },
             });
         }
 
