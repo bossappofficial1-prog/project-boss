@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "BOSS Customer",
     startupImage: [
-      "/assets/logo/og-image.png",
+      `${process.env.SITE_URL}/assets/logo/og-image.png`,
     ],
   },
   openGraph: {
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     siteName: "BOSS",
     images: [
       {
-        url: "/assets/logo/og-image.png",
+        url: `${process.env.SITE_URL}/assets/logo/og-image.png`,
         width: 1200,
         height: 630,
         alt: "BOSS Business Management Platform",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "BOSS - Platform Manajemen Bisnis",
     description: "Optimalkan operasional, jadwal, dan pengalaman pelanggan bisnis kamu cukup lewat BOSS.",
-    images: ["/assets/logo/og-image.png"],
+    images: [`${process.env.SITE_URL}/assets/logo/og-image.png`],
   },
   robots: {
     index: true,
@@ -89,8 +89,8 @@ const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   "name": "BOSS Customer",
-  "description": "Dashboard dukungan operasional bisnis",
-  "url": process.env.SITE_URL || 'http://localhost:3010',
+  "description": "BOSS customer",
+  "url": process.env.SITE_URL || 'http://localhost:3000',
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web Browser",
   "offers": {
