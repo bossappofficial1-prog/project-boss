@@ -5,13 +5,13 @@ import { OutletDetails, ProductType } from "@/types";
 import { SelectedSchedule } from "@/types/booking-slots";
 import { useState, useCallback } from "react";
 import { Card } from "../ui/card";
-import { ImageRender } from "../shared/Image";
 import { Clock, Minus, Package, Plus, ShoppingCart, Wrench } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { ScheduleModal } from "./ScheduleModal";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/hooks/useSnackbar";
+import { ImageColorThief } from "../shared/ImageColorThief";
 
 export default function ProductCard({ product, outlet }: { product: ProductType; outlet: OutletDetails }) {
     const { addItem, getOutletItems } = useCart();
@@ -42,10 +42,6 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
                     setQuantity(1);
                 } catch (error) {
                     snackbar.error(error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan produk ke keranjang', 10000)
-                    // toast({
-                    //     title: 'Tidak dapat menambahkan produk',
-                    //     description: error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan produk ke keranjang'
-                    // });
                 }
             }
         } else if (product.type === 'SERVICE') {
@@ -75,10 +71,6 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
             }
         } catch (error) {
             snackbar.error(error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan layanan ke keranjang', 10000)
-            // toast({
-            //     title: 'Tidak dapat menambahkan layanan',
-            //     description: error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan layanan ke keranjang'
-            // });
         }
     }, [addItem, outlet.id, outlet.name, product]);
 
@@ -91,7 +83,7 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
                 {/* Image Section - flex-shrink-0 prevents image from shrinking */}
                 <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 bg-muted overflow-hidden rounded-lg">
                     {(product.image || product.images?.[0]?.url) ? (
-                        <ImageRender
+                        <ImageColorThief
                             src={product.image || product.images?.[0]?.url!}
                             alt={product.name}
                             className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${isOutOfStock ? "grayscale" : ""}`}

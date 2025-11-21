@@ -147,7 +147,7 @@ function HomeSections() {
       </section> */}
 
       {/* --- CATEGORIES SECTION --- */}
-      <section className="space-y-4">
+      <section className="space-y-4" id="categories">
         <HomeSectionHeader title={t("sections.categories.title")} subtitle={t("sections.categories.subtitle")} actionLabel={t("sections.categories.action")} href="/search" icon={<LayoutGrid className="h-4 w-4" />} />
         {categories.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">{t("empty.categories")}</div>
@@ -161,7 +161,7 @@ function HomeSections() {
       </section>
 
       {/* --- FEATURED OUTLETS SECTION --- */}
-      <section className="space-y-4">
+      <section className="space-y-4" id="featured-outlets">
         <HomeSectionHeader title={t("sections.featured.title")} subtitle={t("sections.featured.subtitle")} actionLabel={t("sections.featured.action")} href="/outlets" icon={<Store className="h-4 w-4" />} />
         {outlets.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">{t("empty.outlets")}</div>
@@ -181,7 +181,7 @@ function HomeSections() {
       </section>
 
       {/* --- POPULAR ITEMS SECTION --- */}
-      <section className="space-y-4">
+      <section className="space-y-4" id="popular-items">
         <HomeSectionHeader
           title={t("sections.popular.title")}
           subtitle={t("sections.popular.subtitle")}
@@ -207,7 +207,7 @@ function HomeSections() {
       </section>
 
       {/* --- PROMOS SECTION --- */}
-      <section className="space-y-4">
+      <section className="space-y-4" id="promos">
         <HomeSectionHeader
           title={t("sections.promos.title")}
           subtitle={t("sections.promos.subtitle")}
@@ -233,7 +233,7 @@ function HomeSections() {
       </section>
 
       {/* --- QUICK ACTIONS SECTION --- */}
-      <section className="space-y-4">
+      <section className="space-y-4" id="quick-action">
         <HomeSectionHeader
           title={t("sections.quickActions.title")}
           subtitle={t("sections.quickActions.subtitle")}
