@@ -104,6 +104,10 @@ export class OutletRepository {
                             description: {
                                 contains: search,
                                 mode: "insensitive"
+                            },
+                            name: {
+                                contains: search,
+                                mode: "insensitive"
                             }
                         }
                     }

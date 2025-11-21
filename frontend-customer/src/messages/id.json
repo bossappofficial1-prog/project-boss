@@ -172,6 +172,28 @@
         "startSearching": "Mulai mencari",
         "searchDescription": "Masukkan kata kunci untuk menemukan outlet, produk, atau layanan"
     },
+    "outletsPage": {
+        "title": "Jelajahi Outlet",
+        "subtitle": "Temukan mitra bisnis andalan dan layanan favorit di sekitarmu",
+        "appBarTitle": "Outlet",
+        "searchPlaceholder": "Cari nama outlet, layanan, atau promo...",
+        "searchDescription": "Gunakan kata kunci untuk mempersempit hasil terbaik.",
+        "loading": "Memuat daftar outlet...",
+        "loadingMore": "Memuat outlet lainnya...",
+        "loadMore": "Tampilkan lebih banyak outlet",
+        "noMore": "Tidak ada outlet lain untuk ditampilkan",
+        "empty": {
+            "title": "Outlet belum tersedia",
+            "description": "Silakan coba kata kunci lain atau cek kembali nanti.",
+            "emptySearch": "Ketik kata kunci di bilah pencarian atas untuk memulai pencarian outlet."
+        },
+        "error": {
+            "title": "Gagal memuat outlet",
+            "generic": "Periksa koneksi internet Anda lalu coba lagi."
+        },
+        "results": "Menampilkan {count} dari {total} outlet",
+        "resultsHint": "Scroll ke bawah untuk menjelajah lebih banyak opsi."
+    },
     "search": {
         "placeholder": "Cari outlet, produk, atau layanan...",
         "loading": "Sedang mencari...",
