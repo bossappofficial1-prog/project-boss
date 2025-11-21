@@ -159,7 +159,7 @@ export default function AppBar({
             <div className={`flex items-center w-full justify-between max-w-3xl`}>
                 {/* Left Section */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                    {(leftIcon || showBackButton) && (
+                    {(leftIcon || showBackButton) && !isSearchActive && (
                         <Button
                             variant="ghost"
                             size="icon"

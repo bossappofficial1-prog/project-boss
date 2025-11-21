@@ -218,7 +218,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
             } else if (from === "search" || from === "favorites" || from == "nearby") {
                 onLeftClickHandler = () => router.back();
             } else {
-                onLeftClickHandler = () => router.push('/');
+                onLeftClickHandler = () => router.back();
             }
 
             setAppBar({
