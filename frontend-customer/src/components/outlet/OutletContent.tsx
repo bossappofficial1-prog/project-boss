@@ -204,7 +204,6 @@ export function OutletContent({ outletId }: { outletId: string }) {
         } else { sessionStorage.removeItem(SESSION_KEY) }
 
         const outletData = outletQuery.data;
-        console.log(prevPage, from);
 
         if (outletData) {
             let onLeftClickHandler: (() => void) | undefined;
@@ -213,7 +212,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 onLeftClickHandler = () => router.replace('/search');
             } else if (prevPage == "nearby" && from == "product") {
                 onLeftClickHandler = () => router.push("/nearby");
-            } else if (from === "product") {
+            } else if (from === "product" || from === "share") {
                 onLeftClickHandler = () => router.push('/');
             } else if (from === "search" || from === "favorites" || from == "nearby") {
                 onLeftClickHandler = () => router.back();

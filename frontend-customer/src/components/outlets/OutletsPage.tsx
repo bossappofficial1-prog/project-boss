@@ -35,7 +35,7 @@ export default function OutletsPage() {
     useEffect(() => {
         setAppBar({
             title: t("title"),
-            subtitle: t("subtitle"),
+            // subtitle: t("subtitle"),
             showBackButton: true,
             showSearch: true,
             onSearch: handleAppBarSearch,
@@ -115,16 +115,16 @@ export default function OutletsPage() {
             ) : !hasResults ? (
                 renderEmptyOrPrompt()
             ) : (
-                <section className="space-y-4 pt-5">
+                <section className="space-y-2">
                     <div className="flex flex-col gap-1 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
                         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                             {t("results", { count: shownCount, total: total || shownCount })}
                         </span>
                         <span className="text-xs text-muted-foreground">{t("resultsHint")}</span>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                         {outlets.map((outlet) => (
-                            <OutletCard key={outlet.id} outlet={outlet as any} alignment="vertical" />
+                            <OutletCard key={outlet.id} outlet={outlet as any} alignment="horizontal" />
                         ))}
                     </div>
                     <div className="flex justify-center pt-1">

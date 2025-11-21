@@ -10,9 +10,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { Share2, Copy, Facebook, MessageCircle, Mail, ExternalLink, Check } from 'lucide-react';
-import { useToast } from '@/components/ui/toast';
+import { useSnackbar } from '@/context/SnackbarContext';
 
 interface ShareOutletProps {
     outlet: {
@@ -27,13 +26,13 @@ interface ShareOutletProps {
 export function ShareOutlet({ outlet, children }: ShareOutletProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
-    const { push: toast } = useToast();
+    const { showSnackbar } = useSnackbar()
 
     // Memoize share URL and text to avoid re-creating on each render
     const shareUrl = useMemo(() => {
         if (typeof window === 'undefined') return '';
         try {
-            return `${window.location.origin}/outlet/${outlet.id}`;
+            return `${window.location.origin}/outlet/${outlet.id}?from=share`;
         } catch {
             return '';
         }
@@ -43,7 +42,7 @@ export function ShareOutlet({ outlet, children }: ShareOutletProps) {
 
     const handleCopyLink = useCallback(async () => {
         if (!shareUrl) {
-            toast({ title: 'Gagal menyalin', description: 'Link tidak tersedia' });
+            showSnackbar('Gagal menyalin', 'error');
             return;
         }
 
@@ -61,12 +60,12 @@ export function ShareOutlet({ outlet, children }: ShareOutletProps) {
             }
 
             setCopied(true);
-            toast({ title: 'Link tersalin!', description: 'Link outlet telah disalin ke clipboard' });
+            showSnackbar('Link outlet telah disalin ke clipboard', 'success');
             setTimeout(() => setCopied(false), 2000);
         } catch (error) {
-            toast({ title: 'Gagal menyalin', description: 'Terjadi kesalahan saat menyalin link' });
+            showSnackbar('Terjadi kesalahan saat menyalin link', 'success');
         }
-    }, [shareUrl, toast]);
+    }, [shareUrl]);
 
     // Small helper for opening external windows safely
     const openExternal = useCallback((url: string) => window.open(url, '_blank', 'noopener,noreferrer'), []);
@@ -102,11 +101,11 @@ export function ShareOutlet({ outlet, children }: ShareOutletProps) {
                         // user cancelled or failed — swallow silently
                     }
                 } else {
-                    toast({ title: 'Fitur tidak tersedia', description: 'Browser Anda tidak mendukung fitur berbagi' });
+                    showSnackbar('Browser Anda tidak mendukung fitur berbagi', 'error')
                 }
             }
         }
-    ]), [shareText, shareUrl, outlet.address, outlet.name, openExternal, toast]);
+    ]), [shareText, shareUrl, outlet.address, outlet.name, openExternal]);
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
