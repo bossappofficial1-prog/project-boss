@@ -19,6 +19,7 @@ export const CreatePaymentSchema = z.object({
     ),
     payment_method: z.enum(paymentMethodIds),
     selectedSlotId: z.string().optional(),
+    staffId: z.string().uuid().optional(),
     outletId: z.string()
 })
 

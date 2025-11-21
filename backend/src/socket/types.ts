@@ -16,7 +16,8 @@ export const SOCKET_EVENT = {
 
     ORDER_UPDATE_STATUS: "order:updateStatus",
     ORDER_STATUS_CHANGED: "order:statusChanged",
-    QUEUE_UPDATED: "queue:updated"
+    QUEUE_UPDATED: "queue:updated",
+    NOTIFICATION_UPDATE: "notification:update"
 } as const
 
 export type PaymentSubmitPayload = { orderId: string; outletId: string; amount: number };

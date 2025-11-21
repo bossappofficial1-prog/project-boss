@@ -94,8 +94,8 @@ export function OutletCard({ outlet, alignment = "vertical", from }: OutletCardP
 
     if (alignment === "horizontal") {
         return (
-            <Link href={{ pathname: `/outlet/${outlet.id}`, ...(from && from !== "" ? { query: { from: from } } : {}) }} className="block group">
-                <div className="flex gap-3 bg-card rounded-lg border hover:shadow-md hover:border-border/60 transition-all duration-300 p-2.5">
+            <Link id={outlet.id} href={{ pathname: `/outlet/${outlet.id}`, ...(from && from !== "" ? { query: { from: from } } : {}) }} className="block group">
+                <div className="flex gap-3 bg-card shadow-md rounded-sm border hover:shadow-md hover:border-border/60 transition-all duration-300 p-2.5">
                     <div className="w-24 h-24 rounded-md overflow-hidden shrink-0">
                         <OutletImage outlet={outlet} imageSize="80px" />
                     </div>

@@ -2,7 +2,7 @@
 
 import { useCart } from "@/hooks/useCart";
 import { OutletDetails, ProductType } from "@/types";
-import { BookingSlot } from "@/types/booking-slots";
+import { SelectedSchedule } from "@/types/booking-slots";
 import { useState, useCallback } from "react";
 import { Card } from "../ui/card";
 import { ImageRender } from "../shared/Image";
@@ -64,7 +64,7 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
         });
     };
 
-    const handleScheduleSelect = useCallback((selectedSchedule: BookingSlot | string) => {
+    const handleScheduleSelect = useCallback((selectedSchedule: SelectedSchedule) => {
         try {
             const success = addItem(outlet.id, outlet.name, product, 1, selectedSchedule);
             if (success) {

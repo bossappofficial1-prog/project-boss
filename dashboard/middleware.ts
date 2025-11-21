@@ -16,6 +16,7 @@ const ROUTE_CONFIG = {
     '/auth/register',
     '/auth/forgot-password',
     '/auth/reset-password',
+    '/auth/login/cashier',
     '/unauthorized'
   ]),
   adminOnlyRoutes: new Set([
@@ -31,6 +32,7 @@ const ROUTE_CONFIG = {
     '/admin/withdrawals'
   ]),
   ownerOnlyRoutes: new Set(['/owner', '/owner/dashboard']),
+  cashierRoutes: new Set(['/cashier', '/cashier/pos', '/cashier/queue']),
   sharedRoutes: new Set(['/profile', '/notifications'])
 } as const;
 
@@ -51,6 +53,10 @@ function isAdminOnlyRoute(pathname: string): boolean {
 
 function isOwnerOnlyRoute(pathname: string): boolean {
   return Array.from(ROUTE_CONFIG.ownerOnlyRoutes).some(route => pathname.startsWith(route));
+}
+
+function isCashierRoute(pathname: string): boolean {
+  return Array.from(ROUTE_CONFIG.cashierRoutes).some(route => pathname.startsWith(route));
 }
 
 function isSharedRoute(pathname: string): boolean {
@@ -135,9 +141,32 @@ export const middleware: NextMiddleware = async (request: NextRequest) => {
   }
 
   const token = request.cookies.get('token')?.value;
+  const cashierToken = request.cookies.get('cashier_token')?.value;
   const isPublic = isPublicRoute(pathname);
+  const isCashier = isCashierRoute(pathname);
 
-  // No token and accessing protected route → redirect to login
+  // Debug logging for cashier routes
+  if (pathname.startsWith('/cashier') || pathname.startsWith('/auth/login/cashier')) {
+    console.log('[Middleware] Cashier route detected:', {
+      pathname,
+      hasCashierToken: !!cashierToken,
+      hasOwnerToken: !!token
+    });
+  }
+
+  // Handle cashier routes separately (check this FIRST before other auth logic)
+  if (pathname.startsWith('/cashier')) {
+    // Other cashier routes require cashier_token
+    if (!cashierToken) {
+      const loginUrl = new URL('/auth/login/cashier', request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Cashier authenticated - allow access to cashier routes
+    return NextResponse.next();
+  }
+
+  // No token and accessing protected route → redirect to owner/admin login
   if (!token && !isPublic) {
     return createLoginRedirect(request, pathname);
   }

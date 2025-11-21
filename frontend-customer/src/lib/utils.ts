@@ -7,6 +7,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function parseRemotePatterns(patterns: string): RemotePattern[] {
+    console.log(patterns);
+
     // Helper to extract a RemotePattern from a URL string
     const fromUrl = (urlStr: string): RemotePattern | null => {
         try {
@@ -28,10 +30,10 @@ export function parseRemotePatterns(patterns: string): RemotePattern[] {
     };
 
     const defaults: RemotePattern[] = [
-        { protocol: 'https', hostname: 'bossapp.id' },
-        { protocol: 'https', hostname: 'api.bossapp.id' },
-        { protocol: 'https', hostname: 'dashboard.bossapp.id' },
-        { protocol: 'http', hostname: 'localhost' }
+        { protocol: 'https', hostname: 'bossapp.id', pathname: '/**' },
+        { protocol: 'https', hostname: 'api.bossapp.id', pathname: '/**' },
+        { protocol: 'https', hostname: 'dashboard.bossapp.id', pathname: '/**' },
+        { protocol: 'http', hostname: 'localhost', pathname: '/**' }
     ];
 
     // Always include API origin if provided, so uploaded images served by API are allowed in dev/prod

@@ -7,6 +7,7 @@ import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { OutletProvider } from '@/components/providers/OutletProvider';
 import { SocketProvider } from '@/components/providers/SocketProvider';
 import { Toaster } from 'sonner';
+import { DashboardSocketListener } from '../sockets/DashboardSocketListener';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -29,6 +30,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
   return (
     <OutletProvider>
+      <DashboardSocketListener />
       <SocketProvider>
         <div className={`min-h-screen max-w-full bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-poppins`}>
           <style jsx global>{`
@@ -75,7 +77,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
         <Toaster
           position="top-right"
           toastOptions={{
-            duration: Infinity, // No auto-close
+            duration: 5000, // No auto-close
           }}
         />
       </SocketProvider>

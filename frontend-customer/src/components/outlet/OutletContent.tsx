@@ -218,7 +218,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
             } else if (from === "search" || from === "favorites" || from == "nearby") {
                 onLeftClickHandler = () => router.back();
             } else {
-                onLeftClickHandler = () => router.push('/');
+                onLeftClickHandler = () => router.back();
             }
 
             setAppBar({
@@ -226,6 +226,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 subtitle: outletData.name,
                 showBackButton: true,
                 centerTitle: true,
+                showThemeToggle: false,
                 ...(onLeftClickHandler ? { onLeftClick: onLeftClickHandler } : {})
             });
         }
@@ -333,40 +334,44 @@ export function OutletContent({ outletId }: { outletId: string }) {
             <div className="space-y-3 mt-6">
                 <Tabs
                     defaultValue={selectedTabs}
-                    onValueChange={(value) => { setSelectedTabs(value); localStorage.setItem("selectedTabs", value) }}
-                    className="w-full">
+                    onValueChange={(value) => {
+                        setSelectedTabs(value);
+                        localStorage.setItem("selectedTabs", value);
+                    }}
+                    className="w-full"
+                >
                     <TabsList className="grid w-full grid-cols-3 h-10">
-                        <TabsTrigger value="products" className="flex items-center gap-2">
-                            <Package className="w-4 h-4" />
-                            <span className="text-xs sm:text-sm">{t("products")} ({goods.length})</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="services" className="flex items-center gap-2">
-                            <Wrench className="w-4 h-4" />
-                            <span className="text-xs sm:text-sm">{t("services")} ({services.length})</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="hours" className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-xs sm:text-sm">{t("openingHours")}</span>
-                        </TabsTrigger>
+                        {[
+                            { value: "products", icon: Package, label: t("products"), count: goods.length },
+                            { value: "services", icon: Wrench, label: t("services"), count: services.length },
+                            { value: "hours", icon: Clock, label: t("openingHours") },
+                        ].map(({ value, icon: Icon, label, count }) => (
+                            <TabsTrigger key={value} value={value} className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                <span className="text-xs sm:text-sm">
+                                    {label} {count !== undefined ? `(${count})` : ""}
+                                </span>
+                            </TabsTrigger>
+                        ))}
                     </TabsList>
+
                     <TabsContent value="products" className="mt-2 space-y-4">
-                        {goods.length > 0 ? (
+                        {goods.length ? (
                             <div className="grid gap-2">
-                                {goods.map(product => (
-                                    <ProductCard key={product.id} product={product} outlet={outlet} />
+                                {goods.map((p) => (
+                                    <ProductCard key={p.id} product={p} outlet={outlet} />
                                 ))}
                             </div>
                         ) : (
-                            <EmptyState
-                                title={t("noProducts")}
-                                description={t("noProductsDescription")} />
+                            <EmptyState title={t("noProducts")} description={t("noProductsDescription")} />
                         )}
                     </TabsContent>
+
                     <TabsContent value="services" className="mt-2 space-y-4">
-                        {services.length > 0 ? (
+                        {services.length ? (
                             <div className="grid gap-2">
-                                {services.map(product => (
-                                    <ProductCard key={product.id} product={product} outlet={outlet} />
+                                {services.map((p) => (
+                                    <ProductCard key={p.id} product={p} outlet={outlet} />
                                 ))}
                             </div>
                         ) : (
@@ -377,8 +382,9 @@ export function OutletContent({ outletId }: { outletId: string }) {
                             />
                         )}
                     </TabsContent>
+
                     <TabsContent value="hours" className="mt-2 space-y-4">
-                        {outlet.operatingHours && outlet.operatingHours.length > 0 ? (
+                        {outlet.operatingHours?.length ? (
                             <OperatingHoursTab operatingHours={outlet.operatingHours} outletOpen={outlet.isOpen} />
                         ) : (
                             <EmptyState

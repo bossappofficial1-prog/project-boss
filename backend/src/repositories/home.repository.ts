@@ -10,6 +10,12 @@ interface PopularItemRow {
 }
 
 export class HomeRepository {
+    private static readonly successfulOrderFilter: Prisma.OrderWhereInput = {
+        transaction: {
+            status: "SUCCESS",
+        },
+    };
+
     static countVerifiedUmkm() {
         return db.user.count({
             where: {
@@ -50,7 +56,11 @@ export class HomeRepository {
                         select: { name: true },
                     },
                     _count: {
-                        select: { orders: true },
+                        select: {
+                            orders: {
+                                where: HomeRepository.successfulOrderFilter,
+                            },
+                        },
                     },
                 },
             });
@@ -63,7 +73,11 @@ export class HomeRepository {
                     select: { name: true },
                 },
                 _count: {
-                    select: { orders: true },
+                    select: {
+                        orders: {
+                            where: HomeRepository.successfulOrderFilter,
+                        },
+                    },
                 },
             },
             orderBy: {
@@ -76,14 +90,18 @@ export class HomeRepository {
 
     static async findPopularItems(limit = 8) {
         const rawItems = await db.$queryRaw<PopularItemRow[]>`
-            SELECT p.id,
-                   p.name,
-                   p.price,
-                   p.image,
-                   COALESCE(SUM(oi.quantity), 0) AS sold_count
+            SELECT
+                p.id,
+                p.name,
+                p.price,
+                p.image,
+                COALESCE(SUM(oi.quantity), 0) AS sold_count
             FROM "Product" p
             LEFT JOIN "OrderItem" oi ON oi."productId" = p.id
-            GROUP BY p.id
+            LEFT JOIN "Order" o ON o.id = oi."orderId"
+            LEFT JOIN "Transaction" t ON t."orderId" = o.id AND t.status = 'SUCCESS'
+            WHERE t.status = 'SUCCESS'
+            GROUP BY p.id, p.name, p.price, p.image
             ORDER BY sold_count DESC
             LIMIT ${limit}
         `;

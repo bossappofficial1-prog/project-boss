@@ -35,10 +35,7 @@ export class ManualPaymentRepository {
     static async updateManualTransaction(id: string, data: Prisma.TransactionUncheckedUpdateInput) {
         return db.transaction.update({
             where: { id },
-            data: {
-                ...data,
-                status: 'SUCCESS'
-            }
+            data
         });
     }
 
@@ -89,6 +86,42 @@ export class ManualPaymentRepository {
             page: Math.max(page, 1),
             limit: take,
             totalPages: Math.ceil(total / take)
+        };
+    }
+
+    static async sumManualTransactions(options: {
+        outletId: string;
+        paymentMethod?: string;
+        status?: PaymentStatus[];
+        startTime?: Date;
+        endTime?: Date;
+    }) {
+        const { outletId, paymentMethod, status, startTime, endTime } = options;
+
+        const where: Prisma.TransactionWhereInput = {
+            isManual: true,
+            order: {
+                outletId,
+            },
+            ...(paymentMethod ? { paymentMethod } : {}),
+            ...(status && status.length > 0 ? { status: { in: status } } : {}),
+            ...((startTime || endTime) ? {
+                createdAt: {
+                    ...(startTime ? { gte: startTime } : {}),
+                    ...(endTime ? { lt: endTime } : {}),
+                },
+            } : {}),
+        };
+
+        const aggregate = await db.transaction.aggregate({
+            where,
+            _sum: { amount: true },
+            _count: { _all: true },
+        });
+
+        return {
+            totalAmount: Number(aggregate._sum.amount ?? 0),
+            transactionsCount: aggregate._count._all ?? 0,
         };
     }
 }

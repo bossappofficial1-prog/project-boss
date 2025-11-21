@@ -123,10 +123,13 @@ export default function QueuePage() {
 
   // Filter data based on search and status
   const filteredQueue = queueData?.filter(item => {
+    const normalizedSearch = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm ||
-      item.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.queueNumber?.toString().includes(searchTerm);
+      item.customerName?.toLowerCase().includes(normalizedSearch) ||
+      item.productName?.toLowerCase().includes(normalizedSearch) ||
+      item.queueNumber?.toString().includes(searchTerm) ||
+      item.assignedStaff?.name?.toLowerCase().includes(normalizedSearch) ||
+      item.bookingSlot?.staff?.name?.toLowerCase().includes(normalizedSearch);
 
     const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'pending' && ['AWAITING_PAYMENT', 'CONFIRMED', 'PROCESSING'].includes(item.status as string)) ||
@@ -141,7 +144,7 @@ export default function QueuePage() {
       <div className="space-y-6">
         <QueueHeader
           onRefresh={handleRefresh}
-          onCreateQuick={() => window.location.href = '/owner/dashboard/pos/queue'}
+          onCreateQuick={() => window.location.href = '/owner/dashboard/pos/orders'}
         />
 
         <QueueControls
@@ -161,7 +164,7 @@ export default function QueuePage() {
                 setSearchTerm('');
                 setStatusFilter('all');
               }}
-              onCreateQueue={() => window.location.href = '/owner/dashboard/pos/queue'}
+              onCreateQueue={() => window.location.href = '/owner/dashboard/pos/orders'}
             />
           ) : (
             <>

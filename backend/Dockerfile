@@ -24,11 +24,13 @@ ENV SMTP_FROM=$SMTP_FROM
 
 COPY package*.json ./
 
-# Increase npm timeout and registry settings
+# Increase npm timeout and registry settings and install all deps (including dev)
+# Use `npm ci --include=dev` for reproducible installs and to ensure devDependencies
+# (typescript, @types/*, etc.) are available during the build stage.
 RUN npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set fetch-timeout 300000 && \
-    npm install
+    npm ci --include=dev
 
 COPY . .
 

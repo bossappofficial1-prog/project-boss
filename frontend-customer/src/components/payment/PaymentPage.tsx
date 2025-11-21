@@ -297,6 +297,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             // Construct payload for backend API sesuai format yang benar
             let itemDetails: Array<{ productId: string; quantity: number }> = [];
             let selectedSlotId: string | undefined;
+            let staffId: string | undefined;
             let outletId: string = '';
 
             // Try to get items from checkoutData first
@@ -313,6 +314,9 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 return outlet.items.map(item => {
                     if (item.type === 'SERVICE' && item.selectedSlot && !selectedSlotId) {
                         selectedSlotId = item.selectedSlot;
+                        if (item.staffId) {
+                            staffId = item.staffId;
+                        }
                     }
 
                     // Return item dengan format yang benar
@@ -337,6 +341,9 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                     // Untuk service products, ambil selectedSlotId
                     if (item.type === 'SERVICE' && item.selectedSlot && !selectedSlotId) {
                         selectedSlotId = item.selectedSlot;
+                        if (item.staffId) {
+                            staffId = item.staffId;
+                        }
                     }
 
                     return {
@@ -356,7 +363,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 },
                 item_details: itemDetails,
                 payment_method: selectedPaymentMethod.id as PaymentMethodId,
-                ...(selectedSlotId && { selectedSlotId: selectedSlotId })
+                ...(selectedSlotId && { selectedSlotId: selectedSlotId }),
+                ...(staffId && { staffId })
             };
 
             // Check if we have any items
@@ -413,7 +421,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             router.push(`/payment/${orderId}`)
 
         } catch (error) {
-            console.error('Payment failed:', error)
 
             // Check if it's a network error and should retry
             const isNetworkError = error instanceof Error && (
@@ -435,10 +442,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 return;
             }
 
-            const errorMessage = error instanceof Error ? error.message : t("errors.paymentFailed");
-            snackbar.error(retryCount >= maxRetries
-                ? `${errorMessage} (Sudah dicoba ${maxRetries + 1}x. Periksa koneksi internet Anda.)`
-                : `Periksa input anda`)
+            const errorMessage = (error as any).response.data.message;
+            snackbar.error(errorMessage)
             setIsLoading(false);
         }
     };

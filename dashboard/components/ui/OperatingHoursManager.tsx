@@ -50,7 +50,6 @@ const createDefaultHour = (day: number, outletId: string): OperatingHoursData =>
 export default function OperatingHoursManager({ outletId, operatingHoursData, onOperatingHoursChange }: OperatingHoursManagerProps) {
   const [initialHours, setInitialHours] = useState<Record<number, OperatingHoursData>>({})
   const [currentHours, setCurrentHours] = useState<Record<number, OperatingHoursData>>({})
-  console.log(operatingHoursData);
 
   // Mode: external state (untuk pre-submit) vs internal state (untuk existing outlet)
   const isPreSubmitMode = !!operatingHoursData && !!onOperatingHoursChange

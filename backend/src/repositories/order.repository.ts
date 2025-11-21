@@ -72,8 +72,13 @@ export class OrderRepository {
                 },
                 guestCustomer: true,
                 outlet: true,
-                bookingSlot: true,
+                bookingSlot: {
+                    include: {
+                        staff: true,
+                    }
+                },
                 transaction: true,
+                assignedStaff: true as any,
             },
         });
     }
@@ -110,6 +115,14 @@ export class OrderRepository {
                         status: true,
                         productId: true,
                         staffId: true,
+                        staff: {
+                            select: {
+                                id: true,
+                                name: true,
+                                phone: true,
+                                role: true,
+                            }
+                        } as any,
                     }
                 },
                 guestCustomer: { select: { name: true, phone: true, id: true } },
@@ -121,6 +134,14 @@ export class OrderRepository {
                         address: true,
                     }
                 },
+                assignedStaff: {
+                    select: {
+                        id: true,
+                        name: true,
+                        phone: true,
+                        role: true,
+                    }
+                } as any,
                 transaction: {
                     select: {
                         id: true,

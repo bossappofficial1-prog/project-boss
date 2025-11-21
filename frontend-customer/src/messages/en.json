@@ -172,6 +172,28 @@
         "startSearching": "Start searching",
         "searchDescription": "Enter keywords to find outlets, products, or services"
     },
+    "outletsPage": {
+        "title": "Browse Outlets",
+        "subtitle": "Discover trusted partners and featured services nearby",
+        "appBarTitle": "Outlets",
+        "searchPlaceholder": "Search outlets, services, or promos...",
+        "searchDescription": "Use keywords to narrow down the list.",
+        "loading": "Loading outlets...",
+        "loadingMore": "Loading more outlets...",
+        "loadMore": "Show more outlets",
+        "noMore": "No more outlets to display",
+        "empty": {
+            "title": "No outlets found",
+            "description": "Try a different keyword or check back later.",
+            "emptySearch": "Start by typing into the search bar above to locate outlets."
+        },
+        "error": {
+            "title": "Unable to load outlets",
+            "generic": "Something went wrong. Please try again."
+        },
+        "results": "Showing {count} of {total} outlets",
+        "resultsHint": "Scroll to explore more options."
+    },
     "search": {
         "placeholder": "Search outlets, products, services...",
         "loading": "Searching...",

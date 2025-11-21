@@ -15,7 +15,8 @@ import {
     uploadQRISService,
     getQRISService,
     getOutletAnalytics,
-    getOutletRevenueTrend
+    getOutletRevenueTrend,
+    getOutletIdsService
 } from "../service/outlet.service";
 
 export const findNearbyOutletsController = asyncHandler(async (req: Request, res: Response) => {
@@ -124,6 +125,11 @@ export const deleteOutletController = asyncHandler(async (req: Request, res: Res
     const ownerId = req.storedUser!.id;
     const outlet = await deleteOutletService(id, ownerId);
     return ResponseUtil.success(res, outlet);
+});
+
+export const getOutletIdsController = asyncHandler(async (req: Request, res: Response) => {
+    const outlets = await getOutletIdsService();
+    return ResponseUtil.success(res, outlets);
 });
 
 export const uploadQRISController = asyncHandler(async (req: Request, res: Response) => {

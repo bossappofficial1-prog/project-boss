@@ -8,12 +8,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, Eye, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { Search, Filter, Eye, TrendingUp, TrendingDown, DollarSign, FileText } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { DataTable } from '@/components/ui/data-table';
 import { useDebounce } from '@/hooks/useDebounce';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function TransactionsPage() {
   const { outlets } = useOutletContext();
@@ -30,6 +37,9 @@ export default function TransactionsPage() {
   const [limit, setLimit] = useState(10);
   const searchQuery = useDebounce(searchTerm, 500)
 
+  // Proof preview state
+  const [proofPreview, setProofPreview] = useState<{ url: string; transaction: any } | null>(null);
+
   // Fetch transactions
   const { data, isLoading, isFetching, error, refetch } = useTransactionList({
     outletId: outletId || undefined,
@@ -42,38 +52,73 @@ export default function TransactionsPage() {
     q: searchQuery
   });
 
-  // Status badge color
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: 'default' | 'destructive' | 'success' | 'warning' | 'secondary' }> = {
-      PENDING: { label: 'Pending', variant: 'warning' },
-      SUCCESS: { label: 'Berhasil', variant: 'success' },
-      FAILED: { label: 'Gagal', variant: 'destructive' },
-      CANCELLED: { label: 'Dibatalkan', variant: 'secondary' },
-    };
+  // Status badge color - menggunakan logika yang sama dengan halaman orders
+  const getStatusBadge = (transaction: any) => {
+    // Untuk transaksi yang terhubung dengan order, gunakan orderStatus sebagai referensi
+    const orderStatus = transaction.order?.orderStatus;
+    const transactionStatus = transaction.status;
 
-    const statusInfo = statusMap[status] || { label: status, variant: 'default' };
+    // Jika order masih AWAITING_PAYMENT, maka pembayaran belum dikonfirmasi
+    // Meskipun transaction.status adalah SUCCESS (untuk transaksi offline)
+    let displayStatus = transactionStatus;
+    let displayLabel = '';
+    let displayVariant: 'default' | 'destructive' | 'success' | 'warning' | 'secondary' = 'default';
+
+    if (orderStatus === 'AWAITING_PAYMENT' && transaction.isManual) {
+      // Transaksi offline yang belum dikonfirmasi
+      displayStatus = 'PENDING';
+      displayLabel = 'Menunggu Verifikasi';
+      displayVariant = 'warning';
+    } else {
+      const statusMap: Record<string, { label: string; variant: 'default' | 'destructive' | 'success' | 'warning' | 'secondary' }> = {
+        PENDING: { label: 'Pending', variant: 'warning' },
+        SUCCESS: { label: 'Berhasil', variant: 'success' },
+        FAILED: { label: 'Gagal', variant: 'destructive' },
+        CANCELLED: { label: 'Dibatalkan', variant: 'secondary' },
+      };
+
+      const statusInfo = statusMap[transactionStatus] || { label: transactionStatus, variant: 'default' };
+      displayLabel = statusInfo.label;
+      displayVariant = statusInfo.variant;
+    }
 
     return (
-      <Badge variant={statusInfo.variant} className="font-poppins">
-        {statusInfo.label}
+      <Badge variant={displayVariant} className="font-poppins">
+        {displayLabel}
       </Badge>
     );
   };
 
   // Payment method badge
   const getPaymentMethodBadge = (transaction: any) => {
-    if (transaction.isManual) {
-      return (
-        <Badge variant="outline" className="font-poppins">
-          {transaction.manualMethod || 'Manual'}
-        </Badge>
-      );
-    }
+    const isManual = transaction.isManual;
+    const method = transaction.manualMethod || transaction.paymentMethod || 'Online';
+    const hasProof = Boolean(transaction.paymentProofUrl);
 
     return (
-      <Badge variant="outline" className="font-poppins">
-        {transaction.paymentMethod || 'Online'}
-      </Badge>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="font-poppins">
+            {method}
+          </Badge>
+          {isManual && transaction.order?.orderStatus === 'AWAITING_PAYMENT' && (
+            <Badge variant="warning" className="text-[0.65rem] font-poppins">
+              Belum Dikonfirmasi
+            </Badge>
+          )}
+        </div>
+        {hasProof && (
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto px-0 py-0 text-xs font-medium text-primary justify-start"
+            onClick={() => setProofPreview({ url: transaction.paymentProofUrl, transaction })}
+          >
+            <FileText className="w-3 h-3 mr-1" />
+            Lihat Bukti
+          </Button>
+        )}
+      </div>
     );
   };
 
@@ -102,7 +147,7 @@ export default function TransactionsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 font-poppins">Riwayat Transaksi</h1>
+          <h1 className="text-2xl font-bold text-foreground font-poppins">Riwayat Transaksi</h1>
           <p className="mt-1 text-sm text-gray-500 font-poppins">
             Lihat dan kelola semua transaksi bisnis Anda
           </p>
@@ -336,7 +381,7 @@ export default function TransactionsPage() {
             enableSorting: false,
             cell: (props) => {
               const transaction = props.row.original
-              return getStatusBadge(transaction.status)
+              return getStatusBadge(transaction)
             },
           }
         ]}
@@ -354,14 +399,6 @@ export default function TransactionsPage() {
         }}
         pageSizeOptions={pageSizeOptions}
         globalFilter={false}
-        rowActions={(row) => [
-          {
-            label: "Detail",
-            icon: Eye,
-            onClick(row) {
-            },
-          }
-        ]}
         enableExport
         exportFilename='transactions'
         exportConfig={{
@@ -377,6 +414,36 @@ export default function TransactionsPage() {
           }
         }}
       />
+
+      {/* Proof Preview Dialog */}
+      <Dialog open={Boolean(proofPreview)} onOpenChange={(open) => !open && setProofPreview(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-poppins">Bukti Pembayaran</DialogTitle>
+            <DialogDescription className="font-poppins">
+              {proofPreview?.transaction?.description || 'Detail transaksi'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            {proofPreview?.url ? (
+              <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden">
+                <img
+                  src={proofPreview.url}
+                  alt="Bukti Pembayaran"
+                  className="w-full h-auto max-h-[60vh] object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 font-poppins">
+                Bukti pembayaran tidak tersedia
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

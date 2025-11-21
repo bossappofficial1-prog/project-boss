@@ -155,7 +155,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       icon: <Store className="w-5 h-5" />,
       subItems: [
         { name: 'Dashboard Outlet', href: '/owner/dashboard/outlets' },
-        { name: 'Kelola Outlet', href: '/owner/dashboard/outlets/manage' }
+        { name: 'Kelola Outlet', href: '/owner/dashboard/outlets/manage' },
+        { name: 'Kelola Staff', href: '/owner/dashboard/outlets/staff' }
       ]
     },
     {
@@ -168,11 +169,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       href: '/owner/dashboard/stock',
       icon: <Box className="w-5 h-5" />,
     },
-    {
-      name: 'Jasa',
-      href: '/owner/dashboard/services',
-      icon: <Wrench className="w-5 h-5" />,
-    },
+    // {
+    //   name: 'Jasa',
+    //   href: '/owner/dashboard/services',
+    //   icon: <Wrench className="w-5 h-5" />,
+    // },
     {
       name: 'POS',
       href: '/owner/dashboard/pos/orders',

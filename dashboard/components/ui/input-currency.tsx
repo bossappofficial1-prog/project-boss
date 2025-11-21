@@ -18,7 +18,7 @@ export default function InputCurrency({ value, onValueChange, ...props }: InputC
     }
 
     return <Input
-        value={displayValue}
+        value={displayValue || 0}
         onChange={handleChange}
         inputMode="numeric"
         className={props.className ?? ``}

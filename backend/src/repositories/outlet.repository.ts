@@ -17,6 +17,10 @@ export class OutletRepository {
         });
     }
 
+    static async getOutletIds() {
+        return db.outlet.findMany({ select: { id: true } })
+    }
+
     static async create(data: CreateOutletInput): Promise<Outlet> {
         return db.outlet.create({
             data,
@@ -98,6 +102,10 @@ export class OutletRepository {
                     {
                         business: {
                             description: {
+                                contains: search,
+                                mode: "insensitive"
+                            },
+                            name: {
                                 contains: search,
                                 mode: "insensitive"
                             }

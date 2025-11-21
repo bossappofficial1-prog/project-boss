@@ -8,5 +8,21 @@ export interface BookingSlot {
     startTime: string;
     endTime: string;
     date: string;
-    status: BookingSlotStatus
+    status: BookingSlotStatus;
+    staffId?: string | null;
+    staffName?: string | null;
+}
+
+export interface SelectedSchedule {
+    slot: {
+        id: string;
+        startTime: string;
+        endTime: string;
+        date: string;
+        status: BookingSlotStatus;
+    };
+    staff?: {
+        id: string;
+        name: string;
+    };
 }

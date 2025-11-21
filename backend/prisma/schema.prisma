@@ -146,12 +146,18 @@ model Staff {
   address String?
   notes   String?
 
+  // Password untuk login kasir (nullable - hanya untuk kasir yang butuh login)
+  password String?
+
   // Relasi ke outlet
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
   // Relasi ke booking slots yang ditangani (khusus staff SERVICE)
   bookings BookingSlot[]
+
+  // Relasi ke pesanan yang ditugaskan
+  assignedOrders Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -376,7 +382,6 @@ model BookingSlot {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([productId, startTime, endTime]) // Tidak boleh ada slot yang sama
   @@index([productId])
   @@index([date])
   @@index([staffId])
@@ -438,6 +443,10 @@ model Order {
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
+  // Relasi: Pesanan bisa ditugaskan ke staff tertentu
+  assignedStaffId String?
+  assignedStaff   Staff?  @relation(fields: [assignedStaffId], references: [id], onDelete: SetNull)
+
   // Relasi: Satu pesanan punya banyak item
   items OrderItem[]
 
@@ -453,6 +462,7 @@ model Order {
   @@index([guestCustomerId])
   @@index([outletId])
   @@index([bookingDate])
+  @@index([assignedStaffId])
 }
 
 // Item-item yang ada di dalam sebuah pesanan

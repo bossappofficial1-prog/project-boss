@@ -73,12 +73,14 @@ const imageFileFilter = (req: Request, file: Express.Multer.File, cb: multer.Fil
     cb(null, true);
 };
 
+const MAX_ORIGINAL_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB to allow compression before saving
+
 // Configure multer for images
 const imageUpload = multer({
     storage: imageStorage,
     fileFilter: imageFileFilter,
     limits: {
-        fileSize: 1 * 1024 * 1024, // 1MB limit
+        fileSize: MAX_ORIGINAL_IMAGE_SIZE,
         files: 1 // Only 1 file at a time
     }
 });
@@ -176,7 +178,7 @@ export const uploadPaymentProof = (fieldName: string = 'proof') => {
 export const handleUploadError = (error: any, req: Request, res: any, next: any) => {
     if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
-            return next(new AppError('File too large. Maximum size is 1MB', HttpStatus.BAD_REQUEST));
+            return next(new AppError('File terlalu besar. Maksimal 5MB sebelum kompresi.', HttpStatus.BAD_REQUEST));
         }
         if (error.code === 'LIMIT_FILE_COUNT') {
             return next(new AppError('Too many files. Maximum is 5 files', HttpStatus.BAD_REQUEST));

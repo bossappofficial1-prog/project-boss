@@ -21,6 +21,10 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
     return outlet;
 }
 
+export async function getOutletIdsService() {
+    return await OutletRepository.getOutletIds()
+}
+
 export async function findNearbyOutletsService(
     latitude: number,
     longitude: number,
@@ -116,11 +120,13 @@ export async function getOutletByIdService(id: string, date?: Date) {
     }
     const { operatingHours, ...outlet } = outletRaw;
 
-    const isOpenOutlet = outlet.isOpen && operatingHours.length > 0
-        ? getIsOutletOpen(operatingHours, today)
-        : outlet.isOpen
+    const isOpenOutlet = outlet.isOpen && (
+        operatingHours.length > 0
+            ? getIsOutletOpen(operatingHours, today)
+            : false
+    );
 
-    return { ...outlet, operatingHours, status: isOpenOutlet };
+    return { ...outlet, operatingHours, isOpen: isOpenOutlet, status: isOpenOutlet };
 }
 
 export async function getAllOutletService() {

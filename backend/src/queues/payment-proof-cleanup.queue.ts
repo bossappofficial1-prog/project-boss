@@ -16,6 +16,28 @@ export const paymentProofCleanupQueue = new Queue('payment-proof-cleanup', {
 
 export async function scheduleDailyPaymentProofCleanup() {
     try {
+        const existing = await paymentProofCleanupQueue.getRepeatableJobs();
+        const sameNameJobs = existing.filter(j => j.name === 'daily-cleanup');
+        for (const j of sameNameJobs) {
+            // Remove any job with the same name but not the same expected jobId or cron
+            const isSameId = j.id === 'daily-payment-proof-cleanup';
+            const isSameCron = (j.cron || j.every) === '0 0 * * *';
+            if (!isSameId || !isSameCron) {
+                try {
+                    await paymentProofCleanupQueue.removeRepeatableByKey(j.key);
+                    Console.log(`Removed old repeatable job with key ${j.key}`);
+                } catch (err) {
+                    Console.warn(`Failed to remove old repeatable job ${j.key}`, err);
+                }
+            }
+        }
+
+        const jobExists = await paymentProofCleanupQueue.getRepeatableJobs();
+        if (jobExists.some(j => j.id === 'daily-payment-proof-cleanup' && j.name === 'daily-cleanup')) {
+            Console.log('Daily payment proof cleanup job already scheduled; skipping creating duplicate.');
+            Console.log('Existing repeatable jobs for payment-proof-cleanup:', jobExists);
+            return;
+        }
         await paymentProofCleanupQueue.add(
             'daily-cleanup',
             {},

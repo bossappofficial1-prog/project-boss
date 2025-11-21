@@ -128,7 +128,7 @@ export function CustomerSocketListener() {
 
             const tone = mapStatusToTone(payload.transactionStatus ?? payload.status);
             const message = buildNotificationMessage(payload);
-
+            
             showSnackbar(message, tone, 5000);
             if (typeof window !== "undefined") {
                 window.dispatchEvent(new CustomEvent("customer-notification", { detail: payload }));

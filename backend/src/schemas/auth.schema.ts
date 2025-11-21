@@ -54,11 +54,24 @@ export const resetPasswordSchema = z.object({
         .string()
         .min(8, { message: "Password minimal 8 karakter" })
         .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-            message: "Password harus mengandung huruf besar, kecil, dan angka"
+            message: "Password baru harus mengandung huruf besar, kecil, dan angka"
         }),
 });
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const cashierLoginSchema = z.object({
+    email: z
+        .string()
+        .nonempty({ message: "Email tidak boleh kosong" })
+        .email({ message: "Email tidak valid" })
+        .transform(str => str.toLowerCase()),
+    password: z
+        .string()
+        .nonempty({ message: "Password tidak boleh kosong" }),
+});
+
+export type CashierLoginInput = z.infer<typeof cashierLoginSchema>;
 
 export const changePasswordSchema = z.object({
     currentPassword: z
