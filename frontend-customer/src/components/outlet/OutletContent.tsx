@@ -21,6 +21,7 @@ import { DAY_NAMES, LanguageType } from "@/constants";
 import { formatTime, toMapDestination } from "@/lib/utils";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
 import { EmptyStates } from "../base/EmptyStates";
+import { ImageColorThief } from "../shared/ImageColorThief";
 
 const formatOperatingHours = (operatingHours: OperatingHourType[], locale: LanguageType) => {
     if (typeof window === "undefined") return
@@ -294,7 +295,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
         <div className="pb-20">
             <div className="relative h-52 bg-muted -mx-4 -mt-4">
                 {outlet.image ? (
-                    <ImageRender
+                    <ImageColorThief
                         src={resolveCustomerImageUrl(outlet.image)}
                         alt={outlet.name}
                         className="object-cover w-full h-full"

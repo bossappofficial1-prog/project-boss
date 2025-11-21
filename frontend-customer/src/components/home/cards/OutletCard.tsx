@@ -6,6 +6,7 @@ import { Store } from 'lucide-react'
 import { ImageRender } from "@/components/shared/Image"
 import type { HomeOutletSummary } from '@/types/home'
 import type { Messages, NestedKeyOf } from '@/hooks/useI18n'
+import { ImageColorThief } from '@/components/shared/ImageColorThief'
 
 interface OutletCardProps {
     outlet: HomeOutletSummary;
@@ -32,10 +33,10 @@ function OutletCard({ outlet, numberFormatter, t, tCommon }: OutletCardProps) {
         >
             <div className="relative h-32 w-full overflow-hidden">
                 {outlet.image ? (
-                    <ImageRender
+                    <ImageColorThief
                         src={outlet.image}
                         alt={outlet.name}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        className="object-cover transition duration-500 group-hover:scale-105"
                         sizes="220px"
                     />
                 ) : (

@@ -232,11 +232,17 @@ function LoginForm() {
               </button>
             </div>
 
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <p className="text-sm text-gray-600 dark:text-gray-400 font-poppins">
                 Don't have an account?{' '}
                 <Link href="/auth/register" className="font-semibold text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 transition-colors duration-200">
                   Create Account
+                </Link>
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-poppins">
+                Login as Cashier?{' '}
+                <Link href="/auth/login/cashier" className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors duration-200">
+                  Login
                 </Link>
               </p>
             </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import ColorThief from "colorthief";
+import ImageRender from "./Image";
 
 export function ImageColorThief(props: {
     src: string;
@@ -64,10 +65,10 @@ export function ImageColorThief(props: {
 
     return (
         <div
-            className="w-fit h-full rounded-md shadow-md flex items-center justify-center"
+            className="w-full h-full rounded-md shadow-md flex items-center justify-center"
             style={{ background: gradient }}
         >
-            <img
+            <ImageRender
                 {...props}
                 ref={imgRef}
                 src={props.src}
