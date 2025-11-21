@@ -10,7 +10,8 @@ export function ImageRender(
         className,
         sizes,
         priority,
-        onLoad
+        onLoad,
+        ref
     }:
         {
             src: string,
@@ -18,6 +19,7 @@ export function ImageRender(
             className?: string,
             sizes?: string,
             priority?: boolean,
+            ref?: any,
             onLoad?: () => void
         }) {
     const [imgSrc, setImgSrc] = useState(resolveCustomerImageUrl(src));
@@ -36,6 +38,7 @@ export function ImageRender(
             sizes={sizes || "(max-width: 768px) 100vw, 600px"}
             onError={() => setImgSrc(IMAGE_PLACEHOLDER)}
             onLoad={onLoad}
+            {...(ref && { ref })}
             {...(priority ? { priority } : { loading: "lazy" })}
         />
     );

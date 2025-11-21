@@ -39,13 +39,13 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401) {
-      // Redirect to login - cookie will be cleared by backend
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login';
-      }
-      return Promise.reject(error);
-    }
+    // if (error.response?.status === 401) {
+    //   // Redirect to login - cookie will be cleared by backend
+    //   if (typeof window !== 'undefined') {
+    //     window.location.href = '/auth/login';
+    //   }
+    //   return Promise.reject(error);
+    // }
 
     if (error.response?.data) {
       const backendMessage = error.response.data?.message ||
