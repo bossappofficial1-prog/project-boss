@@ -1,402 +1,492 @@
-'use client';
+"use client"
 
-import { useState, useEffect, useCallback } from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React from "react"
 import {
     Building2,
     Search,
-    Eye,
+    Filter,
+    MoreHorizontal,
+    Wallet,
+    CreditCard,
     MapPin,
-    Phone,
-    Mail,
-    Calendar,
-    DollarSign,
+    Tag,
+    Image as ImageIcon,
     Users,
+    CheckCircle2,
+    AlertTriangle,
+    XCircle,
+    FileText,
+    Ban,
+    Edit,
+    ExternalLink,
+    ArrowUpRight,
+    ArrowDownRight,
     Store
-} from 'lucide-react';
-import { formatDate, formatDateTime } from '@/lib/utils/date';
-import { formatCurrency } from '@/lib/utils';
-import { apiClient } from '@/lib/apis/base';
+} from "lucide-react"
 
-interface Business {
-    id: string;
-    name: string;
-    description?: string;
-    type?: string;
-    address?: string;
-    phone?: string;
-    email?: string;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
-    wallet?: {
-        balance: number;
-    };
-    _count: {
-        outlets: number;
-        orders: number;
-    };
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet"
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs"
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+} from "@/components/ui/select"
+
+// --- HELPER ---
+const formatIDR = (value: number) => {
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(value)
 }
 
-export default function AdminBusinesses() {
-    const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [debouncedSearch, setDebouncedSearch] = useState('');
+// --- TYPES ---
+type VerificationStatus = "verified" | "pending" | "rejected"
+type BusinessStatus = "active" | "suspended"
 
-    const router = useRouter();
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
+interface Business {
+    id: string
+    name: string
+    owner: string
+    email: string
+    status: BusinessStatus
+    verificationStatus: VerificationStatus
+    walletBalance: number
+    createdAt: string
+    logo?: string
+    // Detail fields
+    phone: string
+    address: string
+    bankInfo: {
+        bankName: string
+        accountNumber: string
+        accountHolder: string
+    }
+    stats: {
+        totalMembers: number
+        activePromos: number
+        totalOutlets: number
+    }
+}
 
-    // Debounce search input
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearch(search);
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [search]);
-
-    // Fetch businesses with infinite scroll
-    const {
-        data: businessesData,
-        isLoading,
-        isFetchingNextPage,
-        hasNextPage,
-        fetchNextPage,
-        refetch
-    } = useInfiniteQuery({
-        queryKey: ['admin-businesses', debouncedSearch, statusFilter],
-        queryFn: async ({ pageParam = 1 }) => {
-            const params = new URLSearchParams({
-                page: pageParam.toString(),
-                limit: '12', // Load 12 businesses per page
-                ...(debouncedSearch && { search: debouncedSearch }),
-                ...(statusFilter && statusFilter !== 'all' && { status: statusFilter }),
-            });
-
-            const response = await apiClient.get(`/admin/businesses?${params}`);
-            return response.data;
+// --- MOCK DATA ---
+const BUSINESSES: Business[] = [
+    {
+        id: "BIZ-001",
+        name: "Kopi Kenangan Senja",
+        owner: "Budi Santoso",
+        email: "budi@kopisenja.com",
+        status: "active",
+        verificationStatus: "verified",
+        walletBalance: 15400000,
+        createdAt: "2023-05-12",
+        logo: "/avatars/biz-01.png",
+        phone: "+62 812-3456-7890",
+        address: "Jl. Sudirman No. 45, Jakarta Selatan",
+        bankInfo: {
+            bankName: "BCA",
+            accountNumber: "1234567890",
+            accountHolder: "PT Kopi Kenangan Senja"
         },
-        getNextPageParam: (lastPage, pages) => {
-            // Check if there are more pages based on the response
-            const totalPages = lastPage.data?.pagination?.totalPages || 1;
-            const currentPage = lastPage.data?.pagination?.currentPage || 1;
-            return currentPage < totalPages ? currentPage + 1 : undefined;
+        stats: { totalMembers: 1250, activePromos: 3, totalOutlets: 5 }
+    },
+    {
+        id: "BIZ-002",
+        name: "Martabak Sultan",
+        owner: "Siti Aminah",
+        email: "siti@martabaksultan.id",
+        status: "active",
+        verificationStatus: "pending",
+        walletBalance: 2500000,
+        createdAt: "2023-08-20",
+        phone: "+62 813-9999-8888",
+        address: "Jl. Ahmad Yani No. 12, Bandung",
+        bankInfo: {
+            bankName: "Mandiri",
+            accountNumber: "9876543210",
+            accountHolder: "Siti Aminah"
         },
-        initialPageParam: 1,
-    });
+        stats: { totalMembers: 450, activePromos: 1, totalOutlets: 2 }
+    },
+    {
+        id: "BIZ-003",
+        name: "Fashion Hits Store",
+        owner: "Rian Pratama",
+        email: "rian@fashionhits.com",
+        status: "suspended",
+        verificationStatus: "verified",
+        walletBalance: 450000,
+        createdAt: "2023-02-10",
+        phone: "+62 811-2233-4455",
+        address: "Mangga Dua Square Lt. 3, Jakarta Utara",
+        bankInfo: {
+            bankName: "BRI",
+            accountNumber: "5555666677",
+            accountHolder: "Rian Pratama"
+        },
+        stats: { totalMembers: 890, activePromos: 5, totalOutlets: 1 }
+    },
+]
 
-    // Flatten businesses from all pages
-    const businesses = businessesData?.pages.flatMap(page => page.data.businesses) || [];
+export default function BusinessManagement() {
+    const [searchQuery, setSearchQuery] = React.useState("")
+    const [statusFilter, setStatusFilter] = React.useState("ALL")
+    const [selectedBusiness, setSelectedBusiness] = React.useState<Business | null>(null)
+    const [isSheetOpen, setIsSheetOpen] = React.useState(false)
 
-    // Intersection Observer for infinite scroll
-    const loadMoreRef = useCallback((node: HTMLDivElement | null) => {
-        if (!node) return;
+    const filteredBusinesses = BUSINESSES.filter((biz) => {
+        const matchesSearch = biz.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            biz.owner.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesStatus = statusFilter === "ALL" || biz.verificationStatus === statusFilter
+        return matchesSearch && matchesStatus
+    })
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-                    fetchNextPage();
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        observer.observe(node);
-
-        return () => observer.disconnect();
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-    // Refetch when filters change
-    useEffect(() => {
-        refetch();
-    }, [debouncedSearch, statusFilter, refetch]);
-
-    // Use businesses directly since filtering is done server-side
-    const filteredBusinesses = businesses;
-
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'ACTIVE':
-                return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">Active</Badge>;
-            case 'INACTIVE':
-                return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Inactive</Badge>;
-            case 'SUSPENDED':
-                return <Badge className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">Suspended</Badge>;
-            case 'PENDING':
-                return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">Pending</Badge>;
-            default:
-                return <Badge variant="secondary" className="dark:bg-gray-700 dark:text-gray-300">{status}</Badge>;
-        }
-    };
+    const handleRowClick = (biz: Business) => {
+        setSelectedBusiness(biz)
+        setIsSheetOpen(true)
+    }
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col space-y-3 p-3 h-full">
+
+            {/* --- HEADER & ACTIONS --- */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Business Management</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        Manage all businesses on your platform
-                        {!isLoading && businessesData && (
-                            <span className="block text-sm mt-1 text-gray-500 dark:text-gray-500">
-                                Showing {filteredBusinesses.length} businesses
-                                {businessesData.pages[businessesData.pages.length - 1]?.data?.pagination?.total && (
-                                    ` of ${businessesData.pages[businessesData.pages.length - 1].data.pagination.total}`
-                                )}
-                            </span>
-                        )}
+                    <h2 className="text-2xl font-bold tracking-tight">Business Listings</h2>
+                    <p className="text-muted-foreground text-sm">
+                        Kelola profil bisnis, verifikasi, dan keuangan mitra.
                     </p>
                 </div>
+                <Button size="sm" className="shadow-sm">
+                    <ExternalLink className="mr-2 h-4 w-4" /> Review Verifikasi (3)
+                </Button>
             </div>
 
-            {/* Filters */}
-            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                <CardHeader className="pb-4">
-                    <CardTitle className="text-gray-900 dark:text-gray-100">Filters & Search</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 min-w-0">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
-                                <input
-                                    type="text"
-                                    placeholder="Search businesses..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
-                                />
-                                {search !== debouncedSearch && (
-                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-500 border-t-transparent"></div>
-                                    </div>
-                                )}
-                            </div>
+            {/* --- FILTERS --- */}
+            <Card className="rounded-md shadow-md border-border/50 bg-card">
+                <CardContent className="p-3">
+                    <div className="flex flex-col md:flex-row gap-3">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Cari nama bisnis atau pemilik..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 bg-muted/30 border-border/50"
+                            />
                         </div>
-                        <div className="sm:w-48">
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500">
-                                    <SelectValue placeholder="All Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="ACTIVE">Active</SelectItem>
-                                    <SelectItem value="INACTIVE">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-[180px] bg-muted/30 border-border/50">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Filter className="h-3.5 w-3.5" />
+                                    <span className="truncate text-xs font-medium">
+                                        {statusFilter === 'ALL' ? 'Semua Status Verifikasi' : statusFilter}
+                                    </span>
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">Semua</SelectItem>
+                                <SelectItem value="verified">Terverifikasi</SelectItem>
+                                <SelectItem value="pending">Menunggu Verifikasi</SelectItem>
+                                <SelectItem value="rejected">Ditolak</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Businesses Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {isLoading ? (
-                    Array.from({ length: 6 }).map((_, index) => (
-                        <Card key={index} className="animate-pulse" style={{ animationDelay: `${index * 100}ms` }}>
-                            <CardHeader className="pb-3">
-                                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-2"></div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
-                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
-                                    <div className="grid grid-cols-2 gap-4 pt-4">
-                                        <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-                                        <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-                                    </div>
-                                    <div className="flex space-x-2 pt-4">
-                                        <div className="h-9 bg-gray-200 dark:bg-gray-700 rounded flex-1"></div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))
-                ) : (
-                    filteredBusinesses.map((business: Business, index: number) => (
-                        <Card
-                            key={business.id}
-                            className="group hover:shadow-xl dark:hover:shadow-2xl hover:shadow-red-100 dark:hover:shadow-red-900/20 transition-all duration-300 hover:-translate-y-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 animate-in fade-in-0 slide-in-from-bottom-4"
-                            style={{ animationDelay: `${index * 100}ms` }}
-                        >
-                            <CardHeader className="pb-3">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1 min-w-0">
-                                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors truncate">
-                                            {business.name}
-                                        </CardTitle>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 font-medium">
-                                            {business.type || 'Business'}
-                                        </p>
-                                    </div>
-                                    <div className="ml-3 flex-shrink-0">
-                                        {getStatusBadge(business.status)}
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {/* Description */}
-                                {business.description && (
-                                    <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">
-                                        {business.description}
-                                    </p>
-                                )}
-
-                                {/* Contact Info */}
-                                <div className="space-y-2">
-                                    {business.phone && (
-                                        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer group">
-                                            <Phone className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-red-500 transition-colors" />
-                                            <span className="truncate group-hover:underline">{business.phone}</span>
-                                        </div>
-                                    )}
-                                    {business.email && (
-                                        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer group">
-                                            <Mail className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-red-500 transition-colors" />
-                                            <span className="truncate group-hover:underline">{business.email}</span>
-                                        </div>
-                                    )}
-                                    {business.address && (
-                                        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer group">
-                                            <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-red-500 transition-colors flex-shrink-0" />
-                                            <span className="line-clamp-1 group-hover:underline">{business.address}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Stats */}
-                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                    <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                        <div className="flex items-center justify-center space-x-1 mb-1">
-                                            <Building2 className="w-4 h-4 text-red-500" />
-                                            <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{business._count.outlets}</span>
-                                        </div>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Outlets</p>
-                                    </div>
-                                    <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                        <div className="flex items-center justify-center space-x-1 mb-1">
-                                            <DollarSign className="w-4 h-4 text-green-500" />
-                                            <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{business._count.orders}</span>
-                                        </div>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Orders</p>
-                                    </div>
-                                </div>
-
-                                {/* Wallet Balance */}
-                                {business.wallet && (
-                                    <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
-                                        <div className="p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Wallet Balance</span>
-                                                <span className="font-bold text-green-600 dark:text-green-400 text-lg">
-                                                    {formatCurrency(business.wallet.balance)}
-                                                </span>
-                                            </div>
-                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                                <div
-                                                    className="bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full transition-all duration-500"
-                                                    style={{
-                                                        width: `${Math.min((business.wallet.balance / 10000000) * 100, 100)}%`
-                                                    }}
-                                                ></div>
-                                            </div>
-                                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                                {business.wallet.balance > 5000000 ? 'High balance' :
-                                                    business.wallet.balance > 1000000 ? 'Good balance' : 'Low balance'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Actions */}
-                                <div className="grid grid-cols-2 gap-2 pt-4">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:border-red-800 dark:hover:text-red-400 transition-colors"
-                                        onClick={() => {
-                                            router.push(`/admin/businesses/${business.id}`);
-                                        }}
-                                    >
-                                        <Eye className="w-4 h-4 mr-2" />
-                                        View
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:border-blue-800 dark:hover:text-blue-400 transition-colors"
-                                        onClick={() => {
-                                            router.push(`/admin/businesses/${business.id}/outlets`);
-                                        }}
-                                    >
-                                        <Store className="w-4 h-4 mr-2" />
-                                        Outlets
-                                    </Button>
-                                </div>
-
-                                {/* Created Date */}
-                                <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-500 pt-3 border-t border-gray-100 dark:border-gray-700">
-                                    <Calendar className="w-3 h-3" />
-                                    <span>Joined {formatDateTime(business.createdAt)}</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))
-                )}
-
-                {/* Infinite Scroll Loading Indicator */}
-                {isFetchingNextPage && (
-                    <div className="col-span-full flex justify-center py-8">
-                        <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-red-500 border-t-transparent"></div>
-                            <span className="text-sm font-medium">Loading more businesses...</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Load More Trigger */}
-                {hasNextPage && !isFetchingNextPage && (
-                    <div ref={loadMoreRef} className="col-span-full h-10" />
-                )}
-            </div>
-
-            {/* Empty State */}
-            {!isLoading && filteredBusinesses.length === 0 && (
-                <Card className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700">
-                    <CardContent className="flex flex-col items-center justify-center py-16">
-                        <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-6">
-                            <Building2 className="w-10 h-10 text-gray-400 dark:text-gray-500" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                            {search || (statusFilter && statusFilter !== 'all') ? 'No businesses found' : 'No businesses yet'}
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-center max-w-md leading-relaxed">
-                            {search || (statusFilter && statusFilter !== 'all')
-                                ? 'Try adjusting your search criteria or filter settings to find what you\'re looking for.'
-                                : 'Businesses will appear here once they register on your platform. Check back later or contact support if you\'re expecting businesses to appear.'}
-                        </p>
-                        {(search || (statusFilter && statusFilter !== 'all')) && (
-                            <Button
-                                variant="outline"
-                                className="mt-6 hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:border-red-800 dark:hover:text-red-400 transition-colors"
-                                onClick={() => {
-                                    setSearch('');
-                                    setStatusFilter('all');
-                                }}
+            {/* --- TABLE LIST --- */}
+            <Card className="rounded-md shadow-md border-border/50 flex-1 overflow-hidden">
+                <Table>
+                    <TableHeader className="bg-muted/50">
+                        <TableRow>
+                            <TableHead>Nama Bisnis</TableHead>
+                            <TableHead>Pemilik</TableHead>
+                            <TableHead>Status Akun</TableHead>
+                            <TableHead>Saldo Wallet</TableHead>
+                            <TableHead>Verifikasi Manual</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredBusinesses.map((biz) => (
+                            <TableRow
+                                key={biz.id}
+                                className="cursor-pointer hover:bg-muted/30 transition-colors group"
+                                onClick={() => handleRowClick(biz)}
                             >
-                                Clear Filters
-                            </Button>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-9 w-9 rounded-md border border-border/50">
+                                            <AvatarImage src={biz.logo} alt={biz.name} />
+                                            <AvatarFallback className="rounded-md"><Building2 className="h-4 w-4" /></AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-sm group-hover:text-primary transition-colors">{biz.name}</span>
+                                            <span className="text-xs text-muted-foreground">{biz.createdAt}</span>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-sm">{biz.owner}</TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className={
+                                        biz.status === 'active'
+                                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-800"
+                                            : "bg-destructive/10 text-destructive border-destructive/20"
+                                    }>
+                                        {biz.status === 'active' ? 'Active' : 'Suspended'}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="font-medium font-mono text-sm">
+                                    {formatIDR(biz.walletBalance)}
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        {biz.verificationStatus === 'verified' && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                                        {biz.verificationStatus === 'pending' && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                                        {biz.verificationStatus === 'rejected' && <XCircle className="h-4 w-4 text-destructive" />}
+                                        <span className="text-xs capitalize text-muted-foreground">
+                                            {biz.verificationStatus}
+                                        </span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </Card>
+
+            {/* --- DETAIL SHEET (DRAWER) --- */}
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetContent className="sm:max-w-xl w-[90vw] overflow-y-auto p-0 gap-0">
+                    {selectedBusiness && (
+                        <>
+                            {/* Sheet Header */}
+                            <div className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b border-border/50 p-6 pb-4">
+                                <SheetHeader className="text-left space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <Avatar className="h-16 w-16 rounded-lg border border-border shadow-sm">
+                                                <AvatarImage src={selectedBusiness.logo} />
+                                                <AvatarFallback className="rounded-lg text-xl bg-muted"><Store /></AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <SheetTitle className="text-xl font-bold">{selectedBusiness.name}</SheetTitle>
+                                                <SheetDescription className="flex items-center gap-2 mt-1">
+                                                    <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{selectedBusiness.id}</span>
+                                                    <span>•</span>
+                                                    <span className="text-xs">{selectedBusiness.email}</span>
+                                                </SheetDescription>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {selectedBusiness.status === 'active' ? (
+                                                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20">
+                                                    <Ban className="h-4 w-4 mr-2" /> Suspend
+                                                </Button>
+                                            ) : (
+                                                <Button variant="outline" size="sm" className="text-emerald-600 hover:text-emerald-600 hover:bg-emerald-50 border-emerald-200">
+                                                    <CheckCircle2 className="h-4 w-4 mr-2" /> Unsuspend
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </SheetHeader>
+                            </div>
+
+                            {/* Content Tabs */}
+                            <div className="p-6">
+                                <Tabs defaultValue="overview" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-4 mb-6">
+                                        <TabsTrigger value="overview">Profil</TabsTrigger>
+                                        <TabsTrigger value="finance">Keuangan</TabsTrigger>
+                                        <TabsTrigger value="outlets">Outlet</TabsTrigger>
+                                        <TabsTrigger value="promo">Promo</TabsTrigger>
+                                    </TabsList>
+
+                                    {/* TAB 1: OVERVIEW */}
+                                    <TabsContent value="overview" className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <Card className="shadow-sm border-border/50">
+                                                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Member</CardTitle></CardHeader>
+                                                <CardContent><div className="text-2xl font-bold">{selectedBusiness.stats.totalMembers}</div></CardContent>
+                                            </Card>
+                                            <Card className="shadow-sm border-border/50">
+                                                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Promo Aktif</CardTitle></CardHeader>
+                                                <CardContent><div className="text-2xl font-bold">{selectedBusiness.stats.activePromos}</div></CardContent>
+                                            </Card>
+                                        </div>
+
+                                        <Card className="shadow-sm border-border/50">
+                                            <CardHeader>
+                                                <CardTitle className="text-base">Informasi Kontak</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-3 text-sm">
+                                                <div className="flex justify-between py-2 border-b border-border/30">
+                                                    <span className="text-muted-foreground">Pemilik</span>
+                                                    <span className="font-medium">{selectedBusiness.owner}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-border/30">
+                                                    <span className="text-muted-foreground">Telepon</span>
+                                                    <span className="font-medium">{selectedBusiness.phone}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-border/30">
+                                                    <span className="text-muted-foreground">Alamat</span>
+                                                    <span className="font-medium text-right max-w-[60%]">{selectedBusiness.address}</span>
+                                                </div>
+                                                <div className="flex justify-between py-2 items-center">
+                                                    <span className="text-muted-foreground">Status KYC</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="secondary" className="uppercase text-[10px]">{selectedBusiness.verificationStatus}</Badge>
+                                                        <Button variant="link" size="sm" className="h-auto p-0 text-blue-600">Lihat Dokumen</Button>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </TabsContent>
+
+                                    {/* TAB 2: FINANCE */}
+                                    <TabsContent value="finance" className="space-y-4">
+                                        <Card className="bg-primary/5 border-primary/20 shadow-sm">
+                                            <CardHeader className="pb-2">
+                                                <div className="flex items-center justify-between">
+                                                    <CardTitle className="text-sm font-medium text-primary">Saldo Dompet Aktif</CardTitle>
+                                                    <Wallet className="h-4 w-4 text-primary" />
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="text-3xl font-bold text-primary">{formatIDR(selectedBusiness.walletBalance)}</div>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card className="shadow-sm border-border/50">
+                                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                                <CardTitle className="text-base">Informasi Rekening Bank</CardTitle>
+                                                <Button variant="ghost" size="sm" className="h-8 text-xs">
+                                                    <Edit className="mr-2 h-3 w-3" /> Edit (Admin)
+                                                </Button>
+                                            </CardHeader>
+                                            <CardContent className="space-y-3 text-sm">
+                                                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+                                                    <div className="h-10 w-10 rounded bg-white flex items-center justify-center shadow-sm">
+                                                        <CreditCard className="h-5 w-5 text-muted-foreground" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold">{selectedBusiness.bankInfo.bankName}</p>
+                                                        <p className="font-mono text-muted-foreground">{selectedBusiness.bankInfo.accountNumber}</p>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">A.N {selectedBusiness.bankInfo.accountHolder}</p>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        <div>
+                                            <h4 className="text-sm font-medium mb-3">Transaksi Terakhir</h4>
+                                            <div className="space-y-2">
+                                                {/* Mock Transactions */}
+                                                {[1, 2, 3].map((i) => (
+                                                    <div key={i} className="flex items-center justify-between p-3 bg-card border border-border/50 rounded-lg shadow-sm">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${i % 2 === 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                                                {i % 2 === 0 ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-medium">{i % 2 === 0 ? 'Top Up Saldo' : 'Penarikan Dana'}</p>
+                                                                <p className="text-xs text-muted-foreground">20 Nov 2023, 14:30</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className={`text-sm font-medium ${i % 2 === 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                            {i % 2 === 0 ? '+' : '-'}{formatIDR(500000 * i)}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </TabsContent>
+
+                                    {/* TAB 3: OUTLETS (Mock) */}
+                                    <TabsContent value="outlets">
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-sm font-medium">Daftar Outlet ({selectedBusiness.stats.totalOutlets})</h4>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs">Detail Lokasi</Button>
+                                            </div>
+                                            {[1, 2].map((item) => (
+                                                <div key={item} className="flex items-start gap-3 p-3 border border-border/50 rounded-lg">
+                                                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Outlet Cabang {item}</p>
+                                                        <p className="text-xs text-muted-foreground">Jl. Contoh No. {item}, Jakarta</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </TabsContent>
+
+                                    {/* TAB 4: PROMO & BANNERS (Mock) */}
+                                    <TabsContent value="promo">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <h4 className="text-sm font-medium mb-2 flex items-center gap-2"><Tag className="h-4 w-4" /> Promo Aktif</h4>
+                                                <Card className="p-3 border-dashed border-border bg-muted/20">
+                                                    <p className="text-sm font-medium">Diskon Akhir Tahun</p>
+                                                    <p className="text-xs text-muted-foreground">Potongan 20% All Item • Berakhir 31 Des</p>
+                                                </Card>
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-medium mb-2 flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Banner Aplikasi</h4>
+                                                <div className="h-24 bg-muted rounded-lg flex items-center justify-center text-muted-foreground text-xs border border-border">
+                                                    Banner Image Placeholder
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </TabsContent>
+
+                                </Tabs>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
-    );
+    )
 }

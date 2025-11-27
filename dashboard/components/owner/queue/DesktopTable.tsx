@@ -1,7 +1,14 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useState } from 'react';
 import { orderApi, type QueueEntry, type OrderStatus } from '@/lib/apis/order';
+=======
+import { DataTable } from '@/components/shared';
+import { Button } from '@/components/ui/button';
+import type { QueuePrimaryAction } from '@/hooks/useQueueActions';
+import { type QueueEntry, type OrderStatus } from '@/lib/apis/order';
+>>>>>>> Stashed changes
 
 interface QueueDesktopTableProps {
   queue: QueueEntry[];
@@ -103,6 +110,7 @@ export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) 
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">No. Antrian</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Layanan</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment Image</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Waktu Booking</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
@@ -121,10 +129,46 @@ export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) 
                       {item.queueNumber || item.position || '-'}
                     </span>
                   </div>
+<<<<<<< Updated upstream
                 </div>
               </td>
               <td className="px-4 py-3">
                 <div>
+=======
+                </td>
+                <td className="px-4 py-3">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {item.customerName}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {item.guestCustomer?.phone}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {item.productName}
+                    </div>
+                    {item.items && item.items.length > 1 && (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        +{item.items.length - 1} item lainnya
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
+
+                    {item.transaction.paymentProofUrl
+                      ? <a href={item.transaction.paymentProofUrl} target='_blank'>Lihat</a>
+                      : 'Customer belum upload bukti pembayaran'
+                    }
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+>>>>>>> Stashed changes
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {item.customerName}
                   </div>
