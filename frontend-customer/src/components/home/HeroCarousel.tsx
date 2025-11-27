@@ -24,7 +24,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
 
     if (slides.length === 0) {
         return (
-            <div className="relative overflow-hidden rounded-xl border border-border/40 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 p-8 text-primary shadow-sm">
+            <div className="relative overflow-hidden rounded-md border border-border/40 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 p-4 text-primary">
                 <div className="max-w-xl space-y-2">
                     <p className="text-sm font-semibold uppercase tracking-wide">{t("hero.badge")}</p>
                     <h2 className="text-2xl font-bold leading-tight">{t("hero.fallbackTitle")}</h2>
@@ -52,17 +52,16 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                 {slides.map((banner, index) => (
                     <li
                         key={banner.id}
-                        className="relative min-w-full flex-shrink-0"
+                        className="relative min-w-full max-h-[210px] flex-shrink-0"
                         aria-hidden={index !== active}
                         aria-roledescription="slide"
                     >
                         <div className="absolute inset-0">
-                            <ImageRender
+                            <img
                                 src={banner.imageUrl}
                                 alt={banner.title ?? "Banner"}
                                 className="h-full w-full object-cover"
                                 sizes="100vw"
-                                priority={index === 0}
                             />
                             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/20" />
                         </div>
@@ -77,7 +76,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                             {index === active && (
                                 <div key={active} className="animate-in fade-in slide-in-from-bottom-5 duration-700 ease-out">
                                     <div className="flex flex-col gap-3">
-                                        <p className="text-sm font-semibold uppercase tracking-wider text-white/80">{t("hero.badge")}</p>
+                                        {/* <p className="text-sm font-semibold uppercase tracking-wider text-white/80">{t("hero.badge")}</p> */}
                                         <h2 className="text-2xl font-bold leading-tight line-clamp-2 sm:text-3xl sm:max-w-lg">
                                             {banner.title ?? t("hero.defaultTitle")}
                                         </h2>
@@ -85,7 +84,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                                             {banner.subtitle ?? t("hero.defaultSubtitle")}
                                         </p>
                                         {banner.cta && (
-                                            <Link href={banner.cta.payload || "/promos"} className="mt-2" tabIndex={index !== active ? -1 : 0}>
+                                            <Link href={banner.cta.payload || "/promos"} target="_blank" className="mt-2" tabIndex={index !== active ? -1 : 0}>
                                                 <Button size="sm" variant="secondary" className="bg-white/95 text-primary hover:bg-white">
                                                     {t("hero.cta")}
                                                 </Button>

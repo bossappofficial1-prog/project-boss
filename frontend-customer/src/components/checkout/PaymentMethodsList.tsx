@@ -3,7 +3,7 @@ import { PaymentMethod } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Building2, ChevronRight, QrCode, Shield, Wallet, CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
+import { Building2, ChevronRight, QrCode, Shield, Wallet, CheckCircle2, Loader2, AlertTriangle, ClipboardCheck } from "lucide-react";
 import { Button } from "../ui/button";
 import { ImageRender } from "../shared/Image";
 import { Badge } from "../ui/badge";
@@ -12,10 +12,10 @@ import { useTranslations } from "@/hooks/useI18n";
 
 const PaymentMethodsList: React.FC<{
     onSelectPayment: (method: PaymentMethod) => void;
-    selectedPayment: PaymentMethod
+    selectedPayment?: PaymentMethod | null;
 }> = ({ onSelectPayment, selectedPayment }) => {
     const t = useTranslations("payment");
-    const [selectedCategory, setSelectedCategory] = useState<'all' | 'qris' | 'va'>('all');
+    const [selectedCategory, setSelectedCategory] = useState<'all' | 'qris' | 'va' | 'manual'>('all');
     const { data: paymentMethods, isLoading, error, refetch } = useQuery({
         queryKey: ["payment-methods"],
         queryFn: Order.getPaymentMethodList,
@@ -31,6 +31,7 @@ const PaymentMethodsList: React.FC<{
         { id: 'all' as const, label: t("categories.all"), icon: Wallet, count: paymentMethods?.length || 0 },
         { id: 'qris' as const, label: t("categories.qris"), icon: QrCode, count: paymentMethods?.filter(m => m.type === 'qris').length || 0 },
         { id: 'va' as const, label: t("categories.va"), icon: Building2, count: paymentMethods?.filter(m => m.type === 'va').length || 0 },
+        { id: 'manual' as const, label: t("categories.manual"), icon: ClipboardCheck, count: paymentMethods?.filter(m => m.type === 'manual').length || 0 },
     ];
 
     if (error) {
@@ -101,15 +102,18 @@ const PaymentMethodsList: React.FC<{
                             />
                         ) : filteredMethods && filteredMethods.length > 0 ? (
                             filteredMethods.map((method) => {
-                                const isSelected = selectedPayment && selectedPayment.id === method.id;
+                                const isSelected = selectedPayment?.id === method.id;
 
                                 return (
                                     <button
                                         key={method.id}
+                                        disabled={method.disable}
                                         onClick={() => onSelectPayment(method)}
                                         className={`w-full p-3 border-2 rounded-lg transition-all duration-300 group relative overflow-hidden min-h-[60px] ${isSelected
                                             ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-md ring-1 ring-primary/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/2 dark:hover:bg-primary/5 hover:shadow-sm'
+                                            : method.disable
+                                                ? 'border-gray-200 dark:border-gray-700 opacity-60 grayscale cursor-not-allowed'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/2 dark:hover:bg-primary/5 hover:shadow-sm'
                                             }`}
                                     >
                                         {/* Selection Indicator */}
@@ -144,7 +148,7 @@ const PaymentMethodsList: React.FC<{
                                                     </div>
 
                                                     {/* Payment Type Badge */}
-                                                    <div className="mt-1.5">
+                                                    <div className="mt-1.5 flex items-center gap-3">
                                                         <Badge
                                                             variant="outline"
                                                             className={`text-xs px-1.5 py-0.5 ${method.type === 'qris'
@@ -154,10 +158,13 @@ const PaymentMethodsList: React.FC<{
                                                                     : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800'
                                                                 }`}
                                                         >
-                                                            {method.type === 'qris' ? t("types.qris") :
-                                                                method.type === 'va' ? t("types.va") :
-                                                                    'Lainnya'}
+                                                            {method.type === 'qris'
+                                                                ? t("types.qris")
+                                                                : method.type === 'va'
+                                                                    ? t("types.va")
+                                                                    : t("types.manual")}
                                                         </Badge>
+                                                        {method.disable && <p className="text-xs">Akan tersedia segera</p>}
                                                     </div>
                                                 </div>
                                             </div>

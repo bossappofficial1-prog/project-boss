@@ -1,7 +1,6 @@
 'use client';
 
 import { apiClient } from '@/lib/apis/base';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import ThemeToggle from '../ThemeToggle';
 import ConfirmationModal from '@/components/ui/confirmation-modal';

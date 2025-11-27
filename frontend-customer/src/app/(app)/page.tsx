@@ -118,17 +118,17 @@ function HomeSections() {
       <HeroCarousel banners={banners} />
 
       {/* --- STATS SECTION --- */}
-      <section className="space-y-4">
+      {/* <section className="space-y-4">
         <HomeSectionHeader title={t("stats.title")} subtitle={t("stats.subtitle")} icon={<Sparkles className="h-4 w-4" />} />
 
-        <div className="rounded-xl border border-border/70 bg-card/95 shadow-sm">
+        <div className="rounded-md border border-border/70 bg-card/95">
           <div className="grid grid-cols-3 divide-y divide-border/60 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
             {stats.map((stat) => {
               const Icon = stat.icon;
               return (
                 <div key={stat.key} className="flex flex-col items-center gap-2 p-3 text-center">
 
-                  {/* Ikon dengan latar belakang berbentuk lingkaran */}
+                  Ikon dengan latar belakang berbentuk lingkaran
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" />
                   </div>
@@ -144,10 +144,10 @@ function HomeSections() {
             })}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* --- CATEGORIES SECTION --- */}
-      <section className="space-y-4">
+      <section className="space-y-4" id="categories">
         <HomeSectionHeader title={t("sections.categories.title")} subtitle={t("sections.categories.subtitle")} actionLabel={t("sections.categories.action")} href="/search" icon={<LayoutGrid className="h-4 w-4" />} />
         {categories.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">{t("empty.categories")}</div>
@@ -161,7 +161,7 @@ function HomeSections() {
       </section>
 
       {/* --- FEATURED OUTLETS SECTION --- */}
-      <section className="space-y-4">
+      <section className="space-y-4" id="featured-outlets">
         <HomeSectionHeader title={t("sections.featured.title")} subtitle={t("sections.featured.subtitle")} actionLabel={t("sections.featured.action")} href="/outlets" icon={<Store className="h-4 w-4" />} />
         {outlets.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">{t("empty.outlets")}</div>
@@ -181,7 +181,7 @@ function HomeSections() {
       </section>
 
       {/* --- POPULAR ITEMS SECTION --- */}
-      <section className="space-y-4">
+      <section className="space-y-4" id="popular-items">
         <HomeSectionHeader
           title={t("sections.popular.title")}
           subtitle={t("sections.popular.subtitle")}
@@ -192,7 +192,7 @@ function HomeSections() {
             {t("empty.popular")}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
             {popularItems.map((item) => (
               <PopularItemCard
                 key={item.id}
@@ -207,7 +207,7 @@ function HomeSections() {
       </section>
 
       {/* --- PROMOS SECTION --- */}
-      <section className="space-y-4">
+      <section className="space-y-4" id="promos">
         <HomeSectionHeader
           title={t("sections.promos.title")}
           subtitle={t("sections.promos.subtitle")}
@@ -233,7 +233,7 @@ function HomeSections() {
       </section>
 
       {/* --- QUICK ACTIONS SECTION --- */}
-      <section className="space-y-4">
+      <section className="space-y-4" id="quick-action">
         <HomeSectionHeader
           title={t("sections.quickActions.title")}
           subtitle={t("sections.quickActions.subtitle")}

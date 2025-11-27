@@ -1,8 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import RootLayout from "@/components/layouts/RootLayout";
+import { CustomerSocketListener } from "@/components/socket/CustomerSocketListener";
 import { SocketProvider } from "@/context/SocketContext";
 import { ThemeProvider } from "next-themes";
+import { FeatureGuideProvider } from "@/providers/FeatureGuideProvider";
+import { FeatureGuideOverlay } from "@/components/guides/FeatureGuideOverlay";
+import { SnackbarProvider } from "@/context/SnackbarContext";
+import { SnackbarContainer } from "@/components/shared/Snackbar";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -20,26 +25,34 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "BOSS",
-  description: "Manage your business with BOSS",
-  icons: "/assets/logo/logo-bossapp.svg",
+  title: "BOSS - Platform Manajemen Bisnis",
+  description: "Urus operasional usaha, atur jadwal, dan jaga pelanggan kamu lebih gampang bareng BOSS.",
+  icons: {
+    icon: [
+      { url: "/assets/logo/favicon.ico", type: "image/x-icon" },
+      { url: "/assets/logo/web-icon-192x192.png", type: "image/png", sizes: "192x192" },
+      { url: "/assets/logo/web-icon-512x512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: "/assets/logo/web-icon-192x192.png",
+    shortcut: "/assets/logo/favicon.ico",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "BOSS Customer",
     startupImage: [
-      "/assets/logo/logo-bossapp.svg",
+      `${process.env.SITE_URL}/assets/logo/og-image.png`,
     ],
   },
   openGraph: {
-    title: "BOSS - Business Management Platform",
-    description: "Manage your business with BOSS - Complete solution for business operations, scheduling, and customer management",
+    title: "BOSS - Platform Manajemen Bisnis",
+    description: "BOSS bantu kamu merapikan operasional bisnis, jadwal layanan, sampai urusan pelanggan dalam satu tempat.",
     url: "https://bossapp.id",
     siteName: "BOSS",
     images: [
       {
-        url: "/assets/logo/logo-bossapp.svg",
+        url: `${process.env.SITE_URL}/assets/logo/og-image.png`,
         width: 1200,
         height: 630,
         alt: "BOSS Business Management Platform",
@@ -50,9 +63,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "BOSS - Business Management Platform",
-    description: "Manage your business with BOSS - Complete solution for business operations",
-    images: ["/assets/logo/logo-bossapp.svg"],
+    title: "BOSS - Platform Manajemen Bisnis",
+    description: "Optimalkan operasional, jadwal, dan pengalaman pelanggan bisnis kamu cukup lewat BOSS.",
+    images: [`${process.env.SITE_URL}/assets/logo/og-image.png`],
   },
   robots: {
     index: true,
@@ -72,6 +85,29 @@ export const metadata: Metadata = {
   category: "business",
 };
 
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "BOSS Customer",
+  "description": "BOSS customer",
+  "url": process.env.SITE_URL || 'http://localhost:3000',
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web Browser",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "IDR"
+  },
+  "creator": {
+    "@type": "Organization",
+    "name": "BOSS Development Team"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BOSS"
+  }
+};
+
 export default function Layout({
   children,
 }: {
@@ -84,9 +120,13 @@ export default function Layout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="BOSS Customer" />
-        <link rel="apple-touch-icon" href="/assets/logo/logo-bossapp.svg" />
-        <link rel="icon" type="image/svg+xml" href="/assets/logo/logo-bossapp.svg" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/assets/logo/icon-192x192.png" />
+        <link rel="icon" type="image/x-icon" href="/assets/logo/favicon.ico" />
+        <link rel="shortcut icon" href="/assets/logo/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#eb2525" />
+        <meta name="color-scheme" content="light dark" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       </head>
       <body
         className={`${poppins.variable} font-poppins antialiased`}
@@ -97,11 +137,18 @@ export default function Layout({
           enableSystem
           disableTransitionOnChange
         >
-          <SocketProvider>
-            <RootLayout>
-              {children}
-            </RootLayout>
-          </SocketProvider>
+          <SnackbarProvider>
+            <FeatureGuideProvider>
+              <SocketProvider>
+                <CustomerSocketListener />
+                <RootLayout>
+                  {children}
+                </RootLayout>
+              </SocketProvider>
+              <FeatureGuideOverlay />
+            </FeatureGuideProvider>
+            <SnackbarContainer />
+          </SnackbarProvider>
         </ThemeProvider>
       </body>
     </html>

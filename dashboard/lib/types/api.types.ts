@@ -164,3 +164,12 @@ export interface RevenueChartResponse {
     chartData: RevenueChartData[];
     summary: RevenueChartSummary;
 }
+
+export interface PaginationResponse {
+    "page": number,
+    "limit": number,
+    "total": number,
+    "totalPages": number,
+    "hasNextPage": boolean,
+    "hasPrevPage": boolean
+}

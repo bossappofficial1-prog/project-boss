@@ -1,4 +1,4 @@
-import { OrderStatus, Product, PaymentStatus } from "@prisma/client";
+import { BookingSlotStatus, OrderStatus, PaymentStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { getRabbitMQChannel } from "../config/rabbitmq";
 import { messagePublisher } from "./message-publisher.service";
@@ -10,8 +10,176 @@ import { CreateOrderInput } from "../schemas/order.schema";
 import { createMidtransTransactionService } from './payment.service';
 import { getOutletByIdService } from "./outlet.service";
 import { getBusinessByIdService } from "./business.service"; // Impor service bisnis
-import { generateOrderCode } from "../utils";
 import { BookingRepository } from "../repositories/booking.repository";
+import { createOrderRecord } from "./helpers/order-create.helper";
+import { PaymentRepository } from "../repositories/payment.repository";
+import { SocketEmitter } from "../socket/socket-emiiter";
+import { MidtransTransactionStatus, PaymentResponse } from "../types/Others";
+import Console from "../utils/logger";
+import { paymentQueue } from "../queues/payment.queue";
+
+type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> & Record<string, any>;
+type CustomerOrderRecord = Awaited<ReturnType<typeof OrderRepository.getOrderByCustomerPhone>>[number] & Record<string, any>;
+
+const SERVICE_QUEUE_STATUSES: OrderStatus[] = [
+    OrderStatus.AWAITING_PAYMENT,
+    OrderStatus.PROCESSING,
+    OrderStatus.CONFIRMED,
+    OrderStatus.READY,
+    OrderStatus.ON_GOING,
+];
+
+const SERVICE_QUEUE_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
+    [OrderStatus.AWAITING_PAYMENT]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+    [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+    [OrderStatus.PROCESSING]: [OrderStatus.READY, OrderStatus.CANCELLED],
+    [OrderStatus.READY]: [OrderStatus.ON_GOING, OrderStatus.COMPLETED, OrderStatus.CANCELLED],
+    [OrderStatus.ON_GOING]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
+    [OrderStatus.COMPLETED]: [],
+    [OrderStatus.CANCELLED]: [],
+};
+
+interface QueueMetaPayload {
+    position: number;
+    totalAhead: number;
+    totalOrders: number;
+    scheduledStart: string | null;
+    scheduledEnd: string | null;
+    status: OrderStatus;
+}
+
+interface QueueSnapshotEntry {
+    order: OrderWithRelations;
+    position: number;
+    scheduledStart: Date | null;
+    scheduledEnd: Date | null;
+    total: number;
+}
+
+const queueOrderInclude = {
+    items: { include: { product: true } },
+    guestCustomer: true,
+    bookingSlot: {
+        include: {
+            staff: true,
+        },
+    },
+    outlet: true,
+    transaction: true,
+    assignedStaff: true,
+} as const;
+
+const hasServiceProduct = (order: Pick<OrderWithRelations, 'items'> | CustomerOrderRecord) =>
+    (order.items ?? []).some((item: any) => item.product?.type === 'SERVICE');
+
+const computeQueueSchedule = (order: OrderWithRelations) => {
+    const slotStart = order.bookingSlot?.startTime ? new Date(order.bookingSlot.startTime) : null;
+    const slotEnd = order.bookingSlot?.endTime ? new Date(order.bookingSlot.endTime) : null;
+    const bookingDate = order.bookingDate ? new Date(order.bookingDate) : null;
+    const baseStartSource = slotStart ?? bookingDate ?? order.createdAt;
+    const start = new Date(baseStartSource);
+
+    if (!slotEnd) {
+        const durationMinutes = order.items.find((item: any) => item.product.type === 'SERVICE')?.product?.serviceDurationMinutes ?? 60;
+        const derivedEnd = new Date(start);
+        derivedEnd.setMinutes(derivedEnd.getMinutes() + durationMinutes);
+        return { start, end: derivedEnd };
+    }
+
+    return { start, end: new Date(slotEnd) };
+};
+
+async function buildServiceQueueSnapshot(outletId: string): Promise<QueueSnapshotEntry[]> {
+    const queueOrders = await db.order.findMany({
+        where: {
+            outletId,
+            orderStatus: { in: SERVICE_QUEUE_STATUSES },
+            items: { some: { product: { type: 'SERVICE' } } },
+        },
+        include: queueOrderInclude,
+    }) as OrderWithRelations[];
+
+    if (!queueOrders.length) {
+        return [];
+    }
+
+    const enriched = queueOrders.map((order) => {
+        const schedule = computeQueueSchedule(order);
+        const sortAnchor = schedule.start ?? new Date(order.createdAt);
+        return {
+            order,
+            schedule,
+            sortValue: sortAnchor.getTime(),
+        };
+    });
+
+    enriched.sort((a, b) => {
+        if (a.sortValue !== b.sortValue) {
+            return a.sortValue - b.sortValue;
+        }
+        return a.order.createdAt.getTime() - b.order.createdAt.getTime();
+    });
+
+    const total = enriched.length;
+
+    return enriched.map((entry, index) => ({
+        order: entry.order,
+        position: index + 1,
+        scheduledStart: entry.schedule.start,
+        scheduledEnd: entry.schedule.end,
+        total,
+    }));
+}
+
+async function resolveQueueMetaForOrder(
+    order: OrderWithRelations | CustomerOrderRecord,
+    cache: Map<string, QueueSnapshotEntry[]>
+): Promise<QueueMetaPayload | null> {
+    const status = order.orderStatus as OrderStatus;
+    if (!hasServiceProduct(order) || !SERVICE_QUEUE_STATUSES.includes(status)) {
+        return null;
+    }
+
+    if (!cache.has(order.outletId)) {
+        cache.set(order.outletId, await buildServiceQueueSnapshot(order.outletId));
+    }
+
+    const snapshot = cache.get(order.outletId)!;
+    const entry = snapshot.find((item) => item.order.id === order.id);
+
+    if (!entry) {
+        return null;
+    }
+
+    return {
+        position: entry.position,
+        totalAhead: Math.max(0, entry.position - 1),
+        totalOrders: snapshot.length,
+        scheduledStart: entry.scheduledStart ? entry.scheduledStart.toISOString() : null,
+        scheduledEnd: entry.scheduledEnd ? entry.scheduledEnd.toISOString() : null,
+        status,
+    };
+}
+
+const serializeQueueOrder = (entry: QueueSnapshotEntry) => {
+    const { order, position, scheduledStart, scheduledEnd, total } = entry;
+
+    const queueMeta: QueueMetaPayload = {
+        position,
+        totalAhead: Math.max(0, position - 1),
+        totalOrders: total,
+        scheduledStart: scheduledStart ? scheduledStart.toISOString() : null,
+        scheduledEnd: scheduledEnd ? scheduledEnd.toISOString() : null,
+        status: order.orderStatus,
+    };
+
+    return {
+        ...order,
+        position,
+        queueNumber: position,
+        queueMeta,
+    } as OrderWithRelations & { position: number; queueNumber: number; queueMeta: QueueMetaPayload };
+};
 
 // List goods orders by outlet with optional status filter and pagination
 export async function getGoodsOrdersByOutletService(
@@ -49,7 +217,12 @@ export async function getGoodsOrdersByOutletService(
             take: limit,
             include: {
                 items: { include: { product: true } },
-                guestCustomer: true
+                guestCustomer: true,
+                transaction: {
+                    select: {
+                        paymentProofUrl: true,
+                    }
+                }
             }
         })
     ]);
@@ -66,54 +239,35 @@ export async function getGoodsOrdersByOutletService(
 // List service queue by outlet (READY orders with SERVICE items), ordered by createdAt asc and position
 export async function getServiceQueueByOutletService(
     outletId: string,
-    ownerId: string,
-    options?: { page?: number; limit?: number }
+    userIdentifier: string,
+    options?: { page?: number; limit?: number },
+    validateAsOwner: boolean = true
 ) {
     const page = Math.max(1, options?.page || 1);
     const limit = Math.min(100, Math.max(1, options?.limit || 50));
     const skip = (page - 1) * limit;
 
-    // Ownership validation
-    const outlet = await getOutletByIdService(outletId);
-    const business = await getBusinessByIdService(outlet.businessId);
-    if (business.ownerId !== ownerId) {
-        throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+    // Ownership/Access validation
+    if (validateAsOwner) {
+        // Validasi untuk owner - userIdentifier adalah ownerId
+        const outlet = await getOutletByIdService(outletId);
+        const business = await getBusinessByIdService(outlet.businessId);
+        if (business.ownerId !== userIdentifier) {
+            throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+        }
+    } else {
+        // Validasi untuk kasir - userIdentifier adalah outletId dari session kasir
+        if (userIdentifier !== outletId) {
+            throw new AppError("Anda hanya bisa mengakses antrian outlet Anda sendiri.", HttpStatus.FORBIDDEN);
+        }
     }
 
-    const where = {
-        outletId,
-        // Tampilkan antrian layanan untuk beberapa status yang relevan
-        orderStatus: { in: [
-            OrderStatus.AWAITING_PAYMENT,
-            OrderStatus.PROCESSING,
-            OrderStatus.READY,
-            OrderStatus.CONFIRMED,
-        ] },
-        items: { some: { product: { type: 'SERVICE' } } }
-    } as const;
-
-    const [total, orders] = await db.$transaction([
-        db.order.count({ where: where as any }),
-        db.order.findMany({
-            where: where as any,
-            orderBy: { createdAt: 'asc' },
-            skip,
-            take: limit,
-            include: {
-                items: { include: { product: true } },
-                guestCustomer: true,
-                bookingSlot: true
-            }
-        })
-    ]);
-
-    const data = orders.map((o, idx) => ({
-        position: skip + idx + 1,
-        ...o
-    }));
+    const snapshot = await buildServiceQueueSnapshot(outletId);
+    const total = snapshot.length;
+    const pageEntries = snapshot.slice(skip, skip + limit).map(serializeQueueOrder);
 
     return {
-        data,
+        data: pageEntries,
         total,
         page,
         limit,
@@ -121,288 +275,6 @@ export async function getServiceQueueByOutletService(
     };
 }
 
-async function createOrderInDbService(data: CreateOrderInput) {
-    const { items, outletId, bookingSlotId } = data;
-
-    // Validasi booking slot jika ada
-    if (bookingSlotId) {
-        const slot = await db.bookingSlot.findUnique({ where: { id: bookingSlotId } });
-        if (!slot) {
-            throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
-        }
-        if (slot.status !== 'AVAILABLE') {
-            throw new AppError(Messages.BOOKING_SLOT_UNAVAILABLE, HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    const outlet = await getOutletByIdService(outletId);
-    const business = await getBusinessByIdService(outlet.businessId);
-
-    // SECURITY FIX: Use transaction for atomic stock check and order creation
-    return await db.$transaction(async (tx) => {
-    let subTotal = 0;
-    const productDetails: (Product & { orderQuantity: number })[] = [];
-
-        // SECURITY FIX: Check stock and reserve it atomically
-        for (const item of items) {
-            const product = await tx.product.findUnique({
-                where: { id: item.productId },
-                select: {
-                    id: true,
-                    name: true,
-                    price: true,
-                    type: true,
-                    quantity: true,
-                    outletId: true,
-                    status: true,
-                    serviceDurationMinutes: true
-                }
-            });
-
-            if (!product) {
-                throw new AppError(`Produk dengan ID ${item.productId} tidak ditemukan`, HttpStatus.NOT_FOUND);
-            }
-
-            // SECURITY FIX: Validate product belongs to the outlet
-            if (product.outletId !== outletId) {
-                throw new AppError(`Produk ${product.name} tidak tersedia di outlet ini`, HttpStatus.BAD_REQUEST);
-            }
-
-            // SECURITY FIX: Check if product is active
-            if (product.status !== 'ACTIVE') {
-                throw new AppError(`Produk ${product.name} tidak aktif`, HttpStatus.BAD_REQUEST);
-            }
-
-            // SECURITY FIX: Validate quantity limits
-            if (item.quantity <= 0 || item.quantity > 1000) {
-                throw new AppError(`Quantity tidak valid untuk produk ${product.name}`, HttpStatus.BAD_REQUEST);
-            }
-
-            // SECURITY FIX: Atomic stock check and decrement
-            if (product.type === 'GOODS') {
-                if (!product.quantity || product.quantity < item.quantity) {
-                    throw new AppError(`Stok produk ${product.name} tidak mencukupi. Tersedia: ${product.quantity}`, HttpStatus.BAD_REQUEST);
-                }
-
-                // Immediately decrement stock to prevent race conditions
-                await tx.product.update({
-                    where: { id: product.id },
-                    data: { quantity: { decrement: item.quantity } },
-                });
-            }
-
-            subTotal += product.price * item.quantity;
-            productDetails.push({
-                ...product,
-                orderQuantity: item.quantity,
-                quantity: product.quantity || 0,
-                costPrice: 0,
-                description: null,
-                unit: null,
-                transactionFeeBearer: null,
-                serviceDurationMinutes: product.serviceDurationMinutes ?? null,
-                image: null,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
-        }
-
-        // SECURITY FIX: Validate minimum and maximum order amount
-        if (subTotal < 1000) { // Minimum 1000 rupiah
-            throw new AppError("Minimum order adalah Rp 1.000", HttpStatus.BAD_REQUEST);
-        }
-        if (subTotal > 50000000) { // Maximum 50 juta rupiah
-            throw new AppError("Maximum order adalah Rp 50.000.000", HttpStatus.BAD_REQUEST);
-        }
-
-        // SECURITY: Additional validation for suspicious order patterns
-        const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-        if (totalItems > 100) {
-            throw new AppError("Terlalu banyak item dalam satu pesanan", HttpStatus.BAD_REQUEST);
-        }
-
-        // SECURITY: Check if order value is suspicious (too high per item)
-        const averageItemPrice = subTotal / totalItems;
-        if (averageItemPrice > 1000000) { // Average > 1 juta per item
-            console.warn(`[SUSPICIOUS ORDER] High average item price: ${averageItemPrice} for phone: ${data.guestCustomer.phone.slice(-4)}`);
-        }
-
-    const midtransFee = Math.round(subTotal * 0.01); // 1% midtrans fee
-        const appFee = Math.round(subTotal * 0.03); // 3% platform fee
-        const feeBearer = business.defaultTransactionFeeBearer;
-        let totalAmount = subTotal;
-
-        if (feeBearer === 'CUSTOMER') {
-            totalAmount += midtransFee + appFee;
-        }
-
-        // SECURITY: Log high-value orders for monitoring
-        if (totalAmount > 5000000) { // Orders above 5 million
-            console.warn(`[HIGH VALUE ORDER] Amount: ${totalAmount} for phone: ${data.guestCustomer.phone.slice(-4)}`);
-        }
-
-        // Before creating any record, validate booking overlap for SERVICE items (capacity-aware)
-        const serviceItems = productDetails.filter(p => p.type === 'SERVICE');
-        if (serviceItems.length > 0 && !bookingSlotId) {
-            // Service booking without explicit slot must provide bookingDate
-            if (!data.bookingDate) {
-                throw new AppError("Booking jasa wajib memiliki waktu booking.", HttpStatus.BAD_REQUEST);
-            }
-
-            const requestedStart = new Date(data.bookingDate);
-
-            // Utility: check overlap of two [start,end) intervals
-            const overlaps = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) => {
-                return aStart < bEnd && bStart < aEnd;
-            };
-
-            for (const svc of serviceItems) {
-                const durationMin = svc.serviceDurationMinutes ?? 60; // default 60 minutes if unspecified
-                const requestedEnd = new Date(requestedStart.getTime() + durationMin * 60_000);
-
-                // Determine allowed parallel capacity (default 1)
-                const capacityRecord = await tx.serviceCapacity.findUnique({
-                    where: { productId: svc.id }
-                });
-                const maxParallel = capacityRecord?.maxParallel ?? 1;
-
-                // Fetch potentially conflicting orders for same service product in active statuses
-                const activeStatuses = [
-                    OrderStatus.AWAITING_PAYMENT,
-                    OrderStatus.PROCESSING,
-                    OrderStatus.READY,
-                    OrderStatus.CONFIRMED,
-                ];
-
-                const existing = await tx.order.findMany({
-                    where: {
-                        outletId,
-                        orderStatus: { in: activeStatuses },
-                        items: { some: { productId: svc.id } },
-                    },
-                    include: {
-                        bookingSlot: true,
-                        items: { include: { product: { select: { id: true, serviceDurationMinutes: true, type: true } } } }
-                    }
-                });
-
-                // Count overlaps
-                let overlapping = 0;
-                for (const ex of existing) {
-                    let exStart: Date | null = null;
-                    let exEnd: Date | null = null;
-
-                    if (ex.bookingSlot) {
-                        exStart = new Date(ex.bookingSlot.startTime);
-                        exEnd = new Date(ex.bookingSlot.endTime);
-                    } else if (ex.bookingDate) {
-                        // Use duration for the same service product within that order
-                        const exItem = ex.items.find(it => it.product.id === svc.id);
-                        const exDuration = exItem?.product.serviceDurationMinutes ?? durationMin;
-                        exStart = new Date(ex.bookingDate);
-                        exEnd = new Date(exStart.getTime() + (exDuration ?? 60) * 60_000);
-                    }
-
-                    if (exStart && exEnd && overlaps(requestedStart, requestedEnd, exStart, exEnd)) {
-                        overlapping += 1;
-                        if (overlapping >= maxParallel) break;
-                    }
-                }
-
-                if (overlapping >= maxParallel) {
-                    throw new AppError(
-                        `Waktu booking bentrok untuk layanan ${svc.name}. Silakan pilih waktu lain.`,
-                        HttpStatus.CONFLICT
-                    );
-                }
-            }
-        }
-
-        // SECURITY: Create guest customer with sanitized data
-        let customer = await tx.guestCustomer.findFirst({
-            where: { phone: data.guestCustomer.phone },
-        });
-
-        if (!customer) {
-            // SECURITY: Sanitize and validate guest customer data
-            const sanitizedGuestData = {
-                name: data.guestCustomer.name.trim().replace(/\s+/g, ' '), // Normalize whitespace
-                phone: data.guestCustomer.phone.replace(/[^\d+]/g, ''), // Keep only digits and +
-            };
-
-            // SECURITY: Additional validation
-            if (sanitizedGuestData.name.length < 2 || sanitizedGuestData.name.length > 100) {
-                throw new AppError("Nama tidak valid", HttpStatus.BAD_REQUEST);
-            }
-
-            if (sanitizedGuestData.phone.length < 10 || sanitizedGuestData.phone.length > 15) {
-                throw new AppError("Nomor telepon tidak valid", HttpStatus.BAD_REQUEST);
-            }
-
-            customer = await tx.guestCustomer.create({
-                data: sanitizedGuestData,
-            });
-
-            // SECURITY: Log new guest customer creation
-            console.log(`[NEW GUEST] Created guest customer with phone ending: ${sanitizedGuestData.phone.slice(-4)}`);
-        } else {
-            // SECURITY: Log returning guest customer
-            console.log(`[RETURNING GUEST] Found existing customer with phone ending: ${customer.phone?.slice(-4) || 'unknown'}`);
-        }
-
-        // Create order
-        const order = await tx.order.create({
-            data: {
-                id: generateOrderCode({ name: outlet.name, maxLength: 12 }, { randomLength: 6 }),
-                guestCustomerId: customer.id,
-                outletId,
-                totalAmount,
-                midtransFee: midtransFee,
-                appFee: appFee,
-                chargedTo: feeBearer,
-                bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
-            },
-        });
-
-        // Create order items
-        await tx.orderItem.createMany({
-            data: items.map((item) => ({
-                orderId: order.id,
-                productId: item.productId,
-                quantity: item.quantity,
-                priceAtTimeOfOrder: productDetails.find(p => p.id === item.productId)?.price || 0,
-            })),
-        });
-
-        // Update booking slot if exists
-        if (bookingSlotId) {
-            await tx.bookingSlot.update({
-                where: { id: bookingSlotId },
-                data: { status: 'BOOKED', orderId: order.id },
-            });
-        }
-
-        // Emit new order event dengan error handling yang lebih baik
-        try {
-            const orderData = await tx.order.findUnique({
-                where: { id: order.id },
-                include: {
-                    items: {
-                        include: { product: true }
-                    },
-                    guestCustomer: true,
-                    outlet: true
-                }
-            });
-
-        } catch (socketError) {
-            console.error('❌ Error emitting new_order event:', socketError);
-            // Tidak throw error karena order sudah berhasil dibuat
-        }
-
-        return { order, midtransFee, appFee, feeBearer, totalAmount };
-    });
-}
 
 export async function getOrderByIdService(id: string, ownerId?: string) {
     const order = await OrderRepository.findById(id);
@@ -459,14 +331,23 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
 
         if (!slot) throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
         if (slot.status === "BOOKED") throw new AppError(Messages.BOOKING_SLOT_ALREADY_BOOKED, HttpStatus.CONFLICT);
+        if (slot.product.outletId !== data.outletId) {
+            throw new AppError('Slot tidak berada pada outlet ini.', HttpStatus.FORBIDDEN);
+        }
+        if (slot.staffId && data.staffId && slot.staffId !== data.staffId) {
+            throw new AppError('Slot ini sudah dialokasikan ke staff lain.', HttpStatus.CONFLICT);
+        }
 
         // Lock slot untuk mencegah race condition
-        await BookingRepository.update(slot.id, { status: "BOOKED" })
+        await BookingRepository.update(slot.id, {
+            status: "BOOKED",
+            staffId: data.staffId ?? slot.staffId ?? null,
+        })
     }
 
     // Jika payment method adalah 'cash', buat order offline tanpa Midtrans
     if (paymentMethod === 'cash') {
-        const { order } = await createOrderInDbService(data);
+        const { order } = await createOrderRecord(data);
 
         const updatedOrder = await db.order.update({
             where: { id: order.id },
@@ -480,7 +361,7 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
     }
 
     // Default flow: gunakan Midtrans untuk pembayaran online/QRIS
-    const { order, midtransFee, appFee, feeBearer, totalAmount } = await createOrderInDbService(data);
+    const { order, midtransFee, appFee, feeBearer, totalAmount } = await createOrderRecord(data);
 
     const chargeTo = feeBearer.toLowerCase() as 'customer' | 'owner';
 
@@ -498,23 +379,96 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
 }
 
 export async function updateOrderStatusService(orderId: string, status: OrderStatus) {
-    const order = await getOrderByIdService(orderId);
+    // Get order with all relations needed
+    const orderData = await db.order.findUnique({
+        where: { id: orderId },
+        include: {
+            items: { include: { product: true } },
+            guestCustomer: true,
+            bookingSlot: { include: { staff: true } },
+            outlet: true,
+            transaction: true,
+        }
+    });
 
-    if (!order) {
+    if (!orderData) {
         throw new Error('Order not found');
+    }
+
+    const order = orderData as OrderWithRelations;
+
+    // Handle CANCELLED status - release resources
+    if (status === OrderStatus.CANCELLED) {
+        await db.$transaction(async (tx) => {
+            // Release booking slot and staff
+            if (order.bookingSlot) {
+                await tx.bookingSlot.update({
+                    where: { id: order.bookingSlot.id },
+                    data: {
+                        status: BookingSlotStatus.AVAILABLE,
+                        staffId: null, // Release staff
+                        orderId: null,
+                    },
+                });
+            }
+
+            // Cancel transaction if exists
+            if (order.transaction?.id) {
+                await tx.transaction.update({
+                    where: { id: order.transaction.id },
+                    data: { 
+                        status: PaymentStatus.CANCELLED 
+                    },
+                });
+            }
+
+            // Return stock for GOODS items
+            for (const item of order.items) {
+                if (item.product.type === 'GOODS') {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            quantity: {
+                                increment: item.quantity,
+                            },
+                        },
+                    });
+                }
+            }
+        });
+    }
+
+    if (status === OrderStatus.PROCESSING) {
+        Console.log('UPDATE TRANSACTION STATUS TO SUCCESS');
+
+        if (order.transaction?.id) {
+            await db.transaction.update({
+                where: {
+                    id: order.transaction.id,
+                },
+                data: { status: PaymentStatus.SUCCESS },
+            });
+        }
     }
 
     if (status === 'COMPLETED' && order?.bookingSlot) {
         await db.bookingSlot.update({
             where: { id: order.bookingSlot.id },
-            data: { status: 'AVAILABLE' },
+            data: { 
+                status: 'AVAILABLE',
+                staffId: null, // Release staff when service is completed
+            },
         });
     }
 
     // Update pesanan dengan include data yang diperlukan
     const updatedOrder = await db.order.update({
         where: { id: orderId },
-        data: { orderStatus: status },
+        data: {
+            orderStatus: status,
+            ...(status === OrderStatus.PROCESSING ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
+            ...(status === OrderStatus.CANCELLED ? { paymentStatus: PaymentStatus.CANCELLED } : {}),
+        },
         include: {
             items: {
                 include: {
@@ -522,12 +476,54 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
                 }
             },
             outlet: true,
-            guestCustomer: true
+            guestCustomer: true,
+            transaction: true,
         }
     });
 
-    // Kirim notifikasi status update melalui message publisher
-    await messagePublisher.publishOrderNotification(updatedOrder.id, updatedOrder.orderStatus);
+    // // Kirim notifikasi status update melalui message publisher
+    // await messagePublisher.publishOrderNotification(updatedOrder.id, updatedOrder.orderStatus);
+
+    // Broadcast status update ke customer melalui socket
+    try {
+        const customerPhone = updatedOrder.guestCustomer?.phone;
+        if (customerPhone) {
+            const statusMessages: Partial<Record<OrderStatus, string>> = {
+                AWAITING_PAYMENT: 'Menunggu pembayaran',
+                PROCESSING: 'Pesanan sedang diproses',
+                READY: 'Pesanan siap diambil',
+                COMPLETED: 'Pesanan selesai',
+                CANCELLED: 'Pesanan dibatalkan',
+                CONFIRMED: 'Pesanan dikonfirmasi',
+            };
+
+            SocketEmitter.getInstance().emitToCustomer(customerPhone, {
+                orderId: updatedOrder.id,
+                amount: updatedOrder.totalAmount,
+                status,
+                transactionStatus: status,
+                isManual: Boolean(updatedOrder.transaction?.isManual),
+                paymentMethod: updatedOrder.transaction?.paymentMethod || 'unknown',
+                message: statusMessages[status] ?? 'Status pesanan diperbarui',
+                type: 'order_status_update'
+            });
+        }
+    } catch (customerSocketError) {
+        console.error('❌ Error emitting customer order status event:', customerSocketError);
+    }
+
+    // Broadcast updated queue snapshot to outlet listeners
+    try {
+        if (hasServiceProduct(updatedOrder)) {
+            const snapshot = await buildServiceQueueSnapshot(updatedOrder.outletId);
+            SocketEmitter.getInstance().emitQueueUpdate(updatedOrder.outletId, {
+                updatedOrderId: updatedOrder.id,
+                queue: snapshot.map(serializeQueueOrder),
+            });
+        }
+    } catch (queueSocketError) {
+        console.error('❌ Error emitting outlet queue snapshot:', queueSocketError);
+    }
 
     // Jika status diubah menjadi COMPLETED dan ini adalah pesanan layanan
     if (status === 'COMPLETED' && updatedOrder.items.some(item => item.product.type === 'SERVICE')) {
@@ -642,18 +638,264 @@ export async function completeServiceOrderService(orderId: string) {
 }
 
 export async function getOrderByCustomerPhoneService(phone: string) {
-    const customerOrder = await OrderRepository.getOrderByCustomerPhone(phone)
+    const customerOrder = await OrderRepository.getOrderByCustomerPhone(phone);
 
     if (!customerOrder || customerOrder.length === 0) throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-    const customerOrderMap = customerOrder.map((order) => {
-        const { guestCustomer, ...otherOrder } = order
+    const queueCache = new Map<string, QueueSnapshotEntry[]>();
 
-        return {
-            ...otherOrder,
-            customerDetails: guestCustomer
+    const mappedOrders = await Promise.all(customerOrder.map(async (order) => {
+        const queueMeta = await resolveQueueMetaForOrder(order, queueCache);
+        return mapPublicOrderResponse(order, queueMeta);
+    }));
+
+    return mappedOrders;
+}
+
+const normalizePhoneNumber = (phone?: string | null) => {
+    if (!phone) return "";
+    const digitsOnly = phone.replace(/[^0-9]/g, "");
+    if (digitsOnly.startsWith("62")) return digitsOnly;
+    if (digitsOnly.startsWith("0")) return `62${digitsOnly.slice(1)}`;
+    return digitsOnly;
+};
+
+const mapPublicOrderResponse = (
+    order: OrderWithRelations | CustomerOrderRecord,
+    queueMeta?: QueueMetaPayload | null
+) => {
+    const { guestCustomer, transaction, items, outlet, bookingSlot, assignedStaff, ...otherOrder } = order as OrderWithRelations & CustomerOrderRecord;
+
+    const mappedTransaction = transaction
+        ? {
+            ...transaction,
+            expiryTime: transaction.expiresAt
+                ? transaction.expiresAt instanceof Date
+                    ? transaction.expiresAt.toISOString()
+                    : transaction.expiresAt
+                : (transaction as any).expiryTime ?? null,
         }
-    })
+        : null;
 
-    return customerOrderMap
+    const mappedItems = (items ?? []).map((item: any) => ({
+        ...item,
+        product: {
+            ...item.product,
+        },
+    }));
+
+    const mappedBookingSlot = bookingSlot
+        ? {
+            ...bookingSlot,
+            startTime: bookingSlot.startTime instanceof Date ? bookingSlot.startTime.toISOString() : bookingSlot.startTime,
+            endTime: bookingSlot.endTime instanceof Date ? bookingSlot.endTime.toISOString() : bookingSlot.endTime,
+            date: bookingSlot.date instanceof Date ? bookingSlot.date.toISOString() : bookingSlot.date,
+            staff: bookingSlot.staff ? { ...bookingSlot.staff } : null,
+        }
+        : null;
+
+    const normalizedOrder = {
+        ...otherOrder,
+        bookingDate: otherOrder.bookingDate instanceof Date ? otherOrder.bookingDate.toISOString() : otherOrder.bookingDate ?? null,
+        createdAt: otherOrder.createdAt instanceof Date ? otherOrder.createdAt.toISOString() : otherOrder.createdAt,
+        updatedAt: otherOrder.updatedAt instanceof Date ? otherOrder.updatedAt.toISOString() : otherOrder.updatedAt,
+    };
+
+    return {
+        ...normalizedOrder,
+        bookingSlot: mappedBookingSlot,
+        outlet: outlet ? { ...outlet } : null,
+        transaction: mappedTransaction,
+        items: mappedItems,
+        customerDetails: guestCustomer ? { ...guestCustomer } : null,
+        assignedStaff: assignedStaff ? { ...assignedStaff } : null,
+        queueMeta: queueMeta ?? null,
+    };
+};
+
+const assertCustomerOwnsOrder = (order: OrderWithRelations, phone: string) => {
+    const providedPhone = normalizePhoneNumber(phone);
+    const orderPhone = normalizePhoneNumber(order?.guestCustomer?.phone);
+
+    if (!providedPhone || !orderPhone || providedPhone !== orderPhone) {
+        throw new AppError("Pesanan tidak ditemukan untuk nomor telepon ini", HttpStatus.FORBIDDEN);
+    }
+};
+
+export async function cancelOrderByCustomerService(orderId: string, phone: string, reason?: string) {
+    const order = await OrderRepository.findById(orderId);
+
+    if (!order) throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    const orderRecord = order as OrderWithRelations;
+
+    assertCustomerOwnsOrder(orderRecord, phone);
+    (await paymentQueue.getJob(orderId))?.remove()
+
+    const cancellableStatuses: OrderStatus[] = [OrderStatus.AWAITING_PAYMENT, OrderStatus.PROCESSING, OrderStatus.CONFIRMED];
+
+    if (!cancellableStatuses.includes(orderRecord.orderStatus)) {
+        throw new AppError("Pesanan tidak dapat dibatalkan pada status saat ini", HttpStatus.BAD_REQUEST);
+    }
+
+    if (reason) {
+        Console.log(`[CUSTOMER CANCEL] Order ${orderId} cancellation reason: ${reason}`);
+    }
+
+    const updatedOrder = await db.$transaction(async (tx) => {
+        for (const item of orderRecord.items) {
+            if (item.product.type === 'GOODS') {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: {
+                        quantity: {
+                            increment: item.quantity,
+                        },
+                    },
+                });
+            }
+        }
+
+        if (orderRecord.bookingSlot) {
+            await tx.bookingSlot.update({
+                where: { id: orderRecord.bookingSlot.id },
+                data: {
+                    status: BookingSlotStatus.AVAILABLE,
+                    staffId: null, // Release staff when order is cancelled
+                    orderId: null,
+                },
+            });
+        }
+
+        if (orderRecord.transaction) {
+            await tx.transaction.update({
+                where: { id: orderRecord.transaction.id },
+                data: {
+                    status: PaymentStatus.CANCELLED,
+                },
+            });
+        }
+
+        return tx.order.update({
+            where: { id: orderId },
+            data: {
+                orderStatus: OrderStatus.CANCELLED,
+                paymentStatus: PaymentStatus.CANCELLED,
+            },
+            include: {
+                items: {
+                    include: {
+                        product: true,
+                    },
+                },
+                guestCustomer: true,
+                outlet: true,
+                transaction: true,
+            },
+        });
+    });
+
+    SocketEmitter.getInstance().emitNotificationToOutlet(order.outletId, { message: `Pesanan ${orderId}, telah dibatalkan customer`, timestamp: new Date() })
+    return mapPublicOrderResponse(updatedOrder as OrderWithRelations);
+}
+
+export async function updateServiceQueueStatusService(
+    orderId: string, 
+    userIdentifier: string, 
+    nextStatus: OrderStatus,
+    validateAsOwner: boolean = true
+) {
+    // Ambil order terlebih dahulu
+    const order = await OrderRepository.findById(orderId);
+    if (!order) {
+        throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    // Validasi akses
+    if (validateAsOwner) {
+        // Validasi untuk owner
+        const outlet = await getOutletByIdService(order.outletId);
+        const business = await getBusinessByIdService(outlet.businessId);
+        if (business.ownerId !== userIdentifier) {
+            throw new AppError("Anda tidak berhak mengakses pesanan ini.", HttpStatus.FORBIDDEN);
+        }
+    } else {
+        // Validasi untuk kasir - userIdentifier adalah outletId
+        if (order.outletId !== userIdentifier) {
+            throw new AppError("Anda hanya bisa mengakses pesanan outlet Anda sendiri.", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    const orderRecord = order as OrderWithRelations;
+
+    if (!hasServiceProduct(orderRecord)) {
+        throw new AppError("Perubahan status hanya berlaku untuk pesanan layanan", HttpStatus.BAD_REQUEST);
+    }
+
+    if (orderRecord.orderStatus === nextStatus) {
+        return orderRecord;
+    }
+
+    const allowedNext = SERVICE_QUEUE_TRANSITIONS[orderRecord.orderStatus] ?? [];
+    if (!allowedNext.includes(nextStatus)) {
+        throw new AppError("Transisi status tidak valid untuk pesanan ini", HttpStatus.BAD_REQUEST);
+    }
+
+    const updatedOrder = await updateOrderStatusService(orderId, nextStatus);
+    return updatedOrder;
+}
+
+export async function confirmOrderByCustomerService(orderId: string, phone: string) {
+    const order = await OrderRepository.findById(orderId);
+
+    if (!order) throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    const orderRecord = order as OrderWithRelations;
+
+    assertCustomerOwnsOrder(orderRecord, phone);
+
+    const confirmableStatuses: OrderStatus[] = [OrderStatus.READY, OrderStatus.ON_GOING];
+
+    if (!confirmableStatuses.includes(orderRecord.orderStatus)) {
+        throw new AppError("Pesanan belum dapat dikonfirmasi", HttpStatus.BAD_REQUEST);
+    }
+
+    const updatedOrder = await updateOrderStatusService(orderId, OrderStatus.COMPLETED);
+
+    return mapPublicOrderResponse(updatedOrder as OrderWithRelations);
+}
+
+export async function expirePaymentOrder(orderId: string) {
+    const orderData = await db.order.findUnique({
+        where: { id: orderId },
+        include: {
+            guestCustomer: true,
+            transaction: true,
+        }
+    });
+
+    if (!orderData) throw new AppError(`Order: ${orderId} NOT FOUND`);
+
+    const order = orderData as OrderWithRelations;
+
+    if (order.transaction && order.transaction.status !== 'PENDING' && order.paymentStatus !== 'PENDING') {
+        console.log(`Payment ${orderId} is already ${order.transaction.status}, skipping expiration`);
+        return;
+    };
+
+    await PaymentRepository.updatePaymentStatusByOrder(orderId, `EXPIRED`);
+    SocketEmitter.getInstance().emitToOrder(orderId, { message: `Payment for ${orderId} has expired`, order_id: orderId })
+    SocketEmitter.getInstance().emitNotificationToOutlet(order.outletId, { message: `Pembayaran untuk OrderID: ${orderId}, telah kadaluarsa`, 'timestamp': new Date() })
+    SocketEmitter.getInstance().emitToCustomer(order.guestCustomer!.phone!, {
+        orderId,
+        amount: order.totalAmount,
+        status: 'expired',
+        transactionStatus: 'expired',
+        paymentMethod: order.transaction?.paymentMethod || 'unknown',
+        isManual: order.transaction?.isManual || false,
+        message: 'Pembayaran kedaluwarsa',
+        type: 'payment_expired'
+    });
+
+    (await paymentQueue.getJob(orderId))?.remove()
 }

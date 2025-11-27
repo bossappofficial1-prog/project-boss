@@ -2,17 +2,19 @@
 
 import { ProductType } from "@/types"
 import { useEffect, useState } from "react"
-import { BookingSlot } from "@/types/booking-slots"
+import { BookingSlot, SelectedSchedule } from "@/types/booking-slots"
 import { useGetSlotProduct } from "@/hooks/useBookingSlot"
 import { formatIsoToTime } from "@/lib/utils"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Button } from "../ui/button"
-import { CalendarIcon, Timer } from "lucide-react"
+import { AlertCircle, CalendarIcon, Timer } from "lucide-react"
 import { format } from "date-fns"
 import { Calendar } from "../ui/calendar"
 import { EmptyState, LoadingState } from "../Base"
 import { useCart } from "@/hooks/useCart"
+import { useAvailableStaff } from "@/hooks/useAvailableStaff"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 
 export function ScheduleModal({
     isOpen,
@@ -23,16 +25,16 @@ export function ScheduleModal({
 }: {
     isOpen: boolean
     onClose: () => void
-    onSelectSchedule: (schedule: BookingSlot | string) => void
+    onSelectSchedule: (selection: SelectedSchedule) => void
     product: Partial<ProductType>
     outletId?: string
 }) {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [scheduleSlots, setScheduleSlots] = useState<BookingSlot[]>([])
     const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null)
+    const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
     const { getSelectedSlot, getServiceInCart, checkTimeConflict } = useCart()
-
-    const selectedSlotIdInCart = getSelectedSlot(selectedSlot?.id!)
+    const selectedSlotIdInCart = selectedSlot?.id ? getSelectedSlot(selectedSlot.id) : ""
 
     // Check if this service is already in cart for the same outlet
     const existingServiceInCart = product.type === 'SERVICE' && outletId
@@ -50,10 +52,15 @@ export function ScheduleModal({
         })
         : null
 
-    const { data: fetchedSlots, isLoading: isSlotsLoading, error: slotsError } = useGetSlotProduct(
+    const { data: fetchedSlots, isLoading: isSlotsLoading } = useGetSlotProduct(
         product.id!,
         selectedDate
     );
+
+    const { data: staffResponse, isLoading: isStaffLoading } = useAvailableStaff(
+        product.id,
+        selectedSlot?.id ?? null
+    )
 
     useEffect(() => {
         if (!selectedDate) {
@@ -62,10 +69,14 @@ export function ScheduleModal({
         }
 
         if (fetchedSlots && fetchedSlots.length > 0) {
-            const mapped: BookingSlot[] = fetchedSlots.map((s: BookingSlot) => ({
-                ...s,
-                startTime: formatIsoToTime(s.startTime),
-                endTime: formatIsoToTime(s.endTime)
+            const mapped: BookingSlot[] = fetchedSlots.map((slot: any) => ({
+                id: slot.id,
+                startTime: formatIsoToTime(slot.startTime),
+                endTime: formatIsoToTime(slot.endTime),
+                date: slot.date,
+                status: slot.status,
+                staffId: slot.staffId ?? slot.staff?.id ?? null,
+                staffName: slot.staff?.name ?? null
             }));
 
             setScheduleSlots(mapped);
@@ -85,6 +96,46 @@ export function ScheduleModal({
 
     }, [selectedDate, fetchedSlots, isReplaceMode, existingServiceInCart])
 
+    useEffect(() => {
+        if (!selectedSlot?.id) {
+            setSelectedStaffId(null)
+            return
+        }
+
+        const staffList = staffResponse?.staff ?? []
+
+        if (!staffList.length) {
+            setSelectedStaffId(null)
+            return
+        }
+
+        const availableStaff = staffList.filter(member => member.isAvailable)
+
+        if (!availableStaff.length) {
+            setSelectedStaffId(null)
+            return
+        }
+
+        if (selectedStaffId && availableStaff.some(member => member.id === selectedStaffId)) {
+            return
+        }
+
+        let nextStaffId: string | null = null
+
+        if (isReplaceMode && existingServiceInCart?.selectedSlot === selectedSlot.id && existingServiceInCart.staffId) {
+            const existingStaff = availableStaff.find(member => member.id === existingServiceInCart.staffId)
+            if (existingStaff) {
+                nextStaffId = existingStaff.id
+            }
+        }
+
+        if (!nextStaffId) {
+            nextStaffId = availableStaff[0]?.id ?? null
+        }
+
+        setSelectedStaffId(nextStaffId)
+    }, [selectedSlot?.id, staffResponse?.staff, isReplaceMode, existingServiceInCart?.selectedSlot, existingServiceInCart?.staffId, selectedStaffId])
+
     const handleSlotSelect = (slot: BookingSlot) => {
         if (slot.status === "BOOKED") return
 
@@ -97,26 +148,34 @@ export function ScheduleModal({
         }
 
         setSelectedSlot(slot)
+        setSelectedStaffId(null)
     }
 
     const handleConfirm = () => {
-        if (selectedSlot && selectedDate) {
-            const slotData = {
-                id: selectedSlot.id,
-                startTime: selectedSlot.startTime,
-                endTime: selectedSlot.endTime,
-                date: selectedDate.toISOString().split('T')[0],
-                status: selectedSlot.status
-            };
+        if (!selectedSlot || !selectedDate) return
 
-            onSelectSchedule(slotData)
-            onClose()
+        const staffList = staffResponse?.staff ?? []
+        const selectedStaff = staffList.find(member => member.id === selectedStaffId)
+
+        const slotData = {
+            id: selectedSlot.id,
+            startTime: selectedSlot.startTime,
+            endTime: selectedSlot.endTime,
+            date: selectedDate.toISOString().split('T')[0],
+            status: selectedSlot.status
         }
+
+        onSelectSchedule({
+            slot: slotData,
+            staff: selectedStaff ? { id: selectedStaff.id, name: selectedStaff.name } : undefined
+        })
+        onClose()
     }
 
     const handleClose = () => {
         setSelectedDate(null)
         setSelectedSlot(null)
+        setSelectedStaffId(null)
         onClose()
     }
 
@@ -186,8 +245,22 @@ export function ScheduleModal({
                                 ? <LoadingState />
                                 : scheduleSlots.length > 0 ? (
                                     <div className="grid grid-cols-2 gap-3">
-                                        {scheduleSlots.map((slot) => (
-                                            <Button
+                                        {scheduleSlots.map((slot) => {
+                                            const now = new Date();
+                                            const isSameDayAsToday = selectedDate ? selectedDate.toDateString() === now.toDateString() : false;
+
+                                            // Disable slots that already passed for the selected day
+                                            let isPastSlot = false;
+                                            if (isSameDayAsToday && selectedDate) {
+                                                const [hoursStr, minutesStr] = slot.startTime.split(/[:.]/);
+                                                const slotStart = new Date(selectedDate);
+                                                const hours = Number(hoursStr ?? 0);
+                                                const minutes = Number(minutesStr ?? 0);
+                                                slotStart.setHours(hours, minutes, 0, 0);
+                                                isPastSlot = slotStart.getTime() <= now.getTime();
+                                            }
+
+                                            return (<Button
                                                 key={slot.id}
                                                 variant={
                                                     slot.status === "BOOKED"
@@ -196,7 +269,7 @@ export function ScheduleModal({
                                                             ? "default"
                                                             : "outline"
                                                 }
-                                                disabled={slot.status === "BOOKED" || slot.status === "BLOCKED" || slot.id === selectedSlotIdInCart}
+                                                disabled={slot.status === "BOOKED" || slot.status === "BLOCKED" || slot.id === selectedSlotIdInCart || isPastSlot}
                                                 className={`flex flex-col items-center p-3 text-sm 
                                                 ${selectedSlot?.id === slot.id && "bg-green-500 text-white hover:bg-green-600"} ${slot.id === selectedSlotIdInCart && "bg-orange-500"}`}
                                                 onClick={() => handleSlotSelect(slot)}
@@ -205,7 +278,8 @@ export function ScheduleModal({
                                                     {slot.startTime} - {slot.endTime}
                                                 </span>
                                             </Button>
-                                        ))}
+                                            )
+                                        })}
                                     </div>
                                 ) : (
                                     <EmptyState
@@ -215,13 +289,57 @@ export function ScheduleModal({
                                 )}
                         </div>
                     )}
+
+                    {selectedSlot && (
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium">Pilih Staff</label>
+                            {isStaffLoading ? (
+                                <LoadingState />
+                            ) : (staffResponse?.staff?.length ?? 0) > 0 ? (
+                                <Select
+                                    value={selectedStaffId ?? undefined}
+                                    onValueChange={(value) => setSelectedStaffId(value)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Pilih staff yang tersedia" />
+                                    </SelectTrigger>
+                                    <SelectContent className="w-full">
+                                        {staffResponse?.staff?.map((member) => (
+                                            <SelectItem key={member.id} value={member.id} disabled={!member.isAvailable}>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-sm">{member.name}</span>
+                                                    {!member.isAvailable && (
+                                                        <span className="text-xs text-muted-foreground">Bentrok dengan jadwal lain</span>
+                                                    )}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <div className="mt-1 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-600">
+                                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                    Tidak ada staff yang tersedia untuk jadwal ini.
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <DialogFooter className="flex gap-3">
                     <Button variant="outline" onClick={handleClose} className="flex-1">
                         Batal
                     </Button>
-                    <Button onClick={handleConfirm} disabled={!selectedSlot || (!!timeConflict && !isReplaceMode)} className="flex-1">
+                    <Button
+                        onClick={handleConfirm}
+                        disabled={
+                            !selectedSlot ||
+                            (!!timeConflict && !isReplaceMode) ||
+                            ((staffResponse?.staff?.length ?? 0) > 0 && !selectedStaffId) ||
+                            ((staffResponse?.staff?.length ?? 0) === 0)
+                        }
+                        className="flex-1"
+                    >
                         {!selectedSlot
                             ? "Pilih Waktu"
                             : timeConflict && !isReplaceMode

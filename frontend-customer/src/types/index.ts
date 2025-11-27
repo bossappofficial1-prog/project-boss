@@ -105,6 +105,7 @@ export interface PaymentData {
         quantity: number
     }>
     subtotal: number
+    transactionFee?: number
     applicationFee: number
     total: number
     paymentMethod: {
@@ -129,14 +130,65 @@ export interface PaymentData {
     timeLimit?: number
 }
 
-export type PaymentMethodId = "qris" | "bca-va" | "bni-va" | "bri-va" | "mandiri-va" | "permata-va"
-export type PaymentMethodType = "qris" | "va"
+export type PaymentMethodId =
+    | "qris"
+    | "bca-va"
+    | "bni-va"
+    | "bri-va"
+    | "mandiri-va"
+    | "permata-va"
+    | "manual-qris"
+    | "manual-transfer"
+
+export type PaymentMethodType = "qris" | "va" | "manual"
+
+export type ManualPaymentTypeLiteral = "QRIS_OFFLINE" | "OWNER_TRANSFER"
+
 export interface PaymentMethod {
     id: PaymentMethodId
     name: string
     type: PaymentMethodType
     description: string
     image_url: string
+    flow?: "midtrans" | "manual"
+    manualType?: ManualPaymentTypeLiteral
+    disable: boolean
+}
+
+export interface ManualPaymentFeeSummary {
+    applicationFee: number
+    transactionFee: number
+    subtotal: number
+}
+
+export interface ManualPaymentInstructions {
+    manualType: ManualPaymentTypeLiteral
+    outletName: string
+    businessName: string
+    qrImageUrl?: string
+    bankAccount?: {
+        bankName: string
+        accountNumber: string
+        accountHolder: string
+    }
+    note?: string | null
+}
+
+export interface ManualPaymentResponse {
+    order_id: string
+    transaction_id: string
+    transaction_status: string
+    gross_amount: number
+    expiry_time: string
+    manual: {
+        type: ManualPaymentTypeLiteral
+        instructions: ManualPaymentInstructions
+        fee_summary: ManualPaymentFeeSummary
+    }
+    customer_details: {
+        name: string
+        phone: string
+    }
 }
 
 export interface PaymentResponse {
@@ -190,18 +242,19 @@ export interface VaNumber {
 export const OrderStatus = {
     AWAITING_PAYMENT: "AWAITING_PAYMENT", // Menunggu pembayaran dikonfirmasi
     PROCESSING: "PROCESSING", // Pesanan sedang diproses (bisa masuk antrian Redis/RabbitMQ)
-    READY: "READY", // Siap diambil (untuk barang) atau siap dimulai (untuk jasa)
+    CONFIRMED: "CONFIRMED", // Merchant confirmed, order dijadwalkan
+    READY: "READY", // Siap diambil (goods) atau siap dimulai (service)
+    ON_GOING: "ON_GOING", // Service sedang berlangsung (service only)
     COMPLETED: "COMPLETED", // Pesanan selesai
-    CANCELLED: "CANCELLED", // Pesanan dibatalkan
-    CONFIRMED: "CONFIRMED" // Tambahkan status baru di sini
+    CANCELLED: "CANCELLED" // Pesanan dibatalkan
 } as const
 
-type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus]
+export type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus]
 
 export interface OrderDetail {
     id: string
     totalAmount: number
-    bookingDate: any
+    bookingDate: string | null
     customerType: string
     paymentStatus: string
     paymentReminderSent: boolean
@@ -212,20 +265,42 @@ export interface OrderDetail {
     createdAt: string
     updatedAt: string
     items: Item[]
-    outlet: Pick<OutletType, "id" | "name">
-    transaction: Transaction
+    outlet: Pick<OutletType, "id" | "name" | "phone" | "address">
+    transaction: Transaction | null
     customerDetails: CustomerInfo & { id: string }
+    bookingSlot?: OrderBookingSlot | null
+    queueMeta?: OrderQueueMeta | null
 }
 
 export interface Item {
     id: string
     priceAtTimeOfOrder: number
     quantity: number
-    product: Pick<ProductType, "id" | "name" | "price">
+    product: Pick<ProductType, "id" | "name" | "price" | "type" | "image" | "unit" | "serviceDurationMinutes" | "outletId">
+}
+
+export interface OrderQueueMeta {
+    position: number
+    totalAhead: number
+    totalOrders: number
+    scheduledStart: string | null
+    scheduledEnd: string | null
+    status: OrderStatusType
+}
+
+export interface OrderBookingSlot {
+    id: string
+    date: string | null
+    startTime: string | null
+    endTime: string | null
+    status: BookingSlotStatus
+    productId: string
+    staffId?: string | null
 }
 
 export interface Transaction {
     id: string
     paymentMethod: string
     status: string
+    expiryTime?: string // ISO date string for payment expiry
 }

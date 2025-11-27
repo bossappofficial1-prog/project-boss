@@ -32,26 +32,26 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
       { value: 'CANCELLED', label: 'Dibatalkan' },
       { value: 'CONFIRMED', label: 'Dikonfirmasi' },
     ];
-    
+
     return allStatuses;
   };
 
   const handleStatusChange = (orderId: string, currentStatus: string, newStatus: string) => {
     if (newStatus === currentStatus) return;
-    
+
     const statusLabels: { [key: string]: string } = {
       'AWAITING_PAYMENT': 'Menunggu Bayar',
-      'PROCESSING': 'Diproses', 
+      'PROCESSING': 'Diproses',
       'READY': 'Siap',
       'COMPLETED': 'Selesai',
       'CANCELLED': 'Dibatalkan',
       'CONFIRMED': 'Dikonfirmasi'
     };
-    
+
     const confirmed = window.confirm(
       `Apakah Anda yakin ingin mengubah status pesanan #${orderId.slice(-8)} dari "${statusLabels[currentStatus]}" menjadi "${statusLabels[newStatus]}"?`
     );
-    
+
     if (confirmed) {
       handleStatusUpdate(orderId, newStatus as OrderStatus);
     }
@@ -68,7 +68,7 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || { label: status, className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400' };
-    
+
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
         {config.label}
@@ -150,7 +150,23 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
               </td>
               <td className="px-4 py-3">
                 <div className="text-sm text-gray-900 dark:text-gray-100">
-                  Online
+                  {(() => {
+                    const anyOrder = order as any;
+                    const paymentMethod = anyOrder.paymentMethod || anyOrder.transaction?.paymentMethod || (anyOrder.midtrans ? 'online' : (anyOrder.paymentMethod === 'manual_transfer' ? 'manual' : 'online'));
+                    return String(paymentMethod).charAt(0).toUpperCase() + String(paymentMethod).slice(1);
+                  })()}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {(() => {
+                    const anyOrder = order as any;
+                    const proofUrl = anyOrder.paymentProofUrl || anyOrder.transaction?.paymentProofUrl || anyOrder.transaction?.midtrans?.qrUrl || anyOrder.payment?.proofUrl || null;
+                    if (proofUrl) {
+                      return (
+                        <a href={proofUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Lihat bukti</a>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </td>
               <td className="px-4 py-3">
@@ -174,10 +190,20 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
               </td>
               <td className="px-4 py-3">
                 <div className="flex items-center justify-end gap-2">
-                    {order.orderStatus === 'AWAITING_PAYMENT' && (
+                  {(() => {
+                    const anyOrder = order as any;
+                    const proofUrl = anyOrder.paymentProofUrl || anyOrder.transaction?.paymentProofUrl || anyOrder.transaction?.midtrans?.qrUrl || anyOrder.payment?.proofUrl || null;
+                    const isManualMethod = (anyOrder.paymentMethod === 'manual_transfer') || Boolean(anyOrder.transaction?.isManual) || String(anyOrder.paymentMethod || '').toLowerCase().includes('manual');
+                    const awaitingVerification = (String(anyOrder.paymentStatus || '').toUpperCase() === 'AWAITING_VERIFICATION') || (String(order.orderStatus || '').toUpperCase() === 'AWAITING_VERIFICATION');
+                    const showConfirm = order.orderStatus === 'AWAITING_PAYMENT' || (isManualMethod && (proofUrl || awaitingVerification));
+
+                    if (!showConfirm) return null;
+
+                    return (
                       <button
                         onClick={() => {
-                          const ok = window.confirm(`Pesanan ini berstatus Menunggu Bayar (QRIS/Transfer).\n\nCustomer: ${order.guestCustomer.name}\nTotal: ${formatCurrency(order.totalAmount)}\n\nApakah yakin ingin memproses sekarang? Status akan diubah menjadi Diproses.`);
+                          const proofNote = proofUrl ? `\nBukti pembayaran ditemukan: buka untuk verifikasi.` : '\nTidak ada bukti pembayaran terlampir.';
+                          const ok = window.confirm(`Pesanan ini berstatus Menunggu Bayar (QRIS/Transfer/Manual).\n\nCustomer: ${order.guestCustomer.name}\nTotal: ${formatCurrency(order.totalAmount)}${proofNote}\n\nApakah yakin ingin memproses sekarang? Status akan diubah menjadi Diproses.`);
                           if (!ok) return;
                           handleStatusUpdate(order.id, 'PROCESSING');
                         }}
@@ -195,46 +221,47 @@ export function OrdersDesktopTable({ orders, onRefresh }: OrdersDesktopTableProp
                           </svg>
                         )}
                       </button>
-                    )}
-                    
-                    {order.orderStatus === 'PROCESSING' && (
-                      <button
-                        onClick={() => handleStatusUpdate(order.id, 'READY')}
-                        disabled={updatingStatus === order.id}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50"
-                        title="Tandai sebagai siap"
-                      >
-                        {updatingStatus === order.id ? (
-                          <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        )}
-                      </button>
-                    )}
-                    
-                    {order.orderStatus === 'READY' && (
-                      <button
-                        onClick={() => handleStatusUpdate(order.id, 'COMPLETED')}
-                        disabled={updatingStatus === order.id}
-                        className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 disabled:opacity-50"
-                        title="Selesaikan"
-                      >
-                        {updatingStatus === order.id ? (
-                          <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </button>
-                    )}
-                  </div>
+                    );
+                  })()}
+
+                  {order.orderStatus === 'PROCESSING' && (
+                    <button
+                      onClick={() => handleStatusUpdate(order.id, 'READY')}
+                      disabled={updatingStatus === order.id}
+                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50"
+                      title="Tandai sebagai siap"
+                    >
+                      {updatingStatus === order.id ? (
+                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+
+                  {order.orderStatus === 'READY' && (
+                    <button
+                      onClick={() => handleStatusUpdate(order.id, 'COMPLETED')}
+                      disabled={updatingStatus === order.id}
+                      className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 disabled:opacity-50"
+                      title="Selesaikan"
+                    >
+                      {updatingStatus === order.id ? (
+                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

@@ -1,96 +1,121 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useCallback, useId } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminHeader from '@/components/admin/AdminHeader';
 import { useAuth } from '@/hooks/useAuth';
-import { useWindowSize } from '@/hooks/useWindowSize';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { usePerformanceMonitor, useComponentMonitor } from '@/hooks/usePerformance';
 import { useSessionSecurity, useSecurityHeaders } from '@/hooks/useSecurity';
+import { useResponsiveBreakpoints } from '@/hooks/useResponsiveBreakpoints';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 
 interface AdminLayoutProps {
     children: React.ReactNode;
 }
 
 // Custom hook for handling sidebar state with localStorage persistence
-function useSidebarState() {
+function useSidebarState(pathname: string) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('admin-sidebar-collapsed');
-            return saved ? JSON.parse(saved) : false;
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const breakpoints = useResponsiveBreakpoints();
+    const { isMobile, isDesktop } = breakpoints;
+
+    // Hydrate collapsed state from localStorage and set sensible default based on current viewport
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
         }
-        return false;
-    });
-    const { isMobile, isDesktop } = useWindowSize();
+
+        try {
+            const saved = window.localStorage.getItem('admin-sidebar-collapsed');
+            if (saved !== null) {
+                setSidebarCollapsed(JSON.parse(saved));
+            } else {
+                setSidebarCollapsed(window.innerWidth < 1024);
+            }
+        } catch (error) {
+            console.warn('Unable to read admin sidebar preference:', error);
+        }
+    }, []);
 
     // Persist sidebar collapsed state
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('admin-sidebar-collapsed', JSON.stringify(sidebarCollapsed));
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        try {
+            window.localStorage.setItem('admin-sidebar-collapsed', JSON.stringify(sidebarCollapsed));
+        } catch (error) {
+            console.warn('Unable to persist admin sidebar preference:', error);
         }
     }, [sidebarCollapsed]);
 
-    // Auto-close sidebar on route change (mobile) and handle responsive behavior
+    // Close mobile drawer when navigating
     useEffect(() => {
-        const handleRouteChange = () => {
-            if (isMobile) {
-                setSidebarOpen(false);
-            }
-        };
-
-        const handleResize = () => {
-            if (isDesktop) {
-                setSidebarOpen(false);
-            }
-        };
-
-        if (typeof window !== 'undefined') {
-            window.addEventListener('popstate', handleRouteChange);
-            window.addEventListener('resize', handleResize);
-            return () => {
-                window.removeEventListener('popstate', handleRouteChange);
-                window.removeEventListener('resize', handleResize);
-            };
+        if (isMobile) {
+            setSidebarOpen(false);
         }
-    }, [isMobile, isDesktop]);
+    }, [pathname, isMobile]);
+
+    // Ensure overlay is disabled on desktop
+    useEffect(() => {
+        if (isDesktop) {
+            setSidebarOpen(false);
+        }
+    }, [isDesktop]);
 
     // Handle keyboard shortcuts
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Toggle sidebar with Ctrl/Cmd + B
-            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-                e.preventDefault();
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') {
+                event.preventDefault();
                 if (isMobile) {
-                    setSidebarOpen(!sidebarOpen);
+                    setSidebarOpen((prev) => !prev);
                 } else {
-                    setSidebarCollapsed(!sidebarCollapsed);
+                    setSidebarCollapsed((prev) => !prev);
                 }
             }
-            // Close sidebar with Escape (mobile only)
-            if (e.key === 'Escape' && isMobile && sidebarOpen) {
+
+            if (event.key === 'Escape' && isMobile) {
                 setSidebarOpen(false);
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isMobile, sidebarOpen, sidebarCollapsed]);
+    }, [isMobile]);
+
+    const toggleSidebar = useCallback(() => setSidebarOpen((prev) => !prev), []);
+    const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+    const toggleCollapse = useCallback(() => setSidebarCollapsed((prev) => !prev), []);
 
     return {
         sidebarOpen,
-        setSidebarOpen,
         sidebarCollapsed,
-        setSidebarCollapsed
+        toggleSidebar,
+        closeSidebar,
+        toggleCollapse,
+        ...breakpoints,
     };
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
     const router = useRouter();
-    const { user, isLoading, isAuthenticated, isAdmin } = useAuth();
-    const { sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed } = useSidebarState();
+    const pathname = usePathname();
+    const { isLoading, isAuthenticated, isAdmin } = useAuth();
+    const {
+        sidebarOpen,
+        sidebarCollapsed,
+        toggleSidebar,
+        closeSidebar,
+        toggleCollapse,
+        isDesktop,
+    } = useSidebarState(pathname);
+    const prefersReducedMotion = usePrefersReducedMotion();
+    const mainContentId = useId();
 
     // Performance and security monitoring
     usePerformanceMonitor('AdminLayout');
@@ -99,18 +124,34 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     useSecurityHeaders();
 
     // Memoize computed values
-    const shouldShowContent = useMemo(() => {
-        return !isLoading && isAuthenticated && isAdmin;
-    }, [isLoading, isAuthenticated, isAdmin]);
+    const shouldShowContent = useMemo(() => !isLoading && isAuthenticated && isAdmin, [isLoading, isAuthenticated, isAdmin]);
 
-    const shouldShowError = useMemo(() => {
-        return !isLoading && (!isAuthenticated || !isAdmin);
-    }, [isLoading, isAuthenticated, isAdmin]);
+    const shouldShowError = useMemo(
+        () => !isLoading && (!isAuthenticated || !isAdmin),
+        [isLoading, isAuthenticated, isAdmin]
+    );
 
     // Handle navigation back to login
     const handleBackToLogin = () => {
         router.push('/auth/login');
     };
+
+    const desktopPaddingClass = useMemo(() => {
+        if (!isDesktop) {
+            return 'lg:pl-0';
+        }
+        return sidebarCollapsed ? 'lg:pl-18 xl:pl-20 2xl:pl-20' : 'lg:pl-72 xl:pl-70 2xl:pl-72';
+    }, [isDesktop, sidebarCollapsed]);
+
+    const mainEffectClass = prefersReducedMotion
+        ? 'transform-none'
+        : sidebarOpen
+            ? 'blur-[1px] lg:blur-0 scale-[0.995] lg:scale-100'
+            : 'blur-0 scale-100';
+
+    const contentAnimationClass = useMemo(() => (
+        prefersReducedMotion ? '' : 'animate-in slide-in-from-bottom-4 duration-500'
+    ), [prefersReducedMotion]);
 
     // Loading state with enhanced skeleton
     if (isLoading) {
@@ -241,7 +282,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
     return (
         <ErrorBoundary>
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-red-800/30 dark:to-gray-900 flex font-poppins relative overflow-hidden">
+            <div className="min-h-screen relative flex bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-red-800/30 dark:to-gray-900 font-poppins overflow-hidden">
+                <a
+                    href={`#${mainContentId}`}
+                    className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-4 focus-visible:left-4 focus-visible:z-[70] focus-visible:rounded-lg focus-visible:bg-white focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium focus-visible:text-gray-900 focus-visible:shadow-lg focus-visible:outline-none dark:focus-visible:bg-gray-900 dark:focus-visible:text-white"
+                >
+                    Skip to main content
+                </a>
                 {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-5 dark:opacity-10 pointer-events-none" aria-hidden="true">
                     <div
@@ -255,16 +302,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 {/* Sidebar */}
                 <AdminSidebar
                     isOpen={sidebarOpen}
-                    onClose={() => setSidebarOpen(false)}
+                    onClose={closeSidebar}
                     isCollapsed={sidebarCollapsed}
-                    onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    onToggleCollapse={toggleCollapse}
                 />
 
                 {/* Mobile overlay with improved backdrop */}
                 {sidebarOpen && (
                     <div
                         className="fixed inset-0 bg-black/40 backdrop-blur-sm lg:hidden animate-in fade-in duration-300 z-30"
-                        onClick={() => setSidebarOpen(false)}
+                        onClick={closeSidebar}
                         style={{ animationFillMode: 'forwards' }}
                         role="button"
                         tabIndex={0}
@@ -272,10 +319,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
-                                setSidebarOpen(false);
+                                closeSidebar();
                             }
                             if (e.key === 'Escape') {
-                                setSidebarOpen(false);
+                                closeSidebar();
                             }
                         }}
                     />
@@ -283,32 +330,34 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
                 {/* Main content area */}
                 <div
-                    className={`flex-1 flex flex-col transition-all duration-300 ease-in-out relative z-10 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}
-                    style={{ willChange: 'margin-left' }}
+                    className={`flex-1 flex flex-col relative z-10 transition-[padding] duration-300 ease-in-out ${desktopPaddingClass}`}
+                    style={{ willChange: 'padding' }}
                 >
                     {/* Header with improved styling */}
                     <div
                         className={`sticky top-0 z-20 transition-all duration-300 ease-in-out ${sidebarOpen
-                            ? 'backdrop-blur-md bg-white/80 dark:bg-gray-800/80 border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg'
+                            ? 'backdrop-blur-md bg-white/80 dark:bg-grazy-800/80 border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg'
                             : 'bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200/30 dark:border-gray-700/30 shadow-sm'
                             }`}
                     >
                         <AdminHeader
-                            onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                            onToggleSidebar={toggleSidebar}
                             sidebarCollapsed={sidebarCollapsed}
-                            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+                            onToggleCollapse={toggleCollapse}
                         />
                     </div>
 
                     {/* Content area with improved spacing and animations */}
                     <main
-                        className={`flex-1 overflow-auto transition-all duration-300 ease-in-out ${sidebarOpen ? 'blur-[1px] lg:blur-0 scale-[0.995] lg:scale-100' : 'blur-0 scale-100'}`}
+                        id={mainContentId}
+                        className={`flex-1 overflow-auto transition-all duration-300 ease-in-out transform ${mainEffectClass}`}
                         style={{ willChange: 'filter, transform' }}
                         role="main"
                         aria-label="Main content"
+                        tabIndex={-1}
                     >
                         <div className="container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
-                            <div className="animate-in slide-in-from-bottom-4 duration-500">
+                            <div className={contentAnimationClass}>
                                 <ErrorBoundary>
                                     {children}
                                 </ErrorBoundary>

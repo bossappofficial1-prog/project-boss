@@ -4,7 +4,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { initializeSocket, disconnectSocket, joinBusinessOutlet, getSocket } from '@/lib/socket';
-import { useOutletContext } from './OutletProvider';
 import type { Socket } from 'socket.io-client';
 
 interface SocketContextType {
@@ -19,17 +18,18 @@ const SocketContext = createContext<SocketContextType | null>(null);
 
 interface SocketProviderProps {
     children: React.ReactNode;
+    outletId?: string | null; // Optional outlet ID - can be passed directly for cashier
 }
 
-export function SocketProvider({ children }: SocketProviderProps) {
+export function SocketProvider({ children, outletId: providedOutletId }: SocketProviderProps) {
     const router = useRouter();
-
-    // Get outlet context
-    const { selectedOutlet } = useOutletContext();
 
     const [isConnected, setIsConnected] = useState(false);
     const [businessEvents, setBusinessEvents] = useState<any[]>([]);
     const [orderEvents, setOrderEvents] = useState<any[]>([]);
+
+    // Determine outlet ID - either from prop (cashier) or from context (owner)
+    const outletId = providedOutletId;
 
     useEffect(() => {
         // Initialize socket regardless of outlet availability
@@ -135,18 +135,13 @@ export function SocketProvider({ children }: SocketProviderProps) {
         };
     }, [router]);
 
-    // Join business outlet when selectedOutlet changes
+    // Join business outlet when outletId changes
     useEffect(() => {
-        if (selectedOutlet && isConnected) {
-            joinBusinessOutlet(selectedOutlet.id);
-
-            // Show notification that outlet changed
-            toast.success('Outlet berubah', {
-                description: `Sekarang terhubung ke ${selectedOutlet.name}`,
-                duration: 3000, // Short duration for this type of notification
-            });
+        if (outletId && isConnected) {
+            console.log('🏢 Joining business outlet:', outletId);
+            joinBusinessOutlet(outletId);
         }
-    }, [selectedOutlet, isConnected]);
+    }, [outletId, isConnected]);
 
     const contextValue: SocketContextType = {
         socket: getSocket(),

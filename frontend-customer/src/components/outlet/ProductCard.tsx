@@ -2,20 +2,20 @@
 
 import { useCart } from "@/hooks/useCart";
 import { OutletDetails, ProductType } from "@/types";
-import { BookingSlot } from "@/types/booking-slots";
+import { SelectedSchedule } from "@/types/booking-slots";
 import { useState, useCallback } from "react";
 import { Card } from "../ui/card";
-import { ImageRender } from "../shared/Image";
 import { Clock, Minus, Package, Plus, ShoppingCart, Wrench } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { ScheduleModal } from "./ScheduleModal";
-import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
+import { useSnackbar } from "@/hooks/useSnackbar";
+import { ImageColorThief } from "../shared/ImageColorThief";
 
 export default function ProductCard({ product, outlet }: { product: ProductType; outlet: OutletDetails }) {
     const { addItem, getOutletItems } = useCart();
-    const { push: toast } = useToast();
+    const snackbar = useSnackbar()
     const router = useRouter();
     const [quantity, setQuantity] = useState(1);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -41,16 +41,13 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
                     addItem(outlet.id, outlet.name, product, quantity);
                     setQuantity(1);
                 } catch (error) {
-                    toast({
-                        title: 'Tidak dapat menambahkan produk',
-                        description: error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan produk ke keranjang'
-                    });
+                    snackbar.error(error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan produk ke keranjang', 10000)
                 }
             }
         } else if (product.type === 'SERVICE') {
             setIsScheduleModalOpen(true);
         }
-    }, [addItem, outlet.id, outlet.name, product, quantity, isOutOfStock, toast]);
+    }, [addItem, outlet.id, outlet.name, product, quantity, isOutOfStock]);
 
     const handleQuantityChange = (delta: number, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -63,7 +60,7 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
         });
     };
 
-    const handleScheduleSelect = useCallback((selectedSchedule: BookingSlot | string) => {
+    const handleScheduleSelect = useCallback((selectedSchedule: SelectedSchedule) => {
         try {
             const success = addItem(outlet.id, outlet.name, product, 1, selectedSchedule);
             if (success) {
@@ -73,12 +70,9 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
                 console.warn('Failed to add service to cart due to time conflict');
             }
         } catch (error) {
-            toast({
-                title: 'Tidak dapat menambahkan layanan',
-                description: error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan layanan ke keranjang'
-            });
+            snackbar.error(error instanceof Error ? error.message : 'Terjadi kesalahan saat menambahkan layanan ke keranjang', 10000)
         }
-    }, [addItem, outlet.id, outlet.name, product, toast]);
+    }, [addItem, outlet.id, outlet.name, product]);
 
     return (
         <>
@@ -88,8 +82,8 @@ export default function ProductCard({ product, outlet }: { product: ProductType;
             >
                 {/* Image Section - flex-shrink-0 prevents image from shrinking */}
                 <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 bg-muted overflow-hidden rounded-lg">
-                    { (product.image || product.images?.[0]?.url) ? (
-                        <ImageRender
+                    {(product.image || product.images?.[0]?.url) ? (
+                        <ImageColorThief
                             src={product.image || product.images?.[0]?.url!}
                             alt={product.name}
                             className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${isOutOfStock ? "grayscale" : ""}`}

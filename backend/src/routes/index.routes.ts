@@ -20,8 +20,10 @@ import securityRouter from "./security.route";
 import queueMonitoringRouter from "./queue-monitoring.route";
 import notificationRouter from "./notification.route";
 import adminRouter from "./admin.route";
+import transactionRouter from "./transaction.route";
 import { ResponseUtil } from "../utils";
 import { paymentMethod } from "../constants/payment-method";
+import { SocketEmitter } from "../socket/socket-emiiter";
 
 const apiRouter = Router()
 
@@ -46,17 +48,13 @@ apiRouter.use('/upload', uploadRouter)
 apiRouter.use('/security', securityRouter)
 apiRouter.use('/queue-monitoring', queueMonitoringRouter)
 apiRouter.use('/notifications', notificationRouter)
+apiRouter.use('/transactions', transactionRouter)
 apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
-// apiRouter.get("/test-websocket/:orderId", async (req, res) => {
-//     const { orderId } = req.params
-//     socketUtils.emitToOrder(orderId, {
-//         message: "Hello World",
-//         orderId: "ORD20250828123456",
-//         status: "test",
-//         timestamp: new Date()
-//     })
-
-//     res.json({ message: "OK" })
-// })
+apiRouter.get('/test-event/:outletId', (req, res) => {
+    const outletId = req.params.outletId;
+    // SocketEmitter.getInstance().sendTestMessage(outletId, `Ada pesanan baru`);
+    SocketEmitter.getInstance().emitNotificationToOutlet(outletId, { message: 'Test', timestamp: new Date() })
+    return ResponseUtil.success(res, {})
+})
 
 export default apiRouter

@@ -5,10 +5,11 @@ import { Transaction } from './transaction';
 export type OrderStatus =
   | 'AWAITING_PAYMENT'
   | 'PROCESSING'
+  | 'CONFIRMED'
   | 'READY'
+  | 'ON_GOING'
   | 'COMPLETED'
-  | 'CANCELLED'
-  | 'CONFIRMED';
+  | 'CANCELLED';
 
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED';
 
@@ -33,11 +34,55 @@ export interface OrderItem {
   product: Product;
 }
 
+export type OnlinePaymentChannel = 'qris_dynamic' | 'va_bca' | 'ewallet_gopay';
+
+export interface MidtransInstruction {
+  title: string;
+  steps: string[];
+}
+
+export interface MidtransOnlineDetail {
+  channel: OnlinePaymentChannel;
+  amount: number;
+  currency?: string;
+  expiredAt?: string;
+  referenceId?: string;
+  qrString?: string;
+  qrUrl?: string;
+  deeplinkUrl?: string;
+  paymentCode?: string;
+  accountName?: string;
+  vaNumbers?: {
+    bank: string;
+    vaNumber: string;
+  }[];
+  instructions?: MidtransInstruction[];
+}
+
+export interface TransactionSummary {
+  id: string;
+  status: PaymentStatus;
+  isManual: boolean;
+  paymentMethod: 'cash' | 'qris' | 'online' | 'manual_transfer';
+  paymentUrl?: string | null;
+  midtrans?: MidtransOnlineDetail | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Outlet {
   id: string;
   name: string;
   address?: string;
   phone?: string;
+}
+
+export interface StaffSummary {
+  id: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  role?: string | null;
 }
 
 export interface Order {
@@ -47,6 +92,10 @@ export interface Order {
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
   discountAmount: number;
+  appFee?: number;
+  midtransFee?: number;
+  chargedTo?: 'CUSTOMER' | 'OWNER';
+  paymentMethod?: 'cash' | 'qris' | 'online' | 'manual_transfer';
   guestCustomerId: string;
   guestCustomer: GuestCustomer;
   outletId: string;
@@ -54,10 +103,31 @@ export interface Order {
   items: OrderItem[];
   createdAt: string;
   updatedAt: string;
+  bookingSlot?: {
+    id: string;
+    date?: string | null;
+    startTime?: string | null;
+    endTime?: string | null;
+    status?: string;
+    productId?: string;
+    staffId?: string | null;
+    staff?: StaffSummary | null;
+  } | null;
+  assignedStaffId?: string | null;
+  assignedStaff?: StaffSummary | null;
 }
 
 export interface GoodsOrder extends Order {
   // Specific for goods orders
+}
+
+export interface QueueMeta {
+  position: number;
+  totalAhead: number;
+  totalOrders: number;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  status: OrderStatus;
 }
 
 export interface QueueEntry extends Order {
@@ -67,12 +137,9 @@ export interface QueueEntry extends Order {
   productName?: string;
   customerName: string;
   status: OrderStatus;
-<<<<<<< Updated upstream
-=======
   queueMeta?: QueueMeta | null;
   scheduledStart?: string | null;
   transaction: Transaction
->>>>>>> Stashed changes
 }
 
 export interface CreateOrderRequest {
@@ -88,6 +155,22 @@ export interface CreateOrderRequest {
   bookingDate?: string;
   paymentMethod?: 'qris' | 'online' | 'cash';
   bookingSlotId?: string;
+  staffId?: string;
+  onlinePaymentChannel?: OnlinePaymentChannel;
+}
+
+export interface CreateOrderResponse {
+  order: Order;
+  transaction: TransactionSummary;
+}
+
+export interface PosCashSummary {
+  outletId: string;
+  totalAmount: number;
+  transactionsCount: number;
+  date: string;
+  startTime: string;
+  endTime: string;
 }
 
 export interface OrderListParams {
@@ -136,19 +219,19 @@ export const orderApi = {
     return apiCallPaginated<QueueEntry>(url);
   },
 
+  async getPosCashSummary(outletId: string, date?: string): Promise<PosCashSummary> {
+    const searchParams = new URLSearchParams({ outletId });
+    if (date) {
+      searchParams.append('date', date);
+    }
+
+    const url = `/internal/pos/orders/cash-summary?${searchParams.toString()}`;
+    return apiCall<PosCashSummary>(url);
+  },
+
   // Create order (manual order)
-  async create(data: CreateOrderRequest): Promise<{
-    orderId: string;
-    totalAmount: number;
-    midtransTransactionToken?: string;
-    midtransRedirectUrl?: string;
-  }> {
-    return apiCall<{
-      orderId: string;
-      totalAmount: number;
-      midtransTransactionToken?: string;
-      midtransRedirectUrl?: string;
-    }>('/orders', {
+  async create(data: CreateOrderRequest): Promise<CreateOrderResponse> {
+    return apiCall<CreateOrderResponse>('/internal/pos/orders', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -157,6 +240,14 @@ export const orderApi = {
   // Update order status
   async updateStatus(orderId: string, status: OrderStatus): Promise<Order> {
     return apiCall<Order>(`/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  // Update service queue order status with validation
+  async updateServiceStatus(orderId: string, status: OrderStatus): Promise<QueueEntry> {
+    return apiCall<QueueEntry>(`/orders/${orderId}/service-status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });

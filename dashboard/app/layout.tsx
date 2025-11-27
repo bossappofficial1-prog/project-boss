@@ -15,11 +15,11 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010'),
   title: {
-    default: "BOSS - Business Operations Support System",
+    default: "BOSS Dashboard - Dukungan Operasional Bisnismu",
     template: "%s | BOSS Dashboard"
   },
-  description: "Comprehensive Business Operations Support System Dashboard for managing outlets, transactions, and business analytics with real-time insights.",
-  keywords: ["business dashboard", "operations management", "outlet management", "transaction tracking", "business analytics", "POS system", "inventory management"],
+  description: "Pantau outlet, transaksi, dan insight bisnis secara real-time lewat dashboard BOSS yang praktis.",
+  keywords: ["dashboard bisnis", "manajemen operasional", "monitor outlet", "pantau transaksi", "analytics bisnis", "sistem kasir", "manajemen stok"],
   authors: [{ name: "BOSS Team" }],
   creator: "BOSS Development Team",
   publisher: "BOSS",
@@ -45,8 +45,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "/",
-    title: "BOSS - Business Operations Support System",
-    description: "Comprehensive Business Operations Support System Dashboard for managing outlets, transactions, and business analytics.",
+    title: "BOSS Dashboard - Dukungan Operasional Bisnismu",
+    description: "Semua data outlet, transaksi, dan analitik bisnis kamu tersaji rapi dalam satu dashboard BOSS.",
     siteName: "BOSS Dashboard",
     images: [
       {
@@ -59,8 +59,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "BOSS - Business Operations Support System",
-    description: "Comprehensive Business Operations Support System Dashboard for managing outlets, transactions, and business analytics.",
+    title: "BOSS Dashboard - Dukungan Operasional Bisnismu",
+    description: "Kelola outlet, transaksi, dan insight bisnis cukup lewat satu dashboard BOSS.",
     images: ["/og-image.jpg"],
     creator: "@boss_dashboard",
   },
@@ -101,7 +101,7 @@ const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   "name": "BOSS Dashboard",
-  "description": "Business Operations Support System Dashboard",
+  "description": "Dashboard dukungan operasional bisnis",
   "url": process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010',
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web Browser",
@@ -130,7 +130,7 @@ export default function RootLayout({
       <head>
         <meta charSet="utf-8" />
         <link rel="canonical" href={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010'} />
-        <meta name="theme-color" content="#2563eb" />
+        <meta name="theme-color" content="#eb2525" />
         <meta name="color-scheme" content="light dark" />
 
         {/* Preconnect to external domains for performance */}

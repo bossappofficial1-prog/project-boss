@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { OrderStatus } from "@prisma/client";
 
+export const onlinePaymentChannelSchema = z.enum([
+    "qris_dynamic",
+    "va_bca",
+    "ewallet_gopay"
+]);
+
 const orderItemSchema = z.object({
     productId: z.string(),
     quantity: z.number()
@@ -9,16 +15,18 @@ const orderItemSchema = z.object({
         .max(1000, { message: "Quantity maksimal 1000" }),
 });
 
+const phoneSchema = z.string()
+    .min(10, { message: "Nomor telepon minimal 10 digit" })
+    .max(15, { message: "Nomor telepon maksimal 15 digit" })
+    .regex(/^[0-9+\-\s()]+$/, { message: "Format nomor telepon tidak valid" });
+
 export const createOrderSchema = z.object({
     guestCustomer: z.object({
         name: z.string()
             .min(2, { message: "Nama minimal 2 karakter" })
             .max(100, { message: "Nama maksimal 100 karakter" })
             .regex(/^[a-zA-Z\s]+$/, { message: "Nama hanya boleh mengandung huruf dan spasi" }),
-        phone: z.string()
-            .min(10, { message: "Nomor telepon minimal 10 digit" })
-            .max(15, { message: "Nomor telepon maksimal 15 digit" })
-            .regex(/^[0-9+\-\s()]+$/, { message: "Format nomor telepon tidak valid" }),
+        phone: phoneSchema,
     }),
     outletId: z.string(),
     items: z.array(orderItemSchema)
@@ -28,7 +36,10 @@ export const createOrderSchema = z.object({
     paymentMethod: z.enum(["qris", "online", "cash"], {
         errorMap: () => ({ message: "Payment method harus 'qris', 'online', atau 'cash'" })
     }).default("online"),
+    onlinePaymentChannel: onlinePaymentChannelSchema.optional(),
     bookingSlotId: z.string().uuid().optional(),
+    staffId: z.string().uuid().optional(),
+    orderSource: z.enum(["CUSTOMER", "POS"]).default("CUSTOMER"),
 }).refine(
     (data) => {
         // Validate total quantity doesn't exceed reasonable limits
@@ -62,12 +73,66 @@ export const createOrderSchema = z.object({
             message: "Booking slot harus punya tanggal booking",
             path: ["bookingDate"]
         }
+    ).refine(
+        (data) => {
+            if (data.paymentMethod === "online") {
+                return Boolean(data.onlinePaymentChannel);
+            }
+            return true;
+        },
+        {
+            message: "Online payment channel wajib diisi untuk pembayaran online",
+            path: ["onlinePaymentChannel"]
+        }
+    ).refine(
+        (data) => {
+            if (data.bookingSlotId) {
+                return Boolean(data.staffId);
+            }
+            if (data.staffId) {
+                return Boolean(data.bookingSlotId);
+            }
+            return true;
+        },
+        {
+            message: "Staff wajib dipilih ketika menggunakan slot booking",
+            path: ["staffId"]
+        }
     );
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
+export type OnlinePaymentChannel = z.infer<typeof onlinePaymentChannelSchema>;
 
 export const updateOrderStatusSchema = z.object({
     status: z.nativeEnum(OrderStatus),
 });
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
+
+const serviceQueueStatuses = [
+    OrderStatus.AWAITING_PAYMENT,
+    OrderStatus.CONFIRMED,
+    OrderStatus.PROCESSING,
+    OrderStatus.READY,
+    OrderStatus.ON_GOING,
+    OrderStatus.COMPLETED,
+    OrderStatus.CANCELLED,
+] as const;
+
+export const updateServiceQueueStatusSchema = z.object({
+    status: z.enum(serviceQueueStatuses.map((status) => status) as [typeof serviceQueueStatuses[number], ...typeof serviceQueueStatuses[number][]]),
+});
+
+export type UpdateServiceQueueStatusInput = z.infer<typeof updateServiceQueueStatusSchema>;
+
+export const customerCancelOrderSchema = z.object({
+    phone: phoneSchema,
+    reason: z.string().max(250).optional(),
+});
+
+export const customerConfirmOrderSchema = z.object({
+    phone: phoneSchema,
+});
+
+export type CustomerCancelOrderInput = z.infer<typeof customerCancelOrderSchema>;
+export type CustomerConfirmOrderInput = z.infer<typeof customerConfirmOrderSchema>;

@@ -20,14 +20,17 @@ export const config = {
     },
 
     midtrans: {
-        fees: 0.01,
+        fees: 0.02,
         serverKey: process.env.MIDTRANS_SERVER_KEY!,
         clientKey: process.env.MIDTRANS_CLIENT_KEY!,
         isProduction: process.env.IS_PRODUCTION === "true",
     },
 
     redis: {
-        url: process.env.REDIS_URL!,
+        url: process.env.REDIS_URL || 'redis://localhost:6379',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        host: process.env.REDIS_HOST || 'localhost',
+        password: process.env.REDIS_PASSWORD || undefined,
     },
 
     emailService: {

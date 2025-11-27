@@ -6,7 +6,6 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { ExpensesHeader } from '@/components/owner/expenses/Header';
 import { ExpensesControls } from '@/components/owner/expenses/Controls';
 import { ExpensesDesktopTable } from '@/components/owner/expenses/DesktopTable';
-import { ExpensesMobileCards } from '@/components/owner/expenses/MobileCards';
 import { ExpensesEmptyState } from '@/components/owner/expenses/EmptyState';
 import { ExpensesSkeleton } from '@/components/owner/expenses/Skeleton';
 import ExpenseModal from '@/components/modals/ExpenseModal';
@@ -61,12 +60,7 @@ export default function ExpensesPage() {
 					<ExpensesEmptyState />
 				) : (
 					<>
-						<div className="hidden md:block">
-							<ExpensesDesktopTable items={expenses} onEdit={handleEdit} onDelete={handleDelete} />
-						</div>
-						<div className="md:hidden">
-							<ExpensesMobileCards items={expenses} onEdit={handleEdit} onDelete={handleDelete} />
-						</div>
+						<ExpensesDesktopTable items={expenses} onEdit={handleEdit} onDelete={handleDelete} />
 					</>
 				)}
 

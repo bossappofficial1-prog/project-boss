@@ -1,22 +1,26 @@
 # 🚀 **BOSS BACKEND API DOCUMENTATION**
 
 ## 📋 **Overview**
+
 BOSS (Business One Stop System) Backend API adalah REST API yang dibangun dengan **Express.js**, **TypeScript**, dan **Prisma ORM** untuk mengelola sistem manajemen bisnis UMKM.
 
-**Base URL**: `http://localhost:1234/api/v1`  
+**Base URL**: `http://localhost:1234/api/v1`
 
 ---
 
 ## 🔐 **Authentication**
 
 ### **Headers Required**
+
 ```http
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
 ```
 
 ### **Response Format**
+
 Semua API menggunakan format response standar:
+
 ```json
 {
   "success": boolean,
@@ -28,6 +32,7 @@ Semua API menggunakan format response standar:
 ```
 
 **Error Response:**
+
 ```json
 {
   "success": false,
@@ -48,10 +53,13 @@ Semua API menggunakan format response standar:
 ## 🔑 **Authentication Endpoints**
 
 ### **1. Register**
+
 ```http
 POST /auth/register
 ```
+
 **Body:**
+
 ```json
 {
   "name": "John Doe",
@@ -60,7 +68,9 @@ POST /auth/register
   "password": "password123"
 }
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -77,17 +87,22 @@ POST /auth/register
 ```
 
 ### **2. Login**
+
 ```http
 POST /auth/login
 ```
+
 **Body:**
+
 ```json
 {
   "email": "john@example.com",
   "password": "password123"
 }
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -105,11 +120,14 @@ POST /auth/login
 ```
 
 ### **3. Get Current User**
+
 ```http
 GET /auth/me
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Response:**
+
 ```json
 {
   "success": true,
@@ -137,10 +155,13 @@ GET /auth/me
 ```
 
 ### **4. Verify Email**
+
 ```http
 POST /auth/verify
 ```
+
 **Body:**
+
 ```json
 {
   "email": "john@example.com",
@@ -149,9 +170,11 @@ POST /auth/verify
 ```
 
 ### **5. Logout**
+
 ```http
 POST /auth/logout
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 
 ---
@@ -159,29 +182,36 @@ POST /auth/logout
 ## 🏢 **Business Management**
 
 ### **1. Get All Businesses (Public)**
+
 ```http
 GET /business
 ```
 
 ### **2. Get Business by ID (Public)**
+
 ```http
 GET /business/:id
 ```
 
 ### **3. Get My Business**
+
 ```http
 GET /business/my/business
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 
 ### **4. Create Business**
+
 ```http
 POST /business
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "name": "My Business",
@@ -193,12 +223,15 @@ POST /business
 ```
 
 ### **5. Update Business**
+
 ```http
 PATCH /business/:id
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "name": "Updated Business Name",
@@ -207,11 +240,14 @@ PATCH /business/:id
 ```
 
 ### **6. Update Bank Account**
+
 ```http
 PUT /business/:id/bank-account
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Body:**
+
 ```json
 {
   "bankName": "BCA",
@@ -225,37 +261,45 @@ PUT /business/:id/bank-account
 ## 🏪 **Outlet Management**
 
 ### **1. Get All Outlets (Public)**
+
 ```http
 GET /outlets
 ```
 
 ### **2. Get Featured Outlets (Public)**
+
 ```http
 GET /outlets/featured
 ```
 
 ### **3. Find Nearby Outlets (Public)**
+
 ```http
 GET /outlets/nearby?lat=-6.2088&lng=106.8456&radius=5
 ```
 
 ### **4. Get Outlet by ID (Public)**
+
 ```http
 GET /outlets/:id
 ```
 
 ### **5. Get Outlets by Business ID (Public)**
+
 ```http
 GET /outlets/business/:businessId?take=10&limit=10&search=outlet+name
 ```
 
 ### **6. Create Outlet**
+
 ```http
 POST /outlets
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "name": "Main Outlet",
@@ -268,12 +312,15 @@ POST /outlets
 ```
 
 ### **7. Update Outlet**
+
 ```http
 PATCH /outlets/:id
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "name": "Updated Outlet Name",
@@ -283,12 +330,15 @@ PATCH /outlets/:id
 ```
 
 ### **8. Update Outlet Location**
+
 ```http
 PATCH /outlets/:outletId/location
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "latitude": -6.2088,
@@ -297,9 +347,11 @@ PATCH /outlets/:outletId/location
 ```
 
 ### **9. Delete Outlet**
+
 ```http
 DELETE /outlets/:id
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 
@@ -308,40 +360,49 @@ DELETE /outlets/:id
 ## 📦 **Product Management**
 
 ### **1. Search Products by Name (Public)**
+
 ```http
 GET /products/search?q=product+name
 ```
 
 ### **2. Get Product by ID (Public)**
+
 ```http
 GET /products/:id
 ```
 
 ### **3. Get Products by Outlet ID (Public)**
+
 ```http
 GET /products/outlet/:outletId
 ```
 
 ### **4. Get Product Booking Slots (Public)**
+
 ```http
 GET /products/:productId/booking-slots
 ```
 
 ### **5. Get Product Import Template**
+
 ```http
 GET /products/template/import
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Response:** Excel file download
 
 ### **6. Create Product**
+
 ```http
 POST /products
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "name": "Product Name",
@@ -356,21 +417,26 @@ POST /products
 ```
 
 ### **7. Bulk Create Products**
+
 ```http
 POST /products/bulk
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Content-Type:** `multipart/form-data`
 **Body:** Excel file upload
 
 ### **8. Update Product**
+
 ```http
 PATCH /products/:id
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "name": "Updated Product Name",
@@ -380,9 +446,11 @@ PATCH /products/:id
 ```
 
 ### **9. Delete Product**
+
 ```http
 DELETE /products/:id
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 
@@ -391,10 +459,13 @@ DELETE /products/:id
 ## 🛒 **Order Management**
 
 ### **1. Create Order (Public/Guest)**
+
 ```http
 POST /orders
 ```
+
 **Body:**
+
 ```json
 {
   "outletId": "outlet_id",
@@ -414,43 +485,54 @@ POST /orders
 ```
 
 ### **2. Get Order by Customer Phone**
+
 ```http
 GET /orders/details/:phone
 ```
 
 ### **3. Get Order by ID**
+
 ```http
 GET /orders/:id
 ```
 
 ### **4. Update Order Status**
+
 ```http
 PATCH /orders/:id/status
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "status": "CONFIRMED"
 }
 ```
+
 **Status Options:** `PENDING`, `CONFIRMED`, `PREPARING`, `READY`, `DELIVERED`, `CANCELLED`
 
 ### **5. Complete Order**
+
 ```http
 POST /orders/:id/complete
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 
 ### **6. Refund Order**
+
 ```http
 POST /orders/:id/refund
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "reason": "Customer request",
@@ -459,53 +541,151 @@ POST /orders/:id/refund
 ```
 
 ### **7. Get Order Receipt**
+
 ```http
 GET /orders/:id/receipt
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 
 ### **8. List Goods Orders by Outlet**
+
 ```http
 GET /orders/:outletId/goods?status=PENDING&limit=10
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 
 ### **9. List Service Queue by Outlet**
+
 ```http
 GET /orders/:outletId/queue
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 
 ### **10. Create Payment**
+
 ```http
 POST /orders/create-payment
 ```
-**Body:**
+
+**Body (online & manual flow):**
+
 ```json
 {
-  "orderId": "order_id",
-  "amount": 15000,
-  "paymentMethod": "MIDTRANS"
+  "customer_details": {
+    "name": "Customer Name",
+    "phone": "081234567890"
+  },
+  "item_details": [{ "productId": "prod_123", "quantity": 2 }],
+  "payment_method": "manual-qris",
+  "outletId": "outlet_abc",
+  "selectedSlotId": "optional_slot_id"
 }
 ```
+
+**Manual payment response:**
+
+```json
+{
+  "order_id": "ORD-123456",
+  "transaction_id": "txn_manual_001",
+  "transaction_status": "pending",
+  "gross_amount": 150000,
+  "expiry_time": "2025-09-21T09:35:00.000Z",
+  "manual": {
+    "type": "QRIS_OFFLINE",
+    "instructions": {
+      "manualType": "QRIS_OFFLINE",
+      "amount": 150000,
+      "currency": "IDR",
+      "expiresAt": "2025-09-21T09:35:00.000Z",
+      "steps": [
+        "Scan QR outlet dari aplikasi pembayaran",
+        "Masukkan nominal sesuai tagihan",
+        "Selesaikan pembayaran lalu unggah bukti"
+      ],
+      "note": "Mohon unggah bukti pembayaran sebelum waktu kedaluwarsa",
+      "qrImageUrl": "https://cdn.bossin.id/uploads/qris-outlet.png"
+    },
+    "fee_summary": {
+      "applicationFee": 4500,
+      "transactionFee": 1500,
+      "subtotal": 144000
+    }
+  },
+  "customer_details": {
+    "name": "Customer Name",
+    "phone": "081234567890"
+  }
+}
+```
+
+> Untuk pembayaran online (Midtrans), response tetap mengikuti payload Midtrans (QRIS/VA) seperti sebelumnya.
+
+### **11. Upload Manual Payment Proof**
+
+```http
+POST /payment/:orderId/manual/proof
+```
+
+**Form Data:** `proof` (image/pdf maksimal 10MB)
+
+### **12. Verifikasi Manual Payment** _(Owner/Admin)_
+
+```http
+POST /payment/:orderId/manual/verify
+```
+
+**Headers:** `Authorization: Bearer <token>`
+**Roles:** `OWNER`, `ADMIN`
+
+### **13. Tolak Manual Payment** _(Owner/Admin)_
+
+```http
+POST /payment/:orderId/manual/reject
+```
+
+**Body:**
+
+```json
+{ "reason": "Bukti transfer buram" }
+```
+
+**Headers:** `Authorization: Bearer <token>`
+**Roles:** `OWNER`, `ADMIN`
+
+### **14. List Manual Payments** _(Owner/Admin)_
+
+```http
+GET /payment/manual?status=AWAITING_VERIFICATION&outletId=outlet_abc&page=1&limit=20
+```
+
+**Headers:** `Authorization: Bearer <token>`
+**Roles:** `OWNER`, `ADMIN`
 
 ---
 
 ## 📅 **Booking Management**
 
 ### **1. Get Booking Slots by Outlet**
+
 ```http
 GET /products/:productId/booking-slots
 ```
 
-### **2. Create Booking** *(Coming from booking routes)*
+### **2. Create Booking** _(Coming from booking routes)_
+
 ```http
 POST /bookings
 ```
+
 **Body:**
+
 ```json
 {
   "productId": "product_id",
@@ -523,11 +703,14 @@ POST /bookings
 ## 💰 **Expense Management**
 
 ### **1. Create Expense**
+
 ```http
 POST /expenses
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Body:**
+
 ```json
 {
   "description": "Office supplies",
@@ -539,17 +722,22 @@ POST /expenses
 ```
 
 ### **2. Get Expenses by Outlet**
+
 ```http
 GET /expenses/outlet/:outletId?startDate=2025-09-01&endDate=2025-09-30
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 
 ### **3. Update Expense**
+
 ```http
 PUT /expenses/:id
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Body:**
+
 ```json
 {
   "description": "Updated description",
@@ -559,9 +747,11 @@ PUT /expenses/:id
 ```
 
 ### **4. Delete Expense**
+
 ```http
 DELETE /expenses/:id
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 
 ---
@@ -569,11 +759,14 @@ DELETE /expenses/:id
 ## 📊 **Reports & Analytics**
 
 ### **1. Get Daily Report**
+
 ```http
 GET /reports/daily/:outletId?date=2025-09-10
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Response:**
+
 ```json
 {
   "success": true,
@@ -595,15 +788,19 @@ GET /reports/daily/:outletId?date=2025-09-10
 ```
 
 ### **2. Get Business Dashboard**
+
 ```http
 GET /dashboard/business/:businessId
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 
 ### **3. Get Outlet Dashboard**
+
 ```http
 GET /dashboard/outlet/:outletId
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 
 ---
@@ -611,11 +808,14 @@ GET /dashboard/outlet/:outletId
 ## 💸 **Withdrawal Management**
 
 ### **1. Get Withdrawal Calculation**
+
 ```http
 GET /withdrawals/business/:businessId/calculation
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Response:**
+
 ```json
 {
   "success": true,
@@ -630,11 +830,14 @@ GET /withdrawals/business/:businessId/calculation
 ```
 
 ### **2. Request Withdrawal**
+
 ```http
 POST /withdrawals/business/:businessId/request
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Body:**
+
 ```json
 {
   "amount": 500000,
@@ -648,12 +851,15 @@ POST /withdrawals/business/:businessId/request
 ```
 
 ### **3. Process Withdrawal (Admin Only)**
+
 ```http
 PATCH /withdrawals/:id/process
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `ADMIN`
 **Body:**
+
 ```json
 {
   "status": "APPROVED",
@@ -663,9 +869,11 @@ PATCH /withdrawals/:id/process
 ```
 
 ### **4. Get Withdrawal History**
+
 ```http
 GET /withdrawals/business/:businessId/history?limit=10&offset=0
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 
 ---
@@ -673,12 +881,15 @@ GET /withdrawals/business/:businessId/history?limit=10&offset=0
 ## 📤 **File Upload**
 
 ### **1. Upload Single Image**
+
 ```http
 POST /upload/image
 ```
+
 **Content-Type:** `multipart/form-data`
 **Body:** `image` file
 **Response:**
+
 ```json
 {
   "success": true,
@@ -692,36 +903,46 @@ POST /upload/image
 ```
 
 ### **2. Upload Multiple Images**
+
 ```http
 POST /upload/images
 ```
+
 **Content-Type:** `multipart/form-data`
 **Body:** `images` files (max 5 files)
 
 ### **3. Upload Product Image**
+
 ```http
 POST /upload/product/image
 ```
+
 **Content-Type:** `multipart/form-data`
 **Body:** `image` file
 
 ### **4. Upload User Avatar**
+
 ```http
 POST /upload/user/avatar
 ```
+
 **Content-Type:** `multipart/form-data`
 **Body:** `avatar` file
 
 ### **5. Delete Image by Filename**
+
 ```http
 DELETE /upload/image/:filename
 ```
 
 ### **6. Delete Image by URL**
+
 ```http
 DELETE /upload/image
 ```
+
 **Body:**
+
 ```json
 {
   "url": "https://your-domain.com/uploads/image_filename.jpg"
@@ -733,17 +954,22 @@ DELETE /upload/image
 ## 👥 **User Management**
 
 ### **1. Get User Profile**
+
 ```http
 GET /users/profile
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 
 ### **2. Update User Profile**
+
 ```http
 PATCH /users/profile
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Body:**
+
 ```json
 {
   "name": "Updated Name",
@@ -757,19 +983,24 @@ PATCH /users/profile
 ## 🏪 **Staff Management**
 
 ### **1. Get Staff by Outlet**
+
 ```http
 GET /staff/outlet/:outletId
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 
 ### **2. Add Staff**
+
 ```http
 POST /staff
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "userId": "user_id",
@@ -784,17 +1015,21 @@ POST /staff
 ## 🕒 **Operating Hours**
 
 ### **1. Get Operating Hours**
+
 ```http
 GET /operating-hours/outlet/:outletId
 ```
 
 ### **2. Update Operating Hours**
+
 ```http
 PUT /operating-hours/outlet/:outletId
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 **Role:** `OWNER`
 **Body:**
+
 ```json
 {
   "monday": { "open": "08:00", "close": "22:00", "isOpen": true },
@@ -812,15 +1047,19 @@ PUT /operating-hours/outlet/:outletId
 ## 📱 **Notifications**
 
 ### **1. Get Notifications**
+
 ```http
 GET /notifications
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 
 ### **2. Mark Notification as Read**
+
 ```http
 PATCH /notifications/:id/read
 ```
+
 **Headers:** `Authorization: Bearer <token>`
 
 ---
@@ -828,6 +1067,7 @@ PATCH /notifications/:id/read
 ## 🔍 **Search**
 
 ### **1. Global Search**
+
 ```http
 GET /search?q=search+term&type=product&outletId=outlet_id
 ```
@@ -837,10 +1077,13 @@ GET /search?q=search+term&type=product&outletId=outlet_id
 ## 💳 **Payment Methods**
 
 ### **1. Get Available Payment Methods**
+
 ```http
 GET /payment-methods
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -866,11 +1109,13 @@ GET /payment-methods
 ## 🔒 **Security & Rate Limiting**
 
 ### **Rate Limits**
+
 - **Order Creation**: 10 orders per minute per IP
 - **Order Management**: 100 requests per minute per user
 - **Authentication**: 5 login attempts per minute per IP
 
 ### **Security Headers**
+
 ```http
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -878,6 +1123,7 @@ X-RateLimit-Reset: 1625097600
 ```
 
 ### **Error Codes**
+
 - `400` - Bad Request (validation errors)
 - `401` - Unauthorized (invalid/missing token)
 - `403` - Forbidden (insufficient permissions)
@@ -891,9 +1137,11 @@ X-RateLimit-Reset: 1625097600
 ## 🧪 **Testing**
 
 ### **Postman Collection**
+
 Import `BOSS-API-Postman-Collection-Fixed.json` untuk testing semua endpoints.
 
 ### **Environment Variables**
+
 ```json
 {
   "baseUrl": "http://localhost:4444/api/v1",
@@ -906,6 +1154,7 @@ Import `BOSS-API-Postman-Collection-Fixed.json` untuk testing semua endpoints.
 ## 📝 **Changelog**
 
 ### **Version 1.0.0** - September 10, 2025
+
 - Initial API documentation
 - All core endpoints documented
 - Authentication & authorization implemented
@@ -918,6 +1167,7 @@ Import `BOSS-API-Postman-Collection-Fixed.json` untuk testing semua endpoints.
 ## 🔧 **Development Setup**
 
 ### **Environment Variables**
+
 ```env
 # Database
 DATABASE_URL="postgresql://user:password@localhost:5432/boss_db"
@@ -946,6 +1196,7 @@ SMTP_PASS="your-app-password"
 ```
 
 ### **Docker Setup**
+
 ```bash
 # Development
 docker-compose -f docker-compose.dev.yml up
@@ -959,6 +1210,7 @@ docker-compose -f docker-compose.prod.yml up
 ## 🤝 **Support**
 
 For technical support or API questions:
+
 - Email: support@boss-api.com
 - Documentation: https://docs.boss-api.com
 - Status Page: https://status.boss-api.com

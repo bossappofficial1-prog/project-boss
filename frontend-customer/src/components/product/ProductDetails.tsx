@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import type { AxiosError } from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { Product as ProductService } from "@/services/product";
 import { Outlet as OutletService } from "@/services/outlets";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ImageRender } from "@/components/shared/Image";
 import { LoadingState, ErrorState, EmptyState } from "@/components/Base";
+import { EmptyStates } from "@/components/base/EmptyStates";
 import {
     ShoppingCart,
     ArrowLeft,
@@ -27,52 +29,48 @@ import Link from "next/link";
 import { ProductType, OutletType } from "@/types"; // pastikan ada OutletType di project
 import { ScheduleModal } from "../outlet/ScheduleModal";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
-import { useToast } from "@/components/ui/toast";
 import { Messages, NestedKeyOf, useTranslations } from "@/hooks/useI18n";
 import { ProductImagesSlider } from "../shared/ProductImagesSlider";
+import { useSnackbar } from "@/hooks/useSnackbar";
 
 type Props = {
-    params: Promise<{ id: string; productId: string }>;
+    outletId: string;
+    productId: string;
 };
 
-export function ProductDetails({ params }: Props) {
+export function ProductDetails({ outletId, productId }: Props) {
     const router = useRouter();
     const { addItem } = useCart();
-    const { push: toast } = useToast();
+    const snackbar = useSnackbar()
     const { setAppBar, resetAppBar } = useAppBarV2();
     const { isProductSaved, toggleSaveProduct } = useSavedProducts();
 
-    const [outletId, setOutletId] = useState("");
-    const [productId, setProductId] = useState("");
     const [showScheduleModal, setShowScheduleModal] = useState(false);
 
     const t = useTranslations("productDetails");
     const tCommon = useTranslations("common");
     const from = useSearchParams().get("from");
 
-    // Ambil params secara async
-    useEffect(() => {
-        params.then(({ id, productId }) => {
-            setOutletId(id);
-            setProductId(productId);
-        });
-    }, [params]);
-
     // Query product dan outlet
     const productQuery = useQuery<ProductType>({
         queryKey: ["product", outletId, productId],
         queryFn: () => ProductService.getDetail(productId),
-        enabled: !!(outletId && productId),
+        enabled: Boolean(outletId && productId),
+        retry: false,
     });
 
     const outletQuery = useQuery<OutletType>({
         queryKey: ["outlet", outletId],
         queryFn: () => OutletService.getDetail(outletId),
-        enabled: !!outletId,
+        enabled: Boolean(outletId),
+        retry: false,
     });
 
     const product = productQuery.data;
     const outlet = outletQuery.data;
+
+    const productErrorStatus = (productQuery.error as AxiosError | undefined)?.response?.status;
+    const outletErrorStatus = (outletQuery.error as AxiosError | undefined)?.response?.status;
 
     const isProductInSaved = useMemo(
         () => (product ? isProductSaved(product.id) : false),
@@ -88,6 +86,7 @@ export function ProductDetails({ params }: Props) {
             subtitle: product.name,
             centerTitle: true,
             showBackButton: true,
+            showThemeToggle: false,
             onLeftClick:
                 from === "saved-products"
                     ? () => router.back()
@@ -125,12 +124,9 @@ export function ProductDetails({ params }: Props) {
         try {
             addItem(outlet.id, outlet.name, product, 1);
         } catch {
-            toast({
-                title: t("toast.addProductError"),
-                description: t("toast.addProductErrorDesc"),
-            });
+            snackbar.error(t("toast.addProductError"))
         }
-    }, [product, outlet, addItem, toast, t]);
+    }, [product, outlet, addItem, t, snackbar]);
 
     const handleScheduleSelect = useCallback(
         (schedule: any) => {
@@ -139,13 +135,10 @@ export function ProductDetails({ params }: Props) {
                 addItem(outletId, outlet.name, product, 1, schedule);
                 setShowScheduleModal(false);
             } catch {
-                toast({
-                    title: t("toast.addServiceError"),
-                    description: t("toast.addServiceErrorDesc"),
-                });
+                snackbar.error(t("toast.addServiceErrorDesc"))
             }
         },
-        [outletId, outlet, product, addItem, toast, t]
+        [outletId, outlet, product, addItem, t, snackbar]
     );
 
     // Format Deskripsi
@@ -196,11 +189,26 @@ export function ProductDetails({ params }: Props) {
     );
 
     // Loading & Error State
-    if (productQuery.isLoading || outletQuery.isLoading) return <LoadingState />;
-    if (productQuery.isError || outletQuery.isError)
+    if (productQuery.isLoading || outletQuery.isLoading) {
+        return <LoadingState />;
+    }
+
+    if (productErrorStatus === 404 || outletErrorStatus === 404) {
+        return (
+            <EmptyStates.NotFound action={{
+                label: "Back to Home",
+                onClick: () => router.push("/")
+            }} />
+        );
+    }
+
+    if (productQuery.isError || outletQuery.isError) {
         return <ErrorState onRetry={() => router.refresh()} />;
-    if (!product || !outlet)
+    }
+
+    if (!product || !outlet) {
         return <EmptyState title={t("empty.title")} />;
+    }
 
     return (
         <div className="pb-16">

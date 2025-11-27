@@ -111,3 +111,28 @@ export type TypedServer = import('socket.io').Server<
     InterServerEvents,
     SocketData
 >;
+
+export const SOCKET_ON_EVENT = {
+    JOIN_OUTLET: "join:outlet", // event yang didengarkan oleh server
+} as const;
+
+export const SOCKET_EMIT_EVENT = {
+    ORDER_UPDATE: "order:update", // event yang dikirim server ke client
+    NEW_ORDER: "order:new",
+} as const;
+
+
+export const SOCKET_EVENT = {
+    OUTLET_JOIN: "join:outlet",
+    ORDER_UPDATE: "order:update",
+    ORDER_NEW: "order:new",
+} as const;
+
+export type SocketEvent = typeof SOCKET_EVENT[keyof typeof SOCKET_EVENT];
+
+// Definisikan tipe payload tiap event
+export interface SocketEventPayload {
+    [SOCKET_EVENT.OUTLET_JOIN]: { outletId: string };
+    [SOCKET_EVENT.ORDER_UPDATE]: { orderId: string; status: string };
+    [SOCKET_EVENT.ORDER_NEW]: { orderId: string; customerName: string };
+}

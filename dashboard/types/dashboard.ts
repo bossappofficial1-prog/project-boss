@@ -28,6 +28,7 @@ export interface Outlet {
   image?: string;
   latitude?: number;
   longitude?: number;
+  qrisImage?: string | null;
 }
 
 export interface Business {

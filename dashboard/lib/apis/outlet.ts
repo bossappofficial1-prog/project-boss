@@ -1,4 +1,5 @@
-import { apiCall } from './base';
+import { apiCall, apiClient } from './base';
+import type { OutletAnalyticsResponse, OutletRevenueTrendResponse, TimeframeFilter } from '@/types/outlet';
 
 export interface BusinessHours {
   id: string;
@@ -34,7 +35,7 @@ export const outletApi = {
 
     // Convert to our format with helper properties
     const dayNames: BusinessHours['day'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-    
+
     return response.map(hour => ({
       ...hour,
       day: dayNames[hour.dayOfWeek],
@@ -48,6 +49,17 @@ export const outletApi = {
     totalSales: number; totalOrders: number; totalExpenses: number; profit: number;
     topProducts: Array<{ productId: string; name: string; quantity: number; revenue: number; }>;
   }>(`/dashboard/outlet/${outletId}`),
+
+  getAnalytics: (outletId: string) => apiCall<OutletAnalyticsResponse>(`/outlets/${outletId}/analytics`),
+
+  getRevenueTrend: (outletId: string, params?: { timeframe?: TimeframeFilter; startDate?: string; endDate?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.timeframe) searchParams.append('timeframe', params.timeframe);
+    if (params?.startDate) searchParams.append('startDate', params.startDate);
+    if (params?.endDate) searchParams.append('endDate', params.endDate);
+    const qs = searchParams.toString();
+    return apiCall<OutletRevenueTrendResponse>(`/outlets/${outletId}/revenue-trend${qs ? `?${qs}` : ''}`);
+  },
 
   getDailyReport: (
     outletId: string,
@@ -74,5 +86,22 @@ export const outletApi = {
         totalLabaBersih: number;
       };
     }>(endpoint);
+  },
+
+  // QRIS Management
+  getQRIS: (outletId: string) => apiCall<{
+    outletId: string;
+    outletName: string;
+    qrisImageUrl: string | null;
+  }>(`/outlets/${outletId}/qris`),
+
+  uploadQRIS: async (outletId: string, fileUrl: string) => {
+    const response = await apiClient.post(`/outlets/${outletId}/qris`, { fileUrl });
+    return response.data.data;
+  },
+
+  deleteQRIS: async (outletId: string) => {
+    const response = await apiClient.delete(`/outlets/${outletId}/qris`);
+    return response.data;
   },
 };

@@ -56,6 +56,9 @@ services:
     environment:
       NODE_ENV: development
       REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       PORT: 1234
     ports:

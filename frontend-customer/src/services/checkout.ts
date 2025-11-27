@@ -1,20 +1,28 @@
 import { CartItem } from '@/hooks/useCart';
 import { OutletSummary, CheckoutData } from '@/types/checkout';
 import { Outlet } from './outlets';
-import { OutletType, PaymentMethodId } from '@/types';
+import { ManualPaymentResponse, PaymentMethod, PaymentMethodId } from '@/types';
 import api from '@/lib/api';
+
+type ManualPaymentStorageData = {
+    response: ManualPaymentResponse;
+    staffId?: string;
+    checkoutData: CheckoutData;
+    selectedPaymentMethod: PaymentMethod;
+    customerInfo: {
+        name: string;
+        phone: string;
+    };
+    createdAt: string;
+};
+
+const MANUAL_PAYMENT_STORAGE_KEY = 'manual-payment-info';
 
 export class CheckoutService {
     /**
      * Transform cart items to checkout data format
      */
     static async prepareCheckoutData(cartItems: CartItem[]): Promise<CheckoutData> {
-        // Validasi: Pastikan hanya ada satu outlet
-        const uniqueOutlets = [...new Set(cartItems.map(item => item.outletId))];
-        if (uniqueOutlets.length > 1) {
-            throw new Error('Checkout hanya dapat dilakukan untuk satu outlet saja');
-        }
-
         // Validasi: Pastikan hanya ada satu jenis produk
         const uniqueProductTypes = [...new Set(cartItems.map(item => item.type))];
         if (uniqueProductTypes.length > 1) {
@@ -41,14 +49,10 @@ export class CheckoutService {
         const outletPromises = Object.values(outletGroups).map(async (group) => {
             const outlet = await Outlet.getDetail(group.outletId);
 
-            const transactionFee = outlet.business.defaultTransactionFeeBearer === "CUSTOMER" ? (group.subtotal * 0.02) : 0;
-            const applicationFee = group.subtotal * 0.03;
-
             return {
                 outletName: group.outletName,
+                outletId: group.outletId,
                 subtotal: group.subtotal,
-                transactionFee,
-                applicationFee,
                 items: group.items
             };
         });
@@ -57,16 +61,13 @@ export class CheckoutService {
 
         // Calculate totals
         const subtotal = outlets.reduce((total, outlet) => total + outlet.subtotal, 0);
-        const totalTransactionFee = outlets.reduce((total, outlet) => total + outlet.transactionFee, 0);
-        const applicationFee = outlets.reduce((total, outlet) => total + outlet.applicationFee, 0);
-        const grandTotal = subtotal + totalTransactionFee + applicationFee;
+        const grandTotal = subtotal;
 
         return {
             outlets,
             subtotal,
-            totalTransactionFee,
-            applicationFee,
-            grandTotal
+            grandTotal,
+
         };
     }
 
@@ -145,6 +146,37 @@ export class CheckoutService {
 
         try {
             localStorage.removeItem('payment-data');
+        } catch {
+            // Ignore storage errors
+        }
+    }
+
+    static saveManualPaymentToStorage(data: ManualPaymentStorageData): void {
+        if (typeof window === 'undefined') return;
+
+        try {
+            localStorage.setItem(MANUAL_PAYMENT_STORAGE_KEY, JSON.stringify(data));
+        } catch {
+            // Ignore storage errors
+        }
+    }
+
+    static getManualPaymentFromStorage(): ManualPaymentStorageData | null {
+        if (typeof window === 'undefined') return null;
+
+        try {
+            const stored = localStorage.getItem(MANUAL_PAYMENT_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    static clearManualPaymentFromStorage(): void {
+        if (typeof window === 'undefined') return;
+
+        try {
+            localStorage.removeItem(MANUAL_PAYMENT_STORAGE_KEY);
         } catch {
             // Ignore storage errors
         }

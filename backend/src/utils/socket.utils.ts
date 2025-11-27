@@ -1,4 +1,5 @@
 import { Server } from "socket.io";
+import { SOCKET_EVENT } from "../socket/types";
 
 class SocketUtils {
     private io: Server | null = null;
@@ -29,7 +30,8 @@ class SocketUtils {
 
     async emitToOrder(orderId: string, payload: any) {
         if (!this.io) throw new Error("Socket.io not initialized");
-        this.io.to(orderId).emit("orderEvent", payload);
+        this.io.to(orderId).emit(SOCKET_EVENT.ORDER_EVENT, payload);
+        this.io.to(orderId).emit(SOCKET_EVENT.ORDER_OTHER_EVENT, payload);
     }
 
     async emitToBusinessOutlet(outletId: string, payload: any) {

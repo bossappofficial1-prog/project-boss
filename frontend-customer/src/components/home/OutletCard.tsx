@@ -5,10 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Phone, Store, ExternalLink, MapPinned, Crown } from "lucide-react";
 import Link from "next/link";
-import { ImageRender } from "../shared/Image";
 import { BusinessType, OutletType } from "@/types";
 import { useTranslations } from "@/hooks/useI18n";
 import { toMapDestination } from "@/lib/utils";
+import { ImageColorThief } from "../shared/ImageColorThief";
 
 type OutletCardProps = {
     outlet: OutletType & Pick<BusinessType, "id" | "name"> & { _count: { orders: number }; distance: number };
@@ -21,7 +21,7 @@ const OutletImage = ({ outlet, imageSize }: { outlet: OutletCardProps['outlet'],
     return (
         <div className="w-full h-full relative overflow-hidden bg-muted">
             {outlet.image ? (
-                <ImageRender
+                <ImageColorThief
                     src={outlet.image}
                     alt={outlet.name}
                     className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${!outlet.isOpen ? "grayscale brightness-90" : ""}`}
@@ -94,19 +94,14 @@ export function OutletCard({ outlet, alignment = "vertical", from }: OutletCardP
 
     if (alignment === "horizontal") {
         return (
-            <Link href={{ pathname: `/outlet/${outlet.id}`, ...(from && from !== "" ? { query: { from: from } } : {}) }} className="block group">
-                <div className="flex gap-3 bg-card rounded-lg border hover:shadow-md hover:border-border/60 transition-all duration-300 p-2.5">
+            <Link id={outlet.id} href={{ pathname: `/outlet/${outlet.id}`, ...(from && from !== "" ? { query: { from: from } } : {}) }} className="block group">
+                <div className="flex gap-3 bg-card shadow-md rounded-sm border hover:shadow-md hover:border-border/60 transition-all duration-300 p-2.5">
                     <div className="w-24 h-24 rounded-md overflow-hidden shrink-0">
                         <OutletImage outlet={outlet} imageSize="80px" />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <OutletHeader name={outlet.name} />
-                        {/* {outlet.business && (
-                            <Badge variant="outline" className="text-xs w-fit mt-1.5 h-5 bg-red-50 text-red-600 border-red-200 font-medium">
-                                {outlet.business.name}
-                            </Badge>
-                        )} */}
-                        <OutletInfo outlet={outlet} showPhone={false} />
+                        <OutletInfo outlet={outlet} showPhone={true} />
                     </div>
                 </div>
             </Link>

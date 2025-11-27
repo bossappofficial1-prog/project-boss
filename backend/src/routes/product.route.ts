@@ -12,10 +12,10 @@ import {
 } from "../controller/product.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createProductSchema, updateProductSchema } from "../schemas/product.schema";
-import { authorize, protect } from "../middleware/auth.middleware";
+import { authorize, protect, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
 import upload, { importUpload } from "../middleware/upload.middleware";
-import { getBookingSlotByOutlet } from "../controller/booking.controller";
+import { getAvailableStaffForProductController, getBookingSlotByOutlet } from "../controller/booking.controller";
 
 const productRouter = Router();
 
@@ -24,6 +24,7 @@ productRouter.get("/search", searchProductsByNameController);
 productRouter.get("/:id", getProductByIdController);
 productRouter.get("/outlet/:outletId", getProductsByOutletIdController);
 productRouter.get("/:productId/booking-slots", getBookingSlotByOutlet)
+productRouter.get("/:productId/available-staff", getAvailableStaffForProductController)
 
 // Rute yang hanya bisa diakses oleh Owner
 productRouter.get("/template/import", getProductImportTemplateController);

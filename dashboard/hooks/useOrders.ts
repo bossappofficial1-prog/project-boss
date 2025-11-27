@@ -2,6 +2,87 @@ import { useState, useEffect, useCallback } from 'react';
 import { orderApi, type GoodsOrder, type QueueEntry, type OrderStatus, type OrderListParams } from '@/lib/apis/order';
 import { authApi } from '@/lib/api';
 
+const toDate = (value: unknown): Date | null => {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const candidate = new Date(value);
+    if (!Number.isNaN(candidate.getTime())) {
+      return candidate;
+    }
+  }
+
+  return null;
+};
+
+const toIsoString = (value: unknown): string | null => {
+  const date = toDate(value);
+  return date ? date.toISOString() : null;
+};
+
+const transformQueueEntries = (entries: any[]): QueueEntry[] => {
+  const sortKey = (entry: any) => {
+    const raw = entry?.queueMeta?.scheduledStart
+      ?? entry?.bookingSlot?.startTime
+      ?? entry?.bookingDate
+      ?? entry?.createdAt;
+    const date = toDate(raw);
+    return date ? date.getTime() : Number.MAX_SAFE_INTEGER;
+  };
+
+  const sorted = [...(entries ?? [])].sort((a, b) => {
+    const timeDiff = sortKey(a) - sortKey(b);
+    if (timeDiff !== 0) {
+      return timeDiff;
+    }
+
+    const positionA = a?.queueMeta?.position ?? a?.position ?? a?.queueNumber ?? Number.MAX_SAFE_INTEGER;
+    const positionB = b?.queueMeta?.position ?? b?.position ?? b?.queueNumber ?? Number.MAX_SAFE_INTEGER;
+    return positionA - positionB;
+  });
+
+  return sorted.map((item, index) => {
+    const queueMeta = item?.queueMeta ?? null;
+    const basePosition = queueMeta?.position ?? item?.position ?? item?.queueNumber ?? index + 1;
+    const scheduledStartSource = item?.scheduledStart
+      ?? queueMeta?.scheduledStart
+      ?? item?.bookingSlot?.startTime
+      ?? item?.bookingDate;
+    const scheduledEndSource = queueMeta?.scheduledEnd ?? item?.bookingSlot?.endTime;
+
+    const normalizedQueueMeta = queueMeta
+      ? {
+        ...queueMeta,
+        position: basePosition,
+        totalAhead: queueMeta.totalAhead ?? Math.max(0, basePosition - 1),
+  totalOrders: queueMeta.totalOrders ?? item?.queueMeta?.totalOrders ?? 0,
+        scheduledStart: toIsoString(scheduledStartSource),
+        scheduledEnd: toIsoString(scheduledEndSource),
+        status: (queueMeta.status ?? item?.status ?? item?.orderStatus ?? 'PROCESSING') as QueueEntry['status'],
+      }
+      : null;
+
+    const resolvedStatus = (item?.status ?? item?.orderStatus ?? normalizedQueueMeta?.status ?? 'PROCESSING') as QueueEntry['status'];
+
+    return {
+      ...item,
+      position: basePosition,
+      queueNumber: item?.queueNumber ?? basePosition,
+      status: resolvedStatus,
+      scheduledStart: toIsoString(scheduledStartSource),
+      customerName: item?.customerName ?? item?.guestCustomer?.name ?? 'Unknown',
+      productName: item?.productName ?? item?.items?.[0]?.product?.name ?? 'Service',
+      queueMeta: normalizedQueueMeta,
+    } as QueueEntry;
+  });
+};
+
 export interface UseGoodsOrdersParams {
   outletId: string | null;
   status?: OrderStatus;
@@ -123,11 +204,15 @@ export interface UseQueueParams {
   refreshInterval?: number;
 }
 
+export interface UseQueueResult<T> extends UseOrdersResult<T> {
+  setQueueData: (entries: T[] | any[]) => void;
+}
+
 export function useOutletQueue({
   outletId,
-  autoRefresh = true,
+  autoRefresh = false,
   refreshInterval = 15000, // 15 seconds for queue (more frequent)
-}: UseQueueParams): UseOrdersResult<QueueEntry> {
+}: UseQueueParams): UseQueueResult<QueueEntry> {
   const [data, setData] = useState<QueueEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,6 +223,25 @@ export function useOutletQueue({
     total: 0,
     limit: 50, // More items for queue
   });
+
+  const applyQueueEntries = useCallback((rawEntries: any[], meta?: Partial<{ page: number; total: number; limit: number; totalPages: number }>) => {
+    const transformed = transformQueueEntries(rawEntries);
+
+    setData(transformed);
+    setPagination((prev) => {
+      const limit = meta?.limit ?? prev.limit;
+      const total = meta?.total ?? transformed.length;
+      const totalPages = meta?.totalPages ?? Math.max(1, Math.ceil(total / (limit || 1)));
+      const currentPageValue = meta?.page ?? Math.min(prev.currentPage, totalPages);
+
+      return {
+        currentPage: currentPageValue,
+        totalPages,
+        total,
+        limit,
+      };
+    });
+  }, [setData, setPagination]);
 
   const fetchQueue = useCallback(async () => {
     if (!outletId) {
@@ -158,28 +262,11 @@ export function useOutletQueue({
 
       const response = await orderApi.getQueueByOutlet(outletId, params);
 
-      // Transform data and add queue position/number if not present
-      const transformedData = (response.data || []).map((item, index) => {
-        const bookingTime = item.bookingDate || (item as any).bookingSlot?.startTime || undefined;
-        return {
-          ...item,
-          // Preserve backend bookingSlot so UI can display startTime fallback
-          bookingSlot: (item as any).bookingSlot,
-          bookingDate: bookingTime as any,
-          position: item.position ?? index + 1,
-          queueNumber: item.queueNumber ?? index + 1,
-          customerName: item.guestCustomer?.name || 'Unknown',
-          productName: item.items?.[0]?.product?.name || 'Service',
-          status: item.orderStatus || 'PROCESSING',
-        };
-      });
-
-      setData(transformedData);
-      setPagination({
-        currentPage: response.page || 1,
+      applyQueueEntries(response.data || [], {
+        page: response.page || 1,
         totalPages: response.totalPages || 1,
         total: response.total || 0,
-        limit: response.limit || 20,
+        limit: response.limit || pagination.limit,
       });
     } catch (err: any) {
       console.error('Error fetching queue:', err);
@@ -188,7 +275,7 @@ export function useOutletQueue({
     } finally {
       setLoading(false);
     }
-  }, [outletId, currentPage, pagination.limit]);
+  }, [outletId, currentPage, pagination.limit, applyQueueEntries]);
 
   const setPage = useCallback((page: number) => {
     setCurrentPage(page);
@@ -214,6 +301,10 @@ export function useOutletQueue({
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, fetchQueue, outletId]);
 
+  const setQueueData = useCallback((entries: any[]) => {
+    applyQueueEntries(entries);
+  }, [applyQueueEntries]);
+
   return {
     data,
     loading,
@@ -222,6 +313,7 @@ export function useOutletQueue({
     refetch: fetchQueue,
     setPage,
     setStatus,
+    setQueueData,
   };
 }
 

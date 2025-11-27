@@ -13,60 +13,17 @@ import { getOutletByIdService } from './outlet.service';
 import { generateDefaultBookingSlots } from './booking.service';
 import { BookingSlot, FeeBearer, Product, ProductType, ServiceStatus, UserRole } from '@prisma/client';
 import { config } from "../config";
+import { BookingRepository } from '../repositories/booking.repository';
 
 export async function createProductService(data: CreateProductInput) {
     await getOutletByIdService(data.outletId);
 
-    // Buat produk
-    const product = await db.$transaction(async (prisma) => {
-        const { capacity: capacityRequested, ...dataWithoutCapacity } = data as any;
-        const createdProduct = await prisma.product.create({
-            data: {
-                ...dataWithoutCapacity,
-                // Jika tipe SERVICE, buat capacity default atau sesuai input
-                ...(data.type === 'SERVICE' && data.serviceDurationMinutes && {
-                    capacity: {
-                        create: {
-                            maxParallel: capacityRequested && capacityRequested > 0 ? capacityRequested : 1
-                        }
-                    }
-                })
-            },
-            include: {
-                capacity: true
-            }
-        });
+    const createdProduct = await ProductRepository.create(data)
 
-        // Jika service, generate slot untuk 30 hari ke depan
-        if (data.type === 'SERVICE' && data.serviceDurationMinutes) {
-            const outlet = await prisma.outlet.findUnique({
-                where: { id: data.outletId },
-                include: { operatingHours: true }
-            });
-
-            if (outlet?.operatingHours) {
-                await generateDefaultBookingSlots({
-                    productId: createdProduct.id,
-                    operatingHours: outlet.operatingHours,
-                    serviceDurationMinutes: data.serviceDurationMinutes,
-                    daysToGenerate: 30
-                });
-            }
-        }
-
-        return createdProduct;
-    });
-
-    return product;
+    return createdProduct;
 }
 
 export async function getProductByIdService(id: string): Promise<Product & { defaultTransactionFeeBearer: any; bookingSlots: BookingSlot[]; images?: { url: string; alt?: string }[] }> {
-    // const cacheKey = `product:${id}`;
-    // const cachedProduct = await redis.get(cacheKey);
-
-    // if (cachedProduct) {
-    //     return JSON.parse(cachedProduct);
-    // }
 
     const product = await ProductRepository.findById(id);
     if (!product) {
@@ -82,20 +39,26 @@ export async function getProductByIdService(id: string): Promise<Product & { def
 
     const result = { ...productWithoutOutlet, defaultTransactionFeeBearer: outlet.business.defaultTransactionFeeBearer, images };
 
-    // Cache the transformed result (so cached responses include images)
-    // await redis.set(cacheKey, JSON.stringify(result), 'EX', 3600);
-
     return result;
 }
 
-export async function getProductsByOutletIdService(outletId: string, q?: string, accessed?: UserRole) {
-    const products = await ProductRepository.findByOutletId(outletId, q, accessed);
-    return products;
+export async function getProductsByOutletIdService(
+    outletId: string,
+    productType: ProductType,
+    params: { q?: string; accessed?: string; page: number; limit: number; }
+): Promise<{ data: Product[]; total: number }> {
+    const { q, accessed, page, limit } = params;
+    return ProductRepository.findByOutletId({ outletId, productType, q, accessed, page, limit });
 }
 
 export async function updateProductService(id: string, data: UpdateProductInput) {
     await getProductByIdService(id);
     const product = await ProductRepository.update(id, data);
+
+    if (data.serviceDurationMinutes !== product.serviceDurationMinutes) {
+        await BookingRepository.deleteByProductId(product.id)
+    }
+
     await redis.del(`product:${id}`);
     return product;
 }

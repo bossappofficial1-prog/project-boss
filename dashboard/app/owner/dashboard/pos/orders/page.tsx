@@ -1,320 +1,924 @@
 'use client'
 
 import React from 'react'
-import { useRouter } from 'next/navigation'
+import { AlertTriangle, Calendar, Clock, Copy, Minus, Plus, ShoppingBag } from 'lucide-react'
+import { toast } from 'sonner'
+
 import { useOutletContext } from '@/components/providers/OutletProvider'
-import { productApi } from '@/lib/api'
-import { resolveUploadImageUrl } from '@/lib/url'
+import QRISViewModal from '@/components/modals/QRISViewModal'
+import { ProductGridSection } from '@/components/owner/dashboard/pos/ProductGridSection'
+import { CustomerFormCard } from '@/components/owner/dashboard/pos/CustomerFormCard'
+import { PaymentMethodCard } from '@/components/owner/dashboard/pos/PaymentMethodCard'
+import { ServiceScheduleDialog, ServiceScheduleSelection } from '@/components/owner/dashboard/pos/ServiceScheduleDialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { orderApi, productApi } from '@/lib/api'
+import type { CreateOrderRequest, OnlinePaymentChannel, PosCashSummary } from '@/lib/apis/order'
+import { useSocketContext } from '@/components/providers/SocketProvider'
+import { usePosOnlinePayment } from '@/hooks/usePosOnlinePayment'
+import { ONLINE_PAYMENT_LABELS } from '@/constants/pos'
+import type { POSProduct, POSCartLine, PaymentMethod, POSCustomerMode } from '@/types/pos'
 
-type Props = {}
+const formatDateTime = (value?: string | null) => {
+  if (!value) return '-'
 
-export default function POSOrdersPage({}: Props) {
-  const router = useRouter()
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('id-ID', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(parsed)
+}
+
+const currencyFormatter = new Intl.NumberFormat('id-ID')
+const slotDateFormatter = new Intl.DateTimeFormat('id-ID', {
+  weekday: 'long',
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+})
+const slotTimeFormatter = new Intl.DateTimeFormat('id-ID', {
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
+export default function POSOrdersPage() {
   const { selectedOutlet } = useOutletContext()
-  const [products, setProducts] = React.useState<any[]>([])
-  const [selectedProducts, setSelectedProducts] = React.useState<{[key: string]: number}>({})
+
+  const [products, setProducts] = React.useState<POSProduct[]>([])
+  const [searchQuery, setSearchQuery] = React.useState('')
+  const [activeFilter, setActiveFilter] = React.useState<'ALL' | 'GOODS' | 'SERVICE'>('ALL')
+  const [cart, setCart] = React.useState<Record<string, POSCartLine>>({})
+  const [isLoadingProducts, setIsLoadingProducts] = React.useState(false)
+  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('cash')
+  const [customerMode, setCustomerMode] = React.useState<POSCustomerMode>('identified')
   const [customerName, setCustomerName] = React.useState('')
   const [customerPhone, setCustomerPhone] = React.useState('')
-  const [paymentMethod, setPaymentMethod] = React.useState<'cash' | 'qris' | 'online'>('cash')
-  const [loading, setLoading] = React.useState(false)
-  const [searchQuery, setSearchQuery] = React.useState('')
+  const [cashReceived, setCashReceived] = React.useState('')
+  const [onlineChannel, setOnlineChannel] = React.useState<OnlinePaymentChannel>('qris_dynamic')
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [showQRISModal, setShowQRISModal] = React.useState(false)
+  const [scheduleDialogData, setScheduleDialogData] = React.useState<{
+    product: POSProduct
+    selection?: ServiceScheduleSelection | null
+  } | null>(null)
+  const [cashSummary, setCashSummary] = React.useState<PosCashSummary | null>(null)
 
-  // Fetch products
+  const outletId = selectedOutlet?.id
+  const qrisImage = selectedOutlet?.manualQrImageUrl || selectedOutlet?.qrisImage
+  const { socket, isConnected } = useSocketContext()
+
+  const fetchProducts = React.useCallback(
+    async (query?: string) => {
+      if (!outletId) return
+      setIsLoadingProducts(true)
+      try {
+        const data = (await productApi.getByOutlet(outletId, {
+          search: query?.trim() ? query.trim() : undefined,
+          limit: 120,
+        }, "CASHIER")).data
+        setProducts(data as POSProduct[])
+      } catch (error) {
+        console.error('Gagal mengambil produk POS:', error)
+        toast.error('Tidak dapat memuat produk outlet')
+      } finally {
+        setIsLoadingProducts(false)
+      }
+    },
+    [outletId]
+  )
+
+  const {
+    onlinePaymentResult,
+    isPaymentSettled,
+    isPaymentRejected,
+    handleOrderCreated,
+    resetPaymentState,
+  } = usePosOnlinePayment({
+    socket,
+    isConnected,
+    outletId,
+    fetchProducts,
+    searchQuery,
+  })
+
+  const fetchCashSummary = React.useCallback(async () => {
+    if (!outletId) {
+      setCashSummary(null)
+      return
+    }
+
+    try {
+      const summary = await orderApi.getPosCashSummary(outletId)
+      setCashSummary(summary)
+    } catch (error) {
+      console.error('Gagal memuat ringkasan kas POS:', error)
+    }
+  }, [outletId])
+
+  const handleSearch = React.useCallback(() => {
+    fetchProducts(searchQuery)
+  }, [fetchProducts, searchQuery])
+
+  const paymentChannelLabel = React.useMemo(() => {
+    const channelFromResult = onlinePaymentResult?.transaction.midtrans?.channel
+    if (channelFromResult && channelFromResult in ONLINE_PAYMENT_LABELS) {
+      return ONLINE_PAYMENT_LABELS[channelFromResult as OnlinePaymentChannel]
+    }
+    return ONLINE_PAYMENT_LABELS[onlineChannel]
+  }, [onlinePaymentResult?.transaction.midtrans?.channel, onlineChannel])
+
   React.useEffect(() => {
-    if (selectedOutlet?.id) {
+    setSearchQuery('')
+    setCart({})
+    setScheduleDialogData(null)
+    if (outletId) {
       fetchProducts()
     }
-  }, [selectedOutlet])
+    fetchCashSummary()
+  }, [fetchProducts, fetchCashSummary, outletId])
 
-  const fetchProducts = async () => {
-    try {
-      const data = await productApi.getByOutlet(selectedOutlet!.id, { search: searchQuery })
-      setProducts(data.filter((p: any) => p.type === 'GOODS'))
-    } catch (error) {
-      console.error('Error fetching products:', error)
+  React.useEffect(() => {
+    fetchCashSummary()
+  }, [fetchCashSummary])
+
+  const cartQuantities = React.useMemo(() => {
+    const map: Record<string, number> = {}
+    Object.entries(cart).forEach(([productId, line]) => {
+      map[productId] = line.quantity
+    })
+    return map
+  }, [cart])
+
+  const filteredProducts = React.useMemo(() => {
+    const list = activeFilter === 'ALL' ? products : products.filter((item) => item.type === activeFilter)
+    if (!searchQuery.trim()) {
+      return list
     }
-  }
+    const query = searchQuery.trim().toLowerCase()
+    return list.filter((item) => item.name.toLowerCase().includes(query))
+  }, [activeFilter, products, searchQuery])
 
-  const addToCart = (productId: string) => {
-    setSelectedProducts(prev => ({
-      ...prev,
-      [productId]: (prev[productId] || 0) + 1
-    }))
-  }
+  const cartItems = React.useMemo(() => Object.values(cart), [cart])
 
-  const removeFromCart = (productId: string) => {
-    setSelectedProducts(prev => {
-      const newQuantity = (prev[productId] || 0) - 1
-      if (newQuantity <= 0) {
-        const { [productId]: removed, ...rest } = prev
-        return rest
+  const hasUnscheduledService = React.useMemo(
+    () =>
+      cartItems.some(
+        (line) =>
+          line.product.type === 'SERVICE' && (
+            !line.bookingSlotId ||
+            !line.bookingStart ||
+            !line.bookingEnd ||
+            !line.staffId
+          )
+      ),
+    [cartItems]
+  )
+
+  const subtotal = React.useMemo(
+    () => cartItems.reduce((total, line) => total + line.product.price * line.quantity, 0),
+    [cartItems]
+  )
+
+  const membershipDiscount = 0
+  const promoDiscount = 0
+  const baseTotal = React.useMemo(
+    () => Math.max(subtotal - membershipDiscount - promoDiscount, 0),
+    [subtotal, membershipDiscount, promoDiscount]
+  )
+  const onlineApplicationFee = React.useMemo(
+    () => (paymentMethod === 'online' ? Math.ceil(baseTotal * 0.03) : 0),
+    [paymentMethod, baseTotal]
+  )
+  const onlineTransactionFee = React.useMemo(
+    () => (paymentMethod === 'online' ? Math.ceil(baseTotal * 0.02) : 0),
+    [paymentMethod, baseTotal]
+  )
+  const total = baseTotal + onlineApplicationFee + onlineTransactionFee
+  const cashChange = paymentMethod === 'cash' ? Number(cashReceived || 0) - total : 0
+
+  const handleAddProduct = (product: POSProduct) => {
+    if (product.type === 'SERVICE') {
+      const serviceLines = Object.values(cart).filter((line) => line.product.type === 'SERVICE')
+      const otherService = serviceLines.find((line) => line.product.id !== product.id)
+
+      if (otherService) {
+        toast.error('Saat ini hanya satu layanan yang dapat diproses per transaksi POS')
+        return
       }
-      return { ...prev, [productId]: newQuantity }
+
+      const existingLine = cart[product.id]
+      const selection = existingLine?.bookingSlotId && existingLine.bookingStart && existingLine.bookingEnd && existingLine.staffId && existingLine.staffName
+        ? {
+          slotId: existingLine.bookingSlotId,
+          startTimeIso: existingLine.bookingStart,
+          endTimeIso: existingLine.bookingEnd,
+          staffId: existingLine.staffId,
+          staffName: existingLine.staffName,
+        }
+        : null
+
+      setScheduleDialogData({ product, selection })
+      return
+    }
+
+    setCart((prev) => {
+      const current = prev[product.id]?.quantity ?? 0
+      const nextQty = current + 1
+      if (product.quantity != null && nextQty > product.quantity) {
+        toast.error('Stok produk tidak mencukupi')
+        return prev
+      }
+      return {
+        ...prev,
+        [product.id]: {
+          product,
+          quantity: nextQty,
+        },
+      }
     })
   }
 
-  const getCartItems = () => {
-    return products.filter(p => selectedProducts[p.id] > 0)
-      .map(p => ({ ...p, quantity: selectedProducts[p.id] }))
+  const handleDecreaseProduct = (productId: string) => {
+    setCart((prev) => {
+      const line = prev[productId]
+      if (!line) return prev
+      const nextQty = line.quantity - 1
+      if (nextQty <= 0) {
+        const { [productId]: _removed, ...rest } = prev
+        return rest
+      }
+      return {
+        ...prev,
+        [productId]: { ...line, quantity: nextQty },
+      }
+    })
   }
 
-  const getTotal = () => {
-    return getCartItems().reduce((total, item) => total + (item.price * item.quantity), 0)
+  const handleRemoveProduct = (productId: string) => {
+    setCart((prev) => {
+      if (!(productId in prev)) return prev
+      const { [productId]: _removed, ...rest } = prev
+      return rest
+    })
+  }
+
+  const handleResetCart = () => {
+    setCart({})
+    setScheduleDialogData(null)
+  }
+
+  const handleCopyToClipboard = async (value: string) => {
+    if (!value) return
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value)
+        toast.success('Disalin ke clipboard')
+      } else {
+        throw new Error('Clipboard tidak tersedia')
+      }
+    } catch (error) {
+      console.error('Gagal menyalin ke clipboard:', error)
+      toast.error('Tidak dapat menyalin teks')
+    }
+  }
+
+  const openScheduleEditor = (line: POSCartLine) => {
+    const selection = line.bookingSlotId && line.bookingStart && line.bookingEnd && line.staffId && line.staffName
+      ? {
+        slotId: line.bookingSlotId,
+        startTimeIso: line.bookingStart,
+        endTimeIso: line.bookingEnd,
+        staffId: line.staffId,
+        staffName: line.staffName,
+      }
+      : null
+
+    setScheduleDialogData({ product: line.product, selection })
+  }
+
+  const handleScheduleConfirm = (selection: ServiceScheduleSelection) => {
+    const targetProduct = scheduleDialogData?.product
+    if (!targetProduct) {
+      setScheduleDialogData(null)
+      return
+    }
+
+    setCart((prev) => ({
+      ...prev,
+      [targetProduct.id]: {
+        product: targetProduct,
+        quantity: 1,
+        bookingSlotId: selection.slotId,
+        bookingStart: selection.startTimeIso,
+        bookingEnd: selection.endTimeIso,
+        staffId: selection.staffId,
+        staffName: selection.staffName,
+      },
+    }))
+
+    setScheduleDialogData(null)
+    toast.success('Jadwal layanan tersimpan')
+  }
+
+  const handleCloseScheduleDialog = () => {
+    setScheduleDialogData(null)
+  }
+
+  const canSubmit = React.useMemo(() => {
+    if (!cartItems.length) return false
+    if (!outletId) return false
+    if (hasUnscheduledService) return false
+    if (customerMode === 'identified') {
+      if (!customerName.trim() || !customerPhone.trim()) return false
+    }
+    if (paymentMethod === 'cash' && cashReceived) {
+      return Number(cashReceived) >= total
+    }
+    if (paymentMethod === 'cash' && !cashReceived) {
+      return false
+    }
+    if (paymentMethod === 'online' && !onlineChannel) {
+      return false
+    }
+    return true
+  }, [
+    cartItems.length,
+    outletId,
+    hasUnscheduledService,
+    customerMode,
+    customerName,
+    customerPhone,
+    paymentMethod,
+    cashReceived,
+    total,
+    onlineChannel,
+  ])
+
+  const buildGuestCustomer = () => {
+    if (customerMode === 'walkin') {
+      return {
+        name: 'Walk-in Customer',
+        phone: '0000000000',
+      }
+    }
+    return {
+      name: customerName.trim(),
+      phone: customerPhone.trim(),
+    }
   }
 
   const handleSubmitOrder = async () => {
-    if (!selectedOutlet?.id) {
-      alert('Pilih outlet terlebih dahulu')
+    if (!outletId) {
+      toast.error('Pilih outlet terlebih dahulu')
       return
     }
-    
-    const cartItems = getCartItems()
-    if (cartItems.length === 0) {
-      alert('Pilih minimal satu produk')
+    if (!cartItems.length) {
+      toast.error('Tambahkan minimal satu item ke keranjang')
+      return
+    }
+    if (customerMode === 'identified') {
+      if (!customerName.trim()) {
+        toast.error('Nama pelanggan wajib diisi')
+        return
+      }
+      if (!customerPhone.trim()) {
+        toast.error('Nomor telepon wajib diisi')
+        return
+      }
+    }
+    if (paymentMethod === 'cash') {
+      if (!cashReceived) {
+        toast.error('Masukkan nominal cash yang diterima')
+        return
+      }
+      if (Number(cashReceived) < total) {
+        toast.error('Nominal cash kurang dari total pembayaran')
+        return
+      }
+    }
+    if (paymentMethod === 'online' && !onlineChannel) {
+      toast.error('Pilih kanal pembayaran online terlebih dahulu')
       return
     }
 
-    if (!customerName.trim()) {
-      alert('Nama pelanggan wajib diisi')
+    const serviceLines = cartItems.filter((line) => line.product.type === 'SERVICE')
+    if (serviceLines.length > 1) {
+      toast.error('Saat ini hanya dapat membuat satu layanan per transaksi POS')
       return
     }
 
-    // Phone is required for guest customer identification
-    if (!customerPhone.trim()) {
-      alert('Nomor telepon wajib diisi')
+    const serviceLine = serviceLines[0]
+    if (serviceLine && (!serviceLine.bookingSlotId || !serviceLine.bookingStart || !serviceLine.bookingEnd)) {
+      toast.error('Pilih jadwal layanan sebelum membuat pesanan')
+      return
+    }
+    if (serviceLine && !serviceLine.staffId) {
+      toast.error('Pilih staff layanan sebelum membuat pesanan')
       return
     }
 
     try {
-      setLoading(true)
-      
-      const orderData = {
-        guestCustomer: {
-          name: customerName.trim(),
-          phone: customerPhone.trim()
-        },
-        outletId: selectedOutlet.id,
-        items: cartItems.map(item => ({
-          productId: item.id,
-          quantity: item.quantity
+      setIsSubmitting(true)
+
+      const payload: CreateOrderRequest = {
+        guestCustomer: buildGuestCustomer(),
+        outletId,
+        items: cartItems.map((line) => ({
+          productId: line.product.id,
+          quantity: line.product.type === 'SERVICE' ? 1 : line.quantity,
         })),
-        paymentMethod: paymentMethod
+        paymentMethod,
       }
 
-      console.log('Creating order:', orderData)
-      
-      const { default: orderApi } = await import('@/lib/apis/order')
-      const result = await orderApi.create(orderData)
-      
-      console.log('Order created successfully:', result)
-      
-      // Reset form
-      setSelectedProducts({})
+      if (paymentMethod === 'online') {
+        payload.onlinePaymentChannel = onlineChannel
+      }
+
+      if (serviceLine) {
+        payload.bookingSlotId = serviceLine.bookingSlotId
+        payload.bookingDate = serviceLine.bookingStart
+        payload.staffId = serviceLine.staffId
+      }
+
+      const response = await orderApi.create(payload)
+
+      toast.success(`Pesanan berhasil dibuat (Order ID: ${response.order.id})`)
+
+      handleOrderCreated(response, paymentMethod === 'online')
+
+      setCart({})
+      setScheduleDialogData(null)
       setCustomerName('')
       setCustomerPhone('')
+      setCustomerMode('identified')
       setPaymentMethod('cash')
-      
-      // Show success message and redirect
-      alert(`Pesanan berhasil dibuat! Order ID: ${result.orderId}`)
-      router.push('/owner/dashboard/orders')
-      
-    } catch (error: any) {
-      console.error('Error creating order:', error)
-      const errorMessage = error?.message || error?.response?.data?.message || 'Gagal membuat pesanan'
-      alert(errorMessage)
+      setCashReceived('')
+      setOnlineChannel('qris_dynamic')
+
+      // Tetap pada halaman POS agar kasir dapat memproses transaksi berikutnya
+      fetchProducts()
+      await fetchCashSummary()
+    } catch (error: unknown) {
+      console.error('Gagal membuat pesanan POS:', error)
+      toast.error('Gagal membuat pesanan, coba lagi')
     } finally {
-      setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
   if (!selectedOutlet) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-4 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5 9h14l1 12H4L5 9z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Pilih Outlet</h3>
-            <p className="text-gray-500 dark:text-gray-400">Pilih outlet terlebih dahulu untuk menggunakan sistem POS</p>
-          </div>
+      <div className="min-h-screen text-slate-900 transition-colors dark:text-slate-50">
+        <div className="flex h-[70vh] flex-col items-center justify-center gap-3 text-center">
+          <ShoppingBag className="h-10 w-10 text-red-500" />
+          <p className="text-lg font-semibold">Pilih outlet terlebih dahulu</p>
+          <p className="max-w-sm text-sm text-slate-600 dark:text-slate-400">
+            Fitur POS hanya aktif setelah kamu memilih outlet yang ingin dipakai.
+          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            POS - Tambah Pesanan Baru
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Outlet: <span className="font-semibold">{selectedOutlet.name}</span>
-          </p>
-        </div>
+    <div className="min-h-screen text-slate-900 transition-colors dark:text-slate-100">
+      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
+        <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {selectedOutlet.name} · {selectedOutlet.address || 'Alamat belum diisi'}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
+            <span>Metode aktif:</span>
+            <Badge
+              variant="secondary"
+              className="bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-200"
+            >
+              {paymentMethod.toUpperCase()}
+            </Badge>
+          </div>
+        </header>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Products Grid */}
-          <div className="xl:col-span-2">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <input
-                    type="text"
-                    placeholder="Cari produk..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  />
-                  <button
-                    onClick={fetchProducts}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
-                  >
-                    Cari
-                  </button>
-                </div>
-              </div>
+        {cashSummary && (
+          <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+            <CardContent className="flex flex-col gap-1 py-4">
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Kas tunai hari ini</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                Rp {currencyFormatter.format(cashSummary.totalAmount)}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {cashSummary.transactionsCount} transaksi cash • {new Date(cashSummary.startTime).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-              <div className="p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {products.map((product) => (
-                    <div key={product.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg mb-3 overflow-hidden">
-                        {product.image ? (
-                          <img 
-                            src={resolveUploadImageUrl(product.image) || 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png'} 
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
+        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <ProductGridSection
+            filteredProducts={filteredProducts}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            onSearch={handleSearch}
+            activeFilter={activeFilter}
+            onFilterChange={(filter) => setActiveFilter(filter)}
+            isLoading={isLoadingProducts}
+            onAddProduct={handleAddProduct}
+            cartQuantities={cartQuantities}
+          />
+
+          <section className="flex flex-col gap-4">
+            <CustomerFormCard
+              mode={customerMode}
+              onModeChange={(mode) => setCustomerMode(mode)}
+              customerName={customerName}
+              onCustomerNameChange={setCustomerName}
+              customerPhone={customerPhone}
+              onCustomerPhoneChange={setCustomerPhone}
+            />
+
+            <PaymentMethodCard
+              paymentMethod={paymentMethod}
+              onPaymentMethodChange={(method) => setPaymentMethod(method)}
+              cashReceived={cashReceived}
+              onCashReceivedChange={setCashReceived}
+              cashChange={cashChange}
+              qrisImage={qrisImage}
+              onShowQRISModal={() => setShowQRISModal(true)}
+              onlineChannel={onlineChannel}
+              onOnlineChannelChange={(channel) => setOnlineChannel(channel)}
+            />
+
+            <Card className="flex flex-1 flex-col border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Keranjang</CardTitle>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Atur kuantitas item sebelum membuat pesanan.
+                </p>
+              </CardHeader>
+              <CardContent className="flex flex-1 flex-col gap-4">
+                <div className="space-y-3">
+                  {cartItems.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
+                      Keranjang kosong. Tambahkan produk terlebih dahulu.
+                    </div>
+                  ) : (
+                    cartItems.map((line) => {
+                      const lineTotal = line.product.price * line.quantity
+                      const hasSchedule = line.product.type === 'SERVICE' && line.bookingStart && line.bookingEnd
+                      const scheduleDate = hasSchedule ? slotDateFormatter.format(new Date(line.bookingStart!)) : null
+                      const scheduleTime = hasSchedule
+                        ? `${slotTimeFormatter.format(new Date(line.bookingStart!))} - ${slotTimeFormatter.format(new Date(line.bookingEnd!))}`
+                        : null
+
+                      return (
+                        <div
+                          key={line.product.id}
+                          className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/60"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{line.product.name}</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-400">
+                                Rp {currencyFormatter.format(line.product.price)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                Rp {currencyFormatter.format(lineTotal)}
+                              </p>
+                              {line.quantity > 1 && (
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  {line.quantity} × Rp {currencyFormatter.format(line.product.price)}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        )}
+
+                          {line.product.type === 'SERVICE' ? (
+                            <div className="flex flex-col gap-2">
+                              {hasSchedule ? (
+                                <div className="rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                                  <p className="mb-1 flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    {scheduleDate}
+                                  </p>
+                                  <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                    <Clock className="h-3 w-3" />
+                                    {scheduleTime}
+                                  </p>
+                                  {line.staffName && (
+                                    <p className="mt-1 text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                      Staff: {line.staffName}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 rounded-md border border-dashed border-amber-400 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                                  <AlertTriangle className="h-3.5 w-3.5" />
+                                  Jadwal layanan belum dipilih
+                                </div>
+                              )}
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="flex-1 border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800"
+                                  onClick={() => openScheduleEditor(line)}
+                                >
+                                  Atur Jadwal
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="flex-none text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
+                                  onClick={() => handleRemoveProduct(line.product.id)}
+                                >
+                                  Hapus
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="icon"
+                                  variant="secondary"
+                                  className="h-8 w-8 border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800"
+                                  onClick={() => handleDecreaseProduct(line.product.id)}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="w-6 text-center text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                  {line.quantity}
+                                </span>
+                                <Button
+                                  size="icon"
+                                  variant="secondary"
+                                  className="h-8 w-8 border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800"
+                                  onClick={() => handleAddProduct(line.product)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
+                                onClick={() => handleRemoveProduct(line.product.id)}
+                              >
+                                ×
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+
+                <Separator className="border-slate-200 dark:border-slate-800" />
+
+                <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                  <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                    <span>Subtotal</span>
+                    <span>Rp {currencyFormatter.format(subtotal)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                    <span>Diskon membership</span>
+                    <span>- Rp {currencyFormatter.format(membershipDiscount)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                    <span>Diskon promo</span>
+                    <span>- Rp {currencyFormatter.format(promoDiscount)}</span>
+                  </div>
+                  {paymentMethod === 'online' && (
+                    <>
+                      <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                        <span>Biaya aplikasi (3%)</span>
+                        <span>+ Rp {currencyFormatter.format(onlineApplicationFee)}</span>
                       </div>
-                      <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-1 line-clamp-2">{product.name}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Stok: {product.quantity || 0}</p>
-                      <p className="text-lg font-semibold text-red-600 dark:text-red-400 mb-3">
-                        Rp {product.price.toLocaleString('id-ID')}
-                      </p>
-                      <button
-                        onClick={() => addToCart(product.id)}
-                        disabled={product.quantity <= 0}
-                        className="w-full px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed touch-manipulation"
-                      >
-                        {product.quantity <= 0 ? 'Stok Habis' : 'Tambah'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Cart & Customer Info - Fixed on mobile */}
-          <div className="xl:col-span-1 space-y-6 xl:sticky xl:top-6 xl:max-h-screen xl:overflow-y-auto">
-            {/* Customer Info */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Data Pelanggan</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama *</label>
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Nama pelanggan"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-base"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No. HP *</label>
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="08xxx (wajib diisi)"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-base"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Metode Pembayaran *</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'qris' | 'online')}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-base"
-                  >
-                    <option value="cash">Cash / Bayar di Tempat</option>
-                    <option value="qris">QRIS</option>
-                    <option value="online">Transfer Online</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Cart */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Keranjang</h3>
-              <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-                {getCartItems().map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{item.name}</p>
-                      <p className="text-red-600 dark:text-red-400 text-sm">Rp {item.price.toLocaleString('id-ID')}</p>
-                    </div>
-                    <div className="flex items-center gap-2 ml-2">
-                      <button
-                        onClick={() => removeFromCart(item.id)}
-                        className="w-8 h-8 bg-red-100 dark:bg-red-900/20 text-red-600 rounded flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 touch-manipulation"
-                      >
-                        -
-                      </button>
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 min-w-[24px] text-center">{item.quantity}</span>
-                      <button
-                        onClick={() => addToCart(item.id)}
-                        className="w-8 h-8 bg-red-100 dark:bg-red-900/20 text-red-600 rounded flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 touch-manipulation"
-                      >
-                        +
-                      </button>
-                    </div>
+                      <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                        <span>Biaya transaksi (2%)</span>
+                        <span>+ Rp {currencyFormatter.format(onlineTransactionFee)}</span>
+                      </div>
+                    </>
+                  )}
+                  <Separator className="border-slate-200 dark:border-slate-800" />
+                  <div className="flex items-center justify-between text-base font-semibold text-slate-900 dark:text-slate-100">
+                    <span>Total bayar</span>
+                    <span>Rp {currencyFormatter.format(total)}</span>
                   </div>
-                ))}
-                {getCartItems().length === 0 && (
-                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">Keranjang kosong</p>
-                )}
-              </div>
+                </div>
 
-              {getCartItems().length > 0 && (
-                <>
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
-                    <div className="flex justify-between text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      <span>Total:</span>
-                      <span>Rp {getTotal().toLocaleString('id-ID')}</span>
-                    </div>
+                <div className="mt-auto flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleResetCart}
+                      disabled={!cartItems.length}
+                      className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:border-slate-200 disabled:text-slate-400 dark:border-slate-700 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      Reset
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleSubmitOrder}
+                      disabled={!canSubmit || isSubmitting}
+                      className="bg-red-600 hover:bg-red-500"
+                    >
+                      {isSubmitting ? 'Memproses...' : 'Buat Pesanan'}
+                    </Button>
                   </div>
-                  <button
-                    onClick={handleSubmitOrder}
-                    disabled={loading || !customerName.trim() || !customerPhone.trim()}
-                    className="w-full px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed touch-manipulation text-base"
-                  >
-                    {loading ? 'Memproses...' : 'Buat Pesanan'}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+                  {!canSubmit && cartItems.length > 0 && (
+                    <p className="text-xs text-red-500 dark:text-red-400">
+                      Pastikan data pelanggan, jadwal layanan, dan pembayaran sudah lengkap sebelum membuat pesanan.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
         </div>
       </div>
+
+      <ServiceScheduleDialog
+        open={Boolean(scheduleDialogData)}
+        product={scheduleDialogData?.product ?? null}
+        existingSelection={scheduleDialogData?.selection}
+        onClose={handleCloseScheduleDialog}
+        onConfirm={handleScheduleConfirm}
+      />
+
+      <QRISViewModal
+        open={showQRISModal}
+        onOpenChange={setShowQRISModal}
+        outletId={selectedOutlet.id}
+        outletName={selectedOutlet.name}
+        qrisImageUrl={qrisImage ?? undefined}
+      />
+
+      <Dialog open={Boolean(onlinePaymentResult)} onOpenChange={(value) => !value && resetPaymentState()}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Instruksi Pembayaran Online</DialogTitle>
+            <DialogDescription>
+              Bagikan instruksi berikut ke pelanggan dan pantau status pembayaran secara real-time dari dashboard.
+            </DialogDescription>
+          </DialogHeader>
+
+          {onlinePaymentResult ? (
+            <div className="space-y-6">
+              {(isPaymentSettled || isPaymentRejected) && (
+                <section
+                  className={`rounded-lg border p-4 ${isPaymentSettled ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200' : 'border-red-300 bg-red-50 text-red-900 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200'}`}
+                >
+                  <p className="font-semibold">
+                    {isPaymentSettled ? 'Pembayaran berhasil! Pesanan siap diproses.' : 'Pembayaran gagal. Silakan bantu pelanggan memilih opsi lain.'}
+                  </p>
+                  <p className="text-sm">
+                    {isPaymentSettled
+                      ? 'Modal akan menutup otomatis setelah beberapa detik. Kamu bisa lanjut melayani pelanggan berikutnya.'
+                      : 'Tutup modal ini lalu bantu pelanggan memilih metode pembayaran lain atau ulangi proses.'}
+                  </p>
+                </section>
+              )}
+
+              <section className="grid gap-4 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Order ID</p>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">
+                    {onlinePaymentResult.order.id}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Dibuat {formatDateTime(onlinePaymentResult.order.createdAt)}</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Metode</p>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">
+                    {paymentChannelLabel}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Total bayar termasuk fee: Rp {currencyFormatter.format(onlinePaymentResult.order.totalAmount)}
+                  </p>
+                </div>
+              </section>
+
+              {onlinePaymentResult.transaction.midtrans ? (
+                <section className="space-y-4">
+                  {onlinePaymentResult.transaction.midtrans.qrUrl && (
+                    <div className="rounded-lg border border-slate-200 bg-white p-4 text-center dark:border-slate-800 dark:bg-slate-900/60">
+                      <p className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">QRIS Dinamis</p>
+                      <div className="mx-auto inline-flex rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950">
+                        <img
+                          src={onlinePaymentResult.transaction.midtrans.qrUrl}
+                          alt="QRIS Dinamis"
+                          className="h-56 w-56 object-contain"
+                        />
+                      </div>
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        Tunjukkan QR ini ke pelanggan untuk discan melalui aplikasi e-wallet.
+                      </p>
+                    </div>
+                  )}
+
+                  {onlinePaymentResult.transaction.midtrans.paymentCode && (
+                    <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Kode Pembayaran</p>
+                          <p className="text-2xl font-semibold tracking-wider text-slate-900 dark:text-slate-100">
+                            {onlinePaymentResult.transaction.midtrans.paymentCode}
+                          </p>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          onClick={() => handleCopyToClipboard(onlinePaymentResult.transaction.midtrans?.paymentCode ?? '')}
+                          className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                          <Copy className="mr-2 h-4 w-4" /> Salin kode
+                        </Button>
+                      </div>
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Berikan kode ini kepada pelanggan untuk disalin ke aplikasi pembayaran.</p>
+                    </div>
+                  )}
+
+                  {onlinePaymentResult.transaction.midtrans.vaNumbers?.length ? (
+                    <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Virtual Account</p>
+                      {onlinePaymentResult.transaction.midtrans.vaNumbers.map((va) => (
+                        <div key={`${va.bank}-${va.vaNumber}`} className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950">
+                          <div>
+                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{va.bank}</p>
+                            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{va.vaNumber}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleCopyToClipboard(va.vaNumber)}
+                            className="text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400"
+                          >
+                            <Copy className="mr-2 h-4 w-4" /> Salin VA
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {onlinePaymentResult.transaction.midtrans.instructions?.length ? (
+                    <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Langkah Pembayaran</p>
+                      {onlinePaymentResult.transaction.midtrans.instructions.map((instruction, index) => (
+                        <div key={`${instruction.title}-${index}`} className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60">
+                          <p className="font-semibold text-slate-800 dark:text-slate-200">{instruction.title}</p>
+                          <ol className="list-decimal space-y-1 pl-4 text-sm text-slate-600 dark:text-slate-400">
+                            {instruction.steps.map((step, stepIndex) => (
+                              <li key={`step-${index}-${stepIndex}`}>{step}</li>
+                            ))}
+                          </ol>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              ) : (
+                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                  Detail pembayaran online belum tersedia. Silakan cek dashboard transaksi atau hubungi admin.
+                </div>
+              )}
+
+              <div className="rounded-lg border border-orange-300 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-500/40 dark:bg-orange-500/10 dark:text-orange-200">
+                <div className="flex items-start gap-2">
+                  <Clock className="mt-0.5 h-4 w-4" />
+                  <p>
+                    Transaksi akan kadaluarsa {formatDateTime(onlinePaymentResult.transaction.midtrans?.expiredAt)}. Pastikan pelanggan menyelesaikan pembayaran sebelum waktu tersebut.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button onClick={resetPaymentState} className="bg-red-600 hover:bg-red-500">
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

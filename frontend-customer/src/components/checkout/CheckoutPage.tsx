@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,10 +16,14 @@ import { PaymentMethod } from '@/types';
 import { useTranslations } from '@/hooks/useI18n';
 
 // Order Summary Component
-const OrderSummary: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransactionFee, applicationFee, grandTotal }) => {
+const OrderSummary: React.FC<CheckoutProps & {
+    selectedPaymentMethod?: PaymentMethod | null;
+    dynamicTransactionFee: number;
+    dynamicApplicationFee: number;
+    dynamicGrandTotal: number;
+}> = ({ outlets, subtotal, selectedPaymentMethod, dynamicTransactionFee, dynamicApplicationFee, dynamicGrandTotal }) => {
     const t = useTranslations("checkout");
     const totalItems = outlets.reduce((total, outlet) => total + 1, 0);
-    console.log(outlets);
 
     return (
         <div className="space-y-4">
@@ -49,27 +53,11 @@ const OrderSummary: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
                                 </div>
                             </div>
 
-                            {/* Transaction Fee */}
-                            {outlet.transactionFee > 0 && (
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">{t("orderSummary.transactionFee")}</span>
-                                    <span>{formatCurrency(outlet.transactionFee)}</span>
-                                </div>
-                            )}
-
-                            {/* Application Fee */}
-                            {outlet.applicationFee > 0 && (
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">{t("orderSummary.applicationFee")}</span>
-                                    <span>{formatCurrency(outlet.applicationFee)}</span>
-                                </div>
-                            )}
-
                             {/* Outlet Subtotal */}
                             <div className="flex items-center justify-between pt-2 border-t">
                                 <span className="text-sm font-medium">{t("orderSummary.orderSubtotal")}</span>
                                 <span className="font-semibold text-primary">
-                                    {formatCurrency(outlet.subtotal + outlet.transactionFee + outlet.applicationFee)}
+                                    {formatCurrency(outlet.subtotal)}
                                 </span>
                             </div>
                         </div>
@@ -77,42 +65,48 @@ const OrderSummary: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
                 </Card>
             ))}
 
-            {/* Payment Summary */}
-            <Card className="py-0">
-                <CardContent className="p-4">
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                            <span>{t("orderSummary.totalOrder", { count: totalItems })}</span>
-                            <span>{formatCurrency(subtotal)}</span>
-                        </div>
-                        {totalTransactionFee > 0 && (
+            {/* Payment Summary - Show fees only when payment method is selected */}
+            {selectedPaymentMethod && (dynamicTransactionFee > 0 || dynamicApplicationFee > 0) && (
+                <Card className="py-0">
+                    <CardContent className="p-4">
+                        <div className="space-y-2">
                             <div className="flex justify-between text-sm">
-                                <span>{t("orderSummary.transactionFee")}</span>
-                                <span>{formatCurrency(totalTransactionFee)}</span>
+                                <span>{t("orderSummary.totalOrder", { count: totalItems })}</span>
+                                <span>{formatCurrency(subtotal)}</span>
                             </div>
-                        )}
-                        {applicationFee > 0 && (
-                            <div className="flex justify-between text-sm">
-                                <span>{t("orderSummary.applicationFee")}</span>
-                                <span>{formatCurrency(applicationFee)}</span>
+
+                            {dynamicTransactionFee > 0 && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">{t("orderSummary.transactionFee")}</span>
+                                    <span>{formatCurrency(dynamicTransactionFee)}</span>
+                                </div>
+                            )}
+
+                            {dynamicApplicationFee > 0 && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">{t("orderSummary.applicationFee")}</span>
+                                    <span>{formatCurrency(dynamicApplicationFee)}</span>
+                                </div>
+                            )}
+
+                            <div className="flex justify-between pt-2 border-t border-blue-200">
+                                <span className="font-semibold">{t("orderSummary.totalPayment")}</span>
+                                <span className="font-bold text-lg text-primary">{formatCurrency(dynamicGrandTotal)}</span>
                             </div>
-                        )}
-                        <div className="flex justify-between pt-2 border-t border-blue-200">
-                            <span className="font-semibold">{t("orderSummary.totalPayment")}</span>
-                            <span className="font-bold text-lg text-primary">{formatCurrency(grandTotal)}</span>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 };
 
 // Checkout Button Component
 const CheckoutButton: React.FC<{
-    grandTotal: number;
+    totalAmount: number;
     onCheckout: () => void;
-}> = ({ grandTotal, onCheckout }) => {
+    disabled?: boolean;
+}> = ({ totalAmount, onCheckout, disabled }) => {
     const t = useTranslations("checkout");
 
     return (
@@ -121,12 +115,13 @@ const CheckoutButton: React.FC<{
                 <div className="flex items-center justify-between gap-4">
                     <div>
                         <p className="text-sm text-muted-foreground">{t("checkoutButton.totalPayment")}</p>
-                        <p className="text-lg font-bold text-primary">{formatCurrency(grandTotal)}</p>
+                        <p className="text-lg font-bold text-primary">{formatCurrency(totalAmount)}</p>
                     </div>
                     <Button
                         size="lg"
                         className="px-8 h-12"
                         onClick={onCheckout}
+                        disabled={disabled}
                     >
                         {t("checkoutButton.createOrder")}
                     </Button>
@@ -136,9 +131,44 @@ const CheckoutButton: React.FC<{
     );
 };
 
-const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransactionFee, applicationFee, grandTotal }) => {
+const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, grandTotal }) => {
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
     const router = useRouter();
+
+    // Calculate dynamic fees based on selected payment method
+    const { dynamicTransactionFee, dynamicApplicationFee, dynamicGrandTotal } = useMemo(() => {
+        if (!selectedPaymentMethod) {
+            return {
+                dynamicTransactionFee: 0,
+                dynamicApplicationFee: 0,
+                dynamicGrandTotal: subtotal
+            };
+        }
+
+        // Calculate fees based on payment method type
+        let transactionFee = 0;
+        let appFee = 0;
+
+        // Different fee structure based on payment method
+        if (selectedPaymentMethod.type === 'qris') {
+            // QRIS typically has lower transaction fees
+            transactionFee = subtotal * 0.02; // 2%
+            appFee = subtotal * 0.03; // 3%
+        } else if (selectedPaymentMethod.type === 'va') {
+            // Virtual Account has fixed fees
+            transactionFee = 4000; // Flat fee Rp 4.000
+            appFee = subtotal * 0.03; // 3%
+        } else if (selectedPaymentMethod.type === 'manual') {
+            transactionFee = 0;
+            appFee = subtotal * 0;
+        }
+
+        return {
+            dynamicTransactionFee: transactionFee,
+            dynamicApplicationFee: appFee,
+            dynamicGrandTotal: subtotal + transactionFee + appFee
+        };
+    }, [selectedPaymentMethod, subtotal]);
 
     const handleSelectPayment = (method: PaymentMethod) => {
         setSelectedPaymentMethod(method);
@@ -149,8 +179,15 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
             return;
         }
 
+        // Use dynamic fees for payment data
         const paymentData = {
-            checkoutData: { outlets, subtotal, totalTransactionFee, applicationFee, grandTotal },
+            checkoutData: {
+                outlets,
+                subtotal,
+                totalTransactionFee: dynamicTransactionFee,
+                applicationFee: dynamicApplicationFee,
+                grandTotal: dynamicGrandTotal
+            },
             selectedPaymentMethod
         };
 
@@ -164,21 +201,26 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, totalTransac
             <OrderSummary
                 outlets={outlets}
                 subtotal={subtotal}
-                totalTransactionFee={totalTransactionFee}
-                applicationFee={applicationFee}
+                totalTransactionFee={dynamicTransactionFee}
+                applicationFee={dynamicApplicationFee}
                 grandTotal={grandTotal}
+                selectedPaymentMethod={selectedPaymentMethod}
+                dynamicTransactionFee={dynamicTransactionFee}
+                dynamicApplicationFee={dynamicApplicationFee}
+                dynamicGrandTotal={dynamicGrandTotal}
             />
 
             {/* Payment Methods */}
             <PaymentMethodsList
                 onSelectPayment={handleSelectPayment}
-                selectedPayment={selectedPaymentMethod!}
+                selectedPayment={selectedPaymentMethod}
             />
 
             {/* Checkout Button */}
             <CheckoutButton
-                grandTotal={grandTotal}
+                totalAmount={dynamicGrandTotal}
                 onCheckout={handleCheckout}
+                disabled={!selectedPaymentMethod}
             />
         </div>
     );

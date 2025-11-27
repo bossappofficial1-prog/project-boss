@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { Input } from '@/components/ui/input';
 
 interface ToolbarProps {
   selectedDate: string;
@@ -18,11 +19,11 @@ export function Toolbar({ selectedDate, onDateChange, isConnected }: ToolbarProp
           <svg className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <input
+          <Input
             type="date"
             value={selectedDate}
             onChange={(e) => onDateChange(e.target.value)}
-            className="border-none focus:outline-none text-sm font-medium text-gray-700 dark:text-gray-300 bg-transparent w-full"
+            className="h-auto w-full border-none bg-transparent px-0 text-sm font-medium text-gray-700 focus-visible:border-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:text-gray-300"
           />
         </div>
 

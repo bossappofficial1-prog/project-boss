@@ -6,6 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
     User,
     Phone,
     Receipt,
@@ -20,8 +28,10 @@ import { CheckoutService } from '@/services/checkout';
 import { formatCurrency } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
 import { useTranslations } from '@/hooks/useI18n';
-import { PaymentMethodId } from '@/types';
+import { ManualPaymentResponse, PaymentMethodId } from '@/types';
 import { ImageRender } from '../shared/Image';
+import { Alert } from '../Base';
+import { useSnackbar } from '@/hooks/useSnackbar';
 
 interface PaymentPageProps {
     checkoutData: CheckoutData;
@@ -87,10 +97,10 @@ const CustomerInfoForm: React.FC<{
                     )}
                 </div>
 
-                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                    <p className="text-sm text-blue-700">
-                        <AlertCircle className="w-4 h-4 inline mr-1" />
-                        {t("customerInfo.infoMessage")}
+                <div className="rounded-lg border border-blue-200/60 bg-blue-50/80 p-3 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/60 dark:text-blue-100/80">
+                    <p className="flex items-start text-sm leading-relaxed">
+                        <AlertCircle className="mr-2 h-4 w-4 flex-shrink-0 text-blue-500 dark:text-blue-300" />
+                        <span>{t("customerInfo.infoMessage")}</span>
                     </p>
                 </div>
             </CardContent>
@@ -124,20 +134,6 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkou
                                 <span className="text-muted-foreground">{t("orderSummary.subtotal")}</span>
                                 <span>{formatCurrency(outlet.subtotal)}</span>
                             </div>
-
-                            {outlet.transactionFee > 0 && (
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t("orderSummary.transactionFee")}</span>
-                                    <span>{formatCurrency(outlet.transactionFee)}</span>
-                                </div>
-                            )}
-
-                            {outlet.applicationFee > 0 && (
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t("orderSummary.applicationFee")}</span>
-                                    <span>{formatCurrency(outlet.applicationFee)}</span>
-                                </div>
-                            )}
                         </div>
                     </div>
                 ))}
@@ -148,20 +144,6 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkou
                         <span>{t("orderSummary.totalOrder")}</span>
                         <span>{formatCurrency(checkoutData.subtotal)}</span>
                     </div>
-
-                    {checkoutData.totalTransactionFee > 0 && (
-                        <div className="flex justify-between text-sm">
-                            <span>{t("orderSummary.totalTransactionFee")}</span>
-                            <span>{formatCurrency(checkoutData.totalTransactionFee)}</span>
-                        </div>
-                    )}
-
-                    {checkoutData.applicationFee > 0 && (
-                        <div className="flex justify-between text-sm">
-                            <span>{t("orderSummary.applicationFee")}</span>
-                            <span>{formatCurrency(checkoutData.applicationFee)}</span>
-                        </div>
-                    )}
 
                     <div className="flex justify-between font-semibold text-lg pt-2 border-t">
                         <span>{t("orderSummary.totalPayment")}</span>
@@ -220,14 +202,14 @@ const PaymentButton: React.FC<{
     return (
         <Card className="sticky bottom-0 py-0 border-t shadow-lg">
             <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-4">
-                    <div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col">
                         <p className="text-sm text-muted-foreground">{t("paymentButton.totalPayment")}</p>
                         <p className="text-xl font-bold text-primary">{formatCurrency(amount)}</p>
                     </div>
                     <Button
                         size="lg"
-                        className="px-8 h-12"
+                        className="h-12 w-full px-8 sm:w-auto"
                         onClick={onPay}
                         disabled={isLoading}
                     >
@@ -244,9 +226,13 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
     const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: '', phone: '' });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+    const [hasStartedPayment, setHasStartedPayment] = useState(false);
     const router = useRouter();
-    const { items: cartItems, clearCart, clearOutletItems } = useCart();
+    const { items: cartItems, clearOutletItems } = useCart();
     const t = useTranslations("paymentPage");
+    const snackbar = useSnackbar()
 
     // Load customer info from ProfileSettings (if available)
     useEffect(() => {
@@ -265,6 +251,20 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
         }
     }, []);
 
+    // Prevent accidental page leave during payment
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasStartedPayment && !isLoading) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasStartedPayment, isLoading]);
+
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
 
@@ -282,17 +282,22 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
         return Object.keys(newErrors).length === 0;
     };
 
-    const handlePayment = async () => {
+    const handlePayment = async (retryCount = 0) => {
         if (!validateForm()) {
             return;
         }
 
+        setHasStartedPayment(true);
+        setPaymentError(null);
         setIsLoading(true);
+
+        const maxRetries = 2;
 
         try {
             // Construct payload for backend API sesuai format yang benar
             let itemDetails: Array<{ productId: string; quantity: number }> = [];
             let selectedSlotId: string | undefined;
+            let staffId: string | undefined;
             let outletId: string = '';
 
             // Try to get items from checkoutData first
@@ -307,9 +312,11 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 }
 
                 return outlet.items.map(item => {
-                    // Untuk service products, ambil selectedSlotId
                     if (item.type === 'SERVICE' && item.selectedSlot && !selectedSlotId) {
                         selectedSlotId = item.selectedSlot;
+                        if (item.staffId) {
+                            staffId = item.staffId;
+                        }
                     }
 
                     // Return item dengan format yang benar
@@ -334,6 +341,9 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                     // Untuk service products, ambil selectedSlotId
                     if (item.type === 'SERVICE' && item.selectedSlot && !selectedSlotId) {
                         selectedSlotId = item.selectedSlot;
+                        if (item.staffId) {
+                            staffId = item.staffId;
+                        }
                     }
 
                     return {
@@ -353,7 +363,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 },
                 item_details: itemDetails,
                 payment_method: selectedPaymentMethod.id as PaymentMethodId,
-                ...(selectedSlotId && { selectedSlotId: selectedSlotId })
+                ...(selectedSlotId && { selectedSlotId: selectedSlotId }),
+                ...(staffId && { staffId })
             };
 
             // Check if we have any items
@@ -364,8 +375,14 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             // Send to backend API
             const response = await CheckoutService.processPayment(payloadBody);
 
+            const orderId = response.order_id;
+
+            const isManualResponse = (resp: any): resp is ManualPaymentResponse => {
+                return Boolean(resp?.manual && resp.manual?.instructions && resp.manual?.fee_summary);
+            };
+
             // Save payment info for local reference
-            const paymentInfo = {
+            const basePaymentInfo = {
                 checkoutData,
                 selectedPaymentMethod,
                 customerInfo,
@@ -374,8 +391,20 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 payload: payloadBody
             };
 
-            localStorage.setItem('lastPayment', JSON.stringify(paymentInfo));
-            localStorage.setItem("paymentInfo", JSON.stringify(response))
+            if (isManualResponse(response)) {
+                CheckoutService.clearManualPaymentFromStorage();
+                CheckoutService.saveManualPaymentToStorage({
+                    response,
+                    checkoutData,
+                    selectedPaymentMethod,
+                    customerInfo,
+                    createdAt: new Date().toISOString()
+                });
+            } else {
+                CheckoutService.clearManualPaymentFromStorage();
+                localStorage.setItem('lastPayment', JSON.stringify(basePaymentInfo));
+                localStorage.setItem("paymentInfo", JSON.stringify(response));
+            }
 
             // Clear checkout and payment data
             CheckoutService.clearCheckoutDataFromStorage();
@@ -383,11 +412,38 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
             clearOutletItems(outletId)
 
             // Redirect to success page
-            router.push('/payment/processing');
+            // if (isManualResponse(response)) {
+            //     router.push('/payment/manual');
+            // } else {
+            //     router.push('/payment/processing');
+            // }
+
+            router.push(`/payment/${orderId}`)
 
         } catch (error) {
-            console.error('Payment failed:', error)
-            alert(error instanceof Error ? error.message : t("errors.paymentFailed"));
+
+            // Check if it's a network error and should retry
+            const isNetworkError = error instanceof Error && (
+                error.message.includes('network') ||
+                error.message.includes('timeout') ||
+                error.message.includes('Failed to fetch') ||
+                error.message.includes('ERR_NETWORK')
+            );
+
+            if (isNetworkError && retryCount < maxRetries) {
+                console.log(`Retrying payment... Attempt ${retryCount + 1} of ${maxRetries}`);
+                setIsLoading(false);
+                snackbar.error(`Koneksi terputus. Mencoba ulang (${retryCount + 1}/${maxRetries})...`)
+
+                // Retry after delay with exponential backoff
+                setTimeout(() => {
+                    handlePayment(retryCount + 1);
+                }, 1500 * (retryCount + 1)); // 1.5s, 3s
+                return;
+            }
+
+            const errorMessage = (error as any).response.data.message;
+            snackbar.error(errorMessage)
             setIsLoading(false);
         }
     };
@@ -413,6 +469,35 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 amount={checkoutData.grandTotal}
                 isLoading={isLoading}
             />
+
+            {/* Leave Confirmation Dialog */}
+            <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Tinggalkan Pembayaran?</DialogTitle>
+                        <DialogDescription>
+                            Pembayaran Anda belum selesai. Jika Anda meninggalkan halaman ini, progress pembayaran akan hilang dan Anda harus mengulang dari awal.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowLeaveDialog(false)}
+                        >
+                            Lanjutkan Bayar
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => {
+                                setHasStartedPayment(false);
+                                router.back();
+                            }}
+                        >
+                            Ya, Tinggalkan
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

@@ -22,7 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             paddingTop: 'var(--appbar-height, 0px)',
                             paddingBottom: 'var(--bottomnav-height, 0px)'
                         }}
-                        className="flex-1 lg:max-w-2xl w-full m-2 overflow-hidden p-3 overflow-x-auto mx-auto"
+                        className="flex-1 md:max-w-4xl w-full m-2 overflow-hidden p-3 overflow-x-auto mx-auto"
                     >
                         <Suspense fallback={<LoadingState />}>
                             {children}

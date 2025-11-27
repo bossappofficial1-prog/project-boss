@@ -31,6 +31,7 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link';
 import { useTranslations } from "@/hooks/useI18n";
 import { useAppBarV2 } from '@/context/AppBarContextV2';
+import { useSnackbar } from '@/hooks/useSnackbar';
 
 function formatSelectedSlot(dateStr: string, startTimeStr: string, endTimeStr: string) {
     const date = parseISO(dateStr);
@@ -119,10 +120,10 @@ function CartItemCard({ item, slotInfo, isValid = true, invalidReason }: CartIte
                     <img
                         src={item.image || '/assets/images/default-image.png'}
                         alt={item.name}
-                        className={`w-16 h-16 rounded-lg object-cover bg-muted flex-shrink-0 ${!isValid ? 'opacity-50' : ''}`}
+                        className={`w-16 h-16 rounded-md object-cover bg-muted flex-shrink-0 ${!isValid ? 'opacity-50' : ''}`}
                     />
                     {!isValid && (
-                        <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/20 rounded-md flex items-center justify-center">
                             <AlertCircle className="w-6 h-6 text-destructive" />
                         </div>
                     )}
@@ -211,18 +212,20 @@ function OrderSummary({ totalPrice, totalItems, outletCount, hasUnscheduledServi
     const router = useRouter();
     const { items } = useCart();
     const t = useTranslations("cart");
+    const snackbar = useSnackbar()
 
     const handleCheckout = async () => {
         if (hasUnscheduledServices) return;
 
         // Validasi: hanya satu outlet yang dipilih
         if (!selectedOutletId) {
-            alert(t("validation.selectOutlet"));
+            snackbar.success(t("validation.selectOutlet"))
             return;
         }
 
         try {
             const selectedOutletItems = items.filter(item => item.outletId === selectedOutletId);
+            localStorage.setItem('selectedOutletIdCheckoutItem', JSON.stringify(selectedOutletItems))
             const checkoutData = await CheckoutService.prepareCheckoutData(selectedOutletItems);
             CheckoutService.saveCheckoutDataToStorage(checkoutData);
             router.push('/checkout');
@@ -233,11 +236,11 @@ function OrderSummary({ totalPrice, totalItems, outletCount, hasUnscheduledServi
 
     return (
         <div className="sticky space-y-2">
-            <Card className="shadow-md">
+            <Card className="shadow-md rounded-md">
                 <CardHeader>
                     <CardTitle className="text-xl">{t("summary")}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3">
                     <div className="flex justify-between items-center text-muted-foreground">
                         <span className="text-sm">{t("subtotal")} ({selectedOutletId ? selectedOutletItems : totalItems} {t("items")}{selectedOutletId && selectedOutletItems !== 1 ? 's' : ''})</span>
                         <span className="text-sm font-medium">Rp{(selectedOutletId ? selectedOutletTotal : totalPrice).toLocaleString('id-ID')}</span>
@@ -258,7 +261,7 @@ function OrderSummary({ totalPrice, totalItems, outletCount, hasUnscheduledServi
 
                     {/* Informasi Outlet yang Dipilih */}
                     {selectedOutletId ? (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="bg-green-50 border border-green-200 rounded-md p-3">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-sm font-medium text-green-800">{t("outlet.selectedOutlet")}</p>
@@ -277,7 +280,7 @@ function OrderSummary({ totalPrice, totalItems, outletCount, hasUnscheduledServi
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                             <p className="text-sm font-medium text-yellow-800">{t("outlet.chooseOutlet")}</p>
                             <p className="text-xs text-yellow-600 mt-1">
                                 {t("outlet.chooseOutletDescription")}
@@ -289,7 +292,7 @@ function OrderSummary({ totalPrice, totalItems, outletCount, hasUnscheduledServi
                     {selectedOutletId && (() => {
                         const selectedOutletProductTypes = [...new Set(items.filter(item => item.outletId === selectedOutletId).map(item => item.type))];
                         return selectedOutletProductTypes.length > 1 ? (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div className="bg-red-50 border border-red-200 rounded-md p-3">
                                 <p className="text-sm font-medium text-red-800">{t("validation.attention")}</p>
                                 <p className="text-xs text-red-600 mt-1">
                                     {t("validation.mixedProducts", {
@@ -490,8 +493,8 @@ export default function CartPage() {
             <div className="grid lg:grid-cols-3 gap-4 items-start">
                 <div className="lg:col-span-2 space-y-2">
                     {/* Cart summary dengan validasi */}
-                    <Card className="bg-blue-50 border border-blue-200 dark:bg-blue-900/40 dark:border-blue-700 rounded-lg shadow-sm transition-colors duration-300">
-                        <CardContent>
+                    <Card className="bg-blue-50 border p-0 border-blue-200 dark:bg-blue-900/40 dark:border-blue-700 rounded-md shadow-sm transition-colors duration-300">
+                        <CardContent className='p-3'>
                             <div className="flex items-start gap-3">
                                 <div>
                                     <h3 className="font-semibold text-blue-900 dark:text-blue-200 text-sm">
@@ -515,8 +518,8 @@ export default function CartPage() {
                     </Card>
 
 
-                    {Object.entries(itemsByOutlet).map(([outletId, { outletName, items: outletItems }]) => (
-                        <Card key={outletId} onClick={() => setIsSelectedOutlet(outletId)} className={`pt-0 py-0 gap-0 overflow-hidden cursor-pointer transition-all ${isSelectedOutlet === outletId ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "hover:border-primary/50"}`}>
+                    {Object.entries(itemsByOutlet).reverse().map(([outletId, { outletName, items: outletItems }]) => (
+                        <Card key={outletId} onClick={() => setIsSelectedOutlet(outletId)} className={`pt-0 py-0 gap-0 overflow-hidden rounded-md cursor-pointer transition-all ${isSelectedOutlet === outletId ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "hover:border-primary/50"}`}>
                             <CardHeader className="bg-muted/50 pt-3 px-3">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <Link

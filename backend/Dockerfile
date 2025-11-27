@@ -23,7 +23,14 @@ ENV SMTP_PASS=$SMTP_PASS
 ENV SMTP_FROM=$SMTP_FROM
 
 COPY package*.json ./
-RUN npm install
+
+# Increase npm timeout and registry settings and install all deps (including dev)
+# Use `npm ci --include=dev` for reproducible installs and to ensure devDependencies
+# (typescript, @types/*, etc.) are available during the build stage.
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-timeout 300000 && \
+    npm ci --include=dev
 
 COPY . .
 
@@ -38,7 +45,6 @@ FROM node:20-alpine AS runner
 WORKDIR /app/backend
 
 COPY --from=builder /app/backend/package*.json ./
-# COPY --from=builder /app/backend/node_modules ./node_modules
 COPY --from=builder /app/backend/dist ./dist
 COPY --from=builder /app/backend/public ./public
 COPY --from=builder /app/backend/prisma ./prisma
@@ -47,10 +53,33 @@ COPY --from=builder /app/backend/prisma ./prisma
 # Ini untuk library yang dibutuhkan runtime Prisma Engine
 RUN apk add --no-cache openssl libstdc++ ca-certificates
 
-# Hanya install Prisma CLI sebagai runtime dependency (tidak perlu generate lagi di sini)
-# RUN npm install prisma --omit=dev --no-fund --no-audit --ignore-scripts
-RUN npm install --omit=dev
-RUN npm install ts-node
+# For development, copy node_modules from builder to avoid reinstall
+# For production, install only production dependencies
+ARG NODE_ENV=production
+ENV NODE_ENV=$NODE_ENV
+
+RUN if [ "$NODE_ENV" = "development" ]; then \
+        echo "Development mode: copying node_modules from builder"; \
+    else \
+        echo "Production mode: installing production dependencies"; \
+        npm config set fetch-retry-mintimeout 20000 && \
+        npm config set fetch-retry-maxtimeout 120000 && \
+        npm config set fetch-timeout 300000 && \
+        npm install --omit=dev; \
+    fi
+
+# Copy node_modules from builder for development
+COPY --from=builder /app/backend/node_modules ./node_modules
 
 EXPOSE 1234
-CMD sh -c 'if [ "$NODE_ENV" = "development" ]; then npx prisma migrate deploy && npm run db:seed; fi && npm start'
+# Smart seeding: use FORCE_RESEED env var to control
+CMD sh -c 'npx prisma migrate deploy && npx prisma generate && \
+    if [ "$NODE_ENV" = "development" ]; then \
+        if [ "$FORCE_RESEED" = "true" ]; then \
+            echo "🔄 Force reseeding enabled..."; \
+            npm run db:seed -- --force; \
+        else \
+            echo "🌱 Normal seeding (skip if data exists)..."; \
+            npm run db:seed; \
+        fi; \
+    fi && npm start'

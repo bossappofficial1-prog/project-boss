@@ -7,6 +7,7 @@ import path from "path";
 import fs from "fs";
 import { config } from "../config";
 import { ImageService } from "../service/image.service";
+import { optimizeUploadedImage } from "../utils/image-optimizer";
 
 // Magic numbers for image file validation
 const IMAGE_MAGIC_NUMBERS = {
@@ -15,6 +16,8 @@ const IMAGE_MAGIC_NUMBERS = {
     'image/gif': ['474946'],
     'image/webp': ['52494646'] // RIFF for WebP
 };
+
+const MAX_ORIGINAL_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB before optimization
 
 // Function to get file magic number (optimized: read only first 4 bytes)
 const getFileMagicNumber = (filePath: string): string => {
@@ -28,8 +31,8 @@ const getFileMagicNumber = (filePath: string): string => {
 // Enhanced file validation function
 const validateImageFile = (file: Express.Multer.File): void => {
     // Check file size (additional check)
-    if (file.size > 1 * 1024 * 1024) {
-        throw new AppError('File size too large. Maximum 1MB allowed.', HttpStatus.BAD_REQUEST);
+    if (file.size > MAX_ORIGINAL_IMAGE_SIZE) {
+        throw new AppError('Ukuran file mentah terlalu besar. Maksimal 5MB sebelum kompresi.', HttpStatus.BAD_REQUEST);
     }
 
     // Get magic number from uploaded file
@@ -66,18 +69,29 @@ export const uploadImageController = asyncHandler(async (req: Request, res: Resp
     // Enhanced security validation
     validateImageFile(file);
 
+    let optimizedFile: Express.Multer.File;
+
+    try {
+        optimizedFile = await optimizeUploadedImage(file);
+    } catch (error) {
+        throw new AppError(
+            'Gagal mengoptimalkan gambar. Pastikan file tidak melebihi 5MB dan berformat gambar yang valid.',
+            HttpStatus.BAD_REQUEST
+        );
+    }
+
     // Generate URL for the uploaded file
     const baseUrl = config.BASE_URL;
-    const relativePath = path.relative(process.cwd(), file.path);
+    const relativePath = path.relative(process.cwd(), optimizedFile.path);
     const imageUrl = `${baseUrl}/${relativePath.replace(/\\/g, '/')}`;
 
     return ResponseUtil.success(res, {
         message: 'Image uploaded successfully',
         url: imageUrl,
-        filename: file.filename,
-        originalName: file.originalname,
-        size: file.size,
-        mimetype: file.mimetype
+        filename: optimizedFile.filename,
+        originalName: optimizedFile.originalname,
+        size: optimizedFile.size,
+        mimetype: optimizedFile.mimetype
     }, HttpStatus.CREATED);
 });
 
@@ -96,15 +110,17 @@ export const uploadMultipleImagesController = asyncHandler(async (req: Request, 
         try {
             validateImageFile(file);
 
-            const relativePath = path.relative(process.cwd(), file.path);
+            const optimizedFile = await optimizeUploadedImage(file);
+
+            const relativePath = path.relative(process.cwd(), optimizedFile.path);
             const imageUrl = `${baseUrl}/${relativePath.replace(/\\/g, '/')}`;
 
             uploadedFiles.push({
                 url: imageUrl,
-                filename: file.filename,
-                originalName: file.originalname,
-                size: file.size,
-                mimetype: file.mimetype
+                filename: optimizedFile.filename,
+                originalName: optimizedFile.originalname,
+                size: optimizedFile.size,
+                mimetype: optimizedFile.mimetype
             });
         } catch (error) {
             // If one file fails validation, clean up all uploaded files
@@ -113,7 +129,15 @@ export const uploadMultipleImagesController = asyncHandler(async (req: Request, 
                     fs.unlinkSync(f.path);
                 }
             });
-            throw error;
+
+            if (error instanceof AppError) {
+                throw error;
+            }
+
+            throw new AppError(
+                'Gagal mengoptimalkan salah satu gambar. Pastikan file tidak melebihi 5MB dan berformat gambar yang valid.',
+                HttpStatus.BAD_REQUEST
+            );
         }
     }
 

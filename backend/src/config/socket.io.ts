@@ -3,6 +3,7 @@ import { createServer, Server as HttpServer } from "http"
 import { Server } from "socket.io"
 import { config } from ".";
 import { Express } from "express";
+import { SOCKET_EVENT } from "../socket/types";
 
 let io: Server;
 
@@ -41,7 +42,8 @@ export const getIO = () => {
 
 export const emitToOrder = (orderId: string, payload: any) => {
     if (!io) throw new Error("Socket.io not initialized");
-    io.to(orderId).emit("orderEvent", payload);
+    io.to(orderId).emit(SOCKET_EVENT.ORDER_EVENT, payload);
+    io.to(orderId).emit(SOCKET_EVENT.ORDER_OTHER_EVENT, payload);
 }
 
 export const emitToBusinessOutlet = (outletId: string, payload: any) => {

@@ -1,45 +1,25 @@
+import { PaymentStatus, OrderStatus } from '@prisma/client';
 import { db } from '../config/prisma';
 import { HttpStatus } from '../constants/http-status';
 import { AppError } from '../errors/app-error';
 import { messagePublisher } from './message-publisher.service';
-import { socketUtils } from '../utils/socket.utils';
-import { OrderStatus } from '@prisma/client';
+import { SocketEmitter } from '../socket/socket-emiiter';
+import { MidtransWebhookPayloadType } from '../types/Others';
 
 export async function handlePaymentSuccess(orderId: string) {
-    let order;
+    let order = await db.order.findUnique({
+        where: { id: orderId },
+        include: {
+            items: { include: { product: true } },
+            bookingSlot: true,
+            outlet: true,
+            guestCustomer: true,
+            transaction: true
+        },
+    });
 
-    // Bypass untuk test WhatsApp notification
-    if (orderId === 'TEST123') {
-        console.log('🧪 Using mock order data for WhatsApp test');
-        order = {
-            id: 'TEST123',
-            paymentStatus: 'PENDING',
-            orderStatus: 'PENDING',
-            outlet: {
-                businessId: 'test-business',
-                name: 'Test Outlet'
-            },
-            guestCustomer: {
-                name: 'Test Customer',
-                phone: '+6283180541892' // Nomor WhatsApp test
-            },
-            items: [],
-            bookingSlot: null
-        };
-    } else {
-        order = await db.order.findUnique({
-            where: { id: orderId },
-            include: {
-                items: { include: { product: true } },
-                bookingSlot: true,
-                outlet: true,
-                guestCustomer: true,
-            },
-        });
-
-        if (!order) {
-            throw new AppError("Order not found", HttpStatus.NOT_FOUND);
-        }
+    if (!order) {
+        throw new AppError("Order not found", HttpStatus.NOT_FOUND);
     }
 
     if (order.paymentStatus === 'SUCCESS') {
@@ -66,7 +46,13 @@ export async function handlePaymentSuccess(orderId: string) {
             // 2. Perbarui status pesanan
             await tx.order.update({
                 where: { id: orderId },
-                data: { paymentStatus: 'SUCCESS', orderStatus },
+                data: { paymentStatus: PaymentStatus.SUCCESS, orderStatus },
+            });
+
+            // 2b. Update status transaksi jika tersedia
+            await tx.transaction.updateMany({
+                where: { orderId },
+                data: { status: PaymentStatus.SUCCESS },
             });
 
             // 3. Perbarui saldo dompet bisnis
@@ -101,16 +87,58 @@ export async function handlePaymentSuccess(orderId: string) {
         console.log('🧪 Skipping database operations for test order');
     }
 
+    // Mutasi objek order lokal agar konsisten dengan database
+    order.orderStatus = orderStatus;
+    order.paymentStatus = PaymentStatus.SUCCESS;
+
     // Terbitkan event setelah transaksi database selesai
     await messagePublisher.publishOrderStatusUpdate(order.id, orderStatus);
 
     // Kirim notifikasi WhatsApp terpadu untuk pembayaran berhasil dan status pesanan
     try {
         await messagePublisher.publishWhatsAppPaymentAndOrderUpdate(order.id, orderStatus);
-        console.log(`� Published consolidated WhatsApp notification for order ${order.id} with status ${orderStatus}`);
+        console.log(`✅ Published consolidated WhatsApp notification for order ${order.id} with status ${orderStatus}`);
     } catch (whatsappError) {
         console.error('❌ Error publishing WhatsApp notification:', whatsappError);
         // Don't fail the payment process if WhatsApp notification fails
+    }
+
+    try {
+        const outletId = order.outlet.id;
+        if (!outletId) {
+            console.warn(`⚠️ Unable to emit payment_success event because outlet ${order.outlet?.name ?? ''} has no id`);
+        } else {
+            SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
+                type: 'payment_success',
+                orderId: order.id,
+                amount: order.totalAmount!,
+                customerName: order.guestCustomer?.name || 'Customer',
+                paymentMethod: order.transaction?.paymentMethod || "unknown",
+                timestamp: new Date()
+            });
+            console.log(`📡 Emitted payment_success event for outlet ${outletId}`);
+        }
+    } catch (socketError) {
+        console.error('❌ Error emitting payment_success event:', socketError);
+    }
+
+    try {
+        const customerPhone = order.guestCustomer?.phone;
+        if (customerPhone) {
+            SocketEmitter.getInstance().emitToCustomer(customerPhone, {
+                orderId: order.id,
+                amount: order.totalAmount!,
+                status: 'settlement',
+                transactionStatus: 'settlement',
+                isManual: Boolean(order.transaction?.isManual),
+                paymentMethod: order.transaction?.paymentMethod || 'unknown',
+                message: 'Pembayaran berhasil diproses',
+                type: 'payment_success'
+            });
+            console.log(`📡 Emitted customer payment_success event for ${customerPhone}`);
+        }
+    } catch (customerSocketError) {
+        console.error('❌ Error emitting customer payment_success event:', customerSocketError);
     }
 }
 
@@ -123,6 +151,7 @@ export async function handlePaymentFailure(orderId: string) {
             bookingSlot: true,
             outlet: true,
             guestCustomer: true,
+            transaction: true,
         },
     });
 
@@ -150,18 +179,62 @@ export async function handlePaymentFailure(orderId: string) {
 
     // Emit notification to business outlet
     try {
-        socketUtils.emitToBusinessOutlet(order.outletId, {
+        SocketEmitter.getInstance().emitToBusinessOutlet(order.outletId, {
             type: 'payment_failed',
             orderId: order.id,
             amount: order.totalAmount,
-            orderStatus: 'CANCELLED',
             customerName: order.guestCustomer?.name || 'Customer',
-            timestamp: new Date()
+            timestamp: new Date(),
+            paymentMethod: order.transaction?.paymentMethod || 'unknown'
         });
         console.log(`📡 Emitted payment_failed event for outlet ${order.outletId}`);
     } catch (socketError) {
         console.error('❌ Error emitting payment_failed event:', socketError);
     }
 
+    try {
+        const customerPhone = order.guestCustomer?.phone;
+        if (customerPhone) {
+            SocketEmitter.getInstance().emitToCustomer(customerPhone, {
+                orderId: order.id,
+                amount: order.totalAmount,
+                status: 'failure',
+                transactionStatus: 'failure',
+                isManual: Boolean(order.transaction?.isManual),
+                paymentMethod: order.transaction?.paymentMethod || 'unknown',
+                message: 'Pembayaran gagal diproses',
+                type: 'payment_failed'
+            });
+            console.log(`📡 Emitted customer payment_failed event for ${customerPhone}`);
+        }
+    } catch (customerSocketError) {
+        console.error('❌ Error emitting customer payment_failed event:', customerSocketError);
+    }
+
     // Tidak perlu kembalikan quantity karena belum dikurangi saat checkout
+}
+
+export async function processMidtransPaymentNotification(payload: MidtransWebhookPayloadType) {
+    const orderId = payload.order_id;
+    const rawStatus = payload.transaction_status;
+
+    if (!orderId || !rawStatus) {
+        console.warn('⚠️ Missing order_id or transaction_status in Midtrans payload, skipping processing');
+        return;
+    }
+
+    const status = rawStatus.toLowerCase();
+
+    const isSuccessfulCapture = status === 'capture'
+        ? payload.fraud_status?.toLowerCase() !== 'challenge'
+        : false;
+
+    if (status === 'settlement' || isSuccessfulCapture) {
+        await handlePaymentSuccess(orderId);
+        return;
+    }
+
+    if (['cancel', 'deny', 'expire', 'failure'].includes(status)) {
+        await handlePaymentFailure(orderId);
+    }
 }

@@ -11,6 +11,11 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+const paymentProofDir = path.join(uploadsDir, 'payment-proofs');
+if (!fs.existsSync(paymentProofDir)) {
+    fs.mkdirSync(paymentProofDir, { recursive: true });
+}
+
 // Configure storage for images
 const imageStorage = multer.diskStorage({
     destination: (req: Request, file: Express.Multer.File, cb) => {
@@ -68,12 +73,14 @@ const imageFileFilter = (req: Request, file: Express.Multer.File, cb: multer.Fil
     cb(null, true);
 };
 
+const MAX_ORIGINAL_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB to allow compression before saving
+
 // Configure multer for images
 const imageUpload = multer({
     storage: imageStorage,
     fileFilter: imageFileFilter,
     limits: {
-        fileSize: 1 * 1024 * 1024, // 1MB limit
+        fileSize: MAX_ORIGINAL_IMAGE_SIZE,
         files: 1 // Only 1 file at a time
     }
 });
@@ -90,6 +97,15 @@ const importStorage = multer.diskStorage({
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const ext = path.extname(file.originalname);
         cb(null, `import-${uniqueSuffix}${ext}`);
+    }
+});
+
+const paymentProofStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, paymentProofDir),
+    filename: (_req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, `payment-proof-${uniqueSuffix}${ext}`);
     }
 });
 
@@ -111,10 +127,37 @@ const importFileFilter = (req: Request, file: Express.Multer.File, cb: multer.Fi
     cb(null, true);
 };
 
+const paymentProofFileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const allowedMimes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'application/pdf'
+    ];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (!allowedMimes.includes(file.mimetype) || !allowedExtensions.includes(ext)) {
+        return cb(new AppError('Bukti pembayaran harus berupa gambar atau PDF', HttpStatus.BAD_REQUEST));
+    }
+
+    cb(null, true);
+};
+
 export const importUpload = multer({
     storage: importStorage,
     fileFilter: importFileFilter,
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB archive max
+});
+
+export const paymentProofUpload = multer({
+    storage: paymentProofStorage,
+    fileFilter: paymentProofFileFilter,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+        files: 1
+    }
 });
 
 // Middleware for single image upload
@@ -127,11 +170,15 @@ export const uploadMultipleImages = (fieldName: string = 'images', maxCount: num
     return imageUpload.array(fieldName, maxCount);
 };
 
+export const uploadPaymentProof = (fieldName: string = 'proof') => {
+    return paymentProofUpload.single(fieldName);
+};
+
 // Error handler for multer errors
 export const handleUploadError = (error: any, req: Request, res: any, next: any) => {
     if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
-            return next(new AppError('File too large. Maximum size is 1MB', HttpStatus.BAD_REQUEST));
+            return next(new AppError('File terlalu besar. Maksimal 5MB sebelum kompresi.', HttpStatus.BAD_REQUEST));
         }
         if (error.code === 'LIMIT_FILE_COUNT') {
             return next(new AppError('Too many files. Maximum is 5 files', HttpStatus.BAD_REQUEST));

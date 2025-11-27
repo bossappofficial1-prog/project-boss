@@ -27,21 +27,25 @@ enum ProductType {
 // Status pembayaran yang lebih sederhana untuk internal aplikasi
 enum PaymentStatus {
   PENDING // Menunggu pembayaran
+  PROOF_SUBMITTED // Bukti pembayaran manual telah diunggah
+  AWAITING_VERIFICATION // Menunggu verifikasi admin/owner
   SUCCESS // Pembayaran berhasil
   FAILED // Pembayaran gagal
   REFUNDED // Dana dikembalikan
   EXPIRED // Waktu pembayaran habis
   CANCELLED // Pembayaran dibatalkan
+  REJECTED_MANUAL // Bukti manual ditolak
 }
 
 // Status alur pesanan secara keseluruhan
 enum OrderStatus {
-  AWAITING_PAYMENT // Menunggu pembayaran dikonfirmasi
-  PROCESSING // Pesanan sedang diproses (bisa masuk antrian Redis/RabbitMQ)
-  READY // Siap diambil (untuk barang) atau siap dimulai (untuk jasa)
-  COMPLETED // Pesanan selesai
-  CANCELLED // Pesanan dibatalkan
-  CONFIRMED // Tambahkan status baru di sini
+  AWAITING_PAYMENT
+  PROCESSING
+  CONFIRMED
+  READY
+  ON_GOING
+  COMPLETED
+  CANCELLED
 }
 
 enum WithdrawalStatus {
@@ -85,6 +89,12 @@ enum StaffRole {
   ADMIN // Admin outlet
   INVENTORY // Staff gudang/inventory
   OTHER // Peran lainnya
+}
+
+enum ManualPaymentType {
+  QRIS_OFFLINE
+  OWNER_TRANSFER
+  CASH
 }
 
 // === MODELS ===
@@ -136,12 +146,18 @@ model Staff {
   address String?
   notes   String?
 
+  // Password untuk login kasir (nullable - hanya untuk kasir yang butuh login)
+  password String?
+
   // Relasi ke outlet
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
   // Relasi ke booking slots yang ditangani (khusus staff SERVICE)
   bookings BookingSlot[]
+
+  // Relasi ke pesanan yang ditugaskan
+  assignedOrders Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -194,6 +210,9 @@ model User {
   // Relasi: Admin memproses banyak withdrawal
   withdrawalsProcessed Withdrawal[] @relation("UserProcessedWithdrawals")
 
+  // Relasi: Admin/owner yang memverifikasi transaksi manual
+  transactionsVerified Transaction[] @relation("TransactionVerifiedBy")
+
   @@index([email])
 }
 
@@ -229,6 +248,9 @@ model Business {
   // Relasi: Satu bisnis bisa memiliki banyak promo
   promos Promo[]
 
+  // Relasi: Satu bisnis bisa memiliki banyak banner
+  banners Banner[]
+
   // Relasi: Satu bisnis bisa memiliki banyak withdrawal
   withdrawals Withdrawal[]
 
@@ -252,6 +274,13 @@ model Outlet {
   // Relasi: Setiap outlet milik satu bisnis
   businessId  String
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Informasi pembayaran manual
+  manualBankName      String?
+  manualBankAccount   String?
+  manualAccountHolder String?
+  manualPaymentNote   String?
+  manualQrImageUrl    String?
 
   // Relasi: Satu outlet bisa memiliki banyak produk
   products Product[]
@@ -353,7 +382,6 @@ model BookingSlot {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([productId, startTime, endTime]) // Tidak boleh ada slot yang sama
   @@index([productId])
   @@index([date])
   @@index([staffId])
@@ -415,6 +443,10 @@ model Order {
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
+  // Relasi: Pesanan bisa ditugaskan ke staff tertentu
+  assignedStaffId String?
+  assignedStaff   Staff?  @relation(fields: [assignedStaffId], references: [id], onDelete: SetNull)
+
   // Relasi: Satu pesanan punya banyak item
   items OrderItem[]
 
@@ -430,6 +462,7 @@ model Order {
   @@index([guestCustomerId])
   @@index([outletId])
   @@index([bookingDate])
+  @@index([assignedStaffId])
 }
 
 // Item-item yang ada di dalam sebuah pesanan
@@ -457,8 +490,18 @@ model Transaction {
   paymentMethod String? // misal: "qris", "gopay"
   status        PaymentStatus @default(PENDING)
 
+  // Penanda pembayaran manual
+  isManual        Boolean            @default(false)
+  manualMethod    ManualPaymentType?
+  paymentProofUrl String?
+  proofUploadedAt DateTime?
+  verifiedAt      DateTime?
+  verifiedById    String?
+  rejectionNote   String?
+  rawMidtrans     Json?
+
   // ID transaksi dari payment gateway (misal: Midtrans transaction_id atau token)
-  externalId String @unique
+  externalId String? @unique
 
   // URL untuk melakukan pembayaran (misal: Midtrans Snap redirect_url)
   paymentUrl String?
@@ -470,7 +513,13 @@ model Transaction {
   orderId String @unique
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  // Relasi ke verifikator transaksi manual
+  verifiedBy User? @relation("TransactionVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([isManual, status])
 }
 
 // Model untuk dompet virtual milik bisnis
@@ -559,6 +608,28 @@ model Promo {
 
   @@unique([businessId, code]) // Kode promo harus unik per bisnis
   @@index([businessId])
+}
+
+// Model for home page banners
+model Banner {
+  id         String  @id @default(uuid())
+  title      String
+  subtitle   String?
+  imageUrl   String
+  ctaType    String  @default("url")
+  ctaPayload String?
+  sortOrder  Int     @default(0)
+  isActive   Boolean @default(true)
+
+  // Optional relation to a business (banner scoped per business)
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([isActive, sortOrder])
 }
 
 // Model untuk membership/keanggotaan customer di suatu bisnis

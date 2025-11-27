@@ -52,8 +52,6 @@ export default function CheckoutPageWrapper() {
             <CheckoutPage
                 outlets={checkoutData.outlets}
                 subtotal={checkoutData.subtotal}
-                totalTransactionFee={checkoutData.totalTransactionFee}
-                applicationFee={checkoutData.applicationFee}
                 grandTotal={checkoutData.grandTotal}
             />
         </div>

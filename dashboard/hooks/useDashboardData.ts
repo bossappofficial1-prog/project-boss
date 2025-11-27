@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { authApi, dashboardApi } from '@/lib/api';
 import { useSocket } from '@/lib/socket';
 import { useOutletContext } from '@/components/providers/OutletProvider';
-import type { Business, DashboardStats, OrderStatsMap, Outlet } from '@/types/dashboard';
+import type { Business, DashboardStats, OrderStatsMap } from '@/types/dashboard';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function useDashboardData(initialDate?: string) {

@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from 'react';
-import { Suspense } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useOutletQueue } from '@/hooks/useOrders';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import { QueueHeader } from '@/components/owner/queue/Header';
@@ -10,6 +9,11 @@ import { QueueDesktopTable } from '@/components/owner/queue/DesktopTable';
 import { QueueMobileCards } from '@/components/owner/queue/MobileCards';
 import { QueueEmptyState } from '@/components/owner/queue/EmptyState';
 import { QueueSkeleton } from '@/components/owner/queue/Skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useQueueStatusActions } from '@/hooks/useQueueActions';
+import { useEmitSocket } from '@/hooks/useEmitSocket';
+import { useSocketEvent } from '@/hooks/useSocketEvent';
+import { SOCKET_EVENT, type SocketEvents } from '@/types/socket';
 
 export default function QueuePage() {
   const { selectedOutletId } = useOutletContext();
@@ -20,10 +24,52 @@ export default function QueuePage() {
     data: queueData,
     loading: isLoading,
     error,
-    refetch: refreshQueue
+    refetch: refreshQueue,
+    setQueueData,
   } = useOutletQueue({
     outletId: selectedOutletId,
-    autoRefresh: true,
+    autoRefresh: false,
+  });
+
+  const { emitEvent, isConnected } = useEmitSocket();
+
+  const {
+    pendingQueueId,
+    confirmOpen,
+    setConfirmOpen,
+    confirmState,
+    executeStatusUpdate,
+    requestStatusChange,
+    requestPrimaryAction,
+    getPrimaryAction,
+  } = useQueueStatusActions({
+    onSuccess: refreshQueue,
+  });
+
+  useEffect(() => {
+    if (!selectedOutletId || !isConnected) {
+      return;
+    }
+
+    emitEvent(SOCKET_EVENT.JOIN_OUTLET, { outletId: selectedOutletId });
+  }, [emitEvent, isConnected, selectedOutletId]);
+
+  const handleQueueSnapshot = useCallback((payload: SocketEvents[typeof SOCKET_EVENT.QUEUE_UPDATED]) => {
+    if (!payload) {
+      return;
+    }
+
+    if (payload.outletId !== selectedOutletId) {
+      return;
+    }
+
+    if (Array.isArray(payload.queue)) {
+      setQueueData(payload.queue);
+    }
+  }, [selectedOutletId, setQueueData]);
+
+  useSocketEvent(SOCKET_EVENT.QUEUE_UPDATED, handleQueueSnapshot, {
+    enabled: Boolean(selectedOutletId),
   });
 
   const handleRefresh = () => {
@@ -77,14 +123,17 @@ export default function QueuePage() {
 
   // Filter data based on search and status
   const filteredQueue = queueData?.filter(item => {
+    const normalizedSearch = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm ||
-      item.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.queueNumber?.toString().includes(searchTerm);
+      item.customerName?.toLowerCase().includes(normalizedSearch) ||
+      item.productName?.toLowerCase().includes(normalizedSearch) ||
+      item.queueNumber?.toString().includes(searchTerm) ||
+      item.assignedStaff?.name?.toLowerCase().includes(normalizedSearch) ||
+      item.bookingSlot?.staff?.name?.toLowerCase().includes(normalizedSearch);
 
     const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'pending' && item.status === 'PROCESSING') ||
-      (statusFilter === 'in_progress' && item.status === 'READY') ||
+      (statusFilter === 'pending' && ['AWAITING_PAYMENT', 'CONFIRMED', 'PROCESSING'].includes(item.status as string)) ||
+      (statusFilter === 'in_progress' && ['READY', 'ON_GOING'].includes(item.status as string)) ||
       (statusFilter === 'completed' && item.status === 'COMPLETED');
 
     return matchesSearch && matchesStatus;
@@ -95,7 +144,7 @@ export default function QueuePage() {
       <div className="space-y-6">
         <QueueHeader
           onRefresh={handleRefresh}
-          onCreateQuick={() => window.location.href = '/owner/dashboard/pos/queue'}
+          onCreateQuick={() => window.location.href = '/owner/dashboard/pos/orders'}
         />
 
         <QueueControls
@@ -115,7 +164,7 @@ export default function QueuePage() {
                 setSearchTerm('');
                 setStatusFilter('all');
               }}
-              onCreateQueue={() => window.location.href = '/owner/dashboard/pos/queue'}
+              onCreateQueue={() => window.location.href = '/owner/dashboard/pos/orders'}
             />
           ) : (
             <>
@@ -123,7 +172,10 @@ export default function QueuePage() {
               <div className="hidden lg:block">
                 <QueueDesktopTable
                   queue={filteredQueue}
-                  onRefresh={refreshQueue}
+                  pendingQueueId={pendingQueueId}
+                  onStatusChange={requestStatusChange}
+                  onPrimaryAction={requestPrimaryAction}
+                  getPrimaryAction={getPrimaryAction}
                 />
               </div>
 
@@ -131,13 +183,27 @@ export default function QueuePage() {
               <div className="lg:hidden">
                 <QueueMobileCards
                   queue={filteredQueue}
-                  onRefresh={refreshQueue}
+                  pendingQueueId={pendingQueueId}
+                  onStatusChange={requestStatusChange}
+                  onPrimaryAction={requestPrimaryAction}
+                  getPrimaryAction={getPrimaryAction}
                 />
               </div>
             </>
           )}
         </Suspense>
       </div>
+      <ConfirmDialog
+        open={confirmOpen && Boolean(confirmState)}
+        onOpenChange={setConfirmOpen}
+        title={confirmState?.title ?? 'Konfirmasi'}
+        description={confirmState?.description}
+        confirmLabel={confirmState?.confirmLabel ?? 'Konfirmasi'}
+        confirmVariant={confirmState?.confirmVariant}
+        confirmLoading={Boolean(pendingQueueId)}
+        onConfirm={executeStatusUpdate}
+        align="left"
+      />
     </>
   );
 }

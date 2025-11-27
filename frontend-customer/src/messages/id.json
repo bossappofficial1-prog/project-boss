@@ -172,6 +172,28 @@
         "startSearching": "Mulai mencari",
         "searchDescription": "Masukkan kata kunci untuk menemukan outlet, produk, atau layanan"
     },
+    "outletsPage": {
+        "title": "Jelajahi Outlet",
+        "subtitle": "Temukan mitra bisnis andalan dan layanan favorit di sekitarmu",
+        "appBarTitle": "Outlet",
+        "searchPlaceholder": "Cari nama outlet, layanan, atau promo...",
+        "searchDescription": "Gunakan kata kunci untuk mempersempit hasil terbaik.",
+        "loading": "Memuat daftar outlet...",
+        "loadingMore": "Memuat outlet lainnya...",
+        "loadMore": "Tampilkan lebih banyak outlet",
+        "noMore": "Tidak ada outlet lain untuk ditampilkan",
+        "empty": {
+            "title": "Outlet belum tersedia",
+            "description": "Silakan coba kata kunci lain atau cek kembali nanti.",
+            "emptySearch": "Ketik kata kunci di bilah pencarian atas untuk memulai pencarian outlet."
+        },
+        "error": {
+            "title": "Gagal memuat outlet",
+            "generic": "Periksa koneksi internet Anda lalu coba lagi."
+        },
+        "results": "Menampilkan {count} dari {total} outlet",
+        "resultsHint": "Scroll ke bawah untuk menjelajah lebih banyak opsi."
+    },
     "search": {
         "placeholder": "Cari outlet, produk, atau layanan...",
         "loading": "Sedang mencari...",
@@ -513,8 +535,8 @@
         "order_singular": "pesanan",
         "order_plural": "pesanan",
         "found": "ditemukan",
-        "error_title": "Gagal Memuat Pesanan",
-        "error_message": "Terjadi kesalahan saat mengambil pesanan Anda. Silakan coba lagi nanti.",
+        "error_title": "Belum Ada Pesanan",
+        "error_message": "Anda belum memiliki pesanan saat ini. Mulai jelajahi outlet dan pesan sekarang!",
         "no_orders_title": "Belum Ada Pesanan",
         "no_orders_description": "Anda belum pernah melakukan pesanan. Mulai pesan dari outlet terdekat!",
         "explore_outlets": "Jelajahi Outlet",
@@ -524,12 +546,152 @@
             "browse": "Lihat Outlet"
         },
         "status": {
+            "all": "Semua",
             "pending": "Menunggu Konfirmasi",
             "confirmed": "Pesanan Dikonfirmasi",
             "preparing": "Sedang Dipersiapkan",
             "ready": "Siap Diambil",
+            "on_going": "Sedang Berlangsung",
+            "completed": "Selesai",
+            "cancelled": "Dibatalkan",
+            "awaiting_payment": "Menunggu Pembayaran",
+            "processing": "Diproses",
+            "confirmed_label": "Dikonfirmasi",
+            "ready_label": "Siap Diambil",
+            "on_going_label": "Berlangsung",
+            "completed_label": "Selesai",
+            "cancelled_label": "Dibatalkan"
+        },
+        "tabs": {
+            "all": "Semua",
+            "awaiting_payment": "Belum Bayar",
+            "processing": "Diproses",
+            "confirmed": "Dikonfirmasi",
+            "ready": "Siap",
+            "on_going": "Berlangsung",
             "completed": "Selesai",
             "cancelled": "Dibatalkan"
+        },
+        "dateGroups": {
+            "today": "Hari Ini",
+            "yesterday": "Kemarin",
+            "thisWeek": "Minggu Ini",
+            "thisMonth": "Bulan Ini",
+            "older": "Lebih Lama"
+        },
+        "actions": {
+            "pay": "Bayar",
+            "cancel": "Batalkan",
+            "contact": "Hubungi",
+            "confirm": "Konfirmasi",
+            "reorder": "Pesan Lagi",
+            "addToCalendar": "Tambah ke kalender",
+            "viewDetails": "Lihat Detail",
+            "close": "Tutup",
+            "contactOutlet": "Hubungi Outlet"
+        },
+        "messages": {
+            "contactRedirect": "Membuka WhatsApp...",
+            "contactUnavailable": "Nomor telepon outlet belum tersedia.",
+            "contactMessage": "Halo {outletName}, saya ingin menanyakan status pesanan dengan ID {orderId}.",
+            "missingPhone": "Silakan atur nomor telepon Anda di profil sebelum menggunakan aksi ini.",
+            "cancelSuccess": "Pesanan berhasil dibatalkan.",
+            "cancelError": "Pesanan gagal dibatalkan. Silakan coba lagi.",
+            "confirmSuccess": "Terima kasih! Pesanan ditandai selesai.",
+            "confirmError": "Pesanan gagal dikonfirmasi. Silakan coba lagi.",
+            "reorderEmpty": "Pesanan ini tidak memiliki item untuk dipesan kembali.",
+            "reorderServiceUnsupported": "Fitur pesan lagi saat ini hanya tersedia untuk produk barang.",
+            "reorderSuccess": "Item berhasil ditambahkan ke keranjang. Periksa sebelum checkout.",
+            "reorderError": "Item gagal ditambahkan ke keranjang. Silakan coba lagi.",
+            "genericError": "Pesanan tidak dapat dimuat. Silakan coba lagi.",
+            "orderIdCopied": "Order ID disalin!",
+            "calendarSuccess": "Event kalender berhasil diunduh.",
+            "calendarError": "Event kalender gagal dibuat. Silakan coba lagi.",
+            "calendarMissingSchedule": "Jadwal belum tersedia. Silakan cek kembali nanti.",
+            "errors": {
+                "orderNotFound": "Pesanan tidak ditemukan.",
+                "ownershipMismatch": "Pesanan ini tidak terkait dengan nomor telepon Anda.",
+                "notCancellable": "Pesanan ini sudah tidak dapat dibatalkan.",
+                "confirmDeliveryOnly": "Konfirmasi hanya tersedia untuk pesanan delivery.",
+                "confirmNotReady": "Pesanan belum siap dikonfirmasi.",
+                "genericTitle": "Gagal memuat pesanan",
+                "generic": "Terjadi kesalahan. Silakan coba lagi."
+            },
+            "confirmations": {
+                "cancel": {
+                    "title": "Batalkan pesanan ini?",
+                    "message": "Tindakan ini tidak dapat dibatalkan. Pesanan Anda akan dibatalkan permanen.",
+                    "confirm": "Ya, batalkan",
+                    "cancel": "Jangan batalkan"
+                },
+                "confirm": {
+                    "title": "Tandai pesanan selesai?",
+                    "message": "Konfirmasi hanya setelah Anda menerima pesanan dari outlet.",
+                    "confirm": "Konfirmasi pesanan",
+                    "cancel": "Belum"
+                }
+            }
+        },
+        "detail": {
+            "title": "Detail Pesanan",
+            "orderId": "Order ID",
+            "progress": "Progress Pesanan",
+            "currentStatus": "Saat ini",
+            "outletInfo": "Informasi Outlet",
+            "customerInfo": "Informasi Pelanggan",
+            "serviceQueue": "Antrian Layanan",
+            "itemDetails": "Rincian Item",
+            "paymentSummary": "Ringkasan Pembayaran",
+            "paymentMethod": "Metode Pembayaran",
+            "subtotal": "Subtotal",
+            "serviceFee": "Biaya Layanan",
+            "transactionFee": "Biaya Transaksi",
+            "totalPayment": "Total Pembayaran",
+            "quantity": "Kuantitas"
+        },
+        "queue": {
+            "positionLabel": "Posisi antrian",
+            "positionPending": "Menunggu",
+            "peopleAhead": "{count} orang di depan",
+            "noOneAhead": "Giliran Anda berikutnya",
+            "estimatedStart": "Perkiraan mulai {date}",
+            "schedulePending": "Jadwal belum ditetapkan"
+        },
+        "timeline": {
+            "awaiting_payment": "Menunggu Pembayaran",
+            "processing": "Diproses",
+            "confirmed": "Dikonfirmasi",
+            "ready": "Siap Diambil",
+            "on_going": "Sedang Berlangsung",
+            "completed": "Selesai"
+        },
+        "card": {
+            "orderId": "ID Pesanan",
+            "from": "Dari",
+            "items": "item"
+        },
+        "search": {
+            "placeholder": "Cari order ID, outlet, produk...",
+            "searching": "Mencari...",
+            "noResults": "Tidak ada hasil untuk \"{query}\"",
+            "resultsFound": "{count} pesanan ditemukan",
+            "clearSearch": "Hapus pencarian"
+        },
+        "sort": {
+            "label": "Urutkan",
+            "newest": "Terbaru",
+            "oldest": "Terlama",
+            "priceHigh": "Harga Tertinggi",
+            "priceLow": "Harga Terendah"
+        },
+        "timer": {
+            "timeRemaining": "Waktu Tersisa",
+            "expired": "Waktu Habis",
+            "hours": "Jam",
+            "minutes": "Menit",
+            "seconds": "Detik",
+            "expiringWarning": "Segera selesaikan pembayaran!",
+            "urgentWarning": "Pembayaran akan segera kadaluarsa!"
         }
     },
     "payment": {
@@ -538,11 +700,13 @@
         "categories": {
             "all": "Semua",
             "qris": "QRIS",
-            "va": "Transfer Bank"
+            "va": "Transfer Bank",
+            "manual": "Manual"
         },
         "types": {
             "qris": "QRIS",
-            "va": "Transfer Bank"
+            "va": "Transfer Bank",
+            "manual": "Manual"
         },
         "loading": "Sedang memuat metode pembayaran...",
         "error": {
@@ -618,6 +782,7 @@
             "phoneInvalid": "Format nomor telepon tidak valid"
         },
         "errors": {
+            "errorTitle": "Terjadi Kesalahan",
             "noItems": "Tidak ada item ditemukan. Silakan kembali ke keranjang dan tambahkan item.",
             "paymentFailed": "Pembayaran gagal diproses. Silakan coba lagi."
         }
@@ -632,6 +797,78 @@
             "message": "Apakah Anda yakin ingin membatalkan pembayaran ini? Tindakan ini tidak dapat dibatalkan.",
             "confirm": "Ya, Batalkan",
             "cancel": "Tidak"
+        }
+    },
+    "paymentDetail": {
+        "title": "Detail Pembayaran",
+        "status": {
+            "pending": {
+                "title": "Menunggu Pembayaran",
+                "description": "Kami masih menunggu pembayaranmu diselesaikan."
+            },
+            "processing": {
+                "title": "Pembayaran Diproses",
+                "description": "Pembayaranmu sedang diverifikasi oleh outlet."
+            },
+            "success": {
+                "title": "Pembayaran Berhasil",
+                "description": "Terima kasih! Outlet telah menerima pembayaranmu."
+            },
+            "failed": {
+                "title": "Pembayaran Gagal",
+                "description": "Transaksi tidak berhasil. Silakan buat pembayaran baru."
+            },
+            "expired": {
+                "title": "Pembayaran Kedaluwarsa",
+                "description": "Batas waktu pembayaran telah lewat. Silakan buat pembayaran baru."
+            },
+            "cancelled": {
+                "title": "Pembayaran Dibatalkan",
+                "description": "Pembayaran ini telah dibatalkan."
+            },
+            "unknown": {
+                "title": "Status Pembayaran",
+                "description": "Status pembayaran belum dapat ditentukan."
+            }
+        },
+        "overview": {
+            "title": "Ringkasan",
+            "method": "Metode Pembayaran",
+            "total": "Total Tagihan",
+            "expiry": "Berakhir Pada"
+        },
+        "method": {
+            "midtrans": "Midtrans",
+            "manual": "Pembayaran Manual"
+        },
+        "midtrans": {
+            "vaTitle": "Virtual Account ({bank})",
+            "qrisTitle": "Pembayaran QRIS"
+        },
+        "manual": {
+            "title": "Instruksi Pembayaran Manual",
+            "outlet": "Outlet",
+            "total": "Total Pembayaran",
+            "qrisTitle": "Scan QR",
+            "qrisDescription": "Scan QR ini menggunakan e-wallet favoritmu dan bayar sesuai nominalnya.",
+            "bankTitle": "Detail Transfer Bank",
+            "bank": "Bank",
+            "accountNumber": "Nomor Rekening",
+            "accountName": "Nama Pemilik",
+            "note": "Catatan Tambahan"
+        },
+        "manualUpload": {
+            "title": "Unggah Bukti Pembayaran",
+            "description": "Unggah bukti pembayaran agar outlet dapat memverifikasi lebih cepat.",
+            "hint": "Format yang didukung: JPG, PNG, WEBP, atau PDF (maks 10MB).",
+            "uploadButton": "Unggah Bukti",
+            "uploading": "Mengunggah...",
+            "success": "Bukti pembayaran berhasil diunggah. Outlet akan segera memverifikasi.",
+            "error": "Gagal mengunggah bukti pembayaran. Silakan coba lagi.",
+            "fileTooLarge": "Ukuran file terlalu besar. Maksimal 10MB.",
+            "invalidType": "Jenis file tidak didukung. Gunakan JPG, PNG, WEBP, atau PDF.",
+            "removeFile": "Hapus File",
+            "expired": "Pembayaran ini telah kedaluwarsa sehingga unggah dinonaktifkan."
         }
     },
     "paymentSuccess": {
@@ -752,6 +989,7 @@
             "title": "Ringkasan Pesanan",
             "subtotal": "Subtotal",
             "applicationFee": "Biaya Aplikasi",
+            "transactionFee": "Biaya Transaksi",
             "total": "Total"
         },
         "footer": {

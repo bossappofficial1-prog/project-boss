@@ -7,6 +7,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function parseRemotePatterns(patterns: string): RemotePattern[] {
+    console.log(patterns);
+
     // Helper to extract a RemotePattern from a URL string
     const fromUrl = (urlStr: string): RemotePattern | null => {
         try {
@@ -28,10 +30,10 @@ export function parseRemotePatterns(patterns: string): RemotePattern[] {
     };
 
     const defaults: RemotePattern[] = [
-        { protocol: 'https', hostname: 'bossapp.id' },
-        { protocol: 'https', hostname: 'api.bossapp.id' },
-        { protocol: 'https', hostname: 'dashboard.bossapp.id' },
-        { protocol: 'http', hostname: 'localhost' }
+        { protocol: 'https', hostname: 'bossapp.id', pathname: '/**' },
+        { protocol: 'https', hostname: 'api.bossapp.id', pathname: '/**' },
+        { protocol: 'https', hostname: 'dashboard.bossapp.id', pathname: '/**' },
+        { protocol: 'http', hostname: 'localhost', pathname: '/**' }
     ];
 
     // Always include API origin if provided, so uploaded images served by API are allowed in dev/prod
@@ -109,15 +111,17 @@ export const isRouteDisabled = (pathname: string, disabledRoutes: string[]) => {
     });
 };
 
-export const formatDateTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString('id-ID', {
+export const formatDateTime = (timestamp: string, locale: string = 'id-ID') => {
+    const formatted = new Date(timestamp).toLocaleString(locale, {
         day: '2-digit',
         month: 'long',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit'
-    }).replace("pukul", "")
+    });
+
+    return locale.startsWith('id') ? formatted.replace("pukul", "").trim() : formatted;
 }
 
 export const formatTime = (date: Date, locale: string = 'id-ID') =>
@@ -144,4 +148,13 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 export const toMapDestination = (latitude: string | number, longitude: string | number) => {
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
     window.open(mapsUrl, "_blank");
+}
+
+export function getCookie(name: string): string | null {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+        return parts.pop()?.split(';').shift() ?? null;
+    }
+    return null;
 }

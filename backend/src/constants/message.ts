@@ -49,6 +49,17 @@ export const Messages = {
     PAYMENT_EXPIRED: 'Waktu pembayaran telah habis',
     REFUND_SUCCESS: 'Dana berhasil dikembalikan',
     REFUND_FAILED: 'Pengembalian dana gagal',
+    PAYMENT_METHOD_NOT_FOUND: 'Metode pembayaran tidak ditemukan',
+    PAYMENT_METHOD_NOT_SUPPORTED: 'Metode pembayaran tidak didukung',
+    MANUAL_PAYMENT_NOT_AVAILABLE: 'Metode pembayaran manual tidak tersedia untuk outlet ini',
+    MANUAL_PAYMENT_NOT_FOUND: 'Transaksi pembayaran manual tidak ditemukan',
+    MANUAL_PAYMENT_ALREADY_VERIFIED: 'Pembayaran manual sudah diverifikasi',
+    MANUAL_PAYMENT_EXPIRED: 'Waktu pembayaran manual telah habis',
+    MANUAL_PAYMENT_TYPE_UNKNOWN: 'Jenis pembayaran manual tidak dikenal',
+    MANUAL_PAYMENT_PROOF_REQUIRED: 'Mohon unggah bukti pembayaran terlebih dahulu',
+    MANUAL_PAYMENT_PROOF_NOT_ALLOWED: 'Bukti pembayaran tidak dapat diunggah untuk status transaksi ini',
+    MANUAL_QRIS_NOT_CONFIGURED: 'Outlet belum mengatur QRIS offline',
+    MANUAL_TRANSFER_NOT_CONFIGURED: 'Outlet belum mengatur rekening transfer manual',
 
     // Promo
     PROMO_NOT_FOUND: 'Promo tidak ditemukan',

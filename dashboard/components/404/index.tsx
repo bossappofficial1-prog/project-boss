@@ -1,13 +1,39 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
+
+const MOOD_DESCRIPTIONS = {
+    normal: {
+        label: 'Normal',
+        helper: 'Robot siap membantu kamu menemukan jalur yang benar.'
+    },
+    happy: {
+        label: 'Happy',
+        helper: 'Robot senang melihatmu! Yuk kembali ke halaman utama.'
+    },
+    sad: {
+        label: 'Sedih',
+        helper: 'Robot butuh semangat. Coba kembali atau hubungi tim kami.'
+    },
+    confused: {
+        label: 'Bingung',
+        helper: 'Robot lagi mencari arah. Pilih aksi di bawah untuk lanjut.'
+    }
+} as const;
 
 export default function NotFoundSVG() {
+    const router = useRouter();
+    const prefersReducedMotion = usePrefersReducedMotion();
+
     // Use shared theme (adapter over next-themes)
     const { theme: currentTheme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
-    const [robotMood, setRobotMood] = useState('normal');
+    const [robotMood, setRobotMood] = useState<'normal' | 'happy' | 'sad' | 'confused'>('normal');
+    const moodInfo = MOOD_DESCRIPTIONS[robotMood];
 
     useEffect(() => {
         // Mark mounted so we avoid hydration mismatch when reading theme
@@ -18,15 +44,20 @@ export default function NotFoundSVG() {
     const isDarkMode = mounted ? (currentTheme === 'dark') : true;
 
     useEffect(() => {
-        // Random mood changes
+        if (prefersReducedMotion) {
+            setRobotMood('normal');
+            return;
+        }
+
+        // Random mood changes for a playful feel
+        const moods: Array<'normal' | 'happy' | 'sad' | 'confused'> = ['normal', 'happy', 'sad', 'confused'];
         const moodInterval = setInterval(() => {
-            const moods = ['normal', 'happy', 'sad', 'confused'];
             const randomMood = moods[Math.floor(Math.random() * moods.length)];
             setRobotMood(randomMood);
         }, 8000);
 
         return () => clearInterval(moodInterval);
-    }, []);
+    }, [prefersReducedMotion]);
 
     const toggleTheme = () => {
         // Toggle between 'dark' and 'light' using next-themes adapter
@@ -37,6 +68,14 @@ export default function NotFoundSVG() {
     const handleRobotClick = () => {
         setRobotMood(robotMood === 'happy' ? 'normal' : 'happy');
     };
+
+    const handleBack = () => {
+        router.back();
+    };
+
+    const containerClassName = `container-svg ${prefersReducedMotion ? 'reduced-motion' : ''}`;
+    const actionTitle = 'Mari kembali ke jalur yang benar';
+    const pageDescription = 'Halaman yang Anda cari tidak ditemukan. Pilih salah satu opsi di bawah untuk melanjutkan.';
 
     const theme = isDarkMode ? {
         background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 30%, #16213e 70%, #0f3460 100%)',
@@ -98,7 +137,7 @@ export default function NotFoundSVG() {
     const eyeData = getMoodEyes();
 
     return (
-        <div className="container-svg" style={{ background: theme.background }}>
+        <div className={containerClassName} style={{ background: theme.background }}>
             <style jsx>{`
                 .container-svg {
                     width: 100%;
@@ -110,6 +149,88 @@ export default function NotFoundSVG() {
                     overflow: hidden;
                     position: relative;
                     transition: background 0.5s ease;
+                    padding-bottom: 140px;
+                }
+
+                .reduced-motion * {
+                    animation: none !important;
+                    transition: none !important;
+                }
+
+                .action-panel {
+                    position: absolute;
+                    bottom: 48px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: min(640px, calc(100% - 48px));
+                    background: ${theme.containerBg};
+                    color: ${theme.textMain};
+                    border-radius: 28px;
+                    padding: 28px 32px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 18px;
+                    text-align: center;
+                    box-shadow: 0 24px 60px ${theme.shadowColor};
+                    backdrop-filter: blur(18px);
+                    border: 1px solid ${isDarkMode ? 'rgba(99, 179, 237, 0.15)' : 'rgba(49, 130, 206, 0.12)'};
+                }
+
+                .action-title {
+                    font-size: 24px;
+                    font-weight: 700;
+                    letter-spacing: 0.01em;
+                }
+
+                .action-description {
+                    font-size: 16px;
+                    color: ${theme.textSubtitle};
+                    line-height: 1.6;
+                    margin: 0;
+                }
+
+                .action-buttons {
+                    display: flex;
+                    gap: 16px;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                .action-button {
+                    min-width: 180px;
+                    padding: 12px 18px;
+                    border-radius: 999px;
+                    font-size: 15px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    border: none;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+                    text-decoration: none;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+                }
+
+                .action-button.primary {
+                    background: ${isDarkMode ? '#2563eb' : '#1d4ed8'};
+                    color: #ffffff;
+                }
+
+                .action-button.secondary {
+                    background: ${theme.buttonBg};
+                    color: ${theme.buttonText};
+                    border: 1px solid ${theme.buttonBorder};
+                }
+
+                .action-button:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.2);
+                }
+
+                .action-button:focus-visible {
+                    outline: 2px solid ${theme.robotAccent};
+                    outline-offset: 2px;
                 }
 
                 .theme-toggle {
@@ -452,11 +573,42 @@ export default function NotFoundSVG() {
                 .mood-${robotMood} #mata-robot-kanan {
                     transition: all 0.5s ease;
                 }
+
+                @media (max-width: 768px) {
+                    .container-svg {
+                        padding: 64px 16px 32px;
+                    }
+
+                    .action-panel {
+                        position: static;
+                        transform: none;
+                        margin-top: 32px;
+                        width: 100%;
+                        border-radius: 22px;
+                        padding: 24px;
+                    }
+
+                    .action-title {
+                        font-size: 20px;
+                    }
+
+                    .action-description {
+                        font-size: 15px;
+                    }
+
+                    .action-buttons {
+                        gap: 12px;
+                    }
+
+                    .action-button {
+                        width: 100%;
+                    }
+                }
             `}</style>
 
             {/* Theme Toggle Button */}
             {/* Theme Toggle Button - guarded to avoid SSR mismatch */}
-            <button className="theme-toggle" onClick={toggleTheme}>
+            <button type="button" className="theme-toggle" onClick={toggleTheme} aria-label="Ubah tema tampilan">
                 <span className="theme-icon">
                     {mounted && currentTheme === 'dark' ? '🌙' : '☀️'}
                 </span>
@@ -666,10 +818,23 @@ export default function NotFoundSVG() {
                 </g>
 
                 {/* Mood indicator text */}
-                <text x="52%" y="88%" textAnchor="middle" className="text-subtitle" style={{ fontSize: '14px', opacity: 0.6 }}>
-                    Robot mood: {robotMood} • Klik robot untuk berinteraksi!
+                <text x="52%" y="88%" textAnchor="middle" className="text-subtitle" style={{ fontSize: '14px', opacity: 0.75 }}>
+                    Robot mood: {moodInfo.label} — {moodInfo.helper}
                 </text>
             </svg>
+
+            <div className="action-panel" role="region" aria-labelledby="action-title" aria-describedby="action-description">
+                <h2 id="action-title" className="action-title">{actionTitle}</h2>
+                <p id="action-description" className="action-description">{pageDescription}</p>
+                <div className="action-buttons">
+                    <button type="button" className="action-button secondary" onClick={handleBack}>
+                        Kembali ke halaman sebelumnya
+                    </button>
+                    <Link href="/" className="action-button primary">
+                        Pergi ke beranda utama
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 }

@@ -30,7 +30,18 @@ export default function PaymentProcessing() {
     const [isMounted, setIsMounted] = useState(false)
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
-    const { isConnected, emitEvent, onEvent } = useSocket();
+    const {
+        isConnected,
+        onEvent,
+        joinOrderRoom,
+        joinCustomerRoom,
+        events,
+    } = useSocket();
+    const {
+        ORDER_OTHER_EVENT,
+        ORDER_EVENT,
+        CUSTOMER_NOTIFICATION,
+    } = events;
     const [isCancelling, setIsCancelling] = useState(false);
     const router = useRouter();
     const t = useTranslations("paymentProcessing");
@@ -95,12 +106,42 @@ export default function PaymentProcessing() {
         }
     }, [orderId, router]);
 
+    const handleCustomerNotification = useCallback((data: any) => {
+        if (!data || data.orderId !== orderId) return;
+        console.log('ℹ️ Customer notification received:', data);
+    }, [orderId]);
+
     useEffect(() => {
-        if (isConnected && orderId) {
-            emitEvent("order:update", orderId);
-            onEvent("orderEvent", handleOrderEvent);
-        }
-    }, [isConnected, orderId, emitEvent, onEvent, handleOrderEvent]);
+        if (!isConnected || !orderId) return;
+
+        joinOrderRoom(orderId);
+        const unsubscribeOther = onEvent(ORDER_OTHER_EVENT, handleOrderEvent);
+        const unsubscribePrimary = onEvent(ORDER_EVENT, handleOrderEvent);
+        const unsubscribeCustomer = onEvent(CUSTOMER_NOTIFICATION, handleCustomerNotification);
+
+        return () => {
+            if (typeof unsubscribeOther === 'function') unsubscribeOther();
+            if (typeof unsubscribePrimary === 'function') unsubscribePrimary();
+            if (typeof unsubscribeCustomer === 'function') unsubscribeCustomer();
+        };
+    }, [
+        isConnected,
+        orderId,
+        joinOrderRoom,
+        onEvent,
+        ORDER_OTHER_EVENT,
+        ORDER_EVENT,
+        CUSTOMER_NOTIFICATION,
+        handleOrderEvent,
+        handleCustomerNotification,
+    ]);
+
+    useEffect(() => {
+        if (!isConnected) return;
+        const phone = paymentInfo?.customerInfo.phone;
+        if (!phone) return;
+        joinCustomerRoom(phone);
+    }, [isConnected, paymentInfo?.customerInfo.phone, joinCustomerRoom]);
 
     const handleRefreshStatus = () => {
         if (!orderId) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { useNearbyOutlets } from '@/hooks/useNearbyOutlets';
 import { useUserPosition } from '@/hooks/userUserPosition';
 import { OutletCard } from '@/components/home/OutletCard';
@@ -13,30 +13,96 @@ import { DistanceSelector } from '@/components/shared/DistanceSelector';
 import { Outlet } from '@/services/outlets';
 import { useAppBarV2 } from '@/context/AppBarContextV2';
 
+const LAST_POSITION_KEY = 'lastPosition';
+const LAST_POSITION_TTL_MS = 3 * 60 * 1000;
+
+type StoredPosition = {
+    latitude: number;
+    longitude: number;
+    expireTo: string;
+};
+
+const buildStoredPosition = (latitude: number, longitude: number): StoredPosition => ({
+    latitude,
+    longitude,
+    expireTo: new Date(Date.now() + LAST_POSITION_TTL_MS).toISOString(),
+});
+
 function NearbyOutletContent() {
     const t = useTranslations('nearbyPage');
     const { position, loading: positionLoading } = useUserPosition();
     const [search, setSearch] = useState('');
+    const [hasLastPosition, setHasLastPosition] = useState<StoredPosition | null>(null)
+
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedDistance, setSelectedDistance] = useState(10);
     const { setAppBar } = useAppBarV2()
 
     useEffect(() => {
-        if (position?.[0] && position?.[1]) {
-            const debugNearbyOutlets = async () => {
-                try {
-                    const res = await Outlet.getNearby({
-                        latitude: position[0],
-                        longitude: position[1]
-                    });
-                } catch (error) {
-                    console.error('Error fetching nearby outlets:', error);
-                }
-            };
+        if (typeof window === 'undefined') return;
 
-            debugNearbyOutlets();
+        const raw = localStorage.getItem(LAST_POSITION_KEY);
+        if (!raw) return;
+
+        try {
+            const parsed = JSON.parse(raw) as StoredPosition;
+            const expireTime = new Date(parsed.expireTo).getTime();
+
+            if (Number.isFinite(expireTime) && Date.now() <= expireTime) {
+                setHasLastPosition(parsed);
+            } else {
+                localStorage.removeItem(LAST_POSITION_KEY);
+            }
+        } catch {
+            localStorage.removeItem(LAST_POSITION_KEY);
         }
-    }, [position]);
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const latitude = position?.[0];
+        const longitude = position?.[1];
+
+        if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+            return;
+        }
+
+        const storedPosition = buildStoredPosition(latitude, longitude);
+        localStorage.setItem(LAST_POSITION_KEY, JSON.stringify(storedPosition));
+        setHasLastPosition(storedPosition);
+    }, [position?.[0], position?.[1]])
+
+    const effectivePosition = useMemo(() => {
+        if (Array.isArray(position) && position.length >= 2) {
+            const [lat, lng] = position;
+            if (typeof lat === 'number' && typeof lng === 'number') {
+                return [lat, lng] as [number, number];
+            }
+        }
+
+        if (hasLastPosition) {
+            return [hasLastPosition.latitude, hasLastPosition.longitude] as [number, number];
+        }
+
+        return null;
+    }, [position, hasLastPosition]);
+    // useEffect(() => {
+    //     if (position?.[0] && position?.[1]) {
+    //         const debugNearbyOutlets = async () => {
+    //             try {
+    //                 const res = await Outlet.getNearby({
+    //                     latitude: position[0],
+    //                     longitude: position[1],
+    //                 });
+    //             } catch (error) {
+    //                 console.error('Error fetching nearby outlets:', error);
+    //             }
+    //         };
+
+    //         debugNearbyOutlets();
+    //     }
+    // }, [position]);
 
     useEffect(() => {
         typeof window !== undefined && setAppBar({ title: t('appBarTitle') })
@@ -61,12 +127,12 @@ function NearbyOutletContent() {
         error,
         refetch
     } = useNearbyOutlets({
-        latitude: position?.[0],
-        longitude: position?.[1],
+        latitude: effectivePosition?.[0],
+        longitude: effectivePosition?.[1],
         radius: selectedDistance,
         take: 10,
         search: debouncedSearch || undefined,
-        enabled: !positionLoading && !!(position?.[0] && position?.[1])
+        enabled: Boolean(effectivePosition)
     });
 
     // Infinite scroll handler
@@ -90,7 +156,7 @@ function NearbyOutletContent() {
     // Get all outlets from all pages
     const allOutlets = data?.pages.flatMap(page => page.data) || [];
 
-    if (positionLoading) {
+    if (!effectivePosition && hasLastPosition) {
         return (
             <div className="max-w-md mx-auto p-4">
                 <LoadingState message={t('loadingLocation')} />
@@ -98,7 +164,7 @@ function NearbyOutletContent() {
         );
     }
 
-    if (!position) {
+    if (!effectivePosition) {
         return (
             <div className="max-w-md mx-auto p-4">
                 <EmptyState

@@ -2,8 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { LayoutDashboard, Building2, Wallet, BarChart3, Users, FileBarChart, ShieldCheck, Settings2, LifeBuoy, ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react';
+
 import { useUserData } from '@/hooks/useUserData';
+import { useResponsiveBreakpoints } from '@/hooks/useResponsiveBreakpoints';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface AdminSidebarProps {
     isOpen: boolean;
@@ -12,260 +18,305 @@ interface AdminSidebarProps {
     onToggleCollapse?: () => void;
 }
 
-export default function AdminSidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse }: AdminSidebarProps) {
+interface SidebarItem {
+    label: string;
+    href: string;
+    icon: LucideIcon;
+    description?: string;
+    badge?: {
+        label: string;
+        variant?: 'default' | 'secondary' | 'destructive' | 'outline';
+    };
+    disabled?: boolean;
+}
+
+interface SidebarSection {
+    heading: string;
+    items: SidebarItem[];
+}
+
+export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: AdminSidebarProps) {
     const pathname = usePathname();
     const { data: userData, isLoading, error } = useUserData();
+    const { isMobile, isDesktop } = useResponsiveBreakpoints();
+    const prefersReducedMotion = usePrefersReducedMotion();
     const [internalCollapsed, setInternalCollapsed] = useState(false);
 
-    // Use external collapse state if provided, otherwise use internal state
-    const collapsed = isCollapsed !== undefined ? isCollapsed : internalCollapsed;
-    const toggleCollapse = onToggleCollapse || (() => setInternalCollapsed(!internalCollapsed));
-
-    // Auto-collapse on mobile
-    useEffect(() => {
-        const checkScreenSize = () => {
-            if (isCollapsed === undefined && typeof window !== 'undefined') {
-                setInternalCollapsed(window.innerWidth < 1024);
-            }
-        };
-
-        if (typeof window !== 'undefined') {
-            checkScreenSize();
-            window.addEventListener('resize', checkScreenSize);
-            return () => window.removeEventListener('resize', checkScreenSize);
+    const isControlled = typeof isCollapsed === 'boolean' && onToggleCollapse !== undefined;
+    const collapsed = isControlled ? (isCollapsed as boolean) : internalCollapsed;
+    const toggleCollapse = useCallback(() => {
+        if (onToggleCollapse) {
+            onToggleCollapse();
+            return;
         }
-    }, [isCollapsed]);
+        setInternalCollapsed((prev) => !prev);
+    }, [onToggleCollapse]);
 
-    const menuItems = [
+    // Auto-collapse on wide screens when internal state is used
+    useEffect(() => {
+        if (isControlled) {
+            return;
+        }
+
+        if (isDesktop) {
+            setInternalCollapsed(false);
+        } else {
+            setInternalCollapsed(true);
+        }
+    }, [isControlled, isDesktop]);
+
+    const navSections = useMemo<SidebarSection[]>(() => [
         {
-            name: 'Dashboard Overview',
-            href: '/admin/dashboard',
-            icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h2a2 2 0 012 2v2H8V5z" />
-                </svg>
-            ),
+            heading: 'Overview',
+            items: [
+                {
+                    label: 'Dashboard Overview',
+                    href: '/admin/dashboard',
+                    icon: LayoutDashboard,
+                    description: 'Realtime KPIs & alerts',
+                },
+            ],
         },
         {
-            name: 'Business Management',
-            href: '/admin/businesses',
-            icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-            ),
+            heading: 'Operations',
+            items: [
+                {
+                    label: 'Business Management',
+                    href: '/admin/businesses',
+                    icon: Building2,
+                    description: 'Audit and oversee UMKM data',
+                },
+                {
+                    label: 'User Management',
+                    href: '/admin/users',
+                    icon: Users,
+                    description: 'Control admin & owner access',
+                },
+                {
+                    label: 'Withdrawal Management',
+                    href: '/admin/withdrawals',
+                    icon: Wallet,
+                    description: 'Approve manual payouts',
+                    badge: { label: 'Live', variant: 'secondary' },
+                },
+            ],
         },
         {
-            name: 'Withdrawal Management',
-            href: '/admin/withdrawals',
-            icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            ),
+            heading: 'Insights',
+            items: [
+                {
+                    label: 'Analytics & Reports',
+                    href: '/admin/analytics',
+                    icon: BarChart3,
+                    description: 'Trends, cohorts, performance',
+                    badge: { label: 'New' },
+                },
+                {
+                    label: 'Financial Reports',
+                    href: '/admin/reports',
+                    icon: FileBarChart,
+                    description: 'Export-ready statements',
+                },
+            ],
         },
         {
-            name: 'Analytics & Reports',
-            href: '/admin/analytics',
-            icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-            ),
+            heading: 'Platform',
+            items: [
+                {
+                    label: 'System Management',
+                    href: '/admin/system',
+                    icon: ShieldCheck,
+                    description: 'Logs, uptime & security',
+                },
+                {
+                    label: 'Platform Settings',
+                    href: '/admin/settings',
+                    icon: Settings2,
+                    description: 'Policies, configurations, billing',
+                },
+                {
+                    label: 'Support Tickets',
+                    href: '/admin/support',
+                    icon: LifeBuoy,
+                    description: 'Resolve customer issues',
+                    badge: { label: 'Soon', variant: 'outline' },
+                    disabled: true,
+                },
+            ],
         },
-        {
-            name: 'User Management',
-            href: '/admin/users',
-            icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                </svg>
-            ),
-        },
-        {
-            name: 'Financial Reports',
-            href: '/admin/reports',
-            icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-            ),
-        },
-        {
-            name: 'System Management',
-            href: '/admin/system',
-            icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-            ),
-        },
-        // {
-        //     name: 'Support Tickets',
-        //     href: '/admin/support',
-        //     icon: (
-        //         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        //             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        //         </svg>
-        //     ),
-        // },
-        {
-            name: 'Platform Settings',
-            href: '/admin/settings',
-            icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-            ),
-        },
-    ];
+    ], []);
+
+    const isActivePath = useCallback((href: string) => {
+        if (pathname === href) {
+            return true;
+        }
+        return pathname.startsWith(`${href}/`);
+    }, [pathname]);
+
+    const handleItemClick = useCallback(() => {
+        if (isMobile) {
+            onClose();
+        }
+    }, [isMobile, onClose]);
+
+    const itemAnimationClass = prefersReducedMotion ? '' : 'transition-all duration-200';
 
     return (
         <>
-            {/* Mobile Overlay */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
-                    onClick={onClose}
-                />
-            )}
-
-            {/* Mobile Close Button - clear X so users know how to close the sidebar */}
-            {isOpen && (
-                <button
-                    aria-label="Close menu"
-                    title="Close menu"
-                    onClick={onClose}
-                    className="fixed top-4 right-4 z-50 lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-md bg-red-600 text-white shadow-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
-                >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            )}
-
-            {/* Sidebar */}
-            <div
-                className={`fixed left-0 top-0 z-50 h-full bg-white dark:bg-gray-800 shadow-2xl border-r border-gray-200 dark:border-gray-700 transform transition-all duration-300 ease-in-out lg:translate-x-0
-                ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-                ${collapsed ? 'w-16' : 'w-64'}`}
+            <aside
+                className={cn(
+                    'fixed inset-y-0 left-0 w-64 top-0 z-50 h-full bg-white dark:bg-gray-800 shadow-2xl border-r border-gray-200 dark:border-gray-700 transform transition-all duration-300 ease-in-out lg:translate-x-0',
+                    isOpen ? 'translate-x-0' : '-translate-x-full',
+                    collapsed ? 'w-20' : 'w-72'
+                )}
                 style={{ willChange: 'transform, width' }}
+                aria-label="Admin navigation"
             >
                 <div className="flex flex-col h-full">
-                    {/* Logo Section */}
                     <div className="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 border-b border-red-500/30">
-                        <div className={`flex items-center space-x-3 transition-opacity duration-200`}>
-                            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                        <div className={cn('flex items-center gap-3 text-white', collapsed && 'justify-center w-full')}>
+                            <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
                                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                                 </svg>
                             </div>
-                            <h1 className={`text-lg font-bold text-white truncate ${collapsed ? 'opacity-0' : 'opacity-100'}`}>BOSS Admin</h1>
+                            {!collapsed && (
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-semibold tracking-wide">BOSS Admin</span>
+                                    <span className="text-xs text-white/80">Platform control center</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Navigation Menu */}
-                    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-                        {menuItems.map((item, index) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={onClose}
-                                    className={`group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative overflow-hidden
-                                        ${isActive
-                                            ? 'text-red-700 dark:text-red-400 shadow-sm'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-100'
-                                        }
-                                        ${collapsed ? 'justify-center px-2' : ''} ${!collapsed && isActive ? "border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20" : ""}`}
-                                    style={{ animationDelay: `${index * 50}ms` }}
-                                >
-                                    {/* Active indicator */}
-                                    {isActive && (
-                                        <>
-                                            {collapsed ? (
-                                                <span className="absolute right-1/3 top-1/3 -translate-y-1/2 w-3 h-3 rounded-full bg-red-600/90 shadow-sm" />
-                                            ) : (
-                                                <div className="absolute left-0 top-0 h-full w-1 bg-red-500 rounded-r-full" />
-                                            )}
-                                        </>
+                    <nav
+                        className="flex-1 px-3 py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent"
+                        aria-label="Primary"
+                    >
+                        <div className="space-y-6">
+                            {navSections.map((section) => (
+                                <div key={section.heading} className="space-y-2">
+                                    {!collapsed && (
+                                        <p className="px-2 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                                            {section.heading}
+                                        </p>
                                     )}
+                                    <div className="space-y-1">
+                                        {section.items.map((item) => {
+                                            const Icon = item.icon;
+                                            const active = !item.disabled && isActivePath(item.href);
 
-                                    {/* Icon */}
-                                    <span className={`flex-shrink-0 transition-all duration-200 flex items-center justify-center ${collapsed ? 'w-8 h-8' : 'p-1 rounded-md'}
-                                        ${isActive
-                                            ? (collapsed ? 'text-white' : 'text-white bg-red-600 shadow-md')
-                                            : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'}
-                                        `}>
-                                        {item.icon}
-                                    </span>
+                                            const content = (
+                                                <div
+                                                    className={cn(
+                                                        'group flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500/60 focus:ring-offset-1 dark:focus:ring-offset-gray-900',
+                                                        itemAnimationClass,
+                                                        collapsed && 'justify-center px-2',
+                                                        item.disabled
+                                                            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-70'
+                                                            : active
+                                                                ? 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 shadow-sm border border-red-200 dark:border-red-800'
+                                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60'
+                                                    )}
+                                                >
+                                                    <span
+                                                        className={cn(
+                                                            'flex items-center justify-center rounded-lg border border-transparent bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 group-hover:text-red-600 group-hover:bg-red-100 dark:group-hover:bg-red-900/30 dark:group-hover:text-red-300',
+                                                            itemAnimationClass,
+                                                            collapsed ? 'h-10 w-10' : 'h-11 w-11',
+                                                            active && 'bg-red-600 text-white dark:bg-red-500',
+                                                            item.disabled && 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600'
+                                                        )}
+                                                    >
+                                                        <Icon className="h-5 w-5" strokeWidth={1.8} />
+                                                    </span>
 
-                                    {/* Text */}
-                                    <span className={`ml-3 transition-opacity duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
-                                        {item.name}
-                                    </span>
+                                                    {!collapsed && (
+                                                        <div className="flex flex-1 items-center gap-3 min-w-0">
+                                                            <div className="flex min-w-0 flex-col">
+                                                                <span className="truncate" aria-hidden={item.disabled}>
+                                                                    {item.label}
+                                                                </span>
+                                                                {item.description && (
+                                                                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate">
+                                                                        {item.description}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {item.badge && (
+                                                                <Badge variant={item.badge.variant ?? 'default'}>
+                                                                    {item.badge.label}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    )}
 
-                                    {/* Tooltip for collapsed state */}
-                                    {collapsed && (
-                                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                                            {item.name}
-                                        </div>
-                                    )}
-                                </Link>
-                            );
-                        })}
+                                                    {collapsed && !item.disabled && (
+                                                        <span className="pointer-events-none z-[99999] absolute left-full ml-2 hidden whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-md transition-opacity duration-200 group-hover:block group-hover:opacity-100">
+                                                            {item.label}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+
+                                            if (item.disabled) {
+                                                return (
+                                                    <div key={item.href} aria-disabled="true" tabIndex={-1} className="cursor-not-allowed">
+                                                        {content}
+                                                    </div>
+                                                );
+                                            }
+
+                                            return (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    aria-current={active ? 'page' : undefined}
+                                                    onClick={handleItemClick}
+                                                    className="block"
+                                                >
+                                                    {content}
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </nav>
 
-                    {/* Floating expand handle when collapsed to make it obvious how to expand */}
-                    {/* {collapsed && (
-                        <button
-                            onClick={toggleCollapse}
-                            aria-label="Expand sidebar"
-                            title="Expand sidebar"
-                            className="hidden lg:inline-flex absolute right-0 top-1/3 -translate-x-1/2 items-center justify-center w-8 h-8 bg-white/10 text-white rounded-full shadow-md hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-red-400"
-                        >
-                            <svg className={`w-4 h-4 transition-transform ${collapsed ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    )} */}
-
-                    {/* Footer */}
                     <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
-                        {isLoading ? (
-                            <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
-                                <div className={`space-y-2 transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}>
-                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-24"></div>
-                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32"></div>
-                                </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white shadow-sm">
+                                <span className="text-sm font-semibold">
+                                    {userData?.user?.email?.charAt(0).toUpperCase() || 'A'}
+                                </span>
                             </div>
-                        ) : error ? (
-                            <div className={`text-sm text-red-600 dark:text-red-400 transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}>
-                                Error loading user data
-                            </div>
-                        ) : (
-                            <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-sm font-semibold">
-                                        {userData?.user?.email?.charAt(0).toUpperCase() || 'A'}
-                                    </span>
+                            {!collapsed && (
+                                <div className="min-w-0">
+                                    {isLoading ? (
+                                        <div className="space-y-2">
+                                            <div className="h-4 w-28 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                                            <div className="h-3 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                                        </div>
+                                    ) : error ? (
+                                        <p className="text-xs text-red-500">Gagal memuat data admin</p>
+                                    ) : (
+                                        <>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                                {userData?.user?.email?.split('@')[0] || 'Admin'}
+                                            </p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                {userData?.user?.role || 'Administrator'}
+                                            </p>
+                                        </>
+                                    )}
                                 </div>
-                                <div className={`transition-opacity duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                                        {userData?.user?.email?.split('@')[0] || 'Admin'}
-                                    </p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Administrator</p>
-                                </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
+            </aside>
         </>
     );
 }

@@ -1,104 +1,92 @@
 "use client";
 
-<<<<<<< Updated upstream
+
 import { useState } from 'react';
 import { orderApi, type QueueEntry, type OrderStatus } from '@/lib/apis/order';
-=======
 import { DataTable } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import type { QueuePrimaryAction } from '@/hooks/useQueueActions';
-import { type QueueEntry, type OrderStatus } from '@/lib/apis/order';
->>>>>>> Stashed changes
 
 interface QueueDesktopTableProps {
   queue: QueueEntry[];
-  onRefresh: () => void;
+  pendingQueueId: string | null;
+  onStatusChange: (entry: QueueEntry, nextStatus: OrderStatus) => void;
+  onPrimaryAction: (entry: QueueEntry) => void;
+  getPrimaryAction: (entry: QueueEntry) => QueuePrimaryAction | null;
 }
 
-export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) {
-  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+const statusMap: Record<string, { label: string; value: OrderStatus }> = {
+  AWAITING_PAYMENT: { label: 'Menunggu Bayar', value: 'AWAITING_PAYMENT' },
+  CONFIRMED: { label: 'Dikonfirmasi', value: 'CONFIRMED' },
+  PROCESSING: { label: 'Menunggu', value: 'PROCESSING' },
+  READY: { label: 'Siap', value: 'READY' },
+  ON_GOING: { label: 'Sedang Dilayani', value: 'ON_GOING' },
+  COMPLETED: { label: 'Selesai', value: 'COMPLETED' },
+  CANCELLED: { label: 'Dibatalkan', value: 'CANCELLED' },
+};
+
+const transitionMap: Record<string, OrderStatus[]> = {
+  AWAITING_PAYMENT: ['PROCESSING', 'CANCELLED'],
+  CONFIRMED: ['PROCESSING', 'CANCELLED'],
+  PROCESSING: ['READY', 'CANCELLED'],
+  READY: ['ON_GOING', 'COMPLETED', 'CANCELLED'],
+  ON_GOING: ['COMPLETED', 'CANCELLED'],
+  COMPLETED: [],
+  CANCELLED: [],
+};
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const formatSchedule = (item: QueueEntry) => {
+  const scheduled = item.scheduledStart ?? item.queueMeta?.scheduledStart ?? item.bookingSlot?.startTime ?? item.bookingDate;
+  return scheduled ? formatDate(scheduled) : '-';
+};
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+  }).format(amount);
+};
+
+const resolveStaffName = (item: QueueEntry) => {
+  return item.assignedStaff?.name ?? item.bookingSlot?.staff?.name ?? null;
+};
+
+export function QueueDesktopTable({ queue, pendingQueueId, onStatusChange, onPrimaryAction, getPrimaryAction }: QueueDesktopTableProps) {
+  const getQueuePosition = (item: QueueEntry) => item.queueMeta?.position ?? item.position ?? item.queueNumber ?? 0;
 
   const getStatusOptions = (currentStatus: string) => {
-    const statusMap = {
-      'AWAITING_PAYMENT': { label: 'Menunggu Bayar', value: 'AWAITING_PAYMENT' },
-      'CONFIRMED': { label: 'Dikonfirmasi', value: 'CONFIRMED' },
-      'PROCESSING': { label: 'Menunggu', value: 'PROCESSING' },
-      'READY': { label: 'Siap', value: 'READY' },
-      'COMPLETED': { label: 'Selesai', value: 'COMPLETED' },
-      'CANCELLED': { label: 'Dibatalkan', value: 'CANCELLED' },
-    };
+    const currentStatusOptions = statusMap[currentStatus];
+    if (!currentStatusOptions) {
+      return [] as Array<{ label: string; value: OrderStatus }>;
+    }
 
-    const currentStatusObj = statusMap[currentStatus as keyof typeof statusMap];
-    if (!currentStatusObj) return [];
+    const transitions = transitionMap[currentStatus] ?? [];
+    const options = [currentStatusOptions];
 
-    // Define valid transitions for queue items
-    const transitions = {
-      'AWAITING_PAYMENT': ['PROCESSING', 'CANCELLED'],
-      'CONFIRMED': ['PROCESSING', 'CANCELLED'],
-      'PROCESSING': ['READY', 'CANCELLED'],
-      'READY': ['COMPLETED', 'CANCELLED'],
-      'COMPLETED': [],
-      'CANCELLED': [],
-    };
-
-    const availableTransitions = transitions[currentStatus as keyof typeof transitions] || [];
-    const options = [currentStatusObj];
-
-    availableTransitions.forEach(status => {
-      if (statusMap[status as keyof typeof statusMap]) {
-        options.push(statusMap[status as keyof typeof statusMap]);
+    transitions.forEach((status) => {
+      const mapped = statusMap[status];
+      if (mapped) {
+        options.push(mapped);
       }
     });
 
     return options;
   };
 
-  const handleStatusChange = async (queueId: string, currentStatus: string, newStatus: string) => {
-    if (currentStatus === newStatus) return;
-
-    const statusLabels = {
-      'AWAITING_PAYMENT': 'Menunggu Bayar',
-      'CONFIRMED': 'Dikonfirmasi', 
-      'PROCESSING': 'Menunggu',
-      'READY': 'Siap',
-      'COMPLETED': 'Selesai',
-      'CANCELLED': 'Dibatalkan',
-    };
-
-    const currentLabel = statusLabels[currentStatus as keyof typeof statusLabels] || currentStatus;
-    const newLabel = statusLabels[newStatus as keyof typeof statusLabels] || newStatus;
-
-    const confirmMessage = `Ubah status antrian dari "${currentLabel}" ke "${newLabel}"?`;
-    if (!window.confirm(confirmMessage)) return;
-
-    setUpdatingStatus(queueId);
-    try {
-      await orderApi.updateStatus(queueId, newStatus as OrderStatus);
-      onRefresh();
-    } catch (error) {
-      console.error('Error updating status:', error);
-      alert('Gagal mengubah status. Silakan coba lagi.');
-    } finally {
-      setUpdatingStatus(null);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
+  const handleStatusChange = (entry: QueueEntry, newStatus: string) => {
+    if (entry.status === newStatus) return;
+    onStatusChange(entry, newStatus as OrderStatus);
   };
 
   return (
@@ -113,6 +101,7 @@ export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) 
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment Image</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Waktu Booking</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Staff</th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
           </tr>
         </thead>
@@ -130,53 +119,53 @@ export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) 
                     </span>
                   </div>
 <<<<<<< Updated upstream
-                </div>
-              </td>
+                </div >
+              </td >
               <td className="px-4 py-3">
                 <div>
 =======
                 </td>
-                <td className="px-4 py-3">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {item.customerName}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {item.guestCustomer?.phone}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {item.productName}
-                    </div>
-                    {item.items && item.items.length > 1 && (
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        +{item.items.length - 1} item lainnya
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
+    <td className="px-4 py-3">
+      <div>
+        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {item.customerName}
+        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          {item.guestCustomer?.phone}
+        </div>
+      </div>
+    </td>
+    <td className="px-4 py-3">
+      <div>
+        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {item.productName}
+        </div>
+        {item.items && item.items.length > 1 && (
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            +{item.items.length - 1} item lainnya
+          </div>
+        )}
+      </div>
+    </td>
+    <td className="px-4 py-3">
+      <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
 
-                    {item.transaction.paymentProofUrl
-                      ? <a href={item.transaction.paymentProofUrl} target='_blank'>Lihat</a>
-                      : 'Customer belum upload bukti pembayaran'
-                    }
-                  </div>
-                </td>
-                <td className="px-4 py-3">
+        {item.transaction.paymentProofUrl
+          ? <a href={item.transaction.paymentProofUrl} target='_blank'>Lihat</a>
+          : 'Customer belum upload bukti pembayaran'
+        }
+      </div>
+    </td>
+    <td className="px-4 py-3">
 >>>>>>> Stashed changes
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {item.customerName}
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {item.guestCustomer?.phone}
-                  </div>
-                </div>
-              </td>
+      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        {item.customerName}
+      </div>
+      <div className="text-sm text-gray-500 dark:text-gray-400">
+        {item.guestCustomer?.phone}
+      </div>
+    </div>
+              </td >
               <td className="px-4 py-3">
                 <div>
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -217,10 +206,11 @@ export function QueueDesktopTable({ queue, onRefresh }: QueueDesktopTableProps) 
                   ))}
                 </select>
               </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+            </tr >
+          ))
+}
+        </tbody >
+      </table >
+    </div >
   );
 }

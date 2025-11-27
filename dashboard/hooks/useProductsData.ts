@@ -76,31 +76,12 @@ export function useProductsData() {
         search: searchQuery || undefined,
       });
 
-      if (Array.isArray(response)) {
-        setProducts(response);
-        setTotalPages(1);
-        setTotalProducts(response.length);
-      } else if (response && typeof response === 'object' && 'products' in response && Array.isArray((response as any).products)) {
-        const res = response as { products: ProductItem[]; pagination?: { totalPages: number; total: number } };
-        setProducts(res.products);
-        if (res.pagination) {
-          setTotalPages(res.pagination.totalPages);
-          setTotalProducts(res.pagination.total);
-        } else {
-          setTotalPages(1);
-          setTotalProducts(res.products.length);
-        }
-      } else if (response && typeof response === 'object' && 'id' in response) {
-        // single product returned
-        setProducts([response as ProductItem]);
-        setTotalPages(1);
-        setTotalProducts(1);
-      } else {
-        // fallback
-        setProducts([]);
-        setTotalPages(1);
-        setTotalProducts(0);
-      }
+      const data = response.data;
+      const paginated = response.pagination;
+
+      setProducts(data)
+      setTotalPages(paginated.totalPages)
+      setTotalProducts(paginated.total)
     } catch (e: any) {
       console.error('Error fetching products:', e);
       setProducts([]);
@@ -115,12 +96,15 @@ export function useProductsData() {
   }, [selectedOutletId, currentPage, itemsPerPage, searchQuery, fetchProducts, contextLoading]);
 
   const handleSearch = (q: string) => {
-    setSearchQuery(q);
-    setCurrentPage(1);
+    setSearchQuery((prev) => {
+      if (prev !== q) {
+        setCurrentPage(1);
+      }
+      return q;
+    });
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
     try {
       await productApi.delete(productId);
       await fetchProducts();
@@ -163,7 +147,6 @@ export function useProductsData() {
 
   const handleRefreshData = () => fetchProducts();
 
-  const formatCurrency = useCallback((amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount), []);
   const formatDuration = useCallback((minutes?: number) => {
     if (!minutes) return '-';
     const hours = Math.floor(minutes / 60);
@@ -198,7 +181,6 @@ export function useProductsData() {
     handleExportProducts,
     handleRefreshData,
     // formatters
-    formatCurrency,
     formatDuration,
   };
 }

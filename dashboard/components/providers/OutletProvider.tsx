@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useOutletsQuery } from '@/hooks/useOutlets';
-import type { Outlet } from '@/types/dashboard';
+import { Outlet } from '@/types';
 
 interface OutletContextType {
     selectedOutlet: Outlet | null;
@@ -70,7 +70,7 @@ export function OutletProvider({ children }: OutletProviderProps) {
     const { data, isLoading, error, refetch } = useOutletsQuery();
     const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
 
-    const outlets = data?.outlets || [];
+    const outlets = (data?.outlets || []) as Outlet[];
 
     // Initialize selected outlet when outlets data is available
     useEffect(() => {
@@ -81,12 +81,7 @@ export function OutletProvider({ children }: OutletProviderProps) {
     }, [outlets, selectedOutlet]);
 
     const handleSetSelectedOutlet = (outlet: Outlet | null) => {
-        console.log(`🔄 OutletProvider: handleSetSelectedOutlet called with outlet:`, outlet?.id || 'null');
-        console.log(`🔄 OutletProvider: Previous selectedOutlet:`, selectedOutlet?.id || 'null');
-
         setSelectedOutlet(outlet);
-
-        console.log(`🔄 OutletProvider: State updated, new selectedOutlet:`, outlet?.id || 'null');
 
         if (typeof window !== 'undefined') {
             if (outlet) {

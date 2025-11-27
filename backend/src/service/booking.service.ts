@@ -8,11 +8,12 @@ import { createMidtransTransactionService } from './payment.service';
 import { getOrderByIdService } from './order.service';
 import { db } from '../config/prisma';
 import { config } from '../config';
-import { Prisma, PrismaClient, OutletOperatingHours, BookingSlot } from "@prisma/client";
+import { Prisma, PrismaClient, OutletOperatingHours, BookingSlot, StaffRole, StaffStatus } from "@prisma/client";
 import { add, set } from "date-fns";
 import { getOutletByIdService } from "./outlet.service";
 import { generateTimeSlots } from "../utils";
 import Console from "../utils/logger";
+import { getStaffAvailabilityForWindow, StaffAvailabilityResult } from "./staff.service";
 
 export async function createBookingSlotService(data: CreateBookingSlotInput) {
     const product = await getProductByIdService(data.productId);
@@ -95,25 +96,37 @@ export async function deleteBookingSlotService(id: string) {
     return bookingSlot;
 }
 
-export async function getBookingSlotByProductService(productId: string, date: Date): Promise<Array<Pick<BookingSlot, "id" | "date" | "startTime" | "endTime">>> {
+type BookingSlotWithStaff = Pick<BookingSlot, "id" | "date" | "startTime" | "endTime" | "status" | "staffId"> & {
+    staff: null | {
+        id: string;
+        name: string;
+        status: StaffStatus;
+        role: StaffRole;
+    };
+    availableStaffCount: number;
+    totalStaffCount: number;
+};
+
+export async function getBookingSlotByProductService(productId: string, date: Date): Promise<BookingSlotWithStaff[]> {
+    const product = await getProductByIdService(productId);
+
+    if (product.type !== 'SERVICE') {
+        throw new AppError("Slots can only be generated for SERVICE type products.", HttpStatus.BAD_REQUEST);
+    }
+
+    const outletId = product.outletId;
+    if (!outletId) {
+        throw new AppError("Product tidak memiliki outlet terkait (outletId).", HttpStatus.BAD_REQUEST);
+    }
+
+    const capacityRecord = await db.serviceCapacity.findUnique({ where: { productId } });
+    const maxParallel = capacityRecord?.maxParallel ?? 1;
+
     let slots = await BookingRepository.getSlotsByProductId(productId, date);
-    Console.log(slots)
 
     if (!slots.length) {
-        const product = await getProductByIdService(productId);
-
-        if (product.type !== 'SERVICE') {
-            throw new AppError("Slots can only be generated for SERVICE type products.", HttpStatus.BAD_REQUEST);
-        }
-
-        const serviceDurationMinutes = product.serviceDurationMinutes ?? 60
-
-        const outletId = product.outletId
-        if (!outletId) {
-            throw new AppError("Product tidak memiliki outlet terkait (outletId).", HttpStatus.BAD_REQUEST);
-        }
-
-        const outlet = await getOutletByIdService(outletId)
+        const serviceDurationMinutes = product.serviceDurationMinutes ?? 60;
+        const outlet = await getOutletByIdService(outletId);
 
         await generateSlotsForDate({
             productId,
@@ -125,7 +138,67 @@ export async function getBookingSlotByProductService(productId: string, date: Da
         slots = await BookingRepository.getSlotsByProductId(productId, date);
     }
 
-    return slots
+    if (!slots.length) {
+        return [];
+    }
+
+    const availabilityDetails = await Promise.all(slots.map(async (slot) => {
+        if (slot.status === 'BLOCKED') {
+            return {
+                availableStaffCount: 0,
+                totalStaffCount: 0,
+            };
+        }
+
+        const staffAvailability = await getAvailableStaffForProductSlotService({
+            productId,
+            outletId,
+            startTime: new Date(slot.startTime),
+            endTime: new Date(slot.endTime),
+        });
+
+        const availableStaffCount = staffAvailability.filter((member) => member.isAvailable).length;
+
+        return {
+            availableStaffCount: Math.min(availableStaffCount, maxParallel),
+            totalStaffCount: Math.min(staffAvailability.length, maxParallel),
+        };
+    }));
+
+    return slots.map((slot, index) => {
+        const availability = availabilityDetails[index];
+        const derivedStatus = slot.status === 'BLOCKED'
+            ? slot.status
+            : (availability.availableStaffCount > 0 ? 'AVAILABLE' : 'BOOKED');
+
+        return {
+            ...slot,
+            status: derivedStatus as BookingSlot['status'],
+            availableStaffCount: availability.availableStaffCount,
+            totalStaffCount: availability.totalStaffCount,
+        };
+    });
+}
+
+export async function getAvailableStaffForProductSlotService(params: {
+    productId: string;
+    outletId: string;
+    startTime: Date;
+    endTime: Date;
+    excludeSlotId?: string;
+}): Promise<StaffAvailabilityResult[]> {
+    const { outletId, startTime, endTime, excludeSlotId, productId: _productId } = params;
+
+    if (endTime <= startTime) {
+        throw new AppError("Waktu selesai harus lebih besar dari waktu mulai", HttpStatus.BAD_REQUEST);
+    }
+
+    return getStaffAvailabilityForWindow({
+        outletId,
+        startTime,
+        endTime,
+        excludeSlotId,
+    });
 }
 
 type GenerateSlotsForDateParams = {
@@ -176,6 +249,7 @@ export async function generateSlotsForDate({ productId, operatingHours, serviceD
             endTime: slotEnd,
             status: 'AVAILABLE',
         });
+        console.log(productId);
 
         slotStart = slotEnd;
     }

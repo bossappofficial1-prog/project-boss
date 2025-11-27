@@ -15,8 +15,8 @@ interface PopularItemCardProps {
 
 function PopularItemCard({ item, numberFormatter, currencyFormatter, t }: PopularItemCardProps) {
     return (
-        <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-3 shadow-sm">
-            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
+        <div className="flex items-center gap-3 rounded-md border border-border/60 bg-card p-2 relative">
+            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-muted">
                 {item.image ? (
                     <ImageRender src={item.image} alt={item.name} className="h-full w-full object-cover" sizes="56px" />
                 ) : (

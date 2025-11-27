@@ -1,6 +1,6 @@
 'use client'
 
-import { OrderDetail, OrderStatus } from "@/types"
+import { OrderDetail, OrderStatus, OrderStatusType } from "@/types"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,13 +9,14 @@ import { useTranslations } from "@/hooks/useI18n"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { Clock, Hash, Store, CheckCircle, XCircle, Hourglass, Truck, PackageCheck } from "lucide-react"
+import { JSX } from "react"
 
 interface OrderCardProps {
     order: OrderDetail
     onClick: () => void
 }
 
-const statusConfig = {
+const statusConfig: Partial<Record<OrderStatusType, { label: string; icon: JSX.Element; color: string }>> = {
     [OrderStatus.AWAITING_PAYMENT]: {
         label: "Menunggu Pembayaran",
         icon: <Hourglass className="w-3 h-3" />,
@@ -49,8 +50,7 @@ const statusConfig = {
 }
 
 export default function OrderCard({ order, onClick }: OrderCardProps) {
-    const t = useTranslations("orders")
-    const currentStatus = statusConfig[order.orderStatus] || statusConfig[OrderStatus.PROCESSING]
+    const currentStatus = statusConfig[order.orderStatus] ?? statusConfig[OrderStatus.PROCESSING]!
 
     const formattedDate = format(new Date(order.createdAt), "d MMMM yyyy, HH:mm", { locale: id })
     const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0)

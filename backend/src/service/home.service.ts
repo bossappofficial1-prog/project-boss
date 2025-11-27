@@ -1,4 +1,5 @@
 import { HomeRepository } from "../repositories/home.repository";
+import { BannerRepository } from "../repositories/banner.repository";
 
 export async function getHomeSummaryService(searchQuery?: string) {
     const [umkm, transactions, memberships, outlets] = await Promise.all([
@@ -14,23 +15,14 @@ export async function getHomeSummaryService(searchQuery?: string) {
     ]);
 
     // Additional home content: banners, categories, popular items, promos
-    // Banners: using a few static images from public/uploads as featured promos
-    const banners = [
-        {
-            id: 'banner-1',
-            title: 'Diskon Spesial Akhir Pekan',
-            subtitle: 'Hemat hingga 20% untuk pembelian pertama',
-            imageUrl: '/uploads/image-1758479998961-708861805.png',
-            cta: { type: 'promo', payload: '' }
-        },
-        {
-            id: 'banner-2',
-            title: 'Gratis Ongkir',
-            subtitle: 'Untuk pesanan di atas Rp50.000',
-            imageUrl: '/uploads/image-1758485702353-698978368.png',
-            cta: { type: 'url', payload: '/promos' }
-        }
-    ]
+    const rawBanners = await BannerRepository.findActiveBanners(5)
+    const banners = rawBanners.map(b => ({
+        id: b.id,
+        title: b.title,
+        subtitle: b.subtitle,
+        imageUrl: b.imageUrl,
+        cta: { type: b.ctaType || "url", payload: b.ctaPayload || "" }
+    }))
 
     // Categories: lightweight static categories for quick navigation
     const categories = [

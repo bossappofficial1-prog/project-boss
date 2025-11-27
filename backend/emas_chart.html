@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grafik Harga Emas Hari Ini</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .price-display {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .price-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #d4af37;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .price-currency {
+            font-size: 18px;
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .price-change {
+            font-size: 14px;
+            color: #48bb78;
+            font-weight: 500;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .btn-filter {
+            background-color: white;
+            padding: 10px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .btn-filter:hover {
+            border-color: #d4af37;
+            color: #d4af37;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.15);
+        }
+
+        .btn-filter.active {
+            background: linear-gradient(135deg, #d4af37 0%, #c9a227 100%);
+            color: white;
+            border-color: #d4af37;
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+            background: linear-gradient(to bottom, #f7fafc, #edf2f7);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            width: 100%;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .chart-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .chart-info-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 400px;
+            font-size: 16px;
+            color: #718096;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+
+        .uptrend {
+            color: rgb(12, 189, 12);
+            font-size: 14px;
+        }
+
+        .uptrend::before {
+            content: '+ ';
+        }
+
+        .downtrend {
+            color: rgb(255, 0, 0);
+            font-size: 14px;
+        }
+
+        .downtrend::before {
+            content: '- ';
+        }
+
+        .netral {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .netral::before {
+            content: '~';
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .price-value {
+                font-size: 28px;
+            }
+
+            .btn-group {
+                gap: 8px;
+            }
+
+            .btn-filter {
+                padding: 8px 12px;
+                font-size: 12px;
+                min-width: 45px;
+            }
+
+            .chart-container {
+                height: 300px;
+                padding: 15px;
+            }
+
+            .chart-info {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .chart-info-item {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Grafik Harga Emas</h1>
+            <span style="display: flex; width: 100%; justify-content: center; gap: 6px;">
+                <span class="netral" id="trend">Rp 0 (0%)</span>
+                <p id="timeRange" style="color: #718096; font-size: 14px;">Data
+                    Real-Time Harga Emas</p>
+            </span>
+        </div>
+
+        <div class="price-display">
+            <span class="price-value" id="currentPrice">-</span>
+            <span class="price-currency">IDR/gram</span>
+        </div>
+
+        <div class="btn-group">
+            <button id="btn1d" class="btn-filter active">1D</button>
+            <button id="btn1w" class="btn-filter">1W</button>
+            <button id="btn1m" class="btn-filter">1M</button>
+            <button id="btn3m" class="btn-filter">3M</button>
+            <button id="btn6m" class="btn-filter">6M</button>
+            <button id="btn1y" class="btn-filter">1Y</button>
+            <button id="btn5y" class="btn-filter">5Y</button>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <canvas id="myChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-info">
+            <div class="chart-info-item">
+                <span class="chart-info-label">Harga Tertinggi</span>
+                <span id="maxPrice">-</span>
+            </div>
+            <div class="chart-info-item">
+                <span class="chart-info-label">Harga Terendah</span>
+                <span id="minPrice">-</span>
+            </div>
+            <div class="chart-info-item">
+                <span class="chart-info-label">Rata-rata</span>
+                <span id="avgPrice">-</span>
+            </div>
+            <div class="chart-info-item">
+                <span class="chart-info-label">Total Data</span>
+                <span id="dataCount">-</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+
+    <script>
+        let goldChart = null;
+        let allData = [];
+        let currentRangeType = '1D';
+        let refreshInterval = null;
+        const REFRESH_INTERVAL = 2 * 60 * 1000; // 10 menit dalam milliseconds
+        const trendElement = document.getElementById('trend')
+        let trend = 'netral'
+
+        function setTrend(trend) {
+            trendElement.classList.forEach(c => trendElement.classList.remove(c))
+            trendElement.classList.add(`${trend}`)
+        }
+
+        function renderChart(priceData, dateLabels) {
+            console.log('Rendering chart with', priceData.length, 'data points');
+
+            const canvas = document.getElementById('myChart');
+            if (!canvas) {
+                console.error('Canvas element not found');
+                return;
+            }
+
+            // Destroy existing chart
+            if (goldChart) {
+                goldChart.destroy();
+                goldChart = null;
+            }
+
+            // Small delay to ensure DOM is ready
+            requestAnimationFrame(() => {
+                try {
+                    const ctx = canvas.getContext('2d');
+
+                    const minPrice = Math.min(...priceData);
+                    const maxPrice = Math.max(...priceData);
+                    const range = maxPrice - minPrice;
+                    const padding = range === 0 ? 1000 : range * 0.1;
+
+                    goldChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: dateLabels,
+                            datasets: [{
+                                label: 'Harga Emas (IDR/gram)',
+                                data: priceData,
+                                borderColor: '#d4af37',
+                                backgroundColor: 'rgba(212, 175, 55, 0.15)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.3,
+                                pointRadius: 0,
+                                pointHoverRadius: 5,
+                                pointBackgroundColor: '#d4af37',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointHoverBorderWidth: 2,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: {
+                                        color: '#4a5568',
+                                        font: { size: 13, weight: '600' },
+                                        padding: 15,
+                                        usePointStyle: true
+                                    }
+                                },
+                                tooltip: {
+                                    enabled: true,
+                                    mode: 'index',
+                                    intersect: false,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                                    titleColor: '#fff',
+                                    bodyColor: '#fff',
+                                    borderColor: '#d4af37',
+                                    borderWidth: 2,
+                                    padding: 12,
+                                    cornerRadius: 8,
+                                    displayColors: false,
+                                    callbacks: {
+                                        title: function (context) {
+                                            return context[0].label;
+                                        },
+                                        label: function (context) {
+                                            return 'Harga: Rp ' + context.parsed.y.toLocaleString('id-ID');
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    min: minPrice - padding,
+                                    max: maxPrice + padding,
+                                    ticks: {
+                                        color: '#718096',
+                                        font: { size: 11 },
+                                        callback: function (value) {
+                                            return 'Rp ' + value.toLocaleString('id-ID');
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(226, 232, 240, 0.3)',
+                                        drawBorder: false
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: '#718096',
+                                        font: { size: 10 },
+                                        maxRotation: 45,
+                                        minRotation: 0,
+                                        maxTicksLimit: 8
+                                    },
+                                    grid: {
+                                        display: false,
+                                        drawBorder: false
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    console.log('Chart rendered successfully');
+                } catch (error) {
+                    console.error('Error rendering chart:', error);
+                }
+            });
+        }
+
+        async function getData(start_date, end_date) {
+            try {
+                console.log('Fetching data for range:', start_date, 'to', end_date);
+
+                const res = await fetch("https://webv2-api.treasury.id/api/v1/external/wp/gold/price", {
+                    body: JSON.stringify({
+                        assetType: "gold",
+                        end_date,
+                        region: "id",
+                        start_date,
+                        type: "last_price"
+                    }),
+                    method: "POST",
+                    headers: {
+                        'Content-Type': "application/json"
+                    }
+                });
+
+                const response = await res.json();
+                console.log('API Response received:', response);
+
+                if (!response.data || !response.data.attributes || !response.data.attributes.prices) {
+                    throw new Error('Invalid data format from API');
+                }
+
+                allData = response.data.attributes.prices;
+                console.log('Data points received:', allData.length);
+
+                if (allData.length === 0) {
+                    throw new Error('No price data available');
+                }
+
+                const priceData = allData.map(d => d.buy_price);
+                const dateLabels = allData.map(d => d.datetime);
+
+                updatePriceInfo(priceData);
+                renderChart(priceData, dateLabels);
+
+            } catch (error) {
+                console.error('Error in getData:', error);
+                alert('Gagal memuat data: ' + error.message);
+            }
+        }
+
+        function updatePriceInfo(priceData) {
+            const currentPrice = priceData[priceData.length - 1];
+            const maxPrice = Math.max(...priceData);
+            const minPrice = Math.min(...priceData);
+            const avgPrice = (priceData.reduce((a, b) => a + b, 0) / priceData.length);
+            const selisih = priceData[priceData.length - 1] - priceData[0]
+            const percent = (((selisih) / priceData[0]) * 100).toFixed(2)
+            const trend = selisih > 0 ? 'uptrend' : (selisih < 0 ? 'downtrend' : 'netral')
+            setTrend(trend)
+
+            trendElement.textContent = `Rp ${(selisih).toLocaleString('id-ID')} (${percent}%)`
+            document.getElementById('currentPrice').textContent = currentPrice.toLocaleString('id-ID');
+            document.getElementById('maxPrice').textContent = 'Rp ' + maxPrice.toLocaleString('id-ID');
+            document.getElementById('minPrice').textContent = 'Rp ' + minPrice.toLocaleString('id-ID');
+            document.getElementById('avgPrice').textContent = 'Rp ' + Math.round(avgPrice).toLocaleString('id-ID');
+            document.getElementById('dataCount').textContent = priceData.length + ' data point';
+        }
+
+        function formatDate(date) {
+            // console.log(date.);
+
+            return date.toISOString().slice(0, 19).replace('T', ' ');
+        }
+
+        function getDateRange(type) {
+            const end = new Date();
+            const start = new Date();
+
+            switch (type) {
+                case '1D': start.setHours(0, 0, 0, 0); break;
+                case '1W': start.setDate(end.getDate() - 7); break;
+                case '1M': start.setMonth(end.getMonth() - 1); break;
+                case '3M': start.setMonth(end.getMonth() - 3); break;
+                case '6M': start.setMonth(end.getMonth() - 6); break;
+                case '1Y': start.setFullYear(end.getFullYear() - 1); break;
+                case '5Y': start.setFullYear(end.getFullYear() - 5); break;
+                default: break;
+            }
+
+            return { start_date: formatDate(start), end_date: formatDate(end) };
+        }
+
+        function updateTimeRangeDisplay(rangeType) {
+            const rangeTexts = {
+                '1D': '24 Jam Terakhir',
+                '1W': 'Minggu Terakhir',
+                '1M': 'Bulan Terakhir',
+                '3M': '3 Bulan Terakhir',
+                '6M': '6 Bulan Terakhir',
+                '1Y': '1 Tahun Terakhir',
+                '5Y': '5 Tahun Terakhir'
+            };
+            document.getElementById('timeRange').textContent = rangeTexts[rangeType] || 'Data Real-Time Harga Emas';
+        }
+
+        function startAutoRefresh() {
+            // Clear existing interval jika ada
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+
+            // Set interval untuk refetch setiap 10 menit
+            refreshInterval = setInterval(() => {
+                console.log('Auto-refreshing data at', new Date().toLocaleTimeString('id-ID'));
+                const range = getDateRange(currentRangeType);
+                getData(range.start_date, range.end_date);
+            }, REFRESH_INTERVAL);
+
+            console.log('Auto-refresh started. Interval:', REFRESH_INTERVAL / 1000 / 60, 'minutes');
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+                console.log('Auto-refresh stopped');
+            }
+        }
+
+        // Setup button listeners
+        document.querySelectorAll('.btn-filter').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentRangeType = btn.textContent;
+                updateTimeRangeDisplay(currentRangeType);
+                const range = getDateRange(currentRangeType);
+                getData(range.start_date, range.end_date);
+            });
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            currentRangeType = '1D';
+            const range = getDateRange('1D');
+            updateTimeRangeDisplay('1D');
+            getData(range.start_date, range.end_date);
+            startAutoRefresh();
+        });
+
+        // Stop auto-refresh jika user menutup tab/window
+        window.addEventListener('beforeunload', () => {
+            stopAutoRefresh();
+        });
+    </script>
+
+</body>
+
+</html>

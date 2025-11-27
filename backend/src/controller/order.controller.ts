@@ -5,9 +5,11 @@ import { HttpStatus } from "../constants/http-status";
 import {
     getOrderByIdService, refundOrderService,
     createOrderAndMidtransTransactionService,
-    updateOrderStatusService, completeServiceOrderService,
+    updateOrderStatusService, updateServiceQueueStatusService, completeServiceOrderService,
     getGoodsOrdersByOutletService, getServiceQueueByOutletService,
-    getOrderByCustomerPhoneService
+    getOrderByCustomerPhoneService,
+    cancelOrderByCustomerService,
+    confirmOrderByCustomerService
 } from "../service/order.service";
 import { ReceiptService } from "../service/receipt.service";
 
@@ -36,6 +38,20 @@ export const updateOrderStatusController = asyncHandler(async (req: Request, res
     await getOrderByIdService(id, ownerId);
 
     const order = await updateOrderStatusService(id, status);
+    return ResponseUtil.success(res, order);
+});
+
+export const updateServiceOrderStatusController = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const user = req.storedUser!;
+    
+    // Jika kasir, gunakan outletId dari session kasir untuk validasi
+    const isCashier = (user as any).userType === 'CASHIER';
+    const userIdentifier = isCashier ? (user as any).outletId : user.id;
+    const validateAsOwner = !isCashier;
+
+    const order = await updateServiceQueueStatusService(id, userIdentifier, status, validateAsOwner);
     return ResponseUtil.success(res, order);
 });
 
@@ -115,15 +131,21 @@ export const listGoodsOrdersByOutletController = asyncHandler(async (req: Reques
 export const listServiceQueueByOutletController = asyncHandler(async (req: Request, res: Response) => {
     const { outletId } = req.params;
     const { page, limit } = req.query as any;
-    const ownerId = req.storedUser!.id;
+    const user = req.storedUser!;
+    
+    // Jika kasir, gunakan outletId dari session kasir untuk validasi
+    const isCashier = (user as any).userType === 'CASHIER';
+    const userIdentifier = isCashier ? (user as any).outletId : user.id;
+    const validateAsOwner = !isCashier;
 
     const result = await getServiceQueueByOutletService(
         outletId,
-        ownerId,
+        userIdentifier,
         {
             page: page ? parseInt(page) : undefined,
             limit: limit ? parseInt(limit) : undefined
-        }
+        },
+        validateAsOwner
     );
     return ResponseUtil.paginated(
         res,
@@ -181,3 +203,21 @@ export const getOrderNotificationDataController = asyncHandler(async (req: Reque
 
     return ResponseUtil.success(res, notificationData);
 })
+
+export const cancelOrderByCustomerController = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { phone, reason } = req.body as { phone: string; reason?: string };
+
+    const order = await cancelOrderByCustomerService(id, phone, reason);
+
+    return ResponseUtil.success(res, order);
+});
+
+export const confirmOrderByCustomerController = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { phone } = req.body as { phone: string };
+
+    const order = await confirmOrderByCustomerService(id, phone);
+
+    return ResponseUtil.success(res, order);
+});

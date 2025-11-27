@@ -1,29 +1,51 @@
+import path from 'path';
 import { snap, coreApi } from '../config/midtrans';
 import { getOrderByIdService } from './order.service';
 import { db } from '../config/prisma';
 import { config } from '../config';
-import { PaymentStatus, Order, OrderItem, Product, GuestCustomer, FeeBearer } from '@prisma/client';
+import { PaymentStatus, Order, OrderItem, Product, GuestCustomer, FeeBearer, ManualPaymentType, OrderStatus } from '@prisma/client';
 import { messagePublisher } from './message-publisher.service';
 import { CreatePaymentPayload } from '../schemas/payment-v2.schema';
-import { MidtransPaymentMethod, PaymentMethodId, paymentMethodMapping } from '../constants/payment-method';
+import { paymentMethod, MidtransPaymentMethod, PaymentMethodId, paymentMethodMapping } from '../constants/payment-method';
 import { OutletRepository } from '../repositories/outlet.repository';
 import { ProductRepository } from '../repositories/product.repository';
 import { generateOrderCode } from '../utils';
 import Console from '../utils/logger';
-import { MidtransItem, MidtransPayload, MidtransWebhookPayloadType } from '../types/Others';
+import { MidtransItem, MidtransPayload, MidtransWebhookPayloadType, PaymentResponse } from '../types/Others';
 import { mappingTransactionStatusForMidtrans } from '../utils/mapping';
 import { AppError } from '../errors/app-error';
 import { Messages } from '../constants/message';
 import { HttpStatus } from '../constants/http-status';
 import { socketUtils } from '../utils/socket.utils';
+import { ManualPaymentRepository } from '../repositories/manual-payment.repository';
+import { buildMidtransCorePayload } from '../utils/midtrans-core.utils';
+import { SocketEmitter } from '../socket/socket-emiiter';
+import { paymentQueue, schedulePaymentExpiration } from '../queues/payment.queue';
+import { PaymentRepository } from '../repositories/payment.repository';
 
 // Konstanta untuk fee rates
 const TRANSACTION_FEE_RATE = 0.02;
+const TRANSACTION_BANK_FEE_RATE = 4000;
 const APPLICATION_FEE_RATE = 0.03;
 
 type OrderWithDetails = Order & {
     items: (OrderItem & { product: Product })[];
     guestCustomer: GuestCustomer;
+};
+
+type OutletWithBusiness = Awaited<ReturnType<typeof OutletRepository.findById>>;
+
+type ManualPaymentInstructions = {
+    manualType: ManualPaymentType;
+    outletName: string;
+    businessName: string;
+    qrImageUrl?: string;
+    bankAccount?: {
+        bankName: string;
+        accountNumber: string;
+        accountHolder: string;
+    };
+    note?: string | null;
 };
 
 // Sub-fungsi untuk validasi dan prepare data
@@ -63,122 +85,172 @@ async function validateItemsAndPrepareData(inputItems: any[], outletId: string) 
 }
 
 // Sub-fungsi untuk hitung biaya
-function calculateFees(totalProductPrice: number, outlet: any) {
-    const transactionFeeTotal =
-        outlet.business.defaultTransactionFeeBearer === "CUSTOMER" ?
-            Math.floor(totalProductPrice * TRANSACTION_FEE_RATE) :
-            0;
+function calculateFees(totalProductPrice: number, outlet: any, payment_method: string) {
+    let transactionFeeTotal: number = 0;
+    let applicationFee: number = 0;
+    let grossAmount: number = 0;
 
-    const applicationFee = Math.floor(totalProductPrice * APPLICATION_FEE_RATE);
-    const grossAmount = totalProductPrice + transactionFeeTotal + applicationFee;
+    if (payment_method.startsWith('qris') || payment_method.endsWith('-va')) {
+        transactionFeeTotal =
+            outlet.business.defaultTransactionFeeBearer === "CUSTOMER" ? (payment_method.endsWith('-va')
+                ? TRANSACTION_BANK_FEE_RATE
+                : Math.floor(totalProductPrice * TRANSACTION_FEE_RATE))
+                : 0;
+
+        applicationFee = Math.floor(totalProductPrice * APPLICATION_FEE_RATE);
+    }
+    grossAmount = totalProductPrice + transactionFeeTotal + applicationFee;
+
+    console.log(grossAmount, totalProductPrice);
 
     return { transactionFeeTotal, applicationFee, grossAmount };
 }
 
-// Sub-fungsi untuk build payload Midtrans
-function buildMidtransPayload(orderId: string, grossAmount: number, itemDetails: MidtransItem[], customerDetails: any, midtransPaymentType: string) {
-    const payload: MidtransPayload = {
-        transaction_details: {
-            order_id: orderId,
-            gross_amount: grossAmount,
-        },
-        customer_details: {
-            first_name: customerDetails.name,
-            phone: customerDetails.phone,
-        },
-        item_details: itemDetails,
-        payment_type: "",
-    };
-
-    if (midtransPaymentType.endsWith("_va")) {
-        payload.payment_type = "bank_transfer";
-        payload.bank_transfer = {
-            bank: midtransPaymentType.replace("_va", ""),
-        };
-    } else {
-        payload.payment_type = "qris";
+function buildManualInstructions(outlet: OutletWithBusiness, manualType: ManualPaymentType): ManualPaymentInstructions {
+    if (!outlet) {
+        throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
-    return payload;
+    const baseInstruction: ManualPaymentInstructions = {
+        manualType,
+        outletName: outlet.name,
+        businessName: outlet.business?.name ?? '',
+        note: outlet.manualPaymentNote ?? null
+    };
+
+    if (manualType === ManualPaymentType.QRIS_OFFLINE) {
+        if (!outlet.manualQrImageUrl) {
+            throw new AppError(Messages.MANUAL_QRIS_NOT_CONFIGURED, HttpStatus.BAD_REQUEST);
+        }
+        return {
+            ...baseInstruction,
+            qrImageUrl: outlet.manualQrImageUrl
+        };
+    }
+
+    if (manualType === ManualPaymentType.OWNER_TRANSFER) {
+        if (!outlet.business.bankAccount || !outlet.business.bankName || !outlet.business.accountHolder) {
+            throw new AppError(Messages.MANUAL_TRANSFER_NOT_CONFIGURED, HttpStatus.BAD_REQUEST);
+        }
+
+        return {
+            ...baseInstruction,
+            bankAccount: {
+                bankName: outlet.business.bankName,
+                accountNumber: outlet.business.bankAccount,
+                accountHolder: outlet.business.accountHolder
+            }
+        };
+    }
+
+    throw new AppError(Messages.MANUAL_PAYMENT_TYPE_UNKNOWN, HttpStatus.BAD_REQUEST);
 }
 
-// Sub-fungsi untuk create order dan items
-async function createOrderAndItems(orderId: string, grossAmount: number, applicationFee: number, transactionFeeTotal: number, selectedSlotId: string | undefined, outletId: string, customerDetails: any, inputItems: any[], productMap: Map<string, Product>) {
-    await db.$transaction(async (tr) => {
-        await tr.order.create({
-            data: {
-                id: orderId,
-                totalAmount: grossAmount,
-                appFee: applicationFee,
-                midtransFee: transactionFeeTotal,
-                chargedTo: FeeBearer.CUSTOMER,
-                ...(selectedSlotId && {
-                    bookingSlot: {
-                        connect: {
-                            id: selectedSlotId
-                        }
-                    },
-                }),
-                guestCustomer: {
-                    create: {
-                        name: customerDetails.name,
-                        phone: customerDetails.phone,
-                    },
-                },
-                outlet: {
-                    connect: {
-                        id: outletId
-                    },
-                },
-            },
-        });
-
-        for (const item of inputItems) {
-            const product = productMap.get(item.productId);
-
-            if (product?.type === "GOODS") {
-                const productQuantity = product.quantity ?? 0;
-                if (item.quantity > productQuantity) {
-                    throw new AppError(Messages.PRODUCT_OUT_OF_STOCK, HttpStatus.BAD_REQUEST);
-                }
-            } else if (product?.type === "SERVICE" && selectedSlotId) {
-                const bookingSlot = await tr.bookingSlot.findUnique({
-                    where: { id: selectedSlotId },
-                });
-
-                if (!bookingSlot) throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
-                if (bookingSlot.status === "BOOKED" || bookingSlot.status === "BLOCKED") throw new AppError(Messages.BOOKING_SLOT_ALREADY_BOOKED, HttpStatus.BAD_REQUEST);
-
-            } else if (product?.type === "SERVICE" && !selectedSlotId) throw new AppError(Messages.BOOKING_SLOT_REQUIRED, HttpStatus.BAD_REQUEST);
-
-            await tr.orderItem.create({
-                data: {
-                    orderId,
-                    productId: product?.id!,
-                    quantity: item.quantity,
-                    priceAtTimeOfOrder: product?.price!,
-                },
-            });
-
-            if (product?.type === "GOODS") {
-                // Validasi stok saja, tapi jangan kurangi quantity dulu
-                const productQuantity = product.quantity ?? 0;
-                if (item.quantity > productQuantity) {
-                    throw new AppError(Messages.PRODUCT_OUT_OF_STOCK, HttpStatus.BAD_REQUEST);
-                }
-            }
-
-            if (product?.type === "SERVICE") {
-                await tr.bookingSlot.update({ where: { id: selectedSlotId }, data: { status: "BOOKED" } });
+async function createManualTransactionRecord(params: {
+    orderId: string;
+    amount: number;
+    paymentMethodId: PaymentMethodId;
+    manualType: ManualPaymentType;
+    expiresAt: Date;
+}) {
+    return ManualPaymentRepository.createManualTransaction({
+        amount: params.amount,
+        paymentMethod: params.paymentMethodId,
+        status: PaymentStatus.PENDING,
+        isManual: true,
+        manualMethod: params.manualType,
+        expiresAt: params.expiresAt,
+        externalId: params.orderId,
+        order: {
+            connect: {
+                id: params.orderId
             }
         }
     });
+}
+
+function toPublicUrl(filePath: string) {
+    const relativePath = path.relative(process.cwd(), filePath).replace(/\\/g, '/');
+    return `${config.BASE_URL}/${relativePath}`;
+}
+
+function formatManualPaymentResponse(options: {
+    order: OrderWithDetails;
+    transactionId: string;
+    manualType: ManualPaymentType;
+    instructions: ManualPaymentInstructions;
+    expiresAt: Date;
+    grossAmount: number;
+    fees: {
+        applicationFee: number;
+        transactionFee: number;
+        subtotal: number;
+    };
+}) {
+    return {
+        order_id: options.order.id,
+        transaction_id: options.transactionId,
+        transaction_status: 'pending',
+        gross_amount: options.grossAmount,
+        expiry_time: options.expiresAt.toISOString(),
+        manual: {
+            type: options.manualType,
+            instructions: options.instructions,
+            fee_summary: options.fees
+        },
+        customer_details: {
+            name: options.order.guestCustomer.name,
+            phone: options.order.guestCustomer.phone
+        }
+    };
+}
+
+// Sub-fungsi untuk create order dan items
+// Delegates to repository which already wraps operations in a DB transaction.
+async function createOrderAndItems(orderId: string, grossAmount: number, applicationFee: number, transactionFeeTotal: number, selectedSlotId: string | undefined, staffId: string | undefined, outletId: string, customerDetails: any, inputItems: any[], productMap: Map<string, Product>) {
+    try {
+        await PaymentRepository.createOrderWithItems({
+            orderId,
+            grossAmount,
+            appFee: applicationFee,
+            midtransFee: transactionFeeTotal,
+            selectedSlotId: selectedSlotId ?? null,
+            staffId: staffId ?? null,
+            outletId,
+            customer: { name: customerDetails.name, phone: customerDetails.phone },
+            items: inputItems.map((it) => ({ productId: it.productId, quantity: it.quantity }))
+        });
+    } catch (err: any) {
+        const msg = (err && err.message) ? String(err.message).toLowerCase() : '';
+
+        if (msg.includes('stok') || msg.includes('stok tidak') || msg.includes('stock')) {
+            throw new AppError(Messages.PRODUCT_OUT_OF_STOCK, HttpStatus.BAD_REQUEST);
+        }
+
+        if (msg.includes('booking slot required') || msg.includes('booking slot')) {
+            throw new AppError(Messages.BOOKING_SLOT_REQUIRED, HttpStatus.BAD_REQUEST);
+        }
+
+        if (msg.includes('already booked') || msg.includes('booked') || msg.includes('blocked')) {
+            throw new AppError(Messages.BOOKING_SLOT_ALREADY_BOOKED, HttpStatus.BAD_REQUEST);
+        }
+
+        if (msg.includes('product not found')) {
+            throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
+        }
+
+        // Re-throw unknown errors
+        throw err;
+    }
 }
 
 // Sub-fungsi untuk handle Midtrans charge
 async function handleMidtransCharge(payload: MidtransPayload, orderId: string) {
     try {
         const midtransResponse = await coreApi.charge(payload) as MidtransWebhookPayloadType;
+        const expiresAt = midtransResponse.expiry_time
+            ? new Date(midtransResponse.expiry_time)
+            : new Date(Date.now() + 15 * 60 * 1000);
 
         await db.transaction.create({
             data: {
@@ -186,9 +258,10 @@ async function handleMidtransCharge(payload: MidtransPayload, orderId: string) {
                 externalId: midtransResponse.transaction_id,
                 amount: Number(midtransResponse.gross_amount),
                 paymentMethod: midtransResponse.payment_type,
-                expiresAt: new Date(midtransResponse.expiry_time),
+                expiresAt,
                 orderId: orderId,
                 status: mappingTransactionStatusForMidtrans(midtransResponse.transaction_status),
+                rawMidtrans: midtransResponse
             },
         });
 
@@ -236,8 +309,6 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
         });
     }
 
-    // Hitung gross_amount final dari item_details yang sudah lengkap
-    // untuk memastikan tidak ada selisih.
     const calculatedGrossAmount = itemDetails.reduce((acc, item) => {
         return acc + (item.price * item.quantity);
     }, 0);
@@ -249,8 +320,7 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
         },
         customer_details: {
             first_name: order.guestCustomer.name,
-            phone: order.guestCustomer.phone,
-            email: 'noreply@bossin.id', // Default email untuk Midtrans
+            phone: order.guestCustomer.phone
         },
         item_details: itemDetails,
         expiry: {
@@ -265,13 +335,15 @@ export async function createMidtransTransactionService(orderId: string, finalAmo
     await db.transaction.create({
         data: {
             orderId: order.id,
-            amount: calculatedGrossAmount, // Gunakan juga di sini untuk konsistensi
+            amount: calculatedGrossAmount,
             status: PaymentStatus.PENDING,
-            externalId: transaction.token, // Snap token
-            paymentUrl: transaction.redirect_url, // URL pembayaran
+            externalId: transaction.token,
+            paymentUrl: transaction.redirect_url,
             expiresAt: expiresAt,
         },
     });
+
+    await schedulePaymentExpiration(order.id, expiresAt);
 
     // Emit notification to business outlet
     try {
@@ -320,22 +392,22 @@ export async function createQrisPaymentService(orderId: string) {
             amount: order.totalAmount,
             status: PaymentStatus.PENDING,
             externalId: chargeResponse.transaction_id,
-            // Untuk QRIS, tidak ada URL redirect langsung, tapi kita bisa simpan link ke gambar QR
             paymentUrl: chargeResponse.actions?.find((a: any) => a.name === 'deeplink-redirect')?.url || chargeResponse.actions?.find((a: any) => a.name === 'generate-qr-code')?.url,
             expiresAt: expiresAt,
         },
     });
 
+    await schedulePaymentExpiration(order.id, expiresAt);
+
     // Emit notification to business outlet
     try {
-        socketUtils.emitToBusinessOutlet(order.outletId, {
-            type: 'payment_created',
-            orderId: order.id,
+        SocketEmitter.getInstance().emitToBusinessOutlet(order.outletId, {
             amount: order.totalAmount,
-            paymentMethod: 'qris',
+            orderId: order.id,
             customerName: order.guestCustomer.name,
+            paymentMethod: 'qris',
             timestamp: new Date()
-        });
+        })
         console.log(`📡 Emitted payment_created event for outlet ${order.outletId}`);
     } catch (socketError) {
         console.error('❌ Error emitting payment_created event:', socketError);
@@ -350,6 +422,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
         item_details: inputItems,
         payment_method,
         selectedSlotId,
+        staffId,
         outletId,
     } = data;
 
@@ -357,7 +430,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
     const { productMap, outlet, itemDetails: baseItemDetails, totalProductPrice } = await validateItemsAndPrepareData(inputItems, outletId);
 
     // Hitung biaya
-    const { transactionFeeTotal, applicationFee, grossAmount } = calculateFees(totalProductPrice, outlet);
+    const { transactionFeeTotal, applicationFee, grossAmount } = calculateFees(totalProductPrice, outlet, payment_method);
 
     // Tambahkan item biaya ke detail
     const itemDetails = [...baseItemDetails];
@@ -376,26 +449,138 @@ export async function createPaymentService(data: CreatePaymentPayload) {
         quantity: 1,
     });
 
-    const orderId = generateOrderCode({ name: "Test" });
-    const paymentMethod = payment_method as PaymentMethodId;
-    const midtransPaymentType = paymentMethodMapping[paymentMethod];
+    const orderId = generateOrderCode({ name: outlet.name ?? "Order" });
+    const paymentMethodId = payment_method as PaymentMethodId;
+    const methodDefinition = paymentMethod.find(method => method.id === paymentMethodId);
 
-    // Build payload Midtrans
-    const payload = buildMidtransPayload(orderId, grossAmount, itemDetails, customerDetails, midtransPaymentType);
+    if (!methodDefinition) {
+        throw new AppError(Messages.PAYMENT_METHOD_NOT_FOUND, HttpStatus.BAD_REQUEST);
+    }
 
-    // Create order dan items
-    await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, outletId, customerDetails, inputItems, productMap);
+    const manualType = 'manualType' in methodDefinition
+        ? methodDefinition.manualType as ManualPaymentType
+        : undefined;
+    const isManualFlow = methodDefinition.flow === 'manual';
+
+    if (isManualFlow && !manualType) {
+        throw new AppError(Messages.MANUAL_PAYMENT_TYPE_UNKNOWN, HttpStatus.BAD_REQUEST);
+    }
+
+    // Create order dan items terlebih dahulu
+
+    if (isManualFlow && manualType) {
+        const instructions = buildManualInstructions(outlet, manualType);
+
+        try {
+            await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, staffId, outletId, customerDetails, inputItems, productMap);
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+            const transaction = await createManualTransactionRecord({
+                orderId,
+                amount: grossAmount,
+                paymentMethodId,
+                manualType,
+                expiresAt
+            });
+
+            const orderWithDetails = await db.order.findUnique({
+                where: { id: orderId },
+                include: {
+                    items: {
+                        include: { product: true }
+                    },
+                    guestCustomer: true
+                }
+            }) as OrderWithDetails | null;
+
+            if (!orderWithDetails) {
+                throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
+            }
+
+            await db.order.update({
+                where: { id: orderId },
+                data: {
+                    orderStatus: OrderStatus.AWAITING_PAYMENT,
+                    paymentStatus: PaymentStatus.PENDING,
+                }
+            });
+
+            const expireTime = new Date(expiresAt)
+            const delay = Math.max(0, (expireTime.getTime() - new Date().getTime()))
+
+            try {
+                await paymentQueue.add({ orderId }, { delay })
+                SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
+                    orderId,
+                    amount: grossAmount,
+                    paymentMethod: manualType,
+                    customerName: customerDetails.name,
+                    timestamp: new Date()
+                });
+                SocketEmitter.getInstance().emitNotificationToOutlet(outletId, {
+                    message: `Pesanan baru, Order ID: ${orderId}`,
+                    timestamp: new Date()
+                })
+                console.log(`📡 Emitted manual_payment_created event for outlet ${outletId}`);
+            } catch (socketError) {
+                console.error('❌ Error emitting manual_payment_created event:', socketError);
+            }
+
+            return formatManualPaymentResponse({
+                order: orderWithDetails,
+                transactionId: transaction.id,
+                manualType,
+                instructions,
+                expiresAt,
+                grossAmount,
+                fees: {
+                    applicationFee,
+                    transactionFee: transactionFeeTotal,
+                    subtotal: totalProductPrice
+                }
+            });
+        } catch (error) {
+            try {
+                await PaymentRepository.restockAndCancelOrder(orderId);
+                await db.order.delete({ where: { id: orderId } });
+            } catch (cleanupError) {
+                const message = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+                if (!message.toLowerCase().includes('order not found')) {
+                    Console.error('Failed to rollback manual payment order', cleanupError);
+                }
+            }
+            throw error;
+        }
+    }
+
+    await createOrderAndItems(orderId, grossAmount, applicationFee, transactionFeeTotal, selectedSlotId, staffId, outletId, customerDetails, inputItems, productMap);
+
+    const midtransPaymentType = paymentMethodMapping[paymentMethodId];
+
+    if (!midtransPaymentType) {
+        throw new AppError(Messages.PAYMENT_METHOD_NOT_SUPPORTED, HttpStatus.BAD_REQUEST);
+    }
+
+    const payload = buildMidtransCorePayload({
+        orderId,
+        grossAmount,
+        itemDetails,
+        customer: {
+            name: customerDetails.name,
+            phone: customerDetails.phone,
+        },
+        paymentType: midtransPaymentType,
+    });
 
     // Handle Midtrans charge
     const result = await handleMidtransCharge(payload, orderId);
 
     // Emit notification to business outlet
     try {
-        socketUtils.emitToBusinessOutlet(outletId, {
-            type: 'payment_created',
-            orderId: orderId,
+        SocketEmitter.getInstance().emitNotificationToOutlet(outletId, { message: `Ada pesanan baru, OrderID: ${orderId}`, timestamp: new Date() })
+        SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
+            orderId,
             amount: grossAmount,
-            paymentMethod: midtransPaymentType,
+            paymentMethod: payment_method,
             customerName: customerDetails.name,
             timestamp: new Date()
         });
@@ -418,39 +603,295 @@ export async function cancelPaymentService(orderId: string) {
         throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
-    if (transaction.status !== PaymentStatus.PENDING) {
+    if (
+        transaction.status !== PaymentStatus.PENDING &&
+        transaction.status !== PaymentStatus.AWAITING_VERIFICATION &&
+        transaction.status !== PaymentStatus.REJECTED_MANUAL
+    ) {
         throw new AppError("Pembayaran tidak dapat dibatalkan karena status sudah " + transaction.status, HttpStatus.BAD_REQUEST);
     }
 
-    // Cancel via Midtrans API (manual HTTP request)
-    try {
-        await coreApi.transaction.cancel(orderId);
-    } catch (error) {
-        Console.error("Error expiring Midtrans transaction:", error);
-        throw new AppError("Gagal membatalkan pembayaran di Midtrans", HttpStatus.INTERNAL_SERVER_ERROR);
+    if (!transaction.isManual) {
+        // Cancel via Midtrans API (manual HTTP request)
+        try {
+            await coreApi.transaction.cancel(orderId);
+        } catch (error) {
+            Console.error("Error expiring Midtrans transaction:", error);
+            throw new AppError("Gagal membatalkan pembayaran di Midtrans", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    // Update status transaksi di database
-    await db.transaction.update({
-        where: { id: transaction.id },
-        data: { status: PaymentStatus.CANCELLED },
+    // Delegate restock and cancellation logic to repository (transactional)
+    try {
+        await PaymentRepository.restockAndCancelOrder(orderId);
+    } catch (err) {
+        Console.error('Error restocking or cancelling order:', err);
+        throw new AppError('Gagal membatalkan pembayaran', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    return { message: "Pembayaran berhasil dibatalkan", orderId };
+}
+
+export async function uploadManualPaymentProofService(orderId: string, filePath: string) {
+    const transaction = await ManualPaymentRepository.findManualTransactionByOrderId(orderId);
+
+    if (!transaction) {
+        throw new AppError(Messages.MANUAL_PAYMENT_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    if (!transaction.isManual || !transaction.manualMethod) {
+        throw new AppError(Messages.MANUAL_PAYMENT_NOT_AVAILABLE, HttpStatus.BAD_REQUEST);
+    }
+
+    if (transaction.status === PaymentStatus.SUCCESS) {
+        throw new AppError(Messages.MANUAL_PAYMENT_ALREADY_VERIFIED, HttpStatus.BAD_REQUEST);
+    }
+
+    const uploadableStatuses: PaymentStatus[] = [
+        PaymentStatus.PENDING,
+        PaymentStatus.AWAITING_VERIFICATION,
+        PaymentStatus.REJECTED_MANUAL
+    ];
+
+    if (!uploadableStatuses.includes(transaction.status)) {
+        throw new AppError(Messages.MANUAL_PAYMENT_PROOF_NOT_ALLOWED, HttpStatus.BAD_REQUEST);
+    }
+
+    if (transaction.expiresAt && transaction.expiresAt.getTime() < Date.now()) {
+        throw new AppError(Messages.MANUAL_PAYMENT_EXPIRED, HttpStatus.BAD_REQUEST);
+    }
+
+    const proofUrl = toPublicUrl(filePath);
+
+    const updated = await ManualPaymentRepository.updateManualTransaction(transaction.id, {
+        paymentProofUrl: proofUrl,
+        proofUploadedAt: new Date(),
+        status: PaymentStatus.AWAITING_VERIFICATION
     });
 
-    // Rollback stok untuk produk GOODS
-    await db.$transaction(async (tr) => {
-        for (const item of transaction.order.items) {
-            if (item.product.type === "GOODS") {
-                await tr.product.update({
-                    where: { id: item.product.id },
-                    data: {
-                        quantity: {
-                            increment: item.quantity
-                        },
-                    },
-                });
-            }
+    await db.order.update({
+        where: { id: orderId },
+        data: {
+            orderStatus: OrderStatus.AWAITING_PAYMENT,
+            paymentStatus: PaymentStatus.AWAITING_VERIFICATION
         }
     });
 
-    return { message: "Pembayaran berhasil dibatalkan", orderId };
+    try {
+        const job = await paymentQueue.getJob(transaction.orderId);
+        if (job) job.remove();
+
+        SocketEmitter.getInstance().emitNotificationToOutlet(transaction.order.outletId, {
+            message: `Pesanan ${orderId}, telah mengirim bukti pembayarannya.`,
+            timestamp: new Date()
+        })
+        SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
+            orderId,
+            amount: transaction.amount,
+            customerName: transaction.order.guestCustomer.name,
+            paymentMethod: transaction.paymentMethod as string,
+            timestamp: transaction.createdAt
+        });
+    } catch (socketError) {
+        console.error('❌ Error emitting manual_payment_proof_uploaded event:', socketError);
+    }
+
+    return updated;
+}
+
+export async function verifyManualPaymentService(orderId: string, verifierId: string) {
+    const transaction = await ManualPaymentRepository.findManualTransactionByOrderId(orderId);
+
+    if (!transaction) {
+        throw new AppError(Messages.MANUAL_PAYMENT_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    if (transaction.status !== PaymentStatus.AWAITING_VERIFICATION) {
+        throw new AppError(Messages.MANUAL_PAYMENT_PROOF_REQUIRED, HttpStatus.BAD_REQUEST);
+    }
+
+    const updatedTransaction = await ManualPaymentRepository.updateManualTransaction(transaction.id, {
+        status: PaymentStatus.SUCCESS,
+        verifiedAt: new Date(),
+        verifiedById: verifierId,
+        rejectionNote: null
+    });
+
+    await db.order.update({
+        where: { id: orderId },
+        data: {
+            paymentStatus: PaymentStatus.SUCCESS,
+            orderStatus: OrderStatus.CONFIRMED
+        }
+    });
+
+    try {
+        socketUtils.emitToBusinessOutlet(transaction.order.outletId, {
+            type: 'manual_payment_verified',
+            orderId,
+            amount: transaction.amount,
+            paymentMethod: transaction.manualMethod,
+            timestamp: new Date()
+        });
+    } catch (socketError) {
+        console.error('❌ Error emitting manual_payment_verified event:', socketError);
+    }
+
+    await messagePublisher.publishOrderStatusUpdate(orderId, OrderStatus.PROCESSING);
+    await messagePublisher.publishWhatsAppPaymentSuccess(orderId);
+
+    try {
+        const customerPhone = transaction.order.guestCustomer?.phone;
+        if (customerPhone) {
+            SocketEmitter.getInstance().emitToCustomer(customerPhone, {
+                orderId,
+                amount: transaction.amount,
+                status: 'settlement',
+                transactionStatus: 'settlement',
+                isManual: true,
+                paymentMethod: transaction.manualMethod ?? 'manual',
+                message: 'Pembayaran manual telah diverifikasi',
+                type: 'payment_success'
+            });
+        }
+    } catch (customerSocketError) {
+        console.error('❌ Error emitting customer manual payment success event:', customerSocketError);
+    }
+
+    return updatedTransaction;
+}
+
+export async function rejectManualPaymentService(orderId: string, verifierId: string, reason: string) {
+    const transaction = await ManualPaymentRepository.findManualTransactionByOrderId(orderId);
+
+    if (!transaction) {
+        throw new AppError(Messages.MANUAL_PAYMENT_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+
+    if (transaction.status !== PaymentStatus.AWAITING_VERIFICATION) {
+        throw new AppError(Messages.MANUAL_PAYMENT_PROOF_REQUIRED, HttpStatus.BAD_REQUEST);
+    }
+
+    const updatedTransaction = await ManualPaymentRepository.updateManualTransaction(transaction.id, {
+        status: PaymentStatus.REJECTED_MANUAL,
+        verifiedAt: new Date(),
+        verifiedById: verifierId,
+        rejectionNote: reason
+    });
+
+    await db.order.update({
+        where: { id: orderId },
+        data: {
+            paymentStatus: PaymentStatus.REJECTED_MANUAL,
+            orderStatus: OrderStatus.AWAITING_PAYMENT
+        }
+    });
+
+    try {
+        socketUtils.emitToBusinessOutlet(transaction.order.outletId, {
+            type: 'manual_payment_rejected',
+            orderId,
+            amount: transaction.amount,
+            paymentMethod: transaction.manualMethod,
+            reason,
+            timestamp: new Date()
+        });
+    } catch (socketError) {
+        console.error('❌ Error emitting manual_payment_rejected event:', socketError);
+    }
+
+    try {
+        const customerPhone = transaction.order.guestCustomer?.phone;
+        if (customerPhone) {
+            SocketEmitter.getInstance().emitToCustomer(customerPhone, {
+                orderId,
+                amount: transaction.amount,
+                status: 'rejected',
+                transactionStatus: 'REJECTED_MANUAL',
+                isManual: true,
+                paymentMethod: transaction.manualMethod ?? 'manual',
+                message: `Pembayaran manual ditolak: ${reason}`,
+                type: 'payment_failed'
+            });
+        }
+    } catch (customerSocketError) {
+        console.error('❌ Error emitting customer manual payment rejected event:', customerSocketError);
+    }
+
+    return updatedTransaction;
+}
+
+export async function getManualPaymentsService(options?: {
+    status?: PaymentStatus[];
+    outletId?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+}) {
+    return ManualPaymentRepository.listManualTransactions(options);
+}
+
+export async function getPaymentOrderService(orderId: string) {
+    const data = await PaymentRepository.getByOrderId(orderId)
+
+    if (!data) throw new AppError(`Orderid tidak ditemukan`, HttpStatus.NOT_FOUND);
+
+    const { order: rawOrder, ...transaction } = data
+    const { guestCustomer, items, outlet, ...order } = rawOrder
+
+    const convertMidtrans = transaction.rawMidtrans as unknown as PaymentResponse | null;
+
+    return {
+        id: transaction.orderId,
+        status: order.orderStatus,
+        totalAmount: transaction.amount,
+        payment: {
+            status: transaction.status,
+            method: convertMidtrans ? `MIDTRANS` : `MANUAL`,
+            isManual: transaction.isManual,
+            midtrans: convertMidtrans ? {
+                transaction_id: convertMidtrans?.transaction_id ?? null,
+                order_id: convertMidtrans?.order_id ?? null,
+                gross_amount: convertMidtrans?.gross_amount ?? null,
+                transaction_status: convertMidtrans?.transaction_status ?? null,
+                payment_type: convertMidtrans?.payment_type,
+                expiry_time: convertMidtrans?.expiry_time,
+                actions: convertMidtrans?.actions ?? null,
+                va_numbers: convertMidtrans?.va_numbers ?? null,
+                currency: 'IDR'
+            } : null,
+            manual: transaction.isManual ? {
+                type: transaction.paymentMethod,
+                paymentProofUrl: transaction.paymentProofUrl,
+                intruction: {
+                    manualType: transaction.paymentMethod,
+                    outletName: outlet.name,
+                    businessName: outlet.business.name,
+                    note: null,
+                    qrImageUrl: outlet.manualQrImageUrl,
+                    expiry_time: transaction.expiresAt,
+                    bankAccount: transaction.paymentMethod === 'manual-transfer' ? {
+                        bankName: outlet.business.bankName,
+                        accountNumber: outlet.business.bankAccount,
+                        accountHolder: outlet.business.accountHolder
+                    } : null
+                }
+            } : null
+        },
+        customerDetails: {
+            name: guestCustomer.name,
+            phone: guestCustomer.phone
+        },
+        feeDetail: {
+            appFee: order.appFee,
+            transactionFee: order.midtransFee
+        },
+        items: items.map((item) => ({
+            id: item.id,
+            name: item.product.name,
+            price: item.product.price,
+            quantity: item.quantity,
+            subtotal: item.product.price * item.quantity
+        }))
+    }
 }

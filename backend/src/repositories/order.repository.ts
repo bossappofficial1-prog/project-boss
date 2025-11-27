@@ -70,9 +70,15 @@ export class OrderRepository {
                         product: true,
                     },
                 },
-                guestCustomer: true, // <-- SELALU SERTAKAN INI
+                guestCustomer: true,
                 outlet: true,
-                bookingSlot: true,
+                bookingSlot: {
+                    include: {
+                        staff: true,
+                    }
+                },
+                transaction: true,
+                assignedStaff: true as any,
             },
         });
     }
@@ -91,22 +97,57 @@ export class OrderRepository {
                                 id: true,
                                 name: true,
                                 price: true,
+                                type: true,
+                                image: true,
+                                unit: true,
+                                serviceDurationMinutes: true,
+                                outletId: true,
                             }
                         }
+                    }
+                },
+                bookingSlot: {
+                    select: {
+                        id: true,
+                        date: true,
+                        startTime: true,
+                        endTime: true,
+                        status: true,
+                        productId: true,
+                        staffId: true,
+                        staff: {
+                            select: {
+                                id: true,
+                                name: true,
+                                phone: true,
+                                role: true,
+                            }
+                        } as any,
                     }
                 },
                 guestCustomer: { select: { name: true, phone: true, id: true } },
                 outlet: {
                     select: {
                         id: true,
-                        name: true
+                        name: true,
+                        phone: true,
+                        address: true,
                     }
                 },
+                assignedStaff: {
+                    select: {
+                        id: true,
+                        name: true,
+                        phone: true,
+                        role: true,
+                    }
+                } as any,
                 transaction: {
                     select: {
                         id: true,
                         paymentMethod: true,
-                        status: true
+                        status: true,
+                        expiresAt: true,
                     }
                 }
             },

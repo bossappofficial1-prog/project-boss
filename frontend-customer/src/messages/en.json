@@ -172,6 +172,28 @@
         "startSearching": "Start searching",
         "searchDescription": "Enter keywords to find outlets, products, or services"
     },
+    "outletsPage": {
+        "title": "Browse Outlets",
+        "subtitle": "Discover trusted partners and featured services nearby",
+        "appBarTitle": "Outlets",
+        "searchPlaceholder": "Search outlets, services, or promos...",
+        "searchDescription": "Use keywords to narrow down the list.",
+        "loading": "Loading outlets...",
+        "loadingMore": "Loading more outlets...",
+        "loadMore": "Show more outlets",
+        "noMore": "No more outlets to display",
+        "empty": {
+            "title": "No outlets found",
+            "description": "Try a different keyword or check back later.",
+            "emptySearch": "Start by typing into the search bar above to locate outlets."
+        },
+        "error": {
+            "title": "Unable to load outlets",
+            "generic": "Something went wrong. Please try again."
+        },
+        "results": "Showing {count} of {total} outlets",
+        "resultsHint": "Scroll to explore more options."
+    },
     "search": {
         "placeholder": "Search outlets, products, services...",
         "loading": "Searching...",
@@ -513,8 +535,8 @@
         "order_singular": "order",
         "order_plural": "orders",
         "found": "found",
-        "error_title": "Failed to Load Orders",
-        "error_message": "An error occurred while fetching your orders. Please try again later.",
+        "error_title": "No Orders Yet",
+        "error_message": "You don't have any orders yet. Start exploring outlets and order now!",
         "no_orders_title": "No Orders Yet",
         "no_orders_description": "You haven't placed any orders. Start ordering from nearby outlets!",
         "explore_outlets": "Explore Outlets",
@@ -524,12 +546,152 @@
             "browse": "Browse Outlets"
         },
         "status": {
+            "all": "All",
             "pending": "Waiting for Confirmation",
             "confirmed": "Order Confirmed",
             "preparing": "Being Prepared",
             "ready": "Ready for Pickup",
+            "on_going": "On Going",
+            "completed": "Completed",
+            "cancelled": "Cancelled",
+            "awaiting_payment": "Awaiting Payment",
+            "processing": "Processing",
+            "confirmed_label": "Confirmed",
+            "ready_label": "Ready",
+            "on_going_label": "On Going",
+            "completed_label": "Completed",
+            "cancelled_label": "Cancelled"
+        },
+        "tabs": {
+            "all": "All",
+            "awaiting_payment": "Unpaid",
+            "processing": "Processing",
+            "confirmed": "Confirmed",
+            "ready": "Ready",
+            "on_going": "On Going",
             "completed": "Completed",
             "cancelled": "Cancelled"
+        },
+        "dateGroups": {
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "thisWeek": "This Week",
+            "thisMonth": "This Month",
+            "older": "Older"
+        },
+        "actions": {
+            "pay": "Pay",
+            "cancel": "Cancel",
+            "contact": "Contact",
+            "confirm": "Confirm",
+            "reorder": "Reorder",
+            "addToCalendar": "Add to calendar",
+            "viewDetails": "View Details",
+            "close": "Close",
+            "contactOutlet": "Contact Outlet"
+        },
+        "messages": {
+            "contactRedirect": "Opening WhatsApp chat...",
+            "contactUnavailable": "Outlet phone number is unavailable.",
+            "contactMessage": "Hello {outletName}, I would like to ask about my order with ID {orderId}.",
+            "missingPhone": "Please set your phone number in your profile before using this action.",
+            "cancelSuccess": "Your order has been cancelled.",
+            "cancelError": "We could not cancel the order. Please try again.",
+            "confirmSuccess": "Thank you! The order has been marked as completed.",
+            "confirmError": "We could not confirm the order. Please try again.",
+            "reorderEmpty": "This order has no items to reorder.",
+            "reorderServiceUnsupported": "Reorder is currently available for goods items only.",
+            "reorderSuccess": "Items added to your cart. Review them before checkout.",
+            "reorderError": "We could not add the items to your cart. Please try again.",
+            "genericError": "We could not load your orders. Please try again.",
+            "orderIdCopied": "Order ID copied!",
+            "calendarSuccess": "Calendar event downloaded.",
+            "calendarError": "We could not create the calendar event. Please try again.",
+            "calendarMissingSchedule": "Schedule is not available yet. Please check again later.",
+            "errors": {
+                "orderNotFound": "We couldn't find this order.",
+                "ownershipMismatch": "This order does not belong to your phone number.",
+                "notCancellable": "This order can no longer be cancelled.",
+                "confirmDeliveryOnly": "Only delivery orders can be confirmed using this action.",
+                "confirmNotReady": "This order is not ready to be confirmed yet.",
+                "genericTitle": "Unable to load orders",
+                "generic": "Something went wrong. Please try again."
+            },
+            "confirmations": {
+                "cancel": {
+                    "title": "Cancel this order?",
+                    "message": "This action cannot be undone. Your order will be permanently cancelled.",
+                    "confirm": "Yes, cancel",
+                    "cancel": "Keep order"
+                },
+                "confirm": {
+                    "title": "Mark order as completed?",
+                    "message": "Confirm only after you have received your order from the outlet.",
+                    "confirm": "Confirm order",
+                    "cancel": "Not yet"
+                }
+            }
+        },
+        "detail": {
+            "title": "Order Details",
+            "orderId": "Order ID",
+            "progress": "Order Progress",
+            "currentStatus": "Current",
+            "outletInfo": "Outlet Information",
+            "customerInfo": "Customer Information",
+            "serviceQueue": "Service Queue",
+            "itemDetails": "Item Details",
+            "paymentSummary": "Payment Summary",
+            "paymentMethod": "Payment Method",
+            "subtotal": "Subtotal",
+            "serviceFee": "Service Fee",
+            "transactionFee": "Transaction Fee",
+            "totalPayment": "Total Payment",
+            "quantity": "Quantity"
+        },
+        "queue": {
+            "positionLabel": "Queue position",
+            "positionPending": "Pending",
+            "peopleAhead": "{count} ahead",
+            "noOneAhead": "You're next",
+            "estimatedStart": "Est. start {date}",
+            "schedulePending": "Schedule pending"
+        },
+        "timeline": {
+            "awaiting_payment": "Awaiting Payment",
+            "processing": "Processing",
+            "confirmed": "Confirmed",
+            "ready": "Ready for Pickup",
+            "on_going": "On Going",
+            "completed": "Completed"
+        },
+        "card": {
+            "orderId": "Order ID",
+            "from": "From",
+            "items": "items"
+        },
+        "search": {
+            "placeholder": "Search order ID, outlet, product...",
+            "searching": "Searching...",
+            "noResults": "No results for \"{query}\"",
+            "resultsFound": "{count} orders found",
+            "clearSearch": "Clear search"
+        },
+        "sort": {
+            "label": "Sort",
+            "newest": "Newest",
+            "oldest": "Oldest",
+            "priceHigh": "Highest Price",
+            "priceLow": "Lowest Price"
+        },
+        "timer": {
+            "timeRemaining": "Time Remaining",
+            "expired": "Expired",
+            "hours": "Hours",
+            "minutes": "Minutes",
+            "seconds": "Seconds",
+            "expiringWarning": "Complete payment soon!",
+            "urgentWarning": "Payment will expire soon!"
         }
     },
     "payment": {
@@ -538,11 +700,13 @@
         "categories": {
             "all": "All",
             "qris": "QRIS",
-            "va": "Bank Transfer"
+            "va": "Bank Transfer",
+            "manual": "Manual"
         },
         "types": {
             "qris": "QRIS",
-            "va": "Bank Transfer"
+            "va": "Bank Transfer",
+            "manual": "Manual"
         },
         "loading": "Loading payment methods...",
         "error": {
@@ -618,6 +782,7 @@
             "phoneInvalid": "Invalid phone number format"
         },
         "errors": {
+            "errorTitle": "Something went wrong",
             "noItems": "No items found. Please go back to cart and add items.",
             "paymentFailed": "Payment processing failed. Please try again."
         }
@@ -632,6 +797,78 @@
             "message": "Are you sure you want to cancel this payment? This action cannot be undone.",
             "confirm": "Yes, Cancel",
             "cancel": "No"
+        }
+    },
+    "paymentDetail": {
+        "title": "Payment Details",
+        "status": {
+            "pending": {
+                "title": "Awaiting Payment",
+                "description": "We are waiting for your payment to be completed."
+            },
+            "processing": {
+                "title": "Processing Payment",
+                "description": "Your payment is being verified by the outlet."
+            },
+            "success": {
+                "title": "Payment Successful",
+                "description": "Thank you! The outlet has received your payment."
+            },
+            "failed": {
+                "title": "Payment Failed",
+                "description": "The transaction did not go through. Please create a new payment."
+            },
+            "expired": {
+                "title": "Payment Expired",
+                "description": "The payment window has passed. Please create a new payment."
+            },
+            "cancelled": {
+                "title": "Payment Cancelled",
+                "description": "This payment has been cancelled."
+            },
+            "unknown": {
+                "title": "Payment Status",
+                "description": "We cannot determine the payment status yet."
+            }
+        },
+        "overview": {
+            "title": "Overview",
+            "method": "Payment Method",
+            "total": "Total Amount",
+            "expiry": "Expires At"
+        },
+        "method": {
+            "midtrans": "Midtrans",
+            "manual": "Manual Payment"
+        },
+        "midtrans": {
+            "vaTitle": "Virtual Account ({bank})",
+            "qrisTitle": "QRIS Payment"
+        },
+        "manual": {
+            "title": "Manual Payment Instructions",
+            "outlet": "Outlet",
+            "total": "Total Payment",
+            "qrisTitle": "Scan QR",
+            "qrisDescription": "Scan this QR code with your preferred e-wallet and pay the exact amount.",
+            "bankTitle": "Bank Transfer Details",
+            "bank": "Bank",
+            "accountNumber": "Account Number",
+            "accountName": "Account Holder",
+            "note": "Additional Notes"
+        },
+        "manualUpload": {
+            "title": "Upload Payment Proof",
+            "description": "Upload your payment receipt so the outlet can verify it faster.",
+            "hint": "Supported formats: JPG, PNG, WEBP, or PDF (max 10MB).",
+            "uploadButton": "Upload Proof",
+            "uploading": "Uploading...",
+            "success": "Payment proof uploaded. The outlet will confirm shortly.",
+            "error": "Failed to upload payment proof. Please try again.",
+            "fileTooLarge": "File is too large. Maximum size is 10MB.",
+            "invalidType": "Unsupported file type. Use JPG, PNG, WEBP, or PDF.",
+            "removeFile": "Remove File",
+            "expired": "This payment has expired so uploads are disabled."
         }
     },
     "paymentSuccess": {
@@ -752,6 +989,7 @@
             "title": "Order Summary",
             "subtotal": "Subtotal",
             "applicationFee": "Application Fee",
+            "transactionFee": "Transaction Fee",
             "total": "Total"
         },
         "footer": {

@@ -1,19 +1,17 @@
 // Checkout related types
 import { CartItem } from '@/hooks/useCart';
+import type { PaymentMethod as GlobalPaymentMethod } from '.';
 
 export interface OutletSummary {
     outletName: string;
+    outletId: string;
     subtotal: number;
-    transactionFee: number;
-    applicationFee: number;
     items: CartItem[];
 }
 
 export interface CheckoutData {
     outlets: OutletSummary[];
-    subtotal: number;        // Total subtotal semua outlet
-    totalTransactionFee: number;  // Total biaya transaksi
-    applicationFee: number;  // Biaya aplikasi
+    subtotal: number;
     grandTotal: number;      // Total keseluruhan
     selectedPaymentMethod?: PaymentMethod; // Untuk flow ke payment
 }
@@ -21,8 +19,8 @@ export interface CheckoutData {
 export interface CheckoutProps {
     outlets: OutletSummary[];
     subtotal: number;
-    totalTransactionFee: number;
-    applicationFee: number;
+    totalTransactionFee?: number;
+    applicationFee?: number;
     grandTotal: number;
 }
 
@@ -34,15 +32,9 @@ export interface PaymentFormData {
     checkoutData: CheckoutData;
 }
 
-export interface PaymentMethod {
-    id: string;
-    name: string;
-    description: string;
-    icon: React.ReactNode;
-    type: 'qris' | 'va' | 'credit';
-}
+export type PaymentMethod = GlobalPaymentMethod;
 
-export type PaymentMethodType = 'qris' | 'va' | 'credit';
+export type PaymentMethodType = PaymentMethod['type'];
 
 // Payment flow states
 export interface PaymentFlowState {

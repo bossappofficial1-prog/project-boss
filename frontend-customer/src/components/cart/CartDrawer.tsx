@@ -390,7 +390,9 @@ export function FloatingCartButton({ className = '' }: { className?: string }) {
         setMounted(true);
     }, []);
 
-    if (!mounted || totalItems === 0 || isRouteDisabled(pathname, ROUTES_CART_DISABLED)) return null;
+    const isOutletPage = pathname?.startsWith('/outlet/');
+
+    if (!mounted || totalItems === 0 || !isOutletPage || isRouteDisabled(pathname, ROUTES_CART_DISABLED)) return null;
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -399,10 +401,11 @@ export function FloatingCartButton({ className = '' }: { className?: string }) {
     }
 
     return (
-        <FloatingButton>
+        <FloatingButton
+        >
             <Button
-                size="lg"
-                className={"rounded-full bg-blue-500 hover:bg-blue-600 h-12 w-12 p-2 shadow-lg hover:shadow-xl transition-shadow" + className}
+                size="sm"
+                className={"rounded-full bg-blue-500 hover:bg-blue-600 h-12 w-12 scale-90 shadow-lg hover:shadow-xl transition-shadow" + className}
                 onClick={handleClick}
             >
                 <div className="relative">

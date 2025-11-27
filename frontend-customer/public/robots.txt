@@ -1,9 +1,0 @@
-# *
-User-agent: *
-Allow: /
-
-# Host
-Host: bossapp.id
-
-# Sitemaps
-Sitemap: bossapp.id/sitemap.xml
