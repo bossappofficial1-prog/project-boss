@@ -77,6 +77,15 @@ export function formatChartDate(
     }
 }
 
+export function formatISOStringDate(isoString: string) {
+    const date = new Date(isoString)
+    return date.toLocaleDateString(`id-ID`, {
+        day: `numeric`,
+        month: `long`,
+        year: `numeric`
+    })
+}
+
 export function parseRemotePatterns(patterns: string): RemotePattern[] {
     // Helper to extract a RemotePattern from a URL string
     const fromUrl = (urlStr: string): RemotePattern | null => {

@@ -86,7 +86,7 @@ export default function ThemeToggle() {
           />
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+          <div className="absolute right-0 top-full mt-2 w-40 bg-card border-2 rounded-lg shadow-lg z-50">
             {themes.map((themeOption) => (
               <button
                 key={themeOption.value}
@@ -95,8 +95,8 @@ export default function ThemeToggle() {
                   setIsOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${theme === themeOption.value
-                    ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                    : 'text-gray-700 dark:text-gray-300'
+                  ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                  : 'text-gray-700 dark:text-gray-300'
                   }`}
               >
                 {themeOption.icon}

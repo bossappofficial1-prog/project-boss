@@ -13,7 +13,8 @@ import {
     Wallet,
     Server,
     ArrowRight,
-    Briefcase
+    Briefcase,
+    LucideIcon
 } from "lucide-react"
 import {
     Area,
@@ -39,16 +40,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
-// --- HELPER CURRENCY IDR ---
-const formatIDR = (value: number) => {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(value)
-}
+import { AdminOverviewKPIsResponse, useKPIs } from "@/hooks/useOverview"
+import { formatCurrencyIDR } from "@/components/owner/dashboard/StatsCards"
 
 // --- MOCK DATA (Adjusted for IDR) ---
 const revenueData = [
@@ -111,6 +104,9 @@ const activityFeed = [
 ]
 
 export default function DashboardOverview() {
+    const { data: kpiData } = useKPIs()
+    console.log(kpiData);
+
     return (
         <div className="flex flex-col space-y-3 p-3">
 
@@ -121,67 +117,33 @@ export default function DashboardOverview() {
                     <Button variant="outline" size="sm" className="hidden md:flex shadow-sm rounded-md">
                         Download Laporan
                     </Button>
-                    <Button size="sm" className="shadow-sm rounded-md">
-                        <ArrowRight className="mr-2 h-4 w-4" /> Live View
-                    </Button>
+
                 </div>
             </div>
 
             {/* --- KPI SECTION 1: REVENUE (Grid 3) --- */}
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="shadow-md rounded-md border-border/50">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Pendapatan (Hari Ini)
-                        </CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{formatIDR(18500000)}</div>
-                        <p className="text-xs text-muted-foreground flex items-center mt-1">
-                            <span className="text-emerald-500 flex items-center font-medium">
-                                +20.1% <ArrowUpRight className="h-3 w-3 ml-0.5" />
-                            </span>
-                            <span className="ml-1">dari kemarin</span>
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-md rounded-md border-border/50">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Pendapatan (Mingguan)
-                        </CardTitle>
-                        <Activity className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{formatIDR(128390000)}</div>
-                        <p className="text-xs text-muted-foreground flex items-center mt-1">
-                            <span className="text-emerald-500 flex items-center font-medium">
-                                +4.5% <ArrowUpRight className="h-3 w-3 ml-0.5" />
-                            </span>
-                            <span className="ml-1">dari minggu lalu</span>
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-md rounded-md border-border/50">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Pendapatan (Bulanan)
-                        </CardTitle>
-                        <CreditCard className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{formatIDR(452231000)}</div>
-                        <p className="text-xs text-muted-foreground flex items-center mt-1">
-                            <span className="text-rose-500 flex items-center font-medium">
-                                -1.2% <ArrowDownRight className="h-3 w-3 ml-0.5" />
-                            </span>
-                            <span className="ml-1">dari bulan lalu</span>
-                        </p>
-                    </CardContent>
-                </Card>
+                <KpiCard
+                    Icon={DollarSign}
+                    title="Pendapatan (Hari Ini)"
+                    nominal={kpiData?.today || 0}
+                    growth={kpiData?.todayGrowth || 0}
+                    description="dari kemarin"
+                />
+                <KpiCard
+                    Icon={Activity}
+                    title="Pendapatan (Mingguan)"
+                    nominal={kpiData?.week || 0}
+                    growth={kpiData?.weekGrowth || 0}
+                    description="dari minggu lalu"
+                />
+                <KpiCard
+                    Icon={DollarSign}
+                    title="Pendapatan (Bulanan)"
+                    nominal={kpiData?.month || 0}
+                    growth={kpiData?.monthGrowth || 0}
+                    description="dari bulan lalu"
+                />
             </div>
 
             {/* --- KPI SECTION 2: OPERATIONAL (Grid 4) --- */}
@@ -271,7 +233,7 @@ export default function DashboardOverview() {
                                         }}
                                     />
                                     <Tooltip
-                                        formatter={(value: number) => formatIDR(value)}
+                                        formatter={(value: number) => formatCurrencyIDR(value)}
                                         contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '6px' }}
                                         itemStyle={{ color: 'var(--card-foreground)' }}
                                     />
@@ -411,5 +373,46 @@ export default function DashboardOverview() {
                 </Card>
             </div>
         </div>
+    )
+}
+
+type KpiCardProps = {
+    title: string
+    nominal: number
+    description?: string
+    Icon: LucideIcon
+    growth?: number
+}
+
+export function KpiCard({ title, nominal, Icon, description, growth }: KpiCardProps) {
+    return (
+        <Card className="shadow-md rounded-md border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {title}
+                </CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{formatCurrencyIDR(nominal)}</div>
+                <p className="text-xs text-muted-foreground flex items-center mt-1">
+                    {
+                        typeof growth === 'number' && (
+                            <>
+                                {growth < 0
+                                    ? <span className="text-red-500 flex items-center font-medium">
+                                        {growth}% <ArrowDownRight className="h-3 w-3 ml-0.5" />
+                                    </span>
+                                    : <span className="text-emerald-500 flex items-center font-medium">
+                                        {growth}% <ArrowUpRight className="h-3 w-3 ml-0.5" />
+                                    </span>
+                                }
+                                <span className="ml-1">{description}</span>
+                            </>
+                        )
+                    }
+                </p>
+            </CardContent>
+        </Card>
     )
 }

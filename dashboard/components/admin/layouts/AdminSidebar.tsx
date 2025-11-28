@@ -54,8 +54,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
                             <Link href="/admin/dashboard">
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground ring-2 ring-primary/20">
-                                    <Sparkles className="size-4" />
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-secondary text-primary-foreground ring-2 ring-primary/20">
+                                    <img src={'/icon-192x192.png'} className="size-5" />
                                 </div>
                                 <div className="grid flex-1 text-left leading-tight">
                                     <span className="truncate font-bold text-foreground">BOSS Platform</span>

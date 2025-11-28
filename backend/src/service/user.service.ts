@@ -24,6 +24,7 @@ export async function getAllUserService(params?: PaginationParams): Promise<Pagi
         role: user.role,
         isVerified: user.isVerified,
         avatar: user.avatar,
+        provider: user.provider,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
     }));

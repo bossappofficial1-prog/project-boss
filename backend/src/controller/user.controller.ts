@@ -24,7 +24,6 @@ export const getAllUserController = asyncHandler(async (req: Request, res: Respo
     };
 
     const result = await getAllUserService(paginationParams);
-
     return ResponseUtil.paginated(
         res,
         result.data,

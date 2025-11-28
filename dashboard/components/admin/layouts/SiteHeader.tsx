@@ -13,6 +13,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import ThemeToggle from "@/components/ThemeToggle"
+import { CommadSearch } from "@/components/shared/CommandSearc"
 
 export function SiteHeader() {
     return (
@@ -25,12 +26,13 @@ export function SiteHeader() {
                 <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
 
                 <div className="relative hidden md:flex items-center">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <CommadSearch />
+                    {/* <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <Input
                         type="search"
                         placeholder="Search workspace..."
                         className="h-9 w-64 rounded-lg bg-muted/50 pl-9 text-sm transition-colors focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring/50 border-transparent hover:bg-muted/80"
-                    />
+                    /> */}
                 </div>
             </div>
 

@@ -165,6 +165,7 @@ export class UserRepository {
                 phone: true,
                 role: true,
                 isVerified: true,
+                provider: true,
                 avatar: true,
                 createdAt: true,
                 updatedAt: true
