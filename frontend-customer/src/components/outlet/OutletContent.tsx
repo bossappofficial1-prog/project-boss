@@ -293,7 +293,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
 
     return (
         <div className="pb-20">
-            <div className="relative h-52 bg-muted -mx-4 -mt-4">
+            <div className="relative h-60 bg-muted -mx-4 -mt-4">
                 {outlet.image ? (
                     <ImageColorThief
                         src={resolveCustomerImageUrl(outlet.image)}

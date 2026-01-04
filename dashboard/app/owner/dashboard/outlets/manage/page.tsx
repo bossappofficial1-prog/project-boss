@@ -412,7 +412,7 @@ export default function ManageOutletsPage() {
                       />
                     }
                   </div>
-                  <ImageUploader onFileChange={(file) => { handleImageUpload(file!, 'qris') }} />
+                  <ImageUploader onValueChange={(file) => { handleImageUpload(file!, 'qris') }} />
                 </div>
               ) : (
                 <div>

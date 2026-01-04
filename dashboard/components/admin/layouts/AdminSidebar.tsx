@@ -1,6 +1,10 @@
-'use client'
+"use client"
 
-import React from "react"
+import * as React from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { ChevronRight, LogOut, Sparkles } from "lucide-react"
+
 import {
     Sidebar,
     SidebarContent,
@@ -14,216 +18,200 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarMenuSub,
-    useSidebar
+    SidebarMenuSubButton,
+    SidebarMenuSubItem
 } from "@/components/ui/sidebar"
-import { cn } from "@/lib/utils"
 import {
-    BarChart3,
-    Calendar,
-    ChevronDown,
-    ChevronRight,
-    FileText,
-    Folder,
-    HelpCircle,
-    Home,
-    LayoutDashboard,
-    LogOut,
-    Mail,
-    Settings,
-    User,
-    Users
-} from "lucide-react"
-import type { LucideIcon } from "lucide-react"
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { sidebarData } from "@/config/sidebar"
+import { useAuth } from "@/hooks/useAuth"
+import ConfirmationModal from "@/components/ui/confirmation-modal"
 
-export function AdminSidebar() {
-    type SidebarItem = {
-        id: string
-        label: string
-        icon?: LucideIcon
-        badge?: string
-        children?: SidebarItem[]
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const pathname = usePathname()
+    const { user, logout } = useAuth()
+    const [isOpenDialog, setIsOpenDialog] = React.useState(false)
+    const [logoutLoading, setLogoutLoading] = React.useState(false)
+
+    // Helper function untuk cek apakah URL aktif
+    const isActive = (url: string) => {
+        return pathname === url || pathname.startsWith(`${url}/`)
     }
 
-    type SidebarSection = {
-        label: string
-        items: SidebarItem[]
-    }
-
-    const sidebarSections: SidebarSection[] = [
-        {
-            label: "Main Menu",
-            items: [
-                { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-                { id: "home", label: "Home", icon: Home },
-                { id: "analytics", label: "Analytics", icon: BarChart3, badge: "New" },
-                { id: "messages", label: "Messages", icon: Mail, badge: "12" },
-            ],
-        },
-        {
-            label: "Workspace",
-            items: [
-                {
-                    id: "projects",
-                    label: "Projects",
-                    icon: Folder,
-                    children: [
-                        { id: "p1", label: "Website Redesign" },
-                        { id: "p2", label: "Mobile App" },
-                        { id: "p3", label: "Marketing Campaign" },
-                    ],
-                },
-                { id: "docs", label: "Documents", icon: FileText },
-                { id: "calendar", label: "Calendar", icon: Calendar },
-                { id: "team", label: "Team", icon: Users },
-            ],
-        },
-        {
-            label: "Settings",
-            items: [
-                { id: "settings", label: "Settings", icon: Settings },
-                { id: "help", label: "Help & Support", icon: HelpCircle },
-            ],
-        },
-    ]
-
-    const [activeItem, setActiveItem] = React.useState("dashboard")
-    const [expandedItems, setExpandedItems] = React.useState<Record<string, boolean>>(() =>
-        Object.fromEntries(
-            sidebarSections
-                .flatMap((section) => section.items)
-                .filter((item) => item.children?.length)
-                .map((item) => [item.id, true])
-        )
-    )
-    const { state } = useSidebar()
-    const isCollapsed = state === "collapsed"
-
-    const handleSelect = (id: string) => {
-        setActiveItem(id)
-    }
-
-    const toggleItem = (id: string) => {
-        setExpandedItems((prev) => ({
-            ...prev,
-            [id]: !prev[id],
-        }))
+    const handleLogout = async () => {
+        try {
+            setLogoutLoading(true)
+            await logout()
+        } catch (error) {
+            console.log(error);
+        } finally { setLogoutLoading(false) }
     }
 
     return (
-        <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-            <SidebarHeader className="px-3 py-4">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            disabled
-                            className="h-auto cursor-default select-none gap-3 px-2 py-1.5 text-base font-semibold text-sidebar-foreground"
-                        >
-                            <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                <span>A</span>
-                            </div>
-                            <div className="min-w-0 space-y-0.5 text-left group-data-[collapsible=icon]:hidden">
-                                <span className="block truncate text-sm font-semibold">Acme Corp</span>
-                                <span className="block truncate text-xs text-muted-foreground">Enterprise Plan</span>
-                            </div>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
+        <>
+            <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar" {...props}>
+                {/* --- HEADER / LOGO --- */}
+                <SidebarHeader>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton size="lg" asChild className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                                <Link href="/admin/dashboard">
+                                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-secondary text-primary-foreground ring-2 ring-primary/20">
+                                        <img src={'/icon-192x192.png'} className="size-5" />
+                                    </div>
+                                    <div className="grid flex-1 text-left leading-tight">
+                                        <span className="truncate font-bold text-foreground">BOSS Platform</span>
+                                        <span className="truncate text-xs text-muted-foreground">Enterprise</span>
+                                    </div>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarHeader>
 
-            <SidebarContent>
-                {sidebarSections.map((section) => (
-                    <SidebarGroup key={section.label}>
-                        <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-                            {section.label}
-                        </SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                {section.items.map((item) => {
-                                    const Icon = item.icon
-                                    const hasChildren = Boolean(item.children?.length)
-                                    const isExpanded = expandedItems[item.id]
-                                    const isParentActive = activeItem === item.id
-                                    const isAnyChildActive = item.children?.some((child) => child.id === activeItem)
+                {/* --- MAIN CONTENT --- */}
+                <SidebarContent>
+                    {sidebarData.sections.map((section) => (
+                        <SidebarGroup key={section.label}>
+                            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+                            <SidebarGroupContent>
+                                <SidebarMenu>
+                                    {section.items.map((item) => {
+                                        // Cek apakah item memiliki submenu
+                                        const hasChildren = item.items && item.items.length > 0
+                                        // Cek apakah parent aktif (jika salah satu child aktif)
+                                        const isChildActive = hasChildren && item.items?.some((child) => isActive(child.url))
+                                        // State aktif untuk item biasa
+                                        const isItemActive = !hasChildren && isActive(item.url)
 
-                                    return (
-                                        <SidebarMenuItem key={item.id}>
-                                            <SidebarMenuButton
-                                                tooltip={item.label}
-                                                isActive={isParentActive || isAnyChildActive}
-                                                onClick={() => {
-                                                    if (hasChildren) {
-                                                        toggleItem(item.id)
-                                                    } else {
-                                                        handleSelect(item.id)
-                                                    }
-                                                }}
-                                                className="gap-3"
-                                                data-state={hasChildren ? (isExpanded ? "open" : "closed") : undefined}
-                                                aria-expanded={hasChildren ? isExpanded : undefined}
+                                        return hasChildren ? (
+                                            <Collapsible
+                                                key={item.title}
+                                                asChild
+                                                defaultOpen={isChildActive}
+                                                className="group/collapsible"
                                             >
-                                                {Icon ? <Icon className="size-5" /> : null}
-                                                <span className="flex-1 truncate text-sm font-medium group-data-[collapsible=icon]:hidden">
-                                                    {item.label}
-                                                </span>
-                                                {item.badge && (
-                                                    <SidebarMenuBadge className="bg-sidebar-accent text-sidebar-accent-foreground">
-                                                        {item.badge}
-                                                    </SidebarMenuBadge>
-                                                )}
-                                                {hasChildren && !isCollapsed && (
-                                                    isExpanded ? (
-                                                        <ChevronDown className="size-4 text-muted-foreground" />
-                                                    ) : (
-                                                        <ChevronRight className="size-4 text-muted-foreground" />
-                                                    )
-                                                )}
-                                            </SidebarMenuButton>
-                                            {hasChildren && !isCollapsed && isExpanded && (
-                                                <SidebarMenuSub>
-                                                    {item.children?.map((child) => {
-                                                        const ChildIcon = child.icon
-                                                        return (
-                                                            <SidebarMenuItem key={child.id}>
-                                                                <SidebarMenuButton
-                                                                    tooltip={child.label}
-                                                                    isActive={activeItem === child.id}
-                                                                    onClick={() => handleSelect(child.id)}
-                                                                    className={cn("pl-6", ChildIcon ? "gap-2" : undefined)}
-                                                                    size="sm"
-                                                                >
-                                                                    {ChildIcon ? <ChildIcon className="size-4" /> : null}
-                                                                    <span className="truncate text-sm">{child.label}</span>
-                                                                </SidebarMenuButton>
-                                                            </SidebarMenuItem>
-                                                        )
-                                                    })}
-                                                </SidebarMenuSub>
-                                            )}
-                                        </SidebarMenuItem>
-                                    )
-                                })}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                ))}
-            </SidebarContent>
+                                                <SidebarMenuItem>
+                                                    <CollapsibleTrigger asChild>
+                                                        <SidebarMenuButton
+                                                            tooltip={item.title}
+                                                            isActive={isChildActive}
+                                                            className="data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium"
+                                                        >
+                                                            {item.icon && <item.icon />}
+                                                            <span>{item.title}</span>
+                                                            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                                        </SidebarMenuButton>
+                                                    </CollapsibleTrigger>
+                                                    <CollapsibleContent>
+                                                        <SidebarMenuSub>
+                                                            {item.items?.map((subItem) => (
+                                                                <SidebarMenuSubItem key={subItem.title}>
+                                                                    <SidebarMenuSubButton
+                                                                        asChild
+                                                                        isActive={isActive(subItem.url)}
+                                                                        className="hover:bg-sidebar-accent/50 active:bg-sidebar-accent transition-colors"
+                                                                    >
+                                                                        <Link href={subItem.url}>
+                                                                            <span>{subItem.title}</span>
+                                                                        </Link>
+                                                                    </SidebarMenuSubButton>
+                                                                </SidebarMenuSubItem>
+                                                            ))}
+                                                        </SidebarMenuSub>
+                                                    </CollapsibleContent>
+                                                </SidebarMenuItem>
+                                            </Collapsible>
+                                        ) : (
+                                            <SidebarMenuItem key={item.title}>
+                                                <SidebarMenuButton
+                                                    asChild
+                                                    isActive={isItemActive}
+                                                    tooltip={item.title}
+                                                    className="transition-all duration-200 ease-in-out hover:translate-x-1"
+                                                >
+                                                    <Link href={item.url}>
+                                                        {item.icon && <item.icon />}
+                                                        <span>{item.title}</span>
+                                                        {item.badge && (
+                                                            <SidebarMenuBadge className="bg-primary/10 text-primary font-medium border border-primary/20">
+                                                                {item.badge}
+                                                            </SidebarMenuBadge>
+                                                        )}
+                                                    </Link>
+                                                </SidebarMenuButton>
+                                            </SidebarMenuItem>
+                                        )
+                                    })}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                    ))}
+                </SidebarContent>
 
-            <SidebarFooter className="border-t border-sidebar-border px-3 py-4">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton className="gap-3" tooltip="Account">
-                            <div className="flex size-9 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
-                                <User className="size-4" />
-                            </div>
-                            <div className="min-w-0 text-left group-data-[collapsible=icon]:hidden">
-                                <p className="truncate text-sm font-medium">John Doe</p>
-                                <p className="truncate text-xs text-muted-foreground">john@example.com</p>
-                            </div>
-                            <LogOut className="size-4 text-muted-foreground group-data-[collapsible=icon]:hidden" />
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarFooter>
-        </Sidebar>
+                {/* --- FOOTER / USER PROFILE --- */}
+                <SidebarFooter>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <SidebarMenuButton
+                                        size="lg"
+                                        className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                                    >
+                                        <Avatar className="h-8 w-8 rounded-lg border border-border/50">
+                                            <AvatarImage src={`/icon.ico`} alt={user?.name} />
+                                            <AvatarFallback className="rounded-lg font-bold bg-primary/10 text-primary">
+                                                {user?.name.substring(0, 2).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="grid flex-1 text-left leading-tight">
+                                            <span className="truncate font-semibold">{user?.name || '...'}</span>
+                                            <span className="truncate text-xs text-muted-foreground">{user?.email || '...'}</span>
+                                        </div>
+                                        <ChevronRight className="ml-auto size-4" />
+                                    </SidebarMenuButton>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                                    side="bottom"
+                                    align="end"
+                                    sideOffset={4}
+                                >
+                                    <DropdownMenuItem
+                                        onClick={() => setIsOpenDialog(!isOpenDialog)}
+                                        className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                                    >
+                                        <LogOut className="mr-2 size-4" />
+                                        Log out
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarFooter>
+            </Sidebar>
+            <ConfirmationModal
+                open={isOpenDialog}
+                onOpenChange={setIsOpenDialog}
+                title='Konfirmasi'
+                description='Kamu yakin ingin keluar?'
+                confirmText='keluar'
+                align="left"
+                onConfirm={handleLogout}
+                loading={logoutLoading}
+                confirmLoadingLabel='Loging out...'
+            />
+        </>
     )
 }

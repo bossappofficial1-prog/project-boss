@@ -13,7 +13,7 @@ export class UserService {
     }
 
     static async create(data: createUserPayload): Promise<User> {
-        return (await apiClient.post(this.baseUrl, data)).data.data
+        return apiClient.post(this.baseUrl, data)
     }
 
     static async update(userId: string, data: updateUserPayload): Promise<User> {

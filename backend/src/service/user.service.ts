@@ -2,7 +2,7 @@ import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
 import { UserRepository, PaginationParams, PaginatedResult, SafeUser } from "../repositories/user.repository";
-import { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
+import { createUserByAdminInput, CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
 import { UserMe } from "../types/Others";
 import { BcryptUtil } from "../utils";
 import { randomUUID } from "crypto";
@@ -24,6 +24,7 @@ export async function getAllUserService(params?: PaginationParams): Promise<Pagi
         role: user.role,
         isVerified: user.isVerified,
         avatar: user.avatar,
+        provider: user.provider,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
     }));
@@ -148,4 +149,10 @@ export async function createUserWithGoogleService(googleProfile: {
     });
 
     return { ...user, password: '[REDACTED]' };
+}
+
+export async function createUserByAdmin(dtoUser: createUserByAdminInput) {
+    const user = await UserRepository.createByAdmin(dtoUser)
+
+    return user
 }

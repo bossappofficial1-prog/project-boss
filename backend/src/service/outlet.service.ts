@@ -8,6 +8,7 @@ import { getBusinessByOwnerIdService } from "./business.service";
 import { getIsOutletOpen, calculateDistance, validateCoordinates, calculateBoundingBox, validatePaginationParams, validateRadius, mapOutletsWithOpenStatus, removeOperatingHoursFromOutlets } from "../utils/outlet.utils";
 import Redis from "ioredis";
 import { ImageService } from "./image.service";
+import { EventPublisher } from "../events/publisher";
 
 // Redis client
 const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
@@ -18,6 +19,7 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
         throw new AppError("Anda tidak berhak menambahkan outlet ke bisnis ini.", HttpStatus.FORBIDDEN);
     }
     const outlet = await OutletRepository.create(data);
+    await EventPublisher.publishOutletCreated(outlet);
     return outlet;
 }
 

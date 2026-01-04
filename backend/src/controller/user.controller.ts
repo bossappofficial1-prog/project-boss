@@ -1,6 +1,6 @@
 
 import { NextFunction, Request, Response } from "express";
-import { createUserService, deleteUserService, getAllUserService, getUserByIdService, updateUserService } from "../service/user.service";
+import { createUserByAdmin, createUserService, deleteUserService, getAllUserService, getUserByIdService, updateUserService } from "../service/user.service";
 import { ResponseUtil } from "../utils/response";
 import { asyncHandler } from "../middleware/error.middleware";
 import { PaginationParams } from "../repositories/user.repository";
@@ -24,7 +24,6 @@ export const getAllUserController = asyncHandler(async (req: Request, res: Respo
     };
 
     const result = await getAllUserService(paginationParams);
-
     return ResponseUtil.paginated(
         res,
         result.data,
@@ -67,4 +66,12 @@ export const createUserController = asyncHandler(async (req: Request, res: Respo
     const user = await createUserService(payload)
 
     return ResponseUtil.success(res, user, 201)
+})
+
+export const createUserByAdminController = asyncHandler(async (req: Request, res: Response) => {
+    const dtoUser = req.body
+
+    const result = await createUserByAdmin(dtoUser);
+
+    return ResponseUtil.success(res, result, 201)
 })

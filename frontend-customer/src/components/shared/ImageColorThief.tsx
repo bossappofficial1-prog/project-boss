@@ -65,7 +65,7 @@ export function ImageColorThief(props: {
 
     return (
         <div
-            className="w-full h-full rounded-md shadow-md flex items-center justify-center"
+            className="w-full h-full flex items-center justify-center"
             style={{ background: gradient }}
         >
             <ImageRender

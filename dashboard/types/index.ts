@@ -374,10 +374,10 @@ export interface FormState<T = any> {
   isDirty: boolean;
 }
 
-export interface TableColumn<T = any> {
-  key: keyof T | string;
+export interface TableColumn<T = any, K extends keyof T = keyof T> {
+  key: K;
   title: string;
-  render?: (value: any, record: T, index: number) => React.ReactNode;
+  render?: (value: T[K], record: T, index: number) => React.ReactNode;
   sortable?: boolean;
   width?: string | number;
   align?: 'left' | 'center' | 'right';
