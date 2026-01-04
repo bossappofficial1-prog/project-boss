@@ -305,3 +305,18 @@ export const getMetricsKPIs = asyncHandler(async (req: Request, res: Response) =
 
     return ResponseUtil.success(res, result)
 })
+
+export const revenueInRangeController = asyncHandler(async (req: Request, res: Response) => {
+    const fromRaw = req.query.from;
+    const toRaw = req.query.to;
+
+    const defaultFrom = new Date().toISOString();
+    const defaultTo = new Date();
+    defaultTo.setHours(0, 0, 0, 0);
+
+    const from = typeof fromRaw === 'string' ? fromRaw : defaultFrom
+    const to = typeof toRaw === 'string' ? toRaw : defaultTo.toISOString()
+    const result = await AdminV2Service.getRevenueInRange(from, to);
+
+    return ResponseUtil.success(res, result);
+})

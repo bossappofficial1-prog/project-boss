@@ -103,10 +103,16 @@ export class UserRepository {
         });
     }
 
+    static async createByAdmin(data: Pick<User, 'name' | 'email' | 'password' | 'role'>) {
+        return db.user.create({ data })
+    }
+
+    static async updateByAdmin(userId: string, data: Partial<User>) {
+        return db.user.update({ where: { id: userId }, data })
+    }
+
     static async createGoogleUser(data: Pick<User, 'name' | 'email' | 'password' | 'googleId' | 'provider' | 'isVerified' | 'role'>): Promise<User> {
-        return db.user.create({
-            data,
-        });
+        return db.user.create({ data });
     }
 
     static async update(id: string, data: Partial<Pick<User, 'name' | 'password' | 'isVerified' | 'verificationCode' | 'verificationCodeExpires'>>): Promise<User> {

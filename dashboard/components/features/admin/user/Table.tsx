@@ -4,7 +4,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { User } from "@/types/user"
-import { CheckCircle2, MailPlus, Shield, ShieldAlert, UserCog } from "lucide-react";
+import { CheckCircle2, MailPlus, ShieldAlert, Trash2, UserCog } from "lucide-react";
 import { formatISOStringDate } from "@/lib/utils";
 import { GoogleIcon } from "@/icons";
 
@@ -17,8 +17,21 @@ type UserTableProps = {
     onPaginationChange?: (params: { page: number; limit: number }) => void;
     limit?: number;
     paginationLength?: number
+    onEdit?: (user: User) => void
+    onDelete?: (user: User) => void
 }
-export function UserTable({ users, onSearchChange, onRefresh, onLoading, isRefresh, onPaginationChange, limit, paginationLength }: UserTableProps) {
+export function UserTable({
+    users,
+    onSearchChange,
+    onRefresh,
+    onLoading,
+    isRefresh,
+    onPaginationChange,
+    limit,
+    paginationLength,
+    onEdit,
+    onDelete
+}: UserTableProps) {
 
     return (
         <DataTable
@@ -30,7 +43,6 @@ export function UserTable({ users, onSearchChange, onRefresh, onLoading, isRefre
             onSearchChange={onSearchChange}
             searchPlaceholder="Cari pengguna"
             enableColumnResizing
-            enableRowSelection
             serverSidePagination
             serverLimit={limit || 10}
             totalItems={paginationLength}
@@ -120,24 +132,23 @@ export function UserTable({ users, onSearchChange, onRefresh, onLoading, isRefre
                     },
                 }
             ]}
-            actionViewType="dropdown"
-            rowActions={(user) => [
+            actionViewType="flex"
+            rowActions={() => [
                 {
-                    render(row) {
-                        return (<><UserCog className="mr-2 h-4 w-4 text-muted-foreground" /> Edit Detail</>)
+                    label: `Edit`,
+                    icon: UserCog,
+                    onClick(row) {
+                        return onEdit?.(row)
                     },
                 },
                 {
-                    render: () => (
-                        <>
-                            <Shield className="mr-2 h-4 w-4 text-muted-foreground" /> Ubah Role
-                        </>
-                    )
+                    onClick(row) {
+                        return onDelete?.(row)
+                    },
+                    label: 'Hapus',
+                    variant: 'destructive',
+                    icon: Trash2,
                 },
-                {
-                    label: 'Hapus User',
-                    variant: 'destructive'
-                }
             ]}
         />
     )

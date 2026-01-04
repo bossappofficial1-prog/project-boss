@@ -1,32 +1,16 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import {
-    ArrowUpRight,
-    ArrowDownRight,
     DollarSign,
     Users,
-    CreditCard,
     Activity,
     AlertCircle,
     Ticket,
     Wallet,
-    Server,
     ArrowRight,
-    Briefcase,
-    LucideIcon
+    Briefcase
 } from "lucide-react"
-import {
-    Area,
-    AreaChart,
-    Bar,
-    BarChart,
-    CartesianGrid,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from "recharts"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -34,14 +18,14 @@ import {
     CardContent,
     CardDescription,
     CardHeader,
-    CardTitle,
-    CardFooter
+    CardTitle
 } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { AdminOverviewKPIsResponse, useKPIs } from "@/hooks/useOverview"
+import { useKPIs, useRevenue } from "@/hooks/useOverview"
 import { formatCurrencyIDR } from "@/components/owner/dashboard/StatsCards"
+import { KpiCard } from "@/components/features/admin/overview/KpisCard"
+import { RevenueChart } from "@/components/features/admin/overview/RevenueChart"
+import { RecentActivity } from "@/components/features/admin/overview/RecentActivity"
+import { PayoutVsRequestChart } from "@/components/features/admin/overview/PayoutVsRequestChart"
 
 // --- MOCK DATA (Adjusted for IDR) ---
 const revenueData = [
@@ -104,12 +88,13 @@ const activityFeed = [
 ]
 
 export default function DashboardOverview() {
-    const { data: kpiData } = useKPIs()
-    console.log(kpiData);
+    const [from, setFilterFrom] = useState<string>()
+    const [to, setFilterTo] = useState<string>()
+    const { data: kpiData } = useKPIs();
+    const { data: revenueData } = useRevenue(from, to)
 
     return (
         <div className="flex flex-col space-y-3 p-3">
-
             {/* --- TITLE & ACTIONS --- */}
             <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-2xl font-bold tracking-tight">Dashboard Overview</h2>
@@ -117,7 +102,6 @@ export default function DashboardOverview() {
                     <Button variant="outline" size="sm" className="hidden md:flex shadow-sm rounded-md">
                         Download Laporan
                     </Button>
-
                 </div>
             </div>
 
@@ -126,21 +110,21 @@ export default function DashboardOverview() {
                 <KpiCard
                     Icon={DollarSign}
                     title="Pendapatan (Hari Ini)"
-                    nominal={kpiData?.today || 0}
+                    nominal={formatCurrencyIDR(kpiData?.today || 0)}
                     growth={kpiData?.todayGrowth || 0}
                     description="dari kemarin"
                 />
                 <KpiCard
                     Icon={Activity}
                     title="Pendapatan (Mingguan)"
-                    nominal={kpiData?.week || 0}
+                    nominal={formatCurrencyIDR(kpiData?.week || 0)}
                     growth={kpiData?.weekGrowth || 0}
                     description="dari minggu lalu"
                 />
                 <KpiCard
                     Icon={DollarSign}
                     title="Pendapatan (Bulanan)"
-                    nominal={kpiData?.month || 0}
+                    nominal={formatCurrencyIDR(kpiData?.month || 0)}
                     growth={kpiData?.monthGrowth || 0}
                     description="dari bulan lalu"
                 />
@@ -148,187 +132,46 @@ export default function DashboardOverview() {
 
             {/* --- KPI SECTION 2: OPERATIONAL (Grid 4) --- */}
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="shadow-md rounded-md border-border/50 bg-accent/5">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Bisnis Aktif</CardTitle>
-                        <Briefcase className="h-4 w-4 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">573</div>
-                        <p className="text-xs text-muted-foreground">+2 baru hari ini</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-md rounded-md border-border/50 bg-accent/5">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Penarikan Tertunda</CardTitle>
-                        <Wallet className="h-4 w-4 text-amber-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">24</div>
-                        <p className="text-xs  text-amber-600 font-medium">Perlu tinjauan</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-md rounded-md border-border/50 bg-accent/5">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Transaksi Gagal</CardTitle>
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">7</div>
-                        <p className="text-xs  text-destructive font-medium">Error kritis</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="shadow-md rounded-md border-border/50 bg-accent/5">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Tiket Terbuka</CardTitle>
-                        <Ticket className="h-4 w-4 text-blue-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">12</div>
-                        <p className="text-xs text-muted-foreground">3 prioritas tinggi</p>
-                    </CardContent>
-                </Card>
+                <KpiCard
+                    Icon={Briefcase}
+                    title="Bisnis Aktif"
+                    nominal={(kpiData?.businessActive || 0).toString()}
+                />
+                <KpiCard
+                    Icon={Wallet}
+                    title="Penarikan Tertunda"
+                    nominal={(kpiData?.withdrawalPending || 0).toString()}
+                />
+                <KpiCard
+                    Icon={AlertCircle}
+                    title="Transaksi Gagal"
+                    nominal={(kpiData?.failedTransaction || 0).toString()}
+                />
+                <KpiCard
+                    Icon={Ticket}
+                    title="Tiket Terbuka"
+                    nominal={`23`}
+                />
             </div>
 
             {/* --- MAIN CONTENT: CHART & FEED --- */}
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-7">
 
                 {/* REVENUE TREND CHART */}
-                <Card className="col-span-4 shadow-md rounded-md border-border/50">
-                    <CardHeader>
-                        <CardTitle>Tren Pendapatan</CardTitle>
-                        <CardDescription>
-                            Performa pendapatan Anda selama 7 bulan terakhir.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                        <div className="h-[300px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={revenueData}>
-                                    <defs>
-                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" vertical={false} />
-                                    <XAxis
-                                        dataKey="name"
-                                        stroke="#888888"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                    />
-                                    <YAxis
-                                        stroke="#888888"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickFormatter={(value) => {
-                                            // Format ringkas untuk axis Y (e.g. 10Jt)
-                                            return new Intl.NumberFormat("id-ID", { notation: "compact", compactDisplay: "short" }).format(value)
-                                        }}
-                                    />
-                                    <Tooltip
-                                        formatter={(value: number) => formatCurrencyIDR(value)}
-                                        contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '6px' }}
-                                        itemStyle={{ color: 'var(--card-foreground)' }}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="total"
-                                        stroke="var(--primary)"
-                                        strokeWidth={2}
-                                        fillOpacity={1}
-                                        fill="url(#colorRevenue)"
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+                <RevenueChart onFilterChange={(filter) => {
+                    setFilterFrom(filter.from);
+                    setFilterTo(filter.to);
+                }} data={revenueData} />
 
                 {/* RECENT ACTIVITY FEED */}
-                <Card className="col-span-3 shadow-md rounded-md border-border/50 flex flex-col">
-                    <CardHeader>
-                        <CardTitle>Aktivitas Terbaru</CardTitle>
-                        <CardDescription>Event sistem dan aksi user terkini.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-1 p-0">
-                        <ScrollArea className="h-[300px] px-6">
-                            <div className="space-y-6">
-                                {activityFeed.map((item) => (
-                                    <div key={item.id} className="flex items-start gap-4 group">
-                                        {item.avatar ? (
-                                            <Avatar className="h-9 w-9 border border-border">
-                                                <AvatarImage src={item.avatar} alt={item.user} />
-                                                <AvatarFallback>{item.user.substring(0, 2)}</AvatarFallback>
-                                            </Avatar>
-                                        ) : (
-                                            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-muted">
-                                                <Server className="h-4 w-4 text-muted-foreground" />
-                                            </div>
-                                        )}
-
-                                        <div className="grid gap-1">
-                                            <p className="text-sm font-medium leading-none group-hover:text-primary transition-colors">
-                                                {item.user}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {item.action}
-                                            </p>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] text-muted-foreground">{item.time}</span>
-                                                {item.status === 'critical' && <Badge variant="destructive" className="text-[10px] h-4 px-1 rounded-[4px]">Kritis</Badge>}
-                                                {item.status === 'warning' && <Badge variant="secondary" className="text-[10px] h-4 px-1 rounded-[4px] text-amber-600 bg-amber-100 dark:bg-amber-900/30">Review</Badge>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
-                    <CardFooter className="border-t border-border/50 p-3">
-                        <Button variant="ghost" size="sm" className="w-full text-muted-foreground text-xs">Lihat semua aktivitas</Button>
-                    </CardFooter>
-                </Card>
+                <RecentActivity data={activityFeed} />
             </div>
 
             {/* --- BOTTOM ROW: PAYOUT CHART & QUICK ACTIONS --- */}
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-7">
 
                 {/* PAYOUTS VS REQUESTS CHART */}
-                <Card className="col-span-4 shadow-md rounded-md border-border/50">
-                    <CardHeader>
-                        <CardTitle>Pembayaran vs Permintaan</CardTitle>
-                        <CardDescription>Perbandingan permintaan penarikan vs pembayaran diproses.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[200px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={payoutData}>
-                                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" vertical={false} />
-                                    <XAxis
-                                        dataKey="name"
-                                        stroke="#888888"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                    />
-                                    <Tooltip
-                                        cursor={{ fill: 'var(--muted)/0.4' }}
-                                        contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '6px' }}
-                                    />
-                                    <Bar dataKey="requests" name="Permintaan" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-                                    <Bar dataKey="payouts" name="Dibayar" fill="var(--muted-foreground)" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+                <PayoutVsRequestChart data={payoutData} />
 
                 {/* QUICK ACTIONS */}
                 <Card className="col-span-3 shadow-md rounded-md border-border/50">
@@ -336,7 +179,7 @@ export default function DashboardOverview() {
                         <CardTitle>Aksi Cepat</CardTitle>
                         <CardDescription>Kelola fungsi sistem utama dengan efisien.</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid gap-3">
+                    <CardContent className="grid gap-2">
                         <Button variant="outline" className="h-14 w-full justify-start gap-4 rounded-md shadow-sm hover:bg-muted/50 border-border/50 group">
                             <div className="flex items-center justify-center p-2 bg-primary/10 rounded-md group-hover:bg-primary/20 transition-colors">
                                 <Wallet className="h-5 w-5 text-primary" />
@@ -373,46 +216,5 @@ export default function DashboardOverview() {
                 </Card>
             </div>
         </div>
-    )
-}
-
-type KpiCardProps = {
-    title: string
-    nominal: number
-    description?: string
-    Icon: LucideIcon
-    growth?: number
-}
-
-export function KpiCard({ title, nominal, Icon, description, growth }: KpiCardProps) {
-    return (
-        <Card className="shadow-md rounded-md border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {title}
-                </CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{formatCurrencyIDR(nominal)}</div>
-                <p className="text-xs text-muted-foreground flex items-center mt-1">
-                    {
-                        typeof growth === 'number' && (
-                            <>
-                                {growth < 0
-                                    ? <span className="text-red-500 flex items-center font-medium">
-                                        {growth}% <ArrowDownRight className="h-3 w-3 ml-0.5" />
-                                    </span>
-                                    : <span className="text-emerald-500 flex items-center font-medium">
-                                        {growth}% <ArrowUpRight className="h-3 w-3 ml-0.5" />
-                                    </span>
-                                }
-                                <span className="ml-1">{description}</span>
-                            </>
-                        )
-                    }
-                </p>
-            </CardContent>
-        </Card>
     )
 }

@@ -14,10 +14,24 @@ export interface AdminOverviewKPIsResponse {
     failedTransaction: number
 }
 
+export interface AdminOverviewRevenueResponse {
+    label: string,
+    value: number
+}
+
 export const useKPIs = () => useQuery({
     queryKey: ['kpis-data'],
     queryFn: async (): Promise<AdminOverviewKPIsResponse> => {
         const response = await apiClient.get('/admin/dashboard/kpis-metrics');
-        return response.data
+        return response.data.data
     }
+})
+
+export const useRevenue = (from?: string, to?: string) => useQuery({
+    queryKey: ['revenue', from, to],
+    queryFn: async () => {
+        const response = (await apiClient.get(`/admin/dashboard/revenue?from=${from}&to=${to}`)).data.data
+        return response
+    },
+    enabled: !!from && !!to
 })

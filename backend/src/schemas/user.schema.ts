@@ -80,3 +80,50 @@ export const updateUserSchema = z
     });
 
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
+
+export const createUserByAdminSchema = z.object({
+    name: z
+        .string()
+        .nonempty({ message: "Nama tidak boleh kosong" })
+        .min(3, { message: "Nama minimal 3 karakter" })
+        .max(125, "Nama maksimal 125 karakter"),
+    email: z
+        .string()
+        .nonempty({ message: "Email tidak boleh kosong" })
+        .email({ message: "Email tidak valid" })
+        .max(255, { message: "Email terlalu panjang, maksimal 255 karakter" })
+        .transform(str => str.toLowerCase()),
+    password: z
+        .string()
+        .nonempty({ message: "Password tidak boleh kosong" })
+        .min(6, { message: "Password minimal 6 karakter" }),
+    role: z.nativeEnum(UserRole).default("OWNER")
+});
+
+export type createUserByAdminInput = z.infer<typeof createUserByAdminSchema>
+
+export const editUserByAdminSchema = z.object({
+    name: z
+        .string()
+        .nonempty({ message: "Nama tidak boleh kosong" })
+        .min(3, { message: "Nama minimal 3 karakter" })
+        .max(125, "Nama maksimal 125 karakter")
+        .optional(),
+    email: z
+        .string()
+        .nonempty({ message: "Email tidak boleh kosong" })
+        .email({ message: "Email tidak valid" })
+        .max(255, { message: "Email terlalu panjang, maksimal 255 karakter" })
+        .transform(str => str.toLowerCase())
+        .optional(),
+    password: z
+        .string()
+        .nonempty({ message: "Password tidak boleh kosong" })
+        .min(6, { message: "Password minimal 6 karakter" })
+        .optional(),
+    role: z.nativeEnum(UserRole).default("OWNER")
+        .optional(),
+});
+
+export type editUserByAdminInput = z.infer<typeof editUserByAdminSchema>

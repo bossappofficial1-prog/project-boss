@@ -1,20 +1,60 @@
 import { db } from "../config/prisma";
 
 export class AdminV2Repository {
-    static async getRevenue(
+    static async getRevenueSum(
         start: Date,
         end: Date,
     ) {
         return await db.order.aggregate({
             _sum: { totalAmount: true },
             where: {
-                createdAt: {
-                    gte: start,
-                    lt: end
-                }
+                AND: [
+                    {
+                        createdAt: {
+                            gte: start,
+                            lt: end
+                        }
+                    },
+                    {
+                        OR: [
+                            { paymentStatus: 'PROOF_SUBMITTED' },
+                            { paymentStatus: 'SUCCESS' },
+                        ]
+                    }
+                ]
             }
         })
     }
+
+    static async getRevenueGrouped(
+        start: Date,
+        end: Date,
+        interval: 'hour' | 'day' | 'week' | 'month' | 'year'
+    ) {
+        return await db.$queryRaw<
+            { bucket: Date; total: number }[]
+        >`
+        WITH grouped AS (
+            SELECT
+                date_trunc(${interval}, "createdAt") AS bucket,
+                SUM("totalAmount") AS total
+            FROM "Order"
+            WHERE 
+                "createdAt" >= ${start}
+                AND "createdAt" < ${end}
+                AND (
+                    "paymentStatus" = 'PROOF_SUBMITTED'
+                    OR "paymentStatus" = 'SUCCESS'
+                )
+            GROUP BY bucket
+            ORDER BY bucket
+        )
+        SELECT bucket, total FROM grouped;
+    `;
+    }
+
+
+
 
     static async getStatusPlatform() {
         const [businessCount, withdrawalPendingCount, transactionFailedCount] = await Promise.all([
