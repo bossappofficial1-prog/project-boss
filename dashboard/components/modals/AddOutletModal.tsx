@@ -254,7 +254,7 @@ export default function AddOutletModal({
     <>
       <Toaster richColors position="top-center" />
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl overflow-hidden flex flex-col">
+        <DialogContent className="w-[850px] max-h-[95dvh] overflow-hidden flex flex-col">
           <DialogHeader className="pb-4 border-b">
             <DialogTitle className="flex items-center gap-3 text-xl">
               <Store className="h-6 w-6 text-red-500" />

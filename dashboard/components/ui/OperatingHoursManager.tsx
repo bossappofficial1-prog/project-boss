@@ -163,14 +163,14 @@ export default function OperatingHoursManager({ outletId, operatingHoursData, on
 
     return (
       <div key={day.value} className="group relative">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-50/80 dark:from-gray-800/50 dark:to-gray-800/30 gap-3 sm:gap-4 border border-gray-100 dark:border-gray-700/50 hover:border-gray-200 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-sm">
+        <div className="flex flex-col p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-50/80 dark:from-gray-800/50 dark:to-gray-800/30 gap-3 sm:gap-4 border border-gray-100 dark:border-gray-700/50 hover:border-gray-200 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-sm">
 
           {/* Change Indicator */}
           {hasChanged && (
             <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full shadow-sm" title="Ada perubahan" />
           )}
 
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className="flex justify-between items-center gap-3 sm:gap-4 min-w-0">
             <Label className="w-16 sm:w-20 font-semibold text-sm sm:text-base flex-shrink-0 text-gray-700 dark:text-gray-300">
               {day.label}
             </Label>
@@ -192,7 +192,7 @@ export default function OperatingHoursManager({ outletId, operatingHoursData, on
             </div>
           </div>
 
-          <div className={`flex items-center gap-3 transition-all duration-300 ${dayData.isOpen
+          <div className={`flex items-center w-full gap-3 transition-all duration-300 ${dayData.isOpen
             ? 'opacity-100 translate-x-0'
             : 'opacity-30 pointer-events-none translate-x-2'
             }`}>
