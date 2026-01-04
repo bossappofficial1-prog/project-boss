@@ -402,7 +402,7 @@ export default function ManageOutletsPage() {
 
               {isEditing ? (
                 <div>
-                  <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                  <div className="relative w-full mb-3 spect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                     {qrisPreview &&
                       <img
                         src={qrisPreview}

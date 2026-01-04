@@ -254,7 +254,7 @@ export default function AddOutletModal({
     <>
       <Toaster richColors position="top-center" />
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[850px] max-h-[95dvh] overflow-hidden flex flex-col">
+        <DialogContent className="max-h-[95dvh] overflow-hidden flex flex-col">
           <DialogHeader className="pb-4 border-b">
             <DialogTitle className="flex items-center gap-3 text-xl">
               <Store className="h-6 w-6 text-red-500" />
@@ -343,7 +343,7 @@ export default function AddOutletModal({
             <section className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">Media</h3>
               {mode === 'edit' && outletDetail?.image && (
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-md border">
+                <div className="flex items-center gap-3 p-3 rounded-md border">
                   <img src={outletDetail.image} alt="Outlet" className="h-12 w-12 object-cover rounded-md" />
                   <div>
                     <p className="text-sm font-medium">Gambar saat ini</p>
@@ -351,7 +351,7 @@ export default function AddOutletModal({
                   </div>
                 </div>
               )}
-              <Controller control={control} name="file" render={({ field }) => <ImageUploader onValueChange={field.onChange} />} />
+              <Controller control={control} name="file" render={({ field }) => <ImageUploader value={field.value} onValueChange={field.onChange} />} />
               {errors.file && <p className="text-xs text-red-500 mt-1">{errors.file.message}</p>}
             </section>
 

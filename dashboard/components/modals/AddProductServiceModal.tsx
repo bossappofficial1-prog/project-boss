@@ -310,15 +310,17 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
                                 <img src={imagePriview} alt="Preview" className="h-24 w-24 object-cover rounded" />
                             </div>
                         )}
-                        <ImageUploader onValueChange={(f) => {
-                            if (f && f.size > 1024 * 1024) {
-                                setError('Ukuran gambar melebihi 1MB.')
-                                setFile(null)
-                            } else {
-                                setError(null)
-                                setFile(f)
-                            }
-                        }} />
+                        <ImageUploader
+                            value={file}
+                            onValueChange={(f) => {
+                                if (f && f.size > 1024 * 1024) {
+                                    setError('Ukuran gambar melebihi 1MB.')
+                                    setFile(null)
+                                } else {
+                                    setError(null)
+                                    setFile(f)
+                                }
+                            }} />
                         {uploading && (
                             <span className="text-xs text-gray-500">Uploading...</span>
                         )}
