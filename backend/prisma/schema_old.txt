@@ -9,6 +9,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // === ENUMS ===
@@ -47,9 +48,27 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
+enum FeeBearer {
+  CUSTOMER
+  OWNER
+}
+
 enum ServiceStatus {
   ACTIVE
   INACTIVE
+}
+
+enum MemberType {
+  REGULAR
+  VIP
+  PREMIUM
 }
 
 enum BookingSlotStatus {
@@ -64,136 +83,21 @@ enum StaffStatus {
   ON_LEAVE
 }
 
+enum StaffRole {
+  SERVICE // Staff yang menangani layanan/jasa
+  CASHIER // Kasir
+  ADMIN // Admin outlet
+  INVENTORY // Staff gudang/inventory
+  OTHER // Peran lainnya
+}
+
 enum ManualPaymentType {
   QRIS_OFFLINE
   OWNER_TRANSFER
   CASH
 }
 
-enum CustomerType {
-  GUEST // Customer tanpa register
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  EXPIRED
-  SUSPENDED
-  CANCELLED
-}
-
-enum StockMovementType {
-  IN // Barang masuk
-  OUT // Barang keluar (via order)
-  ADJUSTMENT // Koreksi stok
-  RETURN // Retur
-}
-
 // === MODELS ===
-
-// Model untuk pengguna (Owner/UMKM atau Admin)
-model User {
-  id                      String    @id @default(uuid())
-  email                   String    @unique
-  name                    String
-  avatar                  String?
-  password                String // Akan disimpan dalam bentuk hash
-  role                    UserRole  @default(OWNER)
-  isVerified              Boolean   @default(false)
-  verificationCode        String?
-  verificationCodeExpires DateTime?
-  phone                   String? // Penting untuk notifikasi WA
-  googleId                String?   @unique
-  provider                String?   @default("local")
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-
-  // Relasi: Satu user (owner) memiliki satu bisnis
-  business Business?
-
-  // Relasi: Admin/owner yang memverifikasi transaksi manual
-  transactionsVerified Transaction[] @relation("TransactionVerifiedBy")
-
-  @@index([email])
-  @@index([role])
-}
-
-// Model untuk entitas bisnis utama milik seorang Owner
-model Business {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Info Bank
-  bankName      String?
-  bankAccount   String?
-  accountHolder String?
-
-  // === SUBSCRIPTION ===
-  subscriptionStatus    SubscriptionStatus @default(ACTIVE)
-  subscriptionStartDate DateTime           @default(now())
-  subscriptionEndDate   DateTime? // Null = unlimited
-  subscriptionPlan      String             @default("BASIC")
-
-  // Relasi: Setiap bisnis dimiliki oleh satu User (Owner)
-  ownerId String @unique
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  // Relasi: Satu bisnis bisa memiliki banyak outlet
-  outlets Outlet[]
-
-  // Relasi: Satu bisnis bisa memiliki banyak banner
-  banners Banner[]
-
-  @@index([ownerId])
-  @@index([subscriptionStatus])
-  @@index([description]) // Indeks untuk pencarian deskripsi bisnis
-}
-
-// Model untuk cabang/outlet dari sebuah bisnis
-model Outlet {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  address     String?
-  phone       String?
-  createdAt   DateTime @default(now())
-  image       String?  @default("https://press-parts-outlet.com/cdn/shop/files/non-photoproductimage_9c33376d-caaf-4116-b20a-3162aedf74f4_512x512.png?v=1687762014")
-  updatedAt   DateTime @updatedAt
-  latitude    Float?
-  longitude   Float?
-  isOpen      Boolean  @default(false)
-
-  // Relasi: Setiap outlet milik satu bisnis
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  // Informasi pembayaran manual
-  manualBankName      String?
-  manualBankAccount   String?
-  manualAccountHolder String?
-  manualPaymentNote   String?
-  manualQrImageUrl    String?
-
-  // Relasi: Satu outlet bisa memiliki banyak produk
-  products Product[]
-
-  // Relasi: Banyak pesanan bisa dibuat di satu outlet
-  orders Order[]
-
-  // Relasi: Banyak pengeluaran bisa dicatat per outlet
-  expenses Expense[]
-
-  // Relasi untuk operating hours dan staff
-  operatingHours OutletOperatingHours[]
-  staff          Staff[]
-
-  @@index([businessId])
-  @@index([latitude, longitude]) // Indeks untuk query lokasi (bounding box)
-  @@index([name]) // Indeks untuk pencarian nama outlet
-  @@index([description]) // Indeks untuk pencarian deskripsi outlet
-}
 
 // Model untuk jam operasional outlet
 model OutletOperatingHours {
@@ -214,140 +118,231 @@ model OutletOperatingHours {
   @@index([outletId])
 }
 
-// Model untuk staff/karyawan outlet (Kasir)
+// Model untuk kapasitas layanan
+model ServiceCapacity {
+  id          String @id @default(uuid())
+  maxParallel Int    @default(1) // Berapa banyak service bisa dilakukan bersamaan
+
+  // Relasi ke produk
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+}
+
+// Model untuk staff/karyawan outlet
 model Staff {
-  id       String      @id @default(uuid())
-  name     String
-  phone    String?
-  email    String?     @unique
-  password String // Hash untuk login POS kasir
-  status   StaffStatus @default(ACTIVE)
+  id     String      @id @default(uuid())
+  name   String
+  phone  String?
+  status StaffStatus @default(ACTIVE)
+  role   StaffRole   @default(OTHER)
+
+  // Informasi tambahan
+  email   String? @unique
+  address String?
+  notes   String?
+
+  // Password untuk login kasir (nullable - hanya untuk kasir yang butuh login)
+  password String?
 
   // Relasi ke outlet
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
-  // Relasi ke pesanan yang di-handle oleh kasir
-  ordersHandled Order[]
+  // Relasi ke booking slots yang ditangani (khusus staff SERVICE)
+  bookings BookingSlot[]
+
+  // Relasi ke pesanan yang ditugaskan
+  assignedOrders Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([outletId])
+}
+
+// === MODELS ===
+
+enum CustomerType {
+  GUEST // Customer tanpa register
+}
+
+enum PromoType {
+  PERCENTAGE // Diskon dalam bentuk persen, misal: 10%
+  FIXED_AMOUNT // Potongan harga tetap, misal: Rp 20.000
+}
+
+enum PromoStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+// === MODELS ===
+
+// Model untuk pengguna (hanya Owner/UMKM)
+model User {
+  id                      String    @id @default(uuid())
+  email                   String    @unique
+  name                    String
+  avatar                  String?
+  password                String // Akan disimpan dalam bentuk hash
+  role                    UserRole  @default(OWNER)
+  isVerified              Boolean   @default(false)
+  verificationCode        String?
+  verificationCodeExpires DateTime?
+  phone                   String? // Penting untuk notifikasi WA
+  googleId                String?   @unique
+  provider                String?   @default("local")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  // Relasi: Satu user (owner) memiliki satu bisnis
+  business Business?
+
+  // Relasi: Customer bisa jadi member di berbagai bisnis
+  memberships Membership[]
+
+  // Relasi: Admin memproses banyak withdrawal
+  withdrawalsProcessed Withdrawal[] @relation("UserProcessedWithdrawals")
+
+  // Relasi: Admin/owner yang memverifikasi transaksi manual
+  transactionsVerified Transaction[] @relation("TransactionVerifiedBy")
+
   @@index([email])
 }
 
-// Model untuk produk (parent table - minimalis)
-model Product {
-  id          String        @id @default(uuid())
+// Model untuk entitas bisnis utama milik seorang Owner
+model Business {
+  id          String   @id @default(uuid())
   name        String
   description String?
-  type        ProductType // GOODS atau SERVICE
-  status      ServiceStatus @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Info Bank
+  bankName      String?
+  bankAccount   String?
+  accountHolder String?
+
+  // Relasi: Setiap bisnis dimiliki oleh satu User (Owner)
+  ownerId String @unique
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Relasi: Satu bisnis bisa memiliki banyak outlet
+  outlets Outlet[]
+
+  // Relasi: Setiap bisnis memiliki satu dompet virtual
+  wallet Wallet?
+
+  // Menentukan siapa yang menanggung biaya Midtrans untuk transaksi QRIS/booking
+  defaultTransactionFeeBearer FeeBearer @default(OWNER)
+
+  // Relasi: Satu bisnis bisa memiliki banyak member
+  memberships Membership[]
+
+  // Relasi: Satu bisnis bisa memiliki banyak promo
+  promos Promo[]
+
+  // Relasi: Satu bisnis bisa memiliki banyak banner
+  banners Banner[]
+
+  // Relasi: Satu bisnis bisa memiliki banyak withdrawal
+  withdrawals Withdrawal[]
+
+  @@index([ownerId])
+  @@index([description]) // Indeks untuk pencarian deskripsi bisnis
+}
+
+// Model untuk cabang/outlet dari sebuah bisnis
+model Outlet {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  address     String?
+  phone       String?
+  createdAt   DateTime @default(now())
+  image       String?  @default("https://press-parts-outlet.com/cdn/shop/files/non-photoproductimage_9c33376d-caaf-4116-b20a-3162aedf74f4_512x512.png?v=1687762014")
+  updatedAt   DateTime @updatedAt
+  latitude    Float?
+  longitude   Float?
+  isOpen      Boolean  @default(false)
+  // Relasi: Setiap outlet milik satu bisnis
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Informasi pembayaran manual
+  manualBankName      String?
+  manualBankAccount   String?
+  manualAccountHolder String?
+  manualPaymentNote   String?
+  manualQrImageUrl    String?
+
+  // Relasi: Satu outlet bisa memiliki banyak produk
+  products Product[]
+
+  // Relasi: Banyak pesanan bisa dibuat di satu outlet
+  orders Order[]
+
+  // Relasi: Banyak pengeluaran bisa dicatat per outlet
+  expenses Expense[]
+
+  // Relasi baru untuk booking features
+  operatingHours OutletOperatingHours[]
+  staff          Staff[]
+
+  @@index([businessId])
+  @@index([latitude, longitude]) // Indeks untuk query lokasi (bounding box)
+  @@index([name]) // Indeks untuk pencarian nama outlet
+  @@index([description]) // Indeks untuk pencarian deskripsi outlet
+}
+
+// Model untuk produk (barang) atau jasa yang ditawarkan
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  costPrice   Float       @default(0) // Harga Pokok Penjualan (HPP)
+  price       Float // Harga Jual
+  type        ProductType // Membedakan antara BARANG atau JASA
+  quantity    Int? // Jumlah stok saat ini (untuk GOODS)
+  unit        String? // Satuan (misal: Pcs, Kg, Box)
+
+  // Status layanan (untuk on/off layanan)
+  status ServiceStatus @default(ACTIVE)
+
+  // Fee cas per produk (jika null, gunakan default dari Business)
+  transactionFeeBearer FeeBearer?
+
+  // Durasi layanan dalam menit (khusus untuk SERVICE)
+  serviceDurationMinutes Int?
 
   // Relasi: Setiap produk/jasa terhubung ke satu outlet
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
-  // Subtables (one-to-one polymorphic)
-  goods   ProductGoods?
-  service ProductService?
+  image String? @default("https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png")
 
-  // Shared relations
+  // New relation: multiple images per product
   productImages ProductImage[]
-  orderItems    OrderItem[]
+
+  // Relasi: Satu produk bisa ada di banyak item pesanan
+  orderItems OrderItem[]
+
+  // Relasi: Satu produk service bisa punya banyak booking slot
+  bookingSlots BookingSlot[]
+
+  // Relasi: Satu produk service memiliki satu kapasitas
+  capacity ServiceCapacity?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([outletId])
-  @@index([type])
-  @@index([status])
-}
-
-// Subtable untuk produk GOODS
-model ProductGoods {
-  id        String  @id @default(uuid())
-  productId String  @unique
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  // Goods-specific fields
-  currentStock Int    @default(0)
-  minStock     Int? // Alert threshold untuk low stock
-  unit         String // Pcs, Kg, Box, Liter, dll
-
-  // HPP (Harga Pokok Penjualan) - calculated from stock logs
-  averageHpp Float @default(0)
-
-  // Pricing
-  sellingPrice Float // Harga jual
-
-  // Relations
-  stockLogs StockLog[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productId])
-  @@index([currentStock]) // Untuk query low stock
-}
-
-// Log untuk tracking barang masuk/keluar (untuk HPP calculation)
-model StockLog {
-  id       String            @id @default(uuid())
-  type     StockMovementType
-  quantity Int // Positif untuk IN, bisa negatif untuk OUT
-
-  // HPP per unit saat barang masuk (untuk tipe IN)
-  hppPerUnit Float?
-
-  // Reference ke transaksi/order yang trigger movement ini
-  referenceType String? // "ORDER", "PURCHASE", "MANUAL", "ADJUSTMENT", "RETURN"
-  referenceId   String? // ID dari order/purchase/etc
-  notes         String?
-
-  // Relations
-  productGoodsId String
-  productGoods   ProductGoods @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([productGoodsId])
-  @@index([type])
-  @@index([createdAt])
-  @@index([referenceType, referenceId])
-}
-
-// Subtable untuk produk SERVICE
-model ProductService {
-  id        String  @id @default(uuid())
-  productId String  @unique
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  // Service-specific fields
-  durationMinutes Int // Durasi layanan dalam menit
-  sellingPrice    Float
-
-  // Service Provider Info (penyedia jasa)
-  providerName  String
-  providerPhone String?
-  providerEmail String?
-
-  // Commission/Wage untuk provider
-  commissionType  String @default("PERCENTAGE") // PERCENTAGE atau FIXED
-  commissionValue Float  @default(0) // % atau nominal
-
-  // Capacity
-  maxParallel Int @default(1) // Berapa banyak service bisa dilakukan bersamaan
-
-  // Relations
-  bookingSlots BookingSlot[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productId])
-  @@index([providerName])
 }
 
 // Model untuk menyimpan banyak gambar per produk
@@ -373,19 +368,23 @@ model BookingSlot {
   status    BookingSlotStatus @default(AVAILABLE)
 
   // Relasi: Slot ini untuk produk jasa mana
-  productServiceId String
-  productService   ProductService @relation(fields: [productServiceId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   // Relasi: Slot ini dibooking oleh order mana (jika sudah dibooking)
   orderId String? @unique
   order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
+  // Relasi: Slot ini ditangani oleh staff mana
+  staffId String?
+  staff   Staff?  @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([productServiceId])
+  @@index([productId])
   @@index([date])
-  @@index([status])
+  @@index([staffId])
 }
 
 // Model untuk menyimpan data customer guest (tanpa register)
@@ -398,7 +397,8 @@ model GuestCustomer {
   // Relasi: Satu guest customer bisa punya banyak order
   orders Order[]
 
-  createdAt DateTime @default(now())
+  createdAt  DateTime     @default(now())
+  Membership Membership[]
 
   @@index([email])
   @@index([phone])
@@ -426,8 +426,14 @@ model Order {
   midtransRedirectUrl      String?
 
   // Fee structure sesuai diagram
-  midtransFee Float @default(0) // 0.7% dari subtotal
-  appFee      Float @default(0) // 2% dari subtotal
+  midtransFee Float     @default(0) // 0.7% dari subtotal
+  appFee      Float     @default(0) // 2% dari subtotal
+  chargedTo   FeeBearer @default(CUSTOMER)
+
+  // Info promo yang digunakan
+  promoId        String?
+  promo          Promo?  @relation(fields: [promoId], references: [id], onDelete: SetNull)
+  discountAmount Float   @default(0)
 
   // Relasi: Pesanan dibuat oleh guest customer
   guestCustomerId String
@@ -437,9 +443,9 @@ model Order {
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
-  // Relasi: Pesanan bisa di-handle oleh staff tertentu (kasir)
-  handledByStaffId String?
-  handledByStaff   Staff?  @relation(fields: [handledByStaffId], references: [id], onDelete: SetNull)
+  // Relasi: Pesanan bisa ditugaskan ke staff tertentu
+  assignedStaffId String?
+  assignedStaff   Staff?  @relation(fields: [assignedStaffId], references: [id], onDelete: SetNull)
 
   // Relasi: Satu pesanan punya banyak item
   items OrderItem[]
@@ -456,9 +462,7 @@ model Order {
   @@index([guestCustomerId])
   @@index([outletId])
   @@index([bookingDate])
-  @@index([handledByStaffId])
-  @@index([orderStatus])
-  @@index([paymentStatus])
+  @@index([assignedStaffId])
 }
 
 // Item-item yang ada di dalam sebuah pesanan
@@ -518,6 +522,46 @@ model Transaction {
   @@index([isManual, status])
 }
 
+// Model untuk dompet virtual milik bisnis
+model Wallet {
+  id      String @id @default(uuid())
+  balance Float  @default(0)
+
+  // Relasi: Dompet ini milik bisnis mana
+  businessId String   @unique
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+}
+
+// Model untuk mencatat riwayat penarikan dana oleh owner
+model Withdrawal {
+  id                String           @id @default(uuid())
+  requestedAmount   Float // Amount yang diminta untuk ditarik
+  midtransFee       Float            @default(4000) // Fee Midtrans Rp 4.000
+  appFee            Float // 2% dari requested amount
+  finalAmount       Float // Amount setelah dipotong fee
+  status            WithdrawalStatus @default(PENDING)
+  notes             String?
+  midtransReference String?          @unique
+
+  // Relasi: Penarikan ini untuk bisnis mana (langsung ke business)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Admin yang memproses withdrawal (opsional)
+  processedById String?
+  processedBy   User?   @relation("UserProcessedWithdrawals", fields: [processedById], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@index([businessId])
+  @@index([status])
+  @@index([processedById])
+}
+
 // Model untuk mencatat pengeluaran
 model Expense {
   id          String   @id @default(uuid())
@@ -531,9 +575,39 @@ model Expense {
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
-  @@index([outletId])
-  @@index([date])
   @@map("expenses")
+}
+
+// Model untuk Promo/Diskon
+model Promo {
+  id          String      @id @default(uuid())
+  code        String // Kode unik promo, misal: "HEMAT20K"
+  description String?
+  type        PromoType
+  value       Float // Nilai diskon (bisa persen atau nominal)
+  status      PromoStatus @default(ACTIVE)
+
+  // Batasan penggunaan
+  maxUses   Int? // Maksimal berapa kali promo bisa digunakan secara total
+  timesUsed Int  @default(0)
+
+  // Syarat & Ketentuan
+  minPurchaseAmount Float? // Minimal pembelian untuk bisa menggunakan promo
+  validFrom         DateTime @default(now())
+  validUntil        DateTime
+
+  // Relasi: Promo ini milik bisnis mana
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Relasi: Promo ini digunakan di order mana saja
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, code]) // Kode promo harus unik per bisnis
+  @@index([businessId])
 }
 
 // Model for home page banners
@@ -556,4 +630,31 @@ model Banner {
 
   @@index([businessId])
   @@index([isActive, sortOrder])
+}
+
+// Model untuk membership/keanggotaan customer di suatu bisnis
+model Membership {
+  id                 String     @id @default(uuid())
+  memberCode         String     @unique
+  memberType         MemberType @default(REGULAR)
+  discountPercentage Float      @default(0)
+  isActive           Boolean    @default(true)
+  notes              String?
+
+  // Relasi: Member ini milik guest customer mana
+  guestCustomerId String
+  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+
+  // Relasi: Member ini di bisnis mana
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+
+  @@unique([guestCustomerId, businessId])
+  @@index([businessId])
+  @@index([memberCode])
 }
