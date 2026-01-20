@@ -57,13 +57,9 @@ export class AdminV2Repository {
 
 
     static async getStatusPlatform() {
-        const [businessCount, withdrawalPendingCount, transactionFailedCount] = await Promise.all([
+        const [businessCount, transactionFailedCount] = await Promise.all([
             await db.business.count(),
-            await db.withdrawal.count({
-                where: {
-                    status: 'PENDING'
-                }
-            }),
+
             await db.transaction.count({
                 where: {
                     OR: [
@@ -75,6 +71,6 @@ export class AdminV2Repository {
             })
         ])
 
-        return { businessCount, withdrawalPendingCount, transactionFailedCount }
+        return { businessCount, transactionFailedCount }
     }
 }

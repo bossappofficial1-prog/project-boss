@@ -9,6 +9,7 @@ export interface User {
     password: string;
     role: typeof userRole[number];
     isVerivied: boolean;
+    isVerified: boolean;
     phone?: string;
     googleId?: string;
     provider: typeof userProvider[number];
@@ -18,3 +19,41 @@ export interface User {
 
 export type createUserPayload = Pick<User, "name" | "email" | "password" | "role">
 export type updateUserPayload = Partial<createUserPayload>
+
+
+export interface UserDetail {
+    user: User
+    business: Business
+    wallet: Wallet
+    recentActivity: RecentActivity
+}
+
+export interface Business {
+    id: string
+    name: string
+    description: string
+    bankInfo: BankInfo
+    config: Config
+}
+
+export interface BankInfo {
+    bankName: string
+    bankAccount: string
+    accountHolder: string
+}
+
+export interface Config {
+    feeBearer: string
+    totalOutlets: number
+    totalMembers: number
+}
+
+export interface Wallet {
+    balance: number
+    pendingWithdrawal: number
+}
+
+export interface RecentActivity {
+    lastWithdrawal: string
+    lastWithdrawalStatus: string
+}

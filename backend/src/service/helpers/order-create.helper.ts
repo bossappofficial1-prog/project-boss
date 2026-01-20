@@ -123,27 +123,6 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
             throw new AppError('Tidak ada staff yang tersedia untuk slot ini.', HttpStatus.CONFLICT);
         }
 
-        const capacityRecord = await db.serviceCapacity.findUnique({
-            where: { productId: slot.productId },
-        });
-
-        const configuredCapacity = capacityRecord?.maxParallel ?? totalStaffCount;
-        const maxParallel = Math.max(Math.min(configuredCapacity, totalStaffCount), 1);
-        slotMaxParallel = maxParallel;
-
-        const activeBookings = await db.bookingSlot.count({
-            where: {
-                productId: slot.productId,
-                startTime: slot.startTime,
-                endTime: slot.endTime,
-                orderId: { not: null },
-            },
-        });
-
-        if (activeBookings >= maxParallel) {
-            throw new AppError('Slot ini sudah penuh.', HttpStatus.CONFLICT);
-        }
-
         if (assignedStaffId) {
             const isStaffAvailable = staffAvailability.some(
                 (member) => member.id === assignedStaffId && member.isAvailable,
@@ -265,11 +244,6 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
                 const durationMin = svc.serviceDurationMinutes ?? 60;
                 const requestedEnd = new Date(requestedStart.getTime() + durationMin * 60000);
 
-                const capacityRecord = await tx.serviceCapacity.findUnique({
-                    where: { productId: svc.id },
-                });
-                const maxParallel = capacityRecord?.maxParallel ?? 1;
-
                 const activeStatuses = [
                     OrderStatus.AWAITING_PAYMENT,
                     OrderStatus.PROCESSING,
@@ -313,12 +287,7 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
                                 staffConflict = true;
                             }
                         }
-                        if (overlapping >= maxParallel) break;
                     }
-                }
-
-                if (overlapping >= maxParallel) {
-                    throw new AppError(`Waktu booking bentrok untuk layanan ${svc.name}. Silakan pilih waktu lain.`, HttpStatus.CONFLICT);
                 }
 
                 if (staffConflict) {

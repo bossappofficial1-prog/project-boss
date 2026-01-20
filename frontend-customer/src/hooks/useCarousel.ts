@@ -82,28 +82,43 @@ export function useCarousel({ count, autoplay = true, autoplayInterval = 6000 }:
     const handleTouchStart = (e: ReactTouchEvent<HTMLElement>) => {
         if (count <= 1) return
         startInteraction()
-        setIsDragging(true)
         touchStartX.current = e.touches[0].clientX
         dragOffset.current = 0
     }
 
+
+    const DRAG_START_THRESHOLD = 8 // px
+
     const handleTouchMove = (e: ReactTouchEvent<HTMLElement>) => {
-        if (!isDragging) return
+        if (count <= 1) return
+
         const currentX = e.touches[0].clientX
         const deltaX = currentX - touchStartX.current
         dragOffset.current = deltaX
-        const container = e.currentTarget as HTMLElement
-        container.style.setProperty('--slide-offset', `${dragOffset.current}px`)
-    }
 
-    const handleTouchEnd = (e: React.TouchEvent<HTMLElement>) => {
+        if (!isDragging && Math.abs(deltaX) > DRAG_START_THRESHOLD) {
+            setIsDragging(true)
+        }
+
         if (!isDragging) return
 
         const container = e.currentTarget as HTMLElement
+        container.style.setProperty('--slide-offset', `${deltaX}px`)
+    }
+
+
+    const handleTouchEnd = (e: React.TouchEvent<HTMLElement>) => {
+        const container = e.currentTarget as HTMLElement
         container.style.removeProperty('--slide-offset')
 
+        if (!isDragging) {
+            endInteraction()
+            return
+        }
+
         setIsDragging(false)
-        const swipeThreshold = 50 // px
+
+        const swipeThreshold = 50
 
         if (dragOffset.current > swipeThreshold) {
             prev()

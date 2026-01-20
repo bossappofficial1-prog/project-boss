@@ -67,7 +67,7 @@ export default function POSOrdersPage() {
   const [customerMode, setCustomerMode] = React.useState<POSCustomerMode>('identified')
   const [customerName, setCustomerName] = React.useState('')
   const [customerPhone, setCustomerPhone] = React.useState('')
-  const [cashReceived, setCashReceived] = React.useState('')
+  const [cashReceived, setCashReceived] = React.useState(0)
   const [onlineChannel, setOnlineChannel] = React.useState<OnlinePaymentChannel>('qris_dynamic')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [showQRISModal, setShowQRISModal] = React.useState(false)
@@ -467,7 +467,7 @@ export default function POSOrdersPage() {
       setCustomerPhone('')
       setCustomerMode('identified')
       setPaymentMethod('cash')
-      setCashReceived('')
+      setCashReceived(0)
       setOnlineChannel('qris_dynamic')
 
       // Tetap pada halaman POS agar kasir dapat memproses transaksi berikutnya

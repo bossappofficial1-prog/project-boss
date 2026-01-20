@@ -4,110 +4,23 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     Users,
     UserPlus,
-    RefreshCw,
-    Loader2,
-    Phone,
-    Mail,
-    MapPin,
-    NotebookPen,
-    Edit2,
-    Trash2,
-    KeyRound,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useOutletContext } from '@/components/providers/OutletProvider'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { staffApi } from '@/lib/api'
-import type { StaffMember, StaffRole, StaffStatus, CreateStaffPayload, UpdateStaffPayload } from '@/types/staff'
-
-type StaffFormState = {
-    name: string
-    phone: string
-    email: string
-    address: string
-    notes: string
-    role: StaffRole
-    status: StaffStatus
-    password: string
-}
-
-const DEFAULT_FORM: StaffFormState = {
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-    notes: '',
-    role: 'SERVICE',
-    status: 'ACTIVE',
-    password: '',
-}
-
-const ROLE_OPTIONS: Array<{ value: StaffRole; label: string }> = [
-    { value: 'SERVICE', label: 'Staff Layanan' },
-    { value: 'CASHIER', label: 'Kasir' },
-    { value: 'ADMIN', label: 'Admin Outlet' },
-    { value: 'INVENTORY', label: 'Gudang / Inventory' },
-    { value: 'OTHER', label: 'Peran Lainnya' },
-]
-
-const STATUS_OPTIONS: Array<{ value: StaffStatus; label: string }> = [
-    { value: 'ACTIVE', label: 'Aktif' },
-    { value: 'INACTIVE', label: 'Nonaktif' },
-    { value: 'ON_LEAVE', label: 'Cuti / Izin' },
-]
-
-const STATUS_BADGE_CLASS: Record<StaffStatus, string> = {
-    ACTIVE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    INACTIVE: 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-    ON_LEAVE: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-}
-
-const ROLE_BADGE_CLASS: Record<StaffRole, string> = {
-    SERVICE: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    CASHIER: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    ADMIN: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-    INVENTORY: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
-    OTHER: 'bg-slate-100 text-slate-700 dark:bg-slate-800/40 dark:text-slate-300',
-}
-
-const ROLE_LABEL: Record<StaffRole, string> = ROLE_OPTIONS.reduce((acc, option) => {
-    acc[option.value] = option.label
-    return acc
-}, {} as Record<StaffRole, string>)
-
-const STATUS_LABEL: Record<StaffStatus, string> = STATUS_OPTIONS.reduce((acc, option) => {
-    acc[option.value] = option.label
-    return acc
-}, {} as Record<StaffStatus, string>)
-
-const sanitizeOptional = (value: string) => {
-    const trimmed = value.trim()
-    return trimmed === '' ? undefined : trimmed
-}
+import type { StaffMember, CreateStaffPayload } from '@/types/staff'
+import { StaffDialog } from '@/components/features/owner/staff/StaffModal'
+import { StaffTable } from '@/components/features/owner/staff/StaffTable'
 
 export default function StaffManagementPage() {
     const { selectedOutlet } = useOutletContext()
     const [staff, setStaff] = useState<StaffMember[]>([])
-    const [isLoading, setIsLoading] = useState(false)
-    const [searchTerm, setSearchTerm] = useState('')
+    const [, setIsLoading] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
-    const [formState, setFormState] = useState<StaffFormState>(DEFAULT_FORM)
     const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -138,25 +51,8 @@ export default function StaffManagementPage() {
         loadStaff()
     }, [loadStaff])
 
-    const filteredStaff = useMemo(() => {
-        if (!searchTerm.trim()) return staff
-        const query = searchTerm.trim().toLowerCase()
-        return staff.filter((member) => {
-            return [
-                member.name,
-                member.email ?? '',
-                member.phone ?? '',
-                ROLE_LABEL[member.role],
-                STATUS_LABEL[member.status],
-            ]
-                .join(' ')
-                .toLowerCase()
-                .includes(query)
-        })
-    }, [staff, searchTerm])
 
     const resetForm = () => {
-        setFormState(DEFAULT_FORM)
         setEditingStaff(null)
     }
 
@@ -169,84 +65,25 @@ export default function StaffManagementPage() {
     const handleOpenEdit = (member: StaffMember) => {
         setModalMode('edit')
         setEditingStaff(member)
-        setFormState({
-            name: member.name,
-            phone: member.phone ?? '',
-            email: member.email ?? '',
-            address: member.address ?? '',
-            notes: member.notes ?? '',
-            role: member.role,
-            status: member.status,
-            password: '',
-        })
         setIsModalOpen(true)
     }
 
-    const validateForm = (): string | null => {
-        if (!formState.name.trim()) {
-            return 'Nama staff wajib diisi'
-        }
-
-        if (formState.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.email.trim())) {
-            return 'Format email tidak valid'
-        }
-
-        if (formState.phone && !/^([+]?\d){6,15}$/.test(formState.phone.trim())) {
-            return 'Nomor telepon tidak valid'
-        }
-
-        // Validasi untuk kasir
-        if (formState.role === 'CASHIER') {
-            if (!formState.email?.trim()) {
-                return 'Email wajib diisi untuk akun kasir'
-            }
-
-            if (modalMode === 'create' && !formState.password?.trim()) {
-                return 'Password wajib diisi untuk akun kasir'
-            }
-
-            if (formState.password && formState.password.trim().length > 0 && formState.password.trim().length < 6) {
-                return 'Password minimal 6 karakter'
-            }
-        }
-
-        return null
-    }
-
-    const handleSubmit = async () => {
+    const handleSubmit = async (payload: any) => {
         if (!selectedOutlet?.id) return
 
-        const validation = validateForm()
-        if (validation) {
-            toast.error(validation)
-            return
+        if (modalMode === 'create') {
+            const payloads: CreateStaffPayload = {
+                ...payload,
+                outletId: selectedOutlet.id,
+            }
+            await staffApi.create(payloads)
+            toast.success('Staff berhasil ditambahkan')
+        } else if (editingStaff) {
+            await staffApi.update(editingStaff.id, payload)
+            toast.success('Data staff berhasil diperbarui')
         }
-
-        const commonFields = {
-            name: formState.name.trim(),
-            role: formState.role,
-            status: formState.status,
-            phone: sanitizeOptional(formState.phone),
-            email: sanitizeOptional(formState.email),
-            address: sanitizeOptional(formState.address),
-            notes: sanitizeOptional(formState.notes),
-            password: sanitizeOptional(formState.password),
-        } satisfies UpdateStaffPayload & Pick<CreateStaffPayload, 'name' | 'role' | 'status' | 'phone' | 'email' | 'address' | 'notes' | 'password'>
-
         try {
             setIsSubmitting(true)
-            if (modalMode === 'create') {
-                const payload: CreateStaffPayload = {
-                    ...commonFields,
-                    outletId: selectedOutlet.id,
-                }
-                await staffApi.create(payload)
-                toast.success('Staff berhasil ditambahkan')
-            } else if (editingStaff) {
-                const payload: UpdateStaffPayload = { ...commonFields }
-                await staffApi.update(editingStaff.id, payload)
-                toast.success('Data staff berhasil diperbarui')
-            }
 
             setIsModalOpen(false)
             resetForm()
@@ -301,26 +138,7 @@ export default function StaffManagementPage() {
                 </p>
             </section>
 
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-center gap-3">
-                    <Input
-                        value={searchTerm}
-                        onChange={(event) => setSearchTerm(event.target.value)}
-                        placeholder="Cari nama, peran, atau kontak..."
-                        className="w-full md:w-72"
-                    />
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={loadStaff}
-                        disabled={isLoading}
-                        className="flex items-center gap-2"
-                    >
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                        Muat Ulang
-                    </Button>
-                </div>
-
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
                 <Button type="button" onClick={handleOpenCreate} className="inline-flex items-center gap-2">
                     <UserPlus className="h-4 w-4" /> Tambah Staff
                 </Button>
@@ -331,264 +149,26 @@ export default function StaffManagementPage() {
                     <span>Total staff: {staff.length}</span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">Outlet: {outletName}</span>
                 </div>
-
-                {isLoading ? (
-                    <div className="flex items-center justify-center gap-2 px-4 py-16 text-sm text-slate-500 dark:text-slate-400">
-                        <Loader2 className="h-4 w-4 animate-spin" /> Memuat data staff...
-                    </div>
-                ) : filteredStaff.length === 0 ? (
-                    <div className="px-4 py-16 text-center text-sm text-slate-500 dark:text-slate-400">
-                        Belum ada staff yang tercatat atau tidak ada yang cocok dengan pencarian.
-                    </div>
-                ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[28%]">Nama & Catatan</TableHead>
-                                <TableHead className="w-[25%]">Kontak</TableHead>
-                                <TableHead className="w-[20%]">Peran</TableHead>
-                                <TableHead className="w-[15%]">Status</TableHead>
-                                <TableHead className="w-[12%] text-right">Aksi</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredStaff.map((member) => (
-                                <TableRow key={member.id}>
-                                    <TableCell>
-                                        <div className="font-semibold text-slate-900 dark:text-slate-100">{member.name}</div>
-                                        {member.address && (
-                                            <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                                                <MapPin className="h-3.5 w-3.5" />
-                                                {member.address}
-                                            </p>
-                                        )}
-                                        {member.notes && (
-                                            <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                                                <NotebookPen className="h-3.5 w-3.5" />
-                                                {member.notes}
-                                            </p>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
-                                            {member.phone ? (
-                                                <p className="flex items-center gap-2">
-                                                    <Phone className="h-3.5 w-3.5 text-slate-400" />
-                                                    <span>{member.phone}</span>
-                                                </p>
-                                            ) : (
-                                                <p className="flex items-center gap-2 text-xs text-slate-400">
-                                                    <Phone className="h-3.5 w-3.5" />
-                                                    <span>Belum diisi</span>
-                                                </p>
-                                            )}
-                                            {member.email ? (
-                                                <p className="flex items-center gap-2">
-                                                    <Mail className="h-3.5 w-3.5 text-slate-400" />
-                                                    <span>{member.email}</span>
-                                                </p>
-                                            ) : (
-                                                <p className="flex items-center gap-2 text-xs text-slate-400">
-                                                    <Mail className="h-3.5 w-3.5" />
-                                                    <span>Belum diisi</span>
-                                                </p>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-col gap-1">
-                                            <Badge className={`${ROLE_BADGE_CLASS[member.role]} font-medium`}>{ROLE_LABEL[member.role]}</Badge>
-                                            {member.role === 'CASHIER' && member.email && (
-                                                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                                                    <KeyRound className="h-3 w-3" />
-                                                    <span>Akun login aktif</span>
-                                                </div>
-                                            )}
-                                            {member.role === 'CASHIER' && !member.email && (
-                                                <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                                                    <KeyRound className="h-3 w-3" />
-                                                    <span>Belum ada akun</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge className={`${STATUS_BADGE_CLASS[member.status]} font-medium`}>{STATUS_LABEL[member.status]}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button
-                                                type="button"
-                                                size="icon"
-                                                variant="ghost"
-                                                onClick={() => handleOpenEdit(member)}
-                                                aria-label={`Edit ${member.name}`}
-                                            >
-                                                <Edit2 className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                size="icon"
-                                                variant="ghost"
-                                                className="text-red-500 hover:text-red-600"
-                                                onClick={() => {
-                                                    setDeletingStaff(member)
-                                                    setIsDeleteDialogOpen(true)
-                                                }}
-                                                aria-label={`Hapus ${member.name}`}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
+                <StaffTable
+                    data={staff}
+                    onDelete={(member) => {
+                        setDeletingStaff(member)
+                        setIsDeleteDialogOpen(true)
+                    }}
+                    onEdit={(member) => {
+                        handleOpenEdit(member)
+                    }}
+                />
             </div>
 
-            <Dialog open={isModalOpen} onOpenChange={(open) => !isSubmitting && setIsModalOpen(open)}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>{modalMode === 'create' ? 'Tambah Staff Baru' : 'Edit Data Staff'}</DialogTitle>
-                        <DialogDescription>
-                            {modalMode === 'create'
-                                ? 'Masukkan informasi staff untuk outlet ini. Untuk kasir, email dan password wajib diisi agar bisa login ke sistem POS.'
-                                : `Perbarui informasi ${editingStaff?.name} sesuai kebutuhan.`}
-                        </DialogDescription>
-                    </DialogHeader>
+            <StaffDialog
+                onSubmit={handleSubmit}
+                initialData={editingStaff as any}
+                isOpen={isModalOpen}
+                onOpenChange={(open) => !isSubmitting && setIsModalOpen(open)}
+                modalMode={modalMode}
 
-                    <div className="space-y-4">
-                        <div>
-                            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Nama *</label>
-                            <Input
-                                value={formState.name}
-                                onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
-                                placeholder="Nama lengkap staff"
-                            />
-                        </div>
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Nomor Telepon</label>
-                                <Input
-                                    value={formState.phone}
-                                    onChange={(event) => setFormState((prev) => ({ ...prev, phone: event.target.value }))}
-                                    placeholder="Contoh: 081234567890"
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Email</label>
-                                <Input
-                                    type="email"
-                                    value={formState.email}
-                                    onChange={(event) => setFormState((prev) => ({ ...prev, email: event.target.value }))}
-                                    placeholder="staff@contoh.com"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Peran</label>
-                                <Select
-                                    value={formState.role}
-                                    onValueChange={(value: StaffRole) => setFormState((prev) => ({ ...prev, role: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Pilih peran" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {ROLE_OPTIONS.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Status</label>
-                                <Select
-                                    value={formState.status}
-                                    onValueChange={(value: StaffStatus) => setFormState((prev) => ({ ...prev, status: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Pilih status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {STATUS_OPTIONS.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Alamat</label>
-                            <Textarea
-                                value={formState.address}
-                                onChange={(event) => setFormState((prev) => ({ ...prev, address: event.target.value }))}
-                                rows={2}
-                                placeholder="Alamat atau lokasi bertugas"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Catatan</label>
-                            <Textarea
-                                value={formState.notes}
-                                onChange={(event) => setFormState((prev) => ({ ...prev, notes: event.target.value }))}
-                                rows={2}
-                                placeholder="Informasi tambahan seperti keahlian atau jadwal khusus"
-                            />
-                        </div>
-
-                        {formState.role === 'CASHIER' && (
-                            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
-                                <div className="mb-3 flex items-center gap-2">
-                                    <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                    </svg>
-                                    <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">Akun Login Kasir</h4>
-                                </div>
-                                <p className="mb-3 text-xs text-blue-700 dark:text-blue-300">
-                                    Kasir memerlukan akun login untuk mengakses sistem POS. {modalMode === 'edit' && 'Kosongkan jika tidak ingin mengubah password.'}
-                                </p>
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                                        Password {modalMode === 'create' && '*'}
-                                    </label>
-                                    <Input
-                                        type="password"
-                                        value={formState.password}
-                                        onChange={(event) => setFormState((prev) => ({ ...prev, password: event.target.value }))}
-                                        placeholder={modalMode === 'create' ? 'Minimal 6 karakter' : 'Kosongkan jika tidak diubah'}
-                                    />
-                                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                        Password akan digunakan oleh kasir untuk login ke sistem POS
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <DialogFooter className="gap-2 sm:gap-3">
-                        <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>
-                            Batal
-                        </Button>
-                        <Button type="button" onClick={handleSubmit} disabled={isSubmitting} className="flex items-center gap-2">
-                            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                            {modalMode === 'create' ? 'Simpan Staff' : 'Simpan Perubahan'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            />
 
             <ConfirmDialog
                 open={isDeleteDialogOpen}

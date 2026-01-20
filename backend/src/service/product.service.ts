@@ -282,7 +282,6 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
                                 }
                             })
                         },
-                        include: { capacity: true }
                     });
 
                     // Generate booking slots for service

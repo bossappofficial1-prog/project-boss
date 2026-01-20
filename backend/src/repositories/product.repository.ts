@@ -18,20 +18,20 @@ export class ProductRepository {
         return db.product.create({
             data: {
                 ...rest,
-                ...(data.type === 'SERVICE' && data.serviceDurationMinutes && {
-                    capacity: {
-                        create: {
-                            maxParallel: capacity && capacity > 0 ? capacity : 1
-                        }
-                    }
-                }),
-                ...(capacity !== undefined
-                    ? {
-                        serviceCapacity: {
-                            create: { value: capacity }
-                        }
-                    }
-                    : {}),
+                // ...(data.type === 'SERVICE' && data.serviceDurationMinutes && {
+                //     capacity: {
+                //         create: {
+                //             maxParallel: capacity && capacity > 0 ? capacity : 1
+                //         }
+                //     }
+                // }),
+                // ...(capacity !== undefined
+                //     ? {
+                //         serviceCapacity: {
+                //             create: { value: capacity }
+                //         }
+                //     }
+                //     : {}),
             },
         });
     }

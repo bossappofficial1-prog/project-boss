@@ -10,6 +10,13 @@ const RoleEnum = z.enum(['ADMIN', 'OWNER']).refine(
     { message: 'Role harus dipilih' }
 );
 
+const passwordSchema = z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.string()
+        .min(6, "Jika diganti, password minimal 6 karakter")
+        .optional()
+);
+
 const baseSchema = z.object({
     name: z.string('Massukkan nama').min(3, 'Nama minimal 3 huruf'),
     role: RoleEnum,
@@ -40,21 +47,14 @@ export function FormUser({
 
     // Schema berubah tergantung apakah ini mode "Tambah" atau "Edit"
     const schema = useMemo(() => {
-        let passwordSchema;
-
         if (isEditMode || isGoogleProvider) {
-            passwordSchema = z.string()
-                .transform((val) => val === "" ? undefined : val)
-                .optional()
-                .refine((val) => !val || val.length >= 6, {
-                    message: "Jika diganti, password minimal 6 karakter"
-                });
-        } else {
-            passwordSchema = z.string().min(6, 'Password minimal 6 karakter');
+            return baseSchema.extend({
+                password: passwordSchema
+            });
         }
 
         return baseSchema.extend({
-            password: passwordSchema
+            password: z.string().min(6, 'Password minimal 6 karakter')
         });
     }, [isEditMode, isGoogleProvider]);
 

@@ -119,9 +119,6 @@ export async function getBookingSlotByProductService(productId: string, date: Da
         throw new AppError("Product tidak memiliki outlet terkait (outletId).", HttpStatus.BAD_REQUEST);
     }
 
-    const capacityRecord = await db.serviceCapacity.findUnique({ where: { productId } });
-    const maxParallel = capacityRecord?.maxParallel ?? 1;
-
     let slots = await BookingRepository.getSlotsByProductId(productId, date);
 
     if (!slots.length) {
@@ -160,8 +157,8 @@ export async function getBookingSlotByProductService(productId: string, date: Da
         const availableStaffCount = staffAvailability.filter((member) => member.isAvailable).length;
 
         return {
-            availableStaffCount: Math.min(availableStaffCount, maxParallel),
-            totalStaffCount: Math.min(staffAvailability.length, maxParallel),
+            availableStaffCount: Math.min(availableStaffCount),
+            totalStaffCount: Math.min(staffAvailability.length),
         };
     }));
 

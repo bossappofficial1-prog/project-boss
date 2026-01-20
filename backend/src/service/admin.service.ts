@@ -94,8 +94,7 @@ export class AdminService {
                 ...statistics,
                 totalOrders: business.outlets.reduce((sum, outlet) => sum + (outlet._count?.orders || 0), 0),
                 totalOutlets: business._count.outlets,
-                totalProducts: business.outlets.reduce((sum, outlet) => sum + (outlet._count?.products || 0), 0),
-                walletBalance: business.wallet?.balance || 0
+                totalProducts: business.outlets.reduce((sum, outlet) => sum + (outlet._count?.products || 0), 0)
             }
         };
     }

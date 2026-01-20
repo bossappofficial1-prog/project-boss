@@ -1,6 +1,6 @@
 
 import { NextFunction, Request, Response } from "express";
-import { createUserByAdmin, createUserService, deleteUserService, getAllUserService, getUserByIdService, updateUserService } from "../service/user.service";
+import { createUserByAdmin, createUserService, deleteUserService, getAllUserService, getUserByIdService, getUserDetailService, updateUserService } from "../service/user.service";
 import { ResponseUtil } from "../utils/response";
 import { asyncHandler } from "../middleware/error.middleware";
 import { PaginationParams } from "../repositories/user.repository";
@@ -45,6 +45,13 @@ export const getUserByIdController = asyncHandler(async (req: Request, res: Resp
     return ResponseUtil.success(res, user)
 })
 
+export const getUserDetailController = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.params.userId
+    const user = await getUserDetailService(userId)
+
+    return ResponseUtil.success(res, user)
+})
+
 
 export const updateUserController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body
@@ -56,6 +63,11 @@ export const updateUserController = asyncHandler(async (req: Request, res: Respo
 
 export const deleteUserController = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.params.userId
+    const storedUserId = req.storedUser?.id
+
+    if (userId === storedUserId) {
+        return ResponseUtil.error(res, 'Tidak mendapatkan menghapus akun anda sendiri', [], 400)
+    }
     const user = await deleteUserService(userId)
 
     return ResponseUtil.success(res, user)
@@ -63,7 +75,8 @@ export const deleteUserController = asyncHandler(async (req: Request, res: Respo
 
 export const createUserController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body;
-    const user = await createUserService(payload)
+    const actor = req.storedUser?.role
+    const user = await createUserService(payload, actor)
 
     return ResponseUtil.success(res, user, 201)
 })

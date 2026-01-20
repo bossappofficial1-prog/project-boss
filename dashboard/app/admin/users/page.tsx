@@ -8,12 +8,13 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { UserTable } from "@/components/features/admin/user/Table"
-import { useUsers } from "@/hooks/useUsers"
+import { useCreateUser, useDeleteUser, useUpdateUser, useUserDetail, useUsers } from "@/hooks/useUsers"
 import { FormUser } from "@/components/features/admin/user/FormUser"
 import { User } from "@/types/user"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
-import ConfirmationModal from "@/components/ui/confirmation-modal"
 import { UserService } from "@/lib/servicev2/user.service"
+import { toast } from "sonner"
+import UserDetailModal from "@/components/features/admin/user/UserDetailModal"
 
 export default function UserManagement() {
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -21,13 +22,20 @@ export default function UserManagement() {
   const [limit, setLimit] = useState(10)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
-  const [editedUser, setEditedUser] = useState<Partial<User> | undefined>()
+  const [selectedUser, setSelectedUser] = useState<Partial<User> | undefined>()
+  const [selectedUserId, setSelectedUserId] = useState<string>('')
+  const [showDetailModal, setShowDetailModal] = useState(false)
 
   const { data, isRefetching, refetch } = useUsers({
     search: searchQuery,
     limit: limit,
     page: page
   })
+
+  const deleteUser = useDeleteUser()
+  const createUser = useCreateUser()
+  const updateUser = useUpdateUser()
+  const userDetail = useUserDetail(selectedUserId)
 
   const onPaginationChange = (params: { page: number, limit: number }) => {
     setPage(params.page)
@@ -48,7 +56,7 @@ export default function UserManagement() {
           <Button variant="outline" size="sm" className="shadow-sm">
             <Download className="mr-2 h-4 w-4" /> Export
           </Button>
-          <Button size="sm" onClick={() => { setEditedUser(undefined); setIsFormOpen(true) }} className="shadow-sm">
+          <Button size="sm" onClick={() => { setSelectedUser(undefined); setIsFormOpen(true) }} className="shadow-sm">
             <Plus className="mr-2 h-4 w-4" /> Tambah User
           </Button>
         </div>
@@ -62,42 +70,58 @@ export default function UserManagement() {
         limit={limit}
         onPaginationChange={onPaginationChange}
         paginationLength={data?.pagination.total}
-        onEdit={(user) => { setEditedUser({ name: user.name, role: user.role, email: user.email, provider: user.provider, createdAt: user.createdAt }); setIsFormOpen(true) }}
-        onDelete={(user) => { setEditedUser({ name: user.name, role: user.role, email: user.email, provider: user.provider, createdAt: user.createdAt }); setShowDeleteConfirmation(true) }}
+        onShowDetail={(userId) => { setSelectedUserId(userId); setShowDetailModal(true) }}
+        onEdit={(user) => { setSelectedUser({ id: user.id, name: user.name, role: user.role, email: user.email, provider: user.provider, createdAt: user.createdAt }); setIsFormOpen(true) }}
+        onDelete={(user) => { setSelectedUser({ id: user.id, name: user.name }); setShowDeleteConfirmation(true) }}
       />
 
       <FormUser
         isOpen={isFormOpen}
         onOpenChange={(open) => {
           setIsFormOpen(open)
-          if (!open) setEditedUser(undefined)
+          if (!open) setSelectedUser(undefined)
         }}
+        isLoading={createUser.isPending || updateUser.isPending}
         onSubmit={async (values) => {
-          await UserService.create(values as any)
-          // const valueses = values as FormData
-          // console.log('Nama file:', valueses.get('name'))
+          selectedUser?.id
+            ? updateUser.mutate({ userId: selectedUser.id!, userData: values as any }, {
+              onError: () => setIsFormOpen(true),
+              onSuccess: () => setIsFormOpen(false),
+            })
+            : createUser.mutate(values as any, {
+              onError: () => setIsFormOpen(true),
+              onSuccess: () => setIsFormOpen(false),
+            })
         }}
-        defaultValues={editedUser}
+        defaultValues={selectedUser}
       />
 
-      {showDeleteConfirmation && (
+      {/* {showDetailModal && selectedUserId && (
+      )} */}
+      <UserDetailModal
+        data={userDetail.data!}
+        isOpen={showDetailModal}
+        // isOpen
+        onClose={setShowDetailModal}
+      />
+
+      {showDeleteConfirmation && selectedUser && (
         <ConfirmDialog
           open={showDeleteConfirmation}
           onOpenChange={setShowDeleteConfirmation}
           title={`Konfirmasi Hapus`}
-          description={`Yakin ingin menghapus user '${editedUser?.name}'`}
+          description={`Yakin ingin menghapus user '${selectedUser?.name}'`}
           align="center"
-          onCancel={() => setEditedUser(undefined)}
+          confirmLoading={deleteUser.isPending}
+          onCancel={() => setSelectedUser(undefined)}
           confirmLabel='Yakin'
-          onConfirm={async () => {
-            await new Promise(resolve => setTimeout(resolve, 5000))
+          onConfirm={() => {
+            deleteUser.mutate(selectedUser.id!, {
+              onSuccess: () => setShowDeleteConfirmation(false)
+            });
+            return false
           }}
         />
-        // <ConfirmDialog
-        //   open={showDeleteConfirmation}
-        //   onOpenChange={setShowDeleteConfirmation}
-        //   title={`Konfirmat`}
-        // />
       )}
     </div>
   )

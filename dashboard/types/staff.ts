@@ -1,7 +1,7 @@
 export type BookingSlotStatus = 'AVAILABLE' | 'BOOKED' | 'BLOCKED';
 
-export type StaffRole = 'SERVICE' | 'CASHIER' | 'ADMIN' | 'INVENTORY' | 'OTHER';
-export type StaffStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+export type StaffRole = 'CASHIER' | 'ADMIN';
+export type StaffStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface StaffMember {
     id: string;

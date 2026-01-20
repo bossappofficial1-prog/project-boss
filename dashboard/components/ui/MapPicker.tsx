@@ -1,23 +1,12 @@
 'use client'
 
-import { apiClient } from '@/lib/apis/base'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet'
-import { LatLng, Icon } from 'leaflet'
+import { Map, MapControls, MapMarker, MarkerContent, MarkerPopup, useMap } from '@/components/ui/map'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MapPin, Search, Navigation, X } from 'lucide-react'
-import 'leaflet/dist/leaflet.css'
-import { useEffect, useRef, useState } from 'react'
-
-// Fix for default markers in react-leaflet
-delete (Icon.Default.prototype as any)._getIconUrl
-Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-})
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type ComponentProps } from 'react'
 
 interface MapPickerProps {
   latitude?: number
@@ -25,6 +14,13 @@ interface MapPickerProps {
   onLocationChange: (lat: number, lng: number) => void
   className?: string
   placeholder?: string
+  showControls?: boolean
+  controlsProps?: ComponentProps<typeof MapControls>
+  mapProps?: Omit<ComponentProps<typeof Map>, 'center' | 'zoom'>
+  showSelectionMarker?: boolean
+  renderMarkerContent?: (position: { lat: number; lng: number }) => ReactNode
+  renderMarkerPopup?: (position: { lat: number; lng: number }) => ReactNode
+  children?: ReactNode
 }
 
 interface LocationSearchResult {
@@ -33,75 +29,40 @@ interface LocationSearchResult {
   lon: string
 }
 
-// Component for handling map clicks and marker dragging
-function LocationMarker({ position, onPositionChange }: {
-  position: LatLng | null
-  onPositionChange: (lat: number, lng: number) => void
-}) {
-  const [markerPosition, setMarkerPosition] = useState<LatLng | null>(position)
+type Position = { lat: number; lng: number }
+
+function RecenterMap({ position }: { position: Position | null }) {
+  const { map, isLoaded } = useMap()
+  const lastPositionRef = useRef<Position | null>(null)
 
   useEffect(() => {
-    setMarkerPosition(position)
-  }, [position])
+    if (!map || !isLoaded || !position) return
+    if (lastPositionRef.current
+      && lastPositionRef.current.lat === position.lat
+      && lastPositionRef.current.lng === position.lng) {
+      return
+    }
+    lastPositionRef.current = position
+    map.flyTo({ center: [position.lng, position.lat], zoom: map.getZoom() || 13, duration: 800 })
+  }, [map, isLoaded, position])
 
-  const map = useMapEvents({
-    click(e) {
-      const newPos = e.latlng
-      setMarkerPosition(newPos)
-      onPositionChange(newPos.lat, newPos.lng)
-    },
-  })
-
-  // Custom marker icon
-  const customIcon = new Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  })
-
-  return markerPosition === null ? null : (
-    <Marker
-      position={markerPosition}
-      icon={customIcon}
-      draggable={true}
-      eventHandlers={{
-        dragend: (e) => {
-          const marker = e.target
-          const newPos = marker.getLatLng()
-          setMarkerPosition(newPos)
-          onPositionChange(newPos.lat, newPos.lng)
-        },
-      }}
-    >
-      <Popup>
-        <div className="text-center">
-          <div className="font-semibold">Lokasi Terpilih</div>
-          <div className="text-sm text-gray-600">
-            Lat: {markerPosition.lat.toFixed(6)}<br />
-            Lng: {markerPosition.lng.toFixed(6)}
-          </div>
-        </div>
-      </Popup>
-    </Marker>
-  )
+  return null
 }
 
-// Helper to recenter the map when `position` changes
-function RecenterMap({ position }: { position: LatLng | null }) {
-  const map = useMap()
+function MapClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }) {
+  const { map, isLoaded } = useMap()
 
   useEffect(() => {
-    if (!position) return
-    try {
-      // animate to new position while keeping current zoom
-      map.flyTo(position, map.getZoom(), { duration: 0.8 })
-    } catch (e) {
-      // ignore if map not ready
+    if (!map || !isLoaded) return
+    const handler = (e: { lngLat: { lng: number; lat: number } }) => {
+      onPick(e.lngLat.lat, e.lngLat.lng)
     }
-  }, [position, map])
+
+    map.on('click', handler)
+    return () => {
+      map.off('click', handler)
+    }
+  }, [map, isLoaded, onPick])
 
   return null
 }
@@ -111,30 +72,40 @@ export default function MapPicker({
   longitude,
   onLocationChange,
   className = '',
-  placeholder = 'Cari lokasi...'
+  placeholder = 'Cari lokasi...',
+  showControls = true,
+  controlsProps,
+  mapProps,
+  showSelectionMarker = true,
+  renderMarkerContent,
+  renderMarkerPopup,
+  children
 }: MapPickerProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<LocationSearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showSearchResults, setShowSearchResults] = useState(false)
-  const [currentPosition, setCurrentPosition] = useState<LatLng | null>(
-    latitude && longitude ? new LatLng(latitude, longitude) : null
+  const [currentPosition, setCurrentPosition] = useState<Position | null>(
+    latitude != null && longitude != null ? { lat: latitude, lng: longitude } : null
   )
 
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchAbortRef = useRef<AbortController | null>(null)
 
   // Update currentPosition when props change
   useEffect(() => {
-    if (latitude && longitude) {
-      setCurrentPosition(new LatLng(latitude, longitude))
-    }
+    if (latitude == null || longitude == null) return
+    setCurrentPosition((prev) => {
+      if (prev && prev.lat === latitude && prev.lng === longitude) return prev
+      return { lat: latitude, lng: longitude }
+    })
   }, [latitude, longitude])
 
   // Default position (Jakarta, Indonesia)
-  const defaultPosition = new LatLng(-6.2088, 106.8456)
+  const defaultPosition = useMemo<Position>(() => ({ lat: -6.2088, lng: 106.8456 }), [])
 
   // Get user's current location
-  const getCurrentLocation = () => {
+  const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
       alert('Geolocation tidak didukung oleh browser ini')
       return
@@ -143,8 +114,10 @@ export default function MapPicker({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords
-        const newPos = new LatLng(latitude, longitude)
-        setCurrentPosition(newPos)
+        setCurrentPosition((prev) => {
+          if (prev && prev.lat === latitude && prev.lng === longitude) return prev
+          return { lat: latitude, lng: longitude }
+        })
         onLocationChange(latitude, longitude)
       },
       (error) => {
@@ -153,36 +126,49 @@ export default function MapPicker({
       },
       { enableHighAccuracy: true, timeout: 10000 }
     )
-  }
+  }, [onLocationChange])
 
   // Search for locations using Nominatim (OpenStreetMap)
-  const searchLocations = async (query: string) => {
+  const searchLocations = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([])
+      setShowSearchResults(false)
+      setIsSearching(false)
       return
     }
 
     setIsSearching(true)
     try {
-      const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}&limit=5&countrycodes=id`)
+      if (searchAbortRef.current) {
+        searchAbortRef.current.abort()
+      }
+      const controller = new AbortController()
+      searchAbortRef.current = controller
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}&limit=5&countrycodes=id`, {
+        signal: controller.signal
+      })
       if (!res.ok) {
         console.error('Geocode proxy returned', res.status)
         setSearchResults([])
+        setShowSearchResults(false)
       } else {
         const data = await res.json()
         setSearchResults(data)
         setShowSearchResults(true)
       }
     } catch (error) {
-      console.error('Error searching locations:', error)
+      if ((error as any)?.name !== 'AbortError') {
+        console.error('Error searching locations:', error)
+      }
       setSearchResults([])
+      setShowSearchResults(false)
     } finally {
       setIsSearching(false)
     }
-  }
+  }, [])
 
   // Handle search input with debouncing
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = useCallback((value: string) => {
     setSearchQuery(value)
 
     if (searchTimeoutRef.current) {
@@ -192,26 +178,74 @@ export default function MapPicker({
     searchTimeoutRef.current = setTimeout(() => {
       searchLocations(value)
     }, 500)
-  }
+  }, [searchLocations])
 
   // Select a location from search results
-  const selectLocation = (result: LocationSearchResult) => {
+  const selectLocation = useCallback((result: LocationSearchResult) => {
     const lat = parseFloat(result.lat)
     const lng = parseFloat(result.lon)
-    const newPos = new LatLng(lat, lng)
-
-    setCurrentPosition(newPos)
+    setCurrentPosition((prev) => {
+      if (prev && prev.lat === lat && prev.lng === lng) return prev
+      return { lat, lng }
+    })
     onLocationChange(lat, lng)
     setSearchQuery(result.display_name)
     setShowSearchResults(false)
-  }
+  }, [onLocationChange])
 
   // Clear search
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchQuery('')
     setSearchResults([])
     setShowSearchResults(false)
-  }
+  }, [])
+
+  const handlePick = useCallback((lat: number, lng: number) => {
+    setCurrentPosition((prev) => {
+      if (prev && prev.lat === lat && prev.lng === lng) return prev
+      return { lat, lng }
+    })
+    onLocationChange(lat, lng)
+  }, [onLocationChange])
+
+  const mapCenter = useMemo<[number, number]>(() => (
+    currentPosition
+      ? [currentPosition.lng, currentPosition.lat]
+      : [defaultPosition.lng, defaultPosition.lat]
+  ), [currentPosition, defaultPosition])
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+      if (searchAbortRef.current) {
+        searchAbortRef.current.abort()
+      }
+    }
+  }, [])
+
+  const markerContent = useMemo(() => {
+    if (!currentPosition) return null
+    return renderMarkerContent
+      ? renderMarkerContent(currentPosition)
+      : <div className="h-4 w-4 rounded-full bg-red-500 ring-2 ring-white shadow" />
+  }, [currentPosition, renderMarkerContent])
+
+  const markerPopupContent = useMemo(() => {
+    if (!currentPosition) return null
+    return renderMarkerPopup
+      ? renderMarkerPopup(currentPosition)
+      : (
+        <div className="text-center">
+          <div className="font-semibold">Lokasi Terpilih</div>
+          <div className="text-sm text-gray-600">
+            Lat: {currentPosition.lat.toFixed(6)}<br />
+            Lng: {currentPosition.lng.toFixed(6)}
+          </div>
+        </div>
+      )
+  }, [currentPosition, renderMarkerPopup])
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -245,9 +279,9 @@ export default function MapPicker({
         {showSearchResults && searchResults.length > 0 && (
           <Card className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto">
             <CardContent className="p-0">
-              {searchResults.map((result, index) => (
+              {searchResults.map((result) => (
                 <button
-                  key={index}
+                  key={`${result.lat}-${result.lon}-${result.display_name}`}
                   type="button"
                   onClick={() => selectLocation(result)}
                   className="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
@@ -307,22 +341,37 @@ export default function MapPicker({
         </CardHeader>
         <CardContent>
           <div className="h-64 rounded-lg overflow-hidden border">
-            <MapContainer
-              center={currentPosition || defaultPosition}
-              zoom={13}
-              style={{ height: '100%', width: '100%' }}
-              className="z-0"
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <RecenterMap position={currentPosition} />
-              <LocationMarker
-                position={currentPosition}
-                onPositionChange={onLocationChange}
-              />
-            </MapContainer>
+            <div className="h-full w-full">
+              <Map
+                center={mapCenter}
+                zoom={13}
+                {...mapProps}
+              >
+                <RecenterMap position={currentPosition} />
+                <MapClickHandler onPick={handlePick} />
+                {showControls && (
+                  <MapControls
+                    position="top-right"
+                    showZoom
+                    showCompass={false}
+                    showLocate={false}
+                    {...controlsProps}
+                  />
+                )}
+                {children}
+                {showSelectionMarker && currentPosition && (
+                  <MapMarker
+                    longitude={currentPosition.lng}
+                    latitude={currentPosition.lat}
+                    draggable
+                    onDragEnd={({ lng, lat }) => handlePick(lat, lng)}
+                  >
+                    <MarkerContent>{markerContent}</MarkerContent>
+                    <MarkerPopup>{markerPopupContent}</MarkerPopup>
+                  </MapMarker>
+                )}
+              </Map>
+            </div>
           </div>
 
           {/* Coordinates Display */}

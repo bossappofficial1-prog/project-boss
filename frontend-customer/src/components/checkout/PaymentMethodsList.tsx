@@ -127,8 +127,8 @@ const PaymentMethodsList: React.FC<{
                                             <div className="flex items-center gap-3">
                                                 {/* Payment Method Icon */}
                                                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${isSelected
-                                                    ? 'bg-primary/10 dark:bg-primary/20'
-                                                    : 'bg-gray-50 dark:bg-gray-800 group-hover:bg-primary/5 dark:group-hover:bg-primary/10'
+                                                    ? 'bg-gray-300'
+                                                    : 'bg-gray-50 '
                                                     }`}>
                                                     <ImageRender
                                                         src={method.image_url}

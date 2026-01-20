@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone, type DropzoneOptions, type FileRejection } from 'react-dropzone'
-import { Upload, X, FileText, AlertCircle, File as FileIcon } from 'lucide-react'
+import { Upload, X, FileText, AlertCircle } from 'lucide-react'
 import { Button } from './button'
 
 // Helper untuk format ukuran file
@@ -15,7 +15,7 @@ const formatFileSize = (bytes: number) => {
 }
 
 type FileUploaderProps = {
-    value?: File | null
+    value?: File | string | null
     onValueChange: (file: File | null) => void
     accept?: DropzoneOptions['accept']
     maxSize?: number
@@ -33,7 +33,7 @@ export default function FileUploader({
     },
     maxSize = 5 * 1024 * 1024, // Default 5MB
     label = "Klik atau seret file ke sini",
-    helperText = "Format yang didukung: JPG, PNG, PDF (Maks 5MB)",
+    helperText,
     disabled = false
 }: FileUploaderProps) {
     const [preview, setPreview] = useState<string | null>(null)
@@ -74,6 +74,11 @@ export default function FileUploader({
     useEffect(() => {
         if (!value) {
             setPreview(null)
+            return
+        }
+
+        if (typeof value === 'string') {
+            setPreview(value)
             return
         }
 
@@ -121,7 +126,14 @@ export default function FileUploader({
                                 {isDragActive ? 'Lepaskan file di sini' : label}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {helperText}
+                                {helperText
+                                    ? helperText
+                                    : `Format yang didukung: 
+                                    ${Object.values(accept)
+                                        .flat()
+                                        .map(ext => ext.replace('.', '').toUpperCase())
+                                        .join(', ')
+                                    } (Maks ${formatFileSize(maxSize)})`}
                             </p>
                         </div>
                     ) : (
@@ -142,11 +154,13 @@ export default function FileUploader({
 
                             <div className="flex-1 text-left overflow-hidden">
                                 <p className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
-                                    {value.name}
+                                    {typeof value === 'string' ? (value.split('/').pop() || 'Gambar tersimpan') : value.name}
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    {formatFileSize(value.size)}
-                                </p>
+                                {typeof value !== 'string' && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {formatFileSize(value.size)}
+                                    </p>
+                                )}
                             </div>
 
                             <Button

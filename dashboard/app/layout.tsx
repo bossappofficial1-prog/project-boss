@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { cookies } from "next/headers";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -120,11 +121,17 @@ const structuredData = {
   }
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const theme = (cookieStore.get('theme')?.value ?? 'system') as
+    | 'light'
+    | 'dark'
+    | 'system';
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -146,7 +153,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${poppins.variable} font-poppins antialiased min-h-screen bg-background text-foreground`}>
-        <ThemeProvider>
+        <ThemeProvider defaultTheme={theme}>
           <QueryProvider>{children}</QueryProvider>
         </ThemeProvider>
       </body>

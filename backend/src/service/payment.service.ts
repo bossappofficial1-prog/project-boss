@@ -115,7 +115,6 @@ function buildManualInstructions(outlet: OutletWithBusiness, manualType: ManualP
         manualType,
         outletName: outlet.name,
         businessName: outlet.business?.name ?? '',
-        note: outlet.manualPaymentNote ?? null
     };
 
     if (manualType === ManualPaymentType.QRIS_OFFLINE) {

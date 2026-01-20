@@ -185,18 +185,18 @@ export default function OrdersPage() {
           emptyMessage="Tidak ada pesanan"
           showTableInfo={true}
           pagination={true}
-          mobileCardRender={(order) => (
-            <OrderMobileCard
-              order={order}
-              pendingOrderId={pendingOrderId}
-              onStatusChange={requestStatusUpdate}
-              onManualConfirm={requestManualConfirmation}
-              onMarkReady={requestReady}
-              onMarkCompleted={requestComplete}
-              onCancel={requestCancel}
-              onPreviewProof={triggerProofPreview}
-            />
-          )}
+        // mobileCardRender={(order) => (
+        //   <OrderMobileCard
+        //     order={order}
+        //     pendingOrderId={pendingOrderId}
+        //     onStatusChange={requestStatusUpdate}
+        //     onManualConfirm={requestManualConfirmation}
+        //     onMarkReady={requestReady}
+        //     onMarkCompleted={requestComplete}
+        //     onCancel={requestCancel}
+        //     onPreviewProof={triggerProofPreview}
+        //   />
+        // )}
         />
       )}
 

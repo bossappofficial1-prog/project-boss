@@ -117,35 +117,6 @@ function HomeSections() {
     <div className="space-y-8 pb-20 pt-2">
       <HeroCarousel banners={banners} />
 
-      {/* --- STATS SECTION --- */}
-      {/* <section className="space-y-4">
-        <HomeSectionHeader title={t("stats.title")} subtitle={t("stats.subtitle")} icon={<Sparkles className="h-4 w-4" />} />
-
-        <div className="rounded-md border border-border/70 bg-card/95">
-          <div className="grid grid-cols-3 divide-y divide-border/60 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-            {stats.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <div key={stat.key} className="flex flex-col items-center gap-2 p-3 text-center">
-
-                  Ikon dengan latar belakang berbentuk lingkaran
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-2xl font-semibold text-foreground">{stat.value}</p>
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                      {stat.label}
-                    </p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section> */}
-
       {/* --- CATEGORIES SECTION --- */}
       <section className="space-y-4" id="categories">
         <HomeSectionHeader title={t("sections.categories.title")} subtitle={t("sections.categories.subtitle")} actionLabel={t("sections.categories.action")} href="/search" icon={<LayoutGrid className="h-4 w-4" />} />

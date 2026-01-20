@@ -158,6 +158,9 @@ export default function ProductsPage() {
         onOpenChange={setShowAddOrEditModal}
         outletId={selectedOutlet || null}
         data={selectedProduct}
+        initialData={{
+          ...selectedProduct
+        }}
         onSuccess={() => { handleRefreshData(); action == 'edit' && setSelectedProduct(null); }}
       />
 

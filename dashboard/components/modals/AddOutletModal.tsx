@@ -63,7 +63,6 @@ export default function AddOutletModal({
   const queryClient = useQueryClient()
   const [operatingHoursData, setOperatingHoursData] = useState<Record<number, OperatingHoursFormData>>({})
   const [initialOperatingHours, setInitialOperatingHours] = useState<Record<number, OperatingHoursFormData>>({})
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [operatingHoursChanged, setOperatingHoursChanged] = useState(false)
 
   const form = useForm<OutletFormData>({
@@ -77,6 +76,8 @@ export default function AddOutletModal({
     control,
     name: ['name', 'address', 'phone', 'description', 'status', 'latitude', 'longitude', 'file']
   })
+  const watchedLongitude = useWatch({ control, name: 'longitude' })
+  const watchedName = useWatch({ control, name: 'name' })
 
   const upsertMutation = useUpsertOperatingHours()
   const outletQueryKey = useMemo(() => ['outlet-detail', outlet?.id], [outlet?.id])
@@ -177,7 +178,6 @@ export default function AddOutletModal({
     reset()
     setOperatingHoursData({})
     setInitialOperatingHours({})
-    setHasUnsavedChanges(false)
     setOperatingHoursChanged(false)
   }, [reset])
 
@@ -197,7 +197,6 @@ export default function AddOutletModal({
       : {}
     setOperatingHoursData(hours)
     setInitialOperatingHours(hours)
-    setHasUnsavedChanges(false)
     setOperatingHoursChanged(false)
   }, [reset])
 
@@ -254,7 +253,7 @@ export default function AddOutletModal({
     <>
       <Toaster richColors position="top-center" />
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[95dvh] overflow-hidden flex flex-col">
+        <DialogContent className="max-h-[95dvh] w-[95vw] max-w-[1000px] overflow-hidden flex flex-col">
           <DialogHeader className="pb-4 border-b">
             <DialogTitle className="flex items-center gap-3 text-xl">
               <Store className="h-6 w-6 text-red-500" />
@@ -333,8 +332,25 @@ export default function AddOutletModal({
               <Controller control={control} name="latitude" render={({ field }) => (
                 <MapPicker
                   latitude={field.value}
-                  longitude={form.watch('longitude')}
+                  longitude={watchedLongitude}
                   onLocationChange={handleLocationSelect}
+                  showSelectionMarker
+                  showControls
+                  mapProps={{ projection: { type: 'globe' } }}
+                  renderMarkerContent={() => (
+                    <div className="flex items-center justify-center h-6 w-6 rounded-full bg-red-500/90 ring-2 ring-white shadow">
+                      <div className="h-2.5 w-2.5 rounded-full bg-white" />
+                    </div>
+                  )}
+                  renderMarkerPopup={(pos) => (
+                    <div className="text-center">
+                      <div className="font-semibold">{watchedName || 'Outlet'}</div>
+                      <div className="text-sm text-gray-600">
+                        Lat: {pos.lat.toFixed(6)}<br />
+                        Lng: {pos.lng.toFixed(6)}
+                      </div>
+                    </div>
+                  )}
                 />
               )} />
             </section>
@@ -351,7 +367,13 @@ export default function AddOutletModal({
                   </div>
                 </div>
               )}
-              <Controller control={control} name="file" render={({ field }) => <ImageUploader value={field.value} onValueChange={field.onChange} />} />
+              <Controller control={control} name="file" render={({ field }) =>
+                <ImageUploader
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  accept={{ 'image/*': ['.jpeg', '.jpg', '.png', '.webp'] }}
+                />}
+              />
               {errors.file && <p className="text-xs text-red-500 mt-1">{errors.file.message}</p>}
             </section>
 

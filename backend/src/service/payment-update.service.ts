@@ -55,16 +55,6 @@ export async function handlePaymentSuccess(orderId: string) {
                 data: { status: PaymentStatus.SUCCESS },
             });
 
-            // 3. Perbarui saldo dompet bisnis
-            await tx.wallet.update({
-                where: { businessId: order.outlet.businessId },
-                data: {
-                    balance: {
-                        increment: order.totalAmount,
-                    },
-                },
-            });
-
             // 4. Kurangi quantity produk untuk GOODS
             for (const item of order.items) {
                 if (item.product.type === 'GOODS') {

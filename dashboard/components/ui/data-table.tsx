@@ -203,7 +203,7 @@ export function DataTable<TData, TValue>({
     emptyMessage = "No results found.",
     showColumnVisibility = true,
     showTableInfo = true,
-    density = 'normal',
+    density = 'compact',
     rowActions,
     bulkActions,
     enableColumnResizing = false,
@@ -434,7 +434,7 @@ export function DataTable<TData, TValue>({
                         }
                         if (actionViewType === 'flex') {
                             return (
-                                <div className="flex flex-wrap gap-2">
+                                <div className="space-x-2">
                                     {actions.map((action, index) => {
                                         const Icon = action.icon;
                                         if (action.render) {

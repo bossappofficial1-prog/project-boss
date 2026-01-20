@@ -21,6 +21,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
         return (
             <div className="relative">
                 <Input
+                    autoComplete='new-password'
                     type={showPassword ? 'text' : 'password'}
                     className={cn('pr-10', className)}
                     ref={ref}

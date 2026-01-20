@@ -1,11 +1,17 @@
 import { SidebarInset, SidebarProvider, SidebarRail, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AdminSidebar";
-import { Bell, Search } from "lucide-react";
 import { SiteHeader } from "./SiteHeader";
+import { Toaster } from "sonner";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     return (
         <SidebarProvider defaultOpen>
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                    duration: 5000, // No auto-close
+                }}
+            />
             <AppSidebar />
             <SidebarRail />
             <SidebarInset className="bg-background">

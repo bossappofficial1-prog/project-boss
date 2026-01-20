@@ -18,7 +18,6 @@ export class AdminRepository {
             todayRevenue,
             monthlyRevenue,
             previousMonthRevenue,
-            pendingWithdrawals,
             totalTransactions,
             todayTransactions,
             // User counts
@@ -64,9 +63,6 @@ export class AdminRepository {
                 },
                 _sum: { totalAmount: true }
             }),
-
-            // Pending withdrawals
-            db.withdrawal.count({ where: { status: 'PENDING' } }),
 
             // Total transactions
             db.order.count({ where: { paymentStatus: 'SUCCESS' } }),
@@ -129,7 +125,6 @@ export class AdminRepository {
             totalRevenue: totalRevenue._sum.totalAmount || 0,
             todayRevenue: todayRevenue._sum.totalAmount || 0,
             monthlyRevenue: currentRevenue,
-            pendingWithdrawals,
             totalTransactions,
             todayTransactions,
             // Change percentages
@@ -163,7 +158,7 @@ export class AdminRepository {
 
         // For now, we'll combine orders and withdrawals as activities
         // In a real implementation, you might have a dedicated activities table
-        const [orders, withdrawals] = await Promise.all([
+        const [orders] = await Promise.all([
             db.order.findMany({
                 skip,
                 take: limit,
@@ -188,29 +183,6 @@ export class AdminRepository {
                     guestCustomer: { select: { name: true } }
                 }
             }),
-            db.withdrawal.findMany({
-                skip,
-                take: limit,
-                orderBy: { createdAt: 'desc' },
-                where: {
-                    ...(search && {
-                        OR: [
-                            { id: { contains: search } },
-                            { business: { name: { contains: search } } }
-                        ]
-                    }),
-                    ...(status && {
-                        status: status === 'success' ? 'COMPLETED' as const :
-                            status === 'warning' ? 'PENDING' as const :
-                                status === 'error' ? 'REJECTED' as const :
-                                    status as any
-                    }),
-                    ...(type && type === 'withdrawal_request' && { status: 'PENDING' as const })
-                },
-                include: {
-                    business: { select: { name: true } }
-                }
-            })
         ]);
 
         // Convert to unified activity format
@@ -222,14 +194,6 @@ export class AdminRepository {
                 timestamp: order.createdAt.toISOString(),
                 status: 'success' as const
             })),
-            ...withdrawals.map(withdrawal => ({
-                id: withdrawal.id,
-                type: 'withdrawal_request' as const,
-                description: `Withdrawal request for ${withdrawal.business.name}`,
-                timestamp: withdrawal.createdAt.toISOString(),
-                status: withdrawal.status === 'COMPLETED' ? 'success' as const :
-                    withdrawal.status === 'PENDING' ? 'warning' as const : 'error' as const
-            }))
         ];
 
         // Sort by timestamp (most recent first)
@@ -293,11 +257,6 @@ export class AdminRepository {
                             }
                         }
                     },
-                    wallet: {
-                        select: {
-                            balance: true
-                        }
-                    },
                     _count: {
                         select: {
                             outlets: true
@@ -343,11 +302,6 @@ export class AdminRepository {
                             }
                         }
                     }
-                },
-                wallet: true,
-                withdrawals: {
-                    take: 10,
-                    orderBy: { createdAt: 'desc' }
                 },
                 _count: {
                     select: {
@@ -807,8 +761,6 @@ export class AdminRepository {
                 totalRevenue,
                 appFees,
                 midtransFees,
-                withdrawalAmount,
-                pendingWithdrawals
             ] = await Promise.all([
                 db.order.aggregate({
                     where: { paymentStatus: 'SUCCESS', ...dateFilter },
@@ -822,23 +774,14 @@ export class AdminRepository {
                     where: { paymentStatus: 'SUCCESS', ...dateFilter },
                     _sum: { midtransFee: true }
                 }),
-                db.withdrawal.aggregate({
-                    where: { status: 'COMPLETED', ...dateFilter },
-                    _sum: { finalAmount: true }
-                }),
-                db.withdrawal.aggregate({
-                    where: { status: 'PENDING' },
-                    _sum: { finalAmount: true }
-                })
+
             ]);
 
             return {
                 totalRevenue: totalRevenue._sum.totalAmount || 0,
                 appFees: appFees._sum.appFee || 0,
                 midtransFees: midtransFees._sum.midtransFee || 0,
-                netRevenue: (totalRevenue._sum.totalAmount || 0) - (appFees._sum.appFee || 0) - (midtransFees._sum.midtransFee || 0),
-                totalWithdrawals: withdrawalAmount._sum.finalAmount || 0,
-                pendingWithdrawals: pendingWithdrawals._sum.finalAmount || 0
+                netRevenue: (totalRevenue._sum.totalAmount || 0) - (appFees._sum.appFee || 0) - (midtransFees._sum.midtransFee || 0)
             };
         } else if (reportType === 'detailed') {
             const transactions = await db.order.findMany({
@@ -875,7 +818,6 @@ export class AdminRepository {
             totalBusinesses,
             totalOrders,
             todayOrders,
-            pendingWithdrawals,
             activeConnections
         ] = await Promise.all([
             // Total users
@@ -892,11 +834,6 @@ export class AdminRepository {
                 where: {
                     createdAt: { gte: startOfDay }
                 }
-            }),
-
-            // Pending withdrawals
-            db.withdrawal.count({
-                where: { status: 'PENDING' }
             }),
 
             // Active connections (mock data for now)
@@ -931,7 +868,6 @@ export class AdminRepository {
                 totalBusinesses,
                 totalOrders,
                 todayOrders,
-                pendingWithdrawals,
                 activeConnections
             }
         };

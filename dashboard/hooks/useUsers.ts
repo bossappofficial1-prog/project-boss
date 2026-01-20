@@ -10,6 +10,9 @@ import type {
     PaginatedUsersResponse,
     UserStats
 } from '@/types/user';
+import { UserService } from '@/lib/servicev2/user.service';
+import { AxiosError } from 'axios';
+import { UserDetail } from '@/types/userv2';
 
 // Query Keys
 export const userQueryKeys = {
@@ -50,6 +53,19 @@ export function useUser(
     });
 }
 
+export function useUserDetail(
+    userId: string,
+    options?: Omit<UseQueryOptions<UserDetail>, 'queryKey' | 'queryFn'>
+) {
+    return useQuery({
+        queryKey: userQueryKeys.detail(userId),
+        queryFn: () => UserService.getUserDetail(userId),
+        enabled: !!userId,
+        staleTime: 5 * 60 * 1000,
+        ...options,
+    });
+}
+
 // Hook to get user statistics
 export function useUserStats(
     options?: Omit<UseQueryOptions<UserStats>, 'queryKey' | 'queryFn'>
@@ -67,7 +83,7 @@ export function useCreateUser() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (userData: CreateUserInput) => userApi.createUser(userData),
+        mutationFn: (userData: CreateUserInput) => UserService.create(userData),
         onSuccess: (newUser) => {
             // Invalidate and refetch users list
             queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
@@ -77,12 +93,12 @@ export function useCreateUser() {
             queryClient.setQueryData(userQueryKeys.detail(newUser.id), newUser);
 
             toast.success('User created successfully!', {
-                description: `${newUser.name} has been added to the system.`
+                description: `${newUser.email} has been added to the system.`
             });
         },
-        onError: (error: Error) => {
+        onError: (error: AxiosError) => {
             toast.error('Failed to create user', {
-                description: error.message
+                description: (error.response?.data as any).message
             });
         },
     });
@@ -94,7 +110,7 @@ export function useUpdateUser() {
 
     return useMutation({
         mutationFn: ({ userId, userData }: { userId: string; userData: UpdateUserInput }) =>
-            userApi.updateUser(userId, userData),
+            UserService.update(userId, userData),
         onSuccess: (updatedUser, { userId }) => {
             // Update specific user in cache
             queryClient.setQueryData(userQueryKeys.detail(userId), updatedUser);
@@ -107,9 +123,9 @@ export function useUpdateUser() {
                 description: `${updatedUser.name} has been updated.`
             });
         },
-        onError: (error: Error) => {
+        onError: (error: AxiosError) => {
             toast.error('Failed to update user', {
-                description: error.message
+                description: (error.response?.data as any).message
             });
         },
     });
@@ -120,7 +136,7 @@ export function useDeleteUser() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (userId: string) => userApi.deleteUser(userId),
+        mutationFn: (userId: string) => UserService.delete(userId),
         onSuccess: (_, userId) => {
             // Remove from cache
             queryClient.removeQueries({ queryKey: userQueryKeys.detail(userId) });
@@ -131,9 +147,9 @@ export function useDeleteUser() {
 
             toast.success('User deleted successfully!');
         },
-        onError: (error: Error) => {
+        onError: (error: AxiosError) => {
             toast.error('Failed to delete user', {
-                description: error.message
+                description: (error.response?.data as any).message
             });
         },
     });
@@ -157,9 +173,9 @@ export function useBulkDeleteUsers() {
 
             toast.success(`Successfully deleted ${result.deletedCount} users`);
         },
-        onError: (error: Error) => {
+        onError: (error: AxiosError) => {
             toast.error('Failed to delete users', {
-                description: error.message
+                description: (error.response?.data as any).message
             });
         },
     });
@@ -185,9 +201,9 @@ export function useUpdateUserStatus() {
                 description: `${updatedUser.name} is now ${statusText}.`
             });
         },
-        onError: (error: Error) => {
+        onError: (error: AxiosError) => {
             toast.error('Failed to update user status', {
-                description: error.message
+                description: (error.response?.data as any).message
             });
         },
     });
@@ -218,9 +234,9 @@ export function useResetUserPassword() {
         onSuccess: (_, { userId }) => {
             toast.success('Password reset successfully!');
         },
-        onError: (error: Error) => {
+        onError: (error: AxiosError) => {
             toast.error('Failed to reset password', {
-                description: error.message
+                description: (error.response?.data as any).message
             });
         },
     });

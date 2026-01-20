@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import ImageUploader from '@/components/ui/ImageUploader'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog'
 import { productApi, uploadApi } from '@/lib/api'
@@ -12,6 +12,8 @@ import { Switch } from '../ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Product } from '@/hooks/useProducts'
 import { Button } from '../ui/button'
+import z from 'zod'
+import { FormFieldConfig, ReusableForm } from '../ui/reuseable-form'
 
 type Props = {
     open: boolean
@@ -20,9 +22,65 @@ type Props = {
     onSuccess?: () => void
     action?: 'add' | 'edit',
     data?: Product | null
+    initialData?: Partial<ProductFormValues & { image: string }>
 }
 
-export default function AddOrEditProductServiceModal({ open, onOpenChange, outletId, onSuccess, action = 'edit', data }: Props) {
+const ProductStatus = z.enum([`ACTIVE`, 'INACTIVE'])
+const ProductType = z.enum([`GOODS`, 'SERVICE'])
+
+export const productSchema = z
+    .object({
+        type: ProductType,
+        name: z.string().min(2, 'Nama produk minimal 2 karakter'),
+        description: z.string().optional(),
+        costPrice: z.number().min(0, 'Harga modal minimal Rp 0'),
+        price: z.number().min(0, 'Harga minimal Rp 0'),
+        quantity: z.number().min(1, 'Stok minimal 1').optional(),
+        unit: z.string().default('pcs').optional(),
+        serviceDurationMinutes: z
+            .number()
+            .min(10, 'Durasi layanan minimal 10 menit')
+            .optional(),
+        status: ProductStatus,
+        file: z
+            .union([
+                z
+                    .instanceof(File)
+                    .refine(file => file.size <= 3 * 1024 * 1024, {
+                        message: 'Ukuran file maksimal 3MB',
+                    }),
+                z.string().min(1),
+            ])
+            .optional(),
+    })
+    .superRefine((data, ctx) => {
+        const isGoods = data.type === 'GOODS';
+
+        if (isGoods && data.quantity == null) {
+            ctx.addIssue({
+                path: ['quantity'],
+                message: 'Stok awal wajib diisi',
+                code: z.ZodIssueCode.custom,
+            });
+            ctx.addIssue({
+                path: ['unit'],
+                message: 'Satuan produk wajib diisi',
+                code: z.ZodIssueCode.custom,
+            });
+        }
+
+        if (!isGoods && data.serviceDurationMinutes == null) {
+            ctx.addIssue({
+                path: ['serviceDurationMinutes'],
+                message: 'Durasi layanan wajib diisi',
+                code: z.ZodIssueCode.custom,
+            });
+        }
+    });
+
+export type ProductFormValues = z.infer<typeof productSchema>;
+
+export default function AddOrEditProductServiceModal({ open, onOpenChange, initialData, outletId, onSuccess, action = 'edit', data }: Props) {
     const [type, setType] = React.useState<'GOODS' | 'SERVICE'>('GOODS')
     const [name, setName] = React.useState('')
     const [description, setDescription] = React.useState('')
@@ -38,6 +96,35 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
     const [submitting, setSubmitting] = React.useState(false)
     const [error, setError] = React.useState<string | null>(null)
     const isEdit = action === 'edit'
+
+    const defaultValues = useMemo(() => {
+        if (isEdit) {
+            const normalized = { ...initialData } as ProductFormValues
+            if (initialData?.image && !normalized.file) {
+                normalized.file = initialData.image
+            }
+            if (normalized.type === 'GOODS') {
+                normalized.serviceDurationMinutes = undefined
+            }
+            if (normalized.type === 'SERVICE') {
+                normalized.quantity = undefined
+                normalized.unit = undefined
+            }
+            return normalized
+        }
+
+        return {
+            unit: 'pcs',
+            costPrice: 0,
+            description: '',
+            name: '',
+            price: 0,
+            quantity: 1,
+            status: 'ACTIVE',
+            type: 'GOODS'
+        } as ProductFormValues
+
+    }, [initialData, isEdit])
 
     const reset = React.useCallback(() => {
         setType('GOODS')
@@ -90,7 +177,7 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
         onOpenChange(nextOpen)
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit3 = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!outletId) { setError('Pilih outlet terlebih dahulu.'); return; }
 
@@ -99,7 +186,6 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
         if (type === 'SERVICE' && serviceDurationMinutes as number < 10) { setError(`Durasi layanan minimal 10 menit`); return }
 
         if (price === '' || Number(price) <= 0) { setError('Harga jual harus lebih dari 0.'); return }
-        console.log(costPrice);
 
         if (costPrice === '' || Number(costPrice) < 0) { setError('Harga modal tidak boleh negatif.'); return }
 
@@ -157,196 +243,163 @@ export default function AddOrEditProductServiceModal({ open, onOpenChange, outle
         }
     }
 
-    return (
-        <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>{action === 'add' ? `Tambah Produk atau Jasa` : `Update ${data?.type === 'GOODS' ? 'Produk' : 'Jasa'} ${data?.name}`}</DialogTitle>
-                    <DialogDescription>Isi detail untuk menambahkan item baru ke outlet.</DialogDescription>
-                </DialogHeader>
-                {!outletId && (
-                    <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 text-amber-800 dark:text-amber-400 text-sm">
-                        Pilih outlet terlebih dahulu agar dapat menambah produk atau jasa.
-                    </div>
-                )}
-                {error && (
-                    <div className="mb-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-red-700 dark:text-red-400 text-sm">
-                        {error}
-                    </div>
-                )}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-                        <div className='sm:col-span-3'>
-                            <Label htmlFor="jenis" >Jenis</Label>
-                            <Select
-                                disabled={isEdit}
-                                value={type}
-                                onValueChange={(value) => setType(value as any)}
-                            >
-                                <SelectTrigger id='jenis' className="h-11">
-                                    <SelectValue placeholder="Pilih Jenis" />
-                                </SelectTrigger>
+    const handleSubmit = async (values: ProductFormValues | FormData) => {
+        const fileEntry = (values as FormData).get('file')
+        const file = fileEntry instanceof File ? fileEntry : null
+        const otherValues = values as FormData
 
-                                <SelectContent >
-                                    <SelectItem value='GOODS'>Produk (Barang)</SelectItem>
-                                    <SelectItem value='SERVICE'>Jasa (Layanan)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="sm:col-span-2">
-                            <Label
-                                htmlFor="status"
-                                className="block text-sm font-semibold text-gray-800 tracking-wide"
-                            >
-                                Status
-                            </Label>
+        const formType = otherValues.get('type') as ProductFormValues['type'] | null
+        const payload: any = {
+            name: otherValues.get('name'),
+            description: otherValues.get('description') || undefined,
+            costPrice: Number(otherValues.get('costPrice')) || 0,
+            price: Number(otherValues.get('price')),
+            type: formType,
+            status: otherValues.get('status'),
+            outletId,
+        }
 
-                            <div className="flex items-center justify-between rounded-lg border h-11 px-4 py-3 shadow-sm hover:shadow-md transition-all duration-200">
-                                <span
-                                    className={`text-sm font-medium ${status === "INACTIVE" ? "text-gray-700" : "text-gray-400"
-                                        }`}
-                                >
-                                    Tidak Aktif
-                                </span>
+        // Upload image and use returned URL
+        if (file) {
+            const uploaded = await uploadApi.uploadImage(file, { scope: 'product' })
+            payload.image = uploaded.url
+        }
+        if (formType === 'GOODS') {
+            payload.quantity = Number(otherValues.get('quantity')) || 0
+            payload.unit = (otherValues.get('unit') as string) || 'pcs'
+        } else {
+            payload.serviceDurationMinutes = Number(otherValues.get('serviceDurationMinutes')) || 0
+        }
 
-                                <Switch
-                                    id="status"
-                                    checked={status === "ACTIVE"}
-                                    onCheckedChange={(check) =>
-                                        check ? setStatus("ACTIVE") : setStatus("INACTIVE")
-                                    }
-                                />
+        if (action === 'add') {
+            await productApi.create(payload)
+        } else {
+            await productApi.update(data?.id!, payload)
+        }
+        onSuccess?.()
+        reset()
+        handleClose(false)
+    }
 
-                                <span
-                                    className={`text-sm font-medium ${status === "ACTIVE" ? "text-emerald-600" : "text-gray-400"
-                                        }`}
-                                >
-                                    Aktif
-                                </span>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div>
-                        <Label htmlFor='nama'>Nama</Label>
-                        <Input
-                            id='nama'
-                            type='text'
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder='Contoh: Kopi Susu Gula Aren'
-                        />
-                    </div>
-
-                    <div>
-                        <Label htmlFor='deskripsi' >Deskripsi (opsional)</Label>
-                        <Textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            id='deskripsi'
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <Label htmlFor='costPrice'>Harga Modal</Label>
-                            <InputCurrency
-                                onValueChange={(value) => setCostPrice(value)}
-                                value={costPrice || 0}
-                                id='costPrice'
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor='price'>Harga Jual</Label>
-                            <InputCurrency
-                                onValueChange={(value) => setPrice(value)}
-                                value={price || 0}
-                                id='price'
-                            />
-                        </div>
-                    </div>
-
-                    {type === 'GOODS' ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <Label>Stok Awal</Label>
-                                <Input
-                                    type="number"
-                                    min={0}
-                                    value={quantity}
-                                    onChange={(e) => setQuantity(e.target.value === '' ? '' : Number(e.target.value))}
-                                />
-                            </div>
-                            <div>
-                                <Label>Satuan</Label>
-                                <Input
-                                    type="text"
-                                    value={unit}
-                                    onChange={(e) => setUnit(e.target.value)}
-                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        <div>
-                            <Label >Durasi Layanan (menit)</Label>
-                            <Input
-                                type="number"
-                                min={10}
-                                placeholder='Durasi layanan minimal 10 menit'
-                                value={serviceDurationMinutes}
-                                onChange={(e) => setServiceDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
-                                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                    )}
-
-                    <div>
-                        <Label>Gambar Produk (maks 1MB)</Label>
-                        {imagePriview && (
-                            <div className="my-2">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={imagePriview} alt="Preview" className="h-24 w-24 object-cover rounded" />
-                            </div>
-                        )}
-                        <ImageUploader
-                            value={file}
-                            onValueChange={(f) => {
-                                if (f && f.size > 1024 * 1024) {
-                                    setError('Ukuran gambar melebihi 1MB.')
-                                    setFile(null)
-                                } else {
-                                    setError(null)
-                                    setFile(f)
-                                }
-                            }} />
-                        {uploading && (
-                            <span className="text-xs text-gray-500">Uploading...</span>
-                        )}
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-2">
-                        <DialogClose asChild>
-                            <Button
-                                type="button"
-                                disabled={submitting}
-                                variant={'outline'}
-                            >
-                                Batal
-                            </Button>
-                        </DialogClose>
-                        <Button
-                            variant={'destructive'}
-                            type="submit"
-                            disabled={submitting || uploading || !outletId}
-                            className={`text-white ${submitting || !outletId ? 'bg-gray-300' : 'bg-red-600 hover:bg-red-700'}`}
+    // mulai perubahan
+    const fields: FormFieldConfig<ProductFormValues>[] = [
+        {
+            name: 'type',
+            label: 'Jenis',
+            type: 'select',
+            colSpan: 4,
+            placeholder: 'Pilih jenis produk',
+            options: [
+                {
+                    label: 'Produk (Barang)',
+                    value: 'GOODS',
+                },
+                {
+                    label: 'Jasa (Layanan)',
+                    value: 'SERVICE',
+                }
+            ]
+        },
+        {
+            name: 'status',
+            label: 'Status',
+            colSpan: 2,
+            type: 'custom',
+            renderCustom(props) {
+                const status = props.field.value
+                return (
+                    <div className="flex items-center justify-between rounded-lg border h-11 px-4 py-3 shadow-sm hover:shadow-md transition-all duration-200">
+                        <span
+                            className={`text-sm font-medium ${status === "INACTIVE" ? "text-gray-700" : "text-gray-400"
+                                }`}
                         >
-                            {submitting ? (!isEdit ? 'Menyimpan...' : 'Mengupdate...') : (uploading ? 'Mengunggah...' : (isEdit ? 'Update' : 'Simpan'))}
-                        </Button>
+                            Tidak Aktif
+                        </span>
+
+                        <Switch
+                            id="status"
+                            checked={status === "ACTIVE"}
+                            onCheckedChange={(checked) =>
+                                props.field.onChange(checked ? "ACTIVE" : "INACTIVE")}
+                        />
+
+                        <span
+                            className={`text-sm font-medium ${status === "ACTIVE" ? "text-emerald-600" : "text-gray-400"
+                                }`}
+                        >
+                            Aktif
+                        </span>
                     </div>
-                </form>
-            </DialogContent>
-        </Dialog>
+                )
+            },
+        },
+        {
+            name: 'name',
+            label: 'Nama',
+            type: 'text',
+            colSpan: 'full',
+            placeholder: 'Contoh: Kopi susu gula aren'
+        },
+        {
+            name: 'description',
+            label: 'Deskripsi (opsional)',
+            type: 'textarea',
+            colSpan: 'full',
+            placeholder: 'Deskripsikan produk anda'
+        },
+        {
+            name: 'costPrice',
+            label: 'Harga Modal',
+            type: 'currency',
+            colSpan: 3,
+        },
+        {
+            name: 'price',
+            label: 'Harga Jual',
+            type: 'currency',
+            colSpan: 3,
+        },
+        {
+            name: 'quantity',
+            label: 'Stok Awal',
+            type: 'number',
+            colSpan: 3,
+            condition: (values) => values.type === 'GOODS',
+        },
+        {
+            name: 'unit',
+            label: 'Satuan',
+            type: 'text',
+            colSpan: 3,
+            condition: (values) => values.type === 'GOODS',
+        },
+        {
+            name: 'serviceDurationMinutes',
+            label: 'Durasi Layanan (menit)',
+            type: 'number',
+            colSpan: 'full',
+            condition: (values) => values.type === 'SERVICE',
+        },
+        {
+            name: 'file',
+            label: 'Gambar Produk',
+            type: 'file',
+            colSpan: 'full',
+            accept: { 'image/*': ['.jpeg', '.png', '.webp', '.jpg'] },
+            maxSizes: 3 * 1024 * 1024
+        },
+    ]
+
+    return (
+        <ReusableForm
+            withDialog
+            gridCols={6}
+            isDialogOpen={open}
+            onDialogOpenChange={handleClose}
+            fields={fields}
+            onSubmit={handleSubmit}
+            schema={productSchema}
+            defaultValues={defaultValues}
+        />
     )
 }

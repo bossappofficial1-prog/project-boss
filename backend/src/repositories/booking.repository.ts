@@ -37,7 +37,7 @@ export class BookingRepository {
     static async getSlots(slotId: string) {
         const slot = await db.bookingSlot.findUnique({
             where: { id: slotId },
-            include: { product: { include: { capacity: true } } }
+            include: { product: true }
         })
 
         return slot

@@ -69,7 +69,6 @@ export class AdminV2Service {
             month: monthRevenueVal,
             monthGrowth: this.calculatePrecentege(monthRevenueVal, lastMonthRevenueVal),
             businessActive: platformStatus.businessCount,
-            withdrawalPending: platformStatus.withdrawalPendingCount,
             failedTransaction: platformStatus.transactionFailedCount
         };
 

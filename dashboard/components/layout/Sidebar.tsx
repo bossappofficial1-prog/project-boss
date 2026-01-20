@@ -210,11 +210,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       href: '/owner/dashboard/transactions',
       icon: <Receipt className="w-5 h-5" />,
     },
-    {
-      name: 'Penarikan Dana',
-      href: '/owner/dashboard/withdrawals',
-      icon: <Banknote className="w-5 h-5" />,
-    },
+    // {
+    //   name: 'Penarikan Dana',
+    //   href: '/owner/dashboard/withdrawals',
+    //   icon: <Banknote className="w-5 h-5" />,
+    // },
   ], []);
 
   const renderOutletSelector = () => {

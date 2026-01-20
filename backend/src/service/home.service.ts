@@ -2,10 +2,9 @@ import { HomeRepository } from "../repositories/home.repository";
 import { BannerRepository } from "../repositories/banner.repository";
 
 export async function getHomeSummaryService(searchQuery?: string) {
-    const [umkm, transactions, memberships, outlets] = await Promise.all([
+    const [umkm, transactions, outlets] = await Promise.all([
         HomeRepository.countVerifiedUmkm(),
         HomeRepository.countSuccessfulTransactions(),
-        HomeRepository.countActiveMemberships(),
         HomeRepository.findTopOutlets(searchQuery)
     ]);
 
@@ -35,7 +34,6 @@ export async function getHomeSummaryService(searchQuery?: string) {
     return {
         umkm,
         transactions,
-        memberships,
         outlets,
         banners,
         categories,

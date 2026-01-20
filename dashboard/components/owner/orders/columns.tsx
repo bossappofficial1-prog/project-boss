@@ -31,7 +31,7 @@ export function createOrderColumns({
             id: 'orderId',
             header: 'ID Pesanan',
             cell: ({ row }) => (
-                <span className="font-mono text-sm font-semibold text-foreground">#{row.original.id.slice(-8)}</span>
+                <span className="font-mono text-sm font-semibold text-foreground">#{row.original.id}</span>
             ),
         },
         {

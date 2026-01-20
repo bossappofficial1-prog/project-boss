@@ -8,6 +8,7 @@ import { BcryptUtil } from "../utils";
 import { randomUUID } from "crypto";
 import { CodeGeneratorUtil, DateUtil } from "../utils";
 import { messagePublisher } from "./message-publisher.service";
+import { UserRole } from "@prisma/client";
 
 export async function getAllUserService(params?: PaginationParams): Promise<PaginatedResult<SafeUser>> {
     if (params) {
@@ -24,6 +25,7 @@ export async function getAllUserService(params?: PaginationParams): Promise<Pagi
         role: user.role,
         isVerified: user.isVerified,
         avatar: user.avatar,
+        business: user.business?.id,
         provider: user.provider,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
@@ -47,13 +49,53 @@ export async function getUserByIdService(userId: string) {
     return { ...user, password: '[REDACTED]' }
 }
 
+export async function getUserDetailService(userId: string) {
+    const user = await UserRepository.detail(userId)
+    if (!user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    const result = {
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            phone: user.phone,
+            isVerified: user.isVerified,
+        },
+        business: {
+            id: user.business?.id,
+            name: user.business?.name,
+            description: user.business?.description,
+            bankInfo: {
+                bankName: user.business?.bankName,
+                bankAccount: user.business?.bankAccount,
+                accountHolder: user.business?.accountHolder,
+            },
+            config: {
+                feeBearer: user.business?.defaultTransactionFeeBearer,
+                totalOutlets: user.business?._count.outlets,
+                totalMembers: 0,
+            },
+        },
+        wallet: {
+            balance: 0,
+            pendingWithdrawal: 500000
+        },
+        recentActivity: {
+            lastWithdrawal: "2024-03-15T10:00:00Z",
+            lastWithdrawalStatus: "COMPLETED"
+        }
+    }
+    return result
+}
+
 export async function getUserByEmailService(email: string, ignoreUserId?: string) {
     const user = await UserRepository.findByEmail(email, ignoreUserId)
 
     return user
 }
 
-export async function createUserService(data: CreateUserInput) {
+export async function createUserService(data: CreateUserInput, actor?: UserRole) {
     data.password = (await BcryptUtil.hash(data.password))!
 
     const verificationCode = CodeGeneratorUtil.generate(6);
@@ -61,12 +103,16 @@ export async function createUserService(data: CreateUserInput) {
 
     const user = await UserRepository.create({
         ...data,
-        verificationCode,
-        verificationCodeExpires,
+        ...(actor === 'ADMIN' ? { isVerified: true } : {
+            verificationCode,
+            verificationCodeExpires,
+        }),
     });
 
-    // Terbitkan event untuk mengirim email verifikasi
-    await messagePublisher.publishSendVerificationEmail(user.email, verificationCode);
+    if (actor !== 'ADMIN') {
+        // Terbitkan event untuk mengirim email verifikasi
+        await messagePublisher.publishSendVerificationEmail(user.email, verificationCode);
+    }
 
     return { ...user, password: '[REDACTED]' }
 }

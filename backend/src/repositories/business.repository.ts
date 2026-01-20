@@ -8,9 +8,6 @@ export class BusinessRepository {
             data: {
                 ...data,
                 ownerId,
-                wallet: {
-                    create: { balance: 0 }
-                }
             },
         });
     }

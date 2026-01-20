@@ -4,7 +4,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { User } from "@/types/user"
-import { CheckCircle2, MailPlus, ShieldAlert, Trash2, UserCog } from "lucide-react";
+import { CheckCircle2, EyeIcon, MailPlus, ShieldAlert, ShowerHeadIcon, Trash2, UserCog } from "lucide-react";
 import { formatISOStringDate } from "@/lib/utils";
 import { GoogleIcon } from "@/icons";
 
@@ -19,6 +19,7 @@ type UserTableProps = {
     paginationLength?: number
     onEdit?: (user: User) => void
     onDelete?: (user: User) => void
+    onShowDetail?: (userId: string) => void
 }
 export function UserTable({
     users,
@@ -30,7 +31,8 @@ export function UserTable({
     limit,
     paginationLength,
     onEdit,
-    onDelete
+    onDelete,
+    onShowDetail
 }: UserTableProps) {
 
     return (
@@ -46,12 +48,15 @@ export function UserTable({
             serverSidePagination
             serverLimit={limit || 10}
             totalItems={paginationLength}
+            emptyMessage="Tidak ada user"
+            labelAction="Aksi"
             onPaginationChange={(params: { page: number; limit: number }) => onPaginationChange?.(params)}
             columns={[
                 {
                     accessorKey: 'id',
                     header: 'Name',
                     enableSorting: false,
+
                     cell(record) {
                         const user = record.row.original;
                         return (
@@ -73,6 +78,7 @@ export function UserTable({
                 {
                     accessorKey: 'provider',
                     header: 'Login Dengan',
+                    enableSorting: false,
                     cell(props) {
                         const record = props.row.original;
                         return (
@@ -133,9 +139,8 @@ export function UserTable({
                 }
             ]}
             actionViewType="flex"
-            rowActions={() => [
+            rowActions={(row) => [
                 {
-                    label: `Edit`,
                     icon: UserCog,
                     onClick(row) {
                         return onEdit?.(row)
@@ -145,10 +150,20 @@ export function UserTable({
                     onClick(row) {
                         return onDelete?.(row)
                     },
-                    label: 'Hapus',
                     variant: 'destructive',
                     icon: Trash2,
                 },
+
+                ...((row.role === 'OWNER' && row.business) ? [
+                    {
+                        variant: 'ghost' as const,
+                        icon: EyeIcon,
+                        className: 'bg-blue-500 hover:bg-blue-600 text-white hover:text-white cursor-pointer',
+                        onClick(row: User) {
+                            return onShowDetail?.(row.id)
+                        },
+                    }
+                ] : [])
             ]}
         />
     )

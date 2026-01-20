@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input';
 import { ONLINE_PAYMENT_OPTIONS } from '@/constants/pos';
 import type { OnlinePaymentChannel } from '@/lib/apis/order';
 import type { PaymentMethod } from '@/types/pos';
+import InputCurrency from '@/components/ui/input-currency';
 
 export interface PaymentMethodCardProps {
     paymentMethod: PaymentMethod;
     onPaymentMethodChange: (method: PaymentMethod) => void;
-    cashReceived: string;
-    onCashReceivedChange: (value: string) => void;
+    cashReceived: number;
+    onCashReceivedChange: (value: number) => void;
     cashChange: number;
     qrisImage?: string | null;
     onShowQRISModal: () => void;
@@ -45,7 +46,7 @@ export function PaymentMethodCard({
                         [
                             { value: 'cash', label: 'Cash' },
                             // { value: 'qris', label: 'QRIS' },
-                            { value: 'online', label: 'Online' },
+                            // { value: 'online', label: 'Online' },
                         ] as const
                     ).map((item) => (
                         <Button
@@ -69,12 +70,12 @@ export function PaymentMethodCard({
                         <Label htmlFor="cash-received" className="text-xs text-slate-600 dark:text-slate-400">
                             Nominal cash diterima
                         </Label>
-                        <Input
+                        <InputCurrency
                             id="cash-received"
-                            type="number"
                             min={0}
                             value={cashReceived}
-                            onChange={(event) => onCashReceivedChange(event.target.value)}
+                            onValueChange={onCashReceivedChange}
+                            // onChange={(event) => onCashReceivedChange(event.target.value)}
                             className="border-slate-300 bg-white text-slate-900 placeholder:text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                         />
                         {cashReceived && (

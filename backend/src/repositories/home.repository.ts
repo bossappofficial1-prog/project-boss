@@ -33,14 +33,6 @@ export class HomeRepository {
         });
     }
 
-    static countActiveMemberships() {
-        return db.membership.count({
-            where: {
-                isActive: true,
-            },
-        });
-    }
-
     static findTopOutlets(searchQuery?: string) {
         if (searchQuery) {
             return db.outlet.findMany({

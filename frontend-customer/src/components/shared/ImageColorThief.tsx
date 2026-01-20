@@ -65,7 +65,7 @@ export function ImageColorThief(props: {
 
     return (
         <div
-            className="w-full h-full flex items-center justify-center"
+            className="w-full h-full relative overflow-hidden"
             style={{ background: gradient }}
         >
             <ImageRender
@@ -73,7 +73,7 @@ export function ImageColorThief(props: {
                 ref={imgRef}
                 src={props.src}
                 alt={props.alt}
-                className={props.className}
+                className={`absolute inset-0 w-full h-full object-cover ${props.className}`}
             />
         </div>
     );

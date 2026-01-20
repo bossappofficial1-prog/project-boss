@@ -1,4 +1,4 @@
-import { BookingSlot, OutletOperatingHours, ServiceCapacity } from "@prisma/client";
+import { BookingSlot, OutletOperatingHours } from "@prisma/client";
 
 export interface OutletWithAvailability {
     id: string;
@@ -9,7 +9,6 @@ export interface OutletWithAvailability {
         name: string;
         price: number;
         serviceDurationMinutes: number;
-        capacity: ServiceCapacity;
         availableSlots: BookingSlot[];
     }>;
 }

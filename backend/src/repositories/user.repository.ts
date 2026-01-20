@@ -27,6 +27,7 @@ export interface SafeUser {
     role: User['role'];
     isVerified: boolean;
     avatar: string | null;
+    bussiness?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -69,10 +70,6 @@ export class UserRepository {
                                 isOpen: true,
                                 latitude: true,
                                 longitude: true,
-                                manualAccountHolder: true,
-                                manualBankAccount: true,
-                                manualBankName: true,
-                                manualPaymentNote: true,
                                 manualQrImageUrl: true,
                                 phone: true,
                                 createdAt: true,
@@ -86,6 +83,26 @@ export class UserRepository {
         });
     }
 
+    static async detail(id: string) {
+        return db.user.findUnique({
+            where: { id },
+            include: {
+                business: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                        bankName: true,
+                        bankAccount: true,
+                        accountHolder: true,
+                        defaultTransactionFeeBearer: true,
+                        _count: { select: { outlets: true } }
+                    }
+                }
+            }
+        })
+    }
+
     static async findByEmail(email: string, ignoreUserId?: string): Promise<User | null> {
         return db.user.findFirst({
             where: {
@@ -97,7 +114,7 @@ export class UserRepository {
         })
     }
 
-    static async create(data: Pick<User, 'name' | 'email' | 'password' | 'verificationCode' | 'verificationCodeExpires'>): Promise<User> {
+    static async create(data: Pick<User, 'name' | 'email' | 'password'> & Partial<User>): Promise<User> {
         return db.user.create({
             data,
         });
@@ -128,8 +145,22 @@ export class UserRepository {
         });
     }
 
-    static async findAll(): Promise<User[]> {
-        return db.user.findMany();
+    static async findAll() {
+        return db.user.findMany({
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                role: true,
+                isVerified: true,
+                provider: true,
+                avatar: true,
+                createdAt: true,
+                updatedAt: true,
+                business: true
+            }
+        });
     }
 
     static async findAllPaginated(params: PaginationParams): Promise<PaginatedResult<SafeUser>> {
@@ -174,7 +205,8 @@ export class UserRepository {
                 provider: true,
                 avatar: true,
                 createdAt: true,
-                updatedAt: true
+                updatedAt: true,
+                business: true
             }
         });
 

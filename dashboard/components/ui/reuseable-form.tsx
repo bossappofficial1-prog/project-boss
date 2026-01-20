@@ -6,7 +6,9 @@ import {
     FieldValues,
     Path,
     DefaultValues,
-    ControllerRenderProps
+    ControllerRenderProps,
+    useWatch,
+    UseFormReturn
 } from "react-hook-form";
 import { useEffect, ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,6 +39,7 @@ import {
 import { DatePicker } from "./date-picker";
 import ImageUploader from "./ImageUploader";
 import { DropzoneOptions } from "react-dropzone";
+import { cn } from "@/lib/utils";
 
 function objectToFormData(obj: any, form?: FormData, namespace?: string): FormData {
     const fd = form || new FormData();
@@ -97,7 +100,7 @@ type CustomRenderInput<T extends FieldValues> = (props: {
     field: ControllerRenderProps<T, Path<T>>;
 }) => ReactNode;
 
-export type FieldType = "text" | "email" | "password" | "file" | "date" | "number" | "select" | "textarea" | "currency" | "custom";
+export type FieldType = "text" | "email" | "password" | "file" | "date" | "number" | "select" | "textarea" | "currency" | "custom" | 'tel';
 
 export interface FormFieldConfig<T extends FieldValues> {
     name: Path<T>;
@@ -111,37 +114,48 @@ export interface FormFieldConfig<T extends FieldValues> {
     renderCustom?: CustomRenderInput<T>;
     accept?: DropzoneOptions['accept'];
     maxSizes?: number;
+    colSpan?: 1 | 2 | 3 | 4 | 5 | 6 | 12 | 'full';
+    condition?: (values: Partial<T>) => boolean;
 }
 
 interface ReusableFormProps<T extends FieldValues> {
+    form?: UseFormReturn<T>;
     schema: ZodType<T, any, any>;
     defaultValues?: DefaultValues<T>;
     onSubmit: (values: T | FormData) => void;
     fields: FormFieldConfig<T>[];
     submitText?: string;
     isLoading?: boolean;
+    submitDisabled?: boolean;
     gridCols?: number;
     useFormData?: boolean;
+    children?: ReactNode;
+    renderFooter?: ReactNode;
 
     // Dialog Props
     withDialog?: boolean;
     isDialogOpen?: boolean;
     onDialogOpenChange?: (open: boolean) => void;
-    dialogTitle?: string;
-    dialogDescription?: string;
+    dialogTitle?: ReactNode;
+    dialogDescription?: ReactNode;
     showDialogCloseButton?: boolean;
     cancelText?: string;
     resetFormOnClose?: boolean;
     className?: string
+    preventClose?: boolean;
+    confirmClose?: boolean;
+    confirmCloseMessage?: string;
 }
 
 export function ReusableForm<T extends FieldValues>({
+    form: externalForm,
     schema,
     defaultValues,
     onSubmit,
     fields,
     submitText = "Submit",
     isLoading = false,
+    submitDisabled = false,
     withDialog = false,
     isDialogOpen,
     onDialogOpenChange,
@@ -151,14 +165,21 @@ export function ReusableForm<T extends FieldValues>({
     cancelText = "Batal",
     resetFormOnClose = true,
     className,
+    preventClose = false,
+    confirmClose = true,
+    confirmCloseMessage = "Perubahan belum disimpan. Tutup form?",
     gridCols = 1,
-    useFormData = false
+    useFormData = false,
+    children,
+    renderFooter
 }: ReusableFormProps<T>) {
 
-    const form = useForm<T>({
+    const internalForm = useForm<T>({
         resolver: zodResolver(schema),
         defaultValues,
     });
+
+    const form = externalForm ?? internalForm;
 
     useEffect(() => {
         if (!withDialog) {
@@ -174,9 +195,27 @@ export function ReusableForm<T extends FieldValues>({
         }
     }, [defaultValues, isDialogOpen, resetFormOnClose, withDialog, form]);
 
+    const canClose = () => {
+        if (preventClose) return false;
+        if (confirmClose && form.formState.isDirty) {
+            if (typeof window === "undefined") return false;
+            return window.confirm(confirmCloseMessage);
+        }
+        return true;
+    };
+
     const handleClose = () => {
+        if (!canClose()) return;
         if (onDialogOpenChange) { onDialogOpenChange(false); }
         if (resetFormOnClose) { form.reset(defaultValues as DefaultValues<T> | undefined); }
+    };
+
+    const handleDialogOpenChange = (open: boolean) => {
+        if (open) {
+            onDialogOpenChange?.(true);
+            return;
+        }
+        handleClose();
     };
 
     const handleFormSubmit = async (values: T) => {
@@ -204,6 +243,46 @@ export function ReusableForm<T extends FieldValues>({
         }
     };
 
+    const watchedValues = useWatch({ control: form.control });
+
+    const formFieldsContent = children ?? (
+        <div className={`grid grid-cols-1 gap-4 ${GRID_COLS_MAP[gridCols as keyof typeof GRID_COLS_MAP] || 'md:grid-cols-1'}`}>
+            {fields.map((field) => {
+                if (field.condition && !field.condition(watchedValues)) {
+                    return null;
+                }
+
+                return (
+                    <RenderField
+                        key={field.name}
+                        field={field}
+                        control={form.control}
+                    />
+                );
+            })}
+        </div>
+    );
+
+    const defaultFooter = withDialog ? (
+        <DialogFooter>
+            <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isLoading}
+            >
+                {cancelText}
+            </Button>
+            <Button type="submit" disabled={isLoading || submitDisabled}>
+                {isLoading ? "Loading..." : submitText}
+            </Button>
+        </DialogFooter>
+    ) : (
+        <Button type="submit" disabled={isLoading || submitDisabled} className="w-full">
+            {isLoading ? "Loading..." : submitText}
+        </Button>
+    );
+
     const formContent = (
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
             {form.formState.errors.root && (
@@ -211,38 +290,15 @@ export function ReusableForm<T extends FieldValues>({
                     {form.formState.errors.root.message}
                 </div>
             )}
-            <div className={`grid grid-cols-1 md:grid-cols-${gridCols} gap-4`}>
-                {fields.map((field) => (
-                    <RenderField key={field.name} field={field} control={form.control} />
-                ))}
-            </div>
-
-            {withDialog ? (
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleClose}
-                        disabled={isLoading}
-                    >
-                        {cancelText}
-                    </Button>
-                    <Button type="submit" disabled={isLoading}>
-                        {isLoading ? "Loading..." : submitText}
-                    </Button>
-                </DialogFooter>
-            ) : (
-                <Button type="submit" disabled={isLoading} className="w-full">
-                    {isLoading ? "Loading..." : submitText}
-                </Button>
-            )}
+            {formFieldsContent}
+            {renderFooter ?? defaultFooter}
         </form>
     );
 
     if (withDialog) {
         return (
-            <Dialog open={isDialogOpen} onOpenChange={onDialogOpenChange}>
-                <DialogContent showCloseButton={showDialogCloseButton} className={`${className} sm:max-w-[600px]`}>
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+                <DialogContent showCloseButton={showDialogCloseButton} className={cn("max-h-[99dvh] overflow-x-auto sm:max-w-[600px]", className)}>
                     <DialogHeader>
                         <DialogTitle>{dialogTitle}</DialogTitle>
                         {dialogDescription && (
@@ -266,6 +322,27 @@ export function ReusableForm<T extends FieldValues>({
     );
 }
 
+const COL_SPAN_MAP = {
+    1: "md:col-span-1",
+    2: "md:col-span-2",
+    3: "md:col-span-3",
+    4: "md:col-span-4",
+    5: "md:col-span-5",
+    6: "md:col-span-6",
+    12: "md:col-span-12",
+    full: "md:col-span-full",
+};
+
+const GRID_COLS_MAP = {
+    1: "md:grid-cols-1",
+    2: "md:grid-cols-2",
+    3: "md:grid-cols-3",
+    4: "md:grid-cols-4",
+    5: "md:grid-cols-5",
+    6: "md:grid-cols-6",
+    12: "md:grid-cols-12",
+};
+
 function RenderField<T extends FieldValues>({
     field,
     control,
@@ -278,9 +355,15 @@ function RenderField<T extends FieldValues>({
             control={control}
             name={field.name}
             render={({ field: formField }) => (
-                <FormItem className={field.className}>
+                <FormItem
+                    className={cn(
+                        "col-span-1", // default mobile
+                        field.colSpan && COL_SPAN_MAP[field.colSpan as keyof typeof COL_SPAN_MAP],
+                        field.className
+                    )}
+                >
                     <FormLabel>{field.label}</FormLabel>
-                    <FormControl>
+                    <FormControl className="col-span-1">
                         <FieldInputSwitch field={field} formField={formField} />
                     </FormControl>
 
@@ -366,10 +449,23 @@ function FieldInputSwitch<T extends FieldValues>({
                     onBlur={formField.onBlur}
                 />
             );
+        case 'number':
+            return (
+                <Input
+                    type={'number'}
+                    placeholder={field.placeholder}
+                    disabled={field.disabled}
+                    {...formField}
+                    onChange={(e) => {
+                        const value = e.target.value
+                        formField.onChange(value === '' ? undefined : Number(value))
+                    }}
+                />
+            );
         default:
             return (
                 <Input
-                    type={field.type === 'number' ? 'number' : (field.type || "text")}
+                    type={field.type || "text"}
                     placeholder={field.placeholder}
                     disabled={field.disabled}
                     {...formField}

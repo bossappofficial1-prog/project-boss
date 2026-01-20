@@ -236,8 +236,6 @@ export class PaymentRepository {
                     throw new AppError('Tidak ada staff yang tersedia untuk slot ini.', HttpStatus.CONFLICT);
                 }
 
-                const capacityRecord = await tr.serviceCapacity.findUnique({ where: { productId: slotRecord.productId } });
-                const maxParallel = capacityRecord?.maxParallel ?? availableStaffCount;
                 const activeBookings = await tr.bookingSlot.count({
                     where: {
                         productId: slotRecord.productId,
@@ -246,10 +244,6 @@ export class PaymentRepository {
                         orderId: { not: null },
                     },
                 });
-
-                if (activeBookings >= maxParallel) {
-                    throw new AppError('Slot ini sudah penuh.', HttpStatus.CONFLICT);
-                }
             }
 
             if (staffId) {

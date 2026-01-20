@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import React, { createContext, useContext } from 'react';
 import { ThemeProvider as NextThemeProvider, useTheme as useNextTheme } from 'next-themes';
 
 type Theme = 'light' | 'dark' | 'system';
@@ -17,13 +17,28 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 function InnerThemeProvider({ children }: { children: React.ReactNode }) {
   const { theme, systemTheme, setTheme: setNextTheme } = useNextTheme();
 
-  // theme from next-themes can be 'light' | 'dark' | 'system' | undefined
+  React.useEffect(() => {
+    const cookieTheme = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('theme='))
+      ?.split('=')[1] as Theme | undefined;
+
+    if (cookieTheme && cookieTheme !== theme) {
+      setNextTheme(cookieTheme);
+    }
+  }, []); // ⬅️ hanya sekali saat mount
+
   const safeTheme = (theme as Theme) || 'system';
-  const actualTheme = (safeTheme === 'system' ? (systemTheme as 'light' | 'dark') || 'light' : safeTheme) as 'light' | 'dark';
+  const actualTheme =
+    (safeTheme === 'system'
+      ? (systemTheme as 'light' | 'dark') || 'light'
+      : safeTheme) as 'light' | 'dark';
 
   const setTheme = (t: Theme) => {
-    // forward to next-themes setter
     setNextTheme(t);
+
+    document.cookie = `theme=${t}; path=/; max-age=31536000; SameSite=Lax`;
+    localStorage.setItem('theme', t); // ⬅️ penting
   };
 
   return (
@@ -34,9 +49,9 @@ function InnerThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 // Public ThemeProvider wraps next-themes provider and keeps existing useTheme API
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children, defaultTheme }: { children: React.ReactNode, defaultTheme: 'light' | 'dark' | 'system'; }) {
   return (
-    <NextThemeProvider attribute="class" enableSystem defaultTheme="system">
+    <NextThemeProvider attribute="class" enableSystem storageKey="theme" defaultTheme={defaultTheme}>
       <InnerThemeProvider>{children}</InnerThemeProvider>
     </NextThemeProvider>
   );

@@ -1,4 +1,4 @@
-import { createUserPayload, updateUserPayload, User } from "@/types/userv2";
+import { createUserPayload, updateUserPayload, User, UserDetail } from "@/types/userv2";
 import { apiClient } from "../apis/base";
 import { PaginationResponse } from "@/types/api.type";
 
@@ -22,6 +22,10 @@ export class UserService {
 
     static async getById(userId: string): Promise<User> {
         return (await apiClient.get(`${this.baseUrl}/${userId}`)).data.data
+    }
+
+    static async getUserDetail(userId: string): Promise<UserDetail> {
+        return (await apiClient.get(`${this.baseUrl}/${userId}/detail`)).data.data
     }
 
     static async delete(userId: string): Promise<void> {

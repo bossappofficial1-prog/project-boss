@@ -5,12 +5,12 @@ import {
     deleteUserController,
     getAllUserController,
     getUserByIdController,
+    getUserDetailController,
     updateUserController
 } from "../controller/user.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import {
     createUserByAdminSchema,
-    createUserSchema,
     updateUserSchema
 } from "../schemas/user.schema";
 import { checkEmailExists } from "../validators/user.validator";
@@ -30,6 +30,10 @@ userRouter.post("/",
 userRouter.get(
     "/:userId",
     getUserByIdController);
+
+userRouter.get(
+    "/:userId/detail",
+    getUserDetailController);
 
 userRouter.delete(
     "/:userId",

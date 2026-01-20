@@ -1,12 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Link2 } from "lucide-react"
 import { useMemo } from "react"
 import { useCarousel } from "@/hooks/useCarousel"
 import { useTranslations } from "@/hooks/useI18n"
 import { Button } from "@/components/ui/button"
-import { ImageRender } from "@/components/shared/Image"
 import type { HomeBanner } from "@/types/home"
 
 interface HeroCarouselProps {
@@ -68,11 +67,6 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
 
                         {/* Wrapper untuk konten agar bisa dianimasikan */}
                         <div className="relative flex min-h-[240px] flex-col justify-center px-6 py-8 text-white sm:px-8">
-                            {/* KUNCI ANIMASI:
-                                Menambahkan `key={active}` akan membuat React me-remount
-                                komponen ini setiap kali slide aktif berubah, sehingga
-                                memicu ulang animasi `animate-in`.
-                            */}
                             {index === active && (
                                 <div key={active} className="animate-in fade-in slide-in-from-bottom-5 duration-700 ease-out">
                                     <div className="flex flex-col gap-3">
@@ -80,14 +74,19 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                                         <h2 className="text-2xl font-bold leading-tight line-clamp-2 sm:text-3xl sm:max-w-lg">
                                             {banner.title ?? t("hero.defaultTitle")}
                                         </h2>
-                                        <p className="text-sm leading-relaxed text-white/90 line-clamp-3 sm:text-base sm:max-w-lg">
+                                        <p className="text-sm leading-relaxed text-white/90 break-words line-clamp-2 sm:text-base w-[22em]">
                                             {banner.subtitle ?? t("hero.defaultSubtitle")}
                                         </p>
-                                        {banner.cta && (
-                                            <Link href={banner.cta.payload || "/promos"} target="_blank" className="mt-2" tabIndex={index !== active ? -1 : 0}>
-                                                <Button size="sm" variant="secondary" className="bg-white/95 text-primary hover:bg-white">
-                                                    {t("hero.cta")}
-                                                </Button>
+                                        {banner.cta && banner.cta.payload && (
+                                            <Link
+                                                href={banner.cta.payload || "/promos"}
+                                                target="_blank"
+                                                className="mt-2 w-fit text-xs flex justify-center items-center gap-1 bg-red-700 hover:bg-red-600 px-3 py-1.5 rounded-sm"
+                                                tabIndex={index !== active ? -1 : 0}
+                                                onTouchStart={(e) => e.stopPropagation()}
+                                                onMouseDown={(e) => e.stopPropagation()}
+                                            >
+                                                {t("hero.cta")}
                                             </Link>
                                         )}
                                     </div>
@@ -102,7 +101,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
             {slides.length > 1 && (
                 <>
                     {/* Container untuk panah navigasi */}
-                    <div
+                    {/* <div
                         className={`absolute inset-0 z-10 flex items-center justify-between px-4 transition-opacity duration-300 ${isInteracting ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                     >
                         <button
@@ -121,7 +120,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                         >
                             <ChevronRight className="h-6 w-6" />
                         </button>
-                    </div>
+                    </div> */}
 
                     {/* Indicators */}
                     <div className="absolute bottom-4 left-0 right-0 z-10 flex items-center justify-center gap-2">
