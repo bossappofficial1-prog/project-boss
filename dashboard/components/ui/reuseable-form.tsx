@@ -176,6 +176,7 @@ interface ReusableFormProps<T extends FieldValues> {
     useFormData?: boolean;
     children?: ReactNode;
     renderFooter?: ReactNode;
+    onValuesChange?: (values: Partial<T>) => void;
 
     // Dialog Props
     withDialog?: boolean;
@@ -216,7 +217,8 @@ export function ReusableForm<T extends FieldValues>({
     gridCols = 1,
     useFormData = false,
     children,
-    renderFooter
+    renderFooter,
+    onValuesChange
 }: ReusableFormProps<T>) {
     const [internalLoading, setInternalLoading] = useState(false)
 
@@ -292,6 +294,12 @@ export function ReusableForm<T extends FieldValues>({
     };
 
     const watchedValues = useWatch({ control: form.control });
+
+    useEffect(() => {
+        if (onValuesChange) {
+            onValuesChange(watchedValues);
+        }
+    }, [watchedValues, onValuesChange]);
 
     const formFieldsContent = children ?? (
         <div className={`grid grid-cols-1 gap-4 ${GRID_COLS_MAP[gridCols as keyof typeof GRID_COLS_MAP] || 'md:grid-cols-1'}`}>

@@ -5,7 +5,7 @@ import { ResponseUtil } from '../utils/response';
 import { asyncHandler } from '../middleware/error.middleware';
 
 export const getBannersController = asyncHandler(async (req: Request, res: Response) => {
-    const banners = await BannerRepository.findActiveBanners(50);
+    const banners = await BannerRepository.findAllBanner();
     return ResponseUtil.success(res, banners, HttpStatus.OK);
 });
 
@@ -16,12 +16,12 @@ export const createBannerController = asyncHandler(async (req: Request, res: Res
 
 export const updateBannerController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const updated = await BannerRepository.update(id, req.body as any);
+    const updated = await BannerRepository.update(id as string, req.body as any);
     return ResponseUtil.success(res, updated, HttpStatus.OK);
 });
 
 export const deleteBannerController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    await BannerRepository.remove(id);
+    await BannerRepository.remove(id as string);
     return res.status(HttpStatus.NO_CONTENT).send();
 });

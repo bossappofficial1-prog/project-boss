@@ -10,6 +10,12 @@ export class BannerRepository {
         });
     }
 
+    static async findAllBanner() {
+        return db.banner.findMany({
+            orderBy: { sortOrder: `asc` }
+        })
+    }
+
     static async create(data: { title: string; subtitle?: string; imageUrl: string; ctaType?: string; ctaPayload?: string; sortOrder?: number; businessId?: string }) {
         return db.banner.create({ data });
     }

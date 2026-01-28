@@ -13,7 +13,7 @@ export async function getHomeSummaryService(searchQuery?: string) {
     ]);
 
     // Additional home content: banners, categories, popular items, promos
-    const rawBanners = await BannerRepository.findActiveBanners(5)
+    const rawBanners = await BannerRepository.findActiveBanners(100)
     const banners = rawBanners.map(b => ({
         id: b.id,
         title: b.title,

@@ -5,6 +5,7 @@ import { useOutletContext } from "./providers/OutletProvider";
 import { Button } from "./ui/button";
 import { FormFieldConfig, ReusableForm } from "./ui/reuseable-form";
 import { ReceiptSettingService, ReceiptSettingType } from "@/lib/apis/receipt-setting";
+import { fileToBase64 } from "@/lib/utils";
 
 export const updateReceiptSettingSchema = z.object({
     photoString: z.any().optional().nullable(),
@@ -18,15 +19,6 @@ export const updateReceiptSettingSchema = z.object({
 });
 
 export type UpdateReceiptSettingValues = z.infer<typeof updateReceiptSettingSchema>;
-
-const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (error) => reject(error);
-        reader.readAsDataURL(file);
-    });
-};
 
 export default function ReceiptSetting() {
     const { selectedOutlet } = useOutletContext();

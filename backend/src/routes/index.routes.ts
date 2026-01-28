@@ -24,12 +24,14 @@ import { ResponseUtil } from "../utils";
 import { paymentMethod } from "../constants/payment-method";
 import { SocketEmitter } from "../socket/socket-emiiter";
 import receiptRouter from "./receipt-setting.route";
+import bannerRouter from "./banner.route";
 
 const apiRouter = Router()
 
 apiRouter.use('/users', userRouter)
 apiRouter.use('/auth', authRouter)
 apiRouter.use('/admin', adminRouter)
+apiRouter.use('/banners', bannerRouter)
 apiRouter.use('/products', productRouter)
 apiRouter.use('/orders', orderRouter)
 apiRouter.use('/dashboard', dashboardRouter)

@@ -362,8 +362,8 @@ model BookingSlot {
   productService   ProductService @relation(fields: [productServiceId], references: [id], onDelete: Cascade)
 
   // Relasi: Slot ini dibooking oleh order mana (jika sudah dibooking)
-  orderId String? @unique
-  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  orderItemId String?    @unique
+  order       OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -432,9 +432,6 @@ model Order {
   // Relasi: Satu pesanan dibayar dengan satu transaksi
   transaction Transaction?
 
-  // Relasi: Satu pesanan bisa book satu slot (untuk service)
-  bookingSlot BookingSlot?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -457,8 +454,10 @@ model OrderItem {
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   // Relasi: Item ini merujuk ke produk apa
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // Relasi: Satu pesanan bisa book satu slot (untuk service)
+  bookingSlot BookingSlot?
 
   @@index([orderId])
   @@index([productId])
