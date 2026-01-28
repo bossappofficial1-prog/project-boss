@@ -9,6 +9,7 @@ import {
 } from "../controller/user.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import {
+    createUserByAdminSchema,
     createUserSchema,
     updateUserSchema
 } from "../schemas/user.schema";
@@ -21,7 +22,8 @@ userRouter.use(protect, authorize("ADMIN"))
 userRouter.get("/", getAllUserController);
 
 userRouter.post("/",
-    validateSchema(createUserSchema),
+    validateSchema(createUserByAdminSchema),
+    checkEmailExists,
     createUserController
 )
 

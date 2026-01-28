@@ -1,4 +1,4 @@
-import { elasticClient, testElasticConnection, getElasticInfo } from '../config/elastic';
+import { elasticClient, testElasticConnection, getElasticInfo, esClient } from '../config/elastic';
 import {
     bulkIndex,
     createIndexIfNotExists,
@@ -13,6 +13,7 @@ import {
 } from '../config/elastic-mappings';
 import logger from '../utils/winston.logger';
 import { getAllOutletsService } from './outlet.service';
+import { Outlet } from '@prisma/client';
 
 /**
  * Initialize Elasticsearch connection and create required indices
@@ -182,3 +183,13 @@ export const reindexAllData = async (): Promise<void> => {
         throw error;
     }
 };
+
+export class ElasticService {
+    async indexOutlet(outlet: Outlet) {
+        await esClient.index({
+            index: `outlets`,
+            id: outlet.id.toString(),
+            document: outlet
+        })
+    }
+}

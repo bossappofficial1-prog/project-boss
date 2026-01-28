@@ -78,3 +78,5 @@ export const checkElasticHealth = async () => {
 };
 
 export default elasticClient;
+
+export const esClient = new Client({ node: ELASTIC_NODE });

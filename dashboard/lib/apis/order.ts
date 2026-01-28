@@ -1,4 +1,5 @@
 import { apiCall, apiCallPaginated, apiClient } from './base';
+import { Transaction } from './transaction';
 
 // Types based on backend schema
 export type OrderStatus =
@@ -138,6 +139,7 @@ export interface QueueEntry extends Order {
   status: OrderStatus;
   queueMeta?: QueueMeta | null;
   scheduledStart?: string | null;
+  transaction: Transaction
 }
 
 export interface CreateOrderRequest {

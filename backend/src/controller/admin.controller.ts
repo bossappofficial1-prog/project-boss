@@ -4,6 +4,7 @@ import { HttpStatus } from '../constants/http-status';
 import { asyncHandler } from '../middleware/error.middleware';
 import { AppError } from '../errors/app-error';
 import { AdminService } from '../service/admin.service';
+import { AdminV2Service } from '../service/adminv2.service';
 
 // === DASHBOARD OVERVIEW ===
 
@@ -298,3 +299,24 @@ export const downloadReportController = asyncHandler(async (req: Request, res: R
     const mockPdfContent = Buffer.from(`Mock PDF Report: ${reportId}\nGenerated at: ${new Date().toISOString()}`);
     res.status(HttpStatus.OK).send(mockPdfContent);
 });
+
+export const getMetricsKPIs = asyncHandler(async (req: Request, res: Response) => {
+    const result = await AdminV2Service.getMetrics()
+
+    return ResponseUtil.success(res, result)
+})
+
+export const revenueInRangeController = asyncHandler(async (req: Request, res: Response) => {
+    const fromRaw = req.query.from;
+    const toRaw = req.query.to;
+
+    const defaultFrom = new Date().toISOString();
+    const defaultTo = new Date();
+    defaultTo.setHours(0, 0, 0, 0);
+
+    const from = typeof fromRaw === 'string' ? fromRaw : defaultFrom
+    const to = typeof toRaw === 'string' ? toRaw : defaultTo.toISOString()
+    const result = await AdminV2Service.getRevenueInRange(from, to);
+
+    return ResponseUtil.success(res, result);
+})

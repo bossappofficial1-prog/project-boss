@@ -351,7 +351,7 @@ export default function AddOutletModal({
                   </div>
                 </div>
               )}
-              <Controller control={control} name="file" render={({ field }) => <ImageUploader onFileChange={field.onChange} />} />
+              <Controller control={control} name="file" render={({ field }) => <ImageUploader onValueChange={field.onChange} />} />
               {errors.file && <p className="text-xs text-red-500 mt-1">{errors.file.message}</p>}
             </section>
 

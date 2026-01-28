@@ -11,7 +11,7 @@ interface PasswordInputProps extends Omit<React.InputHTMLAttributes<HTMLInputEle
 }
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-    ({ className, ...props }, ref) => {
+    ({ className, value, ...props }, ref) => {
         const [showPassword, setShowPassword] = useState(false)
 
         const togglePasswordVisibility = () => {
@@ -25,6 +25,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
                     className={cn('pr-10', className)}
                     ref={ref}
                     {...props}
+                    value={value ?? ''}
                 />
                 <Button
                     type="button"

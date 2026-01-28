@@ -16,5 +16,5 @@ export interface User {
     updateAt: string
 }
 
-export type createUserPayload = Pick<User, "name" | "email" | "password" | "phone" | "role">
+export type createUserPayload = Pick<User, "name" | "email" | "password" | "role">
 export type updateUserPayload = Partial<createUserPayload>

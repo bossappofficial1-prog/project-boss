@@ -21,7 +21,9 @@ import {
     generateReportController,
     downloadReportController,
     getRecentActivitiesController,
-    getAllActivitiesController
+    getAllActivitiesController,
+    getMetricsKPIs,
+    revenueInRangeController
 } from '../controller/admin.controller';
 import {
     getBannersController,
@@ -41,6 +43,8 @@ router.use(authorize('ADMIN'));
 
 // Dashboard routes
 router.get('/dashboard/overview', getDashboardOverviewController);
+router.get('/dashboard/kpis-metrics', getMetricsKPIs);
+router.get('/dashboard/revenue', revenueInRangeController);
 
 // Business management routes
 router.get('/businesses', getAllBusinessesController);
