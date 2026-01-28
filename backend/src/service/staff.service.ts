@@ -1,4 +1,4 @@
-import { BookingSlotStatus, StaffRole, StaffStatus } from "@prisma/client";
+import { BookingSlotStatus, StaffStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 
 export interface StaffAvailabilityInput {
@@ -14,7 +14,6 @@ export interface StaffAvailabilityResult {
     phone?: string | null;
     email?: string | null;
     status: StaffStatus;
-    role: StaffRole;
     isAvailable: boolean;
     conflicts: Array<{
         slotId: string;
@@ -33,7 +32,6 @@ export async function getStaffAvailabilityForWindow({
     const staffMembers = (await db.staff.findMany({
         where: {
             outletId,
-            role: StaffRole.SERVICE,
             status: StaffStatus.ACTIVE,
         },
         select: {
@@ -42,27 +40,6 @@ export async function getStaffAvailabilityForWindow({
             phone: true,
             email: true,
             status: true,
-            role: true,
-            bookings: {
-                where: {
-                    status: {
-                        in: [BookingSlotStatus.BOOKED, BookingSlotStatus.BLOCKED],
-                    },
-                    startTime: { lt: endTime },
-                    endTime: { gt: startTime },
-                    ...(excludeSlotId
-                        ? {
-                            id: { not: excludeSlotId },
-                        }
-                        : {}),
-                },
-                select: {
-                    id: true,
-                    startTime: true,
-                    endTime: true,
-                    status: true,
-                },
-            },
         },
         orderBy: { name: "asc" },
     })) as Array<Record<string, any>>;

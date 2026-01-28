@@ -14,7 +14,7 @@ import { validateSchema } from "../middleware/zod.middleware";
 import { createProductSchema, updateProductSchema } from "../schemas/product.schema";
 import { authorize, protect, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
-import upload, { importUpload } from "../middleware/upload.middleware";
+import { importUpload } from "../middleware/upload.middleware";
 import { getAvailableStaffForProductController, getBookingSlotByOutlet } from "../controller/booking.controller";
 
 const productRouter = Router();
@@ -28,10 +28,11 @@ productRouter.get("/:productId/available-staff", getAvailableStaffForProductCont
 
 // Rute yang hanya bisa diakses oleh Owner
 productRouter.get("/template/import", getProductImportTemplateController);
-productRouter.get("/export/:outletId", protect, authorize(UserRole.OWNER), exportProductsController);
-productRouter.post("/", protect, authorize(UserRole.OWNER), validateSchema(createProductSchema), createProductController);
-productRouter.post("/bulk", protect, authorize(UserRole.OWNER), importUpload.single('file'), bulkCreateProductsController);
-productRouter.patch("/:id", protect, authorize(UserRole.OWNER), validateSchema(updateProductSchema), updateProductController);
-productRouter.delete("/:id", protect, authorize(UserRole.OWNER), deleteProductController);
+productRouter.use(protect, authorize(UserRole.OWNER))
+productRouter.get("/export/:outletId", exportProductsController);
+productRouter.post("/", validateSchema(createProductSchema), createProductController);
+productRouter.post("/bulk", importUpload.single('file'), bulkCreateProductsController);
+productRouter.patch("/:id", validateSchema(updateProductSchema), updateProductController);
+productRouter.delete("/:id", deleteProductController);
 
 export default productRouter;

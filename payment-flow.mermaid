@@ -1,0 +1,70 @@
+graph TD
+    Start([Customer Checkout]) --> Input[Input Data:<br/>- Customer Details<br/>- Cart Items<br/>- Payment Method<br/>- Slot untuk Service]
+    
+    Input --> Validate{Validation<br/>OK?}
+    Validate -->|No| Error1[Return Error]
+    Validate -->|Yes| CreateOrder[Create Order & OrderItems<br/>Status: AWAITING_PAYMENT]
+    
+    CreateOrder --> PaymentType{Payment<br/>Type?}
+    
+    %% Manual Payment Path
+    PaymentType -->|Manual<br/>QRIS/Transfer/Cash| ManualTx[CREATE TRANSACTION<br/>━━━━━━━━━━━━━━<br/>isManual: true<br/>status: PENDING<br/>manualMethod: enum<br/>amount: totalAmount<br/>orderId: order.id]
+    ManualTx --> ReturnManual[Return Order Info<br/>to Customer]
+    ReturnManual --> WaitProof[Customer Upload<br/>Bukti Bayar]
+    WaitProof --> ProofSubmit[UPDATE TRANSACTION<br/>━━━━━━━━━━━━━━<br/>paymentProofUrl<br/>proofUploadedAt<br/>status: PROOF_SUBMITTED]
+    ProofSubmit --> OwnerVerify{Owner<br/>Verifikasi?}
+    OwnerVerify -->|Approve| ManualSuccess[UPDATE TRANSACTION<br/>━━━━━━━━━━━━━━<br/>status: SUCCESS<br/>verifiedAt<br/>verifiedById]
+    OwnerVerify -->|Reject| ManualReject[UPDATE TRANSACTION<br/>━━━━━━━━━━━━━━<br/>status: REJECTED_MANUAL<br/>rejectionNote<br/>---<br/>Order: CANCELLED]
+    
+    %% Digital Payment Path
+    PaymentType -->|Digital<br/>Midtrans| CreateTxRecord[CREATE TRANSACTION<br/>━━━━━━━━━━━━━━<br/>isManual: false<br/>status: PENDING<br/>amount: totalAmount<br/>orderId: order.id]
+    CreateTxRecord --> CallMidtrans[Call Midtrans API<br/>Create Payment]
+    CallMidtrans --> MidtransOK{API<br/>Success?}
+    MidtransOK -->|No| Error2[Return Error]
+    MidtransOK -->|Yes| SaveTx[UPDATE TRANSACTION<br/>━━━━━━━━━━━━━━<br/>externalId<br/>paymentUrl<br/>expiresAt<br/>paymentMethod<br/>rawMidtrans]
+    SaveTx --> ReturnUrl[Return Payment URL<br/>to Customer]
+    ReturnUrl --> CustomerPay[Customer Bayar<br/>via Payment URL]
+    CustomerPay --> Callback[Midtrans Webhook<br/>Notification]
+    Callback --> CallbackStatus{Midtrans<br/>Status?}
+    CallbackStatus -->|settlement/capture| DigitalSuccess[UPDATE TRANSACTION<br/>━━━━━━━━━━━━━━<br/>status: SUCCESS<br/>rawMidtrans]
+    CallbackStatus -->|pending| KeepPending[UPDATE TRANSACTION<br/>━━━━━━━━━━━━━━<br/>status: PENDING]
+    CallbackStatus -->|deny/cancel| DigitalFailed[UPDATE TRANSACTION<br/>━━━━━━━━━━━━━━<br/>status: FAILED/CANCELLED<br/>---<br/>Order: CANCELLED]
+    CallbackStatus -->|expire| DigitalExpired[UPDATE TRANSACTION<br/>━━━━━━━━━━━━━━<br/>status: EXPIRED<br/>---<br/>Order: CANCELLED]
+    
+    %% Success Path
+    ManualSuccess --> UpdateOrder[UPDATE ORDER<br/>━━━━━━━━━━━━━━<br/>paymentStatus: SUCCESS<br/>orderStatus: PROCESSING<br/>---<br/>Transaction.status: SUCCESS]
+    DigitalSuccess --> UpdateOrder
+    
+    UpdateOrder --> StockCheck{Product<br/>Type?}
+    StockCheck -->|GOODS| DeductStock[Deduct Stock<br/>Create StockLog]
+    StockCheck -->|SERVICE| BookSlot[Confirm Booking Slot]
+    
+    DeductStock --> Notify[Send Notifications<br/>to Customer & Owner]
+    BookSlot --> Notify
+    
+    Notify --> Processing[Owner Process Order<br/>PROCESSING → CONFIRMED<br/>→ READY → ON_GOING<br/>→ COMPLETED]
+    Processing --> Done([Order Completed])
+    
+    %% Failed Paths
+    ManualReject --> Release[Release Resources<br/>Booking Slot → Available]
+    DigitalFailed --> Release
+    DigitalExpired --> Release
+    Release --> NotifyFail[Notify Customer]
+    NotifyFail --> Done
+    
+    Error1 --> Done
+    Error2 --> Done
+    KeepPending --> Done
+    
+    style Start fill:#e1f5e1
+    style Done fill:#e1f5e1
+    style UpdateOrder fill:#c8e6c9
+    style ManualSuccess fill:#c8e6c9
+    style DigitalSuccess fill:#c8e6c9
+    style ManualReject fill:#ffcdd2
+    style DigitalFailed fill:#ffcdd2
+    style DigitalExpired fill:#ffcdd2
+    style Error1 fill:#ffcdd2
+    style Error2 fill:#ffcdd2
+    style DeductStock fill:#fff9c4
+    style Notify fill:#b2dfdb

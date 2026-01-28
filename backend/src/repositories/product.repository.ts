@@ -1,4 +1,4 @@
-import { Product, Prisma, UserRole, ProductType } from "@prisma/client";
+import { Product, Prisma, ProductType } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateProductInput, UpdateProductInput } from "../schemas/product.schema";
 
@@ -15,43 +15,61 @@ export class ProductRepository {
     static async create(data: CreateProductInput): Promise<Product> {
         // Destructure capacity and the rest of the fields
         const { capacity, ...rest } = data as any;
-        return db.product.create({
-            data: {
-                ...rest,
-                // ...(data.type === 'SERVICE' && data.serviceDurationMinutes && {
-                //     capacity: {
-                //         create: {
-                //             maxParallel: capacity && capacity > 0 ? capacity : 1
-                //         }
-                //     }
-                // }),
-                // ...(capacity !== undefined
-                //     ? {
-                //         serviceCapacity: {
-                //             create: { value: capacity }
-                //         }
-                //     }
-                //     : {}),
-            },
-        });
+        return db.$transaction(async (trx) => {
+            const product = await trx.product.create({
+                data: {
+                    name: data.name,
+                    type: data.type,
+                    description: data.description,
+                    outletId: data.outletId,
+                    image: data.image,
+                    status: data.status
+                }
+            })
+
+            if (data.type === `GOODS`) {
+                await trx.productGoods.create({
+                    data: {
+                        sellingPrice: data.goods.sellingPrice,
+                        averageHpp: data.goods.averageHpp,
+                        unit: data.goods.unit,
+                        currentStock: data.goods.currentStock,
+                        minStock: data.goods.minStock,
+                        productId: product.id
+                    }
+                })
+            } else {
+                await trx.productService.create({
+                    data: {
+                        durationMinutes: data.service.durationMinutes,
+                        providerName: data.service.providerName,
+                        providerEmail: data.service.providerEmail,
+                        providerPhone: data.service.providerPhone,
+                        sellingPrice: data.service.sellingPrice,
+                        commissionType: data.service.commissionType,
+                        commissionValue: data.service.commissionValue,
+                        productId: product.id
+                    }
+                })
+            }
+
+            return product
+        })
+
     }
 
     static async findById(id: string) {
         return db.product.findUnique({
             where: { id },
             include: {
-                bookingSlots: {
-                    where: {
-                        status: 'AVAILABLE',
-                    },
-                },
+                // bookingSlots: {
+                //     where: {
+                //         status: 'AVAILABLE',
+                //     },
+                // },
                 outlet: {
                     select: {
-                        business: {
-                            select: {
-                                defaultTransactionFeeBearer: true,
-                            }
-                        }
+                        business: true
                     }
                 }
                 // productImages table doesn't exist, image is stored in product.image field
@@ -66,7 +84,7 @@ export class ProductRepository {
         accessed?: string;
         page: number;
         limit: number;
-    }): Promise<{ data: Product[]; total: number }> {
+    }) {
         const { outletId, q, accessed, page, limit, productType } = params;
 
         const where: Prisma.ProductWhereInput = {
@@ -92,6 +110,19 @@ export class ProductRepository {
                 where,
                 skip,
                 take: limit,
+                select: {
+                    id: true,
+                    name: true,
+                    status: true,
+                    description: true,
+                    image: true,
+                    type: true,
+                    createdAt: true,
+                    updatedAt: true,
+
+                    goods: true,
+                    service: true,
+                },
             }),
             db.product.count({ where }),
         ]);
@@ -99,11 +130,29 @@ export class ProductRepository {
         return { data, total };
     }
 
-    static async update(id: string, data: UpdateProductInput): Promise<Product> {
-        return db.product.update({
-            where: { id },
-            data,
-        });
+    static async update(id: string, data: UpdateProductInput) {
+        const { goods, service, ...productData } = data
+        return db.$transaction(async (trx) => {
+            const product = await trx.product.update({
+                where: { id },
+                data: productData
+            })
+
+            if (goods && data.type === `GOODS`) {
+                await trx.productGoods.update({
+                    where: { productId: product.id },
+                    data: { ...goods }
+                })
+            }
+            if (service && data.type === 'SERVICE') {
+                await trx.productService.update({
+                    where: { productId: product.id },
+                    data: { ...service }
+                })
+            }
+
+            return product
+        })
     }
 
     static async delete(id: string): Promise<Product> {

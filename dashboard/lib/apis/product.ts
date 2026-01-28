@@ -1,6 +1,7 @@
 import { PaginatedResponse } from '@/types';
 import { apiClient, API_BASE_URL } from './base';
 import { Product } from '@/hooks/useProducts';
+import { ProductItem } from '@/hooks/useProductsData';
 
 export const productApi = {
   // File operations (using fetch for blob handling)
@@ -43,7 +44,7 @@ export const productApi = {
   },
 
   // JSON operations (now using apiClient instead of fetch)
-  getByOutlet: (outletId: string, params?: { page?: number; limit?: number; search?: string; type?: 'GOODS' | 'SERVICE'; status?: 'ACTIVE' | 'INACTIVE'; }, accessBy: string = 'OWNER'): Promise<PaginatedResponse<Product>> => {
+  getByOutlet: (outletId: string, params?: { page?: number; limit?: number; search?: string; type?: 'GOODS' | 'SERVICE'; status?: 'ACTIVE' | 'INACTIVE'; }, accessBy: string = 'OWNER'): Promise<PaginatedResponse<ProductItem>> => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());

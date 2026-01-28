@@ -111,32 +111,6 @@ export function StaffTable({
                 },
             },
             {
-                accessorKey: 'role',
-                header: 'Peran',
-                cell(props) {
-                    const member = props.row.original
-                    return (
-                        <>
-                            <div className="flex flex-col gap-1">
-                                <Badge className={`${ROLE_BADGE_CLASS[member.role]} font-medium`}>{ROLE_LABEL[member.role]}</Badge>
-                                {member.role === 'CASHIER' && member.email && (
-                                    <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                                        <KeyRound className="h-3 w-3" />
-                                        <span>Akun login aktif</span>
-                                    </div>
-                                )}
-                                {member.role === 'CASHIER' && !member.email && (
-                                    <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                                        <KeyRound className="h-3 w-3" />
-                                        <span>Belum ada akun</span>
-                                    </div>
-                                )}
-                            </div>
-                        </>
-                    )
-                },
-            },
-            {
                 accessorKey: 'status',
                 header: 'Status',
                 cell(props) {

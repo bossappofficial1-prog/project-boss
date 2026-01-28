@@ -5,19 +5,43 @@ import { authApi, productApi } from '@/lib/api';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 
 export interface ProductItem {
-  id: string;
-  name: string;
-  description?: string;
-  costPrice: number;
-  price: number;
-  type: 'GOODS' | 'SERVICE';
-  quantity?: number;
-  unit?: string;
-  status: 'ACTIVE' | 'INACTIVE';
-  serviceDurationMinutes?: number;
-  image?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  id: string
+  name: string
+  description: string
+  image?: string
+  type: "SERVICE" | "GOODS"
+  status: 'ACTIVE' | 'INACTIVE'
+  createdAt: string
+  updatedAt: string
+  goods?: Goods
+  service?: Service
+}
+
+export interface Goods {
+  id: string
+  productId: string
+  currentStock: number
+  minStock?: number
+  unit: string
+  averageHpp: number
+  sellingPrice: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Service {
+  id: string
+  productId: string
+  durationMinutes: number
+  sellingPrice: number
+  providerName: string
+  providerPhone: string
+  providerEmail: string
+  commissionType: "PERCENTAGE" | "FIXED"
+  commissionValue: number
+  maxParallel: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface OutletItem {

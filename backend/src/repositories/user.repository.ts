@@ -58,7 +58,10 @@ export class UserRepository {
                         bankAccount: true,
                         bankName: true,
                         accountHolder: true,
-                        defaultTransactionFeeBearer: true,
+                        subscriptionEndDate: true,
+                        subscriptionPlan: true,
+                        subscriptionStartDate: true,
+                        subscriptionStatus: true,
                         outlets: {
                             select: {
                                 id: true,
@@ -95,7 +98,10 @@ export class UserRepository {
                         bankName: true,
                         bankAccount: true,
                         accountHolder: true,
-                        defaultTransactionFeeBearer: true,
+                        subscriptionEndDate: true,
+                        subscriptionPlan: true,
+                        subscriptionStartDate: true,
+                        subscriptionStatus: true,
                         _count: { select: { outlets: true } }
                     }
                 }

@@ -138,7 +138,7 @@ export default function FileUploader({
                         </div>
                     ) : (
                         // Tampilan Ketika File Sudah Dipilih (di dalam box)
-                        <div className="flex items-center gap-4 w-full p-2">
+                        <div className="flex items-center gap-4 w-full p-2 max-w-[500px]">
                             {/* Preview: Gambar atau Icon File Generic */}
                             {preview ? (
                                 <img

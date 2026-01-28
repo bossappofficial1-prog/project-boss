@@ -28,7 +28,7 @@ orderRouter.post("/customer/:id/cancel", validateSchema(customerCancelOrderSchem
 orderRouter.post("/customer/:id/confirm", validateSchema(customerConfirmOrderSchema), confirmOrderByCustomerController);
 
 // SECURITY FIX: Add rate limiting for owner order management
-orderRouter.use(orderManagementLimiter);
+// orderRouter.use(orderManagementLimiter);
 
 // Rute yang dilindungi untuk melihat detail pesanan
 orderRouter.get("/:id", getOrderByIdController);

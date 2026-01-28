@@ -68,7 +68,6 @@ export async function findTransactionsByFilter(filter: TransactionsFilter) {
                             product: {
                                 select: {
                                     name: true,
-                                    price: true
                                 }
                             }
                         }

@@ -10,7 +10,7 @@ import {
     useWatch,
     UseFormReturn
 } from "react-hook-form";
-import { useEffect, ReactNode } from "react";
+import { useEffect, ReactNode, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZodType } from "zod";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,8 @@ import { DatePicker } from "./date-picker";
 import ImageUploader from "./ImageUploader";
 import { DropzoneOptions } from "react-dropzone";
 import { cn } from "@/lib/utils";
+import { InputPercentage } from "./input-presentage";
+import { DualOptionSwitch } from "./dual-option-switch";
 
 function objectToFormData(obj: any, form?: FormData, namespace?: string): FormData {
     const fd = form || new FormData();
@@ -100,23 +102,66 @@ type CustomRenderInput<T extends FieldValues> = (props: {
     field: ControllerRenderProps<T, Path<T>>;
 }) => ReactNode;
 
-export type FieldType = "text" | "email" | "password" | "file" | "date" | "number" | "select" | "textarea" | "currency" | "custom" | 'tel';
+export type FieldType =
+    | "text"
+    | "email"
+    | "password"
+    | "file"
+    | "date"
+    | "number"
+    | "select"
+    | "textarea"
+    | "currency"
+    | "custom"
+    | 'tel'
+    | 'presentage'
+    | 'dual-option-switch'
 
-export interface FormFieldConfig<T extends FieldValues> {
+interface BaseFieldConfig<T extends FieldValues> {
     name: Path<T>;
     label: string;
-    type?: FieldType;
     placeholder?: string;
     description?: string;
-    options?: { label: string; value: string }[];
     disabled?: boolean;
     className?: string;
+    colSpan?: 1 | 2 | 3 | 4 | 5 | 6 | 12 | 'full';
     renderCustom?: CustomRenderInput<T>;
+    condition?: (values: Partial<T>) => boolean;
+    typeResolver?: (values: Partial<T>) => FieldType;
+    type?: FieldType
+}
+
+interface ImageFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+    type: 'file';
     accept?: DropzoneOptions['accept'];
     maxSizes?: number;
-    colSpan?: 1 | 2 | 3 | 4 | 5 | 6 | 12 | 'full';
-    condition?: (values: Partial<T>) => boolean;
 }
+
+interface SelectFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+    type: 'select';
+    options?: { label: string; value: string }[];
+}
+
+interface SwitchFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+    type: 'dual-option-switch';
+    switchOptions: {
+        left: { label: string; value: any; activeClass?: string };
+        right: { label: string; value: any; activeClass?: string };
+    };
+}
+
+interface StandardFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+    type?: Exclude<FieldType, 'select' | 'dual-option-switch' | 'file'>;
+    options?: never;
+    switchOptions?: never;
+}
+
+export type FormFieldConfig<T extends FieldValues> =
+    | ImageFieldConfig<T>
+    | SwitchFieldConfig<T>
+    | SelectFieldConfig<T>
+    | StandardFieldConfig<T>
+    | { type: "custom"; renderCustom: CustomRenderInput<T> } & BaseFieldConfig<T>
 
 interface ReusableFormProps<T extends FieldValues> {
     form?: UseFormReturn<T>;
@@ -173,6 +218,7 @@ export function ReusableForm<T extends FieldValues>({
     children,
     renderFooter
 }: ReusableFormProps<T>) {
+    const [internalLoading, setInternalLoading] = useState(false)
 
     const internalForm = useForm<T>({
         resolver: zodResolver(schema),
@@ -220,8 +266,8 @@ export function ReusableForm<T extends FieldValues>({
 
     const handleFormSubmit = async (values: T) => {
         try {
+            setInternalLoading(true)
             const hasFileField = fields.some((f) => f.type === 'file');
-
             if (useFormData || hasFileField) {
                 const formData = objectToFormData(values);
                 await onSubmit(formData);
@@ -240,6 +286,8 @@ export function ReusableForm<T extends FieldValues>({
                         "Terjadi kesalahan pada server",
                 })
             }
+        } finally {
+            setInternalLoading(false)
         }
     };
 
@@ -257,6 +305,7 @@ export function ReusableForm<T extends FieldValues>({
                         key={field.name}
                         field={field}
                         control={form.control}
+                        values={watchedValues}
                     />
                 );
             })}
@@ -269,12 +318,12 @@ export function ReusableForm<T extends FieldValues>({
                 type="button"
                 variant="outline"
                 onClick={handleClose}
-                disabled={isLoading}
+                disabled={isLoading || internalLoading}
             >
                 {cancelText}
             </Button>
-            <Button type="submit" disabled={isLoading || submitDisabled}>
-                {isLoading ? "Loading..." : submitText}
+            <Button type="submit" className={`${isLoading || internalLoading ? `cursor-progress` : `cursor-pointer`}`} disabled={isLoading || submitDisabled}>
+                {(isLoading || internalLoading) ? "Loading..." : submitText}
             </Button>
         </DialogFooter>
     ) : (
@@ -298,7 +347,7 @@ export function ReusableForm<T extends FieldValues>({
     if (withDialog) {
         return (
             <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-                <DialogContent showCloseButton={showDialogCloseButton} className={cn("max-h-[99dvh] overflow-x-auto sm:max-w-[600px]", className)}>
+                <DialogContent showCloseButton={showDialogCloseButton} className={cn("h-[100dvh] min-w-full md:min-w-[600px] md:h-auto rounded-none md:max-h-[99dvh] overflow-x-auto", className)}>
                     <DialogHeader>
                         <DialogTitle>{dialogTitle}</DialogTitle>
                         {dialogDescription && (
@@ -346,10 +395,15 @@ const GRID_COLS_MAP = {
 function RenderField<T extends FieldValues>({
     field,
     control,
+    values
 }: {
     field: FormFieldConfig<T>;
     control: Control<T>;
+    values: Partial<T>;
 }) {
+    const resolvedType =
+        field.typeResolver?.(values) ?? field.type;
+
     return (
         <FormField
             control={control}
@@ -362,9 +416,9 @@ function RenderField<T extends FieldValues>({
                         field.className
                     )}
                 >
-                    <FormLabel>{field.label}</FormLabel>
+                    <FormLabel htmlFor={field.name}>{field.label}</FormLabel>
                     <FormControl className="col-span-1">
-                        <FieldInputSwitch field={field} formField={formField} />
+                        <FieldInputSwitch field={{ ...field, type: resolvedType } as FormFieldConfig<T>} formField={formField} />
                     </FormControl>
 
                     {field.description && (
@@ -401,6 +455,7 @@ function FieldInputSwitch<T extends FieldValues>({
             return (
                 <SelectOption
                     {...formField}
+                    id={formField.name}
                     onValueChange={formField.onChange}
                     disabled={field.disabled}
                     options={field.options || []}
@@ -408,9 +463,32 @@ function FieldInputSwitch<T extends FieldValues>({
                     placeholder={field.placeholder}
                 />
             );
+        case "dual-option-switch":
+            return (
+                <DualOptionSwitch
+                    {...formField}
+                    id={formField.name}
+                    onValueChange={formField.onChange}
+                    disabled={field.disabled}
+                    options={field.switchOptions!}
+                    value={formField.value!}
+                />
+            );
+        case "presentage":
+            return (
+                <InputPercentage
+                    {...formField}
+                    id={formField.name}
+                    onValueChange={formField.onChange}
+                    disabled={field.disabled}
+                    value={formField.value!}
+                    placeholder={field.placeholder}
+                />
+            );
         case "textarea":
             return (
                 <Textarea
+                    id={formField.name}
                     placeholder={field.placeholder}
                     disabled={field.disabled}
                     {...formField}
@@ -419,6 +497,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case "password":
             return (
                 <PasswordInput
+                    id={formField.name}
                     placeholder={field.placeholder}
                     disabled={field.disabled}
                     {...formField}
@@ -430,6 +509,7 @@ function FieldInputSwitch<T extends FieldValues>({
             }</>;
         case "date":
             return <DatePicker
+                id={formField.name}
                 onValueChange={formField.onChange}
                 value={formField.value}
                 placeholder={field.placeholder}
@@ -439,6 +519,7 @@ function FieldInputSwitch<T extends FieldValues>({
             return (
                 <InputCurrency
                     {...formField}
+                    id={formField.name}
                     placeholder={field.placeholder}
                     disabled={field.disabled}
                     value={formField.value}
@@ -452,6 +533,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case 'number':
             return (
                 <Input
+                    id={formField.name}
                     type={'number'}
                     placeholder={field.placeholder}
                     disabled={field.disabled}
@@ -465,6 +547,7 @@ function FieldInputSwitch<T extends FieldValues>({
         default:
             return (
                 <Input
+                    id={formField.name}
                     type={field.type || "text"}
                     placeholder={field.placeholder}
                     disabled={field.disabled}

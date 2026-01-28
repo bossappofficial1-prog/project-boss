@@ -1,3 +1,4 @@
+import puppeteer from "puppeteer";
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
 import { ResponseUtil } from "../utils/response";
@@ -9,28 +10,42 @@ import {
     getGoodsOrdersByOutletService, getServiceQueueByOutletService,
     getOrderByCustomerPhoneService,
     cancelOrderByCustomerService,
-    confirmOrderByCustomerService
+    confirmOrderByCustomerService,
+    getOrderReceiptService
 } from "../service/order.service";
-import { ReceiptService } from "../service/receipt.service";
+import { generateReceiptHtml } from "../service/helpers/receipt-template";
 
 export const getOrderReceiptController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const ownerId = req.storedUser!.id;
-    const order = await getOrderByIdService(id, ownerId);
+    const id = req.params.id as string;
+    const receiptData = await getOrderReceiptService(id as string);
 
-    if (!order) {
+    if (!receiptData) {
         throw new Error("Order not found");
     }
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
 
-    const pdfBuffer = await ReceiptService.generateReceipt(order as any);
+    const page = await browser.newPage();
+    await page.setContent(generateReceiptHtml(receiptData), { waitUntil: 'networkidle0' });
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=receipt-${order.id}.pdf`);
+    const pdfBuffer = await page.pdf({
+        width: `${receiptData.printWidth}mm`,
+        height: `${receiptData.printHeight}mm`,
+        printBackground: true,
+        pageRanges: '1',
+        margin: { top: 0, right: 0, bottom: 0, left: 0 }
+    });
+
+    await browser.close();
+
+    res.contentType("application/pdf");
     res.send(pdfBuffer);
 });
 
 export const updateOrderStatusController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { status } = req.body;
     const ownerId = req.storedUser!.id;
 
@@ -42,10 +57,10 @@ export const updateOrderStatusController = asyncHandler(async (req: Request, res
 });
 
 export const updateServiceOrderStatusController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { status } = req.body;
     const user = req.storedUser!;
-    
+
     // Jika kasir, gunakan outletId dari session kasir untuk validasi
     const isCashier = (user as any).userType === 'CASHIER';
     const userIdentifier = isCashier ? (user as any).outletId : user.id;
@@ -77,7 +92,7 @@ export const createOrderController = asyncHandler(async (req: Request, res: Resp
 });
 
 export const completeOrderController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const ownerId = req.storedUser!.id;
 
     // Validate ownership before complete
@@ -88,14 +103,14 @@ export const completeOrderController = asyncHandler(async (req: Request, res: Re
 });
 
 export const getOrderByIdController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const order = await getOrderByIdService(id);
     return ResponseUtil.success(res, order);
 });
 
 export const refundOrderController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const ownerId = req.storedUser!.id;
 
     // Validate ownership before refund
@@ -106,7 +121,7 @@ export const refundOrderController = asyncHandler(async (req: Request, res: Resp
 });
 
 export const listGoodsOrdersByOutletController = asyncHandler(async (req: Request, res: Response) => {
-    const { outletId } = req.params;
+    const outletId = req.params.outletId as string;
     const { status, page, limit } = req.query as any;
     const ownerId = req.storedUser!.id;
 
@@ -129,10 +144,10 @@ export const listGoodsOrdersByOutletController = asyncHandler(async (req: Reques
 });
 
 export const listServiceQueueByOutletController = asyncHandler(async (req: Request, res: Response) => {
-    const { outletId } = req.params;
+    const outletId = req.params.outletId as string;
     const { page, limit } = req.query as any;
     const user = req.storedUser!;
-    
+
     // Jika kasir, gunakan outletId dari session kasir untuk validasi
     const isCashier = (user as any).userType === 'CASHIER';
     const userIdentifier = isCashier ? (user as any).outletId : user.id;
@@ -158,14 +173,14 @@ export const listServiceQueueByOutletController = asyncHandler(async (req: Reque
 });
 
 export const getOrderByCustomerPhoneController = asyncHandler(async (req: Request, res: Response) => {
-    const { phone } = req.params
+    const phone = req.params.phone as string
 
     const customerOrder = await getOrderByCustomerPhoneService(phone)
     return ResponseUtil.success(res, customerOrder)
 })
 
 export const getOrderNotificationDataController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const order = await getOrderByIdService(id);
 
@@ -174,38 +189,38 @@ export const getOrderNotificationDataController = asyncHandler(async (req: Reque
     }
 
     // Format data untuk notifikasi WhatsApp
-    const notificationData = {
-        id: order.id,
-        totalAmount: order.totalAmount,
-        paymentMethod: 'Online', // Default for now
-        updatedAt: order.updatedAt.toISOString(),
-        guestCustomer: {
-            name: order.guestCustomer.name,
-            phone: order.guestCustomer.phone
-        },
-        outlet: {
-            name: order.outlet.name,
-            address: order.outlet.address,
-            phone: order.outlet.phone,
-            whatsapp: order.outlet.phone
-        },
-        items: order.items.map(item => ({
-            quantity: item.quantity,
-            product: {
-                name: item.product.name,
-                type: item.product.type
-            }
-        })),
-        bookingSlot: order.bookingSlot ? {
-            dateTime: order.bookingSlot.startTime.toISOString()
-        } : undefined
-    };
+    // const notificationData = {
+    //     id: order.id,
+    //     totalAmount: order.totalAmount,
+    //     paymentMethod: 'Online', // Default for now
+    //     updatedAt: order.updatedAt.toISOString(),
+    //     guestCustomer: {
+    //         name: order.guestCustomer.name,
+    //         phone: order.guestCustomer.phone
+    //     },
+    //     outlet: {
+    //         name: order.outlet.name,
+    //         address: order.outlet.address,
+    //         phone: order.outlet.phone,
+    //         whatsapp: order.outlet.phone
+    //     },
+    //     items: order.items.map(item => ({
+    //         quantity: item.quantity,
+    //         product: {
+    //             name: item.product.name,
+    //             type: item.product.type
+    //         }
+    //     })),
+    //     bookingSlot: order.bookingSlot ? {
+    //         dateTime: order.bookingSlot.startTime.toISOString()
+    //     } : undefined
+    // };
 
-    return ResponseUtil.success(res, notificationData);
+    return ResponseUtil.success(res, {});
 })
 
 export const cancelOrderByCustomerController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { phone, reason } = req.body as { phone: string; reason?: string };
 
     const order = await cancelOrderByCustomerService(id, phone, reason);
@@ -214,7 +229,7 @@ export const cancelOrderByCustomerController = asyncHandler(async (req: Request,
 });
 
 export const confirmOrderByCustomerController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { phone } = req.body as { phone: string };
 
     const order = await confirmOrderByCustomerService(id, phone);

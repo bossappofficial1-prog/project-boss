@@ -10,15 +10,14 @@ export async function getDashboardSummaryService(outletId: string) {
         db.order.count({ where: { outletId } }),
         db.order.findMany({
             where: { outletId, paymentStatus: 'SUCCESS' },
-            select: { totalAmount: true, appFee: true, midtransFee: true, chargedTo: true }
+            select: { totalAmount: true, appFee: true, midtransFee: true }
         })
     ]);
 
     // Calculate net revenue (subtract fees if charged to customer)
     const totalRevenue = revenueData.reduce((sum, order) => {
         const grossAmount = order.totalAmount;
-        const fees = order.chargedTo === 'CUSTOMER' ? (order.appFee + order.midtransFee) : 0;
-        return sum + (grossAmount - fees);
+        return sum + (grossAmount);
     }, 0);
 
     return {
@@ -53,7 +52,6 @@ export async function getOrderStatsService(outletId: string, period: 'week' | 'm
             totalAmount: true,
             appFee: true,
             midtransFee: true,
-            chargedTo: true
         },
         orderBy: {
             createdAt: 'asc',
@@ -69,8 +67,7 @@ export async function getOrderStatsService(outletId: string, period: 'week' | 'm
         acc[date].totalOrders += 1;
         if (order.paymentStatus === PaymentStatus.SUCCESS) {
             const grossAmount = order.totalAmount;
-            const fees = order.chargedTo === 'CUSTOMER' ? (order.appFee + order.midtransFee) : 0;
-            acc[date].totalRevenue += (grossAmount - fees);
+            acc[date].totalRevenue += (grossAmount);
         }
         return acc;
     }, {} as Record<string, { totalOrders: number; totalRevenue: number }>);

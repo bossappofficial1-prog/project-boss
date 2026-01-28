@@ -2,9 +2,8 @@
 // learn more about it in the docs: https://pris.ly/prisma-schema
 
 generator client {
-  provider        = "prisma-client-js"
-  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
-  previewFeatures = ["postgresqlExtensions"]
+  provider   = "prisma-client-js"
+  engineType = "client"
 }
 
 datasource db {
@@ -159,7 +158,7 @@ model Outlet {
   address     String?
   phone       String?
   createdAt   DateTime @default(now())
-  image       String?  @default("https://press-parts-outlet.com/cdn/shop/files/non-photoproductimage_9c33376d-caaf-4116-b20a-3162aedf74f4_512x512.png?v=1687762014")
+  image       String?  @default("/defaults/default-outlet-image.webp")
   updatedAt   DateTime @updatedAt
   latitude    Float?
   longitude   Float?
@@ -186,8 +185,9 @@ model Outlet {
   expenses Expense[]
 
   // Relasi untuk operating hours dan staff
-  operatingHours OutletOperatingHours[]
-  staff          Staff[]
+  operatingHours  OutletOperatingHours[]
+  staff           Staff[]
+  receiptSettings receiptSetting?
 
   @@index([businessId])
   @@index([latitude, longitude]) // Indeks untuk query lokasi (bounding box)
@@ -252,10 +252,9 @@ model Product {
   // Subtables (one-to-one polymorphic)
   goods   ProductGoods?
   service ProductService?
+  image   String?         @default("/defaults/default-product-image.png")
 
-  // Shared relations
-  productImages ProductImage[]
-  orderItems    OrderItem[]
+  orderItems OrderItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -292,32 +291,6 @@ model ProductGoods {
   @@index([currentStock]) // Untuk query low stock
 }
 
-// Log untuk tracking barang masuk/keluar (untuk HPP calculation)
-model StockLog {
-  id       String            @id @default(uuid())
-  type     StockMovementType
-  quantity Int // Positif untuk IN, bisa negatif untuk OUT
-
-  // HPP per unit saat barang masuk (untuk tipe IN)
-  hppPerUnit Float?
-
-  // Reference ke transaksi/order yang trigger movement ini
-  referenceType String? // "ORDER", "PURCHASE", "MANUAL", "ADJUSTMENT", "RETURN"
-  referenceId   String? // ID dari order/purchase/etc
-  notes         String?
-
-  // Relations
-  productGoodsId String
-  productGoods   ProductGoods @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([productGoodsId])
-  @@index([type])
-  @@index([createdAt])
-  @@index([referenceType, referenceId])
-}
-
 // Subtable untuk produk SERVICE
 model ProductService {
   id        String  @id @default(uuid())
@@ -350,18 +323,30 @@ model ProductService {
   @@index([providerName])
 }
 
-// Model untuk menyimpan banyak gambar per produk
-model ProductImage {
-  id        String   @id @default(uuid())
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  url       String
-  alt       String?
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Log untuk tracking barang masuk/keluar (untuk HPP calculation)
+model StockLog {
+  id       String            @id @default(uuid())
+  type     StockMovementType
+  quantity Int // Positif untuk IN, bisa negatif untuk OUT
 
-  @@index([productId, order])
+  // HPP per unit saat barang masuk (untuk tipe IN)
+  hppPerUnit Float?
+
+  // Reference ke transaksi/order yang trigger movement ini
+  referenceType String? // "ORDER", "PURCHASE", "MANUAL", "ADJUSTMENT", "RETURN"
+  referenceId   String? // ID dari order/purchase/etc
+  notes         String?
+
+  // Relations
+  productGoodsId String
+  productGoods   ProductGoods @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([productGoodsId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([referenceType, referenceId])
 }
 
 // Model untuk slot booking khusus layanan jasa
@@ -393,7 +378,7 @@ model GuestCustomer {
   id    String  @id @default(uuid())
   name  String
   email String?
-  phone String? // Penting untuk notifikasi WA dan data booking
+  phone String  @unique // Penting untuk notifikasi WA dan data booking
 
   // Relasi: Satu guest customer bisa punya banyak order
   orders Order[]
@@ -556,4 +541,14 @@ model Banner {
 
   @@index([businessId])
   @@index([isActive, sortOrder])
+}
+
+model receiptSetting {
+  id          String  @id @default(uuid())
+  outletId    String  @unique
+  photoString String?
+  showLogo    Boolean @default(false)
+  printHeight String  @default("105")
+  printWidth  String  @default("80")
+  outlet      Outlet  @relation(fields: [outletId], references: [id])
 }

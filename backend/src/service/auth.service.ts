@@ -60,7 +60,6 @@ export async function cashierLoginService(data: CashierLoginInput) {
         id: staff.id,
         email: staff.email,
         name: staff.name,
-        role: staff.role,
         outletId: staff.outletId,
         businessId: staff.outlet?.businessId,
         userType: 'CASHIER' // Penanda bahwa ini adalah kasir
@@ -68,8 +67,8 @@ export async function cashierLoginService(data: CashierLoginInput) {
 
     await redis.set(`session:cashier:${staff.id}`, JSON.stringify(staffSession), 'EX', 60 * 60 * 24);
 
-    const token = JwtUtil.generate({ 
-        sessionId: staff.id, 
+    const token = JwtUtil.generate({
+        sessionId: staff.id,
         role: 'CASHIER',
         userType: 'CASHIER',
         outletId: staff.outletId,
@@ -87,7 +86,7 @@ export async function cashierLoginService(data: CashierLoginInput) {
 
 export async function getCashierMeService(staffId: string) {
     const staff = await StaffRepository.findById(staffId);
-    
+
     if (!staff) {
         throw new AppError("Staff tidak ditemukan", HttpStatus.NOT_FOUND);
     }
@@ -116,8 +115,8 @@ export async function getMeService(userId: string) {
     const baseUrl = process.env.BASE_URL || 'http://localhost:1234';
     const transformedOutlets = outlets?.map((outlet: any) => ({
         ...outlet,
-        qrisImage: outlet.qrisImage 
-            ? `${baseUrl}/${outlet.qrisImage.replace(/\\/g, '/')}` 
+        qrisImage: outlet.qrisImage
+            ? `${baseUrl}/${outlet.qrisImage.replace(/\\/g, '/')}`
             : null,
     })) || [];
 

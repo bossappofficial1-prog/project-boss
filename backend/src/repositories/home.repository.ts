@@ -81,52 +81,41 @@ export class HomeRepository {
     }
 
     static async findPopularItems(limit = 8) {
-        const rawItems = await db.$queryRaw<PopularItemRow[]>`
-            SELECT
-                p.id,
-                p.name,
-                p.price,
-                p.image,
-                COALESCE(SUM(oi.quantity), 0) AS sold_count
+        const rawItems = await db.$queryRaw<any[]>`
+        SELECT
+            p.id,
+            p.name,
+            p.image,
+            p.type,
+            COALESCE(pg."sellingPrice", ps."sellingPrice", 0) AS price,
+            CAST(SUM(oi.quantity) AS INTEGER) AS sold_count
             FROM "Product" p
-            LEFT JOIN "OrderItem" oi ON oi."productId" = p.id
-            LEFT JOIN "Order" o ON o.id = oi."orderId"
-            LEFT JOIN "Transaction" t ON t."orderId" = o.id AND t.status = 'SUCCESS'
+            -- Join ke sub-tabel untuk mengambil harga
+            LEFT JOIN "ProductGoods" pg ON pg."productId" = p.id
+            LEFT JOIN "ProductService" ps ON ps."productId" = p.id
+            -- Join ke transaksi yang sukses
+            INNER JOIN "OrderItem" oi ON oi."productId" = p.id
+            INNER JOIN "Order" o ON o.id = oi."orderId"
+            INNER JOIN "Transaction" t ON t."orderId" = o.id
             WHERE t.status = 'SUCCESS'
-            GROUP BY p.id, p.name, p.price, p.image
+            GROUP BY 
+                p.id, 
+                p.name, 
+                p.image, 
+                p.type, 
+                pg."sellingPrice", 
+                ps."sellingPrice"
             ORDER BY sold_count DESC
             LIMIT ${limit}
-        `;
+    `;
 
         return rawItems.map((item) => ({
             id: item.id,
             name: item.name,
+            type: item.type,
             price: Number(item.price ?? 0),
             image: item.image,
             soldCount: Number(item.sold_count ?? 0),
-        }));
-    }
-
-    static async findActivePromos(limit = 6) {
-        const promos = await db.promo.findMany({
-            where: {
-                status: "ACTIVE",
-                validUntil: { gte: new Date() },
-            },
-            orderBy: { validUntil: "asc" },
-            take: limit,
-        });
-
-        return promos.map((promo) => ({
-            id: promo.id,
-            code: promo.code,
-            description: promo.description,
-            type: promo.type,
-            value: Number(promo.value),
-            status: promo.status,
-            minPurchaseAmount: promo.minPurchaseAmount ? Number(promo.minPurchaseAmount) : null,
-            validUntil: promo.validUntil,
-            validFrom: promo.validFrom,
         }));
     }
 }

@@ -11,9 +11,8 @@ import { ProductRepository } from "../repositories/product.repository";
 import { CreateProductInput, UpdateProductInput, createProductSchema } from "../schemas/product.schema";
 import { getOutletByIdService } from './outlet.service';
 import { generateDefaultBookingSlots } from './booking.service';
-import { BookingSlot, FeeBearer, Product, ProductType, ServiceStatus, UserRole } from '@prisma/client';
+import { ProductType, ServiceStatus } from '@prisma/client';
 import { config } from "../config";
-import { BookingRepository } from '../repositories/booking.repository';
 
 export async function createProductService(data: CreateProductInput) {
     await getOutletByIdService(data.outletId);
@@ -23,7 +22,7 @@ export async function createProductService(data: CreateProductInput) {
     return createdProduct;
 }
 
-export async function getProductByIdService(id: string): Promise<Product & { defaultTransactionFeeBearer: any; bookingSlots: BookingSlot[]; images?: { url: string; alt?: string }[] }> {
+export async function getProductByIdService(id: string) {
 
     const product = await ProductRepository.findById(id);
     if (!product) {
@@ -37,7 +36,7 @@ export async function getProductByIdService(id: string): Promise<Product & { def
         images.push({ url: (product as any).image, alt: undefined });
     }
 
-    const result = { ...productWithoutOutlet, defaultTransactionFeeBearer: outlet.business.defaultTransactionFeeBearer, images };
+    const result = { ...productWithoutOutlet, images };
 
     return result;
 }
@@ -46,18 +45,21 @@ export async function getProductsByOutletIdService(
     outletId: string,
     productType: ProductType,
     params: { q?: string; accessed?: string; page: number; limit: number; }
-): Promise<{ data: Product[]; total: number }> {
+) {
     const { q, accessed, page, limit } = params;
-    return ProductRepository.findByOutletId({ outletId, productType, q, accessed, page, limit });
+    const { data, total } = await ProductRepository.findByOutletId({ outletId, productType, q, accessed, page, limit });
+
+    return {
+        data,
+        total
+    }
 }
 
 export async function updateProductService(id: string, data: UpdateProductInput) {
     await getProductByIdService(id);
     const product = await ProductRepository.update(id, data);
 
-    if (data.serviceDurationMinutes !== product.serviceDurationMinutes) {
-        await BookingRepository.deleteByProductId(product.id)
-    }
+    // TODO: Pertimbangkan invalidasi slot jika durasi layanan berubah
 
     await redis.del(`product:${id}`);
     return product;
@@ -81,7 +83,6 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
     if (!fs.existsSync(tempRoot)) fs.mkdirSync(tempRoot, { recursive: true });
     const workDir = isZip ? path.join(tempRoot, path.basename(file.path, '.zip') + '-' + Date.now()) : null;
     let excelPath: string | null = null;
-    let imagesDir: string | null = null;
 
     try {
         if (isZip && file.path) {
@@ -98,7 +99,6 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
                 });
             const files = walk(workDir!);
             excelPath = files.find(f => ['.xlsx', '.xls', '.csv'].includes(path.extname(f).toLowerCase())) || null;
-            imagesDir = fs.existsSync(path.join(workDir!, 'images')) ? path.join(workDir!, 'images') : null;
             if (!excelPath) {
                 throw new AppError('Zip tidak berisi file Excel (.xlsx/.xls/.csv)', HttpStatus.BAD_REQUEST);
             }
@@ -141,28 +141,59 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
             return allowed.includes(s) ? (s as T) : undefined;
         };
 
+        const parseString = (value: any): string | undefined => {
+            if (value === undefined || value === null) return undefined;
+            const text = String(value).trim();
+            return text.length ? text : undefined;
+        };
+
+        const commissionOptions = ['PERCENTAGE', 'FIXED'] as const;
+
         data.forEach((row: any, index: number) => {
             const rawType = normalizeEnum<ProductType>(row['Tipe Produk'], Object.values(ProductType));
             const rawStatus = normalizeEnum<ServiceStatus>(row['Status'], Object.values(ServiceStatus));
-            const rawFeeBearer = normalizeEnum<FeeBearer>(row['Penanggung Biaya'], Object.values(FeeBearer));
+            const finalType = rawType ?? ProductType.GOODS;
 
-            const rowData: CreateProductInput = {
-                name: row['Nama Produk'],
-                description: row['Deskripsi'],
-                price: toNumber(row['Harga Jual']) as number,
-                costPrice: toNumber(row['Harga Pokok']) ?? 0,
-                type: (rawType ?? ProductType.GOODS) as ProductType,
-                quantity: toNumber(row['Jumlah Stok']) as number | undefined,
-                unit: row['Satuan'],
+            const productName = parseString(row['Nama Produk']);
+            const imageFileName = parseString(row['Nama File Gambar']);
+
+            const baseData = {
+                name: productName,
+                description: parseString(row['Deskripsi']),
+                type: finalType,
                 status: (rawStatus ?? ServiceStatus.ACTIVE) as ServiceStatus,
-                transactionFeeBearer: rawFeeBearer as FeeBearer | undefined,
-                serviceDurationMinutes: toNumber(row['Durasi Layanan (menit)']) as number | undefined,
                 outletId: outletId,
-                // Temporarily store the filename; we will resolve to URL later if zip provided
-                image: row['Nama File Gambar'],
-                // capacity is optional, not exposed directly in template. Could map from 'Kapasitas Paralel'
-                capacity: toNumber(row['Kapasitas Paralel']) as number | undefined,
+                image: imageFileName,
             };
+
+            const sellingPrice = toNumber(row['Harga Jual']);
+
+            const rowData: any = finalType === ProductType.GOODS
+                ? {
+                    ...baseData,
+                    type: ProductType.GOODS,
+                    goods: {
+                        sellingPrice: sellingPrice,
+                        averageHpp: toNumber(row['Harga Pokok']),
+                        unit: parseString(row['Satuan']),
+                        currentStock: toNumber(row['Jumlah Stok']),
+                        minStock: toNumber(row['Minimal Stok']),
+                    }
+                }
+                : {
+                    ...baseData,
+                    type: ProductType.SERVICE,
+                    service: {
+                        sellingPrice: sellingPrice,
+                        durationMinutes: toNumber(row['Durasi Layanan (menit)']),
+                        providerName: parseString(row['Nama Provider']) ?? productName,
+                        providerPhone: parseString(row['Nomor Telepon Provider']),
+                        providerEmail: parseString(row['Email Provider']),
+                        commissionType: normalizeEnum<typeof commissionOptions[number]>(row['Tipe Komisi'], commissionOptions),
+                        commissionValue: toNumber(row['Nilai Komisi']),
+                        maxParallel: toNumber(row['Kapasitas Paralel']),
+                    }
+                };
 
             const validation = createProductSchema.safeParse(rowData);
             if (validation.success) {
@@ -184,10 +215,31 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
         const byName = new Map<string, { id: string; name: string; type: ProductType }>();
         existingProducts.forEach(p => byName.set(p.name.trim().toLowerCase(), p));
 
+        const conflicts = rows.map((row) => {
+            const existing = byName.get(row.name.trim().toLowerCase());
+            if (existing && existing.type !== row.type) {
+                return {
+                    row: row._rowNumber,
+                    name: row.name,
+                    existingType: existing.type,
+                    incomingType: row.type,
+                };
+            }
+            return null;
+        }).filter(Boolean) as Array<{ row: number; name: string; existingType: ProductType; incomingType: ProductType }>;
+
+        if (conflicts.length > 0) {
+            throw new AppError("Tipe produk tidak sesuai dengan data yang sudah ada.", HttpStatus.BAD_REQUEST, conflicts);
+        }
+
+        const outletDetail = await getOutletByIdService(outletId);
+        const outletOperatingHours = outletDetail.operatingHours ?? [];
+
         let createdCount = 0;
         let updatedCount = 0;
 
         const uploadsDir = path.join(process.cwd(), 'uploads');
+        if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
         const ensureImageUrl = (filename?: string | null): string | undefined => {
             if (!filename) return undefined;
             const allowedExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
@@ -234,38 +286,43 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
                 const found = byName.get(key);
 
                 // Build common data payload (exclude outletId on update)
-                const resolvedImageUrl = ensureImageUrl(r.image as any);
-                const commonData = {
+                const resolvedImageUrl = ensureImageUrl(r.image);
+                const imageFromRow = typeof r.image === 'string' && r.image.trim() ? r.image.trim() : undefined;
+                const productPayload = {
                     name: r.name,
                     description: r.description,
-                    price: r.price,
-                    costPrice: r.costPrice ?? 0,
                     type: r.type,
-                    quantity: r.type === 'GOODS' ? (r.quantity ?? 0) : null,
-                    unit: r.unit,
                     status: r.status ?? ServiceStatus.ACTIVE,
-                    transactionFeeBearer: r.transactionFeeBearer ?? null,
-                    serviceDurationMinutes: r.type === 'SERVICE' ? (r.serviceDurationMinutes ?? 0) : null,
-                    image: resolvedImageUrl || undefined,
+                    image: resolvedImageUrl ?? imageFromRow,
                 } as const;
+
+                const goodsPayload = r.type === ProductType.GOODS ? {
+                    sellingPrice: r.goods.sellingPrice,
+                    averageHpp: r.goods.averageHpp,
+                    unit: r.goods.unit,
+                    currentStock: r.goods.currentStock ?? 0,
+                    ...(r.goods.minStock !== undefined ? { minStock: r.goods.minStock } : {}),
+                } : undefined;
+
+                const servicePayload = r.type === ProductType.SERVICE ? {
+                    durationMinutes: r.service.durationMinutes,
+                    sellingPrice: r.service.sellingPrice,
+                    providerName: r.service.providerName,
+                    ...(r.service.providerPhone ? { providerPhone: r.service.providerPhone } : {}),
+                    ...(r.service.providerEmail ? { providerEmail: r.service.providerEmail } : {}),
+                    ...(r.service.commissionType ? { commissionType: r.service.commissionType } : {}),
+                    ...(r.service.commissionValue !== undefined ? { commissionValue: r.service.commissionValue } : {}),
+                    ...(r.service.maxParallel !== undefined ? { maxParallel: r.service.maxParallel } : {}),
+                } : undefined;
 
                 if (found) {
                     // Update existing product
                     await tx.product.update({
                         where: { id: found.id },
                         data: {
-                            ...commonData,
-                            // Capacity adjustments for SERVICE
-                            ...(r.type === 'SERVICE' && {
-                                capacity: r.capacity && r.capacity > 0
-                                    ? {
-                                        upsert: {
-                                            update: { maxParallel: r.capacity },
-                                            create: { maxParallel: r.capacity }
-                                        }
-                                    }
-                                    : undefined
-                            }),
+                            ...productPayload,
+                            ...(goodsPayload ? { goods: { upsert: { update: goodsPayload, create: goodsPayload } } } : {}),
+                            ...(servicePayload ? { service: { upsert: { update: servicePayload, create: servicePayload } } } : {}),
                         },
                     });
 
@@ -274,30 +331,21 @@ export async function bulkCreateProductsFromExcelService(file: Express.Multer.Fi
                     // Create new product
                     const createdProduct = await tx.product.create({
                         data: {
-                            ...commonData,
+                            ...productPayload,
                             outletId,
-                            ...(r.type === 'SERVICE' && {
-                                capacity: {
-                                    create: { maxParallel: r.capacity && r.capacity > 0 ? r.capacity : 1 }
-                                }
-                            })
+                            ...(goodsPayload ? { goods: { create: goodsPayload } } : {}),
+                            ...(servicePayload ? { service: { create: servicePayload } } : {}),
                         },
                     });
 
                     // Generate booking slots for service
-                    if (createdProduct.type === 'SERVICE' && createdProduct.serviceDurationMinutes) {
-                        const outlet = await tx.outlet.findUnique({
-                            where: { id: outletId },
-                            include: { operatingHours: true }
+                    if (createdProduct.type === 'SERVICE' && r.service?.durationMinutes && outletOperatingHours.length) {
+                        await generateDefaultBookingSlots({
+                            productId: createdProduct.id,
+                            operatingHours: outletOperatingHours,
+                            serviceDurationMinutes: r.service.durationMinutes,
+                            daysToGenerate: 30
                         });
-                        if (outlet?.operatingHours?.length) {
-                            await generateDefaultBookingSlots({
-                                productId: createdProduct.id,
-                                operatingHours: outlet.operatingHours,
-                                serviceDurationMinutes: createdProduct.serviceDurationMinutes,
-                                daysToGenerate: 30
-                            });
-                        }
                     }
 
                     createdCount += 1;
@@ -328,45 +376,50 @@ export function generateProductImportTemplateService(): Buffer {
     const headers = [
         "Nama Produk",
         "Deskripsi",
+        "Tipe Produk",
+        "Status",
         "Harga Jual",
         "Harga Pokok",
-        "Tipe Produk",
         "Jumlah Stok",
+        "Minimal Stok",
         "Satuan",
-        "Status",
-        "Penanggung Biaya",
         "Durasi Layanan (menit)",
+        "Nama Provider",
+        "Nomor Telepon Provider",
+        "Email Provider",
+        "Tipe Komisi",
+        "Nilai Komisi",
+        "Kapasitas Paralel",
         "Nama File Gambar",
-        "Kapasitas Paralel"
     ];
     const worksheet = xlsx.utils.aoa_to_sheet([headers]);
 
     // Data validations
     const dvList: any[] = [];
-    // Tipe Produk (E)
+    // Tipe Produk (C)
     dvList.push({
-        sqref: 'E2:E1000',
+        sqref: 'C2:C1000',
         type: 'list',
-        formula1: '"GOODS,SERVICE"',
+        formula1: '=_lists!$A$1:$A$2',
         showDropDown: true,
         allowBlank: false,
         errorStyle: 'stop',
         errorTitle: 'Tipe Tidak Valid',
         error: 'Silakan pilih tipe dari daftar: GOODS atau SERVICE.'
     });
-    // Status (H)
+    // Status (D)
     dvList.push({
-        sqref: 'H2:H1000',
+        sqref: 'D2:D1000',
         type: 'list',
-        formula1: '"ACTIVE,INACTIVE"',
+        formula1: '=_lists!$B$1:$B$2',
         showDropDown: true,
         allowBlank: true
     });
-    // Penanggung Biaya (I)
+    // Tipe Komisi (N)
     dvList.push({
-        sqref: 'I2:I1000',
+        sqref: 'N2:N1000',
         type: 'list',
-        formula1: '"CUSTOMER,OWNER"',
+        formula1: '=_lists!$C$1:$C$2',
         showDropDown: true,
         allowBlank: true
     });
@@ -377,6 +430,13 @@ export function generateProductImportTemplateService(): Buffer {
 
     const workbook = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(workbook, worksheet, "Products");
+
+    const listSheet = xlsx.utils.aoa_to_sheet([
+        ["GOODS", "ACTIVE", "PERCENTAGE"],
+        ["SERVICE", "INACTIVE", "FIXED"],
+    ]);
+    listSheet['!cols'] = [{ hidden: true }, { hidden: true }, { hidden: true }];
+    xlsx.utils.book_append_sheet(workbook, listSheet, "_lists");
 
     const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
     return buffer;
@@ -408,7 +468,11 @@ export async function exportProductsToExcelService(
     // Fetch products from database
     const products = await db.product.findMany({
         where,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: {
+            goods: true,
+            service: true,
+        },
     });
 
     // Prepare data for Excel
@@ -424,26 +488,49 @@ export async function exportProductsToExcelService(
         "Status",
         "Durasi Layanan (menit)",
         "Kapasitas Paralel",
-        "Penanggung Biaya Transaksi",
+        "Nama Provider",
         "Tanggal Dibuat"
     ];
 
-    const data = products.map((product, index) => [
-        index + 1,
-        product.name,
-        product.description || '',
-        product.type === 'GOODS' ? 'Barang' : 'Jasa',
-        (product as any).costPrice ?? 0,
-        product.price,
-        product.type === 'GOODS' ? ((product as any).quantity ?? 0) : 'N/A',
-        product.type === 'GOODS' ? ((product as any).unit || 'pcs') : 'N/A',
-        product.status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif',
-        (product as any).serviceDurationMinutes ?? 'N/A',
-        'N/A',
-        ((product as any).transactionFeeBearer === 'CUSTOMER') ? 'Pelanggan' :
-            ((product as any).transactionFeeBearer === 'OWNER') ? 'Pemilik' : 'Default Bisnis',
-        product.createdAt.toLocaleDateString('id-ID')
-    ]);
+    const data = products.map((product, index) => {
+        const goods = product.goods;
+        const service = product.service;
+        const hppValue = goods?.averageHpp ?? 0;
+        const sellingPrice = product.type === 'GOODS'
+            ? goods?.sellingPrice ?? 0
+            : service?.sellingPrice ?? 0;
+        const stockValue = product.type === 'GOODS'
+            ? goods?.currentStock ?? 0
+            : 'N/A';
+        const unitValue = product.type === 'GOODS'
+            ? goods?.unit ?? 'pcs'
+            : 'N/A';
+        const durationValue = product.type === 'SERVICE'
+            ? service?.durationMinutes ?? 'N/A'
+            : 'N/A';
+        const capacityValue = product.type === 'SERVICE'
+            ? service?.maxParallel ?? 'N/A'
+            : 'N/A';
+        const providerName = product.type === 'SERVICE'
+            ? service?.providerName ?? 'N/A'
+            : 'N/A';
+
+        return [
+            index + 1,
+            product.name,
+            product.description || '',
+            product.type === 'GOODS' ? 'Barang' : 'Jasa',
+            hppValue,
+            sellingPrice,
+            stockValue,
+            unitValue,
+            product.status === 'ACTIVE' ? 'Aktif' : 'Tidak Aktif',
+            durationValue,
+            capacityValue,
+            providerName,
+            product.createdAt.toLocaleDateString('id-ID')
+        ];
+    });
 
     // Create worksheet
     const worksheet = xlsx.utils.aoa_to_sheet([headers, ...data]);
@@ -461,7 +548,7 @@ export async function exportProductsToExcelService(
         { wch: 12 },  // Status
         { wch: 20 },  // Durasi Layanan
         { wch: 15 },  // Kapasitas Paralel
-        { wch: 15 },  // Penanggung Biaya
+        { wch: 25 },  // Nama Provider
         { wch: 15 }   // Tanggal Dibuat
     ];
     worksheet['!cols'] = colWidths;

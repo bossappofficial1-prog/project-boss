@@ -1,4 +1,5 @@
 import { Router } from "express";
+import puppeteer from "puppeteer";
 import userRouter from "./user.route";
 import authRouter from "./auth.route";
 import productRouter from "./product.route";
@@ -22,6 +23,7 @@ import transactionRouter from "./transaction.route";
 import { ResponseUtil } from "../utils";
 import { paymentMethod } from "../constants/payment-method";
 import { SocketEmitter } from "../socket/socket-emiiter";
+import receiptRouter from "./receipt-setting.route";
 
 const apiRouter = Router()
 
@@ -45,6 +47,7 @@ apiRouter.use('/security', securityRouter)
 apiRouter.use('/queue-monitoring', queueMonitoringRouter)
 apiRouter.use('/notifications', notificationRouter)
 apiRouter.use('/transactions', transactionRouter)
+apiRouter.use('/receipt-setting', receiptRouter)
 apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
 apiRouter.get('/test-event/:outletId', (req, res) => {
     const outletId = req.params.outletId;

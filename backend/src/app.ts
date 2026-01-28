@@ -13,8 +13,6 @@ import morgan from "morgan"
 import path from "path"
 import passport from "./config/passport"
 
-// Import rute promo
-import promoRouter from './routes/promo.route';
 // Import rute internal
 import internalApiRouter from './routes/internal-api.route';
 
@@ -101,7 +99,6 @@ app.get("/health", (req, res) => {
 })
 
 app.use(App.API_PREFIX, apiRouter)
-app.use(`${App.API_PREFIX}/promos`, promoRouter);
 app.use(`${App.API_PREFIX}/internal`, internalApiRouter);
 
 app.use(notFound)

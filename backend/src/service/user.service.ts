@@ -52,6 +52,9 @@ export async function getUserByIdService(userId: string) {
 export async function getUserDetailService(userId: string) {
     const user = await UserRepository.detail(userId)
     if (!user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    const subscriptionEndDate = new Date(user.business?.subscriptionEndDate!);
+    const today = new Date()
+    const subscriptionExpire = subscriptionEndDate.getTime() > today.getTime()
 
     const result = {
         user: {
@@ -72,9 +75,13 @@ export async function getUserDetailService(userId: string) {
                 accountHolder: user.business?.accountHolder,
             },
             config: {
-                feeBearer: user.business?.defaultTransactionFeeBearer,
+                feeBearer: '',
                 totalOutlets: user.business?._count.outlets,
                 totalMembers: 0,
+                subscriptionStartDate: user.business?.subscriptionStartDate,
+                subscriptionEndDate: user.business?.subscriptionEndDate,
+                subscribetionPlan: user.business?.subscriptionPlan,
+                isExpire: subscriptionExpire
             },
         },
         wallet: {

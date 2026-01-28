@@ -50,3 +50,12 @@ export function generateTimeSlots(
 
     return slots;
 }
+
+export const formatDateTime = (iso: string) => {
+    const d = new Date(iso);
+
+    return {
+        date: d.toLocaleDateString('sv-SE'),
+        time: d.toLocaleTimeString('id-ID', { hour12: false }),
+    };
+};

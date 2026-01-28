@@ -2,19 +2,19 @@
 
 import React from 'react';
 import { resolveUploadImageUrl } from '@/lib/url';
-import { Product } from '@/hooks/useProducts';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { PenBox, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { formatCurrency } from '@/lib/utils';
 import MobileCard from './MobileCards';
+import { ProductItem } from '@/hooks/useProductsData';
 
 export interface DesktopTableProps {
-  products: Product[];
-  onEdit: (p: Product) => void;
-  onDelete: (p: Product) => void;
-  onToggleStatus: (p: Product) => void;
+  products: ProductItem[];
+  onEdit: (p: ProductItem) => void;
+  onDelete: (p: ProductItem) => void;
+  onToggleStatus: (p: ProductItem) => void;
   onRefresh: () => void;
   formatDuration: (n?: number) => string;
   currentPage: number;
@@ -83,11 +83,11 @@ export default function DesktopTable({
 
               return <div className="flex items-center gap-3">
                 <img
-                  src={resolveUploadImageUrl(product.image) || 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png'}
+                  src={resolveUploadImageUrl(product.image)}
                   alt={product.name}
                   className="w-12 h-12 rounded-lg object-cover"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = 'https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-goods-and-services-vector-png-image_6891390.png'
+                    (e.currentTarget as HTMLImageElement).src = '/defaults/default-product-image.png'
                   }}
                 />
                 <div>
@@ -102,10 +102,18 @@ export default function DesktopTable({
             header: 'Harga',
             cell(props) {
               const product = props.row.original;
+              if (product.type === 'GOODS') {
+                return (
+                  <>
+                    <div className="text-gray-900 dark:text-gray-100">{formatCurrency(product.goods?.sellingPrice ?? 0)}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Avg HPP: {formatCurrency(product.goods?.averageHpp ?? 0)}</div>
+                  </>
+                )
+              }
               return (
                 <>
-                  <div className="text-gray-900 dark:text-gray-100">{formatCurrency(product.price)}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Modal: {formatCurrency(product.costPrice)}</div>
+                  <div className="text-gray-900 dark:text-gray-100">{formatCurrency(product.service?.sellingPrice ?? 0)}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Coms Value: {formatCurrency(product.service?.commissionValue ?? 0)}</div>
                 </>
               )
             },
@@ -130,13 +138,24 @@ export default function DesktopTable({
 
               return product.type === 'GOODS' ? (
                 <div>
-                  <div>Stok: {product.quantity ?? 0} {product.unit || ''}</div>
+                  <div>Stok: {product.goods?.currentStock ?? 0} {product.goods?.unit || ''}</div>
                 </div>
               ) : (
-                <div>Durasi: {formatDuration(product.serviceDurationMinutes)}</div>
+                <div>Durasi: {formatDuration(product.service?.durationMinutes)}</div>
               )
             },
-          }
+          },
+          {
+            accessorKey: 'status',
+            header: "Status",
+            enableSorting: false,
+            cell(props) {
+              const product = props.row.original
+              return <Switch checked={product.status == 'ACTIVE'}
+                onCheckedChange={() => onToggleStatus(product)}
+              />
+            },
+          },
         ]}
 
         rowActions={() => ([
@@ -157,28 +176,11 @@ export default function DesktopTable({
             onClick(row) {
               onDelete(row)
             },
-          },
-          {
-            onClick(row) {
-              onToggleStatus(row)
-            },
-            render(product) {
-              return <Switch checked={product.status == 'ACTIVE'}
-                onCheckedChange={() => onToggleStatus(product)}
-              />
-            },
           }
         ])}
 
         actionViewType='flex'
         enableColumnResizing
-        mobileCardRender={(product) => <MobileCard
-          formatDuration={formatDuration}
-          onDelete={onDelete}
-          onEdit={onEdit}
-          onToggleStatus={onToggleStatus}
-          product={product}
-        />}
       />
     </>
   );

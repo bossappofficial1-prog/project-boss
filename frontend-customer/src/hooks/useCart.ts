@@ -2,8 +2,8 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ProductType } from '@/types';
 import { SelectedSchedule } from '@/types/booking-slots';
+import { Product } from '@/types/product';
 
 export interface CartItem {
     id: string;
@@ -31,7 +31,7 @@ interface CartState {
     isOpen: boolean;
 
     // Actions
-    addItem: (outletId: string, outletName: string, product: ProductType, quantity?: number, selectedSchedule?: SelectedSchedule) => boolean;
+    addItem: (outletId: string, outletName: string, product: Product, quantity?: number, selectedSchedule?: SelectedSchedule) => boolean;
     removeItem: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
     updateItem: (itemId: string, updates: Partial<CartItem>) => void;
@@ -55,7 +55,7 @@ export const useCart = create<CartState>()(
             items: [],
             isOpen: false,
 
-            addItem: (outletId: string, outletName: string, product: ProductType, quantity = 1, selectedSchedule) => {
+            addItem: (outletId: string, outletName: string, product: Product, quantity = 1, selectedSchedule) => {
                 const { items } = get();
                 const slotInfo = selectedSchedule?.slot;
                 const staffInfo = selectedSchedule?.staff;
@@ -109,8 +109,8 @@ export const useCart = create<CartState>()(
                         const newQuantity = existingItem.quantity + quantity;
 
                         // Check max quantity for GOODS
-                        if (product.type === 'GOODS' && product.quantity !== null) {
-                            if (newQuantity > product.quantity) {
+                        if (product.type === 'GOODS' && product.goods?.currentStock !== null) {
+                            if (newQuantity > product.goods?.currentStock!) {
                                 // Don't add if exceeds stock
                                 return false;
                             }
@@ -132,13 +132,13 @@ export const useCart = create<CartState>()(
                         outletName,
                         productId: product.id,
                         name: product.name,
-                        price: product.price,
+                        price: product.type === 'GOODS' ? product.goods?.sellingPrice || 0 : product.service?.sellingPrice || 0,
                         quantity,
                         type: product.type,
                         image: product.image,
-                        unit: product.unit || undefined,
-                        maxQuantity: product.type === 'GOODS' ? product.quantity || undefined : undefined,
-                        serviceDurationMinutes: product.type === 'SERVICE' ? product.serviceDurationMinutes || undefined : undefined,
+                        unit: product.type === 'GOODS' ? product.goods?.unit : undefined,
+                        maxQuantity: product.type === 'GOODS' ? product.goods?.currentStock || undefined : undefined,
+                        serviceDurationMinutes: product.type === 'SERVICE' ? product.service?.durationMinutes || undefined : undefined,
                         selectedSlot: product.type === 'SERVICE' ? slotInfo?.id : undefined,
                         slotStartTime: product.type === 'SERVICE' ? slotInfo?.startTime : undefined,
                         slotEndTime: product.type === 'SERVICE' ? slotInfo?.endTime : undefined,

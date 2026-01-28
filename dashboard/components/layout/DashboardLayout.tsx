@@ -8,6 +8,7 @@ import { OutletProvider } from '@/components/providers/OutletProvider';
 import { SocketProvider } from '@/components/providers/SocketProvider';
 import { Toaster } from 'sonner';
 import { DashboardSocketListener } from '../sockets/DashboardSocketListener';
+import { SidebarInset, SidebarProvider } from '../ui/sidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -31,56 +32,29 @@ export default function DashboardLayout({ children }: LayoutProps) {
   return (
     <OutletProvider>
       <DashboardSocketListener />
-      <SocketProvider>
-        <div className={`min-h-screen max-w-full bg-gradient-to-br from-gray-50 via-red-50/30 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-poppins`}>
-          <style jsx global>{`
-            @keyframes fadeInOverlay { from { opacity:0 } to { opacity:1 } }
-            .animate-fadeIn { animation: fadeInOverlay 0.25s ease-out; }
-          `}</style>
+      <SidebarProvider defaultOpen={true}>
+        <SocketProvider>
+          <Sidebar />
+          <SidebarInset className="flex flex-col flex-1">
+            <Header />
 
-          {/* Sidebar */}
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-          {/* Mobile overlay when sidebar is open - covers entire screen */}
-          {sidebarOpen && (
-            <div
-              className="fixed inset-0 bg-black/30 backdrop-blur-md lg:hidden animate-fadeIn z-30"
-              style={{
-                backdropFilter: 'blur(4px)',
-                WebkitBackdropFilter: 'blur(4px)',
-                left: '0',
-                right: '0',
-                top: '0',
-                bottom: '0'
-              }}
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
-
-          {/* Main content */}
-          <div className={`flex-1 flex flex-col lg:ml-64 transition-all duration-300 ${sidebarOpen ? 'lg:scale-100' : 'scale-100'}`}>
-            {/* Header */}
-            <div className={`${sidebarOpen ? 'backdrop-blur-sm bg-white/60 lg:bg-transparent lg:backdrop-blur-none' : 'bg-transparent'} sticky top-0 z-20 transition-all dashboard-header`}>
-              <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-            </div>
-
-            {/* Content */}
-            <main className={`flex-1 overflow-auto relative z-10 transition-all duration-300 ${sidebarOpen ? 'blur-[2px] lg:blur-0' : ''}`}>
-              <div className="container mx-auto p-3 md:p-6 max-w-[100dvw] md:max-w-[75dvw]">
+            {/* Main Content with Responsive Padding */}
+            <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+              <div className="w-full mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8 xl:p-10 2xl:p-12">
                 {children}
               </div>
             </main>
-          </div>
-        </div>
+          </SidebarInset>
 
-        {/* Sonner Toaster for custom notifications */}
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 5000, // No auto-close
-          }}
-        />
-      </SocketProvider>
+          {/* Sonner Toaster for custom notifications */}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 5000,
+            }}
+          />
+        </SocketProvider>
+      </SidebarProvider>
     </OutletProvider>
   );
 }

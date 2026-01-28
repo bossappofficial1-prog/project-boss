@@ -63,12 +63,13 @@ export const getProductsByOutletIdController = asyncHandler(async (req: Request,
     const accessedRole = typeof accessed === 'string' ? accessed : undefined;
     const searchQuery = typeof q === 'string' ? q : undefined;
 
-    const { data, total } = await getProductsByOutletIdService(outletId, productType as any, {
+    const { data, total } = await getProductsByOutletIdService(outletId as string, productType as any, {
         q: searchQuery,
         accessed: accessedRole,
         page: pageNumber,
         limit: limitNumber
     });
+
 
     return ResponseUtil.paginated(res, data, pageNumber, limitNumber, total);
 });

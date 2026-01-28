@@ -2,157 +2,196 @@
 
 import { apiClient } from '@/lib/apis/base';
 import { useState } from 'react';
+import { useSidebar } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 import ThemeToggle from '../ThemeToggle';
 import ConfirmationModal from '@/components/ui/confirmation-modal';
 import { useUserData } from '@/hooks/useUserData';
+import ReceiptSetting from '../ReceiptSetting';
+import {
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface HeaderProps {
-  onToggleSidebar: () => void;
-}
-
-export default function Header({ onToggleSidebar }: HeaderProps) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+export default function Header() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { data: userData, isLoading: isUserLoading } = useUserData();
+  const { open, toggleSidebar, state } = useSidebar();
 
   // Extract user from userData
   const user = userData?.user || null;
 
   const handleLogoutClick = () => {
-    setIsDropdownOpen(false);
     setShowLogoutModal(true);
   };
 
   const handleLogoutConfirm = async () => {
     try {
       const res = await apiClient.post('/auth/logout');
-
-      if (res.status == 200) window.location.href = "/auth/login"
-
+      if (res.status === 200) window.location.href = '/auth/login';
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
+  const getUserInitials = (name: string | undefined) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
-    <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-lg border-b border-red-100 dark:border-gray-700 sticky top-0 z-30">
-      <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
-        <div className="flex justify-between items-center py-3 sm:py-4">
-          {/* Left Section */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <button
-              onClick={onToggleSidebar}
-              className="lg:hidden p-2 sm:p-3 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
-            >
-              <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-red-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg px-4 lg:px-6">
+      {/* Left Section - Sidebar Toggle */}
+      <div className="flex items-center gap-2">
+        {/* Mobile Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className="lg:hidden text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+        >
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Toggle sidebar</span>
+        </Button>
 
-          {/* Right Section */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            {/* Theme Toggle */}
-            <ThemeToggle />
-
-            {/* User dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center space-x-2 sm:space-x-3 p-1.5 sm:p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 group"
-              >
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200">
-                  {isUserLoading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <span className="text-white text-xs sm:text-sm font-bold font-poppins">
-                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </span>
-                  )}
-                </div>
-                <div className="hidden sm:block text-left">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 font-poppins">
-                    {isUserLoading ? 'Loading...' : (user?.name || 'User')}
-                  </p>
-                  <p className="text-xs text-red-600 dark:text-red-400 font-medium font-poppins">
-                    {isUserLoading ? '...' : (user?.role || 'Owner')}
-                  </p>
-                </div>
-                <svg
-                  className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''
-                    }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {/* Dropdown menu */}
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-2 z-50 animate-in slide-in-from-top-5 duration-200">
-                  <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-100 dark:border-gray-700">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 font-poppins truncate">
-                      {isUserLoading ? 'Loading...' : (user?.name || 'User')}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-poppins truncate">
-                      {isUserLoading ? '...' : (user?.email || 'email@example.com')}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      // Navigate to profile page when implemented
-                    }}
-                    className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400 flex items-center font-poppins transition-colors duration-150"
-                  >
-                    <svg className="w-4 h-4 mr-2 sm:mr-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Profil Saya
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      // Navigate to settings page when implemented
-                    }}
-                    className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400 flex items-center font-poppins transition-colors duration-150"
-                  >
-                    <svg className="w-4 h-4 mr-2 sm:mr-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Pengaturan
-                  </button>
-
-                  <div className="border-t border-gray-100 dark:border-gray-700 mt-2">
-                    <button
-                      onClick={handleLogoutClick}
-                      className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center font-poppins transition-colors duration-150"
-                    >
-                      <svg className="w-4 h-4 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Keluar
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Desktop Collapse Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className="hidden lg:flex text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+        >
+          {state === 'collapsed' ? (
+            <PanelLeftOpen className="h-5 w-5" />
+          ) : (
+            <PanelLeftClose className="h-5 w-5" />
+          )}
+          <span className="sr-only">Toggle sidebar collapse</span>
+        </Button>
       </div>
 
-      {/* Click outside to close dropdown */}
-      {isDropdownOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsDropdownOpen(false)}
-        />
-      )}
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Right Section */}
+      <div className="flex items-center gap-2 lg:gap-3">
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
+        {/* Receipt Setting */}
+        <ReceiptSetting />
+
+        <Separator orientation="vertical" className="h-8 hidden sm:block" />
+
+        {/* User Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="relative h-10 gap-2 rounded-xl px-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <Avatar className="h-8 w-8 bg-gradient-to-br from-red-500 to-red-700 shadow-md">
+                <AvatarFallback className="bg-transparent text-white text-sm font-bold">
+                  {isUserLoading ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  ) : (
+                    getUserInitials(user?.name)
+                  )}
+                </AvatarFallback>
+              </Avatar>
+
+              {/* User Info - Hidden on mobile */}
+              <div className="hidden sm:flex flex-col items-start text-left">
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
+                  {isUserLoading ? 'Loading...' : user?.name || 'User'}
+                </span>
+                <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                  {isUserLoading ? '...' : user?.role || 'Owner'}
+                </span>
+              </div>
+
+              <ChevronDown className="h-4 w-4 text-gray-400 dark:text-gray-500 hidden sm:block" />
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            align="end"
+            className="w-56 rounded-xl shadow-xl border-gray-100 dark:border-gray-700"
+          >
+            {/* User Info Header */}
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  {isUserLoading ? 'Loading...' : user?.name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {isUserLoading ? '...' : user?.email || 'email@example.com'}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-900/20 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400">
+                    {isUserLoading ? '...' : user?.role || 'Owner'}
+                  </span>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+
+            <DropdownMenuSeparator />
+
+            {/* Menu Items */}
+            <DropdownMenuItem
+              onClick={() => {
+                // Navigate to profile page when implemented
+              }}
+              className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-400"
+            >
+              <User className="h-4 w-4 text-red-500" />
+              <span>Profil Saya</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => {
+                // Navigate to settings page when implemented
+              }}
+              className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-400"
+            >
+              <Settings className="h-4 w-4 text-red-500" />
+              <span>Pengaturan</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            {/* Logout */}
+            <DropdownMenuItem
+              onClick={handleLogoutClick}
+              className="cursor-pointer gap-2 py-2.5 text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-400"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Keluar</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* Logout Confirmation Modal */}
       <ConfirmationModal
@@ -165,9 +204,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
         confirmVariant="destructive"
         onConfirm={handleLogoutConfirm}
         icon={
-          <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
+          <LogOut className="h-6 w-6 text-red-600 dark:text-red-400" />
         }
       />
     </header>

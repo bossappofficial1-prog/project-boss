@@ -6,16 +6,15 @@ import ProductsHeader from '@/components/owner/products/Header';
 import ProductsControls from '@/components/owner/products/Controls';
 import ProductsSkeleton from '@/components/owner/products/Skeleton';
 import DesktopTable from '@/components/owner/products/DesktopTable';
-import { useProductsData } from '@/hooks/useProductsData';
+import { ProductItem, useProductsData } from '@/hooks/useProductsData';
 import ConfirmationModal from '@/components/ui/confirmation-modal';
 import { toast } from 'sonner';
 import AddOrEditProductServiceModal from '@/components/modals/AddProductServiceModal';
-import { Product } from '@/hooks/useProducts';
 
 export default function ProductsPage() {
   const [showAddOrEditModal, setShowAddOrEditModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [actionLoading, setActionLoading] = useState(false)
   const [action, setAction] = useState<'add' | 'edit'>('add')

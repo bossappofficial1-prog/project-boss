@@ -51,6 +51,8 @@ interface CartItemProps {
 }
 
 function CartItemCard({ item, slotInfo, isValid = true, invalidReason }: CartItemProps) {
+    console.log(item);
+
     const { updateQuantity, updateItem, removeItem } = useCart();
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const isService = item.type === "SERVICE";

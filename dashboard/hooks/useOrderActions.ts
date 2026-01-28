@@ -14,6 +14,7 @@ import {
     formatPaymentMethodLabel,
     getOrderStatusLabel,
 } from '@/components/owner/orders/utils';
+import axios from 'axios';
 
 interface UseOrderActionsOptions {
     onSuccess?: () => Promise<void> | void;
@@ -47,6 +48,46 @@ export function useOrderActions({ onSuccess }: UseOrderActionsOptions = {}) {
     const closeProofPreview = useCallback(() => {
         setProofOrder(null);
     }, []);
+
+    const handlePrint = async (orderId: string) => {
+        // setLoading(true);
+        try {
+            const response = await axios.get(
+                `http://localhost:1234/api/v1/orders/${orderId}/receipt`,
+                {
+                    responseType: 'blob',
+                    withCredentials: true
+                }
+            );
+
+            // 2. Buat object URL dari blob
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+
+            // 3. Gunakan iframe tersembunyi untuk mencetak
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = url;
+            document.body.appendChild(iframe);
+
+            iframe.onload = () => {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+
+                // 4. Bersihkan resource setelah cetak
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                    URL.revokeObjectURL(url);
+                    // setLoading(false);
+                }, 1000);
+            };
+
+        } catch (error) {
+            console.error(error);
+            alert('Terjadi kesalahan saat mencetak struk');
+            //   setLoading(false);
+        }
+    };
 
     const emitStatusUpdate = useCallback((order: GoodsOrder, status: OrderStatus) => {
         try {
@@ -196,6 +237,11 @@ export function useOrderActions({ onSuccess }: UseOrderActionsOptions = {}) {
                 onClick: () => triggerProofPreview(order),
             });
         }
+
+        actions.push({
+            label: 'Print',
+            onClick: () => handlePrint(order.id),
+        })
 
         return actions;
     }, [requestManualConfirmation, requestReady, requestComplete, requestCancel, triggerProofPreview]);

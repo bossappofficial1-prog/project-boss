@@ -1,17 +1,16 @@
 import { Staff } from "@prisma/client";
 import { db } from "../config/prisma";
-import { CreateStaffInput, UpdateStaffInput } from "../schemas/staff.schema";
 import { BcryptUtil } from "../utils";
+import { StaffFormValues, UpdateStaffSchemaValues } from "../schemas/staff.schema";
 
 export class StaffRepository {
-    static async create(data: CreateStaffInput): Promise<Staff> {
-        const staffData: any = { ...data };
-        
+    static async create(data: StaffFormValues): Promise<Staff> {
+        const staffData = { ...data };
         // Hash password jika ada
         if (staffData.password) {
             staffData.password = await BcryptUtil.hash(staffData.password);
         }
-        
+
         return db.staff.create({
             data: staffData,
         });
@@ -33,14 +32,14 @@ export class StaffRepository {
         });
     }
 
-    static async update(id: string, data: UpdateStaffInput): Promise<Staff> {
-        const staffData: any = { ...data };
-        
+    static async update(id: string, data: UpdateStaffSchemaValues): Promise<Staff> {
+        const staffData = { ...data };
+
         // Hash password jika ada dan diubah
         if (staffData.password) {
             staffData.password = await BcryptUtil.hash(staffData.password);
         }
-        
+
         return db.staff.update({
             where: { id },
             data: staffData,

@@ -294,7 +294,6 @@ export class PaymentRepository {
                     totalAmount: grossAmount,
                     appFee: appFee,
                     midtransFee: midtransFee,
-                    chargedTo: 'CUSTOMER',
                     bookingDate: slotStart ?? null,
                     ...(assignedStaffId ? {
                         assignedStaff: {
@@ -319,29 +318,28 @@ export class PaymentRepository {
                     }
                 });
 
-                const product = await tr.product.findUnique({ where: { id: item.productId } });
+                const product = await tr.product.findUnique({ where: { id: item.productId }, include: { goods: true, service: true } });
                 if (!product) throw new AppError('Product not found');
 
                 if (product.type === 'GOODS') {
-                    if (!product.quantity || product.quantity < item.quantity) {
+                    if (!product.goods?.currentStock || product.goods.currentStock < item.quantity) {
                         throw new AppError(`Stok tidak mencukupi untuk produk ${product.id}`);
                     }
-                    await tr.product.update({
+                    await tr.productGoods.update({
                         where: { id: item.productId },
-                        data: { quantity: { decrement: item.quantity } }
+                        data: { currentStock: { decrement: item.quantity } }
                     });
                 }
 
                 if (product.type === 'SERVICE' && slotRecord) {
                     await tr.bookingSlot.create({
                         data: {
-                            productId: slotRecord.productId,
+                            productServiceId: slotRecord.productId,
                             date: new Date(slotRecord.date),
                             startTime: slotStart!,
                             endTime: slotEnd!,
                             status: 'BOOKED',
-                            orderId,
-                            staffId: assignedStaffId ?? null,
+                            orderId
                         },
                     });
                 }

@@ -22,9 +22,17 @@ export class OutletRepository {
     }
 
     static async create(data: CreateOutletInput): Promise<Outlet> {
-        return db.outlet.create({
-            data,
-        });
+        return db.$transaction(async (trx) => {
+            const outlet = await trx.outlet.create({
+                data,
+            });
+
+            await trx.receiptSetting.create({
+                data: { outletId: outlet.id }
+            })
+
+            return outlet
+        })
     }
 
     static async findById(id: string) {
@@ -36,7 +44,6 @@ export class OutletRepository {
                         id: true,
                         name: true,
                         description: true,
-                        defaultTransactionFeeBearer: true,
                         accountHolder: true,
                         bankAccount: true,
                         bankName: true
@@ -407,17 +414,17 @@ export class OutletRepository {
                     outletId,
                     type: ProductType.GOODS,
                     status: ServiceStatus.ACTIVE,
-                    quantity: {
-                        lte: lowStockThreshold,
+                    goods: {
+                        currentStock: { lte: lowStockThreshold },
                     },
                 },
                 select: {
                     id: true,
                     name: true,
-                    quantity: true,
+                    goods: true,
                 },
                 orderBy: {
-                    quantity: 'asc',
+                    goods: { currentStock: 'asc' },
                 },
                 take: 10,
             }),

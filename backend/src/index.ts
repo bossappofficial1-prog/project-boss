@@ -2,7 +2,6 @@ import { networkInterfaces } from "node:os";
 import app from "./app";
 import { config } from "./config";
 import { connectRabbitMQ } from "./config/rabbitmq";
-import { socketUtils } from "./utils/socket.utils";
 import http from "node:http"
 import { SocketEmitter } from "./socket/socket-emiiter";
 import { Server } from "socket.io";

@@ -4,6 +4,52 @@ import { CreateOrderInput } from "../schemas/order.schema";
 import { generateOrderCode } from "../utils";
 
 export class OrderRepository {
+    static async receiptData(orderId: string) {
+        return db.order.findUnique({
+            where: { id: orderId },
+            select: {
+                id: true,
+                createdAt: true,
+                totalAmount: true,
+                guestCustomer: {
+                    select: {
+                        name: true
+                    }
+                },
+                handledByStaff: {
+                    select: {
+                        name: true
+                    }
+                },
+                items: {
+                    select: {
+                        quantity: true,
+                        priceAtTimeOfOrder: true,
+                        product: {
+                            select: {
+                                name: true,
+                                type: true,
+                                goods: {
+                                    select: {
+                                        unit: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                outlet: {
+                    select: {
+                        name: true,
+                        address: true,
+                        phone: true,
+                        receiptSettings: true
+                    }
+                }
+            }
+        })
+    }
+
     static async create(data: CreateOrderInput, outlet: any, totalAmount: number, midtransFee: number, appFee: number, feeBearer: FeeBearer, productDetails: (Product & { orderQuantity: number })[]): Promise<Order> {
         const { guestCustomer, outletId, items, bookingDate } = data;
 
@@ -72,13 +118,8 @@ export class OrderRepository {
                 },
                 guestCustomer: true,
                 outlet: true,
-                bookingSlot: {
-                    include: {
-                        staff: true,
-                    }
-                },
-                transaction: true,
-                assignedStaff: true as any,
+                bookingSlot: true,
+                transaction: true
             },
         });
     }

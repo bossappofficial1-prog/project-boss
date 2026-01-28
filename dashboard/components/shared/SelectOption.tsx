@@ -25,6 +25,7 @@ type SelectOptionProps<T extends BaseOption = BaseOption> = {
     className?: string;
     disabled?: boolean;
     name?: string;
+    id?: string;
 };
 
 export function SelectOption<T extends BaseOption = BaseOption>({
@@ -35,7 +36,8 @@ export function SelectOption<T extends BaseOption = BaseOption>({
     label,
     className,
     disabled = false,
-    name
+    name,
+    id
 }: SelectOptionProps<T>) {
     return (
         <Select
@@ -44,7 +46,7 @@ export function SelectOption<T extends BaseOption = BaseOption>({
             disabled={disabled}
             name={name}
         >
-            <SelectTrigger className={className ?? "w-full"}>
+            <SelectTrigger id={id} className={className ?? "w-full"}>
                 {
                     typeof placeholder == `string`
                         ? <SelectValue placeholder={placeholder || `Pick to select`} />

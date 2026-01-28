@@ -1,44 +1,49 @@
 import { z } from "zod";
-import { StaffRole, StaffStatus } from "@prisma/client";
 
-const nullableString = (schema: z.ZodString) =>
-    z.preprocess((value) => {
-        if (value === null || value === undefined || value === "") {
-            return undefined;
-        }
-        return value;
-    }, schema.optional());
+export const StaffStatusEnum = z.enum(["ACTIVE", "INACTIVE"]);
 
-export const createStaffSchema = z.object({
-    name: z.string().min(1, "Nama staff harus diisi"),
-    phone: nullableString(z.string().min(6, "Nomor telepon tidak valid").max(32, "Nomor telepon terlalu panjang")),
-    email: nullableString(z.string().email("Email tidak valid")),
-    address: nullableString(z.string().max(255, "Alamat maksimal 255 karakter")),
-    notes: nullableString(z.string().max(500, "Catatan maksimal 500 karakter")),
-    role: z.nativeEnum(StaffRole).default(StaffRole.SERVICE),
-    status: z.nativeEnum(StaffStatus).default(StaffStatus.ACTIVE),
-    outletId: z.string().uuid("ID outlet tidak valid"),
-    password: nullableString(
-        z.string()
-            .min(6, "Password minimal 6 karakter")
-            .max(100, "Password maksimal 100 karakter")
-    ),
+export const staffSchema = z.object({
+
+    name: z
+        .string()
+        .min(2, "Nama minimal 2 karakter")
+        .max(50, "Nama maksimal 50 karakter"),
+
+    phone: z
+        .string()
+        .min(10, "Nomor telepon minimal 10 digit")
+        .max(15, "Nomor telepon terlalu panjang")
+        .regex(/^[0-9+]+$/, "Nomor telepon hanya boleh angka dan +")
+        .optional()
+        .nullable()
+        .or(z.literal("")), // Menangani string kosong dari form
+
+    email: z
+        .string()
+        .email("Format email tidak valid")
+        .optional()
+        .nullable()
+        .or(z.literal("")),
+
+    password: z
+        .string()
+        .min(6, "Password minimal 6 karakter")
+        .max(20, "Password maksimal 20 karakter"),
+
+    status: StaffStatusEnum.default("ACTIVE"),
+
+    outletId: z.string().uuid("ID Outlet harus valid"),
+
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
 });
 
-export const updateStaffSchema = z.object({
-    name: z.string().optional(),
-    phone: nullableString(z.string().min(6, "Nomor telepon tidak valid").max(32, "Nomor telepon terlalu panjang")),
-    email: nullableString(z.string().email("Email tidak valid")),
-    address: nullableString(z.string().max(255, "Alamat maksimal 255 karakter")),
-    notes: nullableString(z.string().max(500, "Catatan maksimal 500 karakter")),
-    role: z.nativeEnum(StaffRole).optional(),
-    status: z.nativeEnum(StaffStatus).optional(),
-    password: nullableString(
-        z.string()
-            .min(6, "Password minimal 6 karakter")
-            .max(100, "Password maksimal 100 karakter")
-    ),
-});
+// Type inference untuk TypeScript
+export type StaffFormValues = z.infer<typeof staffSchema>;
 
-export type CreateStaffInput = z.infer<typeof createStaffSchema>;
-export type UpdateStaffInput = z.infer<typeof updateStaffSchema>;
+// Schema khusus untuk Update (semua field opsional, password boleh kosong jika tidak diubah)
+export const updateStaffSchema = staffSchema.extend({
+    password: z.string().min(6).optional().or(z.literal("")),
+}).partial();
+
+export type UpdateStaffSchemaValues = z.infer<typeof updateStaffSchema>

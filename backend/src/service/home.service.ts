@@ -8,9 +8,8 @@ export async function getHomeSummaryService(searchQuery?: string) {
         HomeRepository.findTopOutlets(searchQuery)
     ]);
 
-    const [popularItems, promos] = await Promise.all([
-        HomeRepository.findPopularItems(),
-        HomeRepository.findActivePromos()
+    const [popularItems] = await Promise.all([
+        HomeRepository.findPopularItems()
     ]);
 
     // Additional home content: banners, categories, popular items, promos
@@ -37,7 +36,6 @@ export async function getHomeSummaryService(searchQuery?: string) {
         outlets,
         banners,
         categories,
-        popularItems,
-        promos
+        popularItems
     };
 }

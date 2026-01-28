@@ -17,6 +17,7 @@ import { SocketEmitter } from "../socket/socket-emiiter";
 import { MidtransTransactionStatus, PaymentResponse } from "../types/Others";
 import Console from "../utils/logger";
 import { paymentQueue } from "../queues/payment.queue";
+import { formatDateTime } from "../utils";
 
 type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> & Record<string, any>;
 type CustomerOrderRecord = Awaited<ReturnType<typeof OrderRepository.getOrderByCustomerPhone>>[number] & Record<string, any>;
@@ -276,6 +277,43 @@ export async function getServiceQueueByOutletService(
 }
 
 
+export async function getOrderReceiptService(id: string) {
+    const orderData = await OrderRepository.receiptData(id);
+    const { date, time } = formatDateTime(orderData?.createdAt.toISOString()!)
+    const items = orderData?.items.map((item) => ({
+        name: item.product.name,
+        qty: item.quantity,
+        unit: item.product.goods?.unit ?? '',
+        price: item.priceAtTimeOfOrder,
+        subtotal: item.quantity * item.priceAtTimeOfOrder
+    }))
+    const totalQty = orderData?.items.reduce((prev, item) => {
+        return prev + item.quantity
+    }, 0)
+
+    return {
+        storeName: orderData?.outlet.name,
+        address: orderData?.outlet.address,
+        phone: orderData?.outlet.phone,
+        transactionId: orderData?.id,
+        date,
+        time,
+        orderNo: "-",
+        cashier: orderData?.handledByStaff?.name ?? '-',
+        customerName: orderData?.guestCustomer.name ?? '-',
+        shippingAddress: "-",
+        items,
+        totalQty,
+        subTotal: orderData?.totalAmount,
+        total: orderData?.totalAmount,
+        printHeight: orderData?.outlet.receiptSettings?.printHeight,
+        printWidth: orderData?.outlet.receiptSettings?.printWidth,
+        showLogo: orderData?.outlet.receiptSettings?.showLogo,
+        photoString: orderData?.outlet.receiptSettings?.photoString
+    };
+}
+
+
 export async function getOrderByIdService(id: string, ownerId?: string) {
     const order = await OrderRepository.findById(id);
     if (!order) {
@@ -416,8 +454,8 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
             if (order.transaction?.id) {
                 await tx.transaction.update({
                     where: { id: order.transaction.id },
-                    data: { 
-                        status: PaymentStatus.CANCELLED 
+                    data: {
+                        status: PaymentStatus.CANCELLED
                     },
                 });
             }
@@ -454,7 +492,7 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
     if (status === 'COMPLETED' && order?.bookingSlot) {
         await db.bookingSlot.update({
             where: { id: order.bookingSlot.id },
-            data: { 
+            data: {
                 status: 'AVAILABLE',
                 staffId: null, // Release staff when service is completed
             },
@@ -800,8 +838,8 @@ export async function cancelOrderByCustomerService(orderId: string, phone: strin
 }
 
 export async function updateServiceQueueStatusService(
-    orderId: string, 
-    userIdentifier: string, 
+    orderId: string,
+    userIdentifier: string,
     nextStatus: OrderStatus,
     validateAsOwner: boolean = true
 ) {
