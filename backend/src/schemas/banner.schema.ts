@@ -24,3 +24,12 @@ export const updateBannerSchema = z.object({
 });
 
 export type UpdateBannerInput = z.infer<typeof updateBannerSchema>;
+
+export const bulkOrderSchema = z.array(
+    z.object({
+        id: z.string().min(1, "id tidak boleh kosong"),
+        order: z.number().int("order harus bilangan bulat").nonnegative("order tidak boleh negatif"),
+    })
+);
+
+export type bulkOrderSValues = z.infer<typeof bulkOrderSchema>

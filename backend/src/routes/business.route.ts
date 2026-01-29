@@ -5,7 +5,10 @@ import {
     getBusinessByIdController,
     getMyBusinessController,
     updateBusinessController,
-    updateBankAccountController
+    updateBankAccountController,
+    getAllBusinessesAdminController,
+    getKPIsBusinessesController,
+    exportTenantDataController
 } from "../controller/business.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createBusinessSchema, updateBusinessSchema } from "../schemas/business.schema";
@@ -16,6 +19,9 @@ const businessRouter = Router();
 
 // Rute Publik
 businessRouter.get("/", getAllBusinessesController);
+businessRouter.get("/all", protect, authorize("ADMIN"), getAllBusinessesAdminController);
+businessRouter.get("/kpis", protect, authorize("ADMIN"), getKPIsBusinessesController);
+businessRouter.get("/export", protect, authorize("ADMIN"), exportTenantDataController);
 businessRouter.get("/:id", getBusinessByIdController);
 
 // Rute yang dilindungi dan hanya untuk Owner

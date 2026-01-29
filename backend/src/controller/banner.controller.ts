@@ -3,6 +3,7 @@ import { BannerRepository } from '../repositories/banner.repository';
 import { HttpStatus } from '../constants/http-status';
 import { ResponseUtil } from '../utils/response';
 import { asyncHandler } from '../middleware/error.middleware';
+import { bulkOrderSValues } from '../schemas/banner.schema';
 
 export const getBannersController = asyncHandler(async (req: Request, res: Response) => {
     const banners = await BannerRepository.findAllBanner();
@@ -17,6 +18,12 @@ export const createBannerController = asyncHandler(async (req: Request, res: Res
 export const updateBannerController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const updated = await BannerRepository.update(id as string, req.body as any);
+    return ResponseUtil.success(res, updated, HttpStatus.OK);
+});
+
+export const bulkUpdateBannerController = asyncHandler(async (req: Request, res: Response) => {
+    const payload = req.body as bulkOrderSValues
+    const updated = await BannerRepository.bulkUpdate(payload);
     return ResponseUtil.success(res, updated, HttpStatus.OK);
 });
 

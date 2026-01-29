@@ -19,19 +19,14 @@ import type { LucideIcon } from 'lucide-react';
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { ComponentProps, ReactNode } from "react";
 
-type CsvExportConfig<TData> = {
-    enabled?: boolean;
+type ExportOption = {
+    id: string;
+    label: string;
+    icon?: 'spreadsheet' | 'pdf' | 'text' | 'file';
+    enabled: boolean;
+    type: 'client' | 'server';
+    exportUrl?: string | ((params: Record<string, any>) => string);
     filename?: string;
-    includeHeaders?: boolean;
-    customMapping?: (row: TData) => Record<string, any>;
-};
-
-type PdfExportConfig<TData> = {
-    enabled?: boolean;
-    filename?: string;
-    title?: string;
-    includeStats?: boolean;
-    customMapping?: (row: TData) => Record<string, any>;
 };
 
 type RowAction<TData> = {
@@ -53,6 +48,9 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -76,12 +74,17 @@ import {
     Columns3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import axios from "axios";
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 
 // Enhanced DataTable Props with comprehensive feature set
 interface DataTableProps<TData, TValue> {
     // Core props
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
+    exportConfig?: ExportOption[];
+    enableRowDrag?: boolean;
+    onRowReorder?: (output: { data: TData[], payload: ReorderPayload[] }) => void;
 
     // Search & Filter
     searchKey?: string;
@@ -116,10 +119,6 @@ interface DataTableProps<TData, TValue> {
     enableExport?: boolean;
     exportFilename?: string;
     exportTitle?: string;
-    exportConfig?: {
-        csv?: CsvExportConfig<TData>;
-        pdf?: PdfExportConfig<TData>;
-    };
     onExportStart?: (format: 'csv' | 'pdf') => void;
     onExportComplete?: (format: 'csv' | 'pdf', recordCount: number) => void;
     onExportError?: (format: 'csv' | 'pdf', error: string) => void;
@@ -167,6 +166,56 @@ interface DataTableProps<TData, TValue> {
     onColumnFiltersChange?: (filters: ColumnFiltersState) => void;
 }
 
+function DraggableRow({ row, children, isEnabled }: any) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id: row.id,
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 1 : 0,
+        position: "relative" as const,
+    };
+
+    return (
+        <TableRow
+            ref={setNodeRef}
+            style={style}
+            data-state={row.getIsSelected() && "selected"}
+            className={cn(isDragging && "bg-muted shadow-lg")}
+        >
+            {isEnabled && (
+                <TableCell className="w-10">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 cursor-grab active:cursor-grabbing"
+                        {...attributes}
+                        {...listeners}
+                    >
+                        <GripVertical className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                </TableCell>
+            )}
+            {children}
+        </TableRow>
+    );
+}
+
+type ReorderPayload = {
+    id: string | number;
+    order: number;
+};
+
 export function DataTable<TData, TValue>({
     columns,
     data,
@@ -193,6 +242,8 @@ export function DataTable<TData, TValue>({
     enableExport = false,
     exportFilename = "table-data",
     exportTitle,
+    enableRowDrag,
+    onRowReorder,
     exportConfig,
     onExportStart,
     onExportComplete,
@@ -230,12 +281,23 @@ export function DataTable<TData, TValue>({
         pageIndex: serverSidePagination && typeof serverPage === "number" ? Math.max(0, serverPage - 1) : 0,
         pageSize: serverSidePagination && typeof serverLimit === "number" ? serverLimit : pageSize,
     }));
+    const [rowOrderData, setRowOrderData] = useState<TData[]>(() => data);
     const pageSizePropRef = useRef(pageSize);
     const pendingPaginationRef = useRef<null | { pageIndex: number; pageSize: number }>(null);
     const searchDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const suppressSearchEffectRef = useRef(false);
     const previousSearchValueRef = useRef(searchValue);
     const [isMobile, setIsMobile] = useState(false);
+
+    // setup sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates
+        })
+    )
+
+    const tableData = enableRowDrag ? rowOrderData : data;
 
     // Table Settings State
     const [currentDensity, setCurrentDensity] = useState<'compact' | 'normal' | 'comfortable'>(density);
@@ -263,6 +325,10 @@ export function DataTable<TData, TValue>({
             setPaginationState(prev => ({ ...prev, pageSize }));
         }
     }, [pageSize, serverSidePagination]);
+
+    useEffect(() => {
+        setRowOrderData(data);
+    }, [data, enableRowDrag]);
 
     useEffect(() => {
         if (!serverSidePagination) {
@@ -335,11 +401,9 @@ export function DataTable<TData, TValue>({
         };
     }, [serverSideSearch, onSearchChange, globalFilterValue, searchDebounceMs]);
 
-    // Enhanced columns with selection and validation
     const enhancedColumns = useMemo(() => {
         const cols = [...columns];
 
-        // Add selection column if enabled (only if not already present)
         if (enableRowSelection) {
             const hasSelectColumn = cols.some(col =>
                 (col as any).id === "select" ||
@@ -523,7 +587,7 @@ export function DataTable<TData, TValue>({
 
     // Table instance with enhanced features
     const table = useReactTable({
-        data,
+        data: tableData,
         columns: enhancedColumns,
         state: {
             sorting,
@@ -563,6 +627,37 @@ export function DataTable<TData, TValue>({
         getSortedRowModel: getSortedRowModel(),
     });
 
+    const handleDragEnd = useCallback((event: any) => {
+        if (!enableRowDrag) {
+            return;
+        }
+
+        const { active, over } = event;
+
+        if (!over || active.id === over.id) {
+            return;
+        }
+
+        const rows = table.getRowModel().rows;
+        const oldIndex = rows.findIndex(row => row.id === active.id);
+        const newIndex = rows.findIndex(row => row.id === over.id);
+
+        if (oldIndex === -1 || newIndex === -1) {
+            return;
+        }
+
+        const newData: TData[] = arrayMove(tableData, oldIndex, newIndex);
+        const reorderPayload = newData.map((item: any, index: number) => ({
+            id: item.id,
+            order: index + 1,
+        }));
+        setRowOrderData(newData);
+        onRowReorder?.({
+            data: newData,
+            payload: reorderPayload
+        });
+    }, [enableRowDrag, table, tableData, onRowReorder]);
+
     const tablePagination = table.getState().pagination;
     const effectiveRowModel = serverSideSearch ? table.getRowModel() : table.getFilteredRowModel();
     const totalRowCount = serverSidePagination ? (totalItems ?? data.length) : effectiveRowModel.rows.length;
@@ -571,175 +666,74 @@ export function DataTable<TData, TValue>({
     const pageStartLabel = totalRowCount === 0 ? 0 : pageStart;
     const pageEndLabel = totalRowCount === 0 ? 0 : pageEnd;
 
-    // Helper functions
     const selectedRows = table.getSelectedRowModel().rows.map(row => row.original);
     const hasSelectedRows = selectedRows.length > 0;
+    const handleExport = useCallback(async (option: ExportOption) => {
+        if (!option.enabled) return;
 
-    const handleExport = useCallback((format: 'csv' | 'pdf') => {
+        onExportStart?.(option.id as any);
+
         try {
-            const csvConfig = exportConfig?.csv;
-            const pdfConfig = exportConfig?.pdf;
-
-            if (format === 'csv' && csvConfig?.enabled === false) {
-                onExportError?.(format, 'CSV export is disabled.');
-                return;
-            }
-
-            if (format === 'pdf' && pdfConfig?.enabled === false) {
-                onExportError?.(format, 'PDF export is disabled.');
-                return;
-            }
-
-            onExportStart?.(format);
-
-            const dataToExport = table.getFilteredRowModel().rows.map(row => row.original);
-            const mapRow = format === 'csv' ? csvConfig?.customMapping : pdfConfig?.customMapping;
-
-            const defaultAccessorKeys = columns.map((col, index) => {
-                const key = (col as any).accessorKey || (col as any).id;
-                return key ?? `column_${index}`;
-            });
-
-            const getHeaderLabel = (col: ColumnDef<TData, TValue>, index: number) => {
-                const metaLabel = (col as any).meta?.label;
-                if (typeof metaLabel === 'string' && metaLabel.trim().length > 0) {
-                    return metaLabel;
-                }
-                const header = col.header as unknown;
-                if (typeof header === 'string') {
-                    return header;
-                }
-                if (typeof header === 'number') {
-                    return String(header);
-                }
-                if (typeof header === 'object' && header && 'toString' in header) {
-                    const text = String(header);
-                    if (text !== '[object Object]') {
-                        return text;
-                    }
-                }
-                const accessor = (col as any).accessorKey || (col as any).id;
-                return accessor ?? `Column ${index + 1}`;
-            };
-
-            const buildRows = () => {
-                if (mapRow) {
-                    const mapped = dataToExport.map(mapRow);
-                    const headerKeys = Array.from(
-                        new Set(
-                            mapped.flatMap(item => Object.keys(item ?? {}))
-                        )
-                    );
-                    return {
-                        headerLabels: headerKeys,
-                        rows: mapped.map(item => headerKeys.map(key => item?.[key] ?? '')),
-                    };
-                }
-
-                const headerLabels = columns.map(getHeaderLabel);
-                const rows = dataToExport.map(row =>
-                    defaultAccessorKeys.map(key => {
-                        const value = key ? (row as any)?.[key] : '';
-                        return value ?? '';
-                    })
-                );
-                return { headerLabels, rows };
-            };
-
-            const { headerLabels, rows } = buildRows();
-            const recordCount = rows.length;
-
-            if (format === 'pdf') {
-                const resolvedTitle = pdfConfig?.title ?? exportTitle ?? pdfConfig?.filename ?? exportFilename;
-                const statsSection = pdfConfig?.includeStats
-                    ? `<p style="margin-bottom: 12px; font-size: 12px; color: #555;">Rows exported: ${recordCount}</p>`
-                    : '';
-
-                const tableHeader = headerLabels.map(label =>
-                    `<th style="border: 1px solid #ccc; padding: 8px; background: #f5f5f5; text-align: left;">${label}</th>`
-                ).join('');
-
-                const tableRows = rows.map(cells =>
-                    `<tr>${cells.map(value =>
-                        `<td style="border: 1px solid #ccc; padding: 8px;">${String(value ?? '')}</td>`
-                    ).join('')}</tr>`
-                ).join('');
-
-                const printDiv = document.createElement('div');
-                printDiv.style.position = 'absolute';
-                printDiv.style.left = '-9999px';
-                printDiv.style.top = '-9999px';
-                printDiv.style.width = '100%';
-                printDiv.style.backgroundColor = 'white';
-                printDiv.style.padding = '20px';
-                printDiv.style.fontFamily = 'Arial, sans-serif';
-
-                printDiv.innerHTML = `
-                    <div>
-                        <h2 style="margin-bottom: 12px;">${resolvedTitle}</h2>
-                        ${statsSection}
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr>${tableHeader}</tr>
-                            </thead>
-                            <tbody>
-                                ${tableRows}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-
-                document.body.appendChild(printDiv);
-
-                const originalContents = document.body.innerHTML;
-                document.body.innerHTML = printDiv.innerHTML;
-                window.print();
-                document.body.innerHTML = originalContents;
-                document.body.removeChild(printDiv);
-            } else {
-                const includeHeaders = csvConfig?.includeHeaders ?? true;
-                const filename = `${csvConfig?.filename ?? exportFilename}.csv`;
-
-                const formatCsvValue = (value: unknown) => {
-                    const stringValue = String(value ?? '');
-                    return stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')
-                        ? `"${stringValue.replace(/"/g, '""')}"`
-                        : stringValue;
+            if (option.type === 'server') {
+                const params = {
+                    format: option.id,
+                    search: globalFilterValue,
+                    sorting: JSON.stringify(sorting),
+                    filters: JSON.stringify(columnFilters),
                 };
 
-                const csvLines = rows.map(cells =>
-                    cells.map(formatCsvValue).join(',')
-                );
+                const url = typeof option.exportUrl === 'function'
+                    ? option.exportUrl(params)
+                    : option.exportUrl;
 
-                if (includeHeaders) {
-                    csvLines.unshift(headerLabels.map(formatCsvValue).join(','));
+                const response = await axios({
+                    withCredentials: true,
+                    url: url,
+                    method: 'GET',
+                    params: params,
+                    responseType: 'blob'
+                });
+
+                const blob = new Blob([response.data], {
+                    type: response.headers['content-type']
+                });
+
+                const contentDisposition = response.headers['content-disposition'];
+                let filename = option.filename || `export-${option.id}-${new Date().getTime()}`;
+
+                if (contentDisposition && contentDisposition.includes('filename=')) {
+                    filename = contentDisposition.split('filename=')[1].replace(/["']/g, '');
+                } else if (option.id === 'xlsx' && !filename.endsWith('.xlsx')) {
+                    filename += '.xlsx';
                 }
 
-                const csv = csvLines.join('\n');
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.click();
-                URL.revokeObjectURL(url);
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+
+                // 4. Cleanup
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(downloadUrl);
             }
 
-            onExportComplete?.(format, recordCount);
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Export failed';
-            onExportError?.(format, errorMessage);
-        }
-    }, [table, columns, exportFilename, exportTitle, exportConfig, onExportStart, onExportComplete, onExportError]);
+            onExportComplete?.(option.id as any, 0);
+        } catch (error: any) {
+            console.error("Export Error:", error);
+            const errorMessage = error.response?.status === 403
+                ? "Anda tidak memiliki akses untuk export."
+                : "Gagal mengunduh file dari server.";
 
+            onExportError?.(option.id as any, errorMessage);
+        }
+    }, [globalFilterValue, sorting, columnFilters, onExportStart, onExportComplete, onExportError]);
     const densityStyles = {
         compact: "text-xs [&_td]:py-1 [&_th]:py-1",
         normal: "text-sm [&_td]:py-2 [&_th]:py-2",
         comfortable: "text-sm [&_td]:py-3 [&_th]:py-3"
     };
-
-    const csvExportDisabled = exportConfig?.csv?.enabled === false;
-    const pdfExportDisabled = exportConfig?.pdf?.enabled === false;
 
     // Loading skeleton
     if (isLoading) {
@@ -756,452 +750,461 @@ export function DataTable<TData, TValue>({
     }
 
     return (
-        <div className="space-y-4 bg-background shadow-md p-6 rounded-md" role="region" aria-label={ariaLabel} aria-description={ariaDescription}>
-            {/* Header Section */}
-            {(title || description) && (
-                <div className="space-y-1">
-                    {title && (
-                        <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
-                    )}
-                    {description && (
-                        <p className="text-muted-foreground">{description}</p>
-                    )}
-                </div>
-            )}
-
-            {/* Toolbar */}
-            <div className="flex flex-col gap-4">
-                {/* Top Row - Search and Actions */}
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                    {/* Search and Filters */}
-                    <div className="flex flex-1 flex-col sm:flex-row gap-2 items-start sm:items-center">
-                        {/* Global Search */}
-                        {globalFilter && (
-                            <div className="relative">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder={searchPlaceholder}
-                                    value={globalFilterValue}
-                                    onChange={(event) => {
-                                        const nextValue = event.target.value;
-                                        setGlobalFilterValue(nextValue);
-                                    }}
-                                    className="pl-8 w-full h-9 sm:w-[250px]"
-                                />
-                            </div>
+        <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+        >
+            <div className="space-y-4 bg-background shadow-md p-6 rounded-md" role="region" aria-label={ariaLabel} aria-description={ariaDescription}>
+                {/* Header Section */}
+                {(title || description) && (
+                    <div className="space-y-1">
+                        {title && (
+                            <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
                         )}
-
-                        {/* Column-specific Search */}
-                        {searchKey && (
-                            <div className="relative">
-                                <Filter className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder={`Filter by ${searchKey}...`}
-                                    value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-                                    onChange={(event) => {
-                                        const value = event.target.value;
-                                        table.getColumn(searchKey)?.setFilterValue(value);
-                                        if (serverSideSearch) {
-                                            setGlobalFilterValue(value);
-                                        }
-                                    }}
-                                    className="pl-8 w-full sm:w-[200px]"
-                                />
-                            </div>
-                        )}
-
-                        {/* Active Filters Indicator */}
-                        {table.getState().columnFilters.length > 0 && (
-                            <Badge variant="secondary" className="hidden sm:inline-flex">
-                                {table.getState().columnFilters.length} filter(s)
-                            </Badge>
+                        {description && (
+                            <p className="text-muted-foreground">{description}</p>
                         )}
                     </div>
+                )}
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-2">
-                        {/* Refresh Button */}
-                        {onRefresh && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={onRefresh}
-                                disabled={isRefreshing}
-                                className="flex items-center gap-2"
-                            >
-                                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-                                {!isMobile && "Refresh"}
-                            </Button>
-                        )}
+                {/* Toolbar */}
+                <div className="flex flex-col gap-4">
+                    {/* Top Row - Search and Actions */}
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                        {/* Search and Filters */}
+                        <div className="flex flex-1 flex-col sm:flex-row gap-2 items-start sm:items-center">
+                            {/* Global Search */}
+                            {globalFilter && (
+                                <div className="relative">
+                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder={searchPlaceholder}
+                                        value={globalFilterValue}
+                                        onChange={(event) => {
+                                            const nextValue = event.target.value;
+                                            setGlobalFilterValue(nextValue);
+                                        }}
+                                        className="pl-8 w-full h-9 sm:w-[250px]"
+                                    />
+                                </div>
+                            )}
 
-                        {/* Export Dropdown */}
-                        {enableExport && (
+                            {/* Column-specific Search */}
+                            {searchKey && (
+                                <div className="relative">
+                                    <Filter className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder={`Filter by ${searchKey}...`}
+                                        value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
+                                        onChange={(event) => {
+                                            const value = event.target.value;
+                                            table.getColumn(searchKey)?.setFilterValue(value);
+                                            if (serverSideSearch) {
+                                                setGlobalFilterValue(value);
+                                            }
+                                        }}
+                                        className="pl-8 w-full sm:w-[200px]"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Active Filters Indicator */}
+                            {table.getState().columnFilters.length > 0 && (
+                                <Badge variant="secondary" className="hidden sm:inline-flex">
+                                    {table.getState().columnFilters.length} filter(s)
+                                </Badge>
+                            )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2">
+                            {/* Refresh Button */}
+                            {onRefresh && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={onRefresh}
+                                    disabled={isRefreshing}
+                                    className="flex items-center gap-2"
+                                >
+                                    <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                                    {!isMobile && "Refresh"}
+                                </Button>
+                            )}
+
+                            {/* Export Dropdown */}
+                            {enableExport && exportConfig && exportConfig.length > 0 && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="flex items-center gap-2">
+                                            <Download className="h-4 w-4" />
+                                            {!isMobile && "Export"}
+                                            <ChevronDown className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Pilih Format Export</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+
+                                        {exportConfig
+                                            .filter(opt => opt.enabled)
+                                            .map((option) => (
+                                                <DropdownMenuItem
+                                                    key={option.id}
+                                                    onSelect={() => handleExport(option)}
+                                                    className="cursor-pointer"
+                                                >
+                                                    {/* Render icon dinamis berdasarkan config */}
+                                                    {option.icon === 'spreadsheet' && <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />}
+                                                    {option.icon === 'pdf' && <FileText className="mr-2 h-4 w-4 text-red-600" />}
+                                                    {(!option.icon || option.icon === 'file') && <Download className="mr-2 h-4 w-4" />}
+
+                                                    <span>{option.label}</span>
+                                                </DropdownMenuItem>
+                                            ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+
+                            {/* Column Visibility */}
+                            {showColumnVisibility && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="flex items-center gap-2">
+                                            <Columns3 className="h-4 w-4" />
+                                            {!isMobile && "Columns"}
+                                            <ChevronDown className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        {table
+                                            .getAllColumns()
+                                            .filter((column) => column.getCanHide())
+                                            .map((column) => {
+                                                return (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={column.id}
+                                                        className="capitalize"
+                                                        checked={column.getIsVisible()}
+                                                        onCheckedChange={(value) =>
+                                                            column.toggleVisibility(!!value)
+                                                        }
+                                                    >
+                                                        {column.columnDef.header?.toString() || column.id}
+                                                    </DropdownMenuCheckboxItem>
+                                                );
+                                            })}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+
+                            {/* Settings Menu */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                                        <Download className="h-4 w-4" />
-                                        {!isMobile && "Export"}
-                                        <ChevronDown className="h-4 w-4" />
+                                    <Button variant="outline" size="sm">
+                                        <Settings2 className="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Export as</DropdownMenuLabel>
+                                    <DropdownMenuLabel>Table settings</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                        disabled={csvExportDisabled}
-                                        onSelect={() => {
-                                            if (!csvExportDisabled) {
-                                                handleExport('csv');
-                                            }
+                                    <DropdownMenuCheckboxItem
+                                        checked={currentDensity === 'compact'}
+                                        onCheckedChange={(checked) => {
+                                            setCurrentDensity(checked ? 'compact' : 'normal');
                                         }}
-                                        className={cn(!csvExportDisabled && "cursor-pointer")}
                                     >
-                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
-                                        CSV
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        disabled={pdfExportDisabled}
-                                        onSelect={() => {
-                                            if (!pdfExportDisabled) {
-                                                handleExport('pdf');
-                                            }
+                                        Compact view
+                                    </DropdownMenuCheckboxItem>
+                                    <DropdownMenuCheckboxItem
+                                        checked={isStriped}
+                                        onCheckedChange={(checked) => {
+                                            setIsStriped(!!checked);
                                         }}
-                                        className={cn(!pdfExportDisabled && "cursor-pointer")}
                                     >
-                                        <FileText className="mr-2 h-4 w-4" />
-                                        PDF
-                                    </DropdownMenuItem>
+                                        Striped rows
+                                    </DropdownMenuCheckboxItem>
+                                    <DropdownMenuCheckboxItem
+                                        checked={isBordered}
+                                        onCheckedChange={(checked) => {
+                                            setIsBordered(!!checked);
+                                        }}
+                                    >
+                                        Show borders
+                                    </DropdownMenuCheckboxItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                        )}
+                        </div>
+                    </div>
 
-                        {/* Column Visibility */}
-                        {showColumnVisibility && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                                        <Columns3 className="h-4 w-4" />
-                                        {!isMobile && "Columns"}
-                                        <ChevronDown className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    {table
-                                        .getAllColumns()
-                                        .filter((column) => column.getCanHide())
-                                        .map((column) => {
+                    {/* Bulk Actions Bar */}
+                    {hasSelectedRows && bulkActions && (
+                        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-dashed">
+                            <Badge variant="secondary">
+                                {selectedRows.length} selected
+                            </Badge>
+                            <div className="flex items-center gap-1">
+                                {bulkActions.map((action, index) => {
+                                    const Icon = action.icon;
+                                    return (
+                                        <Button
+                                            key={index}
+                                            variant={action.variant === 'destructive' ? 'destructive' : 'outline'}
+                                            size="sm"
+                                            onClick={() => action.onClick(selectedRows)}
+                                            className="flex items-center gap-2"
+                                        >
+                                            {Icon && <Icon className="h-4 w-4" />}
+                                            {action.label}
+                                        </Button>
+                                    );
+                                })}
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => table.resetRowSelection()}
+                                className="ml-auto"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Mobile Card View */}
+                {isMobile && mobileCardRender ? (
+                    <div className="space-y-3">
+                        {table.getRowModel().rows.map((row) => (
+                            <div
+                                key={row.id}
+                                onClick={() => onRowClick?.(row.original)}
+                            >
+                                {mobileCardRender(row.original)}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    /* Desktop Table View */
+                    <div className={cn(
+                        "rounded-md border",
+                        isBordered && "border-border",
+                        !isBordered && "border-none"
+                    )}>
+                        <Table className={cn(
+                            densityStyles[currentDensity],
+                            isStriped && "[&_tbody_tr:nth-child(odd)]:bg-muted/25"
+                        )}>
+                            <TableHeader className={cn(
+                                stickyHeader && "sticky top-0 z-10 bg-background"
+                            )}>
+                                {table.getHeaderGroups().map((headerGroup) => (
+                                    <TableRow key={headerGroup.id}>
+                                        {headerGroup.headers.map((header) => {
+                                            const canSort = header.column.getCanSort();
+                                            const sorted = header.column.getIsSorted();
+
                                             return (
-                                                <DropdownMenuCheckboxItem
-                                                    key={column.id}
-                                                    className="capitalize"
-                                                    checked={column.getIsVisible()}
-                                                    onCheckedChange={(value) =>
-                                                        column.toggleVisibility(!!value)
-                                                    }
+                                                <TableHead
+                                                    key={header.id}
+                                                    className={cn(
+                                                        canSort && "cursor-pointer select-none hover:bg-muted/50",
+                                                        "transition-colors"
+                                                    )}
+                                                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                                                    style={{
+                                                        width: enableColumnResizing ? header.getSize() : undefined
+                                                    }}
                                                 >
-                                                    {column.columnDef.header?.toString() || column.id}
-                                                </DropdownMenuCheckboxItem>
+                                                    <div className="flex items-center gap-2">
+                                                        {header.isPlaceholder
+                                                            ? null
+                                                            : flexRender(
+                                                                header.column.columnDef.header,
+                                                                header.getContext()
+                                                            )}
+                                                        {canSort && (
+                                                            <div className="flex flex-col">
+                                                                {sorted === 'asc' ? (
+                                                                    <ArrowUp className="h-3 w-3" />
+                                                                ) : sorted === 'desc' ? (
+                                                                    <ArrowDown className="h-3 w-3" />
+                                                                ) : (
+                                                                    <ArrowUpDown className="h-3 w-3 opacity-50" />
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {/* Column Resizer */}
+                                                    {enableColumnResizing && header.column.getCanResize() && (
+                                                        <div
+                                                            className="absolute right-0 top-0 h-full w-1 bg-border opacity-0 hover:opacity-100 cursor-col-resize"
+                                                            onMouseDown={header.getResizeHandler()}
+                                                            onTouchStart={header.getResizeHandler()}
+                                                        />
+                                                    )}
+                                                </TableHead>
                                             );
                                         })}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-
-                        {/* Settings Menu */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                    <Settings2 className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Table settings</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuCheckboxItem
-                                    checked={currentDensity === 'compact'}
-                                    onCheckedChange={(checked) => {
-                                        setCurrentDensity(checked ? 'compact' : 'normal');
-                                    }}
+                                    </TableRow>
+                                ))}
+                            </TableHeader>
+                            <TableBody>
+                                <SortableContext
+                                    items={table.getRowModel().rows.map((r) => r.id)}
+                                    strategy={verticalListSortingStrategy}
+                                    disabled={!enableRowDrag}
                                 >
-                                    Compact view
-                                </DropdownMenuCheckboxItem>
-                                <DropdownMenuCheckboxItem
-                                    checked={isStriped}
-                                    onCheckedChange={(checked) => {
-                                        setIsStriped(!!checked);
-                                    }}
-                                >
-                                    Striped rows
-                                </DropdownMenuCheckboxItem>
-                                <DropdownMenuCheckboxItem
-                                    checked={isBordered}
-                                    onCheckedChange={(checked) => {
-                                        setIsBordered(!!checked);
-                                    }}
-                                >
-                                    Show borders
-                                </DropdownMenuCheckboxItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
-
-                {/* Bulk Actions Bar */}
-                {hasSelectedRows && bulkActions && (
-                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-dashed">
-                        <Badge variant="secondary">
-                            {selectedRows.length} selected
-                        </Badge>
-                        <div className="flex items-center gap-1">
-                            {bulkActions.map((action, index) => {
-                                const Icon = action.icon;
-                                return (
-                                    <Button
-                                        key={index}
-                                        variant={action.variant === 'destructive' ? 'destructive' : 'outline'}
-                                        size="sm"
-                                        onClick={() => action.onClick(selectedRows)}
-                                        className="flex items-center gap-2"
-                                    >
-                                        {Icon && <Icon className="h-4 w-4" />}
-                                        {action.label}
-                                    </Button>
-                                );
-                            })}
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => table.resetRowSelection()}
-                            className="ml-auto"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                )}
-            </div>
-
-            {/* Mobile Card View */}
-            {isMobile && mobileCardRender ? (
-                <div className="space-y-3">
-                    {table.getRowModel().rows.map((row) => (
-                        <div
-                            key={row.id}
-                            onClick={() => onRowClick?.(row.original)}
-                        >
-                            {mobileCardRender(row.original)}
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                /* Desktop Table View */
-                <div className={cn(
-                    "rounded-md border",
-                    isBordered && "border-border",
-                    !isBordered && "border-none"
-                )}>
-                    <Table className={cn(
-                        densityStyles[currentDensity],
-                        isStriped && "[&_tbody_tr:nth-child(odd)]:bg-muted/25"
-                    )}>
-                        <TableHeader className={cn(
-                            stickyHeader && "sticky top-0 z-10 bg-background"
-                        )}>
-                            {table.getHeaderGroups().map((headerGroup) => (
-                                <TableRow key={headerGroup.id}>
-                                    {headerGroup.headers.map((header) => {
-                                        const canSort = header.column.getCanSort();
-                                        const sorted = header.column.getIsSorted();
-
-                                        return (
-                                            <TableHead
-                                                key={header.id}
-                                                className={cn(
-                                                    canSort && "cursor-pointer select-none hover:bg-muted/50",
-                                                    "transition-colors"
-                                                )}
-                                                onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                                                style={{
-                                                    width: enableColumnResizing ? header.getSize() : undefined
-                                                }}
+                                    {table.getRowModel().rows?.length ? (
+                                        table.getRowModel().rows.map((row) => (
+                                            <DraggableRow
+                                                key={row.id}
+                                                row={row}
+                                                isEnabled={enableRowDrag}
+                                            // key={row.id}
+                                            // data-state={row.getIsSelected() && "selected"}
+                                            // className={cn(
+                                            //     onRowClick && "cursor-pointer hover:bg-muted/50",
+                                            //     "transition-colors"
+                                            // )}
+                                            // onClick={() => onRowClick?.(row.original)}
                                             >
-                                                <div className="flex items-center gap-2">
-                                                    {header.isPlaceholder
-                                                        ? null
-                                                        : flexRender(
-                                                            header.column.columnDef.header,
-                                                            header.getContext()
+                                                {row.getVisibleCells().map((cell) => (
+                                                    <TableCell key={cell.id}>
+                                                        {flexRender(
+                                                            cell.column.columnDef.cell,
+                                                            cell.getContext()
                                                         )}
-                                                    {canSort && (
-                                                        <div className="flex flex-col">
-                                                            {sorted === 'asc' ? (
-                                                                <ArrowUp className="h-3 w-3" />
-                                                            ) : sorted === 'desc' ? (
-                                                                <ArrowDown className="h-3 w-3" />
-                                                            ) : (
-                                                                <ArrowUpDown className="h-3 w-3 opacity-50" />
-                                                            )}
-                                                        </div>
+                                                    </TableCell>
+                                                ))}
+                                            </DraggableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell
+                                                colSpan={enhancedColumns.length}
+                                                className="h-24 text-center"
+                                            >
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="text-muted-foreground">{emptyMessage}</div>
+                                                    {table.getState().columnFilters.length > 0 && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => table.resetColumnFilters()}
+                                                        >
+                                                            Clear filters
+                                                        </Button>
                                                     )}
                                                 </div>
-                                                {/* Column Resizer */}
-                                                {enableColumnResizing && header.column.getCanResize() && (
-                                                    <div
-                                                        className="absolute right-0 top-0 h-full w-1 bg-border opacity-0 hover:opacity-100 cursor-col-resize"
-                                                        onMouseDown={header.getResizeHandler()}
-                                                        onTouchStart={header.getResizeHandler()}
-                                                    />
-                                                )}
-                                            </TableHead>
-                                        );
-                                    })}
-                                </TableRow>
-                            ))}
-                        </TableHeader>
-                        <TableBody>
-                            {table.getRowModel().rows?.length ? (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={row.getIsSelected() && "selected"}
-                                        className={cn(
-                                            onRowClick && "cursor-pointer hover:bg-muted/50",
-                                            "transition-colors"
-                                        )}
-                                        onClick={() => onRowClick?.(row.original)}
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
                                             </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={enhancedColumns.length}
-                                        className="h-24 text-center"
-                                    >
-                                        <div className="flex flex-col items-center gap-2">
-                                            <div className="text-muted-foreground">{emptyMessage}</div>
-                                            {table.getState().columnFilters.length > 0 && (
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => table.resetColumnFilters()}
-                                                >
-                                                    Clear filters
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            )}
+                                        </TableRow>
+                                    )}
+                                </SortableContext>
 
-            {/* Footer with Table Info and Pagination */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                {/* Table Info */}
-                {showTableInfo && (
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div>
-                            Showing {pageStartLabel} to {pageEndLabel} of {totalRowCount} result(s)
-                        </div>
-                        {hasSelectedRows && (
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+
+                {/* Footer with Table Info and Pagination */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    {/* Table Info */}
+                    {showTableInfo && (
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div>
-                                {selectedRows.length} of {effectiveRowModel.rows.length} row(s) selected
+                                Showing {pageStartLabel} to {pageEndLabel} of {totalRowCount} result(s)
                             </div>
-                        )}
-                    </div>
-                )}
+                            {hasSelectedRows && (
+                                <div>
+                                    {selectedRows.length} of {effectiveRowModel.rows.length} row(s) selected
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-                {/* Pagination Controls */}
-                {pagination && (
-                    <div className="flex items-center gap-2">
-                        {/* Page Size Selector */}
+                    {/* Pagination Controls */}
+                    {pagination && (
                         <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium">Rows per page</p>
-                            <Select
-                                value={`${table.getState().pagination.pageSize}`}
-                                onValueChange={(value) => {
-                                    const newSize = Number(value);
-                                    table.setPageSize(newSize);
-                                }}
-                            >
-                                <SelectTrigger className="h-8 w-[70px]">
-                                    <SelectValue placeholder={table.getState().pagination.pageSize} />
-                                </SelectTrigger>
-                                <SelectContent side="top">
-                                    {pageSizeOptions.map((pageSize) => (
-                                        <SelectItem key={pageSize} value={`${pageSize}`}>
-                                            {pageSize}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                            {/* Page Size Selector */}
+                            <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium">Rows per page</p>
+                                <Select
+                                    value={`${table.getState().pagination.pageSize}`}
+                                    onValueChange={(value) => {
+                                        const newSize = Number(value);
+                                        table.setPageSize(newSize);
+                                    }}
+                                >
+                                    <SelectTrigger className="h-8 w-[70px]">
+                                        <SelectValue placeholder={table.getState().pagination.pageSize} />
+                                    </SelectTrigger>
+                                    <SelectContent side="top">
+                                        {pageSizeOptions.map((pageSize) => (
+                                            <SelectItem key={pageSize} value={`${pageSize}`}>
+                                                {pageSize}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                        {/* Page Navigation */}
-                        <div className="flex items-center gap-1">
-                            <p className="text-sm font-medium">
-                                Page {table.getState().pagination.pageIndex + 1} of{' '}
-                                {table.getPageCount()}
-                            </p>
+                            {/* Page Navigation */}
                             <div className="flex items-center gap-1">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.setPageIndex(0)}
-                                    disabled={!table.getCanPreviousPage()}
-                                    className="h-8 w-8 p-0"
-                                    aria-label="Go to first page"
-                                >
-                                    «
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.previousPage()}
-                                    disabled={!table.getCanPreviousPage()}
-                                    className="h-8 w-8 p-0"
-                                    aria-label="Go to previous page"
-                                >
-                                    ‹
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.nextPage()}
-                                    disabled={!table.getCanNextPage()}
-                                    className="h-8 w-8 p-0"
-                                    aria-label="Go to next page"
-                                >
-                                    ›
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                                    disabled={!table.getCanNextPage()}
-                                    className="h-8 w-8 p-0"
-                                    aria-label="Go to last page"
-                                >
-                                    »
-                                </Button>
+                                <p className="text-sm font-medium">
+                                    Page {table.getState().pagination.pageIndex + 1} of{' '}
+                                    {table.getPageCount()}
+                                </p>
+                                <div className="flex items-center gap-1">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => table.setPageIndex(0)}
+                                        disabled={!table.getCanPreviousPage()}
+                                        className="h-8 w-8 p-0"
+                                        aria-label="Go to first page"
+                                    >
+                                        «
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => table.previousPage()}
+                                        disabled={!table.getCanPreviousPage()}
+                                        className="h-8 w-8 p-0"
+                                        aria-label="Go to previous page"
+                                    >
+                                        ‹
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => table.nextPage()}
+                                        disabled={!table.getCanNextPage()}
+                                        className="h-8 w-8 p-0"
+                                        aria-label="Go to next page"
+                                    >
+                                        ›
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                                        disabled={!table.getCanNextPage()}
+                                        className="h-8 w-8 p-0"
+                                        aria-label="Go to last page"
+                                    >
+                                        »
+                                    </Button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
-        </div>
+        </DndContext>
     );
 }

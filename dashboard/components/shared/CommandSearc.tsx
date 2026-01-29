@@ -40,13 +40,14 @@ export function CommadSearch() {
                                     if (item.items) {
                                         return item.items.map((subitem, k) => {
                                             const SubIcon = subitem.icon;
+                                            const childUrl = subitem.url;
 
                                             return (
                                                 <CommandItem
                                                     key={subitem.title + k}
-                                                    onSelect={() => { router.push(item.url); setOpen((open) => !open) }}
+                                                    onSelect={() => { router.push(childUrl); setOpen((open) => !open) }}
                                                 >
-                                                    {SubIcon && <SubIcon />}
+                                                    {SubIcon ? <SubIcon /> : (Icon && <Icon />)}
                                                     <span>{subitem.title}</span>
                                                 </CommandItem>
                                             )

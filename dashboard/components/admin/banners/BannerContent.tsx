@@ -9,18 +9,47 @@ import {
 } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import BannerForm, { BannerFormValues } from './BannerForm';
-import { Banner, useBanners, useCreateBanner, useDeleteBanner, useUpdateBanner } from '@/hooks/useBanners';
+import { Banner, useBanners, useBulkUpdateBanner, useCreateBanner, useDeleteBanner, useUpdateBanner } from '@/hooks/useBanners';
 import { BannerTable } from './BannerTable';
 import { uploadApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { fileToBase64 } from '@/lib/utils';
 import ConfirmationModal from '@/components/ui/confirmation-modal';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function GlobalBannerContent() {
     const { data: banners, isLoading } = useBanners()
     const { mutate: createBanner, isPending: createLoading } = useCreateBanner()
     const { mutate: updateBanner, isPending: updateLoading } = useUpdateBanner()
     const { mutate: deleteBanner, isPaused: deleteLoading } = useDeleteBanner()
+    const queryClient = useQueryClient();
+    const { mutate: bulkOrderUpdate } = useBulkUpdateBanner({
+        onMutate: async ({ data }) => {
+            await queryClient.cancelQueries({ queryKey: ['banners'] });
+            const previous = queryClient.getQueryData<Banner[]>(['banners']);
+            if (previous) {
+                const orderMap = new Map(data.map(item => [item.id, item.order]));
+                const optimistic = [...previous]
+                    .map((banner) =>
+                        orderMap.has(banner.id)
+                            ? { ...banner, sortOrder: orderMap.get(banner.id)! }
+                            : banner
+                    )
+                    .sort((a, b) => a.sortOrder - b.sortOrder);
+                queryClient.setQueryData(['banners'], optimistic);
+            }
+
+            return { previous };
+        },
+        onError: (error, _, context) => {
+            if (context?.previous) {
+                queryClient.setQueryData(['banners'], context.previous);
+            }
+            toast.error('Gagal update posisi banner.', {
+                description: error?.message ?? 'Silakan coba kembali.'
+            });
+        }
+    })
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
     const [selectedBannerToDelete, setSelectedBannerToDelete] = useState<Banner | null>(null)
@@ -163,11 +192,11 @@ export default function GlobalBannerContent() {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
                         <Megaphone className="h-6 w-6 text-indigo-600" />
                         Global Banner
                     </h1>
-                    <p className="text-slate-500 text-sm mt-1">
+                    <p className="text-muted-foreground text-sm mt-1">
                         Kelola banner promosi yang muncul di halaman utama User Apps.
                     </p>
                 </div>
@@ -196,6 +225,7 @@ export default function GlobalBannerContent() {
                 {/* LEFT COLUMN: LIST BANNERS */}
                 <div className="lg:col-span-7 space-y-4">
                     <BannerTable
+                        onReOrder={(payload) => bulkOrderUpdate({ data: payload })}
                         data={banners || []}
                         isLoading={isLoading}
                         onEdit={handleEdit}

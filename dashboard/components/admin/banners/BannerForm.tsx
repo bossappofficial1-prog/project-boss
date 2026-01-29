@@ -77,7 +77,10 @@ export default function BannerForm(
             label: `Link URL Tujuan`,
             name: `ctaPayload`,
             type: `text`,
-            placeholder: `Contoh: https://olas.xyz atau /outlet/promos`,
+            placeholder(values) {
+                if (values.ctaType === 'deep-link') return 'Contoh: /outlet/promos';
+                return 'Contoh: https://olas.xyz'
+            },
             colSpan: `full`,
             condition: (values) => values.ctaType !== `none`
         },
@@ -87,7 +90,7 @@ export default function BannerForm(
             type: 'dual-option-switch',
             colSpan: 6,
             switchOptions: {
-                left: { label: 'Draft', value: 'draft', activeClass: 'text-gray-700/60' },
+                left: { label: 'Draft', value: 'draft', activeClass: 'text-muted-foreground' },
                 right: { label: 'Publish', value: 'publish', activeClass: 'text-green-600' },
             }
         },

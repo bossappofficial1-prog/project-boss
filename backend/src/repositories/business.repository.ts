@@ -1,4 +1,4 @@
-import { Business } from "@prisma/client";
+import { $Enums, Business } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateBusinessInput, UpdateBusinessInput } from "../schemas/business.schema";
 
@@ -33,5 +33,115 @@ export class BusinessRepository {
             where: { id },
             data,
         });
+    }
+
+    // admin
+
+    static async findAllBusiness(params?:
+        {
+            name?: string,
+            status?: $Enums.SubscriptionStatus
+        }) {
+        return db.business.findMany({
+            where: {
+                ...(params?.name && params.name !== '' && {
+                    name: {
+                        contains: params.name,
+                        mode: 'insensitive',
+                    },
+                }),
+                ...(params?.status && {
+                    subscriptionStatus: params.status,
+                }),
+            },
+            select: {
+                id: true,
+                name: true,
+                subscriptionEndDate: true,
+                subscriptionPlan: true,
+                subscriptionStatus: true,
+                createdAt: true,
+                owner: {
+                    select: {
+                        name: true,
+                        email: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        })
+    }
+
+    static async getKPIs() {
+        const today = new Date()
+
+        const startOfLastMonth = new Date(
+            today.getFullYear(),
+            today.getMonth() - 1,
+            1,
+            0, 0, 0, 0
+        )
+
+        const endOfLastMonth = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            0,
+            23, 59, 59, 999
+        )
+
+        const startOfThisMonth = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            1,
+            0, 0, 0, 0
+        )
+        const startOfNextMonth = new Date(
+            today.getFullYear(),
+            today.getMonth() + 1,
+            1,
+            0, 0, 0, 0
+        )
+
+        const startOfToday = new Date()
+        startOfToday.setHours(0, 0, 0, 0)
+
+        const endOfNext7Days = new Date(startOfToday)
+        endOfNext7Days.setDate(startOfToday.getDate() + 7)
+
+
+        const [totalMerchants, totalLastMonth, totalMerchantThisMonth, totalMerchantSuspend, totalIncommingMerchantExpire] = await Promise.all([
+            db.business.count(),
+            db.business.count({
+                where: {
+                    createdAt: {
+                        gte: startOfLastMonth,
+                        lt: endOfLastMonth,
+                    },
+                },
+            }),
+            db.business.count({
+                where: {
+                    createdAt: {
+                        gte: startOfThisMonth,
+                        lt: startOfNextMonth
+                    }
+                }
+            }),
+            db.business.count({
+                where: { subscriptionStatus: 'SUSPENDED' }
+            }),
+            db.business.count({
+                where: {
+                    subscriptionEndDate: {
+                        gte: startOfToday,
+                        lt: endOfNext7Days,
+                    },
+                },
+            })
+        ]);
+
+        return { totalMerchants, totalLastMonth, totalMerchantThisMonth, totalMerchantSuspend, totalIncommingMerchantExpire }
     }
 }

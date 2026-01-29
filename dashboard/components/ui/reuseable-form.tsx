@@ -42,6 +42,7 @@ import { DropzoneOptions } from "react-dropzone";
 import { cn } from "@/lib/utils";
 import { InputPercentage } from "./input-presentage";
 import { DualOptionSwitch } from "./dual-option-switch";
+import { SegmentedControl } from "./segmented-control";
 
 function objectToFormData(obj: any, form?: FormData, namespace?: string): FormData {
     const fd = form || new FormData();
@@ -116,11 +117,16 @@ export type FieldType =
     | 'tel'
     | 'presentage'
     | 'dual-option-switch'
+    | 'toogle'
+
+type PlaceholderResolver<T extends FieldValues> =
+    | string
+    | ((values: Partial<T>) => string);
 
 interface BaseFieldConfig<T extends FieldValues> {
     name: Path<T>;
     label: string;
-    placeholder?: string;
+    placeholder?: PlaceholderResolver<T>;
     description?: string;
     disabled?: boolean;
     className?: string;
@@ -142,6 +148,11 @@ interface SelectFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
     options?: { label: string; value: string }[];
 }
 
+interface ToogleFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+    type: 'toogle';
+    options?: { label: string; value: string, disabled?: boolean }[];
+}
+
 interface SwitchFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
     type: 'dual-option-switch';
     switchOptions: {
@@ -160,6 +171,7 @@ export type FormFieldConfig<T extends FieldValues> =
     | ImageFieldConfig<T>
     | SwitchFieldConfig<T>
     | SelectFieldConfig<T>
+    | ToogleFieldConfig<T>
     | StandardFieldConfig<T>
     | { type: "custom"; renderCustom: CustomRenderInput<T> } & BaseFieldConfig<T>
 
@@ -177,9 +189,11 @@ interface ReusableFormProps<T extends FieldValues> {
     children?: ReactNode;
     renderFooter?: ReactNode;
     onValuesChange?: (values: Partial<T>) => void;
+    hideSubmitButton?: boolean;
 
     // Dialog Props
     withDialog?: boolean;
+    id?: string
     isDialogOpen?: boolean;
     onDialogOpenChange?: (open: boolean) => void;
     dialogTitle?: ReactNode;
@@ -218,7 +232,9 @@ export function ReusableForm<T extends FieldValues>({
     useFormData = false,
     children,
     renderFooter,
-    onValuesChange
+    onValuesChange,
+    hideSubmitButton,
+    id
 }: ReusableFormProps<T>) {
     const [internalLoading, setInternalLoading] = useState(false)
 
@@ -320,7 +336,7 @@ export function ReusableForm<T extends FieldValues>({
         </div>
     );
 
-    const defaultFooter = withDialog ? (
+    const defaultFooter = hideSubmitButton ? null : withDialog ? (
         <DialogFooter>
             <Button
                 type="button"
@@ -330,18 +346,27 @@ export function ReusableForm<T extends FieldValues>({
             >
                 {cancelText}
             </Button>
-            <Button type="submit" className={`${isLoading || internalLoading ? `cursor-progress` : `cursor-pointer`}`} disabled={isLoading || submitDisabled}>
+            <Button
+                type="submit"
+                className={`${isLoading || internalLoading ? 'cursor-progress' : 'cursor-pointer'}`}
+                disabled={isLoading || submitDisabled}
+            >
                 {(isLoading || internalLoading) ? "Loading..." : submitText}
             </Button>
         </DialogFooter>
     ) : (
-        <Button type="submit" disabled={isLoading || submitDisabled} className="w-full">
+        <Button
+            type="submit"
+            disabled={isLoading || submitDisabled}
+            className="w-full"
+        >
             {isLoading ? "Loading..." : submitText}
         </Button>
     );
 
+
     const formContent = (
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+        <form id={id} onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
             {form.formState.errors.root && (
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                     {form.formState.errors.root.message}
@@ -400,6 +425,16 @@ const GRID_COLS_MAP = {
     12: "md:grid-cols-12",
 };
 
+function resolvePlaceholder<T extends FieldValues>(
+    placeholder: PlaceholderResolver<T> | undefined,
+    values: Partial<T>
+): string | undefined {
+    if (typeof placeholder === "function") {
+        return placeholder(values);
+    }
+    return placeholder;
+}
+
 function RenderField<T extends FieldValues>({
     field,
     control,
@@ -426,7 +461,7 @@ function RenderField<T extends FieldValues>({
                 >
                     <FormLabel htmlFor={field.name}>{field.label}</FormLabel>
                     <FormControl className="col-span-1">
-                        <FieldInputSwitch field={{ ...field, type: resolvedType } as FormFieldConfig<T>} formField={formField} />
+                        <FieldInputSwitch allValues={values} field={{ ...field, type: resolvedType } as FormFieldConfig<T>} formField={formField} />
                     </FormControl>
 
                     {field.description && (
@@ -441,17 +476,21 @@ function RenderField<T extends FieldValues>({
 
 function FieldInputSwitch<T extends FieldValues>({
     field,
-    formField
+    formField,
+    allValues
 }: {
     field: FormFieldConfig<T>;
     formField: ControllerRenderProps<T, Path<T>>
+    allValues: Partial<T>
 }) {
+    const placeholderText = resolvePlaceholder(field.placeholder, allValues);
+
     switch (field.type) {
         case `file`:
             return (
                 <ImageUploader
                     onValueChange={formField.onChange}
-                    helperText={field.placeholder}
+                    helperText={placeholderText}
                     disabled={formField.disabled}
                     maxSize={field.maxSizes}
                     key={formField.name + (formField.value ? 'loaded' : 'empty')}
@@ -468,7 +507,18 @@ function FieldInputSwitch<T extends FieldValues>({
                     disabled={field.disabled}
                     options={field.options || []}
                     value={formField.value!}
-                    placeholder={field.placeholder}
+                    placeholder={placeholderText}
+                />
+            );
+        case "toogle":
+            return (
+                <SegmentedControl
+                    {...formField}
+                    size="sm"
+                    id={formField.name}
+                    onChange={formField.onChange}
+                    options={field.options || []}
+                    value={formField.value!}
                 />
             );
         case "dual-option-switch":
@@ -490,14 +540,14 @@ function FieldInputSwitch<T extends FieldValues>({
                     onValueChange={formField.onChange}
                     disabled={field.disabled}
                     value={formField.value!}
-                    placeholder={field.placeholder}
+                    placeholder={placeholderText}
                 />
             );
         case "textarea":
             return (
                 <Textarea
                     id={formField.name}
-                    placeholder={field.placeholder}
+                    placeholder={placeholderText}
                     disabled={field.disabled}
                     {...formField}
                 />
@@ -506,7 +556,7 @@ function FieldInputSwitch<T extends FieldValues>({
             return (
                 <PasswordInput
                     id={formField.name}
-                    placeholder={field.placeholder}
+                    placeholder={placeholderText}
                     disabled={field.disabled}
                     {...formField}
                 />
@@ -520,7 +570,7 @@ function FieldInputSwitch<T extends FieldValues>({
                 id={formField.name}
                 onValueChange={formField.onChange}
                 value={formField.value}
-                placeholder={field.placeholder}
+                placeholder={placeholderText}
                 className={field.className + ' w-full'}
             />
         case "currency":
@@ -528,7 +578,7 @@ function FieldInputSwitch<T extends FieldValues>({
                 <InputCurrency
                     {...formField}
                     id={formField.name}
-                    placeholder={field.placeholder}
+                    placeholder={placeholderText}
                     disabled={field.disabled}
                     value={formField.value}
                     onValueChange={(val) => {
@@ -543,7 +593,7 @@ function FieldInputSwitch<T extends FieldValues>({
                 <Input
                     id={formField.name}
                     type={'number'}
-                    placeholder={field.placeholder}
+                    placeholder={placeholderText}
                     disabled={field.disabled}
                     {...formField}
                     onChange={(e) => {
@@ -557,7 +607,7 @@ function FieldInputSwitch<T extends FieldValues>({
                 <Input
                     id={formField.name}
                     type={field.type || "text"}
-                    placeholder={field.placeholder}
+                    placeholder={placeholderText}
                     disabled={field.disabled}
                     {...formField}
                     onChange={formField.onChange}

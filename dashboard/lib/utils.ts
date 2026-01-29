@@ -191,3 +191,27 @@ export const fileToBase64 = (file: File): Promise<string> => {
         reader.readAsDataURL(file);
     });
 };
+
+export function formatNumberCompactID(value: number): string {
+    if (value < 1000) return value.toString()
+
+    const units = [
+        { value: 1_000_000_000_000, symbol: " T" },
+        { value: 1_000_000_000, symbol: " M" },
+        { value: 1_000_000, symbol: " jt" },
+        { value: 1_000, symbol: " rb" },
+    ]
+
+    for (const unit of units) {
+        if (value >= unit.value) {
+            const formatted = value / unit.value
+            return `${removeTrailingZero(formatted.toFixed(2))}${unit.symbol}`
+        }
+    }
+
+    return value.toString()
+}
+
+function removeTrailingZero(value: string) {
+    return value.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1")
+}

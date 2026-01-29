@@ -1,8 +1,8 @@
-import GlobalBannerContent from "@/components/admin/banners/Content"
+import GlobalBannerContent from "@/components/admin/banners/BannerContent"
 import { Metadata } from "next"
 
-export const metaData: Metadata = {
-    title: 'Banners | BOSS',
+export const metadata: Metadata = {
+    title: 'Banners',
     description: 'Atur banner'
 }
 
