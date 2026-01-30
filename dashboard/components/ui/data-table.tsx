@@ -43,6 +43,7 @@ import {
     Table,
     TableBody,
     TableCell,
+    TableFooter,
     TableHead,
     TableHeader,
     TableRow,
@@ -130,6 +131,7 @@ interface DataTableProps<TData, TValue> {
     showColumnVisibility?: boolean;
     showTableInfo?: boolean;
     density?: 'compact' | 'normal' | 'comfortable';
+    showFooter?: boolean;
 
     // Row Actions
     rowActions?: (row: TData) => Array<RowAction<TData>>;
@@ -242,6 +244,7 @@ export function DataTable<TData, TValue>({
     enableExport = false,
     exportFilename = "table-data",
     exportTitle,
+    showFooter,
     enableRowDrag,
     onRowReorder,
     exportConfig,
@@ -1107,6 +1110,26 @@ export function DataTable<TData, TValue>({
                                 </SortableContext>
 
                             </TableBody>
+                            {showFooter && (
+                                <TableFooter>
+                                    {table.getFooterGroups().map((footerGroup) => (
+                                        <TableRow key={footerGroup.id}>
+                                            {enableRowDrag && <TableCell />}
+                                            {footerGroup.headers.map((header) => (
+                                                <TableCell key={header.id} className="font-bold">
+                                                    {header.isPlaceholder
+                                                        ? null
+                                                        : flexRender(
+                                                            header.column.columnDef.footer,
+                                                            header.getContext()
+                                                        )}
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))}
+                                </TableFooter>
+                            )
+                            }
                         </Table>
                     </div>
                 )}

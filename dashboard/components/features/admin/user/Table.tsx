@@ -56,7 +56,6 @@ export function UserTable({
                     accessorKey: 'id',
                     header: 'Name',
                     enableSorting: false,
-
                     cell(record) {
                         const user = record.row.original;
                         return (
