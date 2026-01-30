@@ -12,7 +12,28 @@ import type {
 } from '@/types/user';
 import { UserService } from '@/lib/servicev2/user.service';
 import { AxiosError } from 'axios';
-import { UserDetail } from '@/types/userv2';
+
+export interface UserDetail {
+    id: string
+    name: string
+    avatar?: string
+    email: string;
+    role: string
+    isVerified: boolean
+    phone?: string
+    business: Business
+}
+
+export interface Business {
+    name: string
+    description: string
+    bankName: string
+    bankAccount: string
+    accountHolder: string
+    subscriptionStatus: string
+    subscriptionPlan: string
+    subscriptionEndDate: any
+}
 
 // Query Keys
 export const userQueryKeys = {

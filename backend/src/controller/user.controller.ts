@@ -1,6 +1,6 @@
 
 import { NextFunction, Request, Response } from "express";
-import { createUserByAdmin, createUserService, deleteUserService, getAllUserService, getUserByIdService, getUserDetailService, updateUserService } from "../service/user.service";
+import { createUserByAdmin, createUserService, deleteUserService, getAllUserService, getUserByIdService, getUserByIdService2, getUserDetailService, updateUserService } from "../service/user.service";
 import { ResponseUtil } from "../utils/response";
 import { asyncHandler } from "../middleware/error.middleware";
 import { PaginationParams } from "../repositories/user.repository";
@@ -36,6 +36,13 @@ export const getAllUserController = asyncHandler(async (req: Request, res: Respo
             hasPrevPage: result.hasPrevPage
         }
     );
+})
+
+export const getUserByIdController2 = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.params.userId as string
+    const user = await getUserByIdService2(userId)
+
+    return ResponseUtil.success(res, user)
 })
 
 export const getUserByIdController = asyncHandler(async (req: Request, res: Response) => {

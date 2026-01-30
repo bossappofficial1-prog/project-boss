@@ -6,14 +6,10 @@ import { AppError } from '../errors/app-error';
 import { AdminService } from '../service/admin.service';
 import { AdminV2Service } from '../service/adminv2.service';
 
-// === DASHBOARD OVERVIEW ===
-
 export const getDashboardOverviewController = asyncHandler(async (req: Request, res: Response) => {
     const data = await AdminService.getDashboardOverview();
     return ResponseUtil.success(res, data, HttpStatus.OK);
 });
-
-// === BUSINESS MANAGEMENT ===
 
 export const getAllBusinessesController = asyncHandler(async (req: Request, res: Response) => {
     const {
@@ -39,7 +35,7 @@ export const getAllBusinessesController = asyncHandler(async (req: Request, res:
 
 export const getBusinessDetailsController = asyncHandler(async (req: Request, res: Response) => {
     const { businessId } = req.params;
-    const data = await AdminService.getBusinessDetails(businessId);
+    const data = await AdminService.getBusinessDetails(businessId as string);
     return ResponseUtil.success(res, data, HttpStatus.OK);
 });
 
@@ -98,7 +94,7 @@ export const updateUserStatusController = asyncHandler(async (req: Request, res:
         throw new AppError('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
-    const data = await AdminService.updateUserStatus(userId, status, req.storedUser.id);
+    const data = await AdminService.updateUserStatus(userId as string, status, req.storedUser.id);
     return ResponseUtil.success(res, data, HttpStatus.OK);
 });
 
@@ -219,7 +215,7 @@ export const updateTicketStatusController = asyncHandler(async (req: Request, re
         throw new AppError('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
-    const data = await AdminService.updateTicketStatus(ticketId, status, req.storedUser.id);
+    const data = await AdminService.updateTicketStatus(ticketId as string, status, req.storedUser.id);
     return ResponseUtil.success(res, data, HttpStatus.OK);
 });
 

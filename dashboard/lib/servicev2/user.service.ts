@@ -1,6 +1,7 @@
-import { createUserPayload, updateUserPayload, User, UserDetail } from "@/types/userv2";
+import { createUserPayload, updateUserPayload, User } from "@/types/userv2";
 import { apiClient } from "../apis/base";
 import { PaginationResponse } from "@/types/api.type";
+import { UserDetail } from "@/hooks/useUsers";
 
 export class UserService {
     private static readonly baseUrl = "/users";
@@ -25,7 +26,7 @@ export class UserService {
     }
 
     static async getUserDetail(userId: string): Promise<UserDetail> {
-        return (await apiClient.get(`${this.baseUrl}/${userId}/detail`)).data.data
+        return (await apiClient.get(`${this.baseUrl}/${userId}`)).data.data
     }
 
     static async delete(userId: string): Promise<void> {

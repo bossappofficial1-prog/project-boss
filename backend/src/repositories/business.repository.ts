@@ -4,9 +4,10 @@ import { CreateBusinessInput, UpdateBusinessInput } from "../schemas/business.sc
 
 export class BusinessRepository {
     static async create(data: CreateBusinessInput, ownerId: string): Promise<Business> {
+        const { defaultTransactionFeeBearer, ...cleanData } = data
         return db.business.create({
             data: {
-                ...data,
+                ...cleanData,
                 ownerId,
             },
         });

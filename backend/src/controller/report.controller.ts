@@ -21,3 +21,12 @@ export const getFinancialSummaryController = asyncHandler(async (req: Request, r
 
     ResponseUtil.success(res, summary);
 });
+
+export const getOutletReportController = asyncHandler(async (req: Request, res: Response) => {
+    const outletId = req.params.outletId as string
+    const { type, date } = req.query
+
+    const report = await ReportService.getOutletReport(outletId, date as string, type as 'daily' | 'weekly' | 'monthly')
+
+    return ResponseUtil.success(res, report);
+});

@@ -24,43 +24,12 @@ export const apiClient: AxiosInstance = axios.create({
 // Request interceptor - cookies are sent automatically with withCredentials
 apiClient.interceptors.request.use(
   (config) => {
-    // Cookies (including auth token) are sent automatically with withCredentials: true
-    // No need to manually add Authorization header
     return config;
   },
   (error) => {
     return Promise.reject(error);
   }
 );
-
-// Response interceptor to handle common errors
-// apiClient.interceptors.response.use(
-//   (response: AxiosResponse) => {
-//     return response;
-//   },
-//   (error) => {
-//     // if (error.response?.status === 401) {
-//     //   // Redirect to login - cookie will be cleared by backend
-//     //   if (typeof window !== 'undefined') {
-//     //     window.location.href = '/auth/login';
-//     //   }
-//     //   return Promise.reject(error);
-//     // }
-
-//     if (error.response?.data) {
-//       const backendMessage = error.response.data?.message ||
-//         error.response.data?.data?.message ||
-//         error.response.data?.error ||
-//         error.response.data?.errors ||
-//         null;
-//       // const message = backendMessage ?
-//       //   (typeof backendMessage === 'string' ? backendMessage : JSON.stringify(backendMessage)) :
-//       //   `${error.response.status} ${error.response.statusText}`;
-//       // throw new Error(message);
-//     }
-//     // throw error;
-//   }
-// );
 
 // Get auth token from cookies (deprecated - using httpOnly cookies now)
 export const getAuthToken = (): string | null => {

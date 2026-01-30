@@ -15,6 +15,7 @@ import passport from "./config/passport"
 
 // Import rute internal
 import internalApiRouter from './routes/internal-api.route';
+import { traffictMiddleware } from "./middleware/traffict.middleware"
 
 const app = express()
 
@@ -69,7 +70,7 @@ app.use(session({
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
-
+app.use(traffictMiddleware)
 app.use(compression());
 
 // Middleware logging permintaan (Morgan)

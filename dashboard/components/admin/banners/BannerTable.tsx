@@ -28,11 +28,13 @@ export function BannerTable(
     const columns: ColumnDef<Banner>[] = [
         {
             accessorKey: `sortOrder`,
-            header: `Nomor`,
+            header: `Urutan`,
+            enableSorting: false,
         },
         {
             accessorKey: `ctaPayload`,
             header: `Banner`,
+            enableSorting: false,
             cell(props) {
                 const banner = props.row.original;
 
@@ -76,6 +78,7 @@ export function BannerTable(
 
     return (
         <DataTable
+            showColumnVisibility={false}
             pageSize={5}
             isLoading={isLoading}
             columns={columns}

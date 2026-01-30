@@ -4,7 +4,7 @@ import {
     createUserController,
     deleteUserController,
     getAllUserController,
-    getUserByIdController,
+    getUserByIdController2,
     getUserDetailController,
     updateUserController
 } from "../controller/user.controller";
@@ -29,7 +29,7 @@ userRouter.post("/",
 
 userRouter.get(
     "/:userId",
-    getUserByIdController);
+    getUserByIdController2);
 
 userRouter.get(
     "/:userId/detail",

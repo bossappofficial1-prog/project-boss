@@ -121,7 +121,7 @@ export function AllBusinessTable({
                     icon: 'spreadsheet',
                     enabled: true,
                     type: 'server',
-                    exportUrl: 'http://localhost:1234/api/v1/business/export'
+                    exportUrl: `${process.env.NEXT_PUBLIC_API_BASE_URL}/business/export`
                 }
             ]}
             onSearchChange={onSearchChange}

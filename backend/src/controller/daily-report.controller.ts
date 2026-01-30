@@ -26,7 +26,7 @@ export const getDailyReportController = asyncHandler(async (req: Request, res: R
     }
 
     const report = await DailyReportService.getDailyReport(
-        outletId,
+        outletId as string,
         startDate ? new Date(startDate as string) : undefined,
         endDate ? new Date(`${endDate}T23:59:59.999Z`) : undefined // End of the day
     );

@@ -10,4 +10,4 @@ if (!connectionString) {
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
-export const db = new PrismaClient({ adapter });
+export const db = new PrismaClient({ adapter, log: ['query'] });

@@ -1,5 +1,4 @@
 import { Router } from "express";
-import puppeteer from "puppeteer";
 import userRouter from "./user.route";
 import authRouter from "./auth.route";
 import productRouter from "./product.route";
@@ -25,6 +24,7 @@ import { paymentMethod } from "../constants/payment-method";
 import { SocketEmitter } from "../socket/socket-emiiter";
 import receiptRouter from "./receipt-setting.route";
 import bannerRouter from "./banner.route";
+import serverRouter from "./server.route";
 
 const apiRouter = Router()
 
@@ -34,6 +34,7 @@ apiRouter.use('/admin', adminRouter)
 apiRouter.use('/banners', bannerRouter)
 apiRouter.use('/products', productRouter)
 apiRouter.use('/orders', orderRouter)
+apiRouter.use('/server', serverRouter)
 apiRouter.use('/dashboard', dashboardRouter)
 apiRouter.use('/business', businessRouter)
 apiRouter.use('/bookings', bookingRouter)
@@ -53,7 +54,6 @@ apiRouter.use('/receipt-setting', receiptRouter)
 apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
 apiRouter.get('/test-event/:outletId', (req, res) => {
     const outletId = req.params.outletId;
-    // SocketEmitter.getInstance().sendTestMessage(outletId, `Ada pesanan baru`);
     SocketEmitter.getInstance().emitNotificationToOutlet(outletId, { message: 'Test', timestamp: new Date() })
     return ResponseUtil.success(res, {})
 })

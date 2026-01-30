@@ -215,3 +215,15 @@ export function formatNumberCompactID(value: number): string {
 function removeTrailingZero(value: string) {
     return value.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1")
 }
+
+export function formatDuration(totalSeconds: number): string {
+    if (Number.isNaN(totalSeconds) || totalSeconds <= 0) return '00:00:00';
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const pad = (value: number) => String(value).padStart(2, '0');
+
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}

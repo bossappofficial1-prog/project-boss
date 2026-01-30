@@ -41,12 +41,12 @@ export default function GlobalBannerContent() {
 
             return { previous };
         },
-        onError: (error, _, context) => {
+        onError: (error: any, _, context) => {
             if (context?.previous) {
                 queryClient.setQueryData(['banners'], context.previous);
             }
             toast.error('Gagal update posisi banner.', {
-                description: error?.message ?? 'Silakan coba kembali.'
+                description: error?.response.data.message ?? 'Silakan coba kembali.'
             });
         }
     })

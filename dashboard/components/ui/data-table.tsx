@@ -775,7 +775,7 @@ export function DataTable<TData, TValue>({
                         {/* Search and Filters */}
                         <div className="flex flex-1 flex-col sm:flex-row gap-2 items-start sm:items-center">
                             {/* Global Search */}
-                            {globalFilter && (
+                            {globalFilter && !enableRowDrag && (
                                 <div className="relative">
                                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input
@@ -1003,6 +1003,7 @@ export function DataTable<TData, TValue>({
                             )}>
                                 {table.getHeaderGroups().map((headerGroup) => (
                                     <TableRow key={headerGroup.id}>
+                                        {enableRowDrag && <TableHead className="text-center">#</TableHead>}
                                         {headerGroup.headers.map((header) => {
                                             const canSort = header.column.getCanSort();
                                             const sorted = header.column.getIsSorted();

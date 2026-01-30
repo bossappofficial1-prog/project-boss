@@ -86,6 +86,33 @@ export class UserRepository {
         });
     }
 
+    static async getById(userId: string) {
+        return db.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                name: true,
+                avatar: true,
+                role: true,
+                email: true,
+                isVerified: true,
+                phone: true,
+                business: {
+                    select: {
+                        name: true,
+                        description: true,
+                        bankName: true,
+                        bankAccount: true,
+                        accountHolder: true,
+                        subscriptionStatus: true,
+                        subscriptionPlan: true,
+                        subscriptionEndDate: true
+                    }
+                }
+            }
+        })
+    }
+
     static async detail(id: string) {
         return db.user.findUnique({
             where: { id },
@@ -177,46 +204,63 @@ export class UserRepository {
             sortBy = 'createdAt',
             sortOrder = 'desc'
         } = params;
+        const safePage = Math.max(1, Number(page) || 1);
+        const safeLimit = Math.min(Math.max(1, Number(limit) || 10), 100);
 
-        const skip = (page - 1) * limit;
+        const skip = (safePage - 1) * limit;
 
+        const normalizedSearch = search?.trim();
         // Build where clause for search
-        const where = search ? {
+        const where = normalizedSearch ? {
             OR: [
-                { name: { contains: search, mode: 'insensitive' as const } },
-                { email: { contains: search, mode: 'insensitive' as const } },
-                { phone: { contains: search, mode: 'insensitive' as const } }
+                { name: { contains: normalizedSearch, mode: 'insensitive' as const } },
+                { email: { contains: normalizedSearch, mode: 'insensitive' as const } },
+                { phone: { contains: normalizedSearch, mode: 'insensitive' as const } }
             ]
-        } : {};
+        } : undefined;
 
-        // Build orderBy clause
-        const orderBy = { [sortBy]: sortOrder };
+        const allowedSortFields = [
+            'createdAt',
+            'updatedAt',
+            'name',
+            'email'
+        ] as const;
 
-        // Get total count
-        const total = await db.user.count({ where });
+        type SortField = typeof allowedSortFields[number];
 
-        // Get paginated data
-        const data = await db.user.findMany({
-            where,
-            orderBy,
-            skip,
-            take: limit,
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                role: true,
-                isVerified: true,
-                provider: true,
-                avatar: true,
-                createdAt: true,
-                updatedAt: true,
-                business: true
-            }
-        });
+        const sortField: SortField = allowedSortFields.includes(sortBy as SortField)
+            ? (sortBy as SortField)
+            : 'createdAt';
 
-        const totalPages = Math.ceil(total / limit);
+        const orderBy = {
+            [sortField]: sortOrder === 'asc' ? 'asc' : 'desc'
+        };
+
+        const [total, data] = await db.$transaction([
+            db.user.count({ where }),
+            db.user.findMany({
+                where,
+                orderBy,
+                skip,
+                take: safeLimit,
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                    role: true,
+                    isVerified: true,
+                    provider: true,
+                    avatar: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    business: true
+                }
+            })
+        ]);
+
+
+        const totalPages = Math.ceil(total / safeLimit);
 
         return {
             data,
@@ -224,8 +268,8 @@ export class UserRepository {
             limit,
             total,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1
+            hasNextPage: skip + data.length < total,
+            hasPrevPage: safePage > 1
         };
     }
 
