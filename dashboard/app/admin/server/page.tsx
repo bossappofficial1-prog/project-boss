@@ -9,17 +9,13 @@ import {
     RefreshCw,
     CheckCircle2,
     AlertCircle,
-    XCircle,
     Clock,
-    Terminal,
     Cpu,
     Globe,
     Shield,
-    Cloud,
     Zap,
     Trash2,
     Power,
-    AlertTriangle,
     ArrowUpRight,
     Wifi
 } from "lucide-react";
@@ -65,6 +61,11 @@ export default function ServerStatus() {
         storagePercentage: 0,
         networkThroughput: "0"
     });
+
+    useEffect(() => {
+        if (!metrics) return;
+        document.title = `C${metrics.cpu}% R${metrics.ramPercentage}% T${metrics.networkThroughput}req/s`
+    }, [metrics, metrics?.cpu])
 
     const [servicesData, setServicesData] = useState<Service[]>([
         { name: 'API Gateway (Express)', status: 'operational', uptime: '-', latency: '-', icon: Globe },

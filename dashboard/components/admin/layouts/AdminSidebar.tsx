@@ -60,7 +60,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return (
         <>
             <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar" {...props}>
-                {/* --- HEADER / LOGO --- */}
                 <SidebarHeader>
                     <SidebarMenu>
                         <SidebarMenuItem>

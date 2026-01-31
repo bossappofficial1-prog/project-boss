@@ -6,14 +6,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUserData } from '@/hooks/useUserData';
 import { useOutletContext } from '@/components/providers/OutletProvider';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -35,7 +27,6 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import {

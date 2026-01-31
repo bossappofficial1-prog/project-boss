@@ -3,7 +3,6 @@
 import { DataTable } from "@/components/ui/data-table"
 import { OutletReport } from "@/hooks/useReport"
 import { formatCurrency } from "@/lib/utils";
-import { useMemo } from "react";
 import { Sparkline } from "../Sparkline";
 import { Activity } from "lucide-react";
 
