@@ -1,17 +1,17 @@
-import { apiCall, apiCallPaginated, apiClient } from './base';
-import { Transaction } from './transaction';
+import { apiCall, apiCallPaginated, apiClient } from "./base";
+import { Transaction } from "./transaction";
 
 // Types based on backend schema
 export type OrderStatus =
-  | 'AWAITING_PAYMENT'
-  | 'PROCESSING'
-  | 'CONFIRMED'
-  | 'READY'
-  | 'ON_GOING'
-  | 'COMPLETED'
-  | 'CANCELLED';
+  | "AWAITING_PAYMENT"
+  | "PROCESSING"
+  | "CONFIRMED"
+  | "READY"
+  | "ON_GOING"
+  | "COMPLETED"
+  | "CANCELLED";
 
-export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED';
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED" | "EXPIRED" | "CANCELLED";
 
 export interface GuestCustomer {
   id: string;
@@ -19,11 +19,47 @@ export interface GuestCustomer {
   phone: string;
 }
 
+export interface ProductGoods {
+  id: string;
+  productId: string;
+  sellingPrice: number;
+  currentStock: number;
+  unit: string;
+  averageHpp: number;
+  minStock?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductService {
+  id: string;
+  productId: string;
+  sellingPrice: number;
+  durationMinutes: number;
+  providerName: string;
+  providerPhone?: string | null;
+  providerEmail?: string | null;
+  commissionType: "PERCENTAGE" | "FIXED";
+  commissionValue: number;
+  maxParallel: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Product {
   id: string;
   name: string;
-  type: 'GOODS' | 'SERVICE';
-  price: number;
+  description?: string | null;
+  type: "GOODS" | "SERVICE";
+  image?: string | null;
+  status: "ACTIVE" | "INACTIVE";
+  outletId: string;
+  createdAt: string;
+  updatedAt: string;
+
+  // Polymorphic fields - only one will be present
+  goods?: ProductGoods | null;
+  service?: ProductService | null;
 }
 
 export interface OrderItem {
@@ -34,7 +70,7 @@ export interface OrderItem {
   product: Product;
 }
 
-export type OnlinePaymentChannel = 'qris_dynamic' | 'va_bca' | 'ewallet_gopay';
+export type OnlinePaymentChannel = "qris_dynamic" | "va_bca" | "ewallet_gopay";
 
 export interface MidtransInstruction {
   title: string;
@@ -63,7 +99,7 @@ export interface TransactionSummary {
   id: string;
   status: PaymentStatus;
   isManual: boolean;
-  paymentMethod: 'cash' | 'qris' | 'online' | 'manual_transfer';
+  paymentMethod: "cash" | "qris" | "online" | "manual_transfer";
   paymentUrl?: string | null;
   midtrans?: MidtransOnlineDetail | null;
   createdAt?: string;
@@ -94,8 +130,8 @@ export interface Order {
   discountAmount: number;
   appFee?: number;
   midtransFee?: number;
-  chargedTo?: 'CUSTOMER' | 'OWNER';
-  paymentMethod?: 'cash' | 'qris' | 'online' | 'manual_transfer';
+  chargedTo?: "CUSTOMER" | "OWNER";
+  paymentMethod?: "cash" | "qris" | "online" | "manual_transfer";
   guestCustomerId: string;
   guestCustomer: GuestCustomer;
   outletId: string;
@@ -139,7 +175,7 @@ export interface QueueEntry extends Order {
   status: OrderStatus;
   queueMeta?: QueueMeta | null;
   scheduledStart?: string | null;
-  transaction: Transaction
+  transaction: Transaction;
 }
 
 export interface CreateOrderRequest {
@@ -153,9 +189,8 @@ export interface CreateOrderRequest {
     quantity: number;
   }[];
   bookingDate?: string;
-  paymentMethod?: 'qris' | 'online' | 'cash';
+  paymentMethod?: "qris" | "online" | "cash";
   bookingSlotId?: string;
-  staffId?: string;
   onlinePaymentChannel?: OnlinePaymentChannel;
 }
 
@@ -191,15 +226,15 @@ export const orderApi = {
   // Get goods orders by outlet
   async getGoodsByOutlet(
     outletId: string,
-    params?: OrderListParams
+    params?: OrderListParams,
   ): Promise<PaginatedResponse<GoodsOrder>> {
     const searchParams = new URLSearchParams();
-    if (params?.status) searchParams.append('status', params.status);
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.status) searchParams.append("status", params.status);
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
 
     const queryString = searchParams.toString();
-    const url = `/orders/${outletId}/goods${queryString ? `?${queryString}` : ''}`;
+    const url = `/orders/${outletId}/goods${queryString ? `?${queryString}` : ""}`;
 
     return apiCallPaginated<GoodsOrder>(url);
   },
@@ -207,14 +242,14 @@ export const orderApi = {
   // Get service queue by outlet
   async getQueueByOutlet(
     outletId: string,
-    params?: Omit<OrderListParams, 'status'>
+    params?: Omit<OrderListParams, "status">,
   ): Promise<PaginatedResponse<QueueEntry>> {
     const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
 
     const queryString = searchParams.toString();
-    const url = `/orders/${outletId}/queue${queryString ? `?${queryString}` : ''}`;
+    const url = `/orders/${outletId}/queue${queryString ? `?${queryString}` : ""}`;
 
     return apiCallPaginated<QueueEntry>(url);
   },
@@ -222,7 +257,7 @@ export const orderApi = {
   async getPosCashSummary(outletId: string, date?: string): Promise<PosCashSummary> {
     const searchParams = new URLSearchParams({ outletId });
     if (date) {
-      searchParams.append('date', date);
+      searchParams.append("date", date);
     }
 
     const url = `/internal/pos/orders/cash-summary?${searchParams.toString()}`;
@@ -231,8 +266,8 @@ export const orderApi = {
 
   // Create order (manual order)
   async create(data: CreateOrderRequest): Promise<CreateOrderResponse> {
-    return apiCall<CreateOrderResponse>('/internal/pos/orders', {
-      method: 'POST',
+    return apiCall<CreateOrderResponse>("/internal/pos/orders", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   },
@@ -240,7 +275,7 @@ export const orderApi = {
   // Update order status
   async updateStatus(orderId: string, status: OrderStatus): Promise<Order> {
     return apiCall<Order>(`/orders/${orderId}/status`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify({ status }),
     });
   },
@@ -248,7 +283,7 @@ export const orderApi = {
   // Update service queue order status with validation
   async updateServiceStatus(orderId: string, status: OrderStatus): Promise<QueueEntry> {
     return apiCall<QueueEntry>(`/orders/${orderId}/service-status`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify({ status }),
     });
   },
@@ -256,7 +291,7 @@ export const orderApi = {
   // Complete order
   async complete(orderId: string): Promise<Order> {
     return apiCall<Order>(`/orders/${orderId}/complete`, {
-      method: 'POST',
+      method: "POST",
     });
   },
 
@@ -268,7 +303,7 @@ export const orderApi = {
   // Get order receipt
   async getReceipt(orderId: string): Promise<Blob> {
     const response = await apiClient.get(`/orders/${orderId}/receipt`, {
-      responseType: 'blob',
+      responseType: "blob",
     });
     return response.data;
   },
@@ -276,7 +311,7 @@ export const orderApi = {
   // Refund order
   async refund(orderId: string): Promise<Order> {
     return apiCall<Order>(`/orders/${orderId}/refund`, {
-      method: 'POST',
+      method: "POST",
     });
   },
 };

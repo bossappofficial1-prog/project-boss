@@ -7,11 +7,7 @@ import { getProductByIdService } from "./product.service";
 import { createMidtransTransactionService } from "./payment.service";
 import { getOrderByIdService } from "./order.service";
 import { db } from "../config/prisma";
-import {
-  Prisma,
-  OutletOperatingHours,
-  BookingSlot,
-} from "@prisma/client";
+import { Prisma, OutletOperatingHours, BookingSlot } from "@prisma/client";
 import { add, set } from "date-fns";
 import { getOutletByIdService } from "./outlet.service";
 import { getStaffAvailabilityForWindow, StaffAvailabilityResult } from "./staff.service";
@@ -21,13 +17,18 @@ import { getStaffAvailabilityForWindow, StaffAvailabilityResult } from "./staff.
  */
 export async function createBookingSlotService(data: CreateBookingSlotInput) {
   const product = await getProductByIdService(data.productId);
-  if (product.type !== "SERVICE") {
+  if (product.type !== "SERVICE" || !product.service) {
     throw new AppError(
       "Booking slots can only be created for SERVICE type products.",
       HttpStatus.BAD_REQUEST,
     );
   }
-  const bookingSlot = await BookingRepository.create(data);
+
+  const { productId, ...slotData } = data;
+  const bookingSlot = await BookingRepository.create({
+    ...slotData,
+    productServiceId: product.service.id,
+  });
   return bookingSlot;
 }
 
@@ -86,8 +87,8 @@ export async function getBookingSlotByIdService(id: string) {
   return bookingSlot;
 }
 
-export async function getBookingSlotsByProductIdService(productId: string) {
-  const bookingSlots = await BookingRepository.findByProductId(productId);
+export async function getBookingSlotsByProductServiceIdService(productServiceId: string) {
+  const bookingSlots = await BookingRepository.findByProductServiceId(productServiceId);
   return bookingSlots;
 }
 
@@ -112,7 +113,7 @@ type BookingSlotWithStaff = Pick<
 };
 
 /**
- * Retrieves booking slots for a product on a specific date. 
+ * Retrieves booking slots for a product on a specific date.
  * Generates slots if none exist and calculates staff availability capped by maxParallel.
  */
 export async function getBookingSlotByProductService(
@@ -136,7 +137,13 @@ export async function getBookingSlotByProductService(
   // Get maxParallel capacity from ProductService
   const maxParallel = product.service?.maxParallel ?? 1;
 
-  let slots = await BookingRepository.getSlotsByProductId(productId, date);
+  // Get ProductService ID
+  const productServiceId = product.service?.id;
+  if (!productServiceId) {
+    throw new AppError("Product service data not found", HttpStatus.NOT_FOUND);
+  }
+
+  let slots = await BookingRepository.getSlotsByProductServiceId(productServiceId, date);
 
   // Generate slots if they haven't been created yet for this date
   if (!slots.length) {
@@ -150,55 +157,22 @@ export async function getBookingSlotByProductService(
       date,
     });
 
-    slots = await BookingRepository.getSlotsByProductId(productId, date);
+    slots = await BookingRepository.getSlotsByProductServiceId(productServiceId, date);
   }
 
-  if (!slots.length) {
-    return [];
-  }
+  // Determine status based on booking
+  return slots.map((slot) => {
+    let derivedStatus: BookingSlot["status"] = slot.status;
 
-  // Calculate staff availability for each slot
-  const availabilityDetails = await Promise.all(
-    slots.map(async (slot) => {
-      if (slot.status === "BLOCKED") {
-        return {
-          availableStaffCount: 0,
-          totalStaffCount: 0,
-        };
-      }
-
-      const staffAvailability = await getAvailableStaffForProductSlotService({
-        productId,
-        outletId,
-        startTime: new Date(slot.startTime),
-        endTime: new Date(slot.endTime),
-      });
-
-      const availableStaffCount = staffAvailability.filter((member) => member.isAvailable).length;
-
-      return {
-        // Cap availability by the product's maxParallel setting
-        availableStaffCount: Math.min(availableStaffCount, maxParallel),
-        totalStaffCount: Math.min(staffAvailability.length, maxParallel),
-      };
-    }),
-  );
-
-  // Map slots to final status based on dynamic staff availability
-  return slots.map((slot, index) => {
-    const availability = availabilityDetails[index];
-    const derivedStatus =
-      slot.status === "BLOCKED"
-        ? slot.status
-        : availability.availableStaffCount > 0
-          ? "AVAILABLE"
-          : "BOOKED";
+    if (slot.status === "AVAILABLE" && (slot as any).orderItemId) {
+      derivedStatus = "BOOKED";
+    }
 
     return {
       ...slot,
-      status: derivedStatus as BookingSlot["status"],
-      availableStaffCount: availability.availableStaffCount,
-      totalStaffCount: availability.totalStaffCount,
+      status: derivedStatus,
+      availableStaffCount: 1, // Dummy value as we don't track this anymore
+      totalStaffCount: 1, // Dummy value
     };
   });
 }
