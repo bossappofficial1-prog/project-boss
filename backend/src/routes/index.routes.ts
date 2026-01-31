@@ -1,6 +1,7 @@
 import { Router } from "express";
 import userRouter from "./user.route";
 import authRouter from "./auth.route";
+
 import productRouter from "./product.route";
 import orderRouter from "./order.route";
 import dashboardRouter from "./dashboard.route";
@@ -11,6 +12,7 @@ import homeRouter from "./home.route";
 import outletRouter from "./outlet.route";
 import expenseRouter from "./expense.route";
 import reportRouter from "./report.route";
+
 import staffRouter from "./staff.route";
 import operatingHoursRouter from "./operating-hours.route";
 import uploadRouter from "./upload.route";
@@ -19,6 +21,7 @@ import queueMonitoringRouter from "./queue-monitoring.route";
 import notificationRouter from "./notification.route";
 import adminRouter from "./admin.route";
 import transactionRouter from "./transaction.route";
+import stockRouter from "./stock.route";
 import { ResponseUtil } from "../utils";
 import { paymentMethod } from "../constants/payment-method";
 import { SocketEmitter } from "../socket/socket-emiiter";
@@ -26,7 +29,7 @@ import receiptRouter from "./receipt-setting.route";
 import bannerRouter from "./banner.route";
 import serverRouter from "./server.route";
 
-const apiRouter = Router()
+const apiRouter = Router();
 
 apiRouter.use('/users', userRouter)
 apiRouter.use('/auth', authRouter)
@@ -50,12 +53,13 @@ apiRouter.use('/security', securityRouter)
 apiRouter.use('/queue-monitoring', queueMonitoringRouter)
 apiRouter.use('/notifications', notificationRouter)
 apiRouter.use('/transactions', transactionRouter)
+apiRouter.use("/stock", stockRouter);
 apiRouter.use('/receipt-setting', receiptRouter)
 apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
 apiRouter.get('/test-event/:outletId', (req, res) => {
-    const outletId = req.params.outletId;
-    SocketEmitter.getInstance().emitNotificationToOutlet(outletId, { message: 'Test', timestamp: new Date() })
-    return ResponseUtil.success(res, {})
+  const outletId = req.params.outletId;
+  SocketEmitter.getInstance().emitNotificationToOutlet(outletId, { message: 'Test', timestamp: new Date() })
+  return ResponseUtil.success(res, {})
 })
 
-export default apiRouter
+export default apiRouter;
