@@ -11,20 +11,23 @@ const productGoodsSchema = z.object({
   minStock: z.number().int().min(0).nullable().optional(),
   unit: z.string().min(1, { message: "Unit wajib diisi" }),
   sellingPrice: z.number().positive({ message: "Harga jual harus > 0" }),
-  averageHpp: z.number().positive({ message: "averageHpp harus > 0" })
+  averageHpp: z.number().positive({ message: "averageHpp harus > 0" }),
 });
 
 // ProductService
 const productServiceSchema = z.object({
-  durationMinutes: z
-    .number()
-    .int()
-    .positive({ message: "Durasi layanan wajib diisi" }),
+  durationMinutes: z.number().int().positive({ message: "Durasi layanan wajib diisi" }),
   sellingPrice: z.number().positive({ message: "Harga jual harus > 0" }),
 
   providerName: z.string().min(1, { message: "Nama provider wajib diisi" }),
-  providerPhone: z.string().optional(),
-  providerEmail: z.string().email().optional(),
+  providerPhone: z.preprocess(
+    (val) => (val === "" || val === null ? undefined : val),
+    z.string().optional(),
+  ),
+  providerEmail: z.preprocess(
+    (val) => (val === "" || val === null ? undefined : val),
+    z.string().email().optional(),
+  ),
 
   commissionType: z.enum(["PERCENTAGE", "FIXED"]).optional(),
   commissionValue: z.number().min(0).optional(),
@@ -102,12 +105,15 @@ export const updateProductSchema = z
       goods: z.never().optional(),
     }),
   ])
-  .refine((data) => {
-    // minimal ada satu field selain type
-    const { type, ...rest } = data;
-    return Object.keys(rest).length > 0;
-  }, {
-    message: "Minimal satu field harus diisi untuk update",
-  });
+  .refine(
+    (data) => {
+      // minimal ada satu field selain type
+      const { type, ...rest } = data;
+      return Object.keys(rest).length > 0;
+    },
+    {
+      message: "Minimal satu field harus diisi untuk update",
+    },
+  );
 
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
