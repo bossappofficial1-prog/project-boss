@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import {
   recordStockIn,
+  recordStockInBulk,
   recordStockOut,
   adjustStock,
   recordReturn,
@@ -10,6 +11,7 @@ import {
 } from "../service/stock.service";
 import {
   stockInSchema,
+  stockInBulkSchema,
   stockOutSchema,
   stockAdjustmentSchema,
   stockReturnSchema,
@@ -30,6 +32,25 @@ export async function stockInController(req: Request, res: Response, next: NextF
     res.status(HttpStatus.CREATED).json({
       success: true,
       message: "Stock IN berhasil dicatat",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/stock/in-bulk
+ * Record multiple incoming stock (purchase/restock)
+ */
+export async function stockInBulkController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const validatedData = stockInBulkSchema.parse(req.body);
+    const result = await recordStockInBulk(validatedData);
+
+    res.status(HttpStatus.CREATED).json({
+      success: true,
+      message: "Batch Stock IN berhasil dicatat",
       data: result,
     });
   } catch (error) {
@@ -100,7 +121,7 @@ export async function stockReturnController(req: Request, res: Response, next: N
  */
 export async function getStockHistoryController(req: Request, res: Response, next: NextFunction) {
   try {
-    const { productGoodsId } = req.params;
+    const { productGoodsId } = req.params as { productGoodsId: string };
     const filters = {
       type: req.query.type as any,
       startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,

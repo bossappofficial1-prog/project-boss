@@ -69,6 +69,108 @@ export async function recordStockIn(data: StockInInput) {
 }
 
 /**
+ * Record multiple incoming stock in a single transaction
+ */
+export async function recordStockInBulk(data: StockInInput[]) {
+  if (data.length === 0) {
+    return [];
+  }
+
+  // Use a transaction to ensure all stock movements succeed or fail together
+  return db.$transaction(
+    async (tx) => {
+      const results = [];
+
+      for (const item of data) {
+        // Verify ProductGoods exists
+        const productGoods = await tx.productGoods.findUnique({
+          where: { id: item.productGoodsId },
+        });
+
+        if (!productGoods) {
+          throw new AppError(
+            `Product Goods dengan ID ${item.productGoodsId} tidak ditemukan`,
+            HttpStatus.NOT_FOUND,
+          );
+        }
+
+        // Create stock log
+        const stockLog = await tx.stockLog.create({
+          data: {
+            productGoodsId: item.productGoodsId,
+            type: StockMovementType.IN,
+            quantity: item.quantity,
+            hppPerUnit: item.hppPerUnit,
+            referenceType: item.referenceType,
+            referenceId: item.referenceId,
+            notes: item.notes,
+          },
+        });
+
+        // Update current stock
+        const updatedGoods = await tx.productGoods.update({
+          where: { id: item.productGoodsId },
+          data: {
+            currentStock: {
+              increment: item.quantity,
+            },
+          },
+        });
+
+        // Recalculate average HPP
+        // Note: We need to use StockLogRepository logic but adapted for transaction context
+        // OR we can rely on eventual consistency if heavy, but here we want immediate correct HPP.
+        // Since StockLogRepository might use 'db' instance directly, we should ideally duplicate the logic
+        // or ensure repository accepts transaction client.
+        // For simplicity and correctness in this codebase, let's recalculate manually within TX or assume
+        // StockLogRepository uses global db but we just wrote to it in TX... actually if we use global db
+        // inside TX for reading logs it might not see the new log yet if isolation level is high,
+        // but Prisma usually handles this if we pass tx.
+        // Let's reimplement simple Weighted Average logic here using tx to be safe.
+
+        // Get all IN logs (including this new one) to calculate weighted average
+        const allInLogs = await tx.stockLog.findMany({
+          where: {
+            productGoodsId: item.productGoodsId,
+            type: "IN",
+          },
+        });
+
+        let totalValue = 0;
+        let totalQty = 0;
+
+        for (const log of allInLogs) {
+          const qty = log.quantity;
+          const price = log.hppPerUnit || 0;
+          totalValue += qty * price;
+          totalQty += qty;
+        }
+
+        const newAverageHpp = totalQty > 0 ? totalValue / totalQty : 0;
+
+        await tx.productGoods.update({
+          where: { id: item.productGoodsId },
+          data: {
+            averageHpp: newAverageHpp,
+          },
+        });
+
+        results.push({
+          stockLog,
+          productGoods: updatedGoods,
+          newAverageHpp,
+        });
+      }
+
+      return results;
+    },
+    {
+      timeout: 20000, // Increase timeout for bulk operations
+    },
+  );
+}
+
+/**
  * Record outgoing stock (manual sale/usage)
  * Note: For order-based stock out, see order service integration
  * - Creates stock log with type OUT

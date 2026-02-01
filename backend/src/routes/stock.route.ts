@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   stockInController,
+  stockInBulkController,
   stockOutController,
   stockAdjustmentController,
   stockReturnController,
@@ -8,11 +9,13 @@ import {
   getLowStockController,
   recalculateHppController,
 } from "../controller/stock.controller";
+import { stockInBulkSchema } from "../schemas/stock.schema";
 
 const router = Router();
 
 // Stock movement endpoints
 router.post("/in", stockInController);
+router.post("/in-bulk", stockInBulkController);
 router.post("/out", stockOutController);
 router.post("/adjust", stockAdjustmentController);
 router.post("/return", stockReturnController);

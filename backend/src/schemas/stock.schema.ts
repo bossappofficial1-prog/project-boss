@@ -13,6 +13,10 @@ export const stockInSchema = z.object({
 
 export type StockInInput = z.infer<typeof stockInSchema>;
 
+// Schema for bulk stock IN
+export const stockInBulkSchema = z.array(stockInSchema);
+export type StockInBulkInput = z.infer<typeof stockInBulkSchema>;
+
 // Schema for recording stock OUT (outgoing stock from sales/orders)
 export const stockOutSchema = z.object({
   productGoodsId: z.string().nonempty({ message: "Product Goods ID diperlukan" }),
