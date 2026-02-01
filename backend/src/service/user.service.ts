@@ -196,12 +196,13 @@ export async function createUserWithGoogleService(googleProfile: {
         name: googleProfile.name,
         password: await BcryptUtil.hash(randomUUID()),
         googleId: googleProfile.googleId,
+        avatar: googleProfile.avatar || null,
         provider: 'google',
         isVerified: true,
         role: 'OWNER' // Explicitly set role for Google OAuth users
     });
 
-    return { ...user, password: '[REDACTED]' };
+    return { ...user };
 }
 
 export async function createUserByAdmin(dtoUser: createUserByAdminInput) {

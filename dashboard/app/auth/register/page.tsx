@@ -1,629 +1,328 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import ThemeToggle from '@/components/ThemeToggle';
-import BackNavigationConfirmModal from '@/components/modals/BackNavigationConfirmModal';
-import { PasswordInput } from '@/components/ui/password-input';
-import { Input } from '@/components/ui/input';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import React, { useState, useEffect } from 'react';
+import {
+    CheckCircle2,
+    Store,
+    User,
+    Mail,
+    Lock,
+    ArrowRight,
+    ArrowLeft,
+    Check,
+    X,
+    Loader2,
+    ShieldCheck,
+    Phone,
+    FileText,
+    Smartphone
+} from "lucide-react";
+import { cn, getCookie } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ReusableForm } from '@/components/ui/reuseable-form';
+import { fieldRegisterStep1, fieldRegisterStep2, registerStep1Schema, registerStep2Schema } from '@/components/auth/register/schema';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/apis/base';
+import { OtpInputVerification } from '@/components/auth/register/OtpInputVerification';
+import { RegisterStep1 } from '@/components/auth/register/RegisterStep1';
+import { RegisterStep2 } from '@/components/auth/register/RegisterStep2';
 
-export default function RegisterPage() {
-  const [step, setStep] = useState(1); // 1: Personal Info, 2: Account Details, 3: Verification
-  const [formData, setFormData] = useState({
-    // Step 1: Personal Information
-    name: '',
-    phone: '',
-
-    // Step 2: Account Details
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
-  const [verificationCode, setVerificationCode] = useState('');
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendMessage, setResendMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const router = useRouter();
-
-  // Persist registration state in sessionStorage
-  const saveRegistrationState = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('registration_state', JSON.stringify({
-        step,
-        formData,
-        verificationCode,
-        timestamp: Date.now()
-      }));
+const PLANS = [
+    {
+        id: 'TRIAL',
+        name: 'Free Trial',
+        price: 'Rp 0',
+        period: '/ 14 hari',
+        description: 'Cocok untuk mencoba fitur dasar sebelum komitmen.',
+        features: [
+            { label: 'Max 1 Outlet', allowed: true },
+            { label: 'Max 10 Produk', allowed: true },
+            { label: 'Max 1 Staff (Owner Only)', allowed: true },
+            { label: 'Export Laporan', allowed: false },
+            { label: 'Support Email', allowed: true },
+        ],
+        color: 'border-slate-200 hover:border-slate-300',
+        badge: 'GRATIS'
+    },
+    {
+        id: 'BASIC',
+        name: 'Basic Plan',
+        price: 'Rp 99.000',
+        period: '/ bulan',
+        description: 'Untuk usaha kecil yang mulai berkembang.',
+        features: [
+            { label: 'Max 2 Outlet', allowed: true },
+            { label: 'Max 100 Produk', allowed: true },
+            { label: 'Max 3 Staff', allowed: true },
+            { label: 'Export Laporan', allowed: true },
+            { label: 'Support Email', allowed: true },
+        ],
+        color: 'border-blue-200 bg-blue-50/50 hover:border-blue-300',
+        badge: 'POPULAR'
+    },
+    {
+        id: 'PRO',
+        name: 'Pro Plan',
+        price: 'Rp 199.000',
+        period: '/ bulan',
+        description: 'Tanpa batasan untuk pertumbuhan maksimal.',
+        features: [
+            { label: 'Unlimited Outlet', allowed: true },
+            { label: 'Unlimited Produk', allowed: true },
+            { label: 'Unlimited Staff', allowed: true },
+            { label: 'Export Laporan Lengkap', allowed: true },
+            { label: 'Prioritas WhatsApp Support', allowed: true },
+        ],
+        color: 'border-indigo-200 bg-indigo-50/50 hover:border-indigo-300',
+        badge: 'BEST VALUE'
     }
-  };
+];
 
-  const loadRegistrationState = () => {
-    if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem('registration_state');
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          // Only restore if saved within last 30 minutes
-          if (Date.now() - data.timestamp < 30 * 60 * 1000) {
-            setStep(data.step);
-            setFormData(data.formData);
-            setVerificationCode(data.verificationCode || '');
-            return true;
-          } else {
-            // Clear expired state
-            sessionStorage.removeItem('registration_state');
-          }
-        } catch (e) {
-          sessionStorage.removeItem('registration_state');
-        }
-      }
-    }
-    return false;
-  };
+export default function RegistrationPage() {
+    const searchParams = useSearchParams();
+    const router = useRouter()
 
-  const clearRegistrationState = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('registration_state');
-    }
-  };
+    const steps = searchParams.get('step');
+    const providers = searchParams.get('provider');
+    const names = searchParams.get('name');
 
-  const [showBackConfirmation, setShowBackConfirmation] = useState(false);
-  const [restoredFromSession, setRestoredFromSession] = useState(false);
-
-  // Load state on component mount
-  useEffect(() => {
-    const wasRestored = loadRegistrationState();
-    setRestoredFromSession(wasRestored);
-  }, []);
-
-  // Save state whenever it changes
-  useEffect(() => {
-    saveRegistrationState();
-  }, [step, formData, verificationCode]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleNextStep = () => {
-    setError('');
-
-    if (step === 1) {
-      // Validate step 1
-      if (!formData.name.trim() || !formData.phone.trim()) {
-        setError('Please fill in all required fields');
-        return;
-      }
-      setStep(2);
-    } else if (step === 2) {
-      // Validate step 2
-      if (!formData.email.trim() || !formData.password.trim() || !formData.confirmPassword.trim()) {
-        setError('Please fill in all required fields');
-        return;
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match');
-        return;
-      }
-
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters long');
-        return;
-      }
-
-      // Submit registration
-      handleRegister();
-    }
-  };
-
-  const handlePrevStep = () => {
-    setError('');
-    if (step > 1) {
-      if (step === 3) {
-        // Show confirmation dialog when trying to go back from verification step
-        setShowBackConfirmation(true);
-      } else {
-        setStep(step - 1);
-      }
-    }
-  };
-
-  const confirmBackNavigation = () => {
-    setShowBackConfirmation(false);
-    // Reset to step 1 and clear all data since user confirmed they want to start over
-    setStep(1);
-    setFormData({
-      name: '',
-      phone: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
+    const [provider] = useState(() => {
+        if (!providers) return null;
+        return providers as 'email' | 'google'
     });
-    setVerificationCode('');
-    setError('');
-    setSuccess('');
-    clearRegistrationState();
-  };
 
-  const cancelBackNavigation = () => {
-    setShowBackConfirmation(false);
-  };
+    const [logoutLoading, setLogoutLoading] = useState(false)
 
-  const handleRegister = async () => {
-    setIsLoading(true);
-    setError('');
+    const [step, setStep] = useState(() => {
+        const step = Number(steps)
+        if (!step || isNaN(step)) return 1;
+        if (provider) return 2;
+        return step
+    });
 
-    try {
-      await apiClient.post('/auth/register', {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-      });
+    const [formData, setFormData] = useState({
+        businessName: '',
+        description: '',
+        selectedPlan: 'TRIAL',
+        provider: 'email'
+    });
 
-      setSuccess('Registration successful! Please check your email for verification code.');
-      setStep(3);
-      // Don't clear state here - user needs it for verification
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during registration');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showOtpInput, setShowOtpInput] = useState(false);
+    const [timer, setTimer] = useState(0);
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    const handleLogout = async () => {
+        try {
+            setLogoutLoading(true)
+            await apiClient.post('/auth/logout');
+            setStep(1)
+            router.replace('/auth/register')
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            setLogoutLoading(false)
+        }
+    };
 
-    try {
-      await apiClient.post('/auth/verify', {
-        email: formData.email,
-        code: verificationCode,
-      });
+    // Timer logic
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (timer > 0) {
+            interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
+        }
+        return () => clearInterval(interval);
+    }, [timer]);
 
-      setSuccess('Email verified successfully! You can now sign in.');
-      clearRegistrationState(); // Clear state after successful verification
-      setTimeout(() => {
-        router.push('/auth/login');
-      }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during verification');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const handleNext = () => setStep(prev => prev + 1);
+    const handleBack = () => setStep(prev => prev - 1);
 
-  const handleResendVerification = async () => {
-    setResendLoading(true);
-    setResendMessage('');
+    // 4. Final Submit (Create Business & Plan)
+    const handleSubmit = async () => {
+        setIsSubmitting(true);
 
-    try {
-      await apiClient.post('/auth/resend-verification', {
-        email: formData.email,
-      });
+        // Payload Final
+        const payload = {
+            user: {
+                provider: formData.provider,
+                googleId: formData.provider === 'google' ? 'some-google-id' : undefined
+            },
+            business: {
+                name: formData.businessName,
+                description: formData.description,
+                subscriptionPlan: formData.selectedPlan
+            }
+        };
 
-      setResendMessage('Kode verifikasi baru telah dikirim ke email Anda.');
-      setTimeout(() => setResendMessage(''), 5000);
-    } catch (err: any) {
-      setResendMessage(err.message || 'Gagal mengirim ulang kode verifikasi.');
-      setTimeout(() => setResendMessage(''), 5000);
-    } finally {
-      setResendLoading(false);
-    }
-  };
+        console.log("Submitting Final Payload:", payload);
 
-  const getStepTitle = () => {
-    switch (step) {
-      case 1:
-        return 'Personal Information';
-      case 2:
-        return 'Account Setup';
-      case 3:
-        return 'Email Verification';
-      default:
-        return 'Create Account';
-    }
-  };
+        setTimeout(() => {
+            setIsSubmitting(false);
+            alert(`Registrasi Sukses!\nMetode: ${formData.provider.toUpperCase()}\nPlan: ${formData.selectedPlan}`);
+            // Redirect logic here
+        }, 2000);
+    };
 
-  const getStepDescription = () => {
-    switch (step) {
-      case 1:
-        return 'Tell us about yourself';
-      case 2:
-        return 'Create your login credentials';
-      case 3:
-        return 'Verify your email address';
-      default:
-        return 'Join BOSS Dashboard';
-    }
-  };
+    return (
+        <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-900">
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      {/* Theme Toggle Button */}
-      <div className="fixed top-4 right-4 z-10">
-        <ThemeToggle />
-      </div>
-
-      <div className="max-w-md w-full space-y-8">
-        {/* Logo and Header */}
-        <div className="text-center">
-          <div className="mx-auto mb-6 flex justify-center">
-            <Image
-              src="/Logo Boss.png"
-              alt="BOSS Logo"
-              width={200}
-              height={200}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 font-poppins">
-            {getStepTitle()}
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 font-poppins">
-            {getStepDescription()}
-          </p>
-        </div>
-
-        {/* Progress Indicator */}
-        <div className="flex justify-center space-x-4 mb-8">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold font-poppins ${i <= step
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                  }`}
-              >
-                {i < step ? (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  i
-                )}
-              </div>
-              {i < 3 && (
-                <div
-                  className={`w-12 h-0.5 ml-2 ${i < step ? 'bg-red-600' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Restoration Notification */}
-        {restoredFromSession && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 px-4 py-3 rounded-xl text-sm font-poppins">
-            <div className="flex items-center justify-center">
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              <span>Progress restored from previous session</span>
-              <button
-                onClick={() => {
-                  clearRegistrationState();
-                  setStep(1);
-                  setFormData({
-                    name: '',
-                    phone: '',
-                    email: '',
-                    password: '',
-                    confirmPassword: '',
-                  });
-                  setVerificationCode('');
-                  setRestoredFromSession(false);
-                  setError('');
-                  setSuccess('');
-                }}
-                className="ml-3 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline text-xs"
-              >
-                Start fresh
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-red-100 dark:border-gray-700">
-          {/* Success Message */}
-          {success && (
-            <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm font-poppins">
-              <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                {success}
-              </div>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm font-poppins">
-              <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                {error}
-              </div>
-            </div>
-          )}
-
-          {/* Step 1: Personal Information */}
-          {step === 1 && (
-            <div className="space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Enter your full name"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="Enter your phone number"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleNextStep}
-                className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-lg hover:shadow-xl font-poppins"
-              >
-                Continue
-                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
-            </div>
-          )}
-
-          {/* Step 2: Account Details */}
-          {step === 2 && (
-            <div className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
-                  Email Address <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Enter your email address"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <PasswordInput
-                  id="password"
-                  name="password"
-                  autoComplete="new-password"
-                  required
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="Create a secure password"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
-                  Confirm Password <span className="text-red-500">*</span>
-                </label>
-                <PasswordInput
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  autoComplete="new-password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  placeholder="Confirm your password"
-                />
-              </div>
-
-              <div className="flex space-x-4">
-                <button
-                  type="button"
-                  onClick={handlePrevStep}
-                  className="flex-1 flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-semibold rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 font-poppins"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-                  </svg>
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  disabled={isLoading}
-                  className="flex-1 flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl font-poppins"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating...
-                    </div>
-                  ) : (
-                    <>
-                      Create Account
-                      <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                      </svg>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Email Verification */}
-          {step === 3 && (
-            <form className="space-y-6" onSubmit={handleVerify}>
-              <div className="text-center">
-                <div className="mx-auto h-16 w-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
-                  <svg className="h-8 w-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+            {/* LEFT SIDE: BANNER */}
+            <div className="hidden md:flex md:w-5/12 lg:w-1/2 bg-slate-900 text-white p-12 flex-col justify-between relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                    <div className="absolute right-0 top-0 w-[500px] h-[500px] bg-indigo-500 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute left-0 bottom-0 w-[500px] h-[500px] bg-blue-500 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2"></div>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 font-poppins">
-                  We've sent a verification code to<br />
-                  <strong>{formData.email}</strong>
-                </p>
-              </div>
 
-              <div className='flex flex-col items-center justify-center'>
-                <label htmlFor="verificationCode" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
-                  Verification Code
-                </label>
-                <InputOTP
-                  maxLength={6}
-                  value={verificationCode}
-                  onChange={(value) => setVerificationCode(value)}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-poppins">
-                  Enter the 6-digit code sent to your email
-                </p>
-              </div>
-
-              {/* Resend Verification Message */}
-              {resendMessage && (
-                <div className={`text-center text-sm font-poppins p-3 rounded-lg ${resendMessage.includes('berhasil')
-                  ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
-                  : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
-                  }`}>
-                  {resendMessage}
+                <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-8">
+                        <div className="h-8 w-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+                            <Store className="h-5 w-5 text-white" />
+                        </div>
+                        <span className="font-bold text-xl tracking-tight">BossApp</span>
+                    </div>
+                    <h1 className="text-4xl font-bold leading-tight mb-4">
+                        Kelola Bisnis Anda <br /> <span className="text-indigo-400">Lebih Profesional.</span>
+                    </h1>
+                    <p className="text-slate-400 text-lg max-w-md">
+                        Satu platform untuk semua kebutuhan operasional bisnis. Mulai dari kasir, inventori, hingga laporan keuangan.
+                    </p>
                 </div>
-              )}
-
-              {/* Resend Verification Button */}
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={handleResendVerification}
-                  disabled={resendLoading}
-                  className="text-sm text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-poppins"
-                >
-                  {resendLoading ? (
-                    <div className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Sending...
-                    </div>
-                  ) : (
-                    "Didn't receive the code? Resend"
-                  )}
-                </button>
-              </div>
-
-              <div className="flex space-x-4">
-                <button
-                  type="button"
-                  onClick={handlePrevStep}
-                  className="flex-1 flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-semibold rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 font-poppins"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-                  </svg>
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl font-poppins"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Verifying...
-                    </div>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Verify Email
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Sign in link - Only show on step 1 */}
-          {step === 1 && (
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400 font-poppins">
-                Already have an account?{' '}
-                <Link href="/auth/login" className="font-semibold text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 transition-colors duration-200">
-                  Sign In
-                </Link>
-              </p>
             </div>
-          )}
-        </div>
 
-        {/* Back Navigation Confirmation Modal */}
-        <BackNavigationConfirmModal
-          open={showBackConfirmation}
-          onOpenChange={setShowBackConfirmation}
-          onConfirm={confirmBackNavigation}
-          onCancel={cancelBackNavigation}
-        />
-      </div>
-    </div>
-  );
+            <div className="flex-1 flex max-h-[100dvh] flex-col items-center justify-center p-6 md:p-12 overflow-y-auto">
+                <div className="w-full max-w-lg">
+
+                    {!showOtpInput && (
+                        <div className="flex items-center justify-between mb-8 px-2">
+                            {[1, 2, 3].map((s) => (
+                                <div key={s} className="flex items-center">
+                                    <div className={cn(
+                                        "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors",
+                                        step === s ? "border-indigo-600 bg-indigo-600 text-white" :
+                                            step > s ? "border-indigo-600 bg-white text-indigo-600" :
+                                                "border-slate-200 bg-white text-slate-400"
+                                    )}>
+                                        {step > s ? <Check className="h-4 w-4" /> : s}
+                                    </div>
+                                    {s < 3 && (
+                                        <div className={cn(
+                                            "w-12 h-0.5 mx-2 transition-colors",
+                                            step > s ? "bg-indigo-600" : "bg-slate-200"
+                                        )}></div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* FORM CONTENT */}
+                    <div className="bg-white p-0 md:p-8 rounded-2xl md:shadow-xl md:border border-slate-100">
+
+                        {step === 1 && showOtpInput && (
+                            <OtpInputVerification />
+                        )}
+
+                        {/* --- STEP 1: AKUN OWNER (FORM AWAL) --- */}
+                        {step === 1 && !showOtpInput && (
+                            <RegisterStep1 />
+                        )}
+
+                        {step === 2 && (
+                            <RegisterStep2
+                                handleLogout={handleLogout}
+                                handleNext={handleNext}
+                                logoutLoading={logoutLoading}
+                                name={names ?? ''}
+                            />
+                        )}
+
+                        {/* --- STEP 3: PILIH PLAN --- */}
+                        {step === 3 && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                                <div className="text-center md:text-left">
+                                    <h2 className="text-2xl font-bold text-slate-900">Pilih Paket Langganan</h2>
+                                    <p className="text-slate-500 text-sm">Sesuaikan dengan skala bisnis Anda saat ini.</p>
+                                </div>
+
+                                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+                                    {PLANS.map((plan) => (
+                                        <div
+                                            key={plan.id}
+                                            onClick={() => setFormData({ ...formData, selectedPlan: plan.id })}
+                                            className={cn(
+                                                "relative border-2 rounded-xl p-4 cursor-pointer transition-all hover:shadow-md",
+                                                formData.selectedPlan === plan.id
+                                                    ? "border-indigo-600 bg-white ring-1 ring-indigo-600 shadow-md"
+                                                    : `${plan.color} bg-white border-transparent`
+                                            )}
+                                        >
+                                            {plan.badge && (
+                                                <span className={cn(
+                                                    "absolute top-0 right-0 px-3 py-1 text-[10px] font-bold rounded-bl-xl rounded-tr-lg text-white",
+                                                    formData.selectedPlan === plan.id ? "bg-indigo-600" : "bg-slate-400"
+                                                )}>
+                                                    {plan.badge}
+                                                </span>
+                                            )}
+
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <h3 className="font-bold text-slate-900">{plan.name}</h3>
+                                                    <div className="flex items-baseline gap-1">
+                                                        <span className="text-lg font-extrabold text-slate-900">{plan.price}</span>
+                                                        <span className="text-xs text-slate-500 font-medium">{plan.period}</span>
+                                                    </div>
+                                                </div>
+                                                <div className={cn(
+                                                    "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                                    formData.selectedPlan === plan.id ? "border-indigo-600" : "border-slate-300"
+                                                )}>
+                                                    {formData.selectedPlan === plan.id && <div className="h-2.5 w-2.5 rounded-full bg-indigo-600" />}
+                                                </div>
+                                            </div>
+
+                                            <p className="text-xs text-slate-500 mb-3">{plan.description}</p>
+
+                                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                                {plan.features.slice(0, 4).map((feat, idx) => (
+                                                    <div key={idx} className="flex items-center text-xs text-slate-600">
+                                                        {feat.allowed ? (
+                                                            <CheckCircle2 className="h-3 w-3 mr-1.5 text-green-500 flex-shrink-0" />
+                                                        ) : (
+                                                            <X className="h-3 w-3 mr-1.5 text-slate-300 flex-shrink-0" />
+                                                        )}
+                                                        <span className={!feat.allowed ? "text-slate-400 line-through" : ""}>{feat.label}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="bg-slate-50 p-3 rounded-lg flex items-start gap-3 border border-slate-100">
+                                    <ShieldCheck className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-slate-600">
+                                        <span className="font-bold">Jaminan Keamanan Data.</span> Data Anda terenkripsi dan dapat diexport kapan saja.
+                                    </p>
+                                </div>
+
+                                <div className="pt-2 flex gap-3">
+                                    <Button variant="secondary" onClick={handleBack} disabled={isSubmitting}>
+                                        <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+                                    </Button>
+                                    <Button className="flex-1" onClick={handleSubmit} disabled={isSubmitting}>
+                                        {formData.selectedPlan === 'TRIAL' ? 'Mulai Gratis Sekarang' : 'Lanjut ke Pembayaran'}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+
+                    <p className="text-center text-xs text-slate-400 mt-8">
+                        &copy; 2024 BossApp SaaS. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
 }

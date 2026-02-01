@@ -50,7 +50,7 @@ export const findNearbyOutletsController = asyncHandler(async (req: Request, res
 });
 
 export const updateOutletLocationController = asyncHandler(async (req: Request, res: Response) => {
-    const { outletId } = req.params;
+    const outletId = req.params.outletId as string;
     const { latitude, longitude } = req.body;
     const ownerId = req.storedUser!.id;
 
@@ -72,7 +72,7 @@ export const createOutletController = asyncHandler(async (req: Request, res: Res
 });
 
 export const getOutletByIdController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const outlet = await getOutletByIdService(id);
     return ResponseUtil.success(res, outlet);
 });
@@ -92,7 +92,7 @@ export const getAllOutletsController = asyncHandler(async (req: Request, res: Re
 });
 
 export const getOutletsByBusinessIdController = asyncHandler(async (req: Request, res: Response) => {
-    const { businessId } = req.params;
+    const businessId = req.params.businessId as string;
     const { search, take, skip } = req.query;
 
     const parsedTake = take ? parseInt(take as string) : 10; // Default 10 jika tidak disediakan
@@ -113,7 +113,7 @@ export const getFeaturedOutletsController = asyncHandler(async (req: Request, re
 });
 
 export const updateOutletController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const payload = req.body;
     const ownerId = req.storedUser!.id;
     const outlet = await updateOutletService(id, payload, ownerId);
@@ -121,7 +121,7 @@ export const updateOutletController = asyncHandler(async (req: Request, res: Res
 });
 
 export const deleteOutletController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const ownerId = req.storedUser!.id;
     const outlet = await deleteOutletService(id, ownerId);
     return ResponseUtil.success(res, outlet);
@@ -133,7 +133,7 @@ export const getOutletIdsController = asyncHandler(async (req: Request, res: Res
 });
 
 export const uploadQRISController = asyncHandler(async (req: Request, res: Response) => {
-    const { id: outletId } = req.params;
+    const outletId = req.params.outletId as string;
     const ownerId = req.storedUser!.id;
     const result = await uploadQRISService(outletId, ownerId, req.body.fileUrl);
 
@@ -141,7 +141,7 @@ export const uploadQRISController = asyncHandler(async (req: Request, res: Respo
 });
 
 export const getQRISController = asyncHandler(async (req: Request, res: Response) => {
-    const { id: outletId } = req.params;
+    const outletId = req.params.outletId as string;
 
     const qrisData = await getQRISService(outletId);
 
@@ -151,7 +151,7 @@ export const getQRISController = asyncHandler(async (req: Request, res: Response
 type RevenueTimeframe = '7d' | '30d' | '3m' | 'custom';
 
 export const getOutletRevenueTrendController = asyncHandler(async (req: Request, res: Response) => {
-    const { outletId } = req.params;
+    const outletId = req.params.outletId as string;
     if (!outletId) {
         return ResponseUtil.badRequest(res, 'Outlet ID diperlukan');
     }
@@ -171,7 +171,7 @@ export const getOutletRevenueTrendController = asyncHandler(async (req: Request,
 });
 
 export const getOutletAnalyticsController = asyncHandler(async (req: Request, res: Response) => {
-    const { outletId } = req.params
+    const outletId = req.params.outletId as string
 
     if (!outletId) {
         return ResponseUtil.badRequest(res, 'Outlet ID diperlukan');

@@ -135,6 +135,7 @@ interface BaseFieldConfig<T extends FieldValues> {
     condition?: (values: Partial<T>) => boolean;
     typeResolver?: (values: Partial<T>) => FieldType;
     type?: FieldType
+    icon?: React.ComponentType<{ className?: string }>
 }
 
 interface ImageFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
@@ -484,6 +485,7 @@ function FieldInputSwitch<T extends FieldValues>({
     allValues: Partial<T>
 }) {
     const placeholderText = resolvePlaceholder(field.placeholder, allValues);
+    const Icon = field.icon;
 
     switch (field.type) {
         case `file`:
@@ -500,15 +502,19 @@ function FieldInputSwitch<T extends FieldValues>({
             )
         case "select":
             return (
-                <SelectOption
-                    {...formField}
-                    id={formField.name}
-                    onValueChange={formField.onChange}
-                    disabled={field.disabled}
-                    options={field.options || []}
-                    value={formField.value!}
-                    placeholder={placeholderText}
-                />
+                <div className="relative">
+                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    <SelectOption
+                        {...formField}
+                        id={formField.name}
+                        onValueChange={formField.onChange}
+                        disabled={field.disabled}
+                        options={field.options || []}
+                        value={formField.value!}
+                        placeholder={placeholderText}
+                        className={`${Icon ? 'pl-9' : ''} text-sm ${field.className}`}
+                    />
+                </div>
             );
         case "toogle":
             return (
@@ -534,32 +540,44 @@ function FieldInputSwitch<T extends FieldValues>({
             );
         case "presentage":
             return (
-                <InputPercentage
-                    {...formField}
-                    id={formField.name}
-                    onValueChange={formField.onChange}
-                    disabled={field.disabled}
-                    value={formField.value!}
-                    placeholder={placeholderText}
-                />
+                <div className="relative">
+                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    <InputPercentage
+                        {...formField}
+                        id={formField.name}
+                        onValueChange={formField.onChange}
+                        disabled={field.disabled}
+                        value={formField.value!}
+                        className={`${Icon ? 'pl-9' : ''} text-sm ${field.className}`}
+                        placeholder={placeholderText}
+                    />
+                </div>
             );
         case "textarea":
             return (
-                <Textarea
-                    id={formField.name}
-                    placeholder={placeholderText}
-                    disabled={field.disabled}
-                    {...formField}
-                />
+                <div className="relative">
+                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    <Textarea
+                        id={formField.name}
+                        placeholder={placeholderText}
+                        disabled={field.disabled}
+                        className={`${Icon ? 'pl-9' : ''} text-sm ${field.className}`}
+                        {...formField}
+                    />
+                </div>
             );
         case "password":
             return (
-                <PasswordInput
-                    id={formField.name}
-                    placeholder={placeholderText}
-                    disabled={field.disabled}
-                    {...formField}
-                />
+                <div className="relative">
+                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    <PasswordInput
+                        id={formField.name}
+                        placeholder={placeholderText}
+                        disabled={field.disabled}
+                        className={`${Icon ? 'pl-9' : ''} text-sm ${field.className}`}
+                        {...formField}
+                    />
+                </div>
             );
         case "custom":
             return <>{
@@ -575,43 +593,56 @@ function FieldInputSwitch<T extends FieldValues>({
             />
         case "currency":
             return (
-                <InputCurrency
-                    {...formField}
-                    id={formField.name}
-                    placeholder={placeholderText}
-                    disabled={field.disabled}
-                    value={formField.value}
-                    onValueChange={(val) => {
-                        formField.onChange(val || 0);
-                    }}
-                    name={formField.name}
-                    onBlur={formField.onBlur}
-                />
+                <div className="relative">
+                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    <InputCurrency
+                        {...formField}
+                        id={formField.name}
+                        placeholder={placeholderText}
+                        disabled={field.disabled}
+                        value={formField.value}
+                        onValueChange={(val) => {
+                            formField.onChange(val || 0);
+                        }}
+                        className={`${Icon ? 'pl-9' : ''} text-sm ${field.className}`}
+                        name={formField.name}
+                        onBlur={formField.onBlur}
+                    />
+                </div>
             );
         case 'number':
             return (
-                <Input
-                    id={formField.name}
-                    type={'number'}
-                    placeholder={placeholderText}
-                    disabled={field.disabled}
-                    {...formField}
-                    onChange={(e) => {
-                        const value = e.target.value
-                        formField.onChange(value === '' ? undefined : Number(value))
-                    }}
-                />
+                <div className="relative">
+                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    <Input
+                        id={formField.name}
+                        type={'number'}
+                        placeholder={placeholderText}
+                        disabled={field.disabled}
+                        {...formField}
+                        className={`${Icon ? 'pl-9' : ''} text-sm ${field.className}`}
+                        onChange={(e) => {
+                            const value = e.target.value
+                            formField.onChange(value === '' ? undefined : Number(value))
+                        }}
+                    />
+                </div>
+
             );
         default:
             return (
-                <Input
-                    id={formField.name}
-                    type={field.type || "text"}
-                    placeholder={placeholderText}
-                    disabled={field.disabled}
-                    {...formField}
-                    onChange={formField.onChange}
-                />
+                <div className="relative">
+                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    <Input
+                        id={formField.name}
+                        type={field.type || "text"}
+                        placeholder={placeholderText}
+                        disabled={field.disabled}
+                        className={`${Icon ? 'pl-9' : ''} text-sm ${field.className}`}
+                        {...formField}
+                        onChange={formField.onChange}
+                    />
+                </div>
             );
     }
 }

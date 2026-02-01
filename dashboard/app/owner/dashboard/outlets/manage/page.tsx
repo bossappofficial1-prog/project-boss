@@ -349,6 +349,8 @@ export default function ManageOutletsPage() {
 
                       <div className="flex gap-2">
                         <MapPicker
+                          showControls
+                          mapProps={{ projection: { type: 'globe' } }}
                           latitude={formData.latitude || 0}
                           longitude={formData.longitude || 0}
                           onLocationChange={handleLocationSelect}

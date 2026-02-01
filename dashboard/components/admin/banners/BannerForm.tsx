@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { FormFieldConfig, ReusableForm } from "@/components/ui/reuseable-form"
 import { ACCEPTED_FILE_TYPES } from "@/constants/file-types"
+import { FileText } from "lucide-react";
 import z from "zod";
 
 export const bannerSchema = z.object({
@@ -44,6 +45,7 @@ export default function BannerForm(
             label: 'Sub Title',
             name: 'subtitle',
             type: 'textarea',
+            icon: FileText,
             placeholder: 'Contoh: Sekarang pelanggan bisa booking langsung',
             colSpan: 'full'
         },

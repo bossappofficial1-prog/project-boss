@@ -5,11 +5,13 @@ import * as jose from 'jose';
 interface JwtPayload {
   sessionId: string;
   role: 'ADMIN' | 'OWNER';
+  name: string;
+  businessId?: string;
   iat?: number;
   exp?: number;
+  provider?: 'local' | 'google'
 }
 
-// Route configuration with Sets for O(1) lookups
 const ROUTE_CONFIG = {
   publicRoutes: new Set([
     '/auth/login',
@@ -55,10 +57,6 @@ function isOwnerOnlyRoute(pathname: string): boolean {
   return Array.from(ROUTE_CONFIG.ownerOnlyRoutes).some(route => pathname.startsWith(route));
 }
 
-function isCashierRoute(pathname: string): boolean {
-  return Array.from(ROUTE_CONFIG.cashierRoutes).some(route => pathname.startsWith(route));
-}
-
 function isSharedRoute(pathname: string): boolean {
   return Array.from(ROUTE_CONFIG.sharedRoutes).some(route => pathname.startsWith(route));
 }
@@ -78,7 +76,10 @@ async function verifyJWT(token: string): Promise<JwtPayload | null> {
 
     const result: JwtPayload = {
       sessionId: String(payload.sessionId),
-      role: payload.role,
+      role: payload.role as 'ADMIN' | 'OWNER',
+      name: payload.name as string,
+      provider: payload.provider as 'local' | 'google',
+      businessId: payload.businessId as string | undefined,
       iat: typeof payload.iat === 'number' ? payload.iat : undefined,
       exp: typeof payload.exp === 'number' ? payload.exp : undefined,
     };
@@ -126,7 +127,6 @@ function createLoginRedirect(request: NextRequest, pathname: string, reason?: st
   return response;
 }
 
-// --- Middleware ---
 export const middleware: NextMiddleware = async (request: NextRequest) => {
   const { pathname } = request.nextUrl;
 
@@ -143,20 +143,9 @@ export const middleware: NextMiddleware = async (request: NextRequest) => {
   const token = request.cookies.get('token')?.value;
   const cashierToken = request.cookies.get('cashier_token')?.value;
   const isPublic = isPublicRoute(pathname);
-  const isCashier = isCashierRoute(pathname);
-
-  // Debug logging for cashier routes
-  if (pathname.startsWith('/cashier') || pathname.startsWith('/auth/login/cashier')) {
-    console.log('[Middleware] Cashier route detected:', {
-      pathname,
-      hasCashierToken: !!cashierToken,
-      hasOwnerToken: !!token
-    });
-  }
 
   // Handle cashier routes separately (check this FIRST before other auth logic)
   if (pathname.startsWith('/cashier')) {
-    // Other cashier routes require cashier_token
     if (!cashierToken) {
       const loginUrl = new URL('/auth/login/cashier', request.url);
       return NextResponse.redirect(loginUrl);
@@ -180,12 +169,22 @@ export const middleware: NextMiddleware = async (request: NextRequest) => {
       return createLoginRedirect(request, pathname, 'token_invalid_or_expired');
     }
 
-    // Valid token on public route (except unauthorized) → redirect to dashboard
+    if (payload.role === 'OWNER' && !payload.businessId) {
+      if (pathname.startsWith('/auth/register')) {
+        return NextResponse.next();
+      }
+
+      return NextResponse.redirect(new URL(`/auth/register?step=2&provider=${payload.provider}&name=${payload.name}`, request.url));
+    }
+
     if (isPublic && pathname !== '/unauthorized') {
+      if (pathname.startsWith('/auth/register') && request.nextUrl.searchParams.get('step')) {
+        return NextResponse.next();
+      }
+
       return NextResponse.redirect(new URL(getRoleBasedRedirect(payload.role), request.url));
     }
 
-    // Invalid role → redirect to login
     if (!['ADMIN', 'OWNER'].includes(payload.role)) {
       return createLoginRedirect(request, pathname, 'invalid_role');
     }
@@ -204,6 +203,9 @@ export const middleware: NextMiddleware = async (request: NextRequest) => {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-id', payload.sessionId);
     requestHeaders.set('x-user-role', payload.role);
+    if (payload.businessId) {
+      requestHeaders.set('x-business-id', payload.businessId);
+    }
     requestHeaders.set('x-session-id', payload.sessionId);
     requestHeaders.set('x-token-verified', 'true');
 

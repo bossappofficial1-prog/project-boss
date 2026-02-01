@@ -3,6 +3,12 @@ import { bulkOrderSValues } from "../schemas/banner.schema";
 
 export class BannerRepository {
 
+    static async findById(bannerId: string) {
+        return db.banner.findUnique({
+            where: { id: bannerId },
+            select: { id: true, imageUrl: true }
+        })
+    }
     static async findActiveBanners(limit = 10) {
         return db.banner.findMany({
             where: { isActive: true },

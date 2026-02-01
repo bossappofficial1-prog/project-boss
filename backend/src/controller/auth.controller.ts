@@ -7,6 +7,7 @@ import { HttpStatus } from "../constants/http-status";
 import { config } from "../config";
 import { JwtUtil } from "../utils";
 import { redis } from "../config/redis";
+import { BusinessRepository } from "../repositories/business.repository";
 
 export const verifyController = asyncHandler(async (req: Request, res: Response) => {
     const { email, code } = req.body;
@@ -99,7 +100,7 @@ export const changePasswordController = asyncHandler(async (req: Request, res: R
     return ResponseUtil.success(res, { message: "Password berhasil diubah" });
 });
 
-export const googleOAuthCallbackController = asyncHandler(async (req: any, res: any) => {
+export const googleOAuthCallbackController = asyncHandler(async (req: any, res: Response) => {
     const clientUrl = config.CLIENT_URL[0]?.trim() || 'http://localhost:3010';
 
     try {
@@ -108,9 +109,11 @@ export const googleOAuthCallbackController = asyncHandler(async (req: any, res: 
         if (!user) {
             return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent("Google authentication failed")}`);
         }
+        const checkBusinessUser = await BusinessRepository.findByOwnerId(user.user.id)
 
         // Set JWT token as cookie
         const token = user.token;
+
         res.cookie("token", token, {
             httpOnly: true,
             secure: !!config.COOKIES_DOMAIN,
@@ -120,10 +123,12 @@ export const googleOAuthCallbackController = asyncHandler(async (req: any, res: 
             path: '/'
         });
 
-        // Redirect to dashboard with stored URL
-        const redirectUrl = (req.session as any).redirectUrl || '/owner/dashboard';
-        res.redirect(`${clientUrl}${redirectUrl}`);
+        if (checkBusinessUser) {
+            return res.redirect(`${clientUrl}/owner/dashboard`)
+        }
+        res.redirect(`${clientUrl}/auth/register?step=2&provider=google&name=${user.user.name}`);
     } catch (error: any) {
+        console.log(error)
         if (error.message && error.message.includes("Email sudah terdaftar")) {
             const errorMessage = encodeURIComponent("Email sudah terdaftar dengan akun lain.");
             return res.redirect(`${clientUrl}/auth/login?error=${errorMessage}`);
