@@ -326,8 +326,19 @@ export default function AddOrEditProductServiceModal({
       name: "service.providerName",
       label: "Nama Penyedia",
       type: "text",
-      colSpan: "full",
+      colSpan: 3,
       placeholder: "contoh: jono",
+      condition: (values) => values.type === "SERVICE",
+    },
+    {
+      name: "service.bookingInWorkHours",
+      label: "Booking di jam kerja",
+      colSpan: 3,
+      type: "dual-option-switch",
+      switchOptions: {
+        left: { label: "Tidak", value: false },
+        right: { label: "Ya", value: true },
+      },
       condition: (values) => values.type === "SERVICE",
     },
     {
@@ -344,18 +355,6 @@ export default function AddOrEditProductServiceModal({
       type: "tel",
       colSpan: 3,
       placeholder: "contoh: 081234567890",
-      condition: (values) => values.type === "SERVICE",
-    },
-    {
-      name: "service.bookingInWorkHours",
-      label: "Izinkan pelanggan booking di jam kerja",
-      colSpan: "full",
-      oneLine: true,
-      type: "dual-option-switch",
-      switchOptions: {
-        left: { label: "Tidak", value: false },
-        right: { label: "Ya", value: true },
-      },
       condition: (values) => values.type === "SERVICE",
     },
     {
