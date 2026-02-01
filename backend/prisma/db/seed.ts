@@ -6,8 +6,12 @@ const {
   SubscriptionStatus,
 } = require("@prisma/client");
 const { hash } = require("bcryptjs");
+const { Pool } = require("pg");
+const { PrismaPg } = require("@prisma/adapter-pg");
 
-const prisma = new PrismaClient();
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 const forceReseed = process.argv.includes("--force") || process.argv.includes("-f");
 
@@ -27,7 +31,7 @@ async function main() {
   if (forceReseed) {
     console.log("⚡ FORCE RESEED MODE: Clearing all existing data!");
     console.log("🗑️  Cleaning existing data...");
-    await prisma.productImage.deleteMany({});
+
     await prisma.stockLog.deleteMany({}); // Added cleanup for StockLog
     await prisma.productGoods.deleteMany({}); // Added cleanup
     await prisma.productService.deleteMany({}); // Added cleanup
@@ -400,19 +404,11 @@ async function main() {
       }
 
       const createdProduct = await prisma.product.create({
-        data: productData,
+        data: {
+          ...productData,
+          image: template.images[0] || null,
+        },
       });
-
-      const imagesToCreate = template.images.map((imageUrl, index) => ({
-        productId: createdProduct.id,
-        url: imageUrl,
-        alt: `${template.name} image ${index + 1}`,
-        order: index,
-      }));
-
-      if (imagesToCreate.length) {
-        await prisma.productImage.createMany({ data: imagesToCreate });
-      }
     }
   }
   console.log("✅ Products with guaranteed images created.");
@@ -424,13 +420,12 @@ async function main() {
     prisma.business.count(),
     prisma.outlet.count(),
     prisma.product.count(),
-    prisma.productImage.count(),
   ]);
   console.log(`👥 Users: ${counts[0]}`);
   console.log(`🏢 Businesses: ${counts[1]}`);
   console.log(`🏪 Outlets: ${counts[2]}`);
   console.log(`📦 Products: ${counts[3]}`);
-  console.log(`🖼️  Product Images: ${counts[4]}`);
+
   console.log("\n✨ Database seeding completed successfully!");
 }
 

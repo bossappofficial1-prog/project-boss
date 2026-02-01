@@ -317,6 +317,9 @@ model ProductService {
   // Relations
   bookingSlots BookingSlot[]
 
+  // Izinkan booking diluar jam kerja
+  bookingInWorkHours Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
