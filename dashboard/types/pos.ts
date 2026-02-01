@@ -1,24 +1,19 @@
-import type { Product as BackendProduct } from '@/lib/apis/order';
+import type { Product as BackendProduct } from "@/lib/apis/order";
 
-export type PaymentMethod = 'cash' | 'qris' | 'online';
+export type PaymentMethod = "cash" | "qris" | "online";
 
-export type POSCustomerMode = 'identified' | 'walkin';
+export type POSCustomerMode = "identified" | "walkin";
 
+// POSProduct now properly extends Product which has the correct structure
 export interface POSProduct extends BackendProduct {
-    description?: string;
-    quantity?: number | null;
-    image?: string | null;
-    status?: 'ACTIVE' | 'INACTIVE';
-    serviceDurationMinutes?: number | null;
-    type: 'GOODS' | 'SERVICE';
+  // All fields are inherited from Product interface
+  // which now properly includes goods and service subtypes
 }
 
 export interface POSCartLine {
-    product: POSProduct;
-    quantity: number;
-    bookingSlotId?: string;
-    bookingStart?: string;
-    bookingEnd?: string;
-    staffId?: string;
-    staffName?: string;
+  product: POSProduct;
+  quantity: number;
+  bookingSlotId?: string;
+  bookingStart?: string;
+  bookingEnd?: string;
 }
