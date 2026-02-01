@@ -1,47 +1,48 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { authApi, productApi } from '@/lib/api';
-import { useOutletContext } from '@/components/providers/OutletProvider';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { authApi, productApi } from "@/lib/api";
+import { useOutletContext } from "@/components/providers/OutletProvider";
 
 export interface ProductItem {
-  id: string
-  name: string
-  description: string
-  image?: string
-  type: "SERVICE" | "GOODS"
-  status: 'ACTIVE' | 'INACTIVE'
-  createdAt: string
-  updatedAt: string
-  goods?: Goods
-  service?: Service
+  id: string;
+  name: string;
+  description: string;
+  image?: string;
+  type: "SERVICE" | "GOODS";
+  status: "ACTIVE" | "INACTIVE";
+  createdAt: string;
+  updatedAt: string;
+  goods?: Goods;
+  service?: Service;
 }
 
 export interface Goods {
-  id: string
-  productId: string
-  currentStock: number
-  minStock?: number
-  unit: string
-  averageHpp: number
-  sellingPrice: number
-  createdAt: string
-  updatedAt: string
+  id: string;
+  productId: string;
+  currentStock: number;
+  minStock?: number;
+  unit: string;
+  averageHpp: number;
+  sellingPrice: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Service {
-  id: string
-  productId: string
-  durationMinutes: number
-  sellingPrice: number
-  providerName: string
-  providerPhone: string
-  providerEmail: string
-  commissionType: "PERCENTAGE" | "FIXED"
-  commissionValue: number
-  maxParallel: number
-  createdAt: string
-  updatedAt: string
+  id: string;
+  productId: string;
+  durationMinutes: number;
+  sellingPrice: number;
+  providerName: string;
+  providerPhone: string;
+  providerEmail: string;
+  commissionType: "PERCENTAGE" | "FIXED";
+  commissionValue: number;
+  maxParallel: number;
+  bookingInWorkHours: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface OutletItem {
@@ -51,13 +52,17 @@ export interface OutletItem {
 }
 
 export function useProductsData() {
-  const { selectedOutletId, outlets: contextOutlets, isLoading: contextLoading } = useOutletContext();
+  const {
+    selectedOutletId,
+    outlets: contextOutlets,
+    isLoading: contextLoading,
+  } = useOutletContext();
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasBusinessProfile, setHasBusinessProfile] = useState<boolean>(false);
@@ -74,8 +79,8 @@ export function useProductsData() {
         setHasOutlet(userData.outlets.length > 0);
         if (userData.outlets.length === 0) setIsLoading(false);
       } catch (e) {
-        console.error('Error fetching user data:', e);
-        setError('Gagal memuat data pengguna');
+        console.error("Error fetching user data:", e);
+        setError("Gagal memuat data pengguna");
         setIsLoading(false);
       }
     };
@@ -103,13 +108,13 @@ export function useProductsData() {
       const data = response.data;
       const paginated = response.pagination;
 
-      setProducts(data)
-      setTotalPages(paginated.totalPages)
-      setTotalProducts(paginated.total)
+      setProducts(data);
+      setTotalPages(paginated.totalPages);
+      setTotalProducts(paginated.total);
     } catch (e: any) {
-      console.error('Error fetching products:', e);
+      console.error("Error fetching products:", e);
       setProducts([]);
-      setError(e?.message || 'Gagal memuat produk');
+      setError(e?.message || "Gagal memuat produk");
     } finally {
       setIsLoading(false);
     }
@@ -133,19 +138,19 @@ export function useProductsData() {
       await productApi.delete(productId);
       await fetchProducts();
     } catch (e: any) {
-      console.error('Error deleting product:', e);
-      setError(e?.message || 'Gagal menghapus produk. Silakan coba lagi.');
+      console.error("Error deleting product:", e);
+      setError(e?.message || "Gagal menghapus produk. Silakan coba lagi.");
     }
   };
 
   const handleToggleStatus = async (product: ProductItem) => {
     try {
-      const newStatus = product.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      const newStatus = product.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
       await productApi.update(product.id, { status: newStatus });
       await fetchProducts();
     } catch (e: any) {
-      console.error('Error updating product status:', e);
-      setError(e?.message || 'Gagal mengubah status produk. Silakan coba lagi.');
+      console.error("Error updating product status:", e);
+      setError(e?.message || "Gagal mengubah status produk. Silakan coba lagi.");
     }
   };
 
@@ -156,23 +161,23 @@ export function useProductsData() {
         search: searchQuery || undefined,
       });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = `data_produk_dan_jasa_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.download = `data_produk_dan_jasa_${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (e: any) {
-      console.error('Error exporting products:', e);
-      setError(e?.message || 'Gagal mengekspor data produk. Silakan coba lagi.');
+      console.error("Error exporting products:", e);
+      setError(e?.message || "Gagal mengekspor data produk. Silakan coba lagi.");
     }
   };
 
   const handleRefreshData = () => fetchProducts();
 
   const formatDuration = useCallback((minutes?: number) => {
-    if (!minutes) return '-';
+    if (!minutes) return "-";
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return hours > 0 ? `${hours}j ${mins}m` : `${mins}m`;
@@ -192,7 +197,7 @@ export function useProductsData() {
     error,
     hasBusinessProfile,
     hasOutlet,
-    // setters  
+    // setters
     setCurrentPage,
     setItemsPerPage,
     setSearchQuery,

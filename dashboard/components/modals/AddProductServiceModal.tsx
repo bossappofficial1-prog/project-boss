@@ -51,6 +51,7 @@ const serviceSchema = z.object({
   ),
   commissionType: z.enum(["PERCENTAGE", "FIXED"]),
   commissionValue: z.coerce.number().min(0),
+  bookingInWorkHours: z.boolean().default(true),
 });
 
 export type ServiceSchemaType = z.infer<typeof serviceSchema>;
@@ -116,6 +117,7 @@ export default function AddOrEditProductServiceModal({
             commissionValue: initialData.service?.commissionValue ?? 0,
             providerEmail: initialData.service?.providerEmail ?? "",
             providerPhone: initialData.service?.providerPhone ?? "",
+            bookingInWorkHours: initialData.service?.bookingInWorkHours ?? true,
           },
           goods: undefined,
         } satisfies ProductFormValues;
@@ -188,6 +190,7 @@ export default function AddOrEditProductServiceModal({
         sellingPrice: Number(otherValues.get("service[sellingPrice]")),
         providerEmail: providerEmail && providerEmail.trim() !== "" ? providerEmail : undefined,
         providerPhone: providerPhone && providerPhone.trim() !== "" ? providerPhone : undefined,
+        bookingInWorkHours: otherValues.get("service[bookingInWorkHours]") === "true",
       };
       payload.service = service;
     }
@@ -319,7 +322,6 @@ export default function AddOrEditProductServiceModal({
       colSpan: 3,
       condition: (values) => values.type === "SERVICE",
     },
-
     {
       name: "service.providerName",
       label: "Nama Penyedia",
@@ -342,6 +344,18 @@ export default function AddOrEditProductServiceModal({
       type: "tel",
       colSpan: 3,
       placeholder: "contoh: 081234567890",
+      condition: (values) => values.type === "SERVICE",
+    },
+    {
+      name: "service.bookingInWorkHours",
+      label: "Izinkan pelanggan booking di jam kerja",
+      colSpan: "full",
+      oneLine: true,
+      type: "dual-option-switch",
+      switchOptions: {
+        left: { label: "Tidak", value: false },
+        right: { label: "Ya", value: true },
+      },
       condition: (values) => values.type === "SERVICE",
     },
     {

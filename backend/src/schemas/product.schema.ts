@@ -33,6 +33,8 @@ const productServiceSchema = z.object({
   commissionValue: z.number().min(0).optional(),
 
   maxParallel: z.number().int().min(1).optional(),
+
+  bookingInWorkHours: z.boolean().default(true).optional(),
 });
 
 /* =====================================================

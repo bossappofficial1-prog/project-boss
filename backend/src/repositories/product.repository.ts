@@ -67,6 +67,7 @@ export class ProductRepository {
               commissionType: data.service.commissionType,
               commissionValue: data.service.commissionValue,
               maxParallel: data.service.maxParallel,
+              bookingInWorkHours: data.service.bookingInWorkHours,
             },
           },
         },
@@ -126,13 +127,13 @@ export class ProductRepository {
         { outletId },
         ...(q && q !== ""
           ? [
-            {
-              name: {
-                contains: q,
-                mode: "insensitive" as Prisma.QueryMode,
+              {
+                name: {
+                  contains: q,
+                  mode: "insensitive" as Prisma.QueryMode,
+                },
               },
-            },
-          ]
+            ]
           : []),
         ...(accessed && accessed !== "OWNER"
           ? [{ status: "ACTIVE" } as Prisma.ProductWhereInput]
@@ -153,8 +154,8 @@ export class ProductRepository {
           service: true,
         },
         orderBy: {
-          createdAt: 'desc'
-        }
+          createdAt: "desc",
+        },
       }),
       db.product.count({ where }),
     ]);
