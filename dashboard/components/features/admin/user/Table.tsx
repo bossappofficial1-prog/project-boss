@@ -61,7 +61,7 @@ export function UserTable({
                         return (
                             <div className="flex items-center gap-3">
                                 <Avatar className="h-9 w-9 border border-border/50">
-                                    <AvatarImage alt={user.name} />
+                                    <AvatarImage alt={user.name} src={user.avatar!} />
                                     <AvatarFallback className="text-xs font-medium">
                                         {user.name.substring(0, 2).toUpperCase()}
                                     </AvatarFallback>

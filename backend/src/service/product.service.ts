@@ -22,7 +22,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { config } from "../config";
-import { BookingRepository } from "../repositories/booking.repository";
+import { ImageService } from "./image.service";
 
 /**
  * Creates a single product and associated records.
@@ -96,6 +96,10 @@ export async function updateProductService(id: string, data: UpdateProductInput)
     }
   }
 
+  if (data.image && existingProduct) {
+    ImageService.deleteImageByUrl(existingProduct.image)
+  }
+
   await redis.del(`product:${id}`);
   return product;
 }
@@ -106,6 +110,8 @@ export async function updateProductService(id: string, data: UpdateProductInput)
 export async function deleteProductService(id: string) {
   await getProductByIdService(id);
   const product = await ProductRepository.delete(id);
+
+  if (product && product.image) { ImageService.deleteImageByUrl(product.image) }
   await redis.del(`product:${id}`);
   return product;
 }

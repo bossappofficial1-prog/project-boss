@@ -160,7 +160,7 @@ export const deleteImageController = asyncHandler(async (req: Request, res: Resp
     }
 
     const uploadsDir = path.join(process.cwd(), 'uploads');
-    const filePath = path.join(uploadsDir, filename);
+    const filePath = path.join(uploadsDir, filename as string);
 
     // Check if file exists
     if (!fs.existsSync(filePath)) {

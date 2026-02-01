@@ -27,7 +27,13 @@ export async function loginService(data: LoginInput) {
 
     await redis.set(`session:${user.id}`, JSON.stringify(user), 'EX', 60 * 60 * 24);
 
-    const token = JwtUtil.generate({ sessionId: user.id, role: user.role });
+    const token = JwtUtil.generate({
+        sessionId: user.id,
+        name: user.name,
+        role: user.role,
+        provider: user.provider === 'local' ? 'email' : user.provider,
+        businessId: user.business?.id
+    });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
 
@@ -247,13 +253,16 @@ export async function googleOAuthService(profile: {
 
     // Create session and JWT token
     await redis.set(`session:${user.id}`, JSON.stringify(user), 'EX', 60 * 60 * 24);
-    const token = JwtUtil.generate({ sessionId: user.id, role: user.role });
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userWithoutPassword } = user;
+    const token = JwtUtil.generate({
+        sessionId: user.id,
+        role: user.role,
+        name: user.name,
+        provider: user.provider,
+        businessId: user.business?.id ?? null
+    });
 
     return {
-        user: userWithoutPassword,
+        user,
         token,
     };
 }

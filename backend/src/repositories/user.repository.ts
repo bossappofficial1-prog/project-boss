@@ -136,14 +136,15 @@ export class UserRepository {
         })
     }
 
-    static async findByEmail(email: string, ignoreUserId?: string): Promise<User | null> {
+    static async findByEmail(email: string, ignoreUserId?: string) {
         return db.user.findFirst({
             where: {
                 email,
                 ...(ignoreUserId ?
                     { NOT: { id: ignoreUserId } }
                     : {}),
-            }
+            },
+            include: { business: true }
         })
     }
 
@@ -161,8 +162,26 @@ export class UserRepository {
         return db.user.update({ where: { id: userId }, data })
     }
 
-    static async createGoogleUser(data: Pick<User, 'name' | 'email' | 'password' | 'googleId' | 'provider' | 'isVerified' | 'role'>): Promise<User> {
-        return db.user.create({ data });
+    static async createGoogleUser(data: Pick<User, 'name' | 'email' | 'password' | 'googleId' | 'avatar' | 'provider' | 'isVerified' | 'role'>) {
+        return db.user.create({
+            data,
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                avatar: true,
+                role: true,
+                isVerified: true,
+                verificationCode: true,
+                verificationCodeExpires: true,
+                phone: true,
+                googleId: true,
+                provider: true,
+                createdAt: true,
+                updatedAt: true,
+                business: { select: { id: true } }
+            }
+        });
     }
 
     static async update(id: string, data: Partial<Pick<User, 'name' | 'password' | 'isVerified' | 'verificationCode' | 'verificationCodeExpires'>>): Promise<User> {
@@ -273,9 +292,25 @@ export class UserRepository {
         };
     }
 
-    static async findByGoogleId(googleId: string): Promise<User | null> {
+    static async findByGoogleId(googleId: string) {
         return db.user.findUnique({
             where: { googleId },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                avatar: true,
+                role: true,
+                isVerified: true,
+                verificationCode: true,
+                verificationCodeExpires: true,
+                phone: true,
+                googleId: true,
+                provider: true,
+                createdAt: true,
+                updatedAt: true,
+                business: { select: { id: true } }
+            }
         });
     }
 }

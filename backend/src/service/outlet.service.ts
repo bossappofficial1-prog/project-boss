@@ -163,8 +163,16 @@ export async function updateOutletService(id: string, data: UpdateOutletInput, o
     if (business.id !== outlet.businessId) {
         throw new AppError("Anda tidak berhak mengubah outlet ini.", HttpStatus.FORBIDDEN);
     }
+
     const updatedOutlet = await OutletRepository.update(id, data);
 
+    if (data.image && outlet.image && updatedOutlet) {
+        ImageService.deleteImageByUrl(outlet.image)
+    }
+
+    if (data.manualQrImageUrl && outlet.manualQrImageUrl) {
+        ImageService.deleteImageByUrl(outlet.manualQrImageUrl)
+    }
     // hapus gambar sebelumnya jika ada di local
     if (data.image && outlet.image) ImageService.deleteImageByUrl(outlet.image);
 
@@ -646,7 +654,7 @@ export async function getOutletAnalytics(outletId: string, options?: { lowStockT
     const orders = (outletAnalytics?.revenueOrders ?? []) as AnalyticsOrder[];
     const productTypeCounts = (outletAnalytics?.productTypeCounts ?? []) as ProductTypeCount[];
     const topProductItems = (outletAnalytics?.topProductItems ?? []) as TopProductItem[];
-    const lowStockProducts = (outletAnalytics?.lowStockProducts ?? []) as LowStockProduct[];
+    const lowStockProducts: any[] = [];
     const paymentOrders = (outletAnalytics?.paymentOrders ?? []) as PaymentOrder[];
     const expenses = (outletAnalytics?.expenses ?? []) as AnalyticsExpense[];
     const totalRevenue = orders.reduce((prev, current) => prev + getNetRevenue(current), 0);
