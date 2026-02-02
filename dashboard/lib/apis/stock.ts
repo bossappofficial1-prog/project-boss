@@ -21,6 +21,14 @@ export const stockApi = {
       price: number;
       status: "ACTIVE" | "INACTIVE";
       image?: string;
+      goods?: {
+        id: string;
+        currentStock: number;
+        minStock?: number;
+        unit: string;
+        averageHpp: number;
+        sellingPrice: number;
+      };
     }>
   > => {
     const searchParams = new URLSearchParams();
@@ -67,4 +75,59 @@ export const stockApi = {
       notes?: string;
     },
   ) => apiClient.patch(`/products/${productId}/stock`, stockData).then((res) => res.data.data),
+
+  getHistory: (
+    productGoodsId: string,
+    params?: {
+      type?: "IN" | "OUT" | "ADJUSTMENT" | "RETURN";
+      startDate?: string;
+      endDate?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<{
+    success: boolean;
+    data: {
+      productGoods: {
+        id: string;
+        productId: string;
+        currentStock: number;
+        minStock: number | null;
+        unit: string;
+        averageHpp: number;
+        sellingPrice: number;
+        product: {
+          id: string;
+          name: string;
+          description: string | null;
+          type: string;
+          status: string;
+          image: string | null;
+        };
+      };
+      logs: Array<{
+        id: string;
+        type: "IN" | "OUT" | "ADJUSTMENT" | "RETURN";
+        quantity: number;
+        hppPerUnit: number | null;
+        referenceType: string | null;
+        referenceId: string | null;
+        notes: string | null;
+        faktur: string | null;
+        createdAt: string;
+      }>;
+      total: number;
+    };
+  }> => {
+    const searchParams = new URLSearchParams();
+    if (params?.type) searchParams.append("type", params.type);
+    if (params?.startDate) searchParams.append("startDate", params.startDate);
+    if (params?.endDate) searchParams.append("endDate", params.endDate);
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
+    if (params?.offset) searchParams.append("offset", params.offset.toString());
+    const qs = searchParams.toString();
+    return apiClient
+      .get(`/stock/history/${productGoodsId}${qs ? `?${qs}` : ""}`)
+      .then((res) => res.data);
+  },
 };
