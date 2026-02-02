@@ -1,12 +1,65 @@
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { cn } from "@/lib/utils";
-import { Check, Smartphone } from "lucide-react";
-import { useState } from "react";
+import { apiClient } from "@/lib/apis/base";
+import { AxiosError } from "axios";
+import { Smartphone } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export function OtpInputVerification() {
-    const [step, setStep] = useState(1);
-    const [verificationCode, setVerificationCode] = useState<string>()
+const DURATION = 30; // detik
+
+export function OtpInputVerification({ email, setStep }: { email: string, setStep?: (step: number) => void }) {
+    const [verificationCode, setVerificationCode] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
+    const router = useRouter()
+
+    const [timer, setTimer] = useState(() => {
+        if (typeof window === "undefined") return 0;
+
+        const endTime = localStorage.getItem("timer_end");
+        if (!endTime) return 0;
+
+        const diff = Math.floor(
+            (Number(endTime) - Date.now()) / 1000
+        );
+
+        return diff > 0 ? diff : 0;
+    });
+
+    // Timer logic
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (timer > 0) {
+            interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
+        }
+        return () => clearInterval(interval);
+    }, [timer]);
+
+    const startTimer = () => {
+        const endTime = Date.now() + DURATION * 1000;
+        localStorage.setItem("timer_end", endTime.toString());
+        setTimer(DURATION);
+    };
+
+    const handleVerifyOtp = async () => {
+        try {
+            setIsLoading(true)
+            const res = await apiClient.post('/auth/verify', {
+                email,
+                code: verificationCode
+            })
+            // `/auth/register?step=2&isVerified=true&email=${email}`
+            router.push(`/auth/register?step=2&isVerified=true&email=${email}`)
+
+            setStep?.(2)
+        } catch (error: unknown) {
+            const axiosError = error as AxiosError;
+            const errorMessage = (axiosError.response?.data as any).message as string;
+            setErrorMessage(errorMessage.includes('Invalid input data.') ? 'Masukkan kode OTP' : errorMessage)
+        } finally { setIsLoading(false) }
+    }
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 text-center">
@@ -18,9 +71,13 @@ export function OtpInputVerification() {
             <div>
                 <h2 className="text-2xl font-bold text-slate-900">Verifikasi Email</h2>
                 <p className="text-slate-500 text-sm mt-2">
-                    Masukkan 6 digit kode yang telah kami kirimkan ke <strong>{ }</strong>
+                    Masukkan 6 digit kode yang telah kami kirimkan ke <strong>{email}</strong>
                 </p>
             </div>
+
+            {errorMessage && <Alert className="border-red-500 bg-red-500/20 text-red-700">
+                <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>}
 
             <div className="flex justify-center gap-2">
                 <InputOTP
@@ -41,25 +98,22 @@ export function OtpInputVerification() {
 
             <div className="text-sm text-slate-600">
                 Belum terima kode?{' '}
-                {/* {timer > 0 ? (
+                {timer > 0 ? (
                     <span className="text-slate-400 font-medium">Kirim ulang dalam {timer}s</span>
                 ) : (
                     <button
-                        onClick={() => { setTimer(60); alert("Kode dikirim ulang!"); }}
+                        onClick={() => { startTimer() }}
                         className="text-indigo-600 font-semibold hover:underline"
                     >
                         Kirim Ulang
                     </button>
-                )} */}
+                )}
             </div>
 
             <div className="flex flex-col gap-3 pt-2">
-                <Button className="w-full" onClick={() => { }} disabled={false}>
+                <Button className="w-full" onClick={handleVerifyOtp} disabled={verificationCode?.length! < 6 || isLoading}>
                     Verifikasi & Lanjut
                 </Button>
-                {/* <Button variant="ghost" onClick={() => setShowOtpInput(false)}>
-                                        Ganti Email / Nomor
-                                    </Button> */}
             </div>
         </div>
     )

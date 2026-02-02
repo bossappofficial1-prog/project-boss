@@ -10,7 +10,7 @@ import {
     useWatch,
     UseFormReturn
 } from "react-hook-form";
-import { useEffect, ReactNode, useState } from "react";
+import { useEffect, ReactNode, useState, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZodType } from "zod";
 import { Button } from "@/components/ui/button";
@@ -130,6 +130,7 @@ interface BaseFieldConfig<T extends FieldValues> {
     description?: string;
     disabled?: boolean;
     className?: string;
+    valueToUpperCase?: boolean;
     colSpan?: 1 | 2 | 3 | 4 | 5 | 6 | 12 | 'full';
     renderCustom?: CustomRenderInput<T>;
     condition?: (values: Partial<T>) => boolean;
@@ -238,6 +239,7 @@ export function ReusableForm<T extends FieldValues>({
     id
 }: ReusableFormProps<T>) {
     const [internalLoading, setInternalLoading] = useState(false)
+    const wasDialogOpen = useRef(false);
 
     const internalForm = useForm<T>({
         resolver: zodResolver(schema),
@@ -247,18 +249,15 @@ export function ReusableForm<T extends FieldValues>({
     const form = externalForm ?? internalForm;
 
     useEffect(() => {
-        if (!withDialog) {
-            form.reset(defaultValues as DefaultValues<T> | undefined);
-            return;
-        }
-        if (isDialogOpen) {
-            form.reset(defaultValues as DefaultValues<T> | undefined);
-            return;
-        }
-        if (!isDialogOpen && resetFormOnClose) {
+        if (!withDialog) return;
+
+        // dialog baru saja dibuka
+        if (isDialogOpen && !wasDialogOpen.current) {
             form.reset(defaultValues as DefaultValues<T> | undefined);
         }
-    }, [defaultValues, isDialogOpen, resetFormOnClose, withDialog, form]);
+
+        wasDialogOpen.current = !!isDialogOpen;
+    }, [isDialogOpen, withDialog, defaultValues]);
 
     const canClose = () => {
         if (preventClose) return false;
@@ -284,6 +283,7 @@ export function ReusableForm<T extends FieldValues>({
     };
 
     const handleFormSubmit = async (values: T) => {
+        form.clearErrors("root");
         try {
             setInternalLoading(true)
             const hasFileField = fields.some((f) => f.type === 'file');
@@ -294,7 +294,7 @@ export function ReusableForm<T extends FieldValues>({
                 await onSubmit(values);
             }
         } catch (error: any) {
-            console.log('Pot: ', error);
+            console.log('Error: ', error);
 
             const handled = applyApiErrors(error, form)
 
@@ -531,6 +531,7 @@ function FieldInputSwitch<T extends FieldValues>({
             return (
                 <DualOptionSwitch
                     {...formField}
+                    className={field.className}
                     id={formField.name}
                     onValueChange={formField.onChange}
                     disabled={field.disabled}
@@ -640,7 +641,11 @@ function FieldInputSwitch<T extends FieldValues>({
                         disabled={field.disabled}
                         className={`${Icon ? 'pl-9' : ''} text-sm ${field.className}`}
                         {...formField}
-                        onChange={formField.onChange}
+                        onChange={(e) => {
+                            let value = e.target.value
+                            if (field.valueToUpperCase) value = value.toUpperCase();
+                            formField.onChange(value)
+                        }}
                     />
                 </div>
             );

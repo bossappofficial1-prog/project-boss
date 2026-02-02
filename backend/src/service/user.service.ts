@@ -117,7 +117,6 @@ export async function createUserService(data: CreateUserInput, actor?: UserRole)
     });
 
     if (actor !== 'ADMIN') {
-        // Terbitkan event untuk mengirim email verifikasi
         await messagePublisher.publishSendVerificationEmail(user.email, verificationCode);
     }
 

@@ -12,6 +12,24 @@ import { BusinessRepository } from "../repositories/business.repository";
 export const verifyController = asyncHandler(async (req: Request, res: Response) => {
     const { email, code } = req.body;
     const user = await verifyUserService(email, code);
+    const token = JwtUtil.generate({
+        sessionId: user.id,
+        name: user.name,
+        role: user.role,
+        email: user.email,
+        isVerified: user.isVerified,
+        provider: user.provider === 'local' ? 'email' : user.provider,
+        businessId: user.business?.id
+    });
+
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: !!config.COOKIES_DOMAIN,
+        sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+        domain: config.COOKIES_DOMAIN,
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        path: '/'
+    });
     return ResponseUtil.success(res, user);
 });
 
@@ -72,7 +90,24 @@ export const logoutController = asyncHandler(async (req: Request, res: Response)
 export const registerController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body;
     const { verificationCode, ...user } = await createUserService(payload);
+    const token = JwtUtil.generate({
+        sessionId: user.id,
+        name: user.name,
+        role: user.role,
+        email: user.email,
+        isVerified: user.isVerified,
+        provider: user.provider === 'local' ? 'email' : user.provider,
+        businessId: user.business?.id
+    });
 
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: !!config.COOKIES_DOMAIN,
+        sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+        domain: config.COOKIES_DOMAIN,
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        path: '/'
+    });
     return ResponseUtil.success(res, user, HttpStatus.CREATED);
 });
 

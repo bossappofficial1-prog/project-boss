@@ -28,10 +28,12 @@ import { SocketEmitter } from "../socket/socket-emiiter";
 import receiptRouter from "./receipt-setting.route";
 import bannerRouter from "./banner.route";
 import serverRouter from "./server.route";
+import subscriptionPlanRouter from "./subcription-plan.route";
 
 const apiRouter = Router();
 
 apiRouter.use('/users', userRouter)
+apiRouter.use('/subscription-plans', subscriptionPlanRouter)
 apiRouter.use('/auth', authRouter)
 apiRouter.use('/admin', adminRouter)
 apiRouter.use('/banners', bannerRouter)

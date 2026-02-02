@@ -1,16 +1,17 @@
 import { ReusableForm } from "@/components/ui/reuseable-form";
-import { fieldRegisterStep1, registerStep1Schema } from "./schema";
+import { fieldRegisterStep1, RegisterStep1Input, registerStep1Schema } from "./schema";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Mail } from "lucide-react";
-import { useState } from "react";
 
-export function RegisterStep1() {
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const handleGoogleLogin = async () => {
-        setIsSubmitting(true);
-        window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/google`;
-    };
-
+export function RegisterStep1({
+    handleNext,
+    isLoading,
+    handleGoogleLogin
+}: {
+    isLoading: boolean,
+    handleNext: (values: RegisterStep1Input) => void
+    handleGoogleLogin: () => void
+}) {
     return (
         <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="text-center md:text-left mb-2">
@@ -40,14 +41,13 @@ export function RegisterStep1() {
                 key={`register-step-1`}
                 id={`register-step-1`}
                 fields={fieldRegisterStep1}
-                onSubmit={(values) => {
-
-                }}
+                onSubmit={(values) => handleNext(values as RegisterStep1Input)}
+                isDialogOpen={true}
                 schema={registerStep1Schema}
                 hideSubmitButton
             />
 
-            <Button className="w-full" type='submit' form='register-step-1' disabled={isSubmitting}>
+            <Button className="w-full" type='submit' form='register-step-1' disabled={isLoading}>
                 Lanjut: Verifikasi Email <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <p className="text-xs text-center text-slate-400 mt-2">

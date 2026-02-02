@@ -7,12 +7,14 @@ export function RegisterStep2({
     name,
     handleNext,
     handleLogout,
-    logoutLoading
+    logoutLoading,
+    defaultValues
 }: {
     name: string
-    handleNext: (values: RegisterStep2Input | FormData) => void
+    handleNext: (values: RegisterStep2Input) => void
     handleLogout: () => void
     logoutLoading: boolean
+    defaultValues?: RegisterStep2Input
 }) {
     return (
         <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -26,8 +28,9 @@ export function RegisterStep2({
             <ReusableForm
                 key={`register-step-2`}
                 id={`register-step-2`}
+                defaultValues={defaultValues}
                 fields={fieldRegisterStep2}
-                onSubmit={handleNext}
+                onSubmit={handleNext as any}
                 schema={registerStep2Schema}
                 hideSubmitButton
             />

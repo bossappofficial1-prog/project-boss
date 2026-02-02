@@ -122,6 +122,7 @@ export const sidebarData: {
                             url: `/admin/subscriptions/monitor`
                         },
                         { title: "Akan Expire", id: "subs-expiring", badge: "8", url: `/admin/subscriptions/expiring` },
+                        { title: "Paket Harga", id: "subs-plans", badge: "8", url: `/admin/subscriptions/plans` },
                     ],
                 },
                 {

@@ -79,6 +79,9 @@ enum SubscriptionStatus {
   EXPIRED
   SUSPENDED
   CANCELLED
+  PAST_DUE
+  TRIAL
+  AWAITING_PAYMENT
 }
 
 enum StockMovementType {
@@ -88,9 +91,7 @@ enum StockMovementType {
   RETURN // Retur
 }
 
-// === MODELS ===
-
-// Model untuk pengguna (Owner/UMKM atau Admin)
+// Model untuk pengguna
 model User {
   id                      String    @id @default(uuid())
   email                   String    @unique
@@ -117,7 +118,6 @@ model User {
   @@index([role])
 }
 
-// Model untuk entitas bisnis utama milik seorang Owner
 model Business {
   id          String   @id @default(uuid())
   name        String
@@ -125,16 +125,17 @@ model Business {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Info Bank
   bankName      String?
   bankAccount   String?
   accountHolder String?
 
-  // === SUBSCRIPTION ===
-  subscriptionStatus    SubscriptionStatus @default(ACTIVE)
-  subscriptionStartDate DateTime           @default(now())
-  subscriptionEndDate   DateTime? // Null = unlimited
-  subscriptionPlan      String             @default("BASIC")
+  currentSubscriptionId String?                @unique
+  currentSubscription   BusinessSubscription?  @relation("ActiveSubscription", fields: [currentSubscriptionId], references: [id])
+  subscriptionStatus    SubscriptionStatus     @default(ACTIVE)
+  subscriptionStartDate DateTime               @default(now())
+  subscriptionEndDate   DateTime?
+  subscriptionPlan      String                 @default("BASIC")
+  subscriptions         BusinessSubscription[] @relation("BusinessHistory")
 
   // Relasi: Setiap bisnis dimiliki oleh satu User (Owner)
   ownerId String @unique
@@ -144,11 +145,80 @@ model Business {
   outlets Outlet[]
 
   // Relasi: Satu bisnis bisa memiliki banyak banner
-  banners Banner[]
+  banners              Banner[]
+  subscriptionInvoices SubscriptionInvoice[]
 
   @@index([ownerId])
   @@index([subscriptionStatus])
   @@index([description]) // Indeks untuk pencarian deskripsi bisnis
+}
+
+model SubscriptionPlan {
+  id           String @id @default(uuid())
+  name         String // "Basic", "Pro", "Enterprise"
+  code         String @unique // "BASIC", "PRO" (untuk referensi coding)
+  price        Float // Harga per bulan
+  durationDays Int // 30 hari, 365 hari, atau 14 (trial)
+  features     Json
+
+  isActive  Boolean @default(true)
+  isPopular Boolean @default(false)
+
+  subscriptions BusinessSubscription[]
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+}
+
+model BusinessSubscription {
+  id String @id @default(uuid())
+
+  status SubscriptionStatus
+
+  startDate DateTime @default(now())
+  endDate   DateTime
+
+  businessId        String
+  business          Business  @relation("BusinessHistory", fields: [businessId], references: [id], onDelete: Cascade)
+  activeForBusiness Business? @relation("ActiveSubscription")
+
+  planId String
+  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  invoices  SubscriptionInvoice[]
+  autoRenew Boolean               @default(true)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@index([businessId])
+  @@index([endDate])
+}
+
+model SubscriptionInvoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  amount        Float
+  status        PaymentStatus // PENDING, PAID, FAILED, PROOF_SUBMITTED
+
+  paymentUrl String?
+  externalId String?
+
+  proofImage      String?
+  verifiedAt      DateTime?
+  rejectionReason String?
+
+  paidAt DateTime?
+
+  // Relasi
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+
+  subscriptionId String
+  subscription   BusinessSubscription @relation(fields: [subscriptionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt]) // Penting untuk Dashboard Chart Revenue
 }
 
 // Model untuk cabang/outlet dari sebuah bisnis

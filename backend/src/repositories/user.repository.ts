@@ -148,9 +148,10 @@ export class UserRepository {
         })
     }
 
-    static async create(data: Pick<User, 'name' | 'email' | 'password'> & Partial<User>): Promise<User> {
+    static async create(data: Pick<User, 'name' | 'email' | 'password'> & Partial<User>) {
         return db.user.create({
             data,
+            include: { business: true }
         });
     }
 
@@ -184,10 +185,11 @@ export class UserRepository {
         });
     }
 
-    static async update(id: string, data: Partial<Pick<User, 'name' | 'password' | 'isVerified' | 'verificationCode' | 'verificationCodeExpires'>>): Promise<User> {
+    static async update(id: string, data: Partial<Pick<User, 'name' | 'password' | 'isVerified' | 'verificationCode' | 'verificationCodeExpires'>>) {
         return db.user.update({
             where: { id },
             data,
+            include: { business: { select: { id: true } } }
         });
     }
 

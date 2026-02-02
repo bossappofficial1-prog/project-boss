@@ -66,8 +66,8 @@ export function useServicesData() {
         status: statusFilter !== 'ALL' ? statusFilter : undefined,
       });
 
-      const list: ServiceItem[] = data.data
-      const onlyServices = list.filter((item: any) => item.type === 'SERVICE');
+      const list = data.data as unknown as ServiceItem[];
+      const onlyServices = list.filter((item: ServiceItem) => item.type === 'SERVICE');
       setServices(onlyServices);
       setTotalServices(data.pagination?.total ?? onlyServices.length);
       setTotalPages(data.pagination?.totalPages ?? 1);

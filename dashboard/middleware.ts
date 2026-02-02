@@ -10,6 +10,8 @@ interface JwtPayload {
   iat?: number;
   exp?: number;
   provider?: 'local' | 'google'
+  isVerified?: boolean
+  email?: string
 }
 
 const ROUTE_CONFIG = {
@@ -78,7 +80,9 @@ async function verifyJWT(token: string): Promise<JwtPayload | null> {
       sessionId: String(payload.sessionId),
       role: payload.role as 'ADMIN' | 'OWNER',
       name: payload.name as string,
+      isVerified: payload.isVerified as boolean,
       provider: payload.provider as 'local' | 'google',
+      email: payload.email as string,
       businessId: payload.businessId as string | undefined,
       iat: typeof payload.iat === 'number' ? payload.iat : undefined,
       exp: typeof payload.exp === 'number' ? payload.exp : undefined,
@@ -173,8 +177,19 @@ export const middleware: NextMiddleware = async (request: NextRequest) => {
       if (pathname.startsWith('/auth/register')) {
         return NextResponse.next();
       }
+      const params = new URLSearchParams();
 
-      return NextResponse.redirect(new URL(`/auth/register?step=2&provider=${payload.provider}&name=${payload.name}`, request.url));
+      params.set('step', payload.isVerified ? '2' : '1');
+      params.set('isVerified', String(payload.isVerified));
+      params.set('email', String(payload.email));
+
+      if (payload.provider) params.set('provider', payload.provider);
+      if (payload.name) params.set('name', payload.name);
+
+      return NextResponse.redirect(
+        new URL(`/auth/register?${params.toString()}`, request.url)
+      );
+
     }
 
     if (isPublic && pathname !== '/unauthorized') {

@@ -17,8 +17,6 @@ export async function loginService(data: LoginInput) {
         throw new AppError(Messages.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
     }
 
-    if (!user.isVerified) throw new AppError(Messages.ACCOUNT_INACTIVE, HttpStatus.FORBIDDEN);
-
     const isPasswordValid = await BcryptUtil.compare(data.password, user.password);
 
     if (!isPasswordValid) {
@@ -31,6 +29,8 @@ export async function loginService(data: LoginInput) {
         sessionId: user.id,
         name: user.name,
         role: user.role,
+        email: user.email,
+        isVerified: user.isVerified,
         provider: user.provider === 'local' ? 'email' : user.provider,
         businessId: user.business?.id
     });
@@ -256,6 +256,8 @@ export async function googleOAuthService(profile: {
     const token = JwtUtil.generate({
         sessionId: user.id,
         role: user.role,
+        isVerified: user.isVerified,
+        email: user.email,
         name: user.name,
         provider: user.provider,
         businessId: user.business?.id ?? null
