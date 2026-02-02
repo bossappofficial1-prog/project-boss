@@ -38,6 +38,7 @@ export async function recordStockIn(data: StockInInput) {
         referenceType: data.referenceType,
         referenceId: data.referenceId,
         notes: data.notes,
+        faktur: data.faktur,
       },
     });
 
@@ -104,6 +105,7 @@ export async function recordStockInBulk(data: StockInInput[]) {
             referenceType: item.referenceType,
             referenceId: item.referenceId,
             notes: item.notes,
+            faktur: item.faktur,
           },
         });
 

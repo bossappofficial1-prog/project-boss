@@ -9,6 +9,7 @@ export const stockInSchema = z.object({
   referenceType: z.string().optional(),
   referenceId: z.string().optional(),
   notes: z.string().optional(),
+  faktur: z.string().optional(), // URL gambar bukti pembelian (opsional)
 });
 
 export type StockInInput = z.infer<typeof stockInSchema>;

@@ -14,8 +14,9 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import FileUploader from "@/components/ui/ImageUploader";
 
-import { productApi, stockApi } from "@/lib/api";
+import { productApi, stockApi, uploadApi } from "@/lib/api";
 import type { POSProduct } from "@/types/pos";
 
 const currencyFormatter = new Intl.NumberFormat("id-ID");
@@ -39,6 +40,7 @@ export default function POBPage() {
   // Transaction details
   const [referenceType, setReferenceType] = React.useState("PURCHASE"); // PURCHASE, MANUAL
   const [referenceId, setReferenceId] = React.useState("");
+  const [fakturFile, setFakturFile] = React.useState<File | null>(null);
   const [notes, setNotes] = React.useState("");
 
   const outletId = selectedOutlet?.id;
@@ -146,6 +148,7 @@ export default function POBPage() {
     setCart({});
     setReferenceId("");
     setNotes("");
+    setFakturFile(null);
   };
 
   const cartItems = React.useMemo(() => Object.values(cart), [cart]);
@@ -163,6 +166,20 @@ export default function POBPage() {
     try {
       setIsSubmitting(true);
 
+      // Upload faktur image if provided
+      let fakturUrl: string | undefined;
+      if (fakturFile) {
+        try {
+          const uploadResult = await uploadApi.uploadImage(fakturFile);
+          fakturUrl = uploadResult.url;
+        } catch (uploadError) {
+          console.error("Gagal upload faktur:", uploadError);
+          toast.error("Gagal upload gambar faktur");
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const payload = cartItems.map((item) => ({
         productGoodsId: item.product.goods!.id, // Safe asserting because we filtered GOODS
         quantity: item.quantity,
@@ -170,6 +187,7 @@ export default function POBPage() {
         notes: notes.trim() || undefined,
         referenceType: referenceType || undefined,
         referenceId: referenceId.trim() || undefined,
+        faktur: fakturUrl, // Include faktur URL if uploaded
       }));
 
       await stockApi.bulkIn(payload);
@@ -244,9 +262,9 @@ export default function POBPage() {
                   </select>
                 </div>
                 <div className="grid gap-2">
-                  <Label>No. Referensi / Supplier</Label>
+                  <Label>Supplier</Label>
                   <Input
-                    placeholder="Contoh: INV-001 / Toko ABC"
+                    placeholder="Contoh: Toko ABC"
                     value={referenceId}
                     onChange={(e) => setReferenceId(e.target.value)}
                   />
@@ -257,6 +275,17 @@ export default function POBPage() {
                     placeholder="Catatan tambahan..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Faktur Pembelian</Label>
+                  <FileUploader
+                    value={fakturFile}
+                    onValueChange={setFakturFile}
+                    accept={{ "image/*": [".jpeg", ".png", ".jpg", ".webp"] }}
+                    maxSize={5 * 1024 * 1024}
+                    label="Upload gambar faktur"
+                    helperText="Format: JPG, PNG, WEBP (Maks 5MB)"
                   />
                 </div>
               </CardContent>

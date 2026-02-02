@@ -42,6 +42,7 @@ export const stockApi = {
       notes?: string;
       referenceType?: string;
       referenceId?: string;
+      faktur?: string;
     }>,
   ) => apiClient.post("/stock/in-bulk", data).then((res) => res.data),
 

@@ -345,6 +345,9 @@ model StockLog {
   productGoodsId String
   productGoods   ProductGoods @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
 
+  // Bukti pembelian
+  faktur    String?
+
   createdAt DateTime @default(now())
 
   @@index([productGoodsId])
