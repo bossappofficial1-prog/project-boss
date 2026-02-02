@@ -46,6 +46,17 @@ export const stockApi = {
     }>,
   ) => apiClient.post("/stock/in-bulk", data).then((res) => res.data),
 
+  bulkReturn: (
+    data: Array<{
+      productGoodsId: string;
+      quantity: number;
+      notes?: string;
+      referenceType?: string;
+      referenceId?: string;
+      faktur?: string;
+    }>,
+  ) => apiClient.post("/stock/return-bulk", data).then((res) => res.data),
+
   updateStock: (
     productId: string,
     stockData: {

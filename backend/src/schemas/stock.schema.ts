@@ -45,9 +45,14 @@ export const stockReturnSchema = z.object({
   referenceType: z.string().optional(),
   referenceId: z.string().optional(),
   notes: z.string().optional(),
+  faktur: z.string().optional(), // URL gambar bukti pengembalian (opsional)
 });
 
 export type StockReturnInput = z.infer<typeof stockReturnSchema>;
+
+// Schema for bulk stock returns
+export const stockReturnBulkSchema = z.array(stockReturnSchema);
+export type StockReturnBulkInput = z.infer<typeof stockReturnBulkSchema>;
 
 // Schema for stock history query filters
 export const stockHistoryQuerySchema = z.object({

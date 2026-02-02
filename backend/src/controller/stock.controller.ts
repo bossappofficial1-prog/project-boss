@@ -5,6 +5,7 @@ import {
   recordStockOut,
   adjustStock,
   recordReturn,
+  recordReturnBulk,
   getStockHistory,
   getLowStockProducts,
   recalculateHpp,
@@ -15,6 +16,7 @@ import {
   stockOutSchema,
   stockAdjustmentSchema,
   stockReturnSchema,
+  stockReturnBulkSchema,
   stockHistoryQuerySchema,
 } from "../schemas/stock.schema";
 import { HttpStatus } from "../constants/http-status";
@@ -108,6 +110,25 @@ export async function stockReturnController(req: Request, res: Response, next: N
     res.status(HttpStatus.CREATED).json({
       success: true,
       message: "Stock return berhasil dicatat",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/stock/return-bulk
+ * Record multiple stock returns to supplier (stock OUT)
+ */
+export async function stockReturnBulkController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const validatedData = stockReturnBulkSchema.parse(req.body);
+    const result = await recordReturnBulk(validatedData);
+
+    res.status(HttpStatus.CREATED).json({
+      success: true,
+      message: "Batch pengembalian stok berhasil dicatat",
       data: result,
     });
   } catch (error) {

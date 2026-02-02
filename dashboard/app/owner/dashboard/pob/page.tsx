@@ -180,19 +180,35 @@ export default function POBPage() {
         }
       }
 
-      const payload = cartItems.map((item) => ({
-        productGoodsId: item.product.goods!.id, // Safe asserting because we filtered GOODS
-        quantity: item.quantity,
-        hppPerUnit: item.hppPerUnit,
-        notes: notes.trim() || undefined,
-        referenceType: referenceType || undefined,
-        referenceId: referenceId.trim() || undefined,
-        faktur: fakturUrl, // Include faktur URL if uploaded
-      }));
+      if (referenceType === "RETURN") {
+        // Pengembalian - stock keluar
+        const payload = cartItems.map((item) => ({
+          productGoodsId: item.product.goods!.id,
+          quantity: item.quantity,
+          notes: notes.trim() || undefined,
+          referenceType: referenceType,
+          referenceId: referenceId.trim() || undefined,
+          faktur: fakturUrl,
+        }));
 
-      await stockApi.bulkIn(payload);
+        await stockApi.bulkReturn(payload);
+        toast.success("Pengembalian stok berhasil dicatat");
+      } else {
+        // Pembelian - stock masuk
+        const payload = cartItems.map((item) => ({
+          productGoodsId: item.product.goods!.id,
+          quantity: item.quantity,
+          hppPerUnit: item.hppPerUnit,
+          notes: notes.trim() || undefined,
+          referenceType: referenceType,
+          referenceId: referenceId.trim() || undefined,
+          faktur: fakturUrl,
+        }));
 
-      toast.success("Stok berhasil ditambahkan");
+        await stockApi.bulkIn(payload);
+        toast.success("Stok berhasil ditambahkan");
+      }
+
       handleResetCart();
       fetchProducts(searchQuery); // Refresh products (stock counts)
     } catch (error) {
@@ -251,14 +267,13 @@ export default function POBPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-2">
-                  <Label>Tipe Referensi</Label>
+                  <Label>Tipe Transaksi</Label>
                   <select
                     className="flex h-9 w-full rounded-md border border-slate-200 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
                     value={referenceType}
                     onChange={(e) => setReferenceType(e.target.value)}>
-                    <option value="PURCHASE">Pembelian (Purchase)</option>
-                    <option value="MANUAL">Input Manual</option>
-                    <option value="ADJUSTMENT">Penyesuaian (Adjustment)</option>
+                    <option value="PURCHASE">Pembelian (Stok Masuk)</option>
+                    <option value="RETURN">Pengembalian (Stok Keluar)</option>
                   </select>
                 </div>
                 <div className="grid gap-2">

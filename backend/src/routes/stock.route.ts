@@ -5,6 +5,7 @@ import {
   stockOutController,
   stockAdjustmentController,
   stockReturnController,
+  stockReturnBulkController,
   getStockHistoryController,
   getLowStockController,
   recalculateHppController,
@@ -19,6 +20,7 @@ router.post("/in-bulk", stockInBulkController);
 router.post("/out", stockOutController);
 router.post("/adjust", stockAdjustmentController);
 router.post("/return", stockReturnController);
+router.post("/return-bulk", stockReturnBulkController);
 
 // Stock query endpoints
 router.get("/history/:productGoodsId", getStockHistoryController);

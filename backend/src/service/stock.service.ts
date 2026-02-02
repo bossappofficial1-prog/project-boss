@@ -302,6 +302,7 @@ export async function recordReturn(data: StockReturnInput) {
         referenceType: data.referenceType,
         referenceId: data.referenceId,
         notes: data.notes,
+        faktur: data.faktur,
       },
     });
 
@@ -320,6 +321,77 @@ export async function recordReturn(data: StockReturnInput) {
       productGoods: updatedGoods,
     };
   });
+}
+
+/**
+ * Record multiple supplier returns in a single transaction (stock OUT)
+ * This is used for returning goods to supplier, which decreases stock
+ */
+export async function recordReturnBulk(data: StockReturnInput[]) {
+  if (data.length === 0) {
+    return [];
+  }
+
+  return db.$transaction(
+    async (tx) => {
+      const results = [];
+
+      for (const item of data) {
+        // Verify ProductGoods exists
+        const productGoods = await tx.productGoods.findUnique({
+          where: { id: item.productGoodsId },
+        });
+
+        if (!productGoods) {
+          throw new AppError(
+            `Product Goods dengan ID ${item.productGoodsId} tidak ditemukan`,
+            HttpStatus.NOT_FOUND,
+          );
+        }
+
+        // Check sufficient stock
+        if (productGoods.currentStock < item.quantity) {
+          throw new AppError(
+            `Stok tidak mencukupi untuk pengembalian. Stok saat ini: ${productGoods.currentStock}, diminta: ${item.quantity}`,
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        // Create stock log with type OUT (returning to supplier means stock goes out)
+        const stockLog = await tx.stockLog.create({
+          data: {
+            productGoodsId: item.productGoodsId,
+            type: StockMovementType.OUT,
+            quantity: item.quantity,
+            referenceType: item.referenceType || "RETURN",
+            referenceId: item.referenceId,
+            notes: item.notes,
+            faktur: item.faktur,
+          },
+        });
+
+        // Decrease current stock
+        const updatedGoods = await tx.productGoods.update({
+          where: { id: item.productGoodsId },
+          data: {
+            currentStock: {
+              decrement: item.quantity,
+            },
+          },
+        });
+
+        results.push({
+          stockLog,
+          productGoods: updatedGoods,
+        });
+      }
+
+      return results;
+    },
+    {
+      timeout: 20000,
+    },
+  );
 }
 
 /**
