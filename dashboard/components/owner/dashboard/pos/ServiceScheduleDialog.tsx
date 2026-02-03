@@ -26,10 +26,16 @@ interface BookingSlot {
   status: "AVAILABLE" | "BOOKED" | "BLOCKED";
 }
 
+interface Staff {
+  id: string;
+  name: string;
+}
+
 export interface ServiceScheduleSelection {
   slotId: string;
   startTimeIso: string;
   endTimeIso: string;
+  staffId: string;
 }
 
 interface ServiceScheduleDialogProps {
@@ -75,6 +81,12 @@ export function ServiceScheduleDialog({
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = React.useState("");
+
+  // Staff is auto-selected (first available)
+  const [staffId, setStaffId] = React.useState("");
+  const [isLoadingStaff, setIsLoadingStaff] = React.useState(false);
+  const [staffError, setStaffError] = React.useState<string | null>(null);
+
   const nowTs = Date.now();
 
   React.useEffect(() => {
@@ -82,6 +94,8 @@ export function ServiceScheduleDialog({
       setSlots([]);
       setSelectedSlotId("");
       setError(null);
+      setStaffId("");
+      setStaffError(null);
       return;
     }
 
@@ -91,6 +105,7 @@ export function ServiceScheduleDialog({
 
     setSelectedDate(initialDate);
     setSelectedSlotId(existingSelection?.slotId ?? "");
+    setStaffId(existingSelection?.staffId ?? "");
   }, [open, existingSelection]);
 
   const loadSlots = React.useCallback(async () => {
@@ -125,9 +140,47 @@ export function ServiceScheduleDialog({
     }
   }, [open, product?.id, selectedDate]);
 
+  // Auto-fetch and select first available staff when slot is selected
+  const loadStaff = React.useCallback(async () => {
+    if (!product?.id || !selectedSlotId) {
+      setStaffId("");
+      return;
+    }
+
+    setIsLoadingStaff(true);
+    setStaffError(null);
+
+    try {
+      const response = await apiClient.get(
+        `/products/${product.id}/available-staff?slotId=${selectedSlotId}`,
+      );
+      const data: Staff[] = Array.isArray(response.data?.data?.staff)
+        ? response.data.data.staff
+        : [];
+
+      // Auto-select first staff (since each service has one staff)
+      if (data.length > 0) {
+        setStaffId(data[0].id);
+      } else {
+        setStaffId("");
+        setStaffError("Tidak ada staff tersedia untuk slot ini");
+      }
+    } catch (err) {
+      console.error("Failed to load available staff", err);
+      setStaffId("");
+      setStaffError("Tidak dapat memuat staff. Coba pilih slot lain.");
+    } finally {
+      setIsLoadingStaff(false);
+    }
+  }, [product?.id, selectedSlotId]);
+
   React.useEffect(() => {
     loadSlots();
   }, [loadSlots]);
+
+  React.useEffect(() => {
+    loadStaff();
+  }, [loadStaff]);
 
   const selectedSlot = React.useMemo(
     () => slots.find((slot) => slot.id === selectedSlotId) ?? null,
@@ -144,16 +197,23 @@ export function ServiceScheduleDialog({
       return;
     }
 
+    if (!staffId) {
+      setStaffError("Staff belum tersedia, pilih slot lain");
+      return;
+    }
+
     onConfirm({
       slotId: selectedSlot.id,
       startTimeIso: selectedSlot.startTime,
       endTimeIso: selectedSlot.endTime,
+      staffId: staffId,
     });
   };
 
   const handleDateChange = (value: string) => {
     setSelectedDate(value);
     setSelectedSlotId("");
+    setStaffId("");
   };
 
   const handleSlotPick = (slotId: string) => {
@@ -168,6 +228,7 @@ export function ServiceScheduleDialog({
     }
 
     setSelectedSlotId(slotId);
+    setStaffId(""); // Will be auto-fetched
   };
 
   const dateLabel = selectedSlot ? formatDateLabel(selectedSlot.startTime) : null;
@@ -180,6 +241,13 @@ export function ServiceScheduleDialog({
     const slotStart = new Date(slot.startTime).getTime();
     return slot.status === "AVAILABLE" && slotStart > nowTs;
   });
+
+  const canConfirm =
+    selectedSlot &&
+    selectedSlot.status === "AVAILABLE" &&
+    staffId &&
+    !isLoadingStaff &&
+    new Date(selectedSlot.startTime).getTime() > Date.now();
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
@@ -292,7 +360,21 @@ export function ServiceScheduleDialog({
             )}
           </div>
 
-          {selectedSlot && (
+          {/* Show loading or error for staff (without selection UI) */}
+          {selectedSlotId && isLoadingStaff && (
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Memeriksa ketersediaan...
+            </div>
+          )}
+
+          {selectedSlotId && staffError && !isLoadingStaff && (
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-600 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
+              {staffError}
+            </div>
+          )}
+
+          {selectedSlot && staffId && !isLoadingStaff && (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
               <p className="font-medium text-slate-700 dark:text-slate-200">Jadwal terpilih</p>
               <p>{dateLabel}</p>
@@ -312,9 +394,9 @@ export function ServiceScheduleDialog({
           <Button
             type="button"
             onClick={handleConfirm}
-            disabled={!selectedSlot || selectedSlot.status !== "AVAILABLE"}
+            disabled={!canConfirm}
             className="flex-1 bg-red-600 hover:bg-red-500 sm:flex-initial">
-            Simpan Jadwal
+            {isLoadingStaff ? "Memuat..." : "Simpan Jadwal"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -191,6 +191,7 @@ export interface CreateOrderRequest {
   bookingDate?: string;
   paymentMethod?: "qris" | "online" | "cash";
   bookingSlotId?: string;
+  staffId?: string;
   onlinePaymentChannel?: OnlinePaymentChannel;
 }
 

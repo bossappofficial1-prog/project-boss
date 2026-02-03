@@ -190,7 +190,7 @@ export default function POSOrdersPage() {
       cartItems.some(
         (line) =>
           line.product.type === "SERVICE" &&
-          (!line.bookingSlotId || !line.bookingStart || !line.bookingEnd),
+          (!line.bookingSlotId || !line.bookingStart || !line.bookingEnd || !line.staffId),
       ),
     [cartItems],
   );
@@ -236,11 +236,15 @@ export default function POSOrdersPage() {
 
       const existingLine = cart[product.id];
       const selection =
-        existingLine?.bookingSlotId && existingLine.bookingStart && existingLine.bookingEnd
+        existingLine?.bookingSlotId &&
+        existingLine.bookingStart &&
+        existingLine.bookingEnd &&
+        existingLine.staffId
           ? {
               slotId: existingLine.bookingSlotId,
               startTimeIso: existingLine.bookingStart,
               endTimeIso: existingLine.bookingEnd,
+              staffId: existingLine.staffId,
             }
           : null;
 
@@ -318,11 +322,12 @@ export default function POSOrdersPage() {
 
   const openScheduleEditor = (line: POSCartLine) => {
     const selection =
-      line.bookingSlotId && line.bookingStart && line.bookingEnd
+      line.bookingSlotId && line.bookingStart && line.bookingEnd && line.staffId
         ? {
             slotId: line.bookingSlotId,
             startTimeIso: line.bookingStart,
             endTimeIso: line.bookingEnd,
+            staffId: line.staffId,
           }
         : null;
 
@@ -344,6 +349,7 @@ export default function POSOrdersPage() {
         bookingSlotId: selection.slotId,
         bookingStart: selection.startTimeIso,
         bookingEnd: selection.endTimeIso,
+        staffId: selection.staffId,
       },
     }));
 
@@ -467,6 +473,7 @@ export default function POSOrdersPage() {
       if (serviceLine) {
         payload.bookingSlotId = serviceLine.bookingSlotId;
         payload.bookingDate = serviceLine.bookingStart;
+        payload.staffId = serviceLine.staffId;
       }
 
       const response = await orderApi.create(payload);

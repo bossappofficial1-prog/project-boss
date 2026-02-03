@@ -42,7 +42,7 @@ export const stockApi = {
     return apiClient.get(endpoint).then((res) => res.data);
   },
 
-  bulkIn: (
+  bulkIn: async (
     data: Array<{
       productGoodsId: string;
       quantity: number;
@@ -52,9 +52,14 @@ export const stockApi = {
       referenceId?: string;
       faktur?: string;
     }>,
-  ) => apiClient.post("/stock/in-bulk", data).then((res) => res.data),
+  ) => {
+    console.log("[Stock API] bulkIn Payload:", JSON.stringify(data, null, 2));
+    const response = await apiClient.post("/stock/in-bulk", data);
+    console.log("[Stock API] bulkIn Response:", JSON.stringify(response.data, null, 2));
+    return response.data;
+  },
 
-  bulkReturn: (
+  bulkReturn: async (
     data: Array<{
       productGoodsId: string;
       quantity: number;
@@ -63,7 +68,12 @@ export const stockApi = {
       referenceId?: string;
       faktur?: string;
     }>,
-  ) => apiClient.post("/stock/return-bulk", data).then((res) => res.data),
+  ) => {
+    console.log("[Stock API] bulkReturn Payload:", JSON.stringify(data, null, 2));
+    const response = await apiClient.post("/stock/return-bulk", data);
+    console.log("[Stock API] bulkReturn Response:", JSON.stringify(response.data, null, 2));
+    return response.data;
+  },
 
   updateStock: (
     productId: string,

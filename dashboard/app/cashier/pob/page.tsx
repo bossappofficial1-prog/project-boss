@@ -1,11 +1,9 @@
 "use client";
 
 import React from "react";
-import { Copy, Minus, Plus, ShoppingBag, Save, Trash2, ArrowLeft } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 
-import { useOutletContext } from "@/components/providers/OutletProvider";
 import { ProductGridSection } from "@/components/owner/dashboard/pos/ProductGridSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +16,7 @@ import FileUploader from "@/components/ui/ImageUploader";
 
 import { productApi, stockApi, uploadApi } from "@/lib/api";
 import type { POSProduct } from "@/types/pos";
+import { useCashierContext } from "../layout";
 
 const currencyFormatter = new Intl.NumberFormat("id-ID");
 
@@ -27,9 +26,8 @@ interface POBCartItem {
   hppPerUnit: number;
 }
 
-export default function POBPage() {
-  const router = useRouter();
-  const { selectedOutlet } = useOutletContext();
+export default function CashierPOBPage() {
+  const { outletData } = useCashierContext();
 
   const [products, setProducts] = React.useState<POSProduct[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -38,12 +36,12 @@ export default function POBPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Transaction details
-  const [referenceType, setReferenceType] = React.useState("PURCHASE"); // PURCHASE, MANUAL
+  const [referenceType, setReferenceType] = React.useState("PURCHASE"); // PURCHASE, RETURN
   const [referenceId, setReferenceId] = React.useState("");
   const [fakturFile, setFakturFile] = React.useState<File | null>(null);
   const [notes, setNotes] = React.useState("");
 
-  const outletId = selectedOutlet?.id;
+  const outletId = outletData?.id;
 
   const fetchProducts = React.useCallback(
     async (query?: string) => {
@@ -59,7 +57,7 @@ export default function POBPage() {
               limit: 120,
               type: "GOODS", // Filter only GOODS
             },
-            "CASHIER", // Reuse cashier mode if needed, or owner
+            "CASHIER",
           )
         ).data;
         setProducts(data as POSProduct[]);
@@ -164,6 +162,16 @@ export default function POBPage() {
     }
 
     try {
+      if (!referenceId.trim()) {
+        toast.error("Nama supplier wajib diisi");
+        return;
+      }
+
+      if (!fakturFile) {
+        toast.error("Faktur pembelian wajib diupload");
+        return;
+      }
+
       setIsSubmitting(true);
 
       // Upload faktur image if provided
@@ -187,11 +195,18 @@ export default function POBPage() {
           quantity: item.quantity,
           notes: notes.trim() || undefined,
           referenceType: referenceType,
-          referenceId: referenceId.trim() || undefined,
+          referenceId: referenceId.trim(),
           faktur: fakturUrl,
         }));
 
-        await stockApi.bulkReturn(payload);
+        // Log payload for manual testing
+        console.log("[POB] bulkReturn Payload:", JSON.stringify(payload, null, 2));
+
+        const response = await stockApi.bulkReturn(payload);
+
+        // Log response for manual testing
+        console.log("[POB] bulkReturn Response:", JSON.stringify(response, null, 2));
+
         toast.success("Pengembalian stok berhasil dicatat");
       } else {
         // Pembelian - stock masuk
@@ -201,11 +216,18 @@ export default function POBPage() {
           hppPerUnit: item.hppPerUnit,
           notes: notes.trim() || undefined,
           referenceType: referenceType,
-          referenceId: referenceId.trim() || undefined,
+          referenceId: referenceId.trim(),
           faktur: fakturUrl,
         }));
 
-        await stockApi.bulkIn(payload);
+        // Log payload for manual testing
+        console.log("[POB] bulkIn Payload:", JSON.stringify(payload, null, 2));
+
+        const response = await stockApi.bulkIn(payload);
+
+        // Log response for manual testing
+        console.log("[POB] bulkIn Response:", JSON.stringify(response, null, 2));
+
         toast.success("Stok berhasil ditambahkan");
       }
 
@@ -219,30 +241,14 @@ export default function POBPage() {
     }
   };
 
-  if (!selectedOutlet) {
-    return (
-      <div className="min-h-screen text-slate-900 transition-colors dark:text-slate-50">
-        <div className="flex h-[70vh] flex-col items-center justify-center gap-3 text-center">
-          <ShoppingBag className="h-10 w-10 text-blue-500" />
-          <p className="text-lg font-semibold">Pilih outlet terlebih dahulu</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen text-slate-900 transition-colors dark:text-slate-100">
-      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
+    <div className="text-slate-900 transition-colors dark:text-slate-100">
+      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4 p-4">
         <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <h1 className="text-xl font-bold">Pembelian Stok (POB)</h1>
-            </div>
-            <p className="pl-10 text-sm text-slate-600 dark:text-slate-400">
-              Input barang masuk (membeli stok) untuk outlet {selectedOutlet.name}
+            <h1 className="text-xl font-bold">Pembelian Stok (POB)</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Input barang masuk (membeli stok) untuk outlet {outletData.name}
             </p>
           </div>
         </header>
