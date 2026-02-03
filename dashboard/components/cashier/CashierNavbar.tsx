@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, ShoppingBag, ShoppingCart, Users, Package } from "lucide-react";
+import { LogOut, ShoppingBag, ShoppingCart, Users, Package, Receipt } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const navItems = [
   { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
   { href: "/cashier/queue", label: "Antrian", icon: Users },
   { href: "/cashier/pob", label: "POB", icon: Package },
+  { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
 ];
 
 export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
