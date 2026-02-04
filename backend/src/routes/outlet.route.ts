@@ -22,6 +22,7 @@ import { validateSchema } from "../middleware/zod.middleware";
 import { createOutletSchema, updateOutletSchema, updateOutletLocationSchema } from "../schemas/outlet.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
+import { checkOutletLimit } from "../middleware/subscription-limits.middleware";
 
 const outletRouter = Router();
 
@@ -60,7 +61,7 @@ outletRouter.get("/:id", getOutletByIdController);
 outletRouter.get("/business/:businessId", getOutletsByBusinessIdController);
 
 // Rute yang dilindungi dan hanya untuk Owner
-outletRouter.post("/", protect, authorize(UserRole.OWNER), validateSchema(createOutletSchema), createOutletController);
+outletRouter.post("/", protect, authorize(UserRole.OWNER), checkOutletLimit, validateSchema(createOutletSchema), createOutletController);
 outletRouter.patch("/:id", protect, authorize(UserRole.OWNER), validateSchema(updateOutletSchema), updateOutletController);
 outletRouter.delete("/:id", protect, authorize(UserRole.OWNER), deleteOutletController);
 outletRouter.patch("/:outletId/location", protect, authorize(UserRole.OWNER), validateSchema(updateOutletLocationSchema), updateOutletLocationController);

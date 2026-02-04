@@ -16,6 +16,7 @@ import { authorize, protect, authorizeOwnerOrCashier } from "../middleware/auth.
 import { UserRole } from "@prisma/client";
 import { importUpload } from "../middleware/upload.middleware";
 import { getAvailableStaffForProductController, getBookingSlotByOutlet } from "../controller/booking.controller";
+import { checkProductLimit } from "../middleware/subscription-limits.middleware";
 
 const productRouter = Router();
 
@@ -30,8 +31,8 @@ productRouter.get("/:productId/available-staff", getAvailableStaffForProductCont
 productRouter.get("/template/import", getProductImportTemplateController);
 productRouter.use(protect, authorize(UserRole.OWNER))
 productRouter.get("/export/:outletId", exportProductsController);
-productRouter.post("/", validateSchema(createProductSchema), createProductController);
-productRouter.post("/bulk", importUpload.single('file'), bulkCreateProductsController);
+productRouter.post("/", checkProductLimit, validateSchema(createProductSchema), createProductController);
+productRouter.post("/bulk", checkProductLimit, importUpload.single('file'), bulkCreateProductsController);
 productRouter.patch("/:id", validateSchema(updateProductSchema), updateProductController);
 productRouter.delete("/:id", deleteProductController);
 

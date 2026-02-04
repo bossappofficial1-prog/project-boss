@@ -6,6 +6,8 @@ import { createUserSchema } from "../schemas/user.schema";
 import { checkEmailExists } from "../validators/user.validator";
 import { protect } from "../middleware/auth.middleware";
 import passport from "../config/passport";
+import { completeOnboardingController, renewSubscriptionController, getSubscriptionStatusController } from "../controller/onboarding.controller";
+import { completeOnboardingSchema } from "../schemas/onboarding.schema";
 
 const authRouter = Router();
 
@@ -70,6 +72,26 @@ authRouter.get("/google",
 authRouter.get("/google/callback",
     passport.authenticate("google", { failureRedirect: "/auth/login" }),
     googleOAuthCallbackController
+);
+
+// Onboarding routes
+authRouter.post(
+    "/onboarding/complete",
+    protect,
+    validateSchema(completeOnboardingSchema),
+    completeOnboardingController
+);
+
+authRouter.post(
+    "/subscription/renew",
+    protect,
+    renewSubscriptionController
+);
+
+authRouter.get(
+    "/subscription/status",
+    protect,
+    getSubscriptionStatusController
 );
 
 export default authRouter;
