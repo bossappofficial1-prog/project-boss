@@ -8,6 +8,7 @@ import {
   FileText,
   TrendingDown,
   Receipt,
+  CreditCard,
 } from "lucide-react";
 
 interface MenuItem {
@@ -39,6 +40,12 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Dashboard",
         href: "/owner/dashboard",
         icon: LayoutDashboard,
+      },
+      {
+        id: "subscription",
+        name: "Langganan",
+        href: "/owner/subscription",
+        icon: CreditCard,
       },
     ],
   },

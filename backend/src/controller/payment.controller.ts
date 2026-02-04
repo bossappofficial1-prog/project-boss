@@ -18,6 +18,7 @@ import { AppError } from "../errors/app-error";
 import { Messages } from "../constants/message";
 import { PaymentStatus } from "@prisma/client";
 import { processMidtransPaymentNotification } from "../service/payment-update.service";
+import { ensureString } from "../utils/request";
 
 export const createPaymentController = asyncHandler(async (req: Request, res: Response) => {
     const { customer_details, item_details, payment_method, selectedSlotId, staffId, outletId } = req.body as CreatePaymentPayload
@@ -28,13 +29,13 @@ export const createPaymentController = asyncHandler(async (req: Request, res: Re
 })
 
 export const getPaymentOrderController = asyncHandler(async (req: Request, res: Response) => {
-    const { orderId } = req.params
+    const orderId = ensureString(req.params?.orderId, 'orderId')
     const result = await getPaymentOrderService(orderId)
     return ResponseUtil.success(res, result)
 })
 
 export const createQrisPaymentController = asyncHandler(async (req: Request, res: Response) => {
-    const { orderId } = req.params;
+    const orderId = ensureString(req.params?.orderId, 'orderId');
     const charge = await createQrisPaymentService(orderId);
     return ResponseUtil.success(res, charge);
 });
@@ -56,13 +57,13 @@ export const handleNotificationController = asyncHandler(async (req: Request, re
 });
 
 export const cancelPaymentController = asyncHandler(async (req: Request, res: Response) => {
-    const { orderId } = req.params;
+    const orderId = ensureString(req.params?.orderId, 'orderId');
     const result = await cancelPaymentService(orderId);
     return ResponseUtil.success(res, result, HttpStatus.OK);
 });
 
 export const uploadManualPaymentProofController = asyncHandler(async (req: Request, res: Response) => {
-    const { orderId } = req.params;
+    const orderId = ensureString(req.params?.orderId, 'orderId');
 
     if (!req.file?.path) {
         throw new AppError(Messages.REQUIRED_FIELD_MISSING, HttpStatus.BAD_REQUEST);
@@ -77,7 +78,7 @@ export const verifyManualPaymentController = asyncHandler(async (req: Request, r
         throw new AppError(Messages.UNAUTHORIZED, HttpStatus.UNAUTHORIZED);
     }
 
-    const { orderId } = req.params;
+    const orderId = ensureString(req.params?.orderId, 'orderId');
     const result = await verifyManualPaymentService(orderId, req.storedUser.id);
     return ResponseUtil.success(res, result, HttpStatus.OK);
 });
@@ -87,7 +88,7 @@ export const rejectManualPaymentController = asyncHandler(async (req: Request, r
         throw new AppError(Messages.UNAUTHORIZED, HttpStatus.UNAUTHORIZED);
     }
 
-    const { orderId } = req.params;
+    const orderId = ensureString(req.params?.orderId, 'orderId');
     const { reason } = req.body as { reason?: string };
 
     if (!reason) {
@@ -99,16 +100,10 @@ export const rejectManualPaymentController = asyncHandler(async (req: Request, r
 });
 
 export const listManualPaymentsController = asyncHandler(async (req: Request, res: Response) => {
-    const { status, outletId, search, page, limit } = req.query as {
-        status?: string;
-        outletId?: string;
-        search?: string;
-        page?: string;
-        limit?: string;
-    };
+    const { status, outletId, search, page, limit } = req.query;
 
     let statusFilters: PaymentStatus[] | undefined;
-    if (status) {
+    if (typeof status === 'string') {
         const requested = status.split(',').map(s => s.trim().toUpperCase());
         statusFilters = requested.filter((value): value is PaymentStatus =>
             Object.values(PaymentStatus).includes(value as PaymentStatus)
@@ -117,10 +112,10 @@ export const listManualPaymentsController = asyncHandler(async (req: Request, re
 
     const result = await getManualPaymentsService({
         status: statusFilters,
-        outletId,
-        search,
-        page: page ? Number(page) : undefined,
-        limit: limit ? Number(limit) : undefined
+        outletId: typeof outletId === 'string' ? outletId : undefined,
+        search: typeof search === 'string' ? search : undefined,
+        page: typeof page === 'string' ? Number(page) : undefined,
+        limit: typeof limit === 'string' ? Number(limit) : undefined
     });
 
     return ResponseUtil.success(res, result, HttpStatus.OK);

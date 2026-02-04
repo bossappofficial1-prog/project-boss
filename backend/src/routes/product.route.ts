@@ -16,6 +16,7 @@ import { authorize, protect, authorizeOwnerOrCashier } from "../middleware/auth.
 import { UserRole } from "@prisma/client";
 import { importUpload } from "../middleware/upload.middleware";
 import { getAvailableStaffForProductController, getBookingSlotByOutlet } from "../controller/booking.controller";
+import { requireActiveSubscription } from "../middleware/subscription.middleware";
 
 const productRouter = Router();
 
@@ -29,10 +30,10 @@ productRouter.get("/:productId/available-staff", getAvailableStaffForProductCont
 // Rute yang hanya bisa diakses oleh Owner
 productRouter.get("/template/import", getProductImportTemplateController);
 productRouter.use(protect, authorize(UserRole.OWNER))
-productRouter.get("/export/:outletId", exportProductsController);
-productRouter.post("/", validateSchema(createProductSchema), createProductController);
-productRouter.post("/bulk", importUpload.single('file'), bulkCreateProductsController);
-productRouter.patch("/:id", validateSchema(updateProductSchema), updateProductController);
-productRouter.delete("/:id", deleteProductController);
+productRouter.get("/export/:outletId", requireActiveSubscription, exportProductsController);
+productRouter.post("/", requireActiveSubscription, validateSchema(createProductSchema), createProductController);
+productRouter.post("/bulk", requireActiveSubscription, importUpload.single('file'), bulkCreateProductsController);
+productRouter.patch("/:id", requireActiveSubscription, validateSchema(updateProductSchema), updateProductController);
+productRouter.delete("/:id", requireActiveSubscription, deleteProductController);
 
 export default productRouter;

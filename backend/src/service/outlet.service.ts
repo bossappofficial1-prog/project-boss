@@ -9,6 +9,7 @@ import { getIsOutletOpen, calculateDistance, validateCoordinates, calculateBound
 import Redis from "ioredis";
 import { ImageService } from "./image.service";
 import { EventPublisher } from "../events/publisher";
+import { PlanLimitService } from "./plan-limit.service";
 
 // Redis client
 const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
@@ -18,8 +19,10 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
     if (business.id !== data.businessId) {
         throw new AppError("Anda tidak berhak menambahkan outlet ke bisnis ini.", HttpStatus.FORBIDDEN);
     }
+    await PlanLimitService.assertCanCreateOutlet(business.id);
     const outlet = await OutletRepository.create(data);
     await EventPublisher.publishOutletCreated(outlet);
+    await PlanLimitService.invalidateUsageCache(business.id);
     return outlet;
 }
 
@@ -188,6 +191,7 @@ export async function deleteOutletService(id: string, ownerId: string) {
     }
     const deletedOutlet = await OutletRepository.delete(id);
     if (outlet.image) ImageService.deleteImageByUrl(outlet.image);
+    await PlanLimitService.invalidateUsageCache(business.id);
     return deletedOutlet;
 }
 

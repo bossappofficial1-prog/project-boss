@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { getMeController, loginController, logoutController, registerController, verifyController, resendVerificationController, forgotPasswordController, resetPasswordController, googleOAuthCallbackController, cashierLoginController, getCashierMeController } from "../controller/auth.controller";
+import { getMeController, loginController, logoutController, registerController, verifyController, resendVerificationController, forgotPasswordController, resetPasswordController, googleOAuthCallbackController, cashierLoginController, getCashierMeController, completeOnboardingController } from "../controller/auth.controller";
 import { validateSchema } from "../middleware/zod.middleware";
-import { loginSchema, verifySchema, resendVerificationSchema, forgotPasswordSchema, resetPasswordSchema, cashierLoginSchema } from "../schemas/auth.schema";
+import { loginSchema, verifySchema, resendVerificationSchema, forgotPasswordSchema, resetPasswordSchema, cashierLoginSchema, completeRegisterSchema } from "../schemas/auth.schema";
 import { createUserSchema } from "../schemas/user.schema";
 import { checkEmailExists } from "../validators/user.validator";
 import { protect } from "../middleware/auth.middleware";
@@ -32,6 +32,13 @@ authRouter.post(
     validateSchema(createUserSchema),
     checkEmailExists,
     registerController
+);
+
+authRouter.post(
+    "/onboarding/complete",
+    protect,
+    validateSchema(completeRegisterSchema),
+    completeOnboardingController
 );
 
 authRouter.post(

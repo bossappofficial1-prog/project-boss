@@ -145,4 +145,13 @@ export class BusinessRepository {
 
         return { totalMerchants, totalLastMonth, totalMerchantThisMonth, totalMerchantSuspend, totalIncommingMerchantExpire }
     }
+
+    static async completeRegister() {
+        return db.business.create({
+            data: {
+                name: ``,
+                ownerId: ``
+            }
+        })
+    }
 }

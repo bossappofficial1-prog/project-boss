@@ -1,181 +1,78 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RefreshCcw } from "lucide-react";
+
+import { DashboardFilters } from "@/components/admin/dashboard/DashboardFilters";
+import { KpiCards } from "@/components/admin/dashboard/KpiCards";
+import { RevenueTrend } from "@/components/admin/dashboard/RevenueTrend";
+import { SubscriptionFunnelCard } from "@/components/admin/dashboard/SubscriptionFunnelCard";
+import { ProofHealthDonut } from "@/components/admin/dashboard/ProofHealthDonut";
+import { RiskyMerchantsTable } from "@/components/admin/dashboard/RiskyMerchantsTable";
+import { ActivityTimeline } from "@/components/admin/dashboard/ActivityTimeline";
 import { Button } from "@/components/ui/button";
 import {
-    TrendingUp,
-    BarChart3,
-    Settings,
-    Users,
-    Building2,
-    DollarSign
-} from 'lucide-react';
-import { DashboardService } from '@/lib/services/dashboard.service';
-import {
-    DashboardCard,
-    ErrorAlert,
-    SystemHealthCard,
-    RecentActivityCard,
-    QuickActionsCard,
-    RevenueChart
-} from '@/components/dashboard';
-import { DashboardMetrics, SystemHealth } from '@/lib/types/api.types';
+    useAdminDashboardActivities,
+    useAdminDashboardInsights,
+    useAdminDashboardRisk,
+    useDashboardFilters,
+} from "@/hooks/api/use-admin-dashboard";
 
-export default function AdminDashboard() {
-    const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
-
-    // Fetch dashboard overview data
-    const {
-        data: dashboardData,
-        isLoading: dashboardLoading,
-        error: dashboardError,
-        refetch: refetchDashboard
-    } = useQuery({
-        queryKey: ['admin-dashboard'],
-        queryFn: DashboardService.getDashboardOverview,
-        retry: 3,
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    });
-
-    // Fetch system health
-    const {
-        data: systemHealth,
-        isLoading: healthLoading,
-        error: healthError,
-        refetch: refetchHealth
-    } = useQuery({
-        queryKey: ['system-health'],
-        queryFn: DashboardService.getSystemHealth,
-        retry: 3,
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    });
-
-    // Fetch revenue analytics
-    const {
-        data: revenueData,
-        isLoading: revenueLoading,
-        error: revenueError,
-        refetch: refetchRevenue
-    } = useQuery({
-        queryKey: ['revenue-analytics', selectedPeriod],
-        queryFn: () => DashboardService.getRevenueAnalytics(selectedPeriod),
-        retry: 3,
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    });
-
-    const stats: DashboardMetrics | null = dashboardData?.metrics || systemHealth?.metrics || null;
-    const health: SystemHealth | null = systemHealth?.health || null;
-
-    // Use recent activities from dashboard overview, fallback to separate call
-    const recentActivities = dashboardData?.recentActivities || [];
+export default function AdminDashboardPage() {
+    const { dateRange, setDateRange, interval, setInterval, resolvedRange } = useDashboardFilters();
+    const insightsQuery = useAdminDashboardInsights({ range: resolvedRange, interval });
+    const riskQuery = useAdminDashboardRisk(6);
+    const activitiesQuery = useAdminDashboardActivities(8);
 
     return (
         <div className="space-y-6">
-            {/* Error Messages */}
-            {(dashboardError || healthError) && (
-                <div className="space-y-4">
-                    {dashboardError && (
-                        <ErrorAlert
-                            error={{ message: dashboardError.message || 'Failed to load dashboard data' }}
-                            onRetry={refetchDashboard}
-                            title="Error Loading Dashboard Data"
-                        />
-                    )}
-                    {healthError && (
-                        <ErrorAlert
-                            error={{ message: healthError.message || 'Failed to load system health' }}
-                            onRetry={refetchHealth}
-                            title="Error Loading System Health"
-                        />
-                    )}
-                </div>
-            )}
-
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">Welcome back! Here's what's happening with your platform.</p>
-                </div>
-                <div className="flex space-x-3">
-                    <Button variant="outline" className="flex items-center space-x-2">
-                        <BarChart3 className="w-4 h-4" />
-                        <span>View Reports</span>
-                    </Button>
-                    <Button className="flex items-center space-x-2">
-                        <Settings className="w-4 h-4" />
-                        <span>Settings</span>
+            <section className="rounded-3xl border border-border/60 bg-background p-6 shadow-sm">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.4em] text-muted-foreground">Command Center</p>
+                        <h1 className="mt-2 text-3xl font-semibold leading-tight">Dashboard Platform Admin</h1>
+                        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                            Monitor pendapatan SaaS, status bukti pembayaran, dan risiko merchant dalam satu layar taktikal.
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        className="gap-2 rounded-full border border-border/80"
+                        onClick={() => insightsQuery.refetch()}
+                        disabled={insightsQuery.isFetching}
+                    >
+                        <RefreshCcw className={`h-4 w-4 ${insightsQuery.isFetching ? "animate-spin" : ""}`} />
+                        Refresh data
                     </Button>
                 </div>
-            </div>
+            </section>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <DashboardCard
-                    title="Total Users"
-                    value={stats?.totalUsers || 0}
-                    change={stats?.usersChange !== undefined
-                        ? `${stats.usersChange >= 0 ? '+' : ''}${stats.usersChange.toFixed(1)}% from last month`
-                        : "+12% from last month"
-                    }
-                    icon={Users}
-                    isLoading={dashboardLoading || healthLoading}
-                />
+            <DashboardFilters
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                interval={interval}
+                onIntervalChange={setInterval}
+            />
 
-                <DashboardCard
-                    title="Total Businesses"
-                    value={stats?.totalBusinesses || 0}
-                    change={stats?.businessesChange !== undefined
-                        ? `${stats.businessesChange >= 0 ? '+' : ''}${stats.businessesChange.toFixed(1)}% from last month`
-                        : "+8% from last month"
-                    }
-                    icon={Building2}
-                    isLoading={dashboardLoading || healthLoading}
-                />
+            <KpiCards snapshot={insightsQuery.data?.snapshot} isLoading={insightsQuery.isLoading} />
 
-                <DashboardCard
-                    title="Total Revenue"
-                    value={`Rp ${stats?.totalRevenue?.toLocaleString() || 0}`}
-                    change={stats?.revenueChange !== undefined
-                        ? `${stats.revenueChange >= 0 ? '+' : ''}${stats.revenueChange.toFixed(1)}% from last month`
-                        : "+15% from last month"
-                    }
-                    icon={DollarSign}
-                    isLoading={dashboardLoading || healthLoading}
-                />
+            <section className="grid gap-6 xl:grid-cols-3">
+                <div className="xl:col-span-2">
+                    <RevenueTrend
+                        data={insightsQuery.data?.revenueTrend}
+                        interval={interval}
+                        isLoading={insightsQuery.isLoading}
+                    />
+                </div>
+                <ProofHealthDonut data={insightsQuery.data?.proofHealth} isLoading={insightsQuery.isLoading} />
+            </section>
 
-                <SystemHealthCard
-                    health={health}
-                    isLoading={healthLoading}
-                />
-            </div>
-
-            {/* Charts and Analytics */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RevenueChart
-                    data={revenueData?.chartData || []}
-                    summary={revenueData?.summary || {
-                        totalRevenue: 0,
-                        totalTransactions: 0,
-                        averageRevenue: 0,
-                        period: selectedPeriod
-                    }}
-                    isLoading={revenueLoading}
-                    error={revenueError?.message}
-                    onPeriodChange={setSelectedPeriod}
-                />
-
-                {/* Recent Activity */}
-                <RecentActivityCard
-                    activities={recentActivities}
-                    isLoading={dashboardLoading}
-                />
-            </div>
-
-            {/* Quick Actions */}
-            <QuickActionsCard />
+            <section className="grid gap-6 xl:grid-cols-3">
+                <SubscriptionFunnelCard data={insightsQuery.data?.funnel} isLoading={insightsQuery.isLoading} />
+                <div className="space-y-6 xl:col-span-2">
+                    <RiskyMerchantsTable data={riskQuery.data} isLoading={riskQuery.isLoading} />
+                    <ActivityTimeline data={activitiesQuery.data} isLoading={activitiesQuery.isLoading} />
+                </div>
+            </section>
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import { Product, Outlet, PaymentStatus, StaffStatus } from "@prisma/client";
+import { Outlet, PaymentStatus, StaffStatus, Prisma } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreatePaymentInput } from "../schemas/payment.schema";
 import { AppError } from "../errors/app-error";
@@ -6,58 +6,50 @@ import { Messages } from "../constants/message";
 import { HttpStatus } from "../constants/http-status";
 import { getStaffAvailabilityForWindow } from "../service/staff.service";
 
+type ProductWithDetails = Prisma.ProductGetPayload<{ include: { goods: true; service: true } }>;
+
 export class PaymentRepository {
-    /**
-     * Get products by IDs with outlet validation
-     */
-    static async getProductsByIds(productIds: string[]): Promise<Product[]> {
+    static async getProductsByIds(productIds: string[]): Promise<ProductWithDetails[]> {
         return db.product.findMany({
             where: {
                 id: { in: productIds },
-                status: 'ACTIVE',
-                OR: [
-                    { quantity: { gt: 0 } },
-                    { type: 'SERVICE' }
-                ]
-            }
+                status: "ACTIVE",
+            },
+            include: {
+                goods: true,
+                service: true,
+            },
         });
     }
 
-    /**
-     * Get outlet by ID
-     */
     static async getOutletById(outletId: string): Promise<Outlet | null> {
-        return db.outlet.findUnique({
-            where: { id: outletId }
-        });
+        return db.outlet.findUnique({ where: { id: outletId } });
     }
 
-    /**
-     * Validate product availability and stock
-     */
     static async validateProductAvailability(
         productId: string,
-        quantity: number
-    ): Promise<{ available: boolean; product: Product | null; message: string }> {
+        quantity: number,
+    ): Promise<{ available: boolean; product: ProductWithDetails | null; message: string }> {
         const product = await db.product.findUnique({
-            where: { id: productId }
+            where: { id: productId },
+            include: { goods: true, service: true },
         });
 
         if (!product) {
             return { available: false, product: null, message: "Produk tidak ditemukan" };
         }
 
-        if (product.status !== 'ACTIVE') {
+        if (product.status !== "ACTIVE") {
             return { available: false, product, message: "Produk tidak aktif" };
         }
 
-        // Check stock for GOODS type
-        if (product.type === 'GOODS') {
-            if (!product.quantity || product.quantity < quantity) {
+        if (product.type === "GOODS") {
+            const stock = product.goods?.currentStock ?? 0;
+            if (stock < quantity) {
                 return {
                     available: false,
                     product,
-                    message: `Stok tidak mencukupi. Stok tersedia: ${product.quantity || 0}`
+                    message: `Stok tidak mencukupi. Stok tersedia: ${stock}`,
                 };
             }
         }
@@ -65,33 +57,23 @@ export class PaymentRepository {
         return { available: true, product, message: "Produk tersedia" };
     }
 
-    /**
-     * Calculate total amount for payment
-     */
-    static calculateTotalAmount(products: Product[], items: CreatePaymentInput['item_details']): number {
-        let total = 0;
-
-        for (const item of items) {
-            const product = products.find(p => p.id === item.productId);
-            if (product) {
-                total += product.price * item.quantity;
+    static calculateTotalAmount(products: ProductWithDetails[], items: CreatePaymentInput["item_details"]): number {
+        return items.reduce((total, item) => {
+            const product = products.find((p) => p.id === item.productId);
+            if (!product) {
+                return total;
             }
-        }
 
-        return total;
+            return total + PaymentRepository.resolveProductPrice(product) * item.quantity;
+        }, 0);
     }
 
-    /**
-     * Create or find guest customer
-     */
     static async createOrFindGuestCustomer(name: string, phone: string) {
-        let customer = await db.guestCustomer.findFirst({
-            where: { phone }
-        });
+        let customer = await db.guestCustomer.findFirst({ where: { phone } });
 
         if (!customer) {
             customer = await db.guestCustomer.create({
-                data: { name, phone }
+                data: { name, phone },
             });
         }
 
@@ -99,48 +81,58 @@ export class PaymentRepository {
     }
 
     static async updatePaymentStatusByOrder(orderId: string, status: PaymentStatus) {
-        // Load order with items and bookingSlot to decide conditional updates
-        const order = await db.order.findUnique({ where: { id: orderId }, include: { items: true, bookingSlot: true } });
+        const order = await db.order.findUnique({
+            where: { id: orderId },
+            include: {
+                items: {
+                    include: {
+                        product: { include: { goods: true } },
+                        bookingSlot: true,
+                    },
+                },
+            },
+        });
 
-        if (order?.items) {
-            for (const item of order.items) {
-                await db.product.update({
-                    where: { id: item.productId },
+        if (!order) {
+            throw new AppError("Order tidak ditemukan", HttpStatus.NOT_FOUND);
+        }
+
+        for (const item of order.items) {
+            if (item.product.type === "GOODS" && item.product.goods) {
+                await db.productGoods.update({
+                    where: { productId: item.productId },
                     data: {
-                        quantity: {
-                            increment: item.quantity
-                        }
-                    }
-                })
+                        currentStock: { increment: item.quantity },
+                    },
+                });
+            }
+
+            if (item.bookingSlot?.id) {
+                await db.bookingSlot.update({
+                    where: { id: item.bookingSlot.id },
+                    data: {
+                        status: "AVAILABLE",
+                        orderItemId: null,
+                    },
+                });
             }
         }
 
-        // Build conditional nested update for bookingSlot only when present
-        const orderUpdateData: any = {
-            paymentStatus: status,
-            orderStatus: 'CANCELLED'
-        };
-
-        if (order?.bookingSlot && order.bookingSlot.id) {
-            orderUpdateData.bookingSlot = { update: { status: 'AVAILABLE' } };
-        }
-
-        // Update transaction(s) status first
         await db.transaction.updateMany({ where: { orderId }, data: { status } });
 
-        // If there's a booking slot, free it
-        if (order?.bookingSlot && order.bookingSlot.id) {
-            await db.bookingSlot.update({ where: { id: order.bookingSlot.id }, data: { status: 'AVAILABLE' } });
-        }
-
-        // Update order status/payment status
-        await db.order.update({ where: { id: orderId }, data: orderUpdateData });
+        await db.order.update({
+            where: { id: orderId },
+            data: {
+                paymentStatus: status,
+                orderStatus: "CANCELLED",
+            },
+        });
 
         return true;
     }
 
     static async getByOrderId(orderId: string) {
-        return await db.transaction.findUnique({
+        return db.transaction.findUnique({
             where: { orderId },
             include: {
                 order: {
@@ -148,25 +140,22 @@ export class PaymentRepository {
                         guestCustomer: true,
                         items: {
                             include: {
-                                product: true
-                            }
+                                product: {
+                                    include: { goods: true, service: true },
+                                },
+                            },
                         },
                         outlet: {
                             include: {
-                                business: true
-                            }
+                                business: true,
+                            },
                         },
-                    }
-                }
-            }
-        })
+                    },
+                },
+            },
+        });
     }
 
-    /**
-     * Create order and items inside a single transaction.
-     * - Decrement stock for GOODS
-     * - Mark booking slot as BOOKED for SERVICE
-     */
     static async createOrderWithItems(params: {
         orderId: string;
         grossAmount: number;
@@ -180,25 +169,18 @@ export class PaymentRepository {
     }) {
         const { orderId, grossAmount, appFee, midtransFee, selectedSlotId, staffId, outletId, customer, items } = params;
 
-        return await db.$transaction(async (tr) => {
-            let slotRecord: {
-                id: string;
-                productId: string;
-                status: string;
-                staffId: string | null;
-                product: { outletId: string };
-                startTime: Date;
-                date: Date;
-                endTime: Date;
-                staff: { id: string; status: StaffStatus; outletId: string } | null;
-            } | null = null;
+        return db.$transaction(async (tr) => {
+            let slotRecord: Prisma.BookingSlotGetPayload<{ include: { productService: { include: { product: true } } } }> | null = null;
 
             if (selectedSlotId) {
                 slotRecord = await tr.bookingSlot.findUnique({
                     where: { id: selectedSlotId },
                     include: {
-                        product: { select: { outletId: true } },
-                        staff: { select: { id: true, status: true, outletId: true } },
+                        productService: {
+                            include: {
+                                product: true,
+                            },
+                        },
                     },
                 });
 
@@ -206,44 +188,18 @@ export class PaymentRepository {
                     throw new AppError(Messages.BOOKING_SLOT_NOT_FOUND, HttpStatus.NOT_FOUND);
                 }
 
-                if (slotRecord.status === 'BLOCKED') {
+                if (slotRecord.status !== "AVAILABLE") {
                     throw new AppError(Messages.BOOKING_SLOT_UNAVAILABLE, HttpStatus.BAD_REQUEST);
                 }
 
-                if (slotRecord.product.outletId !== outletId) {
-                    throw new AppError('Slot booking tidak berada pada outlet ini.', HttpStatus.FORBIDDEN);
+                if (slotRecord.productService.product.outletId !== outletId) {
+                    throw new AppError("Slot booking tidak berada pada outlet ini.", HttpStatus.FORBIDDEN);
                 }
 
-                const isSlotProductInRequest = items.some((item) => item.productId === slotRecord!.productId);
-                if (!isSlotProductInRequest) {
-                    throw new AppError('Slot booking tidak sesuai dengan produk yang dipilih.', HttpStatus.BAD_REQUEST);
+                const slotProductId = slotRecord.productService.productId;
+                if (!items.some((item) => item.productId === slotProductId)) {
+                    throw new AppError("Slot booking tidak sesuai dengan produk yang dipilih.", HttpStatus.BAD_REQUEST);
                 }
-            }
-
-            const slotStart = slotRecord ? new Date(slotRecord.startTime) : null;
-            const slotEnd = slotRecord ? new Date(slotRecord.endTime) : null;
-
-            if (slotRecord) {
-                const staffAvailability = await getStaffAvailabilityForWindow({
-                    outletId,
-                    startTime: slotStart!,
-                    endTime: slotEnd!,
-                });
-
-                const availableStaffCount = staffAvailability.filter((member) => member.isAvailable).length;
-
-                if (availableStaffCount <= 0) {
-                    throw new AppError('Tidak ada staff yang tersedia untuk slot ini.', HttpStatus.CONFLICT);
-                }
-
-                const activeBookings = await tr.bookingSlot.count({
-                    where: {
-                        productId: slotRecord.productId,
-                        startTime: slotRecord.startTime,
-                        endTime: slotRecord.endTime,
-                        orderId: { not: null },
-                    },
-                });
             }
 
             if (staffId) {
@@ -253,129 +209,166 @@ export class PaymentRepository {
                 });
 
                 if (!staff) {
-                    throw new AppError('Staff tidak ditemukan.', HttpStatus.NOT_FOUND);
+                    throw new AppError("Staff tidak ditemukan.", HttpStatus.NOT_FOUND);
                 }
 
                 if (staff.outletId !== outletId) {
-                    throw new AppError('Staff tidak berasal dari outlet ini.', HttpStatus.FORBIDDEN);
+                    throw new AppError("Staff tidak berasal dari outlet ini.", HttpStatus.FORBIDDEN);
                 }
 
                 if (staff.status !== StaffStatus.ACTIVE) {
-                    throw new AppError('Staff sedang tidak aktif.', HttpStatus.BAD_REQUEST);
-                }
-
-                if (slotRecord?.staffId && slotRecord.staffId !== staffId) {
-                    throw new AppError('Slot ini sudah dialokasikan ke staff lain.', HttpStatus.CONFLICT);
-                }
-            } else if (slotRecord?.staffId) {
-                const slotStaff = slotRecord.staff ?? await tr.staff.findUnique({
-                    where: { id: slotRecord.staffId },
-                    select: { id: true, outletId: true, status: true },
-                });
-
-                if (!slotStaff) {
-                    throw new AppError('Staff pada slot ini tidak ditemukan.', HttpStatus.NOT_FOUND);
-                }
-
-                if (slotStaff.outletId !== outletId) {
-                    throw new AppError('Staff slot tidak berasal dari outlet ini.', HttpStatus.FORBIDDEN);
-                }
-
-                if (slotStaff.status !== StaffStatus.ACTIVE) {
-                    throw new AppError('Staff pada slot sedang tidak aktif.', HttpStatus.BAD_REQUEST);
+                    throw new AppError("Staff sedang tidak aktif.", HttpStatus.BAD_REQUEST);
                 }
             }
 
-            const assignedStaffId = staffId ?? slotRecord?.staffId ?? null;
+            if (slotRecord) {
+                const start = new Date(slotRecord.startTime);
+                const end = new Date(slotRecord.endTime);
+
+                const staffAvailability = await getStaffAvailabilityForWindow({
+                    outletId,
+                    startTime: start,
+                    endTime: end,
+                    excludeSlotId: selectedSlotId ?? undefined,
+                });
+
+                if (!staffAvailability.some((staff) => staff.isAvailable)) {
+                    throw new AppError("Tidak ada staff yang tersedia untuk slot ini.", HttpStatus.CONFLICT);
+                }
+            }
 
             await tr.order.create({
                 data: {
                     id: orderId,
                     totalAmount: grossAmount,
-                    appFee: appFee,
-                    midtransFee: midtransFee,
-                    bookingDate: slotStart ?? null,
-                    ...(assignedStaffId ? {
-                        assignedStaff: {
-                            connect: { id: assignedStaffId }
+                    appFee,
+                    midtransFee,
+                    bookingDate: slotRecord ? slotRecord.startTime : null,
+                    ...(staffId
+                        ? {
+                            handledByStaff: {
+                                connect: { id: staffId },
+                            },
                         }
-                    } : {}),
+                        : {}),
                     guestCustomer: {
-                        create: { name: customer.name, phone: customer.phone }
+                        create: { name: customer.name, phone: customer.phone },
                     },
-                    outlet: { connect: { id: outletId } }
-                }
+                    outlet: { connect: { id: outletId } },
+                },
             });
 
+            let linkedSlotOrderItemId: string | null = null;
+
             for (const item of items) {
-                // create order item
-                await tr.orderItem.create({
+                const product = await tr.product.findUnique({
+                    where: { id: item.productId },
+                    include: { goods: true, service: true },
+                });
+
+                if (!product) {
+                    throw new AppError(`Produk dengan ID ${item.productId} tidak ditemukan`, HttpStatus.NOT_FOUND);
+                }
+
+                if (product.type === "GOODS") {
+                    const stock = product.goods?.currentStock ?? 0;
+                    if (stock < item.quantity) {
+                        throw new AppError(`Stok tidak mencukupi untuk produk ${product.name}`, HttpStatus.BAD_REQUEST);
+                    }
+                }
+
+                const orderItem = await tr.orderItem.create({
                     data: {
                         orderId,
                         productId: item.productId,
                         quantity: item.quantity,
-                        priceAtTimeOfOrder: (await tr.product.findUnique({ where: { id: item.productId } }))?.price ?? 0
-                    }
+                        priceAtTimeOfOrder: PaymentRepository.resolveProductPrice(product),
+                    },
                 });
 
-                const product = await tr.product.findUnique({ where: { id: item.productId }, include: { goods: true, service: true } });
-                if (!product) throw new AppError('Product not found');
-
-                if (product.type === 'GOODS') {
-                    if (!product.goods?.currentStock || product.goods.currentStock < item.quantity) {
-                        throw new AppError(`Stok tidak mencukupi untuk produk ${product.id}`);
-                    }
+                if (product.type === "GOODS") {
                     await tr.productGoods.update({
-                        where: { id: item.productId },
-                        data: { currentStock: { decrement: item.quantity } }
+                        where: { productId: product.id },
+                        data: { currentStock: { decrement: item.quantity } },
                     });
                 }
 
-                if (product.type === 'SERVICE' && slotRecord) {
-                    await tr.bookingSlot.create({
-                        data: {
-                            productServiceId: slotRecord.productId,
-                            date: new Date(slotRecord.date),
-                            startTime: slotStart!,
-                            endTime: slotEnd!,
-                            status: 'BOOKED',
-                            orderId
-                        },
-                    });
+                if (
+                    product.type === "SERVICE" &&
+                    slotRecord &&
+                    slotRecord.productService.productId === product.id
+                ) {
+                    linkedSlotOrderItemId = orderItem.id;
                 }
+            }
+
+            if (slotRecord && linkedSlotOrderItemId && selectedSlotId) {
+                await tr.bookingSlot.update({
+                    where: { id: selectedSlotId },
+                    data: {
+                        status: "BOOKED",
+                        orderItemId: linkedSlotOrderItemId,
+                    },
+                });
             }
 
             return true;
         });
     }
 
-    /**
-     * Restock goods and free booking slots, mark transaction/order cancelled
-     */
     static async restockAndCancelOrder(orderId: string) {
-        return await db.$transaction(async (tr) => {
-            const ord = await tr.order.findUnique({ where: { id: orderId }, include: { items: true, bookingSlot: true } });
-            if (!ord) throw new AppError('Order not found');
+        return db.$transaction(async (tr) => {
+            const order = await tr.order.findUnique({
+                where: { id: orderId },
+                include: {
+                    items: {
+                        include: {
+                            product: { include: { goods: true } },
+                            bookingSlot: true,
+                        },
+                    },
+                },
+            });
 
-            // Restock goods
-            for (const item of ord.items) {
-                const prod = await tr.product.findUnique({ where: { id: item.productId } });
-                if (prod && prod.type === 'GOODS') {
-                    await tr.product.update({ where: { id: prod.id }, data: { quantity: { increment: item.quantity } } });
+            if (!order) {
+                throw new AppError("Order tidak ditemukan", HttpStatus.NOT_FOUND);
+            }
+
+            for (const item of order.items) {
+                if (item.product.type === "GOODS" && item.product.goods) {
+                    await tr.productGoods.update({
+                        where: { productId: item.productId },
+                        data: { currentStock: { increment: item.quantity } },
+                    });
+                }
+
+                if (item.bookingSlot?.id) {
+                    await tr.bookingSlot.update({
+                        where: { id: item.bookingSlot.id },
+                        data: {
+                            status: "AVAILABLE",
+                            orderItemId: null,
+                        },
+                    });
                 }
             }
 
-            // Free booking slot if present
-            if (ord.bookingSlot?.id) {
-                await tr.bookingSlot.update({ where: { id: ord.bookingSlot.id }, data: { status: 'AVAILABLE' } });
-            }
+            await tr.transaction.updateMany({ where: { orderId }, data: { status: "CANCELLED" } });
 
-            // Update transaction and order statuses
-            await tr.transaction.updateMany({ where: { orderId }, data: { status: 'CANCELLED' } });
-
-            await tr.order.update({ where: { id: orderId }, data: { orderStatus: 'CANCELLED', paymentStatus: 'CANCELLED' } });
+            await tr.order.update({
+                where: { id: orderId },
+                data: { orderStatus: "CANCELLED", paymentStatus: "CANCELLED" },
+            });
 
             return true;
         });
+    }
+
+    private static resolveProductPrice(product: ProductWithDetails): number {
+        if (product.type === "GOODS") {
+            return product.goods?.sellingPrice ?? 0;
+        }
+
+        return product.service?.sellingPrice ?? 0;
     }
 }

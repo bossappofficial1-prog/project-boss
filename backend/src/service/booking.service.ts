@@ -32,53 +32,6 @@ export async function createBookingSlotService(data: CreateBookingSlotInput) {
   return bookingSlot;
 }
 
-/**
- * Handles the combined logic of creating a booking and initializing Midtrans payment.
- */
-export async function createBookingAndMidtransTransactionService(
-  data: CreateBookingSlotInput,
-  orderId: string,
-) {
-  const bookingSlot = await createBookingSlotService(data);
-
-  // Get order details to calculate fees
-  const order = await getOrderByIdService(orderId);
-
-  // Fee calculation logic
-  const midtransFee = Math.round(order.totalAmount * 0.007); // 0.7%
-  const appFee = Math.round(order.totalAmount * 0.02); // 2%
-
-  const paymentMethod: "online" | "qris" = "qris";
-  const chargedTo = "customer" as "customer" | "owner";
-
-  // Total amount including fees
-  const finalAmount = order.totalAmount + midtransFee + appFee;
-
-  const midtransTransaction = await createMidtransTransactionService(
-    orderId,
-    finalAmount,
-    midtransFee,
-    appFee,
-    paymentMethod,
-    chargedTo,
-  );
-
-  await db.order.update({
-    where: { id: orderId },
-    data: {
-      midtransTransactionToken: midtransTransaction.token,
-      midtransRedirectUrl: midtransTransaction.redirect_url,
-      bookingSlot: {
-        connect: {
-          id: bookingSlot.id,
-        },
-      },
-    },
-  });
-
-  return { bookingSlot, midtransTransaction };
-}
-
 export async function getBookingSlotByIdService(id: string) {
   const bookingSlot = await BookingRepository.findById(id);
   if (!bookingSlot) {

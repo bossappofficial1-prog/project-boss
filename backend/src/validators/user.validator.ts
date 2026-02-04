@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { getUserByEmailService } from "../service/user.service";
 import { AppError } from "../errors/app-error";
 import { HttpStatus } from "../constants/http-status";
+import { ensureString } from "../utils/request";
 
 export const checkEmailExists = async (
     req: Request,
@@ -9,7 +10,7 @@ export const checkEmailExists = async (
     next: NextFunction
 ) => {
     const { email } = req.body
-    const userId = req.params.userId
+    const userId = req.params.userId ? ensureString(req.params.userId, 'userId') : undefined
     if (!email) return next();
 
     const existingUser = await getUserByEmailService(email, userId)

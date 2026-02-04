@@ -5,6 +5,14 @@ import { asyncHandler } from '../middleware/error.middleware';
 import { AppError } from '../errors/app-error';
 import { AdminService } from '../service/admin.service';
 import { AdminV2Service } from '../service/adminv2.service';
+import { subscriptionIncomeQuerySchema } from '../schemas/platform-income.schema';
+import {
+    adminSubscriptionInvoiceQuerySchema,
+    adminSubscriptionInvoiceRejectSchema,
+    parsePaymentStatuses,
+} from '../schemas/subscription-invoice.schema';
+import { SubscriptionInvoiceService } from '../service/subscription-invoice.service';
+import { ensureString } from '../utils/request';
 
 export const getDashboardOverviewController = asyncHandler(async (req: Request, res: Response) => {
     const data = await AdminService.getDashboardOverview();
@@ -61,6 +69,17 @@ export const getTransactionAnalyticsController = asyncHandler(async (req: Reques
         endDate: endDate as string
     });
 
+    return ResponseUtil.success(res, data, HttpStatus.OK);
+});
+
+export const getRevenueInsightsController = asyncHandler(async (_req: Request, res: Response) => {
+    const data = await AdminService.getRevenueInsights();
+    return ResponseUtil.success(res, data, HttpStatus.OK);
+});
+
+export const getSubscriptionIncomeController = asyncHandler(async (req: Request, res: Response) => {
+    const { months } = subscriptionIncomeQuerySchema.parse(req.query);
+    const data = await AdminService.getSubscriptionIncomeOverview({ months });
     return ResponseUtil.success(res, data, HttpStatus.OK);
 });
 
@@ -316,3 +335,39 @@ export const revenueInRangeController = asyncHandler(async (req: Request, res: R
 
     return ResponseUtil.success(res, result);
 })
+
+export const getSubscriptionInvoiceValidationsController = asyncHandler(async (req: Request, res: Response) => {
+    const parsed = adminSubscriptionInvoiceQuerySchema.parse(req.query);
+    const statusFilters = parsePaymentStatuses(parsed.status);
+
+    const data = await SubscriptionInvoiceService.listInvoices({
+        status: statusFilters,
+        search: parsed.search?.trim() || undefined,
+        page: parsed.page,
+        limit: parsed.limit,
+    });
+
+    return ResponseUtil.success(res, data, HttpStatus.OK);
+});
+
+export const verifySubscriptionInvoiceController = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.storedUser?.id) {
+        throw new AppError('Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+
+    const invoiceId = ensureString(req.params?.invoiceId, 'invoiceId');
+    const result = await SubscriptionInvoiceService.verifyInvoice(invoiceId);
+    return ResponseUtil.success(res, result, HttpStatus.OK);
+});
+
+export const rejectSubscriptionInvoiceController = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.storedUser?.id) {
+        throw new AppError('Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+
+    const invoiceId = ensureString(req.params?.invoiceId, 'invoiceId');
+    const { reason } = adminSubscriptionInvoiceRejectSchema.parse(req.body);
+
+    const result = await SubscriptionInvoiceService.rejectInvoice(invoiceId, reason);
+    return ResponseUtil.success(res, result, HttpStatus.OK);
+});

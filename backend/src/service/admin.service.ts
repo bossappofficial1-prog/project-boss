@@ -146,6 +146,20 @@ export class AdminService {
         return analytics;
     }
 
+    static async getRevenueInsights() {
+        return AdminRepository.getRevenueInsights();
+    }
+
+    static async getSubscriptionIncomeOverview(options: { months?: number }) {
+        const months = options.months ?? 12;
+
+        if (isNaN(months) || months < 1 || months > 24) {
+            throw new AppError('months must be between 1 and 24', HttpStatus.BAD_REQUEST);
+        }
+
+        return AdminRepository.getSubscriptionIncomeOverview({ months });
+    }
+
     static async getTransactionAnalytics(options: {
         startDate?: string;
         endDate?: string;

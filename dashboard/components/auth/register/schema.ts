@@ -71,7 +71,7 @@ export const fieldRegisterStep1: FormFieldConfig<RegisterStep1Input>[] = [
         name: `name`,
         icon: User,
         type: 'text',
-        placeholder: 'Contoh: Budi Santoso'
+        placeholder: 'Contoh: Budi Santoso',
     },
     {
         label: 'Email Bisnis',

@@ -14,6 +14,7 @@ import {
   createProductSchema,
 } from "../schemas/product.schema";
 import { getOutletByIdService } from "./outlet.service";
+import { PlanLimitService } from "./plan-limit.service";
 import { generateDefaultBookingSlots } from "./booking.service";
 import {
   Product,
@@ -28,8 +29,16 @@ import { ImageService } from "./image.service";
  * Creates a single product and associated records.
  */
 export async function createProductService(data: CreateProductInput) {
-  await getOutletByIdService(data.outletId);
+  const outlet = await getOutletByIdService(data.outletId);
+  const businessId = outlet.businessId;
+
+  if (!businessId) {
+    throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
+  }
+
+  await PlanLimitService.assertCanCreateProduct(businessId);
   const createdProduct = await ProductRepository.create(data);
+  await PlanLimitService.invalidateUsageCache(businessId);
   return createdProduct;
 }
 
@@ -108,11 +117,21 @@ export async function updateProductService(id: string, data: UpdateProductInput)
  * Deletes a product and clears its cache.
  */
 export async function deleteProductService(id: string) {
-  await getProductByIdService(id);
+  const existingProduct = await ProductRepository.findById(id);
+  if (!existingProduct) {
+    throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
+  }
+
   const product = await ProductRepository.delete(id);
 
   if (product && product.image) { ImageService.deleteImageByUrl(product.image) }
   await redis.del(`product:${id}`);
+
+  const businessId = existingProduct.outlet?.business?.id;
+  if (businessId) {
+    await PlanLimitService.invalidateUsageCache(businessId);
+  }
+
   return product;
 }
 

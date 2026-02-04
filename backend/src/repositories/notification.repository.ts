@@ -13,11 +13,13 @@ export class NotificationRepository {
     }
 
     static countLowStockGoods(outletId: string, threshold: number) {
-        return db.product.count({
+        return db.productGoods.count({
             where: {
-                outletId,
-                type: ProductType.GOODS,
-                quantity: { lte: threshold },
+                currentStock: { lte: threshold },
+                product: {
+                    outletId,
+                    type: ProductType.GOODS,
+                },
             },
         });
     }

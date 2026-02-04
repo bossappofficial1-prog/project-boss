@@ -6,6 +6,7 @@ import {
     Megaphone,
     Server,
     Settings,
+    ShieldCheck,
     Store,
     Users,
     Wallet,
@@ -136,6 +137,18 @@ export const sidebarData: {
                     ]
                 },
             ],
+        },
+        {
+            label: "Validasi Pembayaran",
+            items: [
+                {
+                    title: "Bukti Langganan",
+                    id: "subscription-invoices",
+                    icon: ShieldCheck,
+                    badge: "Live",
+                    url: `/admin/payments/manual`
+                }
+            ]
         },
         {
             label: "Operasional Platform",

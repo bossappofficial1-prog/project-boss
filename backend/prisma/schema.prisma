@@ -82,6 +82,7 @@ enum SubscriptionStatus {
   PAST_DUE
   TRIAL
   AWAITING_PAYMENT
+  PROOF_SUBMITTED
 }
 
 enum StockMovementType {
@@ -203,6 +204,7 @@ model SubscriptionInvoice {
   externalId String?
 
   proofImage      String?
+  proofUploadedAt DateTime?
   verifiedAt      DateTime?
   rejectionReason String?
 
@@ -416,7 +418,7 @@ model StockLog {
   productGoods   ProductGoods @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
 
   // Bukti pembelian
-  faktur    String?
+  faktur String?
 
   createdAt DateTime @default(now())
 

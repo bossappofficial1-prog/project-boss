@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as promoService from '../service/promo.service';
 import { HttpStatus } from '../constants/http-status';
 import { asyncHandler } from '../middleware/error.middleware';
+import { ensureString } from '../utils/request';
 
 export const createPromoHandler = asyncHandler(async (req: Request, res: Response) => {
     const promo = await promoService.createPromo(req.body);
@@ -13,7 +14,7 @@ export const createPromoHandler = asyncHandler(async (req: Request, res: Respons
 });
 
 export const getPromosByBusinessHandler = asyncHandler(async (req: Request, res: Response) => {
-    const { businessId } = req.params;
+    const businessId = ensureString(req.params?.businessId, 'businessId');
     const promos = await promoService.getPromosByBusiness(businessId);
     res.status(HttpStatus.OK).json({
         success: true,
@@ -23,7 +24,7 @@ export const getPromosByBusinessHandler = asyncHandler(async (req: Request, res:
 });
 
 export const getPromoByIdHandler = asyncHandler(async (req: Request, res: Response) => {
-    const { promoId } = req.params;
+    const promoId = ensureString(req.params?.promoId, 'promoId');
     const promo = await promoService.getPromoById(promoId);
     res.status(HttpStatus.OK).json({
         success: true,

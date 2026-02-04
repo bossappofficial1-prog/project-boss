@@ -356,10 +356,22 @@ body {
   body {
     @apply bg-background text-foreground;
   }
-  .maplibregl-popup-content {
+
+  /* .maplibregl-popup-content {
     @apply bg-transparent! shadow-none! p-0! rounded-none!;
-  }
+  } */
+  /* 
   .maplibregl-popup-tip {
-    @apply hidden!;
-  }
+    @apply hidden !;
+  } */
+
+}
+
+.light-page {
+  color-scheme: light;
+}
+
+.light-page {
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
 }
