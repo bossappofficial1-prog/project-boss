@@ -53,3 +53,16 @@ export const getCompareOutletsReportController = asyncHandler(
     return ResponseUtil.success(res, report);
   },
 );
+
+export const getStaffReportController = asyncHandler(async (req: Request, res: Response) => {
+  const outletId = req.params.outletId as string;
+  const { type, date } = req.query;
+
+  const report = await ReportService.getStaffReport(
+    outletId,
+    date as string,
+    type as "daily" | "weekly" | "monthly",
+  );
+
+  return ResponseUtil.success(res, report);
+});

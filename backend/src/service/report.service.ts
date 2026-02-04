@@ -446,4 +446,126 @@ export class ReportService {
       count: filteredOrders.length,
     };
   }
+
+  static async getStaffReport(
+    outletId: string,
+    date: string,
+    type: "daily" | "weekly" | "monthly",
+  ) {
+    const refDate = date ? new Date(date as string) : new Date();
+    let start: Date, end: Date;
+
+    if (type === "monthly") {
+      start = startOfMonth(refDate);
+      end = endOfMonth(refDate);
+    } else if (type === "weekly") {
+      start = startOfWeek(refDate, { weekStartsOn: 1 });
+      end = endOfWeek(refDate, { weekStartsOn: 1 });
+    } else {
+      start = startOfDay(refDate);
+      end = endOfDay(refDate);
+    }
+
+    // 1. Fetch Completed Orders in Range for this Outlet
+    const orders = await db.order.findMany({
+      where: {
+        outletId: outletId === "all" ? undefined : outletId,
+        orderStatus: OrderStatus.COMPLETED,
+        createdAt: {
+          gte: start,
+          lte: end,
+        },
+      },
+      include: {
+        handledByStaff: true, // For Cashier info
+        items: {
+          include: {
+            product: {
+              include: {
+                service: true, // For Service Provider info
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // 2. Process Cashier Performance (Based on handledByStaff)
+    const cashierMap = new Map<string, { name: string; transactions: number; revenue: number }>();
+
+    orders.forEach((order) => {
+      if (order.handledByStaff) {
+        const staffId = order.handledByStaff.id;
+        const entry = cashierMap.get(staffId) || {
+          name: order.handledByStaff.name,
+          transactions: 0,
+          revenue: 0,
+        };
+        entry.transactions += 1;
+        entry.revenue += order.totalAmount;
+        cashierMap.set(staffId, entry);
+      }
+    });
+
+    const cashierList = Array.from(cashierMap.values()).map((c) => ({
+      staffId: `C-${c.name}`, // Pseudo ID
+      name: c.name,
+      role: "Kasir",
+      transactionCount: c.transactions,
+      revenue: c.revenue,
+      commission: 0, // Cashiers don't have commission in this context
+      type: "CASHIER",
+    }));
+
+    // 3. Process Service Staff Performance (Based on ProductService.providerName)
+    const serviceMap = new Map<
+      string,
+      { name: string; transactions: number; commission: number }
+    >();
+
+    orders.forEach((order) => {
+      order.items.forEach((item) => {
+        if (item.product.service) {
+          const service = item.product.service;
+          const providerName = service.providerName;
+
+          if (providerName) {
+            const entry = serviceMap.get(providerName) || {
+              name: providerName,
+              transactions: 0,
+              commission: 0,
+            };
+
+            entry.transactions += 1; // Count per item served
+
+            // Calculate Commission
+            let itemCommission = 0;
+            if (service.commissionType === "PERCENTAGE") {
+              itemCommission = item.priceAtTimeOfOrder * (service.commissionValue / 100);
+            } else {
+              itemCommission = service.commissionValue;
+            }
+            // Multiply by quantity if item quantity > 1 (though services are usually 1, schema allows qty)
+            itemCommission *= item.quantity;
+
+            entry.commission += itemCommission;
+            serviceMap.set(providerName, entry);
+          }
+        }
+      });
+    });
+
+    const serviceList = Array.from(serviceMap.values()).map((s) => ({
+      staffId: `S-${s.name}`, // Pseudo ID
+      name: s.name,
+      role: "Staff Layanan",
+      transactionCount: s.transactions,
+      revenue: 0, // Service staff revenue attribution is complex (item level), mostly we care about commission
+      commission: s.commission,
+      type: "SERVICE",
+    }));
+
+    // 4. Combine Lists
+    return [...cashierList, ...serviceList];
+  }
 }

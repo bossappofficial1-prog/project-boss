@@ -119,14 +119,6 @@ export const MENU_GROUPS: MenuGroup[] = [
             name: "Laporan Staff",
             href: "/owner/dashboard/reports/staff",
           },
-          {
-            name: "Laporan Pengeluaran",
-            href: "/owner/dashboard/reports/out",
-          },
-          {
-            name: "Laporan Pemasukan",
-            href: "/owner/dashboard/reports/in",
-          },
         ],
       },
       {

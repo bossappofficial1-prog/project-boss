@@ -21,7 +21,7 @@ export interface OrderCreationResult {
  * manages stock for goods, and calculates transaction fees.
  */
 export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCreationResult> {
-  const { items, outletId, bookingSlotId, staffId } = data;
+  const { items, outletId, bookingSlotId, staffId, cashierId } = data;
 
   // 1. Validate Booking Slot if provided
   const slot = bookingSlotId
@@ -47,7 +47,7 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
     }
   }
 
-  // 2. Validate Staff if provided
+  // 2. Validate Staff (Service Provider) if provided
   if (staffId) {
     const staff = await db.staff.findUnique({
       where: { id: staffId },
@@ -61,7 +61,21 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
       throw new AppError("Staff is currently inactive.", HttpStatus.BAD_REQUEST);
   }
 
-  const handledByStaffId = staffId ?? null;
+  // 3. Validate Cashier if provided
+  if (cashierId) {
+    const cashier = await db.staff.findUnique({
+      where: { id: cashierId },
+      select: { id: true, status: true, outletId: true },
+    });
+
+    if (!cashier) throw new AppError("Cashier not found.", HttpStatus.NOT_FOUND);
+    if (cashier.outletId !== outletId)
+      throw new AppError("Cashier does not belong to this outlet.", HttpStatus.FORBIDDEN);
+    // Note: Cashier status check might be needed but assuming logged in cashier is active
+  }
+
+  // Prioritize cashierId for the order handler, fallback to staffId (service provider) if legacy behavior needed
+  const handledByStaffId = cashierId ?? staffId ?? null;
   const slotStart = slot ? new Date(slot.startTime) : null;
   const slotEnd = slot ? new Date(slot.endTime) : null;
   let slotMaxParallel: number | null = null;

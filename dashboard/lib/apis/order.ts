@@ -193,6 +193,7 @@ export interface CreateOrderRequest {
   bookingSlotId?: string;
   staffId?: string;
   onlinePaymentChannel?: OnlinePaymentChannel;
+  cashierId?: string;
 }
 
 export interface CreateOrderResponse {

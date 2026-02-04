@@ -5,6 +5,7 @@ import { OutletReport } from "@/hooks/useReport";
 import { formatCurrency } from "@/lib/utils";
 import { Sparkline } from "../Sparkline";
 import { Activity } from "lucide-react";
+import { Row } from "@tanstack/react-table";
 
 export interface Totals {
   jumlahTransaksi: number;
@@ -57,7 +58,7 @@ export function ReportOutleTable({ data, totals, hideTrend, labelHeader }: Repor
               {
                 accessorKey: "trend",
                 header: "Tren",
-                cell({ row: rows }) {
+                cell({ row: rows }: { row: Row<OutletReport> }) {
                   const row = rows.original;
                   return (
                     <div className="inline-flex items-center justify-center p-1 bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-100 dark:border-slate-800">

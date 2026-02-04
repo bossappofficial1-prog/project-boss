@@ -38,3 +38,27 @@ export function useCompareOutletsReport(type: any, date?: string) {
     },
   });
 }
+
+export interface StaffReportItem {
+  staffId: string;
+  name: string;
+  role: string;
+  type: "CASHIER" | "SERVICE";
+  transactionCount: number;
+  revenue: number;
+  commission: number;
+}
+
+export function useReportStaff(outletId: string, type: any, date?: string) {
+  return useQuery({
+    queryKey: ["staff-report", type, date, outletId],
+    enabled: !!outletId,
+    queryFn: async (): Promise<StaffReportItem[]> => {
+      return (
+        await apiClient.get(`/reports/staff/${outletId}`, {
+          params: { type, date },
+        })
+      ).data.data;
+    },
+  });
+}
