@@ -18,9 +18,11 @@ export interface Totals {
 type ReportOutleTableProps = {
   data: OutletReport[];
   totals: Totals;
+  hideTrend?: boolean;
+  labelHeader?: string;
 };
 
-export function ReportOutleTable({ data, totals }: ReportOutleTableProps) {
+export function ReportOutleTable({ data, totals, hideTrend, labelHeader }: ReportOutleTableProps) {
   return (
     <DataTable
       data={data}
@@ -33,8 +35,8 @@ export function ReportOutleTable({ data, totals }: ReportOutleTableProps) {
       columns={[
         {
           accessorKey: "label",
-          header: "Tanggal",
-          footer: () => "Tanggal",
+          header: labelHeader || "Tanggal",
+          footer: () => labelHeader || "Tanggal",
         },
         {
           accessorKey: "jumlahTransaksi",
@@ -50,19 +52,26 @@ export function ReportOutleTable({ data, totals }: ReportOutleTableProps) {
           },
           footer: () => formatCurrency(totals.totalPendapatan),
         },
-        {
-          accessorKey: "trend",
-          header: "Tren",
-          cell({ row: rows }) {
-            const row = rows.original;
-            return (
-              <div className="inline-flex items-center justify-center p-1 bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-100 dark:border-slate-800">
-                <Sparkline data={row.trend} color={row.labaBersih > 0 ? "#10b981" : "#f43f5e"} />
-              </div>
-            );
-          },
-          footer: () => <Activity className="w-5 h-5 mx-auto text-emerald-500 opacity-50" />,
-        },
+        ...(!hideTrend
+          ? [
+              {
+                accessorKey: "trend",
+                header: "Tren",
+                cell({ row: rows }) {
+                  const row = rows.original;
+                  return (
+                    <div className="inline-flex items-center justify-center p-1 bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-100 dark:border-slate-800">
+                      <Sparkline
+                        data={row.trend}
+                        color={row.labaBersih > 0 ? "#10b981" : "#f43f5e"}
+                      />
+                    </div>
+                  );
+                },
+                footer: () => <Activity className="w-5 h-5 mx-auto text-emerald-500 opacity-50" />,
+              } as any,
+            ]
+          : []),
         {
           accessorKey: "totalPembelian",
           header: "Stok",

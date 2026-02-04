@@ -1,6 +1,11 @@
 import { db } from "../config/prisma";
 import { OrderStatus } from "@prisma/client";
-import { getOutletByIdService } from "./outlet.service";
+import {
+  getOutletByIdService,
+  getAllOutletService,
+  getOutletsByBusinessIdService,
+} from "./outlet.service";
+import { getBusinessByOwnerIdService } from "./business.service";
 import { ReportRepository } from "../repositories/report.repository";
 import {
   eachDayOfInterval,
@@ -312,6 +317,95 @@ export class ReportService {
       // But let's stick to chronological for now or reverse in frontend.
       finalReport.reverse();
     }
+
+    return finalReport;
+  }
+
+  static async getCompareOutletsReport(
+    date: string,
+    type: "daily" | "monthly" | "yearly",
+    ownerId: string,
+  ) {
+    const refDate = date ? new Date(date as string) : new Date();
+    let start: Date, end: Date;
+
+    if (type === "yearly") {
+      start = startOfYear(refDate);
+      end = endOfYear(refDate);
+    } else if (type === "monthly") {
+      start = startOfMonth(refDate);
+      end = endOfMonth(refDate);
+    } else {
+      start = startOfDay(refDate);
+      end = endOfDay(refDate);
+    }
+
+    // 1. Get Business of the owner
+    const business = await getBusinessByOwnerIdService(ownerId);
+
+    // 2. Get Outlets of the business
+    const { outlets } = await getOutletsByBusinessIdService(business.id, undefined, 1000); // Take explicit limit to get all
+
+    // 3. Get Report Data (we still fetch 'all' report data but we will filter in memory,
+    // OR ideally we should filter in repository, but for now filtering in memory is fine if dataset isn't huge.
+    // However, getOutletReport('all') might be heavy if there are many other businesses.
+    // Optimization: ReportRepository.getOutletReport should probably accept a list of outletIds.
+    // But given current implementation, let's stick to filtering.
+    // WAIT! ReportRepository.getOutletReport('all') effectively ignores outletId.
+    // This leaks data if we fetch EVERYTHING and filter here.
+    // ReportRepository.getOutletReport needs to support filtering by list of outlet IDs OR we loop.
+    // Looping might be n+1 queries.
+    // Let's look at getOutletReport in repo.
+    // Repo: if (outletId && outletId !== "all") { logic }. Else { no filter }.
+    // So "all" fetches EVERYTHING in DB. That's bad for multi-tenant.
+    // We SHOULD modify Repo to support fetching by list of IDs or BusinessID.
+    // But for this task, let's see if we can pass a special "all" that is actually scoped?
+    // No, repo interprets "all" as literal no filter.
+
+    // Let's update Repo to accept `outletIds` array? Or just loop in Service?
+    // Constructing specific query in Repo is better.
+    // But changing Repo signature might break other things.
+    // Let's modify Repo to accept `businessId`?
+    // Actually, let's keep it simple.
+    // We can just query the data we need directly or improve the Repo.
+
+    // Given the task constraints, I'll filter in memory BUT fetching ALL data from DB is unsafe/inefficient.
+    // I will filter by checking `outlet.businessId` in the query?
+    // ReportRepository doesn't support businessId.
+
+    // Let's iterate over outlets and fetch report for each? Parallelize.
+    // `outlets.map(o => ReportRepository.getOutletReport(o.id...))`
+    // This is safer but might spam DB.
+    // "all" in Repo was probably intended for Single Tenant or Super Admin.
+    // Since this is "Owner" dashboard, they should only see their own.
+
+    // Let's try to pass `outlets.map(o => o.id)` to Repo? No, it expects string.
+
+    // DECISION: Parallalize calls for each outlet.
+    const reportDataPromises = outlets.map((outlet) =>
+      ReportRepository.getOutletReport(outlet.id, date, start, end, type as any).then((data) => ({
+        outlet,
+        data,
+      })),
+    );
+
+    const results = await Promise.all(reportDataPromises);
+
+    const finalReport = results.map(({ outlet, data }) => {
+      const { orders, expenses, stockLogs } = data;
+      const stats = this.calculateStats(orders, expenses, stockLogs); // No need to filter again
+
+      return {
+        label: outlet.name,
+        jumlahTransaksi: stats.count,
+        totalPendapatan: stats.revenue,
+        totalPembelian: stats.pembelian,
+        totalPengeluaran: stats.pengeluaran,
+        gajiStaf: stats.gaji,
+        labaBersih: stats.labaBersih,
+        trend: [],
+      };
+    });
 
     return finalReport;
   }
