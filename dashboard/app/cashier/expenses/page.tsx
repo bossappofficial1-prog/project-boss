@@ -12,7 +12,7 @@ import ExpenseModal from "@/components/modals/ExpenseModal";
 import { type Expense } from "@/lib/apis/expense";
 
 export default function CashierExpensesPage() {
-  const { outletData } = useCashierContext();
+  const { outletData, cashierData } = useCashierContext();
   const outletId = outletData?.id;
 
   const { expenses, summary, loading, error, startISO, endISO, setRange, refetch, create, update } =
@@ -23,12 +23,18 @@ export default function CashierExpensesPage() {
   const handleAdd = () => {
     setEditing(null);
     setModalOpen(true);
+    // console.log("Nama Kasir", cashierData?.name);
   };
 
   const handleSubmitModal = async (
-    payload: { description: string; amount: number; date: string; outletId: string },
+    formData: { description: string; amount: number; date: string; outletId: string },
     id?: string,
   ) => {
+    const payload = {
+      ...formData,
+      cashier: cashierData?.name || "Cashier",
+    };
+
     if (id) await update(id, payload);
     else await create(payload);
     setModalOpen(false);

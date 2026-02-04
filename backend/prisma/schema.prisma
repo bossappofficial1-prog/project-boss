@@ -582,6 +582,7 @@ model Transaction {
 // Model untuk mencatat pengeluaran
 model Expense {
   id          String   @id @default(uuid())
+  cashier     String  @default("Owner")
   description String
   amount      Float
   date        DateTime
