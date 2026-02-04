@@ -80,8 +80,7 @@ export async function getTransactionListService(params: TransactionListParams) {
       status: transaction.status,
       description: `Penjualan - ${transaction.order.guestCustomer?.name || "Customer"}`,
       paymentMethod: transaction.paymentMethod,
-      cashier:
-        transaction.order.handledByStaff?.name ?? transaction.verifiedBy?.name ?? "System/Owner",
+      cashier: transaction.order.handledByStaff?.name ?? transaction.verifiedBy?.name ?? "Owner",
       isManual: transaction.isManual,
       manualMethod: transaction.manualMethod,
       paymentProofUrl: transaction.paymentProofUrl,
