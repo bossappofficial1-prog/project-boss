@@ -14,7 +14,7 @@ export interface OutletReport {
 
 export function useReportOutlet(outletId: string, type: any, date?: string) {
   return useQuery({
-    queryKey: ["outler-report", type, date],
+    queryKey: ["outler-report", type, date, outletId],
     enabled: !!outletId,
     queryFn: async (): Promise<OutletReport[]> => {
       return (
