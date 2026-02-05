@@ -126,7 +126,10 @@ export default function RegistrationContent() {
 
     useEffect(() => {
         document.documentElement.classList.remove("dark")
-        return () => document.documentElement.classList.add("dark")
+        return () => {
+            const currentTheme = localStorage.getItem('theme') ?? 'system'
+            document.documentElement.classList.add(currentTheme)
+        }
     }, [])
 
     const handleLogout = async () => {
@@ -193,7 +196,7 @@ export default function RegistrationContent() {
             if (formData.selectedPlan === 'TRIAL') {
                 router.push('/owner/dashboard');
             } else if (invoiceId) {
-                router.push(`/subscription/payment?invoiceId=${invoiceId}`);
+                router.push(`/subscription/payment/${invoiceId}`);
             } else {
                 alert('Invoice tidak ditemukan. Silakan hubungi support.');
             }

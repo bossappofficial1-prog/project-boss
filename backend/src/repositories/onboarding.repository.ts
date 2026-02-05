@@ -59,28 +59,10 @@ export class OnboardingRepository {
                 });
             }
 
-            const outlet = await tx.outlet.create({
-                data: {
-                    name: `${business.name} - Outlet Utama`,
-                    description: description ? `Outlet utama untuk ${description}` : `Outlet utama untuk ${business.name}`,
-                    businessId: business.id,
-                },
-            });
-
-            const hoursPayload = Array.from({ length: 7 }).map((_, day) => ({
-                outletId: outlet.id,
-                dayOfWeek: day,
-                openTime: new Date("1970-01-01T08:00:00Z"),
-                closeTime: new Date("1970-01-01T20:00:00Z"),
-                isOpen: day !== 0,
-            }));
-            await tx.outletOperatingHours.createMany({ data: hoursPayload });
-
             return {
                 business: updatedBusiness,
                 subscription,
                 invoice,
-                outlet,
             };
         });
     }

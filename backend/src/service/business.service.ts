@@ -41,7 +41,9 @@ export async function updateBusinessService(id: string, data: UpdateBusinessInpu
     if (business.id !== id) {
         throw new AppError("Anda tidak berhak mengubah bisnis ini.", HttpStatus.FORBIDDEN);
     }
-    const updatedBusiness = await BusinessRepository.update(id, data);
+
+    const { defaultTransactionFeeBearer, ...payload } = data
+    const updatedBusiness = await BusinessRepository.update(id, payload);
     return updatedBusiness;
 }
 
@@ -54,7 +56,6 @@ export async function updateBankAccountService(businessId: string, ownerId: stri
 
     return BusinessRepository.update(businessId, {
         ...data,
-        defaultTransactionFeeBearer: "CUSTOMER"
     });
 }
 

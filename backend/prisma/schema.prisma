@@ -131,7 +131,7 @@ model Business {
   accountHolder String?
 
   currentSubscriptionId String?                @unique
-  currentSubscription   BusinessSubscription?  @relation("ActiveSubscription", fields: [currentSubscriptionId], references: [id])
+  currentSubscription   BusinessSubscription?  @relation("ActiveSubscription", fields: [currentSubscriptionId], references: [id], onDelete: SetNull)
   subscriptionStatus    SubscriptionStatus     @default(ACTIVE)
   subscriptionStartDate DateTime               @default(now())
   subscriptionEndDate   DateTime?
@@ -211,11 +211,11 @@ model SubscriptionInvoice {
   paidAt DateTime?
 
   // Relasi
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id])
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
 
-  subscriptionId String
-  subscription   BusinessSubscription @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String?
+  subscription   BusinessSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -584,7 +584,7 @@ model Transaction {
 // Model untuk mencatat pengeluaran
 model Expense {
   id          String   @id @default(uuid())
-  cashier     String  @default("Owner")
+  cashier     String   @default("Owner")
   description String
   amount      Float
   date        DateTime
@@ -629,5 +629,5 @@ model receiptSetting {
   showLogo    Boolean @default(false)
   printHeight String  @default("105")
   printWidth  String  @default("80")
-  outlet      Outlet  @relation(fields: [outletId], references: [id])
+  outlet      Outlet  @relation(fields: [outletId], references: [id], onDelete: Cascade)
 }

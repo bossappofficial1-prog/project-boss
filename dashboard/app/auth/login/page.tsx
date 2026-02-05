@@ -25,7 +25,10 @@ function LoginForm() {
 
   useEffect(() => {
     document.documentElement.classList.remove("dark")
-    return () => document.documentElement.classList.add("dark")
+    return () => {
+      const currentTheme = localStorage.getItem('theme') ?? 'system'
+      document.documentElement.classList.add(currentTheme)
+    }
   }, [])
 
   // Set error message based on reason parameter or OAuth error

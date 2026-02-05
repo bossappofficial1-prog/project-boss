@@ -54,7 +54,12 @@ export class OrderRepository {
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              include: {
+                goods: true,
+                service: true
+              }
+            },
             bookingSlot: true,
           },
         },
