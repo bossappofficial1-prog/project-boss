@@ -25,13 +25,13 @@ export const getExpensesByOutletController = asyncHandler(async (req: Request, r
 });
 
 export const updateExpenseController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const expense = await ExpenseService.updateExpense(id as string, req.body);
+    const id = ensureString(req.params?.id, 'id');
+    const expense = await ExpenseService.updateExpense(id, req.body);
     ResponseUtil.success(res, expense);
 });
 
 export const deleteExpenseController = asyncHandler(async (req: Request, res: Response) => {
     const id = ensureString(req.params?.id, 'id');
-    const expense = await ExpenseService.updateExpense(id, req.body);
-    ResponseUtil.success(res, expense);
+    await ExpenseService.deleteExpense(id);
+    ResponseUtil.success(res, null, HttpStatus.NO_CONTENT);
 });

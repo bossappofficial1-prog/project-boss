@@ -2,7 +2,7 @@ import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
 import { LoginInput, CashierLoginInput, CompleteRegisterValues } from "../schemas/auth.schema";
-import { BcryptUtil, JwtUtil } from "../utils";
+import { BcryptUtil, CodeGeneratorUtil, JwtUtil } from "../utils";
 import { getUserByEmailService, getUserByIdService, updateUserPasswordService, createUserWithGoogleService } from "./user.service";
 import { UserRepository } from "../repositories/user.repository";
 import { StaffRepository } from "../repositories/staff.repository";
@@ -163,8 +163,15 @@ export async function resendVerificationService(email: string) {
     await redis.set(rateLimitKey, (attemptCount + 1).toString(), 'EX', ttlSeconds);
 
     // Generate new verification code
-    const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    await redis.set(`verification:${email}`, verificationCode, 'EX', 60 * 15); // 15 minutes
+    const verificationCode = CodeGeneratorUtil.generate(6);
+    await redis.set(`verification:${email}`, verificationCode, 'EX', 60 * 10);
+    const expiryCode = new Date()
+    expiryCode.setMinutes(expiryCode.getMinutes() + 10)
+
+    await UserRepository.update(user.id, {
+        verificationCode,
+        verificationCodeExpires: expiryCode
+    })
 
     // Send email via message queue
     await messagePublisher.publishResendVerificationEmail(email, verificationCode);
@@ -256,7 +263,7 @@ export async function googleOAuthService(profile: {
     }
 
     // Create session and JWT token
-    await redis.set(`session:${user.id}`, JSON.stringify(user), 'EX', 60 * 60 * 24);
+    await redis.set(`session:${user.id}`, JSON.stringify({ ...user, businessId: user.business?.id }), 'EX', 60 * 60 * 24);
     const token = JwtUtil.generate({
         sessionId: user.id,
         role: user.role,

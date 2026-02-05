@@ -29,7 +29,7 @@ export class BusinessRepository {
         return db.business.findMany();
     }
 
-    static async update(id: string, data: UpdateBusinessInput): Promise<Business> {
+    static async update(id: string, data: Omit<UpdateBusinessInput, 'defaultTransactionFeeBearer'>): Promise<Business> {
         return db.business.update({
             where: { id },
             data,

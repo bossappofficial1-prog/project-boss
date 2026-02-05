@@ -119,7 +119,6 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
 export async function getOutletByIdService(id: string, date?: Date) {
     const today = date || new Date();
     const outletRaw = await OutletRepository.findById(id)
-
     if (!outletRaw) {
         throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
@@ -176,14 +175,13 @@ export async function updateOutletService(id: string, data: UpdateOutletInput, o
     if (data.manualQrImageUrl && outlet.manualQrImageUrl) {
         ImageService.deleteImageByUrl(outlet.manualQrImageUrl)
     }
-    // hapus gambar sebelumnya jika ada di local
-    if (data.image && outlet.image) ImageService.deleteImageByUrl(outlet.image);
 
     if (data.manualQrImageUrl && outlet.manualQrImageUrl) ImageService.deleteImageByUrl(outlet.manualQrImageUrl);
     return updatedOutlet;
 }
 
 export async function deleteOutletService(id: string, ownerId: string) {
+    console.log(id)
     const outlet = await getOutletByIdService(id);
     const business = await getBusinessByOwnerIdService(ownerId);
     if (business.id !== outlet.businessId) {

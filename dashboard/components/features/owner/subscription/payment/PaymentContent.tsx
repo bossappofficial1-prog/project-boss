@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
 import {
     AlertCircle,
@@ -10,8 +11,8 @@ import {
     Copy,
     X,
     ArrowLeft,
+    Loader2,
 } from 'lucide-react'
-import { Loader2 } from 'lucide-react'
 import FileUploader from '@/components/ui/ImageUploader'
 import { ACCEPTED_FILE_TYPES } from '@/constants/file-types'
 import { useInvoice, useUploadInvoiceProof } from '@/hooks/use-invoice'
@@ -37,23 +38,20 @@ const BANK_ACCOUNTS = [
 export default function SubscriptionPaymentContent({ invoiceId }: { invoiceId: string }) {
     const router = useRouter()
     const { data: invoice, isLoading } = useInvoice(invoiceId)
-    const { mutateAsync: handleUploadProof, isSuccess: uploadSuccess, isPending: isUploading } = useUploadInvoiceProof()
+    const { mutateAsync: uploadProof, isPending: isUploading, isSuccess } =
+        useUploadInvoiceProof()
 
     const [selectedBank, setSelectedBank] = useState(0)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [filePreview, setFilePreview] = useState<string | null>(null)
-    const [error, setError] = useState<string | null>(null)
     const [copied, setCopied] = useState(false)
 
     const handleFileSelect = (file: File | null) => {
         if (!file) return
-
         setSelectedFile(file)
-        // Create preview
+
         const reader = new FileReader()
-        reader.onload = (event) => {
-            setFilePreview(event.target?.result as string)
-        }
+        reader.onload = (e) => setFilePreview(e.target?.result as string)
         reader.readAsDataURL(file)
     }
 
@@ -65,332 +63,251 @@ export default function SubscriptionPaymentContent({ invoiceId }: { invoiceId: s
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-                <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-indigo-600" />
-                    <p className="text-slate-600">Memuat informasi pembayaran...</p>
-                </div>
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         )
     }
 
     if (!invoice) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-                <div className="bg-white rounded-md shadow-lg p-8 max-w-md w-full text-center">
-                    <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                    <h1 className="text-xl font-bold text-slate-900 mb-2">Terjadi Kesalahan</h1>
-                    {/* <p className="text-slate-600 mb-6">{error}</p> */}
-                    <Button
-                        onClick={() => router.back()}
-                        className="w-full"
-                    >
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-                    </Button>
-                </div>
+            <div className="min-h-screen flex items-center justify-center">
+                <Card className="max-w-md w-full text-center">
+                    <CardHeader>
+                        <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
+                        <CardTitle>Terjadi Kesalahan</CardTitle>
+                    </CardHeader>
+                    <CardFooter>
+                        <Button className="w-full" onClick={() => router.back()}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Kembali
+                        </Button>
+                    </CardFooter>
+                </Card>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-3 px-4">
-            <div className="max-w-6xl mx-auto">
+        <div className="min-h-screen px-4 py-6">
+            <div className="max-w-6xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="mb-8">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.back()}
-                        className="mb-4"
-                    >
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+                <div>
+                    <Button variant="ghost" size="sm" onClick={() => router.back()}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Kembali
                     </Button>
-                    <h1 className="text-3xl font-bold text-slate-900">
+                    <h1 className="text-3xl font-bold mt-2">
                         Konfirmasi Pembayaran
                     </h1>
-                    <p className="text-slate-600 mt-2">
+                    <p className="text-muted-foreground">
                         Invoice #{invoice.invoiceNumber}
                     </p>
                 </div>
 
-                {uploadSuccess && (
-                    <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4 flex items-start gap-3">
-                        <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <h3 className="font-semibold text-green-900">
-                                Bukti Pembayaran Berhasil Diupload!
-                            </h3>
-                            <p className="text-sm text-green-800 mt-1">
-                                Tim kami akan memverifikasi pembayaran Anda. Halaman akan dialihkan dalam beberapa detik...
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {error && (
-                    <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4 flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                            <h3 className="font-semibold text-red-900">Error</h3>
-                            <p className="text-sm text-red-800 mt-1">{error}</p>
-                        </div>
-                        <button
-                            onClick={() => setError(null)}
-                            className="text-red-600 hover:text-red-900"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-                    {/* Left: Informasi Pembayaran */}
-                    <div className="md:col-span-4 space-y-6">
-                        {/* Total Pembayaran */}
-                        <div className="bg-white rounded-md shadow-sm border border-slate-100 p-6">
-                            <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-4">
-                                Total Pembayaran
-                            </h2>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                                    <span className="text-slate-700">{invoice.plan?.name ?? 'Paket Langganan'} Plan</span>
-                                    <span className="font-semibold text-slate-900">
-                                        {formatCurrency(invoice.amount)}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center pt-3">
-                                    <span className="font-semibold text-slate-900">
-                                        Total
-                                    </span>
-                                    <span className="text-2xl font-bold text-indigo-600">
-                                        {formatCurrency(invoice.amount)}
-                                    </span>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-2">
-                                    Durasi langganan: {invoice.plan?.durationDays ?? '-'} hari
+                {isSuccess && (
+                    <Card className="border-green-500/30 bg-green-500/5">
+                        <CardContent className="flex gap-3 py-4">
+                            <CheckCircle2 className="text-green-600 h-5 w-5 mt-0.5" />
+                            <div>
+                                <p className="font-semibold text-green-700">
+                                    Bukti pembayaran berhasil diupload
+                                </p>
+                                <p className="text-sm text-green-600">
+                                    Tim kami akan memverifikasi pembayaran Anda.
                                 </p>
                             </div>
-                        </div>
+                        </CardContent>
+                    </Card>
+                )}
 
-                        {/* Petunjuk Transfer */}
-                        <div className="bg-white rounded-md shadow-sm border border-slate-100 p-6">
-                            <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-4">
-                                Pilih Bank Tujuan
-                            </h2>
+                <div className="grid md:grid-cols-6 gap-6">
+                    {/* LEFT */}
+                    <div className="md:col-span-4 space-y-6">
+                        {/* Total */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Total Pembayaran</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">
+                                        {invoice.plan?.name}
+                                    </span>
+                                    <span className="font-semibold">
+                                        {formatCurrency(invoice.amount)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between border-t pt-3">
+                                    <span className="font-semibold">Total</span>
+                                    <span className="text-xl font-bold text-primary">
+                                        {formatCurrency(invoice.amount)}
+                                    </span>
+                                </div>
+                            </CardContent>
+                        </Card>
 
-                            <div className="space-y-3">
+                        {/* Bank */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Pilih Bank Tujuan</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
                                 {BANK_ACCOUNTS.map((bank, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => setSelectedBank(idx)}
-                                        className={`w-full p-4 rounded-md border-2 transition-all text-left ${selectedBank === idx
-                                            ? 'border-indigo-600 bg-indigo-50'
-                                            : 'border-slate-200 hover:border-slate-300'
+                                        className={`w-full rounded-md border p-4 text-left transition
+                                        ${selectedBank === idx
+                                                ? 'border-primary bg-primary/5'
+                                                : 'hover:border-muted-foreground/30'
                                             }`}
                                     >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-semibold text-slate-900">
-                                                {bank.bank}
-                                            </h3>
+                                        <div className="flex justify-between">
+                                            <span className="font-semibold">{bank.bank}</span>
                                             {selectedBank === idx && (
-                                                <CheckCircle2 className="h-5 w-5 text-indigo-600" />
+                                                <CheckCircle2 className="h-4 w-4 text-primary" />
                                             )}
                                         </div>
-                                        <p className="text-sm text-slate-600 font-mono mb-1">
+                                        <p className="font-mono text-sm text-muted-foreground">
                                             {bank.accountNumber}
-                                        </p>
-                                        <p className="text-xs text-slate-500">
-                                            a.n. {bank.accountHolder}
                                         </p>
                                     </button>
                                 ))}
-                            </div>
+                            </CardContent>
+                        </Card>
 
-                            {/* Tampilkan detail bank terpilih */}
-                            <div className="mt-6 bg-slate-50 rounded-md p-4 border border-slate-200">
-                                <h3 className="font-semibold text-slate-900 mb-3">
-                                    Informasi Transfer
-                                </h3>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-600">Bank:</span>
-                                        <span className="font-medium text-slate-900">
-                                            {BANK_ACCOUNTS[selectedBank].bank}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Informasi Transfer</CardTitle>
+                            </CardHeader>
+
+                            <CardContent className="space-y-3 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Bank</span>
+                                    <span className="font-medium">
+                                        {BANK_ACCOUNTS[selectedBank].bank}
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between items-center">
+                                    <span className="text-muted-foreground">Nomor Rekening</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-mono font-medium">
+                                            {BANK_ACCOUNTS[selectedBank].accountNumber}
                                         </span>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() =>
+                                                copyToClipboard(
+                                                    BANK_ACCOUNTS[selectedBank].accountNumber
+                                                )
+                                            }
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-600">Nomor Rekening:</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-mono font-medium text-slate-900">
-                                                {BANK_ACCOUNTS[selectedBank].accountNumber}
-                                            </span>
-                                            <button
-                                                onClick={() =>
-                                                    copyToClipboard(
-                                                        BANK_ACCOUNTS[selectedBank]
-                                                            .accountNumber
-                                                    )
-                                                }
-                                                className="p-1.5 hover:bg-slate-200 rounded transition-colors"
-                                            >
-                                                <Copy className="h-4 w-4 text-slate-600" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-600">Atas Nama:</span>
-                                        <span className="font-medium text-slate-900">
-                                            {BANK_ACCOUNTS[selectedBank].accountHolder}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-600">Jumlah:</span>
-                                        <span className="font-bold text-indigo-600">
-                                            {formatCurrency(invoice.amount)}
-                                        </span>
-                                    </div>
+                                </div>
+
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Atas Nama</span>
+                                    <span className="font-medium">
+                                        {BANK_ACCOUNTS[selectedBank].accountHolder}
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between border-t pt-3">
+                                    <span className="text-muted-foreground">Jumlah Transfer</span>
+                                    <span className="font-bold text-primary">
+                                        {formatCurrency(invoice.amount)}
+                                    </span>
                                 </div>
 
                                 {copied && (
-                                    <p className="text-xs text-green-600 mt-3">
-                                        ✓ Nomor rekening disalin!
+                                    <p className="text-xs text-green-600 pt-2">
+                                        ✓ Nomor rekening berhasil disalin
                                     </p>
                                 )}
-                            </div>
-                        </div>
+                            </CardContent>
+                        </Card>
 
-                        {/* Upload Bukti Pembayaran */}
-                        {invoice.status === 'PENDING' || invoice.status === 'REJECTED_MANUAL' && (
-                            <div className="bg-white rounded-md shadow-sm border border-slate-100 p-6">
-                                <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-4">
-                                    Upload Bukti Transfer
-                                </h2>
 
-                                {filePreview ? (
-                                    <div className="space-y-4">
-                                        <div className="relative rounded-md overflow-hidden bg-slate-100 h-48">
-                                            <img
-                                                src={filePreview}
-                                                alt="Preview bukti pembayaran"
-                                                className="w-full h-full object-cover"
+                        {/* Upload */}
+                        {(invoice.status === 'PENDING' ||
+                            invoice.status === 'REJECTED_MANUAL') && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Upload Bukti Pembayaran</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {filePreview ? (
+                                            <div className="relative">
+                                                <img
+                                                    src={filePreview}
+                                                    className="rounded-md object-cover max-h-64 w-full"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedFile(null)
+                                                        setFilePreview(null)
+                                                    }}
+                                                    className="absolute top-2 right-2 bg-background rounded-full p-1 shadow"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <FileUploader
+                                                accept={ACCEPTED_FILE_TYPES.IMAGE}
+                                                onValueChange={handleFileSelect}
+                                                maxSize={3 * 1024 * 1024}
                                             />
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedFile(null)
-                                                    setFilePreview(null)
-                                                }}
-                                                className="absolute top-2 right-2 bg-white rounded-full p-1.5 hover:bg-slate-100 transition-colors shadow-md"
-                                            >
-                                                <X className="h-4 w-4 text-slate-600" />
-                                            </button>
-                                        </div>
-                                        <p className="text-sm text-slate-600">
-                                            File: {selectedFile?.name}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <FileUploader
-                                        accept={ACCEPTED_FILE_TYPES.IMAGE}
-                                        onValueChange={handleFileSelect}
-                                        maxSize={3 * 1024 * 1024}
-                                    />
-                                )}
-
-                                <Button
-                                    onClick={() => handleUploadProof({ file: selectedFile!, invoiceId })}
-                                    disabled={!selectedFile || isUploading || uploadSuccess}
-                                    className="w-full mt-4"
-                                    size="lg"
-                                >
-                                    {isUploading && (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    )}
-                                    {uploadSuccess
-                                        ? 'Bukti Berhasil Diupload'
-                                        : 'Upload Bukti Pembayaran'}
-                                </Button>
-
-                                <p className="text-xs text-slate-500 mt-3 text-center">
-                                    Pastikan bukti transfer jelas terlihat dengan informasi
-                                    lengkap (nominal, waktu, rekening tujuan)
-                                </p>
-                            </div>
-                        )}
+                                        )}
+                                    </CardContent>
+                                    <CardFooter>
+                                        <Button
+                                            className="w-full"
+                                            disabled={!selectedFile || isUploading || isSuccess}
+                                            onClick={() =>
+                                                uploadProof({ file: selectedFile!, invoiceId })
+                                            }
+                                        >
+                                            {isUploading && (
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            )}
+                                            Upload Bukti
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            )}
                     </div>
 
-                    {/* Right: Info Sidebar */}
-                    <div className="space-y-4 md:col-span-2">
-                        {/* Ringkasan Order */}
-                        <div className="bg-white rounded-md shadow-sm border border-slate-100 p-6 sticky top-4">
-                            <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-4">
-                                Ringkasan
-                            </h3>
-
-                            <div className="space-y-3 text-sm">
+                    {/* RIGHT */}
+                    <div className="md:col-span-2">
+                        <Card className="sticky top-4">
+                            <CardHeader>
+                                <CardTitle>Ringkasan</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 text-sm">
                                 <div>
-                                    <p className="text-slate-500 mb-1">Paket</p>
-                                    <p className="font-semibold text-slate-900">
-                                        {invoice.plan?.name ?? 'Paket Langganan'}
-                                    </p>
+                                    <p className="text-muted-foreground">Paket</p>
+                                    <p className="font-semibold">{invoice.plan?.name}</p>
                                 </div>
-
                                 <div>
-                                    <p className="text-slate-500 mb-1">Invoice Number</p>
-                                    <p className="font-mono text-xs text-slate-900 bg-slate-50 p-2 rounded break-all">
-                                        {invoice.invoiceNumber}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <p className="text-slate-500 mb-1">Status</p>
-                                    <span className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                                        {invoice.status === 'PENDING'
-                                            ? 'Menunggu Pembayaran'
-                                            : invoice.status === 'PROOF_SUBMITTED'
-                                                ? 'Bukti Dikirim'
-                                                : 'Sudah Dibayar'}
+                                    <p className="text-muted-foreground">Status</p>
+                                    <span className="inline-block rounded-full bg-yellow-500/10 px-2 py-1 text-xs text-yellow-700">
+                                        {invoice.status}
                                     </span>
                                 </div>
-
-                                <div className="pt-3 border-t border-slate-100">
-                                    <p className="text-slate-500 mb-1">Total</p>
-                                    <p className="text-xl font-bold text-indigo-600">
+                                <div className="border-t pt-3">
+                                    <p className="text-muted-foreground">Total</p>
+                                    <p className="text-xl font-bold text-primary">
                                         {formatCurrency(invoice.amount)}
                                     </p>
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* Info Box */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                            <h4 className="font-semibold text-blue-900 text-sm mb-2">
-                                💡 Tips
-                            </h4>
-                            <ul className="text-xs text-blue-800 space-y-1.5">
-                                <li className="flex gap-2">
-                                    <span>•</span>
-                                    <span>Transfer sesuai nominal yang tertera</span>
-                                </li>
-                                <li className="flex gap-2">
-                                    <span>•</span>
-                                    <span>
-                                        Tunggu konfirmasi transfer masuk
-                                    </span>
-                                </li>
-                                <li className="flex gap-2">
-                                    <span>•</span>
-                                    <span>
-                                        Upload bukti dalam 5 menit setelah transfer
-                                    </span>
-                                </li>
-                                <li className="flex gap-2">
-                                    <span>•</span>
-                                    <span>
-                                        Verifikasi biasanya selesai dalam 1 jam
-                                    </span>
-                                </li>
-                            </ul>
-                        </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </div>

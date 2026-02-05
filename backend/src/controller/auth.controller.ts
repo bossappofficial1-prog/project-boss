@@ -15,6 +15,8 @@ export const verifyController = asyncHandler(async (req: Request, res: Response)
     const { email, code } = req.body;
     const user = await verifyUserService(email, code);
     const business = user.business as (typeof user.business & { subscriptionStatus?: SubscriptionStatus }) | null;
+    await redis.set(`session:${user.id}`, JSON.stringify({ ...user, businessId: user.business?.id }), 'EX', 60 * 60 * 24);
+
     const token = JwtUtil.generate({
         sessionId: user.id,
         name: user.name,
@@ -87,7 +89,6 @@ export const completeOnboardingController = asyncHandler(async (req: Request, re
         business: onboardingResult.business,
         subscription: onboardingResult.subscription,
         invoice: onboardingResult.invoice,
-        outlet: onboardingResult.outlet,
         token: newToken,
     }, HttpStatus.CREATED);
 });
@@ -172,7 +173,7 @@ export const registerController = asyncHandler(async (req: Request, res: Respons
 export const resendVerificationController = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
     await resendVerificationService(email);
-    return ResponseUtil.success(res, { message: "Email verifikasi telah dikirim ulang" });
+    return ResponseUtil.success(res, { message: "Email verifikasi telah dikirim ulang" }, HttpStatus.OK, `Email verifikasi telah dikirim ulang ke ${email}`);
 });
 
 export const forgotPasswordController = asyncHandler(async (req: Request, res: Response) => {

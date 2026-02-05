@@ -15,12 +15,13 @@ import { Store, AlertCircle, Loader2 } from 'lucide-react'
 import MapPicker from '@/components/ui/MapPicker'
 import ImageUploader from '@/components/ui/ImageUploader'
 import OperatingHoursManager from '@/components/ui/OperatingHoursManager'
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import { useUpsertOperatingHours } from '@/hooks/useOperatingHours'
 import { outletManagementApi, uploadApi } from '@/lib/api'
 import type { OutletDetail, OperatingHoursFormData } from '@/types/dashboard'
 import { isEqual } from 'lodash'
 import { parseOperatingHours } from '@/lib/utils'
+import { AxiosError } from 'axios'
 
 const outletSchema = z.object({
   name: z.string().min(1, 'Nama outlet wajib diisi'),
@@ -171,7 +172,7 @@ export default function AddOutletModal({
       resetForm()
       onOpenChange(false)
     },
-    onError: (e: any) => toast.error(e?.message || 'Gagal menyimpan outlet')
+    onError: (e: any) => toast.error(((e as AxiosError).response?.data as any).message || 'Gagal menyimpan outlet')
   })
 
   const resetForm = useCallback(() => {
@@ -251,7 +252,6 @@ export default function AddOutletModal({
 
   return (
     <>
-      <Toaster richColors position="top-center" />
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[95dvh] w-[95vw] max-w-[1000px] overflow-hidden flex flex-col">
           <DialogHeader className="pb-4 border-b">

@@ -11,7 +11,6 @@ export async function handlePaymentSuccess(orderId: string) {
         where: { id: orderId },
         include: {
             items: { include: { product: true } },
-            bookingSlot: true,
             outlet: true,
             guestCustomer: true,
             transaction: true

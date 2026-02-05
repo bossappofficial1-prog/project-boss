@@ -8,6 +8,7 @@ import { AlertTriangle, Loader2, Trash2 } from 'lucide-react'
 import { outletManagementApi } from '@/lib/api'
 import { Toaster, toast } from 'sonner'
 import type { Outlet } from '@/types/dashboard'
+import { AxiosError } from 'axios'
 
 type Props = {
     open: boolean
@@ -19,11 +20,12 @@ type Props = {
 export default function DeleteOutletModal({ open, onOpenChange, outlet, onSuccess }: Props) {
     const [confirmText, setConfirmText] = useState('')
 
-    const { mutate, isPending: isDeleting } = useMutation({
+    const { mutateAsync, isPending: isDeleting } = useMutation({
         mutationFn: async () => {
             if (!outlet) {
                 throw new Error('Outlet tidak ditemukan')
             }
+            console.log('DELETE MUTATION FIRED')
             return outletManagementApi.delete(outlet.id)
         },
         onSuccess: () => {
@@ -33,13 +35,13 @@ export default function DeleteOutletModal({ open, onOpenChange, outlet, onSucces
             setConfirmText('')
         },
         onError: (e: any) => {
-            toast.error(e?.message || 'Gagal menghapus outlet. Coba lagi.')
+            toast.error(((e as AxiosError).response?.data as any).message || 'Gagal menghapus outlet. Coba lagi.')
         }
     })
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (confirmText === outlet?.name) {
-            mutate()
+            await mutateAsync()
         } else {
             toast.error('Konfirmasi nama outlet tidak sesuai')
         }
@@ -54,8 +56,7 @@ export default function DeleteOutletModal({ open, onOpenChange, outlet, onSucces
 
     return (
         <>
-            <Toaster richColors position="top-center" />
-            <Dialog open={open} onOpenChange={handleClose}>
+            <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center text-xl font-bold text-red-600">
