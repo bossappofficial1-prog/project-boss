@@ -85,6 +85,7 @@ export class SubscriptionRepository {
                 subscription: {
                     include: {
                         plan: true,
+                        invoices: true,
                     },
                 },
             },
@@ -124,6 +125,22 @@ export class SubscriptionRepository {
             limit,
             totalPages: Math.max(Math.ceil(total / limit), 1),
         };
+    }
+
+    static async hasUsedTrial(businessId: string) {
+        const trialSubscription = await db.businessSubscription.findFirst({
+            where: {
+                businessId,
+                plan: {
+                    is: {
+                        code: "TRIAL",
+                    },
+                },
+            },
+            select: { id: true },
+        });
+
+        return Boolean(trialSubscription);
     }
 
     static async createRenewalSubscription(params: {

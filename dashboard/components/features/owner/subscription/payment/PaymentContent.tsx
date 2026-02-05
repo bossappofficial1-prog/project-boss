@@ -16,6 +16,7 @@ import {
 import FileUploader from '@/components/ui/ImageUploader'
 import { ACCEPTED_FILE_TYPES } from '@/constants/file-types'
 import { useInvoice, useUploadInvoiceProof } from '@/hooks/use-invoice'
+import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_STYLES } from '../helper'
 
 const BANK_ACCOUNTS = [
     {
@@ -241,6 +242,16 @@ export default function SubscriptionPaymentContent({ invoiceId }: { invoiceId: s
                                         <CardTitle>Upload Bukti Pembayaran</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
+                                        {invoice.status === 'REJECTED_MANUAL' && invoice.rejectionReason && (
+                                            <div className="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                                                <AlertCircle className="h-4 w-4 mt-0.5" />
+                                                <div>
+                                                    <p className="font-semibold">Bukti ditolak</p>
+                                                    <p>{invoice.rejectionReason}</p>
+                                                    <p className="mt-1 text-rose-600">Unggah ulang bukti yang valid agar invoice dapat diverifikasi.</p>
+                                                </div>
+                                            </div>
+                                        )}
                                         {filePreview ? (
                                             <div className="relative">
                                                 <img
@@ -261,7 +272,7 @@ export default function SubscriptionPaymentContent({ invoiceId }: { invoiceId: s
                                             <FileUploader
                                                 accept={ACCEPTED_FILE_TYPES.IMAGE}
                                                 onValueChange={handleFileSelect}
-                                                maxSize={3 * 1024 * 1024}
+                                                maxSize={5 * 1024 * 1024}
                                             />
                                         )}
                                     </CardContent>
@@ -296,8 +307,8 @@ export default function SubscriptionPaymentContent({ invoiceId }: { invoiceId: s
                                 </div>
                                 <div>
                                     <p className="text-muted-foreground">Status</p>
-                                    <span className="inline-block rounded-full bg-yellow-500/10 px-2 py-1 text-xs text-yellow-700">
-                                        {invoice.status}
+                                    <span className={`inline-block rounded-full px-2 py-1 text-xs ${PAYMENT_STATUS_STYLES[invoice.status]}`}>
+                                        {PAYMENT_STATUS_LABELS[invoice.status]}
                                     </span>
                                 </div>
                                 <div className="border-t pt-3">

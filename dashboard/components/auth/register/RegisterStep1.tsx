@@ -2,6 +2,7 @@ import { ReusableForm } from "@/components/ui/reuseable-form";
 import { fieldRegisterStep1, RegisterStep1Input, registerStep1Schema } from "./schema";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Mail } from "lucide-react";
+import Link from "next/link";
 
 export function RegisterStep1({
     handleNext,
@@ -52,6 +53,15 @@ export function RegisterStep1({
             </Button>
             <p className="text-xs text-center text-slate-400 mt-2">
                 Kami akan mengirimkan kode OTP ke email Anda.
+            </p>
+            <p className="text-sm text-center text-slate-600">
+                Sudah punya akun?{" "}
+                <Link
+                    href="/auth/login"
+                    className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+                >
+                    Masuk di sini
+                </Link>
             </p>
         </div>
     )

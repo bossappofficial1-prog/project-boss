@@ -2,6 +2,7 @@ import { PaymentStatus } from "@prisma/client";
 import { SubscriptionInvoiceRepository, type SubscriptionInvoiceListOptions } from "../repositories/subscription-invoice.repository";
 import { AppError } from "../errors/app-error";
 import { HttpStatus } from "../constants/http-status";
+import { ImageService } from "./image.service";
 
 const VERIFIABLE_STATUSES: PaymentStatus[] = [PaymentStatus.PROOF_SUBMITTED, PaymentStatus.AWAITING_VERIFICATION];
 
@@ -47,6 +48,16 @@ export class SubscriptionInvoiceService {
 
         if (!VERIFIABLE_STATUSES.includes(invoice.status)) {
             throw new AppError("Invoice belum siap ditolak", HttpStatus.BAD_REQUEST);
+        }
+
+        // Hapus file bukti lama jika tersedia; abaikan kegagalan delete agar penolakan tetap berlangsung.
+        try {
+            if (invoice.proofImage) {
+                ImageService.deleteImageByUrl(invoice.proofImage);
+            }
+        } catch (err) {
+            // Log dan lanjut; tidak memblokir penolakan.
+            console.error("Failed to delete proof image on reject", err);
         }
 
         const updated = await SubscriptionInvoiceRepository.rejectInvoice(invoiceId, reason);

@@ -72,6 +72,8 @@ export interface OwnerSubscriptionInvoice {
   status: OwnerPaymentStatus;
   createdAt: string;
   paidAt?: string | null;
+  rejectionReason?: string | null;
+  proofImage?: string | null;
   subscriptionId: string;
   plan: SubscriptionPlanDetail;
 }

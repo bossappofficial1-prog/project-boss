@@ -140,6 +140,8 @@ export class SubscriptionInvoiceRepository {
                     rejectionReason: reason,
                     verifiedAt: now,
                     paidAt: null,
+                    proofImage: null,
+                    proofUploadedAt: null,
                 },
             });
 
