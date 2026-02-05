@@ -262,7 +262,7 @@ export default function RegistrationContent() {
                     )}
 
                     {/* FORM CONTENT */}
-                    <div className="bg-white p-0 md:p-8 rounded-2xl md:shadow-md md:border border-slate-100">
+                    <div className="space-y-6 md:p-8 md:border md:rounded-2xl">
 
                         {step === 1 && showOtpInput && (
                             <OtpInputVerification

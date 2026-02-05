@@ -58,6 +58,8 @@ export class SubscriptionService {
             businessId: invoice.businessId,
             subscriptionId: invoice.subscriptionId,
             createdAt: invoice.createdAt,
+            rejectionReason: invoice.rejectionReason,
+            proofImage: invoice.proofImage,
             plan: invoice.subscription.plan,
         };
     }
@@ -112,6 +114,8 @@ export class SubscriptionService {
                     status: pendingInvoice.status,
                     createdAt: pendingInvoice.createdAt,
                     subscriptionId: pendingInvoice.subscriptionId,
+                    rejectionReason: pendingInvoice.rejectionReason,
+                    proofImage: pendingInvoice.proofImage,
                     plan: pendingInvoice.subscription.plan,
                 }
                 : null,
@@ -147,6 +151,8 @@ export class SubscriptionService {
             throw new AppError('Bisnis tidak ditemukan', HttpStatus.NOT_FOUND);
         }
 
+        const hasUsedTrial = await SubscriptionRepository.hasUsedTrial(businessId);
+
         const pendingInvoice = await SubscriptionRepository.getLatestPendingInvoice(businessId);
         if (pendingInvoice && [PaymentStatus.PENDING, PaymentStatus.PROOF_SUBMITTED].includes(pendingInvoice.status as any)) {
             throw new AppError('Masih ada invoice menunggu pembayaran. Selesaikan proses sebelumnya terlebih dahulu.', HttpStatus.BAD_REQUEST);
@@ -163,6 +169,15 @@ export class SubscriptionService {
                 throw new AppError('Paket langganan tidak aktif', HttpStatus.BAD_REQUEST);
             }
             targetPlan = requestedPlan;
+        }
+
+        if (targetPlan?.code === "TRIAL") {
+            throw new AppError(
+                hasUsedTrial
+                    ? 'Paket trial hanya bisa digunakan satu kali. Pilih paket berbayar untuk melanjutkan.'
+                    : 'Tidak dapat memperpanjang paket trial. Pilih paket berbayar untuk melanjutkan.',
+                HttpStatus.BAD_REQUEST,
+            );
         }
 
         if (!targetPlan) {

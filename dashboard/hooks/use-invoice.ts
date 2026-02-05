@@ -23,6 +23,8 @@ interface Invoice {
     businessId: string
     subscriptionId: string
     createdAt: string
+    rejectionReason?: string | null
+    proofImage?: string | null
 }
 
 interface SubscriptionPlan {
