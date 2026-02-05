@@ -44,10 +44,10 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
     }
 
     // Cek session berdasarkan tipe user
-    const sessionKey = decoded.userType === 'CASHIER' 
+    const sessionKey = decoded.userType === 'CASHIER'
         ? `session:cashier:${decoded.sessionId}`
         : `session:${decoded.sessionId}`;
-    
+
     const session = await redis.get(sessionKey);
     if (!session) {
         res.clearCookie("token", {
@@ -68,6 +68,7 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
     }
 
     const user = JSON.parse(session);
+    console.log(user)
     req.storedUser = user;
     next();
 });

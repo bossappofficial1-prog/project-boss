@@ -16,6 +16,7 @@ import {
 } from "../service/product.service";
 import { UserRole } from "@prisma/client";
 import Console from "../utils/logger";
+import { ensureString } from "../utils/request";
 
 export const getProductImportTemplateController = asyncHandler(async (req: Request, res: Response) => {
     const buffer = generateProductImportTemplateService();
@@ -48,13 +49,13 @@ export const createProductController = asyncHandler(async (req: Request, res: Re
 });
 
 export const getProductByIdController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = ensureString(req.params?.id, 'id');
     const product = await getProductByIdService(id);
     return ResponseUtil.success(res, product);
 });
 
 export const getProductsByOutletIdController = asyncHandler(async (req: Request, res: Response) => {
-    const { outletId } = req.params;
+    const outletId = ensureString(req.params?.outletId, 'outletId');
     const { q, accessed, page, limit, type: productType } = req.query;
     const pageNumber = Math.max(parseInt(page as string, 10) || 1, 1);
     const defaultLimit = 10;
@@ -63,7 +64,7 @@ export const getProductsByOutletIdController = asyncHandler(async (req: Request,
     const accessedRole = typeof accessed === 'string' ? accessed : undefined;
     const searchQuery = typeof q === 'string' ? q : undefined;
 
-    const { data, total } = await getProductsByOutletIdService(outletId as string, productType as any, {
+    const { data, total } = await getProductsByOutletIdService(outletId, productType as any, {
         q: searchQuery,
         accessed: accessedRole,
         page: pageNumber,
@@ -75,20 +76,20 @@ export const getProductsByOutletIdController = asyncHandler(async (req: Request,
 });
 
 export const updateProductController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = ensureString(req.params?.id, 'id');
     const payload = req.body;
     const product = await updateProductService(id, payload);
     return ResponseUtil.success(res, product);
 });
 
 export const deleteProductController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = ensureString(req.params?.id, 'id');
     const product = await deleteProductService(id);
     return ResponseUtil.success(res, product);
 });
 
 export const exportProductsController = asyncHandler(async (req: Request, res: Response) => {
-    const { outletId } = req.params;
+    const outletId = ensureString(req.params?.outletId, 'outletId');
     const { type, search } = req.query;
 
     const buffer = await exportProductsToExcelService(outletId, {

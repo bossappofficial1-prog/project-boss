@@ -21,6 +21,7 @@ import {
 } from "../schemas/stock.schema";
 import { HttpStatus } from "../constants/http-status";
 import { AppError } from "../errors/app-error";
+import { ensureString } from "../utils/request";
 
 /**
  * POST /api/stock/in
@@ -142,7 +143,7 @@ export async function stockReturnBulkController(req: Request, res: Response, nex
  */
 export async function getStockHistoryController(req: Request, res: Response, next: NextFunction) {
   try {
-    const { productGoodsId } = req.params as { productGoodsId: string };
+    const productGoodsId = ensureString(req.params?.productGoodsId, "productGoodsId");
     const filters = {
       type: req.query.type as any,
       startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
@@ -168,7 +169,7 @@ export async function getStockHistoryController(req: Request, res: Response, nex
  */
 export async function getLowStockController(req: Request, res: Response, next: NextFunction) {
   try {
-    const { outletId } = req.params;
+    const outletId = ensureString(req.params?.outletId, "outletId");
     const products = await getLowStockProducts(outletId);
 
     res.status(HttpStatus.OK).json({
@@ -187,7 +188,7 @@ export async function getLowStockController(req: Request, res: Response, next: N
  */
 export async function recalculateHppController(req: Request, res: Response, next: NextFunction) {
   try {
-    const { productGoodsId } = req.params;
+    const productGoodsId = ensureString(req.params?.productGoodsId, "productGoodsId");
     const result = await recalculateHpp(productGoodsId);
 
     res.status(HttpStatus.OK).json({

@@ -3,10 +3,7 @@ import { db } from "../config/prisma";
 import { CreateProductInput, UpdateProductInput } from "../schemas/product.schema";
 
 export class ProductRepository {
-  /**
-   * Finds multiple products by their IDs, including type-specific details.
-   */
-  static async findManyByIds(ids: string[]): Promise<Product[]> {
+  static async findManyByIds(ids: string[]) {
     return db.product.findMany({
       where: {
         id: {
@@ -127,13 +124,13 @@ export class ProductRepository {
         { outletId },
         ...(q && q !== ""
           ? [
-              {
-                name: {
-                  contains: q,
-                  mode: "insensitive" as Prisma.QueryMode,
-                },
+            {
+              name: {
+                contains: q,
+                mode: "insensitive" as Prisma.QueryMode,
               },
-            ]
+            },
+          ]
           : []),
         ...(accessed && accessed !== "OWNER"
           ? [{ status: "ACTIVE" } as Prisma.ProductWhereInput]

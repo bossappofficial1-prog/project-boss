@@ -5,6 +5,7 @@ import { CreateOperatingHoursInput, UpdateOperatingHoursInput } from "../schemas
 import { asyncHandler } from "../middleware/error.middleware";
 import { ResponseUtil } from "../utils";
 import { AppError } from "../errors/app-error";
+import { ensureString } from "../utils/request";
 
 export const createOperatingHoursController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body as CreateOperatingHoursInput;
@@ -13,13 +14,13 @@ export const createOperatingHoursController = asyncHandler(async (req: Request, 
 });
 
 export const getOperatingHoursByOutletController = asyncHandler(async (req: Request, res: Response) => {
-    const { outletId } = req.params;
+    const outletId = ensureString(req.params?.outletId, "outletId");
     const operatingHours = await OperatingHoursRepository.findByOutletId(outletId);
     return ResponseUtil.success(res, operatingHours);
 });
 
 export const updateOperatingHoursController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = ensureString(req.params?.id, "id");
     const payload = req.body as UpdateOperatingHoursInput;
 
     const operatingHours = await OperatingHoursRepository.findById(id);

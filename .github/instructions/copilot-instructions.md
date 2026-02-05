@@ -2,560 +2,198 @@
 applyTo: "**"
 ---
 
-# AI Agent Instructions for BOSS Project
+# Intruksi untuk backend
 
-## 🎯 Project Overview
+## Backend Dibuat menggunakan:
 
-**BOSS (Business One Stop System)** is a comprehensive UMKM (Micro, Small, Medium Enterprise) management platform with multi-service architecture supporting business operations, e-commerce, payment processing, and real-time communications.
+1. expres js (typescript)
+2. Prisma ORM
+3. zod untuk schema
+4. redis untuk cronjob dan chaching
 
-### Architecture Overview
+### Struktur response selalu
 
-- **Backend**: Express.js + TypeScript + Prisma ORM + PostgreSQL
-- **Frontend-Customer**: Next.js 15 + React 19 + TanStack React Query + PWA
-- **Dashboard**: Next.js 15 + React 19 + TanStack React Query (Admin/Owner panel)
-- **Frontend**: Nuxt.js 3 + Vue.js + Pinia (UMKM management)
-- **Consumer**: RabbitMQ message processor for notifications
-- **Email-Service**: SMTP email handling service
-- **Infrastructure**: Docker + Redis + RabbitMQ + Elasticsearch
-
----
-
-## 📁 Project Structure
-
-```
-project-boss/
-├── backend/                    # Express.js API server
-├── frontend-customer/          # Next.js customer-facing app
-├── dashboard/                  # Next.js admin dashboard
-├── frontend/                   # Nuxt.js UMKM management
-├── consumer/                   # RabbitMQ message processor
-├── email-service/             # Email service
-├── docker-compose.*.yml       # Docker orchestration
-├── .github/workflows/         # CI/CD pipelines
-└── uploads/                   # File storage
+```json
+{
+  success: boolean;
+  message: string;
+  data: any;
+  errors: any;
+  path: string;
+}
 ```
 
----
+## Separation of Concern
 
-## 🔧 Development Environment
+### Pisahkan antara route, controller, service, dan repository.
 
-### Quick Start Commands
-
-```bash
-# Development with Docker
-docker-compose -f docker-compose.dev.yml up -d
-
-# Backend development
-cd backend && npm run dev
-
-# Frontend-customer development
-cd frontend-customer && npm run dev
-
-# Dashboard development
-cd dashboard && npm run dev
-
-# Frontend (Nuxt) development
-cd frontend && npm run dev
-```
-
-### Environment Files Required
-
-- `.env.backend` - Backend configuration
-- `.env.frontend-customer` - Next.js customer app
-- `.env.dashboard` - Admin dashboard
-- `.env.consumer` - Message consumer
-- `.env` files for each service
-
-### Database Operations
-
-```bash
-# Prisma operations (in backend/)
-npm run db:migrate       # Run migrations
-npm run db:generate      # Generate Prisma client
-npm run db:seed          # Seed database
-npm run db:studio        # Open Prisma Studio
-npm run db:reset         # Reset database (dev only)
-```
-
----
-
-## 🏗️ Backend Patterns
-
-### Authentication System
-
-- **JWT-based authentication** with HS256 algorithm
-- **Middleware pattern**: `AuthMiddleware.validateJWT()`
-- **Role-based access**: OWNER, ADMIN, USER roles
-- **Socket.IO authentication** with JWT verification
+- Cara membuat router
 
 ```typescript
-// JWT utility pattern
-export const JwtUtil = {
-    generate(payload: any, expiresIn: any = '1D'): string,
-    verify<T>(token: string): T,
-    decode(token: string): any
+import { Router } from "express";
+
+const testRouter = Router();
+
+testRouter("/", testController.getData);
+// Routing lainnya
+export default testRouter;
+```
+
+lalu daftarkan ke index.route.ts
+
+```typescript
+import testRouter from "./test.route";
+
+router.use("/test", testRouter);
+```
+
+- Cara membuat controller
+
+```typescript
+import {Request, Response} from 'express';
+
+const testController = asyncHandler(async(req: Request, res: Response))=>{
+  const data = await TestService.test()
+  return ResponseUtil.success(res, data)
+}
+```
+
+atau
+
+```typescript
+import {Request, Response} from 'express';
+
+export class TestController {
+  public getData = asyncHandler(async(req: Request, res: Response))=>{
+    const data = await TestService.test()
+    return ResponseUtil.success(res, data)
+  }
 }
 
-// Auth middleware usage
-router.get('/protected', AuthMiddleware.validateJWT, controller.method);
+export const testRouter = new TestController()
 ```
 
-### Database Patterns
-
-- **Prisma ORM** with PostgreSQL
-- **Hierarchical relationships**: User → Business → Outlet → Product
-- **Soft deletes** where applicable
-- **UUID primary keys** for all entities
-- **Audit fields**: createdAt, updatedAt on all models
+- Cara membuat service
 
 ```typescript
-// Key relationships
-User 1:N Business 1:N Outlet 1:N Product
-User 1:N Order
-Outlet 1:N Transaction
-Product 1:N OrderItem
-```
+export class TestService {
+  static async getData() {
+    const rawData = await TestServiceRepository.get();
 
-### API Response Pattern
-
-```typescript
-// Standard response format
-{
-  success: boolean,
-  message: string,
-  data?: any,
-  error?: string
-}
-
-// Pagination response
-{
-  success: true,
-  data: [...],
-  pagination: {
-    page: number,
-    limit: number,
-    total: number,
-    totalPages: number
+    return rawData;
   }
 }
 ```
 
+- Cara membuat repository
+
+```typescript
+import { db } from "../config/prisma";
+
+export class TestRepository {
+  static async get() {
+    return db.test.findMany();
+  }
+}
+```
+
+- schema dibuat mengunakan zod dan di buat di dalam folder backend/src/schemas
+
+#### Penamaan file
+
+- nama-file.service.ts
+- nama-file.route.ts
+- nama-file.controller.ts
+- nama-file.repository.ts
+
+ada juga utilis fungsi yang dapat kamu gunakan, dia ada di backend/src/utils/\*\*\*
+
+- Service TIDAK BOLEH langsung mengakses Prisma
+- Semua query database WAJIB melalui repository
+- Semua request body, query, dan params WAJIB divalidasi menggunakan Zod
+- Validasi dilakukan di controller sebelum memanggil service
+- Jika validasi gagal, sudah ditangan oleh midleware errorHandler
+- Redis digunakan untuk:
+  - caching data read-heavy
+  - job scheduling / cronjob
+- Logic redis ditempatkan di service atau util, bukan di controller
+
+## Instruksi untuk Frontend dan dashboard (Next.js)
+
+### Tech Stack & Library
+
+1. Framework: Next.js (App Router)
+2. State Management & Fetching: TanStack Query (React Query) v5
+3. UI Component: shadcn/ui (Tailwind CSS)
+4. Validation: Zod
+5. HTTP Client: Axios (via apiClient)
+
+### Struktur Folder Frontend
+
+- src/app: Page, Layout, dan Server Components.
+- src/components/ui: Komponen dasar dari shadcn/ui.
+- src/components/shared: Komponen reusable (Navbar, Sidebar, dll).
+- src/hooks/api: Custom hooks React Query untuk fetching data.
+- src/lib: Konfigurasi library (api client, query client).
+- src/utils: Fungsi helper.
+
+### Aturan Custom Hooks (React Query)
+
+Semua proses pengambilan data (fetching) wajib menggunakan custom hooks yang diletakkan di dalam folder src/hooks/api.
+
+Struktur File Hook: use-[nama-fitur].ts
+Di dalam setiap file hook, Anda harus mendefinisika
+
+1. Interface Request: Jika API membutuhkan payload atau parameter.
+2. Interface Response: Struktur data inti yang ada di dalam data.
+3. Fungsi API: Menggunakan apiClient.
+4. Export Hook: Menggunakan useQuery untuk Read atau useMutation untuk Write.
+
+#### Contoh Implementasi:
+
+```typescript
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/lib/apis/base";
+
+// 1. Tipe Data (Dibuat di dalam file hook)
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+}
+
+// 2. Fungsi Fetcher
+const fetchUserProfile = async (): Promise<ApiResponse<UserProfile>> => {
+  const { data } = await apiClient.get("/test/profile");
+  return data;
+};
+
+// 3. Hook Export
+export const useUserProfile = () => {
+  return useQuery({
+    queryKey: ["user-profile"],
+    queryFn: fetchUserProfile,
+  });
+};
+```
+
+### Aturan UI & Styling (shadcn/ui)
+
+- Komponen Dasar: Selalu gunakan komponen dari components/ui.
+- Form: Wajib menggunakan komponen reusable-form.tsx yang mengintegrasikan react-hook-form dan zod untuk konsistensi pembuatan form.
+- Design Tokens:
+  - Gunakan rounded-md untuk semua elemen yang memiliki sudut tumpul (buttons, cards, inputs).
+  - Gunakan shadow-md untuk memberikan kedalaman atau elevasi pada komponen container/card.
+- Responsivitas: Gunakan pendekatan Mobile First dengan utility classes Tailwind (contoh: w-full md:w-1/2).
+- Loading State: Gunakan Skeleton dari shadcn saat status isLoading dari React Query bernilai true.
+
 ### Error Handling
 
-- **AppError class** for structured errors
-- **Global error middleware** for consistent responses
-- **Validation with Joi** for request data
-- **Try-catch wrapping** for async operations
+- Integrasi Query: Error dari API harus ditangkap melalui properti error yang disediakan oleh React Query.
+- Umpan Balik Pengguna: Gunakan komponen toast dari shadcn/ui untuk menampilkan pesan error atau sukses yang diambil dari ApiResponse.message.
 
-### File Upload
+### Aturan Penamaan File
 
-- **Multer** for file handling
-- **Public uploads** directory for static files
-- **Image validation** and size limits
-- **URL construction** for uploaded files
-
----
-
-## 🎨 Frontend-Customer Patterns (Next.js)
-
-### State Management
-
-- **TanStack React Query v5** for server state
-- **Local state** with useState for UI state
-- **localStorage** for cart persistence and payment data
-- **Context providers** for global state
-
-### Hook Patterns
-
-```typescript
-// Factory pattern for API hooks
-export const useUsers = () =>
-  useReactQuery({
-    queryKey: ["users"],
-    queryFn: () => UserService.getUsers(),
-  });
-
-// Enhanced hook with error handling
-const useReactQuery = <T>(options: UseQueryOptions<T>) => {
-  return useQuery<T>({
-    ...options,
-    onError: (error) => toast.error(error.message),
-  });
-};
-```
-
-### Payment Integration
-
-- **Midtrans payment gateway** with multiple methods
-- **Dynamic fee calculation** based on payment method
-- **Payment flow**: Checkout → Payment → Processing → Success/Failure
-- **QR code support** for QRIS payments
-- **Transaction status polling** for payment updates
-
-```typescript
-// Fee calculation pattern
-const calculateFees = useMemo(() => {
-  if (!selectedPaymentMethod) return { transactionFee: 0, applicationFee: 0 };
-
-  const transactionFee =
-    selectedPaymentMethod.category === "QRIS"
-      ? Math.ceil(subtotal * 0.007)
-      : 4000;
-  const applicationFee = Math.max(Math.ceil(subtotal * 0.03), 1000);
-
-  return { transactionFee, applicationFee };
-}, [subtotal, selectedPaymentMethod]);
-```
-
-### Component Patterns
-
-- **Shadcn/UI components** for consistent design
-- **Compound components** for complex UI elements
-- **Custom hooks** for business logic separation
-- **Error boundaries** for graceful error handling
-
-### PWA Features
-
-- **Service worker** for offline capability
-- **Push notifications** support
-- **App manifest** for installable experience
-- **Caching strategies** for performance
-
----
-
-## 📊 Dashboard Patterns (Next.js Admin)
-
-### Data Management
-
-- **Factory pattern hooks** for CRUD operations
-- **Optimistic updates** for better UX
-- **Bulk operations** support
-- **Export functionality** (CSV, Excel)
-
-```typescript
-// Factory pattern example
-export const useUserV2 = () => ({
-  useUserList: (params?: UserListParams) =>
-    useReactQuery({
-      queryKey: ["users", params],
-      queryFn: () => UserService.getUsers(params),
-    }),
-
-  createUser: () =>
-    useCreateMutation({
-      mutationFn: UserService.createUser,
-      invalidateQueries: [["users"]],
-    }),
-
-  // ... other CRUD operations
-});
-```
-
-### Admin Features
-
-- **Role-based dashboard** (ADMIN/OWNER access)
-- **User management** with CRUD operations
-- **Business analytics** and reporting
-- **System monitoring** capabilities
-
----
-
-## 🖼️ Frontend (Nuxt.js) Patterns
-
-### State Management
-
-- **Pinia stores** for global state
-- **Composables** for reusable logic
-- **SSR-compatible** state handling
-- **Persistent state** where needed
-
-### Testing
-
-- **Playwright** for E2E testing
-- **Test scenarios**: Auth, Product CRUD, Outlet management
-- **Page object pattern** for maintainable tests
-
-```typescript
-// E2E test pattern
-test.beforeEach(async ({ page }) => {
-  await page.goto("/auth/login");
-  await page.getByPlaceholder("contoh@email.com").fill("john@coffeeshop.com");
-  await page.getByPlaceholder("Masukkan password").fill("password123");
-  await page.getByRole("button", { name: "Masuk" }).click();
-  await page.waitForURL("/umkm/products");
-});
-```
-
----
-
-## 🔄 Message Queue Patterns
-
-### RabbitMQ Integration
-
-- **Publisher-Consumer pattern** for async operations
-- **Email notifications** via message queues
-- **Payment confirmations** processing
-- **WhatsApp notifications** via Twilio
-
-```typescript
-// Message publisher pattern
-export const messagePublisher = {
-  publishEmailVerification: (email: string, token: string) =>
-    publishMessage("email.verification", { email, token }),
-
-  publishWhatsAppPaymentSuccess: (orderId: string) =>
-    publishMessage("whatsapp.payment.success", { orderId }),
-};
-```
-
----
-
-## 🧪 Testing Patterns
-
-### Backend Testing
-
-- **Jest** for unit and integration tests
-- **Supertest** for API testing
-- **Test database** isolation
-- **Coverage reports** with meaningful thresholds
-
-```typescript
-// Integration test pattern
-describe("User Routes", () => {
-  beforeEach(async () => {
-    await db.user.deleteMany();
-  });
-
-  it("should create a new user", async () => {
-    const res = await request(app)
-      .post("/api/v1/users")
-      .send(testUser)
-      .expect(201);
-
-    expect(res.body.success).toBe(true);
-  });
-});
-```
-
-### Frontend Testing
-
-- **Playwright** for E2E testing across applications
-- **Component testing** where applicable
-- **User flow testing** for critical paths
-
-### Utility Testing
-
-- **Socket.IO testing** with connection validation
-- **Elasticsearch testing** with index management
-- **Payment testing** pages for manual validation
-
----
-
-## 🚀 Deployment & CI/CD
-
-### Docker Strategy
-
-- **Multi-stage builds** for optimized images
-- **Service-specific Dockerfiles** for each application
-- **Docker Compose** for local development and production
-- **Build context optimization** to minimize image size
-
-### CI/CD Pipeline
-
-- **GitHub Actions** for automated deployment
-- **Path-based triggers** for service-specific builds
-- **Docker Hub** for image storage
-- **VPS deployment** with automatic service updates
-
-```yaml
-# Deployment pattern
-- name: Check for changes
-  uses: dorny/paths-filter@v2
-  with:
-    filters: |
-      backend: 'backend/**'
-      frontend-customer: 'frontend-customer/**'
-      dashboard: 'dashboard/**'
-```
-
-### Environment Management
-
-- **Development**: `docker-compose.dev.yml`
-- **Production**: `docker-compose.prod.yml`
-- **Local**: `docker-compose.local.yml`
-- **Service-specific** environment files
-
----
-
-## 🔍 Search & Analytics
-
-### Elasticsearch Integration
-
-- **Product search** with full-text capabilities
-- **Outlet search** with location-based queries
-- **Index management** with automated setup
-- **Search testing** utilities for validation
-
----
-
-## 📱 Real-time Features
-
-### Socket.IO Implementation
-
-- **Authenticated connections** with JWT
-- **Business room** subscriptions
-- **Order tracking** for customers
-- **Admin notifications** for real-time updates
-
-```typescript
-// Socket patterns
-socket.on("join:business", (businessId) => {
-  socket.join(`business:${businessId}`);
-});
-
-io.to(`business:${businessId}`).emit("order:new", orderData);
-```
-
----
-
-## 🔐 Security Patterns
-
-### Authentication & Authorization
-
-- **JWT tokens** with secure algorithms
-- **Role-based access control** throughout the system
-- **Environment variable** protection for secrets
-- **CORS configuration** for cross-origin requests
-
-### Data Validation
-
-- **Joi schemas** for request validation
-- **Type safety** with TypeScript
-- **Input sanitization** for security
-- **Error message** sanitization
-
----
-
-## 📝 Code Style & Standards
-
-### General Guidelines
-
-- **TypeScript** for type safety across services
-- **ESLint + Prettier** for code formatting
-- **Conventional commits** for version control
-- **Documentation** in markdown format
-
-### Naming Conventions
-
-- **camelCase** for variables and functions
-- **PascalCase** for components and classes
-- **kebab-case** for file names
-- **SCREAMING_SNAKE_CASE** for constants
-
-### Database Conventions
-
-- **Prisma schema** as single source of truth
-- **Migration files** for database changes
-- **Seed files** for development data
-- **UUID** for primary keys
-
----
-
-## ⚡ Performance Patterns
-
-### Database Optimization
-
-- **Query optimization** with Prisma
-- **Pagination** for large datasets
-- **Indexing** for frequently queried fields
-- **Connection pooling** for database access
-
-### Frontend Optimization
-
-- **React Query** for efficient data fetching
-- **Image optimization** with Next.js
-- **Code splitting** for bundle optimization
-- **Caching strategies** for static content
-
----
-
-## 🚨 Error Handling & Monitoring
-
-### Error Patterns
-
-- **Structured error responses** across all services
-- **Error logging** with Winston
-- **Error boundaries** in React applications
-- **Graceful degradation** for service failures
-
-### Monitoring
-
-- **Health checks** for all services
-- **Log aggregation** with structured logging
-- **Performance monitoring** for critical paths
-
----
-
-## 🔧 Development Workflow
-
-### Branch Strategy
-
-- **develop** branch for development
-- **main/master** for production
-- **Feature branches** for new development
-- **Conventional commits** for clear history
-
-### Code Review Process
-
-- **Pull request** reviews required
-- **Automated testing** before merge
-- **Deployment** triggers on merge to develop
-- **Rollback procedures** for failed deployments
-
----
-
-## 📋 Common Tasks & Commands
-
-### Daily Development
-
-```bash
-# Start all services
-docker-compose -f docker-compose.dev.yml up -d
-
-# View logs
-docker-compose -f docker-compose.dev.yml logs -f [service]
-
-# Database operations
-cd backend && npm run db:migrate && npm run db:seed
-
-# Run tests
-npm test                    # Backend
-npx playwright test         # Frontend E2E
-```
-
-### Troubleshooting
-
-```bash
-# Reset development environment
-docker-compose -f docker-compose.dev.yml down -v
-docker-compose -f docker-compose.dev.yml up -d --build
-
-# Check service health
-docker-compose -f docker-compose.dev.yml ps
-
-# Access service logs
-docker logs [container-name] -f
-```
-
-### Production Deployment
-
-- **Automatic deployment** via GitHub Actions on push to develop
-- **Service-specific rebuilds** based on changed files
-- **Zero-downtime deployment** strategy
-- **Health checks** before service switching
-
----
-
-This documentation provides comprehensive guidance for AI agents working on the BOSS project. Follow these patterns and conventions to maintain consistency and code quality across all services.
-
-Selalu gunkan bahasa indonesia untuk melakukan penjelasan
+- Hooks: use-nama-fitur.ts (kebab-case).
+- Components: NamaKomponen.tsx (PascalCase).
+- Pages: Sesuai standar Next.js (page.tsx, layout.tsx, loading.tsx).

@@ -12,6 +12,7 @@ interface JwtPayload {
   provider?: 'local' | 'google'
   isVerified?: boolean
   email?: string
+  subscriptionStatus?: 'ACTIVE' | 'AWAITING_PAYMENT' | 'PROOF_SUBMITTED' | 'EXPIRED' | 'SUSPENDED' | 'CANCELLED' | 'PAST_DUE' | 'TRIAL'
 }
 
 const ROUTE_CONFIG = {
@@ -202,6 +203,18 @@ export const middleware: NextMiddleware = async (request: NextRequest) => {
 
     if (!['ADMIN', 'OWNER'].includes(payload.role)) {
       return createLoginRedirect(request, pathname, 'invalid_role');
+    }
+
+    // Check subscription status for OWNER
+    if (payload.role === 'OWNER' && payload.subscriptionStatus && 
+        (payload.subscriptionStatus === 'AWAITING_PAYMENT' || payload.subscriptionStatus === 'PROOF_SUBMITTED')) {
+      // Allow access to subscription/payment and subscription/verification-pending pages
+      if (pathname.startsWith('/subscription/payment') || pathname.startsWith('/subscription/verification-pending')) {
+        return NextResponse.next();
+      }
+      
+      // Block access to other pages, redirect to verification pending
+      return NextResponse.redirect(new URL('/subscription/verification-pending', request.url));
     }
 
     // Insufficient permissions → redirect to unauthorized

@@ -5,6 +5,8 @@ import {
     getBusinessDetailsController,
     getRevenueAnalyticsController,
     getTransactionAnalyticsController,
+    getRevenueInsightsController,
+    getSubscriptionIncomeController,
     getAllUsersController,
     updateUserStatusController,
     getFinancialReportsController,
@@ -23,8 +25,16 @@ import {
     getRecentActivitiesController,
     getAllActivitiesController,
     getMetricsKPIs,
-    revenueInRangeController
+    revenueInRangeController,
+    getSubscriptionInvoiceValidationsController,
+    verifySubscriptionInvoiceController,
+    rejectSubscriptionInvoiceController
 } from '../controller/admin.controller';
+import {
+    getAdminDashboardActivitiesController,
+    getAdminDashboardInsightsController,
+    getAdminDashboardRiskController,
+} from '../controller/admin-dashboard.controller';
 import {
     getBannersController,
     createBannerController,
@@ -45,6 +55,9 @@ router.use(authorize('ADMIN'));
 router.get('/dashboard/overview', getDashboardOverviewController);
 router.get('/dashboard/kpis-metrics', getMetricsKPIs);
 router.get('/dashboard/revenue', revenueInRangeController);
+router.get('/dashboard/v3/insights', getAdminDashboardInsightsController);
+router.get('/dashboard/v3/risk-merchants', getAdminDashboardRiskController);
+router.get('/dashboard/v3/activities', getAdminDashboardActivitiesController);
 
 // Business management routes
 router.get('/businesses', getAllBusinessesController);
@@ -53,9 +66,16 @@ router.get('/businesses/:businessId', getBusinessDetailsController);
 // Analytics routes
 router.get('/analytics/revenue', getRevenueAnalyticsController);
 router.get('/analytics/revenue-chart', getRevenueChartController);
+router.get('/analytics/revenue/insights', getRevenueInsightsController);
 router.get('/analytics/transactions', getTransactionAnalyticsController);
+router.get('/platform-income/subscriptions', getSubscriptionIncomeController);
 router.get('/activities/recent', getRecentActivitiesController);
 router.get('/activities', getAllActivitiesController);
+
+// Subscription invoice validations
+router.get('/subscriptions/invoices', getSubscriptionInvoiceValidationsController);
+router.post('/subscriptions/invoices/:invoiceId/verify', verifySubscriptionInvoiceController);
+router.post('/subscriptions/invoices/:invoiceId/reject', rejectSubscriptionInvoiceController);
 
 // User management routes
 router.get('/users', getAllUsersController);

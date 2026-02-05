@@ -3,7 +3,7 @@ import { snap, coreApi } from '../config/midtrans';
 import { getOrderByIdService } from './order.service';
 import { db } from '../config/prisma';
 import { config } from '../config';
-import { PaymentStatus, Order, OrderItem, Product, GuestCustomer, FeeBearer, ManualPaymentType, OrderStatus } from '@prisma/client';
+import { PaymentStatus, Order, OrderItem, Product, GuestCustomer, ManualPaymentType, OrderStatus } from '@prisma/client';
 import { messagePublisher } from './message-publisher.service';
 import { CreatePaymentPayload } from '../schemas/payment-v2.schema';
 import { paymentMethod, MidtransPaymentMethod, PaymentMethodId, paymentMethodMapping } from '../constants/payment-method';
@@ -60,7 +60,7 @@ async function validateItemsAndPrepareData(inputItems: any[], outletId: string) 
         throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
-    const productMap = new Map(products.map((p: Product) => [p.id, p]));
+    const productMap = new Map(products.map((p) => [p.id, p]));
     const itemDetails: MidtransItem[] = [];
     let totalProductPrice = 0;
 
@@ -70,13 +70,17 @@ async function validateItemsAndPrepareData(inputItems: any[], outletId: string) 
             throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
         }
 
-        const subtotal = product.price * item.quantity;
+        const priceProduct = (product.type === 'GOODS'
+            ? product.goods?.sellingPrice
+            : product.service?.sellingPrice) ?? 0
+
+        const subtotal = priceProduct * item.quantity;
         totalProductPrice += subtotal;
 
         itemDetails.push({
             id: product.id,
             name: product.name,
-            price: product.price,
+            price: priceProduct,
             quantity: item.quantity,
         });
     }
@@ -885,12 +889,17 @@ export async function getPaymentOrderService(orderId: string) {
             appFee: order.appFee,
             transactionFee: order.midtransFee
         },
-        items: items.map((item) => ({
-            id: item.id,
-            name: item.product.name,
-            price: item.product.price,
-            quantity: item.quantity,
-            subtotal: item.product.price * item.quantity
-        }))
+        items: items.map((item) => {
+            const productPrice = (item.product.type === 'GOODS'
+                ? item.product.goods?.sellingPrice
+                : item.product.service?.sellingPrice) ?? 0
+            return {
+                id: item.id,
+                name: item.product.name,
+                price: productPrice,
+                quantity: item.quantity,
+                subtotal: productPrice * item.quantity
+            }
+        })
     }
 }

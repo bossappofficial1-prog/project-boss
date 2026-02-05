@@ -4,80 +4,19 @@ import React, { useState, useEffect } from 'react';
 import {
     CheckCircle2,
     Store,
-    User,
-    Mail,
-    Lock,
-    ArrowRight,
     ArrowLeft,
     Check,
     X,
-    Loader2,
     ShieldCheck,
-    Phone,
-    FileText,
-    Smartphone
 } from "lucide-react";
-import { cn, formatCurrency, getCookie } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ReusableForm } from '@/components/ui/reuseable-form';
-import { fieldRegisterStep1, fieldRegisterStep2, registerStep1Schema, registerStep2Schema } from '@/components/auth/register/schema';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/apis/base';
 import { OtpInputVerification } from '@/components/auth/register/OtpInputVerification';
 import { RegisterStep1 } from '@/components/auth/register/RegisterStep1';
 import { RegisterStep2 } from '@/components/auth/register/RegisterStep2';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlan';
-
-const PLANS = [
-    {
-        id: 'TRIAL',
-        name: 'Free Trial',
-        price: 'Rp 0',
-        period: '/ 14 hari',
-        description: 'Cocok untuk mencoba fitur dasar sebelum komitmen.',
-        features: [
-            { label: 'Max 1 Outlet', allowed: true },
-            { label: 'Max 10 Produk', allowed: true },
-            { label: 'Max 1 Staff (Owner Only)', allowed: true },
-            { label: 'Export Laporan', allowed: false },
-            { label: 'Support Email', allowed: true },
-        ],
-        color: 'border-slate-200 hover:border-slate-300',
-        badge: 'GRATIS'
-    },
-    {
-        id: 'BASIC',
-        name: 'Basic Plan',
-        price: 'Rp 99.000',
-        period: '/ bulan',
-        description: 'Untuk usaha kecil yang mulai berkembang.',
-        features: [
-            { label: 'Max 2 Outlet', allowed: true },
-            { label: 'Max 100 Produk', allowed: true },
-            { label: 'Max 3 Staff', allowed: true },
-            { label: 'Export Laporan', allowed: true },
-            { label: 'Support Email', allowed: true },
-        ],
-        color: 'border-blue-200 bg-blue-50/50 hover:border-blue-300',
-        badge: 'POPULAR'
-    },
-    {
-        id: 'PRO',
-        name: 'Pro Plan',
-        price: 'Rp 199.000',
-        period: '/ bulan',
-        description: 'Tanpa batasan untuk pertumbuhan maksimal.',
-        features: [
-            { label: 'Unlimited Outlet', allowed: true },
-            { label: 'Unlimited Produk', allowed: true },
-            { label: 'Unlimited Staff', allowed: true },
-            { label: 'Export Laporan Lengkap', allowed: true },
-            { label: 'Prioritas WhatsApp Support', allowed: true },
-        ],
-        color: 'border-indigo-200 bg-indigo-50/50 hover:border-indigo-300',
-        badge: 'BEST VALUE'
-    }
-];
 
 const getPlanColor = (code: string, isSelected: boolean) => {
     if (isSelected) return "border-indigo-600 bg-white ring-1 ring-indigo-600 shadow-md";
@@ -158,6 +97,7 @@ export default function RegistrationContent() {
         if (isVerified) return isVerified === 'false'
         return false
     });
+
     const [timer, setTimer] = useState(0);
 
     const handleGoogleLogin = async () => {
@@ -183,6 +123,11 @@ export default function RegistrationContent() {
             setIsSubmitting(false);
         }
     };
+
+    useEffect(() => {
+        document.documentElement.classList.remove("dark")
+        return () => document.documentElement.classList.add("dark")
+    }, [])
 
     const handleLogout = async () => {
         try {
@@ -230,32 +175,39 @@ export default function RegistrationContent() {
 
     // 4. Final Submit (Create Business & Plan)
     const handleSubmit = async () => {
-        setIsSubmitting(true);
+        try {
+            setIsSubmitting(true);
 
-        // Payload Final
-        const payload = {
-            user: {
-                provider: formData.provider,
-                googleId: formData.provider === 'google' ? 'some-google-id' : undefined
-            },
-            business: {
-                name: formData.businessName,
+            const { data } = await apiClient.post('/auth/onboarding/complete', {
+                businessName: formData.businessName,
                 description: formData.description,
-                subscriptionPlan: formData.selectedPlan
+                selectedPlan: formData.selectedPlan
+            });
+
+            if (!data.success) {
+                throw new Error(data.message || 'Gagal menyelesaikan registrasi');
             }
-        };
 
-        console.log("Submitting Final Payload:", payload);
+            const invoiceId = data.data?.invoice?.id;
 
-        setTimeout(() => {
+            if (formData.selectedPlan === 'TRIAL') {
+                router.push('/owner/dashboard');
+            } else if (invoiceId) {
+                router.push(`/subscription/payment?invoiceId=${invoiceId}`);
+            } else {
+                alert('Invoice tidak ditemukan. Silakan hubungi support.');
+            }
+        } catch (error: any) {
+            console.error('Onboarding error:', error);
+            const errorMessage = error?.response?.data?.message || 'Gagal menyelesaikan registrasi. Silakan coba lagi.';
+            alert(`Error: ${errorMessage}`);
+        } finally {
             setIsSubmitting(false);
-            alert(`Registrasi Sukses!\nMetode: ${formData.provider.toUpperCase()}\nPlan: ${formData.selectedPlan}`);
-            // Redirect logic here
-        }, 2000);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-900">
+        <div className="min-h-screen light-page bg-slate-50 flex flex-col md:flex-row font-sans text-slate-900">
 
             {/* LEFT SIDE: BANNER */}
             <div className="hidden md:flex md:w-5/12 lg:w-1/2 bg-slate-900 text-white p-12 flex-col justify-between relative overflow-hidden">
@@ -307,7 +259,7 @@ export default function RegistrationContent() {
                     )}
 
                     {/* FORM CONTENT */}
-                    <div className="bg-white p-0 md:p-8 rounded-2xl md:shadow-xl md:border border-slate-100">
+                    <div className="bg-white p-0 md:p-8 rounded-2xl md:shadow-md md:border border-slate-100">
 
                         {step === 1 && showOtpInput && (
                             <OtpInputVerification

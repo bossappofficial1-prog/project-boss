@@ -15,6 +15,83 @@ const prisma = new PrismaClient({ adapter });
 
 const forceReseed = process.argv.includes("--force") || process.argv.includes("-f");
 
+// Subscription Plan Features Definition
+const SUBSCRIPTION_PLANS = [
+  {
+    name: "Trial",
+    code: "TRIAL",
+    price: 0,
+    durationDays: 14,
+    isPopular: false,
+    features: {
+      maxOutlets: 1,
+      maxProducts: 10,
+      maxStaff: 1,
+      canExportReport: false,
+      supportLevel: "EMAIL"
+    }
+  },
+  {
+    name: "Basic",
+    code: "BASIC",
+    price: 99000,
+    durationDays: 30,
+    isPopular: false,
+    features: {
+      maxOutlets: 3,
+      maxProducts: 100,
+      maxStaff: 5,
+      canExportReport: true,
+      supportLevel: "WHATSAPP"
+    }
+  },
+  {
+    name: "Pro",
+    code: "PRO",
+    price: 199000,
+    durationDays: 30,
+    isPopular: true,
+    features: {
+      maxOutlets: -1,
+      maxProducts: -1,
+      maxStaff: -1,
+      canExportReport: true,
+      supportLevel: "PRIORITY"
+    }
+  }
+];
+
+async function seedSubscriptionPlans() {
+  console.log("💳 Creating subscription plans...");
+
+  await Promise.all(
+    SUBSCRIPTION_PLANS.map((plan) =>
+      prisma.subscriptionPlan.upsert({
+        where: { code: plan.code },
+        update: {
+          name: plan.name,
+          price: plan.price,
+          durationDays: plan.durationDays,
+          features: plan.features,
+          isPopular: plan.isPopular,
+          isActive: true,
+        },
+        create: {
+          name: plan.name,
+          code: plan.code,
+          price: plan.price,
+          durationDays: plan.durationDays,
+          features: plan.features,
+          isPopular: plan.isPopular,
+          isActive: true,
+        },
+      })
+    )
+  );
+
+  console.log(`✅ ${SUBSCRIPTION_PLANS.length} subscription plans synced.`);
+}
+
 function validateEnvironment() {
   const requiredEnvVars = ["DATABASE_URL"];
   const missing = requiredEnvVars.filter((env) => !process.env[env]);
@@ -27,6 +104,8 @@ function validateEnvironment() {
 async function main() {
   console.log("🌱 Starting database seeding with VERIFIED images for both Outlets and Products...");
   validateEnvironment();
+
+  await seedSubscriptionPlans();
 
   if (forceReseed) {
     console.log("⚡ FORCE RESEED MODE: Clearing all existing data!");

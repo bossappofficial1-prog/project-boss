@@ -3,12 +3,13 @@ import { asyncHandler } from "../middleware/error.middleware";
 import { ResponseUtil } from "../utils/response";
 import { NotificationMonitoringService } from "../service/notification-monitoring.service";
 import { NotificationRecoveryService } from "../service/notification-recovery.service";
+import { ensureString } from "../utils/request";
 
 /**
  * Queue monitoring and troubleshooting controller
  */
 export class QueueMonitoringController {
-    
+
     /**
      * Get health status of all notification queues
      */
@@ -16,16 +17,16 @@ export class QueueMonitoringController {
         const healthStatus = await NotificationMonitoringService.getQueueHealthStatus();
         return ResponseUtil.success(res, healthStatus);
     });
-    
+
     /**
      * Get detailed information about a specific queue
      */
     static getQueueInfo = asyncHandler(async (req: Request, res: Response) => {
-        const { queueName } = req.params;
+        const queueName = ensureString(req.params?.queueName, "queueName");
         const queueInfo = await NotificationMonitoringService.getDetailedQueueInfo(queueName);
         return ResponseUtil.success(res, queueInfo);
     });
-    
+
     /**
      * Emergency recovery for notification system
      */
@@ -33,7 +34,7 @@ export class QueueMonitoringController {
         const result = await NotificationRecoveryService.recoverNotificationSystem();
         return ResponseUtil.success(res, result);
     });
-    
+
     /**
      * Setup/repair queue configuration
      */
@@ -41,7 +42,7 @@ export class QueueMonitoringController {
         const result = await NotificationRecoveryService.setupQueues();
         return ResponseUtil.success(res, result);
     });
-    
+
     /**
      * Purge dead letter queue
      */
@@ -50,7 +51,7 @@ export class QueueMonitoringController {
         const result = await NotificationMonitoringService.purgeDLQ(queueName);
         return ResponseUtil.success(res, result);
     });
-    
+
     /**
      * Requeue messages from DLQ back to main queue
      */
@@ -59,7 +60,7 @@ export class QueueMonitoringController {
         const result = await NotificationMonitoringService.requeueFromDLQ(dlqName, targetQueue);
         return ResponseUtil.success(res, result);
     });
-    
+
     /**
      * Test notification publishing
      */
@@ -67,13 +68,13 @@ export class QueueMonitoringController {
         const result = await NotificationMonitoringService.testNotificationPublish();
         return ResponseUtil.success(res, result);
     });
-    
+
     /**
      * Get diagnostic information for notification issues
      */
     static getDiagnostics = asyncHandler(async (req: Request, res: Response) => {
         const healthStatus = await NotificationMonitoringService.getQueueHealthStatus();
-        
+
         const diagnostics = {
             timestamp: new Date().toISOString(),
             systemStatus: healthStatus,
@@ -111,14 +112,14 @@ export class QueueMonitoringController {
             ],
             troubleshootingSteps: [
                 "1. Check queue health with /queue-health",
-                "2. Test message publishing with /test-notification", 
+                "2. Test message publishing with /test-notification",
                 "3. Check specific queue with /queue-info/:queueName",
                 "4. If DLQ has messages, investigate and fix root cause",
                 "5. Requeue DLQ messages with /requeue-dlq",
                 "6. Monitor system after fixes"
             ]
         };
-        
+
         return ResponseUtil.success(res, diagnostics);
     });
 }
