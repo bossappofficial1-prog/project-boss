@@ -1,288 +1,370 @@
-"use client"
+"use client";
 
-import type { ComponentType } from "react"
-import { OrderDetail, OrderStatus, type OrderStatusType } from "@/types"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { cn, formatCurrency } from "@/lib/utils"
-import { format } from "date-fns"
-import { id } from "date-fns/locale"
-import { Store, Phone, RefreshCw, CheckCircle2, XCircle, Clock, Hourglass, PackageCheck, ChevronRight, Play, Loader2, CalendarPlus, ListOrdered } from "lucide-react"
-import { useTranslations } from "@/hooks/useI18n"
-import dynamic from "next/dynamic"
+import type { ComponentType } from "react";
+import { OrderDetail, OrderStatus, type OrderStatusType } from "@/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { cn, formatCurrency } from "@/lib/utils";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import {
+  Store,
+  Phone,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Hourglass,
+  PackageCheck,
+  ChevronRight,
+  Play,
+  Loader2,
+  CalendarPlus,
+  ListOrdered,
+} from "lucide-react";
+import { useTranslations } from "@/hooks/useI18n";
+import dynamic from "next/dynamic";
 
-const CountdownTimer = dynamic(() => import("./CountdownTimer"), { ssr: false })
+const CountdownTimer = dynamic(() => import("./CountdownTimer"), { ssr: false });
 
-type QuickActionType = 'contact' | 'cancel' | 'reorder' | 'confirm' | 'pay' | 'calendar'
+type QuickActionType = "contact" | "cancel" | "reorder" | "confirm" | "pay" | "calendar";
 
 interface EnhancedOrderCardProps {
-    order: OrderDetail
-    onClick: () => void
-    onQuickAction?: (action: QuickActionType, order: OrderDetail) => void
-    pendingAction?: { orderId: string; action: QuickActionType } | null
+  order: OrderDetail;
+  onClick: () => void;
+  onQuickAction?: (action: QuickActionType, order: OrderDetail) => void;
+  pendingAction?: { orderId: string; action: QuickActionType } | null;
 }
-
 
 type QuickActionConfig = {
-    label: string
-    icon: ComponentType<{ className?: string }> | null
-    action: QuickActionType
-    variant: 'default' | 'outline'
-}
+  label: string;
+  icon: ComponentType<{ className?: string }> | null;
+  action: QuickActionType;
+  variant: "default" | "outline";
+};
 
-export default function EnhancedOrderCard({ order, onClick, onQuickAction, pendingAction }: EnhancedOrderCardProps) {
-    const t = useTranslations('orders')
+export default function EnhancedOrderCard({
+  order,
+  onClick,
+  onQuickAction,
+  pendingAction,
+}: EnhancedOrderCardProps) {
+  const t = useTranslations("orders");
 
-    const statusConfig = {
-        [OrderStatus.AWAITING_PAYMENT]: {
-            label: t('status.awaiting_payment'),
-            icon: Hourglass,
-            color: "bg-yellow-500",
-            textColor: "text-yellow-700 dark:text-yellow-400",
-            bgColor: "bg-yellow-50 dark:bg-yellow-950/20",
-            progress: 10,
-        },
-        [OrderStatus.PROCESSING]: {
-            label: t('status.processing'),
-            icon: Clock,
-            color: "bg-blue-500",
-            textColor: "text-blue-700 dark:text-blue-400",
-            bgColor: "bg-blue-50 dark:bg-blue-950/20",
-            progress: 25,
-        },
-        [OrderStatus.CONFIRMED]: {
-            label: t('status.confirmed_label'),
-            icon: CheckCircle2,
-            color: "bg-cyan-500",
-            textColor: "text-cyan-700 dark:text-cyan-400",
-            bgColor: "bg-cyan-50 dark:bg-cyan-950/20",
-            progress: 50,
-        },
-        [OrderStatus.READY]: {
-            label: t('status.ready_label'),
-            icon: PackageCheck,
-            color: "bg-green-500",
-            textColor: "text-green-700 dark:text-green-400",
-            bgColor: "bg-green-50 dark:bg-green-950/20",
-            progress: 75,
-        },
-        [OrderStatus.ON_GOING]: {
-            label: t('status.on_going_label'),
-            icon: Play,
-            color: "bg-orange-500",
-            textColor: "text-orange-700 dark:text-orange-400",
-            bgColor: "bg-orange-50 dark:bg-orange-950/20",
-            progress: 80,
-        },
-        [OrderStatus.COMPLETED]: {
-            label: t('status.completed_label'),
-            icon: CheckCircle2,
-            color: "bg-primary",
-            textColor: "text-primary",
-            bgColor: "bg-primary/5",
-            progress: 100,
-        },
-        [OrderStatus.CANCELLED]: {
-            label: t('status.cancelled_label'),
-            icon: XCircle,
-            color: "bg-destructive",
-            textColor: "text-destructive",
-            bgColor: "bg-destructive/5",
-            progress: 0,
-        },
-    }
+  const statusConfig = {
+    [OrderStatus.AWAITING_PAYMENT]: {
+      label: t("status.awaiting_payment"),
+      icon: Hourglass,
+      color: "bg-yellow-500",
+      textColor: "text-yellow-700 dark:text-yellow-400",
+      bgColor: "bg-yellow-50 dark:bg-yellow-950/20",
+      progress: 10,
+    },
+    [OrderStatus.PROCESSING]: {
+      label: t("status.processing"),
+      icon: Clock,
+      color: "bg-blue-500",
+      textColor: "text-blue-700 dark:text-blue-400",
+      bgColor: "bg-blue-50 dark:bg-blue-950/20",
+      progress: 25,
+    },
+    [OrderStatus.CONFIRMED]: {
+      label: t("status.confirmed_label"),
+      icon: CheckCircle2,
+      color: "bg-cyan-500",
+      textColor: "text-cyan-700 dark:text-cyan-400",
+      bgColor: "bg-cyan-50 dark:bg-cyan-950/20",
+      progress: 50,
+    },
+    [OrderStatus.READY]: {
+      label: t("status.ready_label"),
+      icon: PackageCheck,
+      color: "bg-green-500",
+      textColor: "text-green-700 dark:text-green-400",
+      bgColor: "bg-green-50 dark:bg-green-950/20",
+      progress: 75,
+    },
+    [OrderStatus.ON_GOING]: {
+      label: t("status.on_going_label"),
+      icon: Play,
+      color: "bg-orange-500",
+      textColor: "text-orange-700 dark:text-orange-400",
+      bgColor: "bg-orange-50 dark:bg-orange-950/20",
+      progress: 80,
+    },
+    [OrderStatus.COMPLETED]: {
+      label: t("status.completed_label"),
+      icon: CheckCircle2,
+      color: "bg-primary",
+      textColor: "text-primary",
+      bgColor: "bg-primary/5",
+      progress: 100,
+    },
+    [OrderStatus.CANCELLED]: {
+      label: t("status.cancelled_label"),
+      icon: XCircle,
+      color: "bg-destructive",
+      textColor: "text-destructive",
+      bgColor: "bg-destructive/5",
+      progress: 0,
+    },
+  };
 
-    const currentStatus = statusConfig[order.orderStatus] || statusConfig[OrderStatus.PROCESSING]
-    const StatusIcon = currentStatus.icon
+  const currentStatus = statusConfig[order.orderStatus] || statusConfig[OrderStatus.PROCESSING];
+  const StatusIcon = currentStatus.icon;
 
-    const formattedDate = format(new Date(order.createdAt), "d MMM yyyy", { locale: id })
-    const formattedTime = format(new Date(order.createdAt), "HH:mm", { locale: id })
-    const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0)
+  const formattedDate = format(new Date(order.createdAt), "d MMM yyyy", { locale: id });
+  const formattedTime = format(new Date(order.createdAt), "HH:mm", { locale: id });
+  const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
-    const getQuickActions = (): QuickActionConfig[] => {
-        switch (order.orderStatus) {
-            case OrderStatus.AWAITING_PAYMENT:
-                return [
-                    { label: t('actions.pay'), icon: null, action: 'pay' as const, variant: "default" as const },
-                    { label: t('actions.cancel'), icon: null, action: 'cancel' as const, variant: "outline" as const },
-                ]
-            case OrderStatus.PROCESSING:
-            case OrderStatus.CONFIRMED:
-                return [
-                    { label: t('actions.contact'), icon: Phone, action: 'contact' as const, variant: "outline" as const },
-                ]
-            case OrderStatus.READY:
-                return [
-                    { label: t('actions.contact'), icon: Phone, action: 'contact' as const, variant: "outline" as const },
-                    { label: t('actions.confirm'), icon: CheckCircle2, action: 'confirm' as const, variant: "default" as const },
-                ]
-            case OrderStatus.ON_GOING:
-                return [
-                    { label: t('actions.contact'), icon: Phone, action: 'contact' as const, variant: "outline" as const },
-                ]
-            case OrderStatus.COMPLETED:
-                return [
-                    { label: t('actions.reorder'), icon: RefreshCw, action: 'reorder' as const, variant: "outline" as const },
-                ]
-            case OrderStatus.CANCELLED:
-                return [
-                    { label: t('actions.reorder'), icon: RefreshCw, action: 'reorder' as const, variant: "outline" as const },
-                ]
-            default:
-                return []
-        }
-    }
-
-    const hasServiceProduct = order.items.some(item => item.product.type === 'SERVICE')
-    const queueMeta = order.queueMeta ?? null
-    const isCalendarEligibleStatus = (status: OrderStatusType) =>
-        status === OrderStatus.CONFIRMED || status === OrderStatus.READY || status === OrderStatus.ON_GOING
-
-    const quickActions = getQuickActions()
-
-    if (hasServiceProduct && isCalendarEligibleStatus(order.orderStatus)) {
-        quickActions.unshift({
-            label: t('actions.addToCalendar'),
-            icon: CalendarPlus,
-            action: 'calendar' as const,
+  const getQuickActions = (): QuickActionConfig[] => {
+    switch (order.orderStatus) {
+      case OrderStatus.AWAITING_PAYMENT:
+        return [
+          {
+            label: t("actions.pay"),
+            icon: null,
+            action: "pay" as const,
+            variant: "default" as const,
+          },
+          {
+            label: t("actions.cancel"),
+            icon: null,
+            action: "cancel" as const,
             variant: "outline" as const,
-        })
+          },
+        ];
+      case OrderStatus.PROCESSING:
+      case OrderStatus.CONFIRMED:
+        return [
+          {
+            label: t("actions.contact"),
+            icon: Phone,
+            action: "contact" as const,
+            variant: "outline" as const,
+          },
+        ];
+      case OrderStatus.READY:
+        return [
+          {
+            label: t("actions.contact"),
+            icon: Phone,
+            action: "contact" as const,
+            variant: "outline" as const,
+          },
+          {
+            label: t("actions.confirm"),
+            icon: CheckCircle2,
+            action: "confirm" as const,
+            variant: "default" as const,
+          },
+        ];
+      case OrderStatus.ON_GOING:
+        return [
+          {
+            label: t("actions.contact"),
+            icon: Phone,
+            action: "contact" as const,
+            variant: "outline" as const,
+          },
+        ];
+      case OrderStatus.COMPLETED:
+        return [
+          {
+            label: t("actions.reorder"),
+            icon: RefreshCw,
+            action: "reorder" as const,
+            variant: "outline" as const,
+          },
+        ];
+      case OrderStatus.CANCELLED:
+        return [
+          {
+            label: t("actions.reorder"),
+            icon: RefreshCw,
+            action: "reorder" as const,
+            variant: "outline" as const,
+          },
+        ];
+      default:
+        return [];
     }
+  };
 
-    return (
-        <Card className="overflow-hidden shadow-none transition-all p-0 rounded-md" style={{ borderLeftColor: currentStatus.color.replace('bg-', '#') }}>
-            <CardContent className="p-0">
-                {/* Status Header */}
-                <div className={cn("px-4 py-2 flex items-center justify-between", currentStatus.bgColor)}>
-                    <div className="flex items-center gap-2">
-                        <StatusIcon className={cn("w-4 h-4", currentStatus.textColor)} />
-                        <span className={cn("text-xs font-semibold", currentStatus.textColor)}>
-                            {currentStatus.label}
-                        </span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                        {formattedDate} • {formattedTime}
-                    </div>
+  const hasServiceProduct = order.items.some((item) => item.product.type === "SERVICE");
+  const queueMeta = order.queueMeta ?? null;
+  const isCalendarEligibleStatus = (status: OrderStatusType) =>
+    status === OrderStatus.CONFIRMED ||
+    status === OrderStatus.READY ||
+    status === OrderStatus.ON_GOING;
+
+  const quickActions = getQuickActions();
+
+  if (hasServiceProduct && isCalendarEligibleStatus(order.orderStatus)) {
+    quickActions.unshift({
+      label: t("actions.addToCalendar"),
+      icon: CalendarPlus,
+      action: "calendar" as const,
+      variant: "outline" as const,
+    });
+  }
+
+  return (
+    <Card
+      className="overflow-hidden shadow-none transition-all p-0 rounded-md"
+      style={{ borderLeftColor: currentStatus.color.replace("bg-", "#") }}>
+      <CardContent className="p-0">
+        {/* Status Header */}
+        <div className={cn("px-4 py-2 flex items-center justify-between", currentStatus.bgColor)}>
+          <div className="flex items-center gap-2">
+            <StatusIcon className={cn("w-4 h-4", currentStatus.textColor)} />
+            <span className={cn("text-xs font-semibold", currentStatus.textColor)}>
+              {currentStatus.label}
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {formattedDate} • {formattedTime}
+          </div>
+        </div>
+
+        {order.orderStatus === OrderStatus.CANCELLED && (
+          <div className="bg-destructive/10 px-4 py-2 text-xs border-b border-destructive/10">
+            <span className="font-semibold text-destructive block mb-0.5">
+              {t("status.cancelled_label")}:
+            </span>
+            <p className="text-destructive/80 italic line-clamp-2">
+              "{order.cancellationReason || "Tidak ada alasan"}"
+            </p>
+          </div>
+        )}
+
+        {/* Payment Rejection Notice */}
+        {order.transaction?.status === "REJECTED_MANUAL" && (
+          <div className="bg-destructive/10 px-4 py-2 text-xs border-b border-destructive/10">
+            <span className="font-semibold text-destructive block mb-0.5">
+              Bukti Pembayaran Ditolak:
+            </span>
+            <p className="text-destructive/80 italic line-clamp-2">
+              "{order.transaction.rejectionNote || "Tidak ada alasan"}"
+            </p>
+          </div>
+        )}
+
+        {/* Main Content - Clickable */}
+        <div onClick={onClick} className="cursor-pointer hover:bg-accent/50 transition-colors">
+          <div className="px-4 py-3 space-y-3">
+            {/* Outlet Info */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="bg-muted rounded-md p-2 shrink-0">
+                  <Store className="w-5 h-5 text-muted-foreground" />
                 </div>
-
-                {/* Main Content - Clickable */}
-                <div onClick={onClick} className="cursor-pointer hover:bg-accent/50 transition-colors">
-                    <div className="px-4 py-3 space-y-3">
-                        {/* Outlet Info */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <div className="bg-muted rounded-md p-2 shrink-0">
-                                    <Store className="w-5 h-5 text-muted-foreground" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-sm truncate">{order.outlet.name}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {totalItems} item{totalItems > 1 ? 's' : ''}
-                                    </p>
-                                </div>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 ml-2" />
-                        </div>
-
-                        {/* Countdown Timer for AWAITING_PAYMENT */}
-                        {order.orderStatus === OrderStatus.AWAITING_PAYMENT && order.transaction?.expiryTime && (
-                            <div className="pt-2 border-t">
-                                <CountdownTimer
-                                    expiryTime={order.transaction.expiryTime}
-                                    compact={true}
-                                />
-                            </div>
-                        )}
-
-                        {/* Progress Bar - Only show if not completed or cancelled */}
-                        {order.orderStatus !== OrderStatus.COMPLETED && order.orderStatus !== OrderStatus.CANCELLED && (
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="text-muted-foreground">Progress</span>
-                                    <span className={cn("font-semibold", currentStatus.textColor)}>
-                                        {currentStatus.progress}%
-                                    </span>
-                                </div>
-                                <Progress
-                                    value={currentStatus.progress}
-                                    className="h-1.5"
-                                />
-                            </div>
-                        )}
-
-                        {hasServiceProduct && queueMeta && (
-                            <div className="border rounded-md px-3 py-2 flex flex-col gap-1 bg-muted/30">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <ListOrdered className="w-4 h-4 text-muted-foreground" />
-                                        <span className="text-xs text-muted-foreground">
-                                            {t('queue.positionLabel')}
-                                        </span>
-                                    </div>
-                                    <span className="text-sm font-semibold">#{queueMeta.position}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span>
-                                        {queueMeta.totalAhead > 0
-                                            ? t('queue.peopleAhead', { count: queueMeta.totalAhead })
-                                            : t('queue.noOneAhead')}
-                                    </span>
-                                    <span>
-                                        {queueMeta.scheduledStart
-                                            ? t('queue.estimatedStart', {
-                                                date: format(new Date(queueMeta.scheduledStart), "d MMM yyyy HH:mm", { locale: id }),
-                                            })
-                                            : t('queue.schedulePending')}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Price and ID */}
-                        <div className="flex items-center justify-between pt-2 border-t">
-                            <span className="text-xs text-muted-foreground">
-                                {t('card.orderId')}: #{order.id.slice(0, 8)}
-                            </span>
-                            <p className="font-bold text-base text-primary">
-                                {formatCurrency(order.totalAmount)}
-                            </p>
-                        </div>
-                    </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{order.outlet.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {totalItems} item{totalItems > 1 ? "s" : ""}
+                  </p>
                 </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 ml-2" />
+            </div>
 
-                {/* Quick Actions */}
-                {quickActions.length > 0 && (
-                    <div className="px-4 pb-3 flex gap-2">
-                        {quickActions.map((action, idx) => {
-                            const ActionIcon = action.icon
-                            const isBusy = pendingAction?.orderId === order.id
-                            const isLoading = isBusy && pendingAction?.action === action.action
-                            return (
-                                <Button
-                                    key={idx}
-                                    size="sm"
-                                    variant={action.variant}
-                                    className="flex-1 h-9"
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        onQuickAction?.(action.action, order)
-                                    }}
-                                    disabled={isBusy}
-                                >
-                                    {isLoading ? (
-                                        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                                    ) : ActionIcon ? (
-                                        <ActionIcon className="w-4 h-4 mr-1.5" />
-                                    ) : null}
-                                    <span>{action.label}</span>
-                                </Button>
-                            )
-                        })}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    )
+            {/* Countdown Timer for AWAITING_PAYMENT */}
+            {order.orderStatus === OrderStatus.AWAITING_PAYMENT &&
+              order.transaction?.expiryTime && (
+                <div className="pt-2 border-t">
+                  <CountdownTimer expiryTime={order.transaction.expiryTime} compact={true} />
+                </div>
+              )}
+
+            {/* Progress Bar - Only show if not completed or cancelled */}
+            {order.orderStatus !== OrderStatus.COMPLETED &&
+              order.orderStatus !== OrderStatus.CANCELLED && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Progress</span>
+                    <span className={cn("font-semibold", currentStatus.textColor)}>
+                      {currentStatus.progress}%
+                    </span>
+                  </div>
+                  <Progress value={currentStatus.progress} className="h-1.5" />
+                </div>
+              )}
+
+            {hasServiceProduct && queueMeta && (
+              <div className="border rounded-md px-3 py-2 flex flex-col gap-1 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ListOrdered className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      {t("queue.positionLabel")}
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold">#{queueMeta.position}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    {queueMeta.totalAhead > 0
+                      ? t("queue.peopleAhead", { count: queueMeta.totalAhead })
+                      : t("queue.noOneAhead")}
+                  </span>
+                  <span>
+                    {queueMeta.scheduledStart
+                      ? t("queue.estimatedStart", {
+                          date: format(new Date(queueMeta.scheduledStart), "d MMM yyyy HH:mm", {
+                            locale: id,
+                          }),
+                        })
+                      : t("queue.schedulePending")}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Price and ID */}
+            <div className="flex items-center justify-between pt-2 border-t">
+              <span className="text-xs text-muted-foreground">
+                {t("card.orderId")}: #{order.id.slice(0, 8)}
+              </span>
+              <p className="font-bold text-base text-primary">
+                {formatCurrency(order.totalAmount)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        {quickActions.length > 0 && (
+          <div className="px-4 pb-3 flex gap-2">
+            {quickActions.map((action, idx) => {
+              const ActionIcon = action.icon;
+              const isBusy = pendingAction?.orderId === order.id;
+              const isLoading = isBusy && pendingAction?.action === action.action;
+              return (
+                <Button
+                  key={idx}
+                  size="sm"
+                  variant={action.variant}
+                  className="flex-1 h-9"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onQuickAction?.(action.action, order);
+                  }}
+                  disabled={isBusy}>
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                  ) : ActionIcon ? (
+                    <ActionIcon className="w-4 h-4 mr-1.5" />
+                  ) : null}
+                  <span>{action.label}</span>
+                </Button>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }

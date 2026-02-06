@@ -250,6 +250,7 @@ export interface OrderDetail {
   customerDetails: CustomerInfo & { id: string };
   bookingSlot?: OrderBookingSlot | null;
   queueMeta?: OrderQueueMeta | null;
+  cancellationReason?: string | null;
 }
 
 export interface Item {
@@ -283,4 +284,5 @@ export interface Transaction {
   paymentMethod: string;
   status: string;
   expiryTime?: string; // ISO date string for payment expiry
+  rejectionNote?: string | null;
 }

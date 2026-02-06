@@ -111,9 +111,20 @@ export const createOrderSchema = z
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export type OnlinePaymentChannel = z.infer<typeof onlinePaymentChannelSchema>;
 
-export const updateOrderStatusSchema = z.object({
-  status: z.nativeEnum(OrderStatus),
-});
+export const updateOrderStatusSchema = z
+  .object({
+    status: z.nativeEnum(OrderStatus),
+    reason: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.status === OrderStatus.CANCELLED && !data.reason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Alasan pembatalan wajib diisi",
+        path: ["reason"],
+      });
+    }
+  });
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
 
@@ -127,14 +138,25 @@ const serviceQueueStatuses = [
   OrderStatus.CANCELLED,
 ] as const;
 
-export const updateServiceQueueStatusSchema = z.object({
-  status: z.enum(
-    serviceQueueStatuses.map((status) => status) as [
-      (typeof serviceQueueStatuses)[number],
-      ...(typeof serviceQueueStatuses)[number][],
-    ],
-  ),
-});
+export const updateServiceQueueStatusSchema = z
+  .object({
+    status: z.enum(
+      serviceQueueStatuses.map((status) => status) as [
+        (typeof serviceQueueStatuses)[number],
+        ...(typeof serviceQueueStatuses)[number][],
+      ],
+    ),
+    reason: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.status === OrderStatus.CANCELLED && !data.reason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Alasan pembatalan wajib diisi",
+        path: ["reason"],
+      });
+    }
+  });
 
 export type UpdateServiceQueueStatusInput = z.infer<typeof updateServiceQueueStatusSchema>;
 
