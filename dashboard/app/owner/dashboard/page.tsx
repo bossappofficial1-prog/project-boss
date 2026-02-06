@@ -1,39 +1,36 @@
 "use client";
 
-import { useState } from 'react';
-import AddOutletModal from '@/components/modals/AddOutletModal';
-import DeleteOutletModal from '@/components/modals/DeleteOutletModal';
-import BusinessProfileModal from '@/components/modals/BusinessProfileModal';
-import BankAccountModal from '@/components/modals/BankAccountModal';
-import { Button } from '@/components/ui/button';
-import { useDashboardData } from '@/hooks/useDashboardData';
-import StatsCards from '@/components/owner/dashboard/StatsCards';
-import BusinessProfileCard from '@/components/owner/dashboard/BusinessProfileCard';
-import OutletsSection from '@/components/owner/dashboard/OutletsSection';
-import { PageSkeleton } from '@/components/owner/dashboard/Skeletons';
+import { useState } from "react";
+import AddOutletModal from "@/components/modals/AddOutletModal";
+import DeleteOutletModal from "@/components/modals/DeleteOutletModal";
+import BusinessProfileModal from "@/components/modals/BusinessProfileModal";
+import BankAccountModal from "@/components/modals/BankAccountModal";
+import { Button } from "@/components/ui/button";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import StatsCards from "@/components/owner/dashboard/StatsCards";
+import BusinessProfileCard from "@/components/owner/dashboard/BusinessProfileCard";
+import OutletsSection from "@/components/owner/dashboard/OutletsSection";
+import { PageSkeleton } from "@/components/owner/dashboard/Skeletons";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+export const dynamic = "force-dynamic";
+export const runtime = "edge";
 
 export default function DashboardPage() {
-  const {
-    stats,
-    business,
-    outlets,
-    selectedOutlet,
-    isLoading,
-    globalError,
-    refetch,
-  } = useDashboardData();
+  const { stats, business, outlets, selectedOutlet, isLoading, globalError, refetch } =
+    useDashboardData();
 
   const [showOutletModal, setShowOutletModal] = useState(false);
-  const [outletModalMode, setOutletModalMode] = useState<'add' | 'edit'>('add');
+  const [outletModalMode, setOutletModalMode] = useState<"add" | "edit">("add");
   const [showDeleteOutletModal, setShowDeleteOutletModal] = useState(false);
   const [selectedOutletForEdit, setSelectedOutletForEdit] = useState<any>(null);
   const [selectedOutletForDelete, setSelectedOutletForDelete] = useState<any>(null);
   const [showBankModal, setShowBankModal] = useState(false);
   const [showBusinessModal, setShowBusinessModal] = useState(false);
-  const [pendingCreateBusiness, setPendingCreateBusiness] = useState<{ name: string; description?: string; defaultTransactionFeeBearer: 'CUSTOMER' | 'OWNER' } | null>(null);
+  const [pendingCreateBusiness, setPendingCreateBusiness] = useState<{
+    name: string;
+    description?: string;
+    defaultTransactionFeeBearer: "CUSTOMER" | "OWNER";
+  } | null>(null);
 
   const handleAddOutletSuccess = () => refetch();
   const handleEditOutletSuccess = () => refetch();
@@ -42,13 +39,13 @@ export default function DashboardPage() {
 
   const handleEditOutlet = (outlet: any) => {
     setSelectedOutletForEdit(outlet);
-    setOutletModalMode('edit');
+    setOutletModalMode("edit");
     setShowOutletModal(true);
   };
 
   const handleAddOutlet = () => {
     setSelectedOutletForEdit(null);
-    setOutletModalMode('add');
+    setOutletModalMode("add");
     setShowOutletModal(true);
   };
 
@@ -80,8 +77,13 @@ export default function DashboardPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-red-50 dark:border-gray-700 animate-fade-in">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Profil Bisnis</h2>
-                <p className="text-gray-600 dark:text-gray-400">Belum ada data profil bisnis. Lengkapi terlebih dahulu agar dapat menggunakan fitur secara penuh.</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                  Profil Bisnis
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Belum ada data profil bisnis. Lengkapi terlebih dahulu agar dapat menggunakan
+                  fitur secara penuh.
+                </p>
                 <div className="mt-4">
                   <Button onClick={() => setShowBusinessModal(true)}>Lengkapi Profil Bisnis</Button>
                 </div>
@@ -100,15 +102,18 @@ export default function DashboardPage() {
           onAddOutlet={handleAddOutlet}
           onEditOutlet={handleEditOutlet}
           onDeleteOutlet={handleDeleteOutlet}
-          onQRISUpdate={refetch}
           isLoading={isLoading}
         />
 
         {/* Bank owner info empty card if business exists but no bank */}
         {business && !(business.bankName && business.bankAccount) && (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-green-100 dark:border-green-800/50 animate-fade-in">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Informasi Pemilik Rekening</h2>
-            <p className="text-gray-600 dark:text-gray-400">Lengkapi informasi pemilik rekening untuk penarikan dana.</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+              Informasi Pemilik Rekening
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Lengkapi informasi pemilik rekening untuk penarikan dana.
+            </p>
             <div className="mt-4">
               <Button onClick={() => setShowBankModal(true)}>Lengkapi Informasi Rekening</Button>
             </div>
@@ -126,27 +131,27 @@ export default function DashboardPage() {
         onSuccess={() => {
           // if updating, just reload; if creating, handled in onCreateRequested
           if (business?.id) {
-            refetch()
+            refetch();
           }
         }}
         onCreateRequested={(data) => {
-          setPendingCreateBusiness(data)
-          setShowBusinessModal(false)
-          setShowBankModal(true)
+          setPendingCreateBusiness(data);
+          setShowBusinessModal(false);
+          setShowBankModal(true);
         }}
       />
       {/* Bank modal: update if business exists, or create if not */}
       <BankAccountModal
         open={showBankModal}
         onOpenChange={(v) => {
-          setShowBankModal(v)
-          if (!v) setPendingCreateBusiness(null)
+          setShowBankModal(v);
+          if (!v) setPendingCreateBusiness(null);
         }}
         businessId={business?.id}
-        createPayload={business ? undefined : pendingCreateBusiness ?? undefined}
+        createPayload={business ? undefined : (pendingCreateBusiness ?? undefined)}
         onSuccess={() => {
-          setPendingCreateBusiness(null)
-          handleBankAccountSuccess()
+          setPendingCreateBusiness(null);
+          handleBankAccountSuccess();
         }}
       />
 
@@ -155,9 +160,9 @@ export default function DashboardPage() {
         open={showOutletModal}
         onOpenChange={setShowOutletModal}
         mode={outletModalMode}
-        businessId={business?.id || ''}
-        outlet={outletModalMode === 'edit' ? selectedOutletForEdit : undefined}
-        onSuccess={outletModalMode === 'edit' ? handleEditOutletSuccess : handleAddOutletSuccess}
+        businessId={business?.id || ""}
+        outlet={outletModalMode === "edit" ? selectedOutletForEdit : undefined}
+        onSuccess={outletModalMode === "edit" ? handleEditOutletSuccess : handleAddOutletSuccess}
       />
 
       {/* Delete Outlet Modal */}
