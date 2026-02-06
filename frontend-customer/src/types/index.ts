@@ -255,8 +255,9 @@ export interface Item {
   id: string;
   priceAtTimeOfOrder: number;
   quantity: number;
-  product: ProductType; // Use full type since price/unit are now in subtables
+  product: any; // Use full type since price/unit are now in subtables
 }
+
 
 export interface OrderQueueMeta {
   position: number;

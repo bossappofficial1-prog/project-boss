@@ -8,6 +8,7 @@ import { Server } from "socket.io";
 import { socketConfigOption } from "./config/socket";
 import { initSocket } from "./socket";
 import { setUpJobs } from "./jobs";
+import { bootstrapQueues } from "./bootstrap/queue.bootstrap";
 
 function getNetworkAdresses(): string[] {
     const nets = networkInterfaces();
@@ -32,6 +33,7 @@ async function startServer(port: number) {
         const io = new Server(server, socketConfigOption)
         initSocket(io)
         SocketEmitter.getInstance().init(io)
+        await bootstrapQueues();
 
         setUpJobs();
 

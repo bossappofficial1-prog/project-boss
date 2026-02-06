@@ -3,6 +3,7 @@ import { paymentProofCleanupQueue, scheduleDailyPaymentProofCleanup } from "../q
 import Console from "../utils/logger";
 import { processPaymentExpiration } from "./paymentExpiration.job"
 import { processPaymentProofCleanup } from "./paymentProofCleanup.job"
+import { cleanupScheduler } from "./cleanup.job";
 
 export const setUpJobs = () => {
     Console.log(`Init jobs`);
@@ -30,5 +31,7 @@ export const setUpJobs = () => {
         Console.error(`Payment proof cleanup job ${job.id} failed`, error);
     });
 
-    scheduleDailyPaymentProofCleanup();
+    cleanupScheduler.register()
+
+    // scheduleDailyPaymentProofCleanup();
 }

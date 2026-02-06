@@ -38,6 +38,10 @@ export type OutletDetails = {
     latitude: number;
     longitude: number;
     distance?: string;
+    createdAt: string;
+    updatedAt: string;
+    businessId: string;
+    operatingHours: Array<any>
     business: {
         id: string;
         name: string;

@@ -8,6 +8,7 @@ import { orderCreationLimiter, orderManagementLimiter } from "../middleware/orde
 import { validateGuestCustomer, validateBusinessHours, validateOrderFrequency } from "../middleware/guest-validation.middleware";
 import { createPaymentController } from "../controller/payment.controller";
 import { CreatePaymentSchema } from "../schemas/payment-v2.schema";
+import { orderExpiryJob } from "../jobs/payment-expiry.job";
 
 const orderRouter = Router();
 
@@ -22,6 +23,13 @@ orderRouter.post("/",
 );
 
 orderRouter.get("/details/:phone", getOrderByCustomerPhoneController)
+orderRouter.get("/test/:orderId", async (req, res) => {
+    const orderId = req.params.orderId
+
+    await orderExpiryJob.add(orderId)
+
+    return res.json({ message: 'success' })
+})
 orderRouter.post("/:id/customer/cancel", validateSchema(customerCancelOrderSchema), cancelOrderByCustomerController);
 orderRouter.post("/:id/customer/confirm", validateSchema(customerConfirmOrderSchema), confirmOrderByCustomerController);
 orderRouter.post("/customer/:id/cancel", validateSchema(customerCancelOrderSchema), cancelOrderByCustomerController);
