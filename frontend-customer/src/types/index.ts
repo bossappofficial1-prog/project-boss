@@ -1,3 +1,4 @@
+import { Product } from "./product";
 export * from "./outlet";
 export * from "./home";
 
@@ -255,7 +256,7 @@ export interface Item {
   id: string;
   priceAtTimeOfOrder: number;
   quantity: number;
-  product: ProductType; // Use full type since price/unit are now in subtables
+  product: Product; // Use full type since price/unit are now in subtables
 }
 
 export interface OrderQueueMeta {
