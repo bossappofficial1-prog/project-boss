@@ -534,6 +534,7 @@
         "history_and_status": "History and status of your orders",
         "order_singular": "order",
         "order_plural": "orders",
+        "and_more_items": "... and {count} other items",
         "found": "found",
         "error_title": "No Orders Yet",
         "error_message": "You don't have any orders yet. Start exploring outlets and order now!",

@@ -271,6 +271,22 @@ export default function EnhancedOrderCard({
               <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 ml-2" />
             </div>
 
+            {/* Items Summary */}
+            <div className="pl-[52px] text-xs text-muted-foreground">
+              {order.items.length > 0 && (
+                <p className="line-clamp-1">
+                  <span className="font-medium text-foreground">{order.items[0].quantity}x</span>{" "}
+                  {order.items[0].product.name}
+                  {order.items.length > 1 && (
+                    <span className="italic">
+                      {" "}
+                      {t("and_more_items", { count: order.items.length - 1 })}
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+
             {/* Countdown Timer for AWAITING_PAYMENT */}
             {order.orderStatus === OrderStatus.AWAITING_PAYMENT &&
               order.transaction?.expiryTime && (
