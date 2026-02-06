@@ -213,18 +213,29 @@ const serializeQueueOrder = (entry: QueueSnapshotEntry) => {
 // List goods orders by outlet with optional status filter and pagination
 export async function getGoodsOrdersByOutletService(
   outletId: string,
-  ownerId: string,
+  userIdentifier: string,
   options?: { status?: OrderStatus; page?: number; limit?: number },
+  validateAsOwner: boolean = true,
 ) {
   const page = Math.max(1, options?.page || 1);
   const limit = Math.min(100, Math.max(1, options?.limit || 20));
   const skip = (page - 1) * limit;
 
-  // Ownership validation
-  const outlet = await getOutletByIdService(outletId);
-  const business = await getBusinessByIdService(outlet.businessId);
-  if (business.ownerId !== ownerId) {
-    throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+  // Ownership/Access validation
+  if (validateAsOwner) {
+    const outlet = await getOutletByIdService(outletId);
+    const business = await getBusinessByIdService(outlet.businessId);
+    if (business.ownerId !== userIdentifier) {
+      throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+    }
+  } else {
+    // Validasi untuk kasir
+    if (userIdentifier !== outletId) {
+      throw new AppError(
+        "Anda hanya bisa mengakses pesanan outlet Anda sendiri.",
+        HttpStatus.FORBIDDEN,
+      );
+    }
   }
 
   const baseWhere = {

@@ -163,13 +163,23 @@ export const listGoodsOrdersByOutletController = asyncHandler(
   async (req: Request, res: Response) => {
     const outletId = req.params.outletId as string;
     const { status, page, limit } = req.query as any;
-    const ownerId = req.storedUser!.id;
+    const user = req.storedUser!;
 
-    const result = await getGoodsOrdersByOutletService(outletId, ownerId, {
-      status,
-      page: page ? parseInt(page) : undefined,
-      limit: limit ? parseInt(limit) : undefined,
-    } as any);
+    // Jika kasir, gunakan outletId dari session kasir untuk validasi
+    const isCashier = (user as any).userType === "CASHIER";
+    const userIdentifier = isCashier ? (user as any).outletId : user.id;
+    const validateAsOwner = !isCashier;
+
+    const result = await getGoodsOrdersByOutletService(
+      outletId,
+      userIdentifier,
+      {
+        status,
+        page: page ? parseInt(page) : undefined,
+        limit: limit ? parseInt(limit) : undefined,
+      },
+      validateAsOwner,
+    );
     return ResponseUtil.paginated(
       res,
       result.data,

@@ -18,6 +18,7 @@ interface CashierNavbarProps {
 
 const navItems = [
   { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
+  { href: "/cashier/orders", label: "Pesanan Barang", icon: ShoppingBag },
   { href: "/cashier/queue", label: "Antrian", icon: Users },
   { href: "/cashier/pob", label: "POB", icon: Package },
   { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },

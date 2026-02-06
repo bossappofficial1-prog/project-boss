@@ -198,6 +198,9 @@ export default function CashierQueuePage() {
         confirmVariant={confirmState?.confirmVariant}
         confirmLoading={Boolean(pendingQueueId)}
         onConfirm={executeStatusUpdate}
+        showInput={confirmState?.showInput}
+        inputPlaceholder={confirmState?.inputPlaceholder}
+        inputRequired={confirmState?.inputRequired}
         align="left"
       />
     </div>
