@@ -24,7 +24,7 @@ export function ActivityTimeline({ data = [], isLoading }: ActivityTimelineProps
             <CardHeader>
                 <CardTitle className="text-lg">Aktivitas terbaru</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 overflow-y-scroll max-h-[26rem]">
                 {isLoading ? (
                     <Skeleton className="h-64 w-full" />
                 ) : data.length === 0 ? (

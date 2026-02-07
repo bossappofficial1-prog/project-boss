@@ -158,8 +158,8 @@ interface ToogleFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
 interface SwitchFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
     type: 'dual-option-switch';
     switchOptions: {
-        left: { label: string; value: any; activeClass?: string };
-        right: { label: string; value: any; activeClass?: string };
+        left: { label: string; value: any; activeClass?: string, icon?: React.ComponentType<{ className?: string }> };
+        right: { label: string; value: any; activeClass?: string, icon?: React.ComponentType<{ className?: string }> };
     };
 }
 
@@ -503,7 +503,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case "select":
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <SelectOption
                         {...formField}
                         id={formField.name}
@@ -542,7 +542,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case "presentage":
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <InputPercentage
                         {...formField}
                         id={formField.name}
@@ -557,7 +557,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case "textarea":
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <Textarea
                         id={formField.name}
                         placeholder={placeholderText}
@@ -570,7 +570,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case "password":
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <PasswordInput
                         id={formField.name}
                         placeholder={placeholderText}
@@ -595,7 +595,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case "currency":
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <InputCurrency
                         {...formField}
                         id={formField.name}
@@ -614,7 +614,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case 'number':
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <Input
                         id={formField.name}
                         type={'number'}
@@ -633,7 +633,7 @@ function FieldInputSwitch<T extends FieldValues>({
         default:
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <Input
                         id={formField.name}
                         type={field.type || "text"}

@@ -94,9 +94,9 @@ export default function SubscriptionPaymentContent({ invoiceId }: { invoiceId: s
             <div className="max-w-6xl mx-auto space-y-6">
                 {/* Header */}
                 <div>
-                    <Button variant="ghost" size="sm" onClick={() => router.back()}>
+                    <Button variant="ghost" size="sm" onClick={() => router.push('/owner/subscription')}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Kembali
+                        Ke Dashboard
                     </Button>
                     <h1 className="text-3xl font-bold mt-2">
                         Konfirmasi Pembayaran

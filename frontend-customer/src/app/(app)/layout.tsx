@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { AppBarProviderV2 } from "@/context/AppBarContextV2";
 import AppBar from "@/components/AppBarV2";
 import { LoadingState } from "@/components/Base";
+import { OfflineOverlay } from "@/components/OfflineOverlay";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const queryClient = new QueryClient();
@@ -24,9 +25,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         }}
                         className="flex-1 md:max-w-4xl w-full m-2 overflow-hidden p-3 overflow-x-auto mx-auto"
                     >
-                        <Suspense fallback={<LoadingState />}>
-                            {children}
-                        </Suspense>
+                        <OfflineOverlay>
+                            <Suspense fallback={<LoadingState />}>
+                                {children}
+                            </Suspense>
+                        </OfflineOverlay>
                     </main>
                     <AppToaster />
                     <FloatingCartButton />

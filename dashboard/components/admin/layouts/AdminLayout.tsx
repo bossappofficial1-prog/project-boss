@@ -8,6 +8,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <SidebarProvider defaultOpen>
             <Toaster
                 position="top-right"
+                richColors
                 toastOptions={{
                     duration: 5000, // No auto-close
                 }}

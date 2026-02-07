@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { useUserAnalytics, USER_ANALYTICS_SAMPLE } from '@/hooks/useUserAnalytics';
 import type { SignupTrendPoint } from '@/hooks/useUserAnalytics';
+import { RegistrationAnalytics } from '@/components/admin/analystics/RegistrationAnalystic';
 
 type PeriodOption = {
     label: string;
@@ -214,83 +215,14 @@ export default function UserGrowthAnalyticsPage() {
                         ))}
                     </section>
 
-                    <section className="grid gap-6 lg:grid-cols-3">
-                        <Card className="lg:col-span-2">
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle>Timeline Registrasi</CardTitle>
-                                    <p className="text-sm text-muted-foreground">Distribusi harian pendaftar & verifikasi</p>
-                                </div>
-                                {isRefetching && <Badge variant="outline">Menyegarkan…</Badge>}
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-72">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={chartData} margin={{ left: 12, right: 12, top: 10, bottom: 0 }}>
-                                            {chartGradient}
-                                            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                                            <XAxis dataKey="label" tickLine={false} axisLine={false} minTickGap={16} style={{ fontSize: 12 }} />
-                                            <YAxis tickLine={false} axisLine={false} width={40} style={{ fontSize: 12 }} allowDecimals={false} />
-                                            <Tooltip content={<SignupTooltip />} />
-                                            <Area type="monotone" dataKey="total" stroke="#f97316" fill="url(#signupGradient)" strokeWidth={2} />
-                                            <Area type="monotone" dataKey="verified" stroke="#16a34a" fill="url(#verifiedGradient)" strokeWidth={2} />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Rasio Role & Status</CardTitle>
-                                <p className="text-sm text-muted-foreground">Terbatas pada sampel {SAMPLE_HINT}</p>
-                            </CardHeader>
-                            <CardContent className="space-y-5">
-                                <div>
-                                    <p className="text-xs uppercase text-muted-foreground mb-2">Role</p>
-                                    <div className="space-y-3">
-                                        {roleInsights.map((role) => (
-                                            <div key={role.label} className="space-y-1">
-                                                <div className="flex items-center justify-between text-sm font-medium">
-                                                    <span>{role.label}</span>
-                                                    <span className="text-muted-foreground">{role.percentLabel}</span>
-                                                </div>
-                                                <Progress value={role.percent} className="h-2" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-xs uppercase text-muted-foreground mb-2">Verification</p>
-                                    <div className="space-y-3">
-                                        {verificationInsights.map((item) => (
-                                            <div key={item.label} className="space-y-1">
-                                                <div className="flex items-center justify-between text-sm font-medium">
-                                                    <span>{item.label}</span>
-                                                    <span className="text-muted-foreground">{item.percentLabel}</span>
-                                                </div>
-                                                <Progress value={item.percent} className="h-2" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-xs uppercase text-muted-foreground mb-2">Provider</p>
-                                    <div className="space-y-3">
-                                        {providerInsights.map((item) => (
-                                            <div key={item.label} className="space-y-1">
-                                                <div className="flex items-center justify-between text-sm font-medium">
-                                                    <span>{item.label}</span>
-                                                    <span className="text-muted-foreground">{item.percentLabel}</span>
-                                                </div>
-                                                <Progress value={item.percent} className="h-2" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </section>
+                    <RegistrationAnalytics
+                        chartData={chartData}
+                        isRefetching={isRefetching}
+                        providerInsights={providerInsights}
+                        roleInsights={roleInsights}
+                        sampleHint={SAMPLE_HINT}
+                        verificationInsights={verificationInsights}
+                    />
 
                     <section className="grid gap-6 lg:grid-cols-2">
                         <Card>
