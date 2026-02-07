@@ -534,6 +534,7 @@
         "history_and_status": "Riwayat dan status pesanan Anda",
         "order_singular": "pesanan",
         "order_plural": "pesanan",
+        "and_more_items": "... dan {count} item lainnya",
         "found": "ditemukan",
         "error_title": "Belum Ada Pesanan",
         "error_message": "Anda belum memiliki pesanan saat ini. Mulai jelajahi outlet dan pesan sekarang!",

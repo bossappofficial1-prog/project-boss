@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useGoodsOrders } from "@/hooks/useOrders";
-import { useOutletContext } from "@/components/providers/OutletProvider";
 import { OrdersHeader } from "@/components/owner/orders/Header";
 import { OrdersControls } from "@/components/owner/orders/Controls";
 import { OrdersEmptyState } from "@/components/owner/orders/EmptyState";
@@ -15,14 +14,18 @@ import { useEmitSocket } from "@/hooks/useEmitSocket";
 import { SOCKET_EVENT } from "@/types/socket";
 import { createOrderColumns } from "@/components/owner/orders/columns";
 import { ProofPreviewDialog } from "@/components/owner/orders/ProofPreviewDialog";
-import { OrderMobileCard } from "@/components/owner/orders/OrderMobileCard";
 import { useOrderActions } from "@/hooks/useOrderActions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useCashierContext } from "../layout";
+import { useRouter } from "next/navigation";
 
 type StatusFilterValue = "all" | "pending" | "processing" | "ready" | "completed";
 
-export default function OrdersPage() {
-  const { selectedOutletId: outletId } = useOutletContext();
+export default function CashierOrdersPage() {
+  const router = useRouter();
+  const { outletData } = useCashierContext();
+  const outletId = outletData?.id;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("all");
   const { emitEvent } = useEmitSocket();
@@ -112,20 +115,8 @@ export default function OrdersPage() {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <svg
-            className="mx-auto mb-4 h-16 w-16 text-muted-foreground"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-            />
-          </svg>
-          <h3 className="mb-2 text-lg font-semibold text-foreground">Pilih Outlet</h3>
-          <p className="text-muted-foreground">Pilih outlet untuk melihat data pesanan barang</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Memuat data outlet...</p>
         </div>
       </div>
     );
@@ -163,11 +154,11 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1500px] mx-auto px-4 py-6">
       <OrdersHeader
         onRefresh={refetch}
         onCreateQuick={() => {
-          window.location.href = "/owner/dashboard/pos/orders";
+          router.push("/cashier/pos");
         }}
       />
 
@@ -188,33 +179,23 @@ export default function OrdersPage() {
             setStatusFilter("all");
           }}
           onCreateOrder={() => {
-            window.location.href = "/owner/dashboard/pos/orders";
+            router.push("/cashier/pos");
           }}
         />
       ) : (
-        <DataTable<GoodsOrder, unknown>
-          columns={columns}
-          data={filteredOrders}
-          rowActions={(order) => buildRowActions(order)}
-          actionViewType="dropdown"
-          onRefresh={refetch}
-          isLoading={loading}
-          emptyMessage="Tidak ada pesanan"
-          showTableInfo={true}
-          pagination={true}
-          // mobileCardRender={(order) => (
-          //   <OrderMobileCard
-          //     order={order}
-          //     pendingOrderId={pendingOrderId}
-          //     onStatusChange={requestStatusUpdate}
-          //     onManualConfirm={requestManualConfirmation}
-          //     onMarkReady={requestReady}
-          //     onMarkCompleted={requestComplete}
-          //     onCancel={requestCancel}
-          //     onPreviewProof={triggerProofPreview}
-          //   />
-          // )}
-        />
+        <div className="border rounded-md">
+          <DataTable<GoodsOrder, unknown>
+            columns={columns}
+            data={filteredOrders}
+            rowActions={(order) => buildRowActions(order)}
+            actionViewType="dropdown"
+            onRefresh={refetch}
+            isLoading={loading}
+            emptyMessage="Tidak ada pesanan"
+            showTableInfo={true}
+            pagination={true}
+          />
+        </div>
       )}
 
       <ConfirmDialog

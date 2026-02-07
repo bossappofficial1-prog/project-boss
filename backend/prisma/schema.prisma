@@ -485,6 +485,7 @@ model Order {
 
   // Status alur pesanan secara keseluruhan
   orderStatus OrderStatus @default(AWAITING_PAYMENT)
+  cancellationReason String? // jika orderStatus = CANCELLED 
 
   midtransTransactionToken String? @unique
   midtransRedirectUrl      String?

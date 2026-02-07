@@ -239,21 +239,21 @@ export class PaymentRepository {
         }
       }
 
-      if (slotRecord) {
-        const start = new Date(slotRecord.startTime);
-        const end = new Date(slotRecord.endTime);
-
-        const staffAvailability = await getStaffAvailabilityForWindow({
-          outletId,
-          startTime: start,
-          endTime: end,
-          excludeSlotId: selectedSlotId ?? undefined,
-        });
-
-        if (!staffAvailability.some((staff) => staff.isAvailable)) {
-          throw new AppError("Tidak ada staff yang tersedia untuk slot ini.", HttpStatus.CONFLICT);
-        }
-      }
+      // if (slotRecord) {
+      //   const start = new Date(slotRecord.startTime);
+      //   const end = new Date(slotRecord.endTime);
+      //
+      //   const staffAvailability = await getStaffAvailabilityForWindow({
+      //     outletId,
+      //     startTime: start,
+      //     endTime: end,
+      //     excludeSlotId: selectedSlotId ?? undefined,
+      //   });
+      //
+      //   if (!staffAvailability.some((staff) => staff.isAvailable)) {
+      //     throw new AppError("Tidak ada staff yang tersedia untuk slot ini.", HttpStatus.CONFLICT);
+      //   }
+      // }
 
       await tr.order.create({
         data: {

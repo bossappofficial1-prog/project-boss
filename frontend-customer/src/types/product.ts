@@ -36,6 +36,7 @@ export interface Service {
   commissionType: "PERCENTAGE" | "FIXED";
   commissionValue: number;
   maxParallel: number;
+  bookingInWorkHours?: boolean;
   createdAt: string;
   updatedAt: string;
 }

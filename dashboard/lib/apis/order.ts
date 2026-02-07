@@ -139,6 +139,7 @@ export interface Order {
   items: OrderItem[];
   createdAt: string;
   updatedAt: string;
+  cancellationReason?: string | null;
   bookingSlot?: {
     id: string;
     date?: string | null;
@@ -275,18 +276,22 @@ export const orderApi = {
   },
 
   // Update order status
-  async updateStatus(orderId: string, status: OrderStatus): Promise<Order> {
+  async updateStatus(orderId: string, status: OrderStatus, reason?: string): Promise<Order> {
     return apiCall<Order>(`/orders/${orderId}/status`, {
       method: "PATCH",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, reason }),
     });
   },
 
   // Update service queue order status with validation
-  async updateServiceStatus(orderId: string, status: OrderStatus): Promise<QueueEntry> {
+  async updateServiceStatus(
+    orderId: string,
+    status: OrderStatus,
+    reason?: string,
+  ): Promise<QueueEntry> {
     return apiCall<QueueEntry>(`/orders/${orderId}/service-status`, {
       method: "PATCH",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, reason }),
     });
   },
 

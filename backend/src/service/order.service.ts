@@ -88,7 +88,9 @@ const queueOrderInclude = {
 const hasServiceProduct = (order: Pick<OrderWithRelations, "items"> | CustomerOrderRecord) =>
   (order.items ?? []).some((item: any) => item.product?.type === "SERVICE");
 
-const computeQueueSchedule = (order: Pick<OrderWithRelations, 'items' | 'bookingDate' | 'createdAt' | 'product'>) => {
+const computeQueueSchedule = (
+  order: Pick<OrderWithRelations, "items" | "bookingDate" | "createdAt" | "product">,
+) => {
   // Look for booking slot in items
   const bookingSlot = order.items?.find((item: any) => item.bookingSlot)?.bookingSlot;
 
@@ -211,18 +213,29 @@ const serializeQueueOrder = (entry: QueueSnapshotEntry) => {
 // List goods orders by outlet with optional status filter and pagination
 export async function getGoodsOrdersByOutletService(
   outletId: string,
-  ownerId: string,
+  userIdentifier: string,
   options?: { status?: OrderStatus; page?: number; limit?: number },
+  validateAsOwner: boolean = true,
 ) {
   const page = Math.max(1, options?.page || 1);
   const limit = Math.min(100, Math.max(1, options?.limit || 20));
   const skip = (page - 1) * limit;
 
-  // Ownership validation
-  const outlet = await getOutletByIdService(outletId);
-  const business = await getBusinessByIdService(outlet.businessId);
-  if (business.ownerId !== ownerId) {
-    throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+  // Ownership/Access validation
+  if (validateAsOwner) {
+    const outlet = await getOutletByIdService(outletId);
+    const business = await getBusinessByIdService(outlet.businessId);
+    if (business.ownerId !== userIdentifier) {
+      throw new AppError("Anda tidak berhak mengakses outlet ini.", HttpStatus.FORBIDDEN);
+    }
+  } else {
+    // Validasi untuk kasir
+    if (userIdentifier !== outletId) {
+      throw new AppError(
+        "Anda hanya bisa mengakses pesanan outlet Anda sendiri.",
+        HttpStatus.FORBIDDEN,
+      );
+    }
   }
 
   const baseWhere = {
@@ -451,7 +464,11 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
   return { order: updatedOrder, midtransTransaction };
 }
 
-export async function updateOrderStatusService(orderId: string, status: OrderStatus) {
+export async function updateOrderStatusService(
+  orderId: string,
+  status: OrderStatus,
+  reason?: string,
+) {
   // Get order with all relations needed
   const orderData = await db.order.findUnique({
     where: { id: orderId },
@@ -504,7 +521,7 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
       for (const item of order.items) {
         if (item.product.type === "GOODS") {
           await tx.productGoods.update({
-            where: { id: item.productId },
+            where: { productId: item.productId },
             data: {
               currentStock: {
                 increment: item.quantity,
@@ -540,22 +557,26 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
     });
   }
 
+  const updatePayload = {
+    orderStatus: status,
+    ...(reason && status === OrderStatus.CANCELLED ? { cancellationReason: reason } : {}),
+    ...(status === OrderStatus.PROCESSING ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
+    ...(status === OrderStatus.CANCELLED ? { paymentStatus: PaymentStatus.CANCELLED } : {}),
+  };
+  Console.log(`[SERVICE] Updating Order ${orderId} with payload:`, JSON.stringify(updatePayload));
+
   // Update pesanan dengan include data yang diperlukan
   const updatedOrder = await db.order.update({
     where: { id: orderId },
-    data: {
-      orderStatus: status,
-      ...(status === OrderStatus.PROCESSING ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
-      ...(status === OrderStatus.CANCELLED ? { paymentStatus: PaymentStatus.CANCELLED } : {}),
-    },
+    data: updatePayload,
     include: {
       items: {
         include: {
           product: {
             include: {
               goods: true,
-              service: true
-            }
+              service: true,
+            },
           },
         },
       },
@@ -590,6 +611,7 @@ export async function updateOrderStatusService(orderId: string, status: OrderSta
         paymentMethod: updatedOrder.transaction?.paymentMethod || "unknown",
         message: statusMessages[status] ?? "Status pesanan diperbarui",
         type: "order_status_update",
+        cancellationReason: reason,
       });
     }
   } catch (customerSocketError) {
@@ -766,13 +788,13 @@ const mapPublicOrderResponse = (
 
   const mappedTransaction = transaction
     ? {
-      ...transaction,
-      expiryTime: transaction.expiresAt
-        ? transaction.expiresAt instanceof Date
-          ? transaction.expiresAt.toISOString()
-          : transaction.expiresAt
-        : ((transaction as any).expiryTime ?? null),
-    }
+        ...transaction,
+        expiryTime: transaction.expiresAt
+          ? transaction.expiresAt instanceof Date
+            ? transaction.expiresAt.toISOString()
+            : transaction.expiresAt
+          : ((transaction as any).expiryTime ?? null),
+      }
     : null;
 
   const mappedItems = (items ?? []).map((item: any) => ({
@@ -784,18 +806,18 @@ const mapPublicOrderResponse = (
 
   const mappedBookingSlot = bookingSlot
     ? {
-      ...bookingSlot,
-      startTime:
-        bookingSlot.startTime instanceof Date
-          ? bookingSlot.startTime.toISOString()
-          : bookingSlot.startTime,
-      endTime:
-        bookingSlot.endTime instanceof Date
-          ? bookingSlot.endTime.toISOString()
-          : bookingSlot.endTime,
-      date: bookingSlot.date instanceof Date ? bookingSlot.date.toISOString() : bookingSlot.date,
-      staff: null, // staff is not on booking slot schema
-    }
+        ...bookingSlot,
+        startTime:
+          bookingSlot.startTime instanceof Date
+            ? bookingSlot.startTime.toISOString()
+            : bookingSlot.startTime,
+        endTime:
+          bookingSlot.endTime instanceof Date
+            ? bookingSlot.endTime.toISOString()
+            : bookingSlot.endTime,
+        date: bookingSlot.date instanceof Date ? bookingSlot.date.toISOString() : bookingSlot.date,
+        staff: null, // staff is not on booking slot schema
+      }
     : null;
 
   const normalizedOrder = {
@@ -823,6 +845,7 @@ const mapPublicOrderResponse = (
     customerDetails: guestCustomer ? { ...guestCustomer } : null,
     assignedStaff: assignedStaff ? { ...assignedStaff } : null,
     queueMeta: queueMeta ?? null,
+    cancellationReason: otherOrder.cancellationReason,
   };
 };
 
@@ -930,6 +953,7 @@ export async function updateServiceQueueStatusService(
   userIdentifier: string,
   nextStatus: OrderStatus,
   validateAsOwner: boolean = true,
+  reason?: string,
 ) {
   // Ambil order terlebih dahulu
   const order = await OrderRepository.findById(orderId);
@@ -973,7 +997,7 @@ export async function updateServiceQueueStatusService(
     throw new AppError("Transisi status tidak valid untuk pesanan ini", HttpStatus.BAD_REQUEST);
   }
 
-  const updatedOrder = await updateOrderStatusService(orderId, nextStatus);
+  const updatedOrder = await updateOrderStatusService(orderId, nextStatus, reason);
   return updatedOrder;
 }
 

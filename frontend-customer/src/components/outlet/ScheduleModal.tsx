@@ -8,13 +8,11 @@ import { formatIsoToTime } from "@/lib/utils";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Button } from "../ui/button";
-import { AlertCircle, CalendarIcon, Timer } from "lucide-react";
+import { CalendarIcon, Timer } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "../ui/calendar";
 import { EmptyState, LoadingState } from "../Base";
 import { useCart } from "@/hooks/useCart";
-import { useAvailableStaff } from "@/hooks/useAvailableStaff";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { getServiceDuration } from "@/lib/utils/product";
 
 export function ScheduleModal({
@@ -23,17 +21,18 @@ export function ScheduleModal({
   onSelectSchedule,
   product,
   outletId,
+  isOutletOpen = true,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSelectSchedule: (selection: SelectedSchedule) => void;
   product: Partial<Product>;
   outletId?: string;
+  isOutletOpen?: boolean;
 }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [scheduleSlots, setScheduleSlots] = useState<BookingSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const { getSelectedSlot, getServiceInCart, checkTimeConflict } = useCart();
   const selectedSlotIdInCart = selectedSlot?.id ? getSelectedSlot(selectedSlot.id) : "";
 
@@ -42,6 +41,9 @@ export function ScheduleModal({
     product.type === "SERVICE" && outletId ? getServiceInCart(product.id!, outletId) : null;
 
   const isReplaceMode = !!existingServiceInCart;
+
+  // Logic to determine if "today" is disabled for booking
+  const isTodayDisabled = product.service?.bookingInWorkHours === false && isOutletOpen;
 
   // Check for time conflicts when selecting a new slot
   const timeConflict =
@@ -58,11 +60,6 @@ export function ScheduleModal({
     selectedDate,
   );
 
-  const { data: staffResponse, isLoading: isStaffLoading } = useAvailableStaff(
-    product.id,
-    selectedSlot?.id ?? null,
-  );
-
   useEffect(() => {
     if (!selectedDate) {
       setScheduleSlots([]);
@@ -76,8 +73,6 @@ export function ScheduleModal({
         endTime: formatIsoToTime(slot.endTime),
         date: slot.date,
         status: slot.status,
-        staffId: slot.staffId ?? slot.staff?.id ?? null,
-        staffName: slot.staff?.name ?? null,
       }));
 
       setScheduleSlots(mapped);
@@ -96,59 +91,6 @@ export function ScheduleModal({
     }
   }, [selectedDate, fetchedSlots, isReplaceMode, existingServiceInCart]);
 
-  useEffect(() => {
-    if (!selectedSlot?.id) {
-      setSelectedStaffId(null);
-      return;
-    }
-
-    const staffList = staffResponse?.staff ?? [];
-
-    if (!staffList.length) {
-      setSelectedStaffId(null);
-      return;
-    }
-
-    const availableStaff = staffList.filter((member) => member.isAvailable);
-
-    if (!availableStaff.length) {
-      setSelectedStaffId(null);
-      return;
-    }
-
-    if (selectedStaffId && availableStaff.some((member) => member.id === selectedStaffId)) {
-      return;
-    }
-
-    let nextStaffId: string | null = null;
-
-    if (
-      isReplaceMode &&
-      existingServiceInCart?.selectedSlot === selectedSlot.id &&
-      existingServiceInCart.staffId
-    ) {
-      const existingStaff = availableStaff.find(
-        (member) => member.id === existingServiceInCart.staffId,
-      );
-      if (existingStaff) {
-        nextStaffId = existingStaff.id;
-      }
-    }
-
-    if (!nextStaffId) {
-      nextStaffId = availableStaff[0]?.id ?? null;
-    }
-
-    setSelectedStaffId(nextStaffId);
-  }, [
-    selectedSlot?.id,
-    staffResponse?.staff,
-    isReplaceMode,
-    existingServiceInCart?.selectedSlot,
-    existingServiceInCart?.staffId,
-    selectedStaffId,
-  ]);
-
   const handleSlotSelect = (slot: BookingSlot) => {
     if (slot.status === "BOOKED") return;
 
@@ -161,14 +103,10 @@ export function ScheduleModal({
     }
 
     setSelectedSlot(slot);
-    setSelectedStaffId(null);
   };
 
   const handleConfirm = () => {
     if (!selectedSlot || !selectedDate) return;
-
-    const staffList = staffResponse?.staff ?? [];
-    const selectedStaff = staffList.find((member) => member.id === selectedStaffId);
 
     const slotData = {
       id: selectedSlot.id,
@@ -180,7 +118,6 @@ export function ScheduleModal({
 
     onSelectSchedule({
       slot: slotData,
-      staff: selectedStaff ? { id: selectedStaff.id, name: selectedStaff.name } : undefined,
     });
     onClose();
   };
@@ -188,7 +125,6 @@ export function ScheduleModal({
   const handleClose = () => {
     setSelectedDate(null);
     setSelectedSlot(null);
-    setSelectedStaffId(null);
     onClose();
   };
 
@@ -240,7 +176,19 @@ export function ScheduleModal({
                   mode="single"
                   selected={selectedDate || undefined}
                   onSelect={setSelectedDate}
-                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    // Disable past dates
+                    if (date < today) return true;
+
+                    // Disable today if restriction applies
+                    // We compare strictly with today's date (ignoring time)
+                    if (isTodayDisabled && date.getTime() === today.getTime()) return true;
+
+                    return false;
+                  }}
                   initialFocus
                   required={true}
                 />
@@ -304,42 +252,6 @@ export function ScheduleModal({
               )}
             </div>
           )}
-
-          {selectedSlot && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Pilih Staff</label>
-              {isStaffLoading ? (
-                <LoadingState />
-              ) : (staffResponse?.staff?.length ?? 0) > 0 ? (
-                <Select
-                  value={selectedStaffId ?? undefined}
-                  onValueChange={(value) => setSelectedStaffId(value)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih staff yang tersedia" />
-                  </SelectTrigger>
-                  <SelectContent className="w-full">
-                    {staffResponse?.staff?.map((member) => (
-                      <SelectItem key={member.id} value={member.id} disabled={!member.isAvailable}>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm">{member.name}</span>
-                          {!member.isAvailable && (
-                            <span className="text-xs text-muted-foreground">
-                              Bentrok dengan jadwal lain
-                            </span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="mt-1 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-600">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                  Tidak ada staff yang tersedia untuk jadwal ini.
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         <DialogFooter className="flex gap-3">
@@ -348,12 +260,7 @@ export function ScheduleModal({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={
-              !selectedSlot ||
-              (!!timeConflict && !isReplaceMode) ||
-              ((staffResponse?.staff?.length ?? 0) > 0 && !selectedStaffId) ||
-              (staffResponse?.staff?.length ?? 0) === 0
-            }
+            disabled={!selectedSlot || (!!timeConflict && !isReplaceMode)}
             className="flex-1">
             {!selectedSlot
               ? "Pilih Waktu"
