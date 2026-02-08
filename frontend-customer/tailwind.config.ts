@@ -18,6 +18,7 @@ const config = {
         },
         extend: {
             fontFamily: {
+                sans: ["var(--font-poppins)", ...defaultTheme.fontFamily.sans],
                 poppins: ["var(--font-poppins)", ...defaultTheme.fontFamily.sans],
             },
             colors: {

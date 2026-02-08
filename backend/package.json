@@ -38,7 +38,7 @@
   "dependencies": {
     "@elastic/elasticsearch": "^8.15.0",
     "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.2.0",
+    "@prisma/client": "^6.16.2",
     "@types/cors": "^2.8.19",
     "@types/exceljs": "^0.5.3",
     "@types/express-session": "^1.18.2",
@@ -71,7 +71,7 @@
     "passport-google-oauth20": "^2.0.0",
     "pdfkit": "^0.17.1",
     "pg": "^8.11.1",
-    "prisma": "^7.2.0",
+    "prisma": "^6.16.2",
     "puppeteer": "^24.36.0",
     "redis": "^5.9.0",
     "sharp": "^0.34.5",

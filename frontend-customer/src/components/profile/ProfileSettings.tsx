@@ -10,7 +10,7 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { useTranslations } from '@/hooks/useI18n';
-import { User, Phone, Sun, Moon, Monitor, Globe, Save, LogIn, Building, Heart, Receipt, Bookmark, ChevronRight, Settings, Edit2, CheckCircle2 } from "lucide-react";
+import { User, Phone, Sun, Moon, Monitor, Globe, Save, Heart, Receipt, Bookmark, Settings, Edit2, CheckCircle2 } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useSavedProducts } from "@/hooks/useSavedProducts";
 import { STORAGE_PROFILE_KEY } from "@/constants";
@@ -111,14 +111,6 @@ export default function ProfileSettings() {
         } catch (e) {
             console.error(e);
         }
-    };
-
-    const becomeBusiness = () => {
-        window.location.href = `${process.env.NEXT_PUBLIC_DASHBOARD_REGISTER_URL}`
-    };
-
-    const goLogin = () => {
-        window.location.href = `${process.env.NEXT_PUBLIC_DASHBOARD_LOGIN_URL}`
     };
 
     const goToFavorites = () => {
@@ -383,43 +375,6 @@ export default function ProfileSettings() {
                         <Save className="w-5 h-5 mr-2" />
                         {t("saveChanges")}
                     </Button>
-
-                    {/* Secondary Actions */}
-                    <div className="bg-card rounded-md border p-3 space-y-2">
-                        <button
-                            type="button"
-                            onClick={goLogin}
-                            className="w-full flex items-center justify-between p-3 rounded-md hover:bg-accent transition-colors"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                                    <LogIn className="w-5 h-5 text-primary" />
-                                </div>
-                                <div className="text-left">
-                                    <p className="text-sm font-medium text-foreground">{t("login")}</p>
-                                    <p className="text-xs text-muted-foreground">Access partner dashboard</p>
-                                </div>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={becomeBusiness}
-                            className="w-full flex items-center justify-between p-3 rounded-md hover:bg-accent transition-colors"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-orange-500/10 rounded-full flex items-center justify-center">
-                                    <Building className="w-5 h-5 text-orange-500" />
-                                </div>
-                                <div className="text-left">
-                                    <p className="text-sm font-medium text-foreground">{t("becomeBusiness")}</p>
-                                    <p className="text-xs text-muted-foreground">Register as partner</p>
-                                </div>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                        </button>
-                    </div>
 
                     {/* Reset Button */}
                     <Button
