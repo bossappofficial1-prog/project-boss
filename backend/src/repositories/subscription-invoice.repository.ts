@@ -96,20 +96,20 @@ export class SubscriptionInvoiceRepository {
             });
 
             await tx.businessSubscription.update({
-                where: { id: invoice.subscriptionId },
+                where: { id: invoice.subscriptionId || `default` },
                 data: {
                     status: SubscriptionStatus.ACTIVE,
                 },
             });
 
             await tx.business.update({
-                where: { id: invoice.businessId },
+                where: { id: invoice.businessId || `default` },
                 data: {
                     subscriptionStatus: SubscriptionStatus.ACTIVE,
-                    subscriptionStartDate: invoice.subscription.startDate,
-                    subscriptionEndDate: invoice.subscription.endDate,
+                    subscriptionStartDate: invoice.subscription?.startDate,
+                    subscriptionEndDate: invoice.subscription?.endDate,
                     currentSubscriptionId: invoice.subscriptionId,
-                    subscriptionPlan: invoice.subscription.plan.code,
+                    subscriptionPlan: invoice.subscription?.plan.code || `plan`,
                 },
             });
 
@@ -146,14 +146,14 @@ export class SubscriptionInvoiceRepository {
             });
 
             await tx.businessSubscription.update({
-                where: { id: invoice.subscriptionId },
+                where: { id: invoice.subscriptionId || `default` },
                 data: {
                     status: SubscriptionStatus.AWAITING_PAYMENT,
                 },
             });
 
             await tx.business.update({
-                where: { id: invoice.businessId },
+                where: { id: invoice.businessId || `default` },
                 data: {
                     subscriptionStatus: SubscriptionStatus.AWAITING_PAYMENT,
                 },

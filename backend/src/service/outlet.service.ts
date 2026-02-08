@@ -6,16 +6,14 @@ import { OutletRepository } from "../repositories/outlet.repository";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 import { getBusinessByOwnerIdService } from "./business.service";
 import { getIsOutletOpen, calculateDistance, validateCoordinates, calculateBoundingBox, validatePaginationParams, validateRadius, mapOutletsWithOpenStatus, removeOperatingHoursFromOutlets } from "../utils/outlet.utils";
-import Redis from "ioredis";
 import { ImageService } from "./image.service";
 import { EventPublisher } from "../events/publisher";
 import { PlanLimitService } from "./plan-limit.service";
-
-// Redis client
-const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
+import { redis } from "../config/redis";
 
 export async function createOutletService(data: CreateOutletInput, ownerId: string) {
     const business = await getBusinessByOwnerIdService(ownerId);
+    redis.del(`user:${ownerId}`)
     if (business.id !== data.businessId) {
         throw new AppError("Anda tidak berhak menambahkan outlet ke bisnis ini.", HttpStatus.FORBIDDEN);
     }
@@ -175,19 +173,19 @@ export async function updateOutletService(id: string, data: UpdateOutletInput, o
     if (data.manualQrImageUrl && outlet.manualQrImageUrl) {
         ImageService.deleteImageByUrl(outlet.manualQrImageUrl)
     }
-
+    redis.del(`user:${ownerId}`)
     if (data.manualQrImageUrl && outlet.manualQrImageUrl) ImageService.deleteImageByUrl(outlet.manualQrImageUrl);
     return updatedOutlet;
 }
 
 export async function deleteOutletService(id: string, ownerId: string) {
-    console.log(id)
     const outlet = await getOutletByIdService(id);
     const business = await getBusinessByOwnerIdService(ownerId);
     if (business.id !== outlet.businessId) {
         throw new AppError("Anda tidak berhak menghapus outlet ini.", HttpStatus.FORBIDDEN);
     }
     const deletedOutlet = await OutletRepository.delete(id);
+    redis.del(`user:${ownerId}`)
     if (outlet.image) ImageService.deleteImageByUrl(outlet.image);
     await PlanLimitService.invalidateUsageCache(business.id);
     return deletedOutlet;

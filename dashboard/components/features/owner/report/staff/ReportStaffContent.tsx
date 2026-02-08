@@ -12,10 +12,12 @@ import {
   Wallet,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useReportStaff, StaffReportItem } from "@/hooks/useReport";
+import { useReportStaff } from "@/hooks/useReport";
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { ReportStaffTable } from "./ReportStaffTable";
 import { SummaryCard } from "../SummaryCard";
+import { DateFilterControl } from "./DateFilterControl";
+import { SelectOption } from "@/components/shared/SelectOption";
 
 type FilterType = "daily" | "weekly" | "monthly";
 
@@ -70,25 +72,24 @@ export default function ReportStaffContent() {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Users className="text-emerald-500 w-7 h-7" />
+            <Users className="text-primary w-7 h-7" />
             Laporan Kinerja Staff
           </h1>
-          <div className="flex items-center gap-2 mt-2">
-            <select
-              value={outletFilter}
-              onChange={(e) => setOutletFilter(e.target.value)}
-              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="all">Semua Outlet</option>
-              {outlets.map((outlet) => (
-                <option key={outlet.id} value={outlet.id}>
-                  {outlet.name}
-                </option>
-              ))}
-            </select>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">
-              Pantau kinerja kasir dan komisi staff layanan.
-            </p>
-          </div>
+          <p className="text-muted-foreground text-sm">
+            Pantau kinerja kasir dan komisi staff layanan.
+          </p>
+          <SelectOption
+            value={outletFilter}
+            onValueChange={setOutletFilter}
+            options={[
+              { value: "all", label: "Semua Outlet" },
+              ...outlets.map((outlet) => ({
+                value: outlet.id,
+                label: outlet.name,
+              })),
+            ]}
+            placeholder={"Pilih outlet"}
+          />
         </div>
 
         <div className="flex items-center gap-3">
@@ -100,71 +101,46 @@ export default function ReportStaffContent() {
           </button>
         </div>
       </div>
-
-      {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <SummaryCard
-          title="Total Transaksi"
-          value={totals.transactions}
-          icon={<Receipt className="w-4 h-4 text-slate-500" />}
-        />
-        <SummaryCard
-          title="Total Penjualan (Kasir)"
-          value={totals.revenue}
-          icon={<Wallet className="w-4 h-4 text-emerald-500" />}
-        />
-        <SummaryCard
-          title="Total Komisi (Layanan)"
-          value={totals.commission}
-          icon={<Users className="w-4 h-4 text-indigo-500" />}
-        />
-      </div>
-
-      {/* Table Control */}
-      <div className="bg-white dark:bg-[#1e293b] p-2 rounded-lg border border-slate-200 dark:border-slate-800 mb-6 flex flex-wrap items-center justify-between gap-4 shadow-md dark:shadow-xl">
-        <div className="flex bg-slate-100 dark:bg-[#0f172a] p-1 rounded-md border border-slate-200 dark:border-slate-700">
-          <FilterButton active={filterType === "daily"} onClick={() => setFilterType("daily")}>
-            Harian
-          </FilterButton>
-          <FilterButton active={filterType === "weekly"} onClick={() => setFilterType("weekly")}>
-            Mingguan
-          </FilterButton>
-          <FilterButton active={filterType === "monthly"} onClick={() => setFilterType("monthly")}>
-            Bulanan
-          </FilterButton>
+      <div className="space-y-3">
+        {/* Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <SummaryCard
+            title="Total Transaksi"
+            value={totals.transactions}
+            icon={<Receipt className="w-4 h-4 text-slate-500" />}
+          />
+          <SummaryCard
+            title="Total Penjualan (Kasir)"
+            value={totals.revenue}
+            icon={<Wallet className="w-4 h-4 text-emerald-500" />}
+          />
+          <SummaryCard
+            title="Total Komisi (Layanan)"
+            value={totals.commission}
+            icon={<Users className="w-4 h-4 text-indigo-500" />}
+          />
         </div>
 
-        <div className="flex items-center gap-6 px-2">
-          <button
-            onClick={() => adjustDate(-1)}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <div className="flex items-center gap-3 font-bold text-slate-900 dark:text-white">
-            <CalendarIcon className="w-5 h-5 text-emerald-500" />
-            <span className="min-w-[180px] text-center text-lg">
-              {formatPeriodLabel(filterType, currentDate)}
-            </span>
-          </div>
-          <button
-            onClick={() => adjustDate(1)}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
-            <ChevronRight className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
+        <DateFilterControl
+          currentLabel={formatPeriodLabel(filterType, currentDate)}
+          filterType={filterType}
+          onNext={() => adjustDate(1)}
+          onPrev={() => adjustDate(-1)}
+          setFilterType={setFilterType}
+        />
 
-      {/* Table */}
-      <div className="bg-white dark:bg-[#1e293b] rounded-md border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden relative min-h-[300px]">
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/60 dark:bg-[#0f172a]/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-2"></div>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-widest text-center">
-              Memuat Data Staff...
-            </span>
-          </div>
-        )}
-        <ReportStaffTable data={data || []} totals={totals} />
+        {/* Table */}
+        <div>
+          {isLoading && (
+            <div className="absolute inset-0 bg-white/60 dark:bg-[#0f172a]/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-2"></div>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-widest text-center">
+                Memuat Data Staff...
+              </span>
+            </div>
+          )}
+          <ReportStaffTable data={data || []} totals={totals} />
+        </div>
       </div>
     </>
   );

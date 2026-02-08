@@ -4,6 +4,7 @@ import {
   getOutletReportController,
   getCompareOutletsReportController,
   getStaffReportController,
+  exportTransactionReportController,
 } from "../controller/report.controller";
 import { getDailyReportController } from "../controller/daily-report.controller";
 import { protect } from "../middleware/auth.middleware";
@@ -17,5 +18,6 @@ router.get("/daily/:outletId", getDailyReportController);
 router.get("/compare", getCompareOutletsReportController);
 router.get("/outlet/:outletId", getOutletReportController);
 router.get("/staff/:outletId", getStaffReportController);
+router.post("/export-transaction", exportTransactionReportController);
 
 export default router;

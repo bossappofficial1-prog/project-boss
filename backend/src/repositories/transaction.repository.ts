@@ -142,7 +142,7 @@ export async function computeTotalsByFilter(
     endDate?: string;
     query?: string;
   },
-  revenueStatuses?: string[],
+  revenueStatuses?: PaymentStatus[],
 ) {
   const { outletId, userOutletIds, status, startDate, endDate, query } = filter;
 

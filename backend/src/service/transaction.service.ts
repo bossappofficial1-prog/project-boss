@@ -6,6 +6,7 @@ import {
   computeTotalsByFilter,
   computeCountsByFilter,
 } from "../repositories/transaction.repository";
+import { PaymentStatus } from "@prisma/client";
 
 interface TransactionListParams {
   userId: string;
@@ -165,7 +166,7 @@ export async function getTransactionListService(params: TransactionListParams) {
   });
 
   // Calculate totals on DB level for performance. Default: only count INCOME with status 'SUCCESS' unless caller provided a specific status filter.
-  let revenueStatuses: string[] | undefined = undefined;
+  let revenueStatuses: PaymentStatus[] | undefined = undefined;
   if (!status || status === "ALL") {
     // default revenue definition: only SUCCESS transactions
     revenueStatuses = ["SUCCESS"];

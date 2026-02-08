@@ -666,24 +666,24 @@ export default function OrdersPage() {
   const confirmationConfig = confirmationState
     ? confirmationState.action === "cancel"
       ? {
-          title: t("messages.confirmations.cancel.title"),
-          message: t("messages.confirmations.cancel.message"),
-          confirmText: t("messages.confirmations.cancel.confirm"),
-          cancelText: t("messages.confirmations.cancel.cancel"),
-          variant: "destructive" as const,
-        }
+        title: t("messages.confirmations.cancel.title"),
+        message: t("messages.confirmations.cancel.message"),
+        confirmText: t("messages.confirmations.cancel.confirm"),
+        cancelText: t("messages.confirmations.cancel.cancel"),
+        variant: "destructive" as const,
+      }
       : {
-          title: t("messages.confirmations.confirm.title"),
-          message: t("messages.confirmations.confirm.message"),
-          confirmText: t("messages.confirmations.confirm.confirm"),
-          cancelText: t("messages.confirmations.confirm.cancel"),
-          variant: "default" as const,
-        }
+        title: t("messages.confirmations.confirm.title"),
+        message: t("messages.confirmations.confirm.message"),
+        confirmText: t("messages.confirmations.confirm.confirm"),
+        cancelText: t("messages.confirmations.confirm.cancel"),
+        variant: "default" as const,
+      }
     : null;
 
   const confirmationLoading = confirmationState
     ? actionInProgress?.orderId === confirmationState.order.id &&
-      actionInProgress?.action === confirmationState.action
+    actionInProgress?.action === confirmationState.action
     : false;
 
   return (

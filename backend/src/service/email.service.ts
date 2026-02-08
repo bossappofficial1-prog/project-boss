@@ -1,15 +1,23 @@
 import axios from 'axios';
 
+interface EmailAttachment {
+    filename: string;
+    content: string;  // base64 encoded
+    encoding: 'base64';
+    contentType: string;
+}
+
 interface EmailOptions {
     to: string;
     subject: string;
     text: string;
     html?: string;
     from?: string;
+    attachments?: EmailAttachment[];
 }
 
 export class EmailService {
-    private static EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'http://localhost:3000';
+    private static EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'http://localhost:3020';
 
     static async sendEmail(options: EmailOptions) {
         const payload = {

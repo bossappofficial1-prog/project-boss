@@ -149,8 +149,8 @@ export class AdminDashboardRepository {
         const stats = new Map<string, RiskAggregate>();
 
         aggregates.forEach((row) => {
-            const current = stats.get(row.businessId) ?? {
-                businessId: row.businessId,
+            const current = stats.get(row.businessId ?? 'default') ?? {
+                businessId: row.businessId ?? 'default',
                 pendingInvoices: 0,
                 rejectedInvoices: 0,
                 failedInvoices: 0,
@@ -170,11 +170,11 @@ export class AdminDashboardRepository {
                 current.failedInvoices += row._count._all;
             }
 
-            stats.set(row.businessId, current);
+            stats.set(row.businessId || 'default', current);
         });
 
         lastTouch.forEach((row) => {
-            const current = stats.get(row.businessId);
+            const current = stats.get(row.businessId || 'default');
             if (current) {
                 current.lastActivityAt = row._max.updatedAt ?? undefined;
             }

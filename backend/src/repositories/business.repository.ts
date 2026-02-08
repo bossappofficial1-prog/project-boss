@@ -1,6 +1,7 @@
 import { $Enums, Business } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateBusinessInput, UpdateBusinessInput } from "../schemas/business.schema";
+import { generateBusinessId } from "../utils";
 
 export class BusinessRepository {
     static async create(data: CreateBusinessInput, ownerId: string): Promise<Business> {
@@ -9,6 +10,7 @@ export class BusinessRepository {
             data: {
                 ...cleanData,
                 ownerId,
+                id: generateBusinessId()
             },
         });
     }

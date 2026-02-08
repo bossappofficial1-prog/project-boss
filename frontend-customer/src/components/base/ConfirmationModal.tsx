@@ -25,6 +25,7 @@ interface ConfirmationModalProps {
     cancelText?: string;
     variant?: ConfirmationVariant;
     isLoading?: boolean;
+    centerText?: boolean;
 }
 
 const variantConfig = {
@@ -60,6 +61,7 @@ export function ConfirmationModal({
     cancelText = "Cancel",
     variant = "default",
     isLoading = false,
+    centerText = false
 }: ConfirmationModalProps) {
     const config = variantConfig[variant];
     const IconComponent = config.icon;
@@ -78,14 +80,14 @@ export function ConfirmationModal({
                     <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                         <IconComponent className={cn("w-6 h-6", config.iconColor)} />
                     </div>
-                    <DialogTitle className="text-lg font-semibold">
+                    <DialogTitle className="text-lg text-center font-semibold">
                         {title}
                     </DialogTitle>
-                    <DialogDescription className="text-sm text-muted-foreground">
+                    <DialogDescription className="text-sm text-center text-muted-foreground">
                         {message}
                     </DialogDescription>
                 </DialogHeader>
-                <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                <DialogFooter className="flex flex-col sm:flex-row space-x-2 space-y-2 sm:gap-0">
                     <Button
                         variant="outline"
                         onClick={onClose}
