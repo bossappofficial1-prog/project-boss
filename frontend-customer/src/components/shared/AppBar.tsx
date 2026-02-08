@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Menu, Search, MoreVertical, X, Sun, Moon, Laptop } from "lucide-react";
+import { ArrowLeft, Menu, Search, MoreVertical, X, Sun, Moon, Laptop, LogIn, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Search as SearchComponent, SearchInput, SearchDropdown } from "./search";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -13,6 +13,8 @@ import {
     DropdownMenuRadioGroup,
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
+    DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { STORAGE_PROFILE_KEY } from "@/constants";
 
@@ -230,6 +232,8 @@ export default function AppBar({
 
                     {showThemeToggle && !isSearchActive && <ThemeModeToggle />}
 
+                    {!isSearchActive && <PartnerMenuDropdown />}
+
                     {rightContent}
 
                     {showMenu && (
@@ -250,6 +254,51 @@ export default function AppBar({
 
 // Export additional icons for easy use
 export { Menu, Search, MoreVertical, X, ArrowLeft } from "lucide-react";
+
+function PartnerMenuDropdown() {
+    const handleLogin = () => {
+        window.location.href = `${process.env.NEXT_PUBLIC_DASHBOARD_LOGIN_URL}`;
+    };
+
+    const handleRegister = () => {
+        window.location.href = `${process.env.NEXT_PUBLIC_DASHBOARD_REGISTER_URL}`;
+    };
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hover:bg-accent rounded-xl transition-all duration-200 px-3 gap-2"
+                    aria-label="Menu Mitra"
+                    title="Akses Partner"
+                >
+                    <Building2 className="h-4 w-4" />
+                    <span className="hidden sm:inline text-sm font-medium">Mitra</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={8} className="w-52">
+                <DropdownMenuLabel>Akses Mitra</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogin} className="flex items-center gap-3 cursor-pointer">
+                    <LogIn className="h-4 w-4 text-primary" />
+                    <div>
+                        <p className="text-sm font-medium">Masuk</p>
+                        <p className="text-xs text-muted-foreground">Akses dashboard partner</p>
+                    </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleRegister} className="flex items-center gap-3 cursor-pointer">
+                    <Building2 className="h-4 w-4 text-orange-500" />
+                    <div>
+                        <p className="text-sm font-medium">Daftar Sebagai Mitra</p>
+                        <p className="text-xs text-muted-foreground">Register as partner</p>
+                    </div>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
 
 const persistThemePreference = (next: "light" | "dark" | "system") => {
     if (typeof window === "undefined") return;
