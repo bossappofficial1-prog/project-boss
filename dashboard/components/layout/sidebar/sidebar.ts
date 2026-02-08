@@ -36,9 +36,15 @@ export const MENU_GROUPS: MenuGroup[] = [
     label: "Utama",
     items: [
       {
-        id: "dashboard",
+        id: "owner-dashboard",
         name: "Dashboard",
         href: "/owner/dashboard",
+        icon: LayoutDashboard,
+      },
+      {
+        id: "overview",
+        name: "Dashboard Bisnis",
+        href: "/owner/dashboard/business",
         icon: LayoutDashboard,
       },
       {

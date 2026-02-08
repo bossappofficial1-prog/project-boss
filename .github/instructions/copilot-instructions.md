@@ -186,6 +186,9 @@ export const useUserProfile = () => {
   - Gunakan shadow-md untuk memberikan kedalaman atau elevasi pada komponen container/card.
 - Responsivitas: Gunakan pendekatan Mobile First dengan utility classes Tailwind (contoh: w-full md:w-1/2).
 - Loading State: Gunakan Skeleton dari shadcn saat status isLoading dari React Query bernilai true.
+- Tabel: Gunakan data-table.tsx pada `/dasboard/components/data-table.tsx`
+- SOC: Selalu pisahkan page ke dalam beberapa komponent terpisah, dan cukup panggil \*\*Content.tsx di page.tsx. di page.tsx gunakan metadata untuk title dan yang relefan.
+- spacing: space-\*-3, gap-3, rounded-md
 
 ### Error Handling
 
@@ -197,3 +200,7 @@ export const useUserProfile = () => {
 - Hooks: use-nama-fitur.ts (kebab-case).
 - Components: NamaKomponen.tsx (PascalCase).
 - Pages: Sesuai standar Next.js (page.tsx, layout.tsx, loading.tsx).
+
+### Other
+
+- Jangan terlalu banyak menggunakan komentar: contohnya ini (`// ─── Helpers ────────────────────────────────────────────`). gunakan comentar yang penting saja, dan tidak terlalu panjang

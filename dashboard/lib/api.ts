@@ -8,6 +8,7 @@ export { orderApi } from './apis/order';
 export { expenseApi } from './apis/expense';
 export { withdrawalApi } from './apis/withdrawal';
 export { dashboardApi } from './apis/dashboard';
+export { businessDashboardApi } from './apis/business-dashboard';
 export { uploadApi } from './apis/upload';
 export { outletManagementApi } from './apis/outletManagement';
 export { userApi } from './apis/user';

@@ -7,11 +7,11 @@ import { ResponseUtil } from "../utils";
 import { AppError } from "../errors/app-error";
 import { ensureString } from "../utils/request";
 
-export const createOperatingHoursController = asyncHandler(async (req: Request, res: Response) => {
-    const payload = req.body as CreateOperatingHoursInput;
-    const operatingHours = await OperatingHoursRepository.create(payload);
-    return ResponseUtil.success(res, operatingHours, HttpStatus.CREATED);
-});
+// export const createOperatingHoursController = asyncHandler(async (req: Request, res: Response) => {
+//     const payload = req.body as CreateOperatingHoursInput;
+//     const operatingHours = await OperatingHoursRepository.create(payload);
+//     return ResponseUtil.success(res, operatingHours, HttpStatus.CREATED);
+// });
 
 export const getOperatingHoursByOutletController = asyncHandler(async (req: Request, res: Response) => {
     const outletId = ensureString(req.params?.outletId, "outletId");
@@ -34,8 +34,8 @@ export const updateOperatingHoursController = asyncHandler(async (req: Request, 
 
 export const upsertOperatingHoursController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body as CreateOperatingHoursInput;
-    const { outletId, dayOfWeek } = payload;
+    const outletId = req.params.outletId as string
 
-    const operatingHours = await OperatingHoursRepository.upsertOperatingHours(outletId, dayOfWeek, payload);
+    const operatingHours = await OperatingHoursRepository.upsertOperatingHours(outletId, payload);
     return ResponseUtil.success(res, operatingHours);
 });
