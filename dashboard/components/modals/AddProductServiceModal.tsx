@@ -32,6 +32,13 @@ const baseSchema = z.object({
     ])
     .optional(),
 });
+
+const parseDate = (date: string | Date | null | undefined): Date | null => {
+  if (!date) return null;
+  if (date instanceof Date) return date;
+  return new Date(date);
+};
+
 // 1. Definisikan Schema per bagian secara eksplisit
 const goodsSchema = z.object({
   currentStock: z.coerce.number().min(0, "Stok minimal 0"),
@@ -138,20 +145,20 @@ export default function AddOrEditProductServiceModal({
             providerPhone: initialData.service?.providerPhone ?? "",
             bookingInWorkHours: initialData.service?.bookingInWorkHours ?? true,
             // Operating hours
-            mondayOpen: initialData.service?.mondayOpen ?? null,
-            mondayClose: initialData.service?.mondayClose ?? null,
-            tuesdayOpen: initialData.service?.tuesdayOpen ?? null,
-            tuesdayClose: initialData.service?.tuesdayClose ?? null,
-            wednesdayOpen: initialData.service?.wednesdayOpen ?? null,
-            wednesdayClose: initialData.service?.wednesdayClose ?? null,
-            thursdayOpen: initialData.service?.thursdayOpen ?? null,
-            thursdayClose: initialData.service?.thursdayClose ?? null,
-            fridayOpen: initialData.service?.fridayOpen ?? null,
-            fridayClose: initialData.service?.fridayClose ?? null,
-            saturdayOpen: initialData.service?.saturdayOpen ?? null,
-            saturdayClose: initialData.service?.saturdayClose ?? null,
-            sundayOpen: initialData.service?.sundayOpen ?? null,
-            sundayClose: initialData.service?.sundayClose ?? null,
+            mondayOpen: parseDate(initialData.service?.mondayOpen),
+            mondayClose: parseDate(initialData.service?.mondayClose),
+            tuesdayOpen: parseDate(initialData.service?.tuesdayOpen),
+            tuesdayClose: parseDate(initialData.service?.tuesdayClose),
+            wednesdayOpen: parseDate(initialData.service?.wednesdayOpen),
+            wednesdayClose: parseDate(initialData.service?.wednesdayClose),
+            thursdayOpen: parseDate(initialData.service?.thursdayOpen),
+            thursdayClose: parseDate(initialData.service?.thursdayClose),
+            fridayOpen: parseDate(initialData.service?.fridayOpen),
+            fridayClose: parseDate(initialData.service?.fridayClose),
+            saturdayOpen: parseDate(initialData.service?.saturdayOpen),
+            saturdayClose: parseDate(initialData.service?.saturdayClose),
+            sundayOpen: parseDate(initialData.service?.sundayOpen),
+            sundayClose: parseDate(initialData.service?.sundayClose),
           },
           goods: undefined,
         } satisfies ProductFormValues;
@@ -283,7 +290,7 @@ export default function AddOrEditProductServiceModal({
 
   // Create explicit form instance
   const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(productSchema) as any,
     defaultValues,
   });
 
