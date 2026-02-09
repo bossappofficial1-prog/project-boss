@@ -662,7 +662,9 @@
             "awaiting_payment": "Menunggu Pembayaran",
             "processing": "Diproses",
             "confirmed": "Dikonfirmasi",
+            "confirmed_service": "Booking Dikonfirmasi",
             "ready": "Siap Diambil",
+            "ready_service": "Siap Dimulai",
             "on_going": "Sedang Berlangsung",
             "completed": "Selesai"
         },

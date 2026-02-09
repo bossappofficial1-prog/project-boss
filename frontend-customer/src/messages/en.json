@@ -662,7 +662,9 @@
             "awaiting_payment": "Awaiting Payment",
             "processing": "Processing",
             "confirmed": "Confirmed",
+            "confirmed_service": "Booking Confirmed",
             "ready": "Ready for Pickup",
+            "ready_service": "Ready to Start",
             "on_going": "On Going",
             "completed": "Completed"
         },

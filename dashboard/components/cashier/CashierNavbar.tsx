@@ -3,13 +3,15 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, ShoppingBag, ShoppingCart, Users, Package, Receipt, Zap, LayoutGrid } from "lucide-react";
+import { LogOut, ShoppingBag, ShoppingCart, Package, Receipt, Zap, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { apiClient } from "@/lib/apis/base";
 import { cn } from "@/lib/utils";
+import ReceiptSetting from "../ReceiptSetting";
+import { useOutletContext } from "../providers/CashierOutletProvider";
 
 interface CashierNavbarProps {
   cashierName: string;
@@ -17,20 +19,17 @@ interface CashierNavbarProps {
 }
 
 const navItems = [
-  { href: "/cashier/pos-v2", label: "POS", icon: Zap },
-  { href: "/cashier/pos", label: "POS Lama", icon: ShoppingCart },
-  { href: "/cashier/orders-v2", label: "Pesanan Barang", icon: ShoppingBag },
-  { href: "/cashier/orders", label: "Pesanan Lama", icon: ShoppingBag },
-  { href: "/cashier/queue-v2", label: "Antrian", icon: LayoutGrid },
-  { href: "/cashier/queue", label: "Antrian Lama", icon: Users },
-  { href: "/cashier/pob-v2", label: "POB", icon: Package },
-  { href: "/cashier/pob", label: "POB Lama", icon: Package },
+  { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
+  { href: "/cashier/orders", label: "Pesanan Barang", icon: ShoppingBag },
+  { href: "/cashier/queue", label: "Antrian", icon: LayoutGrid },
+  { href: "/cashier/pob", label: "POB", icon: Package },
   { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
 ];
 
 export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { selectedOutletId } = useOutletContext()
 
   const handleLogout = async () => {
     try {
@@ -100,6 +99,7 @@ export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
               );
             })}
           </nav>
+          <ReceiptSetting outletId={selectedOutletId!} />
           <ThemeToggle />
           <Button onClick={handleLogout} variant="outline" size="sm">
             <LogOut className="mr-2 h-4 w-4" />
