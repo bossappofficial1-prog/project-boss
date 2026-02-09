@@ -59,10 +59,10 @@ export function QuickOrderModal({
 
         // Filter by product type
         const filteredProducts = productList.filter(
-          (product: Product) => product.type === productType
+          (product: any) => product.type === productType
         );
 
-        setProducts(filteredProducts as Product[]);
+        setProducts(filteredProducts as any[]);
 
         // Fetch business hours for service booking validation
         if (productType === 'SERVICE') {

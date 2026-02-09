@@ -25,7 +25,10 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "BOSS - Platform Manajemen Bisnis",
+  title: {
+    default: 'BOSS Customer',
+    template: '%s | BOSS'
+  },
   description: "Urus operasional usaha, atur jadwal, dan jaga pelanggan kamu lebih gampang bareng BOSS.",
   icons: {
     icon: [

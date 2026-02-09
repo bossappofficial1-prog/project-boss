@@ -113,8 +113,19 @@ export const loginController = asyncHandler(async (req: Request, res: Response) 
 
 
 export const getMeController = asyncHandler(async (req: Request, res: Response) => {
+
+    const cacheKey = `user:${req.storedUser?.id}`
+    const cacheData = await redis.get(cacheKey)
+    if (cacheData) {
+        console.log('get user from redis')
+        const data = JSON.parse(cacheData)
+        const { password, ...userWithoutPassword } = data.userWithoutBusiness
+        return ResponseUtil.success(res, { user: userWithoutPassword, outlets: data?.outlets ?? null, business: data?.business ?? null });
+    }
+
     const user = await getMeService(req.storedUser!.id);
 
+    await redis.set(cacheKey, JSON.stringify(user), 'EX', 5 * 60)
     const { password, ...userWithoutPassword } = user.userWithoutBusiness
 
     return ResponseUtil.success(res, { user: userWithoutPassword, outlets: user?.outlets ?? null, business: user?.business ?? null });

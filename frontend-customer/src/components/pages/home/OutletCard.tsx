@@ -8,7 +8,7 @@ import Link from "next/link";
 import { BusinessType, OutletType } from "@/types";
 import { useTranslations } from "@/hooks/useI18n";
 import { toMapDestination } from "@/lib/utils";
-import { ImageColorThief } from "../shared/ImageColorThief";
+import { ImageColorThief } from "../../shared/ImageColorThief";
 
 type OutletCardProps = {
     outlet: OutletType & Pick<BusinessType, "id" | "name"> & { _count: { orders: number }; distance: number };

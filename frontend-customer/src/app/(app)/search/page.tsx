@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchOutlets } from '@/hooks/useSearchOutlets';
-import { OutletCard } from '@/components/home/OutletCard';
+import { OutletCard } from '@/components/pages/home/OutletCard';
 import { LoadingState, EmptyState, ErrorState } from '@/components/Base';
 import { Button } from '@/components/ui/button';
 import { Loader2, Store, Search as SearchIcon } from 'lucide-react';

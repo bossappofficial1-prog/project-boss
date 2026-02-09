@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { OutletCard } from "@/components/home/OutletCard";
+import { OutletCard } from "@/components/pages/home/OutletCard";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchOutlets } from "@/hooks/useSearchOutlets";
 import { Loader2, Store } from "lucide-react";
