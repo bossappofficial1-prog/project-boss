@@ -85,10 +85,10 @@ export const useBulkUpdateBanner = (
       const response = await apiClient.patch(`/banners/bulk-update`, data);
       return response.data.data;
     },
-    onSuccess: (data, variables, context, mutationContext) => {
+    onSuccess: (data, variables, context) => {
       toast.success("Berhasil update posisi banner");
       queryClient.invalidateQueries({ queryKey: ["banners"] });
-      onSuccess?.(data, variables, context, mutationContext);
+      onSuccess?.(data, variables, context, undefined as any);
     },
     ...restOptions,
   });
