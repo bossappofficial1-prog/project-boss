@@ -3,8 +3,11 @@
 import React, { useMemo } from "react";
 import { productApi, uploadApi } from "@/lib/api";
 import z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { FormFieldConfig, ReusableForm } from "../ui/reuseable-form";
 import { ProductItem } from "@/hooks/useProductsData";
+import ServiceOperatingHoursSection from "./ServiceOperatingHoursSection";
 
 type Props = {
   open: boolean;
@@ -52,6 +55,22 @@ const serviceSchema = z.object({
   commissionType: z.enum(["PERCENTAGE", "FIXED"]),
   commissionValue: z.coerce.number().min(0),
   bookingInWorkHours: z.boolean().default(true),
+
+  // Operating hours (nullable)
+  mondayOpen: z.coerce.date().nullable().optional(),
+  mondayClose: z.coerce.date().nullable().optional(),
+  tuesdayOpen: z.coerce.date().nullable().optional(),
+  tuesdayClose: z.coerce.date().nullable().optional(),
+  wednesdayOpen: z.coerce.date().nullable().optional(),
+  wednesdayClose: z.coerce.date().nullable().optional(),
+  thursdayOpen: z.coerce.date().nullable().optional(),
+  thursdayClose: z.coerce.date().nullable().optional(),
+  fridayOpen: z.coerce.date().nullable().optional(),
+  fridayClose: z.coerce.date().nullable().optional(),
+  saturdayOpen: z.coerce.date().nullable().optional(),
+  saturdayClose: z.coerce.date().nullable().optional(),
+  sundayOpen: z.coerce.date().nullable().optional(),
+  sundayClose: z.coerce.date().nullable().optional(),
 });
 
 export type ServiceSchemaType = z.infer<typeof serviceSchema>;
@@ -118,6 +137,21 @@ export default function AddOrEditProductServiceModal({
             providerEmail: initialData.service?.providerEmail ?? "",
             providerPhone: initialData.service?.providerPhone ?? "",
             bookingInWorkHours: initialData.service?.bookingInWorkHours ?? true,
+            // Operating hours
+            mondayOpen: initialData.service?.mondayOpen ?? null,
+            mondayClose: initialData.service?.mondayClose ?? null,
+            tuesdayOpen: initialData.service?.tuesdayOpen ?? null,
+            tuesdayClose: initialData.service?.tuesdayClose ?? null,
+            wednesdayOpen: initialData.service?.wednesdayOpen ?? null,
+            wednesdayClose: initialData.service?.wednesdayClose ?? null,
+            thursdayOpen: initialData.service?.thursdayOpen ?? null,
+            thursdayClose: initialData.service?.thursdayClose ?? null,
+            fridayOpen: initialData.service?.fridayOpen ?? null,
+            fridayClose: initialData.service?.fridayClose ?? null,
+            saturdayOpen: initialData.service?.saturdayOpen ?? null,
+            saturdayClose: initialData.service?.saturdayClose ?? null,
+            sundayOpen: initialData.service?.sundayOpen ?? null,
+            sundayClose: initialData.service?.sundayClose ?? null,
           },
           goods: undefined,
         } satisfies ProductFormValues;
@@ -150,7 +184,7 @@ export default function AddOrEditProductServiceModal({
   };
 
   const handleSubmit = async (values: ProductFormValues | FormData) => {
-    const fileEntry = (values as FormData).get("file");
+    const fileEntry = (values as FormData).get(" file");
     const file = fileEntry instanceof File ? fileEntry : null;
     const otherValues = values as FormData;
     const formType = otherValues.get("type") as ProductFormValues["type"] | null;
@@ -191,6 +225,49 @@ export default function AddOrEditProductServiceModal({
         providerEmail: providerEmail && providerEmail.trim() !== "" ? providerEmail : undefined,
         providerPhone: providerPhone && providerPhone.trim() !== "" ? providerPhone : undefined,
         bookingInWorkHours: otherValues.get("service[bookingInWorkHours]") === "true",
+        // Operating hours
+        mondayOpen: otherValues.get("service[mondayOpen]")
+          ? new Date(otherValues.get("service[mondayOpen]") as string)
+          : null,
+        mondayClose: otherValues.get("service[mondayClose]")
+          ? new Date(otherValues.get("service[mondayClose]") as string)
+          : null,
+        tuesdayOpen: otherValues.get("service[tuesdayOpen]")
+          ? new Date(otherValues.get("service[tuesdayOpen]") as string)
+          : null,
+        tuesdayClose: otherValues.get("service[tuesdayClose]")
+          ? new Date(otherValues.get("service[tuesdayClose]") as string)
+          : null,
+        wednesdayOpen: otherValues.get("service[wednesdayOpen]")
+          ? new Date(otherValues.get("service[wednesdayOpen]") as string)
+          : null,
+        wednesdayClose: otherValues.get("service[wednesdayClose]")
+          ? new Date(otherValues.get("service[wednesdayClose]") as string)
+          : null,
+        thursdayOpen: otherValues.get("service[thursdayOpen]")
+          ? new Date(otherValues.get("service[thursdayOpen]") as string)
+          : null,
+        thursdayClose: otherValues.get("service[thursdayClose]")
+          ? new Date(otherValues.get("service[thursdayClose]") as string)
+          : null,
+        fridayOpen: otherValues.get("service[fridayOpen]")
+          ? new Date(otherValues.get("service[fridayOpen]") as string)
+          : null,
+        fridayClose: otherValues.get("service[fridayClose]")
+          ? new Date(otherValues.get("service[fridayClose]") as string)
+          : null,
+        saturdayOpen: otherValues.get("service[saturdayOpen]")
+          ? new Date(otherValues.get("service[saturdayOpen]") as string)
+          : null,
+        saturdayClose: otherValues.get("service[saturdayClose]")
+          ? new Date(otherValues.get("service[saturdayClose]") as string)
+          : null,
+        sundayOpen: otherValues.get("service[sundayOpen]")
+          ? new Date(otherValues.get("service[sundayOpen]") as string)
+          : null,
+        sundayClose: otherValues.get("service[sundayClose]")
+          ? new Date(otherValues.get("service[sundayClose]") as string)
+          : null,
       };
       payload.service = service;
     }
@@ -203,6 +280,14 @@ export default function AddOrEditProductServiceModal({
     onSuccess?.();
     handleClose(false);
   };
+
+  // Create explicit form instance
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(productSchema),
+    defaultValues,
+  });
+
+  const formType = form.watch("type");
 
   // mulai perubahan
   const fields: FormFieldConfig<ProductFormValues>[] = [
@@ -357,6 +442,51 @@ export default function AddOrEditProductServiceModal({
       placeholder: "contoh: 081234567890",
       condition: (values) => values.type === "SERVICE",
     },
+    // Custom renderer for operating hours
+    {
+      name: "service.mondayOpen" as any,
+      label: "",
+      type: "custom",
+      colSpan: "full",
+      condition: (values) => values.type === "SERVICE",
+      renderCustom: () => (
+        <ServiceOperatingHoursSection
+          outletId={outletId!}
+          value={{
+            mondayOpen: form.watch("service.mondayOpen"),
+            mondayClose: form.watch("service.mondayClose"),
+            tuesdayOpen: form.watch("service.tuesdayOpen"),
+            tuesdayClose: form.watch("service.tuesdayClose"),
+            wednesdayOpen: form.watch("service.wednesdayOpen"),
+            wednesdayClose: form.watch("service.wednesdayClose"),
+            thursdayOpen: form.watch("service.thursdayOpen"),
+            thursdayClose: form.watch("service.thursdayClose"),
+            fridayOpen: form.watch("service.fridayOpen"),
+            fridayClose: form.watch("service.fridayClose"),
+            saturdayOpen: form.watch("service.saturdayOpen"),
+            saturdayClose: form.watch("service.saturdayClose"),
+            sundayOpen: form.watch("service.sundayOpen"),
+            sundayClose: form.watch("service.sundayClose"),
+          }}
+          onChange={(value) => {
+            form.setValue("service.mondayOpen", value.mondayOpen);
+            form.setValue("service.mondayClose", value.mondayClose);
+            form.setValue("service.tuesdayOpen", value.tuesdayOpen);
+            form.setValue("service.tuesdayClose", value.tuesdayClose);
+            form.setValue("service.wednesdayOpen", value.wednesdayOpen);
+            form.setValue("service.wednesdayClose", value.wednesdayClose);
+            form.setValue("service.thursdayOpen", value.thursdayOpen);
+            form.setValue("service.thursdayClose", value.thursdayClose);
+            form.setValue("service.fridayOpen", value.fridayOpen);
+            form.setValue("service.fridayClose", value.fridayClose);
+            form.setValue("service.saturdayOpen", value.saturdayOpen);
+            form.setValue("service.saturdayClose", value.saturdayClose);
+            form.setValue("service.sundayOpen", value.sundayOpen);
+            form.setValue("service.sundayClose", value.sundayClose);
+          }}
+        />
+      ),
+    },
     {
       name: "file",
       label: "Gambar Produk",
@@ -369,6 +499,7 @@ export default function AddOrEditProductServiceModal({
 
   return (
     <ReusableForm
+      form={form}
       withDialog
       gridCols={6}
       useFormData={false}

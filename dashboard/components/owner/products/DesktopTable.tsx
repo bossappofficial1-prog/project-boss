@@ -170,6 +170,39 @@ export default function DesktopTable({
             },
           },
           {
+            accessorKey: "operatingHours",
+            header: "Jam Operasional",
+            enableSorting: false,
+            cell(props) {
+              const product = props.row.original;
+
+              // Only show for SERVICE type
+              if (product.type !== "SERVICE") {
+                return <span className="text-gray-400">-</span>;
+              }
+
+              // Check if any operating hours are set
+              const hasHours =
+                product.service?.mondayOpen ||
+                product.service?.tuesdayOpen ||
+                product.service?.wednesdayOpen ||
+                product.service?.thursdayOpen ||
+                product.service?.fridayOpen ||
+                product.service?.saturdayOpen ||
+                product.service?.sundayOpen;
+
+              return hasHours ? (
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                  Sudah diatur
+                </Badge>
+              ) : (
+                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                  Belum diatur
+                </Badge>
+              );
+            },
+          },
+          {
             accessorKey: "status",
             header: "Status",
             enableSorting: false,
