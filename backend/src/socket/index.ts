@@ -44,6 +44,11 @@ export const initSocket = (io: Server<ClientToServerEvents, ServerToClientEvents
             console.log(`Socket ${socket.id} joined order:update ${orderId}`);
         });
 
+        socket.on('cashier:join', (outletId: string) => {
+            socket.join(outletId)
+            console.log(`cashier join ke outlet`, outletId)
+        })
+
         socket.on(SOCKET_EVENT.JOIN_BUSINESS, (outletId: string) => {
             socket.join(`business_outlet_${outletId}`);
             console.log(`Socket ${socket.id} joined business:outlet ${outletId}`);

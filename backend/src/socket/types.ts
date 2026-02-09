@@ -7,6 +7,8 @@ export const SOCKET_EVENT = {
     JOIN_ORDER_UPDATE: "order:update",
     JOIN_BUSINESS: "business:outlet",
 
+    CASHIER_JOIN: 'cashier:join',
+
     PAYMENT_SUBMIT: "payment:submit",
     PAYMENT_NEW: "payment:new",
 
@@ -49,7 +51,8 @@ export interface ClientToServerEvents {
     [SOCKET_EVENT.PAYMENT_SUBMIT]: (payload: PaymentSubmitPayload) => void;
     [SOCKET_EVENT.ORDER_UPDATE_STATUS]: (payload: OrderUpdateStatusPayload) => void;
     [SOCKET_EVENT.JOIN_ORDER_UPDATE]: (orderId: string) => void;
-    [SOCKET_EVENT.JOIN_BUSINESS]: (outletId: string) => void
+    [SOCKET_EVENT.JOIN_BUSINESS]: (outletId: string) => void;
+    [SOCKET_EVENT.CASHIER_JOIN]: (outletId: string) => void
 }
 
 export interface ServerToClientEvents {
@@ -59,4 +62,5 @@ export interface ServerToClientEvents {
     [SOCKET_EVENT.CUSTOMER_NOTIFICATION]: (payload: CustomerNotificationPayload) => void;
     [SOCKET_EVENT.ORDER_STATUS_CHANGED]: (payload: OrderStatusChangedPayload) => void;
     [SOCKET_EVENT.QUEUE_UPDATED]: (payload: QueueUpdatedPayload) => void;
+    [SOCKET_EVENT.CASHIER_JOIN]: (outletId: string) => void
 }

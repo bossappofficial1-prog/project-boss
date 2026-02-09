@@ -16,7 +16,7 @@ import { PaymentRepository } from "../repositories/payment.repository";
 import { SocketEmitter } from "../socket/socket-emiiter";
 import { MidtransTransactionStatus, PaymentResponse } from "../types/Others";
 import Console from "../utils/logger";
-import { paymentQueue } from "../queues/payment.queue";
+import { orderExpiryJob } from "../jobs/payment-expiry.job";
 import { formatDateTime } from "../utils";
 
 type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> &
@@ -870,7 +870,7 @@ export async function cancelOrderByCustomerService(
   const orderRecord = order as OrderWithRelations;
 
   assertCustomerOwnsOrder(orderRecord, phone);
-  (await paymentQueue.getJob(orderId))?.remove();
+  await orderExpiryJob.remove(orderId);
 
   const cancellableStatuses: OrderStatus[] = [
     OrderStatus.AWAITING_PAYMENT,
@@ -893,7 +893,7 @@ export async function cancelOrderByCustomerService(
     for (const item of orderRecord.items) {
       if (item.product.type === "GOODS") {
         await tx.productGoods.update({
-          where: { id: item.productId },
+          where: { id: item.product.goods?.id },
           data: {
             currentStock: {
               increment: item.quantity,
@@ -1116,5 +1116,5 @@ export async function expirePaymentOrder(orderId: string) {
     type: "payment_expired",
   });
 
-  (await paymentQueue.getJob(orderId))?.remove();
+  await orderExpiryJob.remove(orderId);
 }

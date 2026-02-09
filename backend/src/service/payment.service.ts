@@ -38,8 +38,9 @@ import { socketUtils } from "../utils/socket.utils";
 import { ManualPaymentRepository } from "../repositories/manual-payment.repository";
 import { buildMidtransCorePayload } from "../utils/midtrans-core.utils";
 import { SocketEmitter } from "../socket/socket-emiiter";
-import { paymentQueue, schedulePaymentExpiration } from "../queues/payment.queue";
+import { schedulePaymentExpiration } from "../queues/payment.queue";
 import { PaymentRepository } from "../repositories/payment.repository";
+import { orderExpiryJob } from "../jobs/payment-expiry.job";
 
 // Konstanta untuk fee rates
 const TRANSACTION_FEE_RATE = 0.02;
@@ -509,7 +510,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
     quantity: 1,
   });
 
-  const orderId = generateOrderCode({ name: outlet.name ?? "Order" });
+  const orderId: string = generateOrderCode({ name: outlet.name ?? "Order" });
 
   // Untuk online payment, gunakan onlinePaymentChannel untuk lookup method
   // Untuk manual payment (qris/cash), gunakan payment_method
@@ -591,7 +592,15 @@ export async function createPaymentService(data: CreatePaymentPayload) {
       const delay = Math.max(0, expireTime.getTime() - new Date().getTime());
 
       try {
-        await paymentQueue.add({ orderId }, { delay });
+        // await paymentQueue.add({ orderId }, { delay });
+        await orderExpiryJob.add(orderId)
+        SocketEmitter.getInstance().emitToCashier(outletId, {
+          orderId,
+          amount: grossAmount,
+          paymentMethod: manualType,
+          customerName: customerDetails.name,
+          timestamp: new Date(),
+        })
         SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
           orderId,
           amount: grossAmount,
@@ -797,8 +806,7 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
   });
 
   try {
-    const job = await paymentQueue.getJob(transaction.orderId);
-    if (job) job.remove();
+    await orderExpiryJob.remove(transaction.orderId);
 
     SocketEmitter.getInstance().emitNotificationToOutlet(transaction.order.outletId, {
       message: `Pesanan ${orderId}, telah mengirim bukti pembayarannya.`,
@@ -974,38 +982,38 @@ export async function getPaymentOrderService(orderId: string) {
       isManual: transaction.isManual,
       midtrans: convertMidtrans
         ? {
-            transaction_id: convertMidtrans?.transaction_id ?? null,
-            order_id: convertMidtrans?.order_id ?? null,
-            gross_amount: convertMidtrans?.gross_amount ?? null,
-            transaction_status: convertMidtrans?.transaction_status ?? null,
-            payment_type: convertMidtrans?.payment_type,
-            expiry_time: convertMidtrans?.expiry_time,
-            actions: convertMidtrans?.actions ?? null,
-            va_numbers: convertMidtrans?.va_numbers ?? null,
-            currency: "IDR",
-          }
+          transaction_id: convertMidtrans?.transaction_id ?? null,
+          order_id: convertMidtrans?.order_id ?? null,
+          gross_amount: convertMidtrans?.gross_amount ?? null,
+          transaction_status: convertMidtrans?.transaction_status ?? null,
+          payment_type: convertMidtrans?.payment_type,
+          expiry_time: convertMidtrans?.expiry_time,
+          actions: convertMidtrans?.actions ?? null,
+          va_numbers: convertMidtrans?.va_numbers ?? null,
+          currency: "IDR",
+        }
         : null,
       manual: transaction.isManual
         ? {
-            type: transaction.paymentMethod,
-            paymentProofUrl: transaction.paymentProofUrl,
-            intruction: {
-              manualType: transaction.paymentMethod,
-              outletName: outlet.name,
-              businessName: outlet.business.name,
-              note: null,
-              qrImageUrl: outlet.manualQrImageUrl,
-              expiry_time: transaction.expiresAt,
-              bankAccount:
-                transaction.paymentMethod === "manual-transfer"
-                  ? {
-                      bankName: outlet.business.bankName,
-                      accountNumber: outlet.business.bankAccount,
-                      accountHolder: outlet.business.accountHolder,
-                    }
-                  : null,
-            },
-          }
+          type: transaction.paymentMethod,
+          paymentProofUrl: transaction.paymentProofUrl,
+          intruction: {
+            manualType: transaction.paymentMethod,
+            outletName: outlet.name,
+            businessName: outlet.business.name,
+            note: null,
+            qrImageUrl: outlet.manualQrImageUrl,
+            expiry_time: transaction.expiresAt,
+            bankAccount:
+              transaction.paymentMethod === "manual-transfer"
+                ? {
+                  bankName: outlet.business.bankName,
+                  accountNumber: outlet.business.bankAccount,
+                  accountHolder: outlet.business.accountHolder,
+                }
+                : null,
+          },
+        }
         : null,
     },
     customerDetails: {

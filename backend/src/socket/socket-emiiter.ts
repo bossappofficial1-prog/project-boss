@@ -6,7 +6,7 @@ export class SocketEmitter {
   private static instance: SocketEmitter;
   private io: Server | null = null;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): SocketEmitter {
     if (!SocketEmitter.instance) {
@@ -79,6 +79,11 @@ export class SocketEmitter {
     const io = this.getIO();
     io.to(orderId).emit(SOCKET_EVENT.ORDER_EVENT, payload);
     io.to(orderId).emit(SOCKET_EVENT.ORDER_OTHER_EVENT, payload);
+  }
+
+  emitToCashier(outletId: string, payload: any) {
+    const io = this.getIO();
+    io.to(outletId).emit(SOCKET_EVENT.ORDER_EVENT, payload)
   }
 
   emitQueueUpdate(

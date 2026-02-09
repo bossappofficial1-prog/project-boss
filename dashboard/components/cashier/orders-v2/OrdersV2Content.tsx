@@ -23,6 +23,7 @@ import { useSocketEvent } from "@/hooks/useSocketEvent";
 import { SOCKET_EVENT, type SocketEvents } from "@/types/socket";
 import { ordersV2Api } from "@/lib/apis/orders-v2";
 import type { OrderV2Entry, GoodsOrderStatus, OrdersV2Board } from "@/lib/apis/orders-v2";
+import { formatCurrency } from "@/components/owner/orders/utils";
 
 interface OrdersV2ContentProps {
     outletId: string;
@@ -48,14 +49,6 @@ const STATUS_LABELS: Record<string, string> = {
     COMPLETED: "Selesai",
     CANCELLED: "Dibatalkan",
 };
-
-function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-    }).format(amount);
-}
 
 export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
     const router = useRouter();
