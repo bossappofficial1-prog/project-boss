@@ -1,0 +1,15 @@
+-- AlterTable
+ALTER TABLE "ProductService" ADD COLUMN     "fridayClose" TIMESTAMP(3),
+ADD COLUMN     "fridayOpen" TIMESTAMP(3),
+ADD COLUMN     "mondayClose" TIMESTAMP(3),
+ADD COLUMN     "mondayOpen" TIMESTAMP(3),
+ADD COLUMN     "saturdayClose" TIMESTAMP(3),
+ADD COLUMN     "saturdayOpen" TIMESTAMP(3),
+ADD COLUMN     "sundayClose" TIMESTAMP(3),
+ADD COLUMN     "sundayOpen" TIMESTAMP(3),
+ADD COLUMN     "thursdayClose" TIMESTAMP(3),
+ADD COLUMN     "thursdayOpen" TIMESTAMP(3),
+ADD COLUMN     "tuesdayClose" TIMESTAMP(3),
+ADD COLUMN     "tuesdayOpen" TIMESTAMP(3),
+ADD COLUMN     "wednesdayClose" TIMESTAMP(3),
+ADD COLUMN     "wednesdayOpen" TIMESTAMP(3);

@@ -7,9 +7,8 @@ import { getProductByIdService } from "./product.service";
 import { createMidtransTransactionService } from "./payment.service";
 import { getOrderByIdService } from "./order.service";
 import { db } from "../config/prisma";
-import { Prisma, OutletOperatingHours, BookingSlot } from "@prisma/client";
+import { Prisma, BookingSlot } from "@prisma/client";
 import { add, set } from "date-fns";
-import { getOutletByIdService } from "./outlet.service";
 import { getStaffAvailabilityForWindow, StaffAvailabilityResult } from "./staff.service";
 
 /**
@@ -101,11 +100,10 @@ export async function getBookingSlotByProductService(
   // Generate slots if they haven't been created yet for this date
   if (!slots.length) {
     const serviceDurationMinutes = product.service?.durationMinutes ?? 60;
-    const outlet = await getOutletByIdService(outletId);
 
     await generateSlotsForDate({
       productId,
-      operatingHours: outlet.operatingHours,
+      serviceOperatingHours: product.service,
       serviceDurationMinutes,
       date,
     });
@@ -153,17 +151,17 @@ export async function getAvailableStaffForProductSlotService(params: {
 
 type GenerateSlotsForDateParams = {
   productId: string;
-  operatingHours: OutletOperatingHours[];
+  serviceOperatingHours: any; // ProductService with operating hours
   serviceDurationMinutes: number;
   date: Date;
 };
 
 /**
- * Logic to generate specific time slots for a single date based on operating hours.
+ * Logic to generate specific time slots for a single date based on service operating hours.
  */
 export async function generateSlotsForDate({
   productId,
-  operatingHours,
+  serviceOperatingHours,
   serviceDurationMinutes,
   date,
 }: GenerateSlotsForDateParams) {
@@ -177,13 +175,28 @@ export async function generateSlotsForDate({
   }
 
   const slotsToCreate: Prisma.BookingSlotCreateManyInput[] = [];
-  const dayOfWeek = date.getDay();
+  const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 
-  const workHours = operatingHours.find((h) => h.dayOfWeek === dayOfWeek && h.isOpen);
-  if (!workHours) return;
+  // Map dayOfWeek to corresponding field names
+  const dayMap: { [key: number]: { open: string; close: string } } = {
+    0: { open: "sundayOpen", close: "sundayClose" },
+    1: { open: "mondayOpen", close: "mondayClose" },
+    2: { open: "tuesdayOpen", close: "tuesdayClose" },
+    3: { open: "wednesdayOpen", close: "wednesdayClose" },
+    4: { open: "thursdayOpen", close: "thursdayClose" },
+    5: { open: "fridayOpen", close: "fridayClose" },
+    6: { open: "saturdayOpen", close: "saturdayClose" },
+  };
 
-  const open = new Date(workHours.openTime);
-  const close = new Date(workHours.closeTime);
+  const dayFields = dayMap[dayOfWeek];
+  const openTime = serviceOperatingHours[dayFields.open];
+  const closeTime = serviceOperatingHours[dayFields.close];
+
+  // Jika tidak ada jam operasional untuk hari ini (null), skip
+  if (!openTime || !closeTime) return;
+
+  const open = new Date(openTime);
+  const close = new Date(closeTime);
 
   let slotStart = set(date, {
     hours: open.getHours(),
@@ -224,17 +237,17 @@ export async function generateSlotsForDate({
 
 type GenerateSlotsParams = {
   productId: string;
-  operatingHours: OutletOperatingHours[];
+  serviceOperatingHours: any; // ProductService with operating hours
   serviceDurationMinutes: number;
   daysToGenerate: number;
 };
 
 /**
- * Generates default booking slots for a range of days.
+ * Generates default booking slots for a range of days based on service operating hours.
  */
 export async function generateDefaultBookingSlots({
   productId,
-  operatingHours,
+  serviceOperatingHours,
   serviceDurationMinutes,
   daysToGenerate,
 }: GenerateSlotsParams) {
@@ -250,28 +263,41 @@ export async function generateDefaultBookingSlots({
   const slotsToCreate: Prisma.BookingSlotCreateManyInput[] = [];
   const today = new Date();
 
+  // Map dayOfWeek to corresponding field names
+  const dayMap: { [key: number]: { open: string; close: string } } = {
+    0: { open: "sundayOpen", close: "sundayClose" },
+    1: { open: "mondayOpen", close: "mondayClose" },
+    2: { open: "tuesdayOpen", close: "tuesdayClose" },
+    3: { open: "wednesdayOpen", close: "wednesdayClose" },
+    4: { open: "thursdayOpen", close: "thursdayClose" },
+    5: { open: "fridayOpen", close: "fridayClose" },
+    6: { open: "saturdayOpen", close: "saturdayClose" },
+  };
+
   for (let i = 0; i < daysToGenerate; i++) {
     const currentDate = add(today, { days: i });
     const dayOfWeek = currentDate.getDay();
 
-    const workHours = operatingHours.find((h) => h.dayOfWeek === dayOfWeek && h.isOpen);
+    const dayFields = dayMap[dayOfWeek];
+    const openTime = serviceOperatingHours[dayFields.open];
+    const closeTime = serviceOperatingHours[dayFields.close];
 
-    if (workHours) {
+    if (openTime && closeTime) {
       let currentTime = set(currentDate, {
-        hours: workHours.openTime.getHours(),
-        minutes: workHours.openTime.getMinutes(),
+        hours: new Date(openTime).getHours(),
+        minutes: new Date(openTime).getMinutes(),
         seconds: 0,
         milliseconds: 0,
       });
 
-      const closeTime = set(currentDate, {
-        hours: workHours.closeTime.getHours(),
-        minutes: workHours.closeTime.getMinutes(),
+      const closeTimeSet = set(currentDate, {
+        hours: new Date(closeTime).getHours(),
+        minutes: new Date(closeTime).getMinutes(),
         seconds: 0,
         milliseconds: 0,
       });
 
-      while (add(currentTime, { minutes: serviceDurationMinutes }) <= closeTime) {
+      while (add(currentTime, { minutes: serviceDurationMinutes }) <= closeTimeSet) {
         const slotEndTime = add(currentTime, { minutes: serviceDurationMinutes });
 
         slotsToCreate.push({
