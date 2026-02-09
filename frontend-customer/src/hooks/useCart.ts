@@ -60,6 +60,14 @@ export const useCart = create<CartState>()(
                 const slotInfo = selectedSchedule?.slot;
                 const staffInfo = selectedSchedule?.staff;
 
+                // Validasi: Hanya boleh 1 layanan (SERVICE) dalam keranjang
+                if (product.type === 'SERVICE') {
+                    const existingService = items.find(item => item.type === 'SERVICE' && item.productId !== product.id);
+                    if (existingService) {
+                        throw new Error('Hanya boleh menambahkan 1 layanan dalam keranjang. Silakan hapus layanan sebelumnya atau checkout terlebih dahulu.');
+                    }
+                }
+
                 // Validasi: Dalam satu outlet, tidak boleh ada campuran GOODS dan SERVICE
                 const existingItemsInOutlet = items.filter(item => item.outletId === outletId);
                 if (existingItemsInOutlet.length > 0) {

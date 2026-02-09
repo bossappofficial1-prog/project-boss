@@ -87,6 +87,7 @@ export const exportTransactionReportController = asyncHandler(async (req: Reques
       businessId: business.id,
       startDate: body.startDate,
       endDate: body.endDate,
+      // email: 'pitokfauzi@gmail.com',
       email: user.email,
       requestedBy: user.name,
     },
