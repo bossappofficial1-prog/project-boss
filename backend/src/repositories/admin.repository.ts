@@ -1034,12 +1034,12 @@ export class AdminRepository {
             id: invoice.id,
             invoiceNumber: invoice.invoiceNumber,
             businessId: invoice.businessId,
-            businessName: invoice.business.name,
+            businessName: invoice.business?.name ?? 'business name',
             amount: invoice.amount,
             status: invoice.status,
             issuedAt: invoice.createdAt.toISOString(),
             paidAt: invoice.paidAt ? invoice.paidAt.toISOString() : null,
-            planName: invoice.subscription?.plan?.name || invoice.business.subscriptionPlan
+            planName: invoice.subscription?.plan?.name || (invoice.business?.subscriptionPlan ?? 'plan')
         }));
 
         return {

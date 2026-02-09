@@ -5,6 +5,7 @@ import * as ExcelJS from 'exceljs';
 import { BusinessRepository } from "../repositories/business.repository";
 import { CreateBusinessInput, UpdateBusinessInput } from "../schemas/business.schema";
 import { DateUtil } from "../utils";
+import { redis } from "../config/redis";
 
 export async function createBusinessService(data: CreateBusinessInput, ownerId: string) {
     const existingBusiness = await BusinessRepository.findByOwnerId(ownerId);
@@ -54,6 +55,7 @@ export async function updateBankAccountService(businessId: string, ownerId: stri
         throw new AppError('You are not authorized to update this business', HttpStatus.FORBIDDEN);
     }
 
+    redis.del(`user:${ownerId}`)
     return BusinessRepository.update(businessId, {
         ...data,
     });

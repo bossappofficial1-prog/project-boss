@@ -1,0 +1,25 @@
+import { Router } from "express";
+import { protect, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
+import { validateSchema } from "../middleware/zod.middleware";
+import { createPosV2OrderSchema } from "../schemas/pos-v2.schema";
+import {
+    posV2GetProducts,
+    posV2CreateOrder,
+    posV2GetCashSummary,
+    posV2GetRecentOrders,
+    posV2GetBookingSlots,
+    posV2GetAvailableStaff,
+} from "../controller/pos-v2.controller";
+
+const posV2Router = Router();
+
+posV2Router.use(protect, authorizeOwnerOrCashier);
+
+posV2Router.get("/products", posV2GetProducts);
+posV2Router.post("/orders", validateSchema(createPosV2OrderSchema), posV2CreateOrder);
+posV2Router.get("/cash-summary", posV2GetCashSummary);
+posV2Router.get("/recent-orders", posV2GetRecentOrders);
+posV2Router.get("/products/:productId/booking-slots", posV2GetBookingSlots);
+posV2Router.get("/products/:productId/available-staff", posV2GetAvailableStaff);
+
+export default posV2Router;

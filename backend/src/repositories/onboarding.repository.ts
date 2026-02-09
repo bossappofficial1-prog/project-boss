@@ -1,5 +1,6 @@
 import { PaymentStatus, SubscriptionPlan, SubscriptionStatus, SubscriptionInvoice } from "@prisma/client";
 import { db } from "../config/prisma";
+import { generateBusinessId } from "../utils";
 
 interface CompleteOnboardingParams {
     ownerId: string;
@@ -21,6 +22,7 @@ export class OnboardingRepository {
         return db.$transaction(async (tx) => {
             const business = await tx.business.create({
                 data: {
+                    id: generateBusinessId(),
                     name: businessName,
                     description: description || null,
                     ownerId,

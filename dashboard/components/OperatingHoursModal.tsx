@@ -78,29 +78,16 @@ export default function OperatingHoursModal({
             const hasOperatingHoursChanges = Object.values(operatingHoursData).some(
                 (data: OperatingHoursFormData) => data.isOpen !== undefined
             )
-
             if (hasOperatingHoursChanges) {
-                const operatingHoursPromises = Object.values(operatingHoursData)
-                    .filter((data: OperatingHoursFormData) => data.isOpen !== undefined)
-                    .map((data: OperatingHoursFormData) =>
-                        upsertMutation.mutateAsync({
-                            outletId,
-                            dayOfWeek: data.dayOfWeek,
-                            openTime: new Date(`1970-01-01T${data.openTime}:00`),
-                            closeTime: new Date(`1970-01-01T${data.closeTime}:00`),
-                            isOpen: data.isOpen
-                        })
-                    )
-
-                try {
-                    await Promise.all(operatingHoursPromises)
-                } catch (error) {
-                    // Don't fail the entire operation if operating hours fail
-                    console.error('Failed to save operating hours:', error)
-                    toast.error('Gagal menyimpan jam operasional')
-                    setIsSaving(false);
-                    return;
-                }
+                await upsertMutation.mutateAsync({
+                    outletId,
+                    hours: Object.values(operatingHoursData).map(hour => ({
+                        openTime: new Date(`1970-01-01T${hour.openTime}:00`),
+                        closeTime: new Date(`1970-01-01T${hour.closeTime}:00`),
+                        dayOfWeek: hour.dayOfWeek,
+                        isOpen: hour.isOpen,
+                    }))
+                })
             }
 
             toast.success('Jam operasional berhasil disimpan');
@@ -148,7 +135,7 @@ export default function OperatingHoursModal({
                     {!isLoading && (
                         <OperatingHoursManager
                             outletId={outletId}
-                            onOperatingHoursChange={(data) => setOperatingHoursData(data)}
+                            onOperatingHoursChange={(data) => { console.log(data); setOperatingHoursData(data) }}
                             operatingHoursData={operatingHoursData} />
                     )}
                 </div>

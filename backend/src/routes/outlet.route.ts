@@ -26,32 +26,6 @@ import { UserRole } from "@prisma/client";
 
 const outletRouter = Router();
 
-// Konfigurasi multer untuk upload QRIS
-const qrisStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(process.cwd(), 'uploads', 'qris'));
-    },
-    filename: (req, file, cb) => {
-        const uniqueName = `qris-${randomUUID()}${path.extname(file.originalname)}`;
-        cb(null, uniqueName);
-    },
-});
-
-const qrisUpload = multer({
-    storage: qrisStorage,
-    limits: {
-        fileSize: 2 * 1024 * 1024, // 2MB
-    },
-    fileFilter: (req, file, cb) => {
-        const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-        if (allowedMimes.includes(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(new Error('Format file tidak valid. Hanya menerima JPG, PNG, atau WebP'));
-        }
-    },
-});
-
 // Rute Publik
 outletRouter.get("/", getAllOutletsController);
 outletRouter.get("/featured", getFeaturedOutletsController);

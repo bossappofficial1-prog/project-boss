@@ -27,8 +27,10 @@ import {
   LogOut,
   ChevronDown,
 } from 'lucide-react';
+import { useOutletContext } from '../providers/OutletProvider';
 
 export default function Header() {
+  const { selectedOutlet } = useOutletContext();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { data: userData, isLoading: isUserLoading } = useUserData();
   const { open, toggleSidebar, state } = useSidebar();
@@ -99,7 +101,7 @@ export default function Header() {
         <ThemeToggle />
 
         {/* Receipt Setting */}
-        <ReceiptSetting />
+        <ReceiptSetting outletId={selectedOutlet?.id} />
 
         <Separator orientation="vertical" className="h-8 hidden sm:block" />
 

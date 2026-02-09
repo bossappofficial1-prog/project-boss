@@ -1,4 +1,4 @@
-import { FeeBearer, ManualPaymentType, OrderStatus, PaymentStatus } from "@prisma/client";
+import { ManualPaymentType, OrderStatus, PaymentStatus } from "@prisma/client";
 import { coreApi } from "../config/midtrans";
 import { db } from "../config/prisma";
 import { AppError } from "../errors/app-error";
@@ -54,7 +54,7 @@ function buildItemDetails(
   order: OrderWithRelations,
   midtransFee: number,
   appFee: number,
-  feeBearer: FeeBearer,
+  feeBearer: any,
 ): MidtransItem[] {
   const items: MidtransItem[] = order.items.map((item) => ({
     id: item.productId,
@@ -185,11 +185,11 @@ async function handleCashOrder(orderPayload: CreateOrderInput): Promise<CreatePo
       paymentStatus: PaymentStatus.SUCCESS,
       ...(orderPayload.bookingSlotId
         ? {
-            orderStatus: OrderStatus.CONFIRMED,
-          }
+          orderStatus: OrderStatus.CONFIRMED,
+        }
         : {
-            orderStatus: OrderStatus.COMPLETED,
-          }),
+          orderStatus: OrderStatus.COMPLETED,
+        }),
     },
   });
 

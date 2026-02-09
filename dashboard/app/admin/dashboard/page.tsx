@@ -66,11 +66,24 @@ export default function AdminDashboardPage() {
                 <ProofHealthDonut data={insightsQuery.data?.proofHealth} isLoading={insightsQuery.isLoading} />
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-3">
-                <SubscriptionFunnelCard data={insightsQuery.data?.funnel} isLoading={insightsQuery.isLoading} />
-                <div className="space-y-6 xl:col-span-2">
-                    <RiskyMerchantsTable data={riskQuery.data} isLoading={riskQuery.isLoading} />
-                    <ActivityTimeline data={activitiesQuery.data} isLoading={activitiesQuery.isLoading} />
+            <section className="grid grid-cols-1 gap-6 lg:grid-cols-6 lg:items-start">
+                <div className="lg:col-span-3 lg:sticky lg:top-6 h-fit">
+                    <SubscriptionFunnelCard
+                        data={insightsQuery.data?.funnel}
+                        isLoading={insightsQuery.isLoading}
+                    />
+                </div>
+                <div className="space-y-6 lg:col-span-3">
+                    <ActivityTimeline
+                        data={activitiesQuery.data}
+                        isLoading={activitiesQuery.isLoading}
+                    />
+                </div>
+                <div className="lg:col-span-6">
+                    <RiskyMerchantsTable
+                        data={riskQuery.data}
+                        isLoading={riskQuery.isLoading}
+                    />
                 </div>
             </section>
         </div>

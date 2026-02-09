@@ -3,6 +3,10 @@ import { asyncHandler } from "../middleware/error.middleware";
 import { ResponseUtil } from "../utils/response";
 import { ReportService } from "../service/report.service";
 import { z } from "zod";
+import { exportTransactionReportSchema } from "../schemas/export-report.schema";
+import { generateTransactionReportQueue } from "../queues/generate-transaction-report.queue";
+import { BusinessRepository } from "../repositories/business.repository";
+import { HttpStatus } from "../constants/http-status";
 
 const summaryQuerySchema = z.object({
   outletId: z.string(),
@@ -65,4 +69,37 @@ export const getStaffReportController = asyncHandler(async (req: Request, res: R
   );
 
   return ResponseUtil.success(res, report);
+});
+
+export const exportTransactionReportController = asyncHandler(async (req: Request, res: Response) => {
+  const user = req.storedUser!;
+  const body = exportTransactionReportSchema.parse(req.body);
+
+  // Ambil business dari user
+  const business = await BusinessRepository.findById(user.businessId);
+  if (!business) {
+    return ResponseUtil.error(res, 'Business tidak ditemukan', [], HttpStatus.NOT_FOUND);
+  }
+
+  // Tambahkan job ke queue
+  await generateTransactionReportQueue.add(
+    {
+      businessId: business.id,
+      startDate: body.startDate,
+      endDate: body.endDate,
+      // email: 'pitokfauzi@gmail.com',
+      email: user.email,
+      requestedBy: user.name,
+    },
+    {
+      removeOnComplete: true,
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
+      },
+    },
+  );
+
+  return ResponseUtil.success(res, null, HttpStatus.OK, 'Laporan sedang diproses. Akan dikirim ke email Anda.');
 });

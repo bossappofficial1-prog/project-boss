@@ -1,10 +1,16 @@
 import { Router } from "express";
 import { getDashboardSummaryController, getOrderStatsController } from "../controller/dashboard.controller";
+import {
+    getBusinessOverviewController,
+    getBusinessOutletsController,
+    getBusinessRecentOrdersController,
+} from "../controller/business-dashboard.controller";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
 
 const dashboardRouter = Router();
 
+// ─── Per-outlet (existing) ─────────────────────────────
 dashboardRouter.get(
     "/summary",
     protect,
@@ -17,6 +23,28 @@ dashboardRouter.get(
     protect,
     authorize(UserRole.OWNER),
     getOrderStatsController
+);
+
+// ─── Business-level (new) ──────────────────────────────
+dashboardRouter.get(
+    "/business/overview",
+    protect,
+    authorize(UserRole.OWNER),
+    getBusinessOverviewController
+);
+
+dashboardRouter.get(
+    "/business/outlets",
+    protect,
+    authorize(UserRole.OWNER),
+    getBusinessOutletsController
+);
+
+dashboardRouter.get(
+    "/business/recent-orders",
+    protect,
+    authorize(UserRole.OWNER),
+    getBusinessRecentOrdersController
 );
 
 export default dashboardRouter;

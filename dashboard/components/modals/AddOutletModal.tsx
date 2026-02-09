@@ -1,27 +1,21 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { useForm, Controller, useWatch } from 'react-hook-form'
+import { useForm, type Path, type ControllerRenderProps } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Store, AlertCircle, Loader2 } from 'lucide-react'
+import { Building2, Clock, FileText, MapPin, Phone, Store, ToggleLeft } from 'lucide-react'
 import MapPicker from '@/components/ui/MapPicker'
-import ImageUploader from '@/components/ui/ImageUploader'
 import OperatingHoursManager from '@/components/ui/OperatingHoursManager'
 import { toast } from 'sonner'
 import { useUpsertOperatingHours } from '@/hooks/useOperatingHours'
 import { outletManagementApi, uploadApi } from '@/lib/api'
 import type { OutletDetail, OperatingHoursFormData } from '@/types/dashboard'
-import { isEqual } from 'lodash'
 import { parseOperatingHours } from '@/lib/utils'
 import { AxiosError } from 'axios'
+import { ReusableForm, type FormFieldConfig } from '@/components/ui/reuseable-form'
+import { ACCEPTED_FILE_TYPES } from '@/constants/file-types'
 
 const outletSchema = z.object({
   name: z.string().min(1, 'Nama outlet wajib diisi'),
@@ -37,9 +31,7 @@ const outletSchema = z.object({
   status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  file: z.instanceof(File)
-    .refine((file) => file.size <= 1024 * 1024, `Ukuran gambar maksimal 1MB.`)
-    .optional()
+  file: z.instanceof(File).optional(),
 })
 
 type OutletFormData = z.infer<typeof outletSchema>
@@ -54,339 +46,263 @@ type Props = {
 }
 
 export default function AddOutletModal({
-  open,
-  onOpenChange,
-  businessId,
-  onSuccess,
-  mode = 'add',
-  outlet
+  open, onOpenChange, businessId, onSuccess,
+  mode = 'add', outlet
 }: Props) {
   const queryClient = useQueryClient()
+  const upsertMutation = useUpsertOperatingHours()
+
   const [operatingHoursData, setOperatingHoursData] = useState<Record<number, OperatingHoursFormData>>({})
-  const [initialOperatingHours, setInitialOperatingHours] = useState<Record<number, OperatingHoursFormData>>({})
-  const [operatingHoursChanged, setOperatingHoursChanged] = useState(false)
 
   const form = useForm<OutletFormData>({
     resolver: zodResolver(outletSchema) as any,
     mode: 'onChange',
-    defaultValues: { status: 'ACTIVE' }
+    defaultValues: { status: 'ACTIVE' },
   })
-
-  const { register, handleSubmit, control, reset, formState: { errors, isValid } } = form
-  const watchedFields = useWatch({
-    control,
-    name: ['name', 'address', 'phone', 'description', 'status', 'latitude', 'longitude', 'file']
-  })
-  const watchedLongitude = useWatch({ control, name: 'longitude' })
-  const watchedName = useWatch({ control, name: 'name' })
-
-  const upsertMutation = useUpsertOperatingHours()
-  const outletQueryKey = useMemo(() => ['outlet-detail', outlet?.id], [outlet?.id])
 
   const { data: outletDetail } = useQuery({
-    queryKey: outletQueryKey,
+    queryKey: ['outlet-detail', outlet?.id],
     queryFn: () => outletManagementApi.getById(outlet!.id),
     enabled: !!outlet?.id && open && mode === 'edit',
-    staleTime: 5 * 60 * 1000
+    staleTime: 5 * 60 * 1000,
   }) as { data: OutletDetail | undefined }
 
-  const mutationFn = useCallback(async (data: OutletFormData) => {
-    let outletResult: any
-    if (mode === 'edit') {
-      if (!outletDetail) throw new Error('Outlet tidak ditemukan')
-
-      let imageUrl = outletDetail.image
-      if (data.file) {
-        const uploaded = await uploadApi.uploadImage(data.file, { scope: 'outlet' })
-        imageUrl = uploaded.url
-      }
-
-      outletResult = await outletManagementApi.update(outletDetail.id, {
-        name: data.name,
-        address: data.address,
-        phone: data.phone,
-        description: data.description || undefined,
-        image: imageUrl,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        isOpen: data.status === 'ACTIVE'
-      })
-    } else {
-      if (!businessId) throw new Error('Profil bisnis belum dibuat.')
-
-      let imageUrl: string | undefined
-      if (data.file) {
-        const uploaded = await uploadApi.uploadImage(data.file, { scope: 'outlet' })
-        imageUrl = uploaded.url
-      }
-
-      outletResult = await outletManagementApi.create({
-        name: data.name,
-        address: data.address,
-        phone: data.phone,
-        description: data.description || undefined,
-        businessId,
-        image: imageUrl,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        isOpen: data.status === 'ACTIVE'
-      })
-    }
-
-    const changedHours = Object.values(operatingHoursData).filter(d => d.isOpen !== undefined)
-    if (changedHours.length > 0) {
-      try {
-        await Promise.all(changedHours.map(data =>
-          upsertMutation.mutateAsync({
-            outletId: mode === 'edit' ? outletDetail!.id : outletResult.id,
-            dayOfWeek: data.dayOfWeek,
-            openTime: new Date(`1970-01-01T${data.openTime}:00`),
-            closeTime: new Date(`1970-01-01T${data.closeTime}:00`),
-            isOpen: data.isOpen
-          })
-        ))
-      } catch {
-        toast.warning('Outlet disimpan, tapi jam operasional gagal disimpan')
-      }
-    }
-
-    return outletResult
-  }, [mode, outletDetail, businessId, operatingHoursData, upsertMutation])
-
-  const invalidateQueries = useCallback(async (outletId?: string) => {
-    const tasks = [
-      queryClient.invalidateQueries({ queryKey: ['outlets'] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-    ]
-    if (mode === 'edit' && outletId)
-      tasks.push(queryClient.invalidateQueries({ queryKey: ['outlet-detail', outletId] }))
-    await Promise.all(tasks)
-  }, [mode, queryClient])
-
-  const { mutate, isPending: isSubmitting } = useMutation({
-    mutationFn,
-    onSuccess: async (data: any) => {
-      toast.success(mode === 'edit' ? 'Outlet diperbarui!' : 'Outlet berhasil ditambahkan!')
-      await invalidateQueries(mode === 'edit' ? outletDetail?.id : data.id)
-      onSuccess?.()
-      resetForm()
-      onOpenChange(false)
-    },
-    onError: (e: any) => toast.error(((e as AxiosError).response?.data as any).message || 'Gagal menyimpan outlet')
-  })
-
-  const resetForm = useCallback(() => {
-    reset()
-    setOperatingHoursData({})
-    setInitialOperatingHours({})
-    setOperatingHoursChanged(false)
-  }, [reset])
-
-  const populateForm = useCallback((outletData: OutletDetail) => {
-    reset({
-      name: outletData.name,
-      address: outletData.address || '',
-      phone: outletData.phone || '',
-      description: outletData.description || '',
-      status: outletData.isOpen ? 'ACTIVE' : 'INACTIVE',
-      latitude: outletData.latitude,
-      longitude: outletData.longitude,
-    })
-
-    const hours = outletData.operatingHours?.length
-      ? parseOperatingHours(outletData.operatingHours)
-      : {}
-    setOperatingHoursData(hours)
-    setInitialOperatingHours(hours)
-    setOperatingHoursChanged(false)
-  }, [reset])
-
   useEffect(() => {
-    if (outletDetail && open && mode === 'edit') populateForm(outletDetail)
-  }, [outletDetail?.id, open, mode, populateForm])
+    if (!outletDetail || !open || mode !== 'edit') return
 
-  const handleOperatingHoursChange = useCallback((newData: Record<number, OperatingHoursFormData>) => {
-    setOperatingHoursData(newData)
-    const hasChanges = !isEqual(newData, initialOperatingHours)
-    setOperatingHoursChanged(hasChanges)
-  }, [initialOperatingHours])
-
-  const handleLocationSelect = useCallback(async (lat: number, lng: number) => {
-    form.setValue('latitude', lat, { shouldValidate: true })
-    form.setValue('longitude', lng, { shouldValidate: true })
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
-        headers: { 'User-Agent': 'ProjectBoss/1.0' }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.display_name) form.setValue('address', data.display_name, { shouldValidate: true })
-      }
-    } catch (e) { console.error('Reverse geocoding failed:', e) }
-  }, [form])
-
-  const hasFormChanges = useMemo(() => {
-    if (mode === 'add') return true
-    if (!outletDetail) return false
-
-    const [name, address, phone, description, status, latitude, longitude, file] = watchedFields
-
-    const initial = {
-      name: outletDetail.name || '',
+    form.reset({
+      name: outletDetail.name,
       address: outletDetail.address || '',
       phone: outletDetail.phone || '',
       description: outletDetail.description || '',
       status: outletDetail.isOpen ? 'ACTIVE' : 'INACTIVE',
       latitude: outletDetail.latitude,
-      longitude: outletDetail.longitude
+      longitude: outletDetail.longitude,
+    })
+
+    const hours = outletDetail.operatingHours?.length
+      ? parseOperatingHours(outletDetail.operatingHours)
+      : {}
+    setOperatingHoursData(hours)
+  }, [outletDetail?.id, open, mode])
+
+  const handleOperatingHoursChange = useCallback(
+    (data: Record<number, OperatingHoursFormData>) => setOperatingHoursData(data),
+    []
+  )
+
+  const handleLocationSelect = useCallback(async (lat: number, lng: number) => {
+    form.setValue('latitude', lat, { shouldValidate: true })
+    form.setValue('longitude', lng, { shouldValidate: true })
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        { headers: { 'User-Agent': 'ProjectBoss/1.0' } }
+      )
+      if (res.ok) {
+        const data = await res.json()
+        if (data.display_name) form.setValue('address', data.display_name, { shouldValidate: true })
+      }
+    } catch (e) {
+      console.error('Reverse geocoding failed:', e)
     }
+  }, [form])
 
-    const current = { name, address, phone, description, status, latitude, longitude }
-    return !isEqual(current, initial) || !!file
-  }, [mode, watchedFields, outletDetail])
+  const { mutate, isPending: isSubmitting } = useMutation({
+    mutationFn: async (values: any) => {
+      const formData = values as FormData
+      const file = formData.get('file') as File
 
-  const isFormValid = useMemo(() => {
-    if (mode === 'add') return isValid && !!businessId
-    return isValid && (hasFormChanges || operatingHoursChanged)
-  }, [mode, isValid, hasFormChanges, operatingHoursChanged, businessId])
+      const base = {
+        name: formData.get('name') as string,
+        address: formData.get('address') as string,
+        phone: formData.get('phone') as string,
+        description: (formData.get('description') as string) || undefined,
+        latitude: Number(formData.get('latitude')),
+        longitude: Number(formData.get('longitude')),
+        isOpen: formData.get('status') === 'ACTIVE',
+        image: undefined as string | undefined,
+      }
+
+      if (file instanceof File) {
+        const uploaded = await uploadApi.uploadImage(file, { scope: 'outlet' })
+        base.image = uploaded.url
+      }
+
+      const result = mode === 'edit'
+        ? await outletManagementApi.update(outletDetail!.id, base)
+        : await outletManagementApi.create({ ...base, businessId })
+
+      // Save operating hours
+      const changedHours = Object.values(operatingHoursData).filter(d => d.isOpen !== undefined)
+      try {
+        await upsertMutation.mutateAsync({
+          outletId: mode === 'edit' ? outletDetail!.id : result.id,
+          hours: changedHours.map((schedule) => ({
+            openTime: new Date(`1970-01-01T${schedule.openTime}:00`),
+            closeTime: new Date(`1970-01-01T${schedule.openTime}:00`),
+            dayOfWeek: schedule.dayOfWeek,
+            isOpen: schedule.isOpen
+          }))
+        })
+      } catch {
+        toast.warning('Outlet disimpan, tapi jam operasional gagal disimpan')
+      }
+
+      return result
+    },
+    onSuccess: async () => {
+      toast.success(mode === 'edit' ? 'Outlet diperbarui!' : 'Outlet berhasil ditambahkan!')
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['outlets'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+        ...(mode === 'edit' && outletDetail?.id
+          ? [queryClient.invalidateQueries({ queryKey: ['outlet-detail', outletDetail.id] })]
+          : []),
+      ])
+      onSuccess?.()
+      form.reset({ status: 'ACTIVE' })
+      setOperatingHoursData({})
+      onOpenChange(false)
+    },
+    onError: (e: any) => {
+      toast.error(((e as AxiosError).response?.data as any)?.message || 'Gagal menyimpan outlet')
+    },
+  })
+
+  const fields: FormFieldConfig<OutletFormData>[] = useMemo(() => [
+    {
+      name: 'name',
+      label: 'Nama Outlet',
+      placeholder: 'Contoh: Outlet Utama',
+      icon: Building2,
+      colSpan: 2 as const,
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      placeholder: 'Pilih Status',
+      icon: ToggleLeft,
+      colSpan: 1 as const,
+      options: [
+        { label: 'Aktif', value: 'ACTIVE' },
+        { label: 'Tidak Aktif', value: 'INACTIVE' },
+      ],
+    },
+    {
+      name: 'description',
+      label: 'Deskripsi',
+      type: 'textarea' as const,
+      placeholder: 'Deskripsi singkat outlet',
+      icon: FileText,
+      colSpan: 'full' as const,
+    },
+    {
+      name: 'phone',
+      label: 'No. Telepon',
+      type: 'tel' as const,
+      placeholder: '08xxxxxxxxxx',
+      icon: Phone,
+      colSpan: 'full' as const,
+    },
+    {
+      name: 'latitude' as Path<OutletFormData>,
+      label: '',
+      type: 'custom' as const,
+      colSpan: 'full' as const,
+      renderCustom: () => (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
+            <Clock className="h-5 w-5" /> Jam Operasional
+          </h3>
+          <OperatingHoursManager
+            outletId={mode === 'edit' ? outletDetail?.id || '' : ''}
+            operatingHoursData={operatingHoursData}
+            onOperatingHoursChange={handleOperatingHoursChange}
+          />
+        </div>
+      ),
+    },
+    // ── Lokasi ──
+    {
+      name: 'address',
+      label: 'Alamat',
+      placeholder: 'Alamat lengkap',
+      icon: MapPin,
+      colSpan: 'full' as const,
+    },
+    {
+      name: 'longitude' as Path<OutletFormData>,
+      label: '',
+      type: 'custom' as const,
+      colSpan: 'full' as const,
+      renderCustom: ({ field }: { field: ControllerRenderProps<OutletFormData, Path<OutletFormData>> }) => (
+        <MapPicker
+          latitude={form.getValues('latitude')}
+          longitude={field.value as number | undefined}
+          onLocationChange={handleLocationSelect}
+          showSelectionMarker
+          showControls
+          mapProps={{ projection: { type: 'globe' } }}
+          renderMarkerContent={() => (
+            <div className="flex items-center justify-center h-6 w-6 rounded-full bg-red-500/90 ring-2 ring-white shadow">
+              <div className="h-2.5 w-2.5 rounded-full bg-white" />
+            </div>
+          )}
+          renderMarkerPopup={(pos) => (
+            <div className="text-center">
+              <div className="font-semibold">{form.getValues('name') || 'Outlet'}</div>
+              <div className="text-sm text-gray-600">
+                Lat: {pos.lat.toFixed(6)}<br />
+                Lng: {pos.lng.toFixed(6)}
+              </div>
+            </div>
+          )}
+        />
+      ),
+    },
+    // ── Foto ──
+    {
+      name: 'file',
+      label: 'Foto Outlet',
+      type: 'file' as const,
+      accept: ACCEPTED_FILE_TYPES.IMAGE,
+      maxSizes: 3 * 1024 * 1024,
+      colSpan: 'full' as const,
+    },
+  ], [mode, outletDetail, operatingHoursData, handleOperatingHoursChange, handleLocationSelect, form])
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[95dvh] w-[95vw] max-w-[1000px] overflow-hidden flex flex-col">
-          <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="flex items-center gap-3 text-xl">
-              <Store className="h-6 w-6 text-red-500" />
-              {mode === 'edit' ? 'Edit Outlet' : 'Tambah Outlet Baru'}
-            </DialogTitle>
-            <DialogDescription>
-              {mode === 'edit' ? 'Perbarui informasi outlet dan jam operasional Anda.' : 'Lengkapi informasi outlet dan jam operasional Anda.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit(data => mutate(data as any))} className="flex-grow overflow-y-auto pr-2 -mr-4 space-y-6 py-4">
-            {!businessId && (
-              <div className="flex items-start gap-3 p-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg">
-                <AlertCircle className="h-5 w-5 mt-0.5" />
-                <div>
-                  <p className="font-semibold">Bisnis Belum Dibuat</p>
-                  <p className="text-xs mt-1">Silakan buat profil bisnis terlebih dahulu.</p>
-                </div>
-              </div>
-            )}
-
-            {/* Informasi Dasar */}
-            <section className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Informasi Dasar</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2">
-                  <Label htmlFor="name">Nama Outlet</Label>
-                  <Input id="name" placeholder="Contoh: Outlet Utama" {...register('name')} />
-                  {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Controller control={control} name="status" render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger><SelectValue placeholder="Pilih status" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ACTIVE">Aktif</SelectItem>
-                        <SelectItem value="INACTIVE">Tidak Aktif</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )} />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="description">Deskripsi</Label>
-                <Textarea id="description" placeholder="Deskripsi singkat outlet" {...register('description')} />
-              </div>
-            </section>
-
-            {/* Kontak */}
-            <section className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Informasi Kontak</h3>
-              <div>
-                <Label htmlFor="phone">No. Telepon</Label>
-                <Input id="phone" placeholder="08xxxxxxxxxx" {...register('phone')} />
-                {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
-              </div>
-            </section>
-
-            {/* Jam Operasional */}
-            <section className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Jam Operasional</h3>
-              <OperatingHoursManager
-                outletId={mode === 'edit' ? outletDetail?.id || '' : ''}
-                operatingHoursData={operatingHoursData}
-                onOperatingHoursChange={handleOperatingHoursChange}
-              />
-            </section>
-
-            {/* Lokasi */}
-            <section className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Lokasi</h3>
-              <Label htmlFor="address">Alamat</Label>
-              <Input id="address" placeholder="Alamat lengkap" {...register('address')} />
-              {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address.message}</p>}
-              <Controller control={control} name="latitude" render={({ field }) => (
-                <MapPicker
-                  latitude={field.value}
-                  longitude={watchedLongitude}
-                  onLocationChange={handleLocationSelect}
-                  showSelectionMarker
-                  showControls
-                  mapProps={{ projection: { type: 'globe' } }}
-                  renderMarkerContent={() => (
-                    <div className="flex items-center justify-center h-6 w-6 rounded-full bg-red-500/90 ring-2 ring-white shadow">
-                      <div className="h-2.5 w-2.5 rounded-full bg-white" />
-                    </div>
-                  )}
-                  renderMarkerPopup={(pos) => (
-                    <div className="text-center">
-                      <div className="font-semibold">{watchedName || 'Outlet'}</div>
-                      <div className="text-sm text-gray-600">
-                        Lat: {pos.lat.toFixed(6)}<br />
-                        Lng: {pos.lng.toFixed(6)}
-                      </div>
-                    </div>
-                  )}
-                />
-              )} />
-            </section>
-
-            {/* Media */}
-            <section className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Media</h3>
-              {mode === 'edit' && outletDetail?.image && (
-                <div className="flex items-center gap-3 p-3 rounded-md border">
-                  <img src={outletDetail.image} alt="Outlet" className="h-12 w-12 object-cover rounded-md" />
-                  <div>
-                    <p className="text-sm font-medium">Gambar saat ini</p>
-                    <p className="text-xs text-gray-500">Upload gambar baru untuk mengganti</p>
-                  </div>
-                </div>
-              )}
-              <Controller control={control} name="file" render={({ field }) =>
-                <ImageUploader
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  accept={{ 'image/*': ['.jpeg', '.jpg', '.png', '.webp'] }}
-                />}
-              />
-              {errors.file && <p className="text-xs text-red-500 mt-1">{errors.file.message}</p>}
-            </section>
-
-            {/* Footer */}
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Batal</Button>
-              <Button type="submit" disabled={isSubmitting || !isFormValid}>
-                {isSubmitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</>) : (mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Outlet')}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
+    <ReusableForm<OutletFormData>
+      form={form}
+      schema={outletSchema}
+      fields={fields}
+      defaultValues={{ status: 'ACTIVE' }}
+      onSubmit={(values) => mutate(values)}
+      isLoading={isSubmitting}
+      submitDisabled={mode === 'add' && !businessId}
+      submitText={mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Outlet'}
+      cancelText="Batal"
+      gridCols={3}
+      withDialog
+      isDialogOpen={open}
+      onDialogOpenChange={onOpenChange}
+      dialogTitle={
+        <span className="flex items-center gap-3 text-xl">
+          <Store className="h-6 w-6 text-red-500" />
+          {mode === 'edit' ? 'Edit Outlet' : 'Tambah Outlet Baru'}
+        </span>
+      }
+      dialogDescription={
+        mode === 'edit'
+          ? 'Perbarui informasi outlet dan jam operasional Anda.'
+          : 'Lengkapi informasi outlet dan jam operasional Anda.'
+      }
+      className="max-h-[95dvh] w-[95vw] max-w-[1000px]"
+      confirmClose
+      confirmCloseMessage="Perubahan belum disimpan. Tutup form?"
+      resetFormOnClose
+    />
   )
 }

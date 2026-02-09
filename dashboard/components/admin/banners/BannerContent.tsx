@@ -143,6 +143,7 @@ export default function GlobalBannerContent() {
         setSelectedBanner(banner)
         setIsEdit(true)
         setMode('edit')
+        setFormKey(prev => prev + 1)
     }
 
     const handleDelete = (banner: Banner) => {

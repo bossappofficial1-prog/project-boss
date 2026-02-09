@@ -20,9 +20,7 @@ export const updateReceiptSettingSchema = z.object({
 
 export type UpdateReceiptSettingValues = z.infer<typeof updateReceiptSettingSchema>;
 
-export default function ReceiptSetting() {
-    const { selectedOutlet } = useOutletContext();
-
+export default function ReceiptSetting({ outletId }: { outletId?: string }) {
     // States
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
@@ -42,10 +40,10 @@ export default function ReceiptSetting() {
     }, []);
 
     useEffect(() => {
-        if (selectedOutlet?.id) {
-            fetchSettings(selectedOutlet.id);
+        if (outletId) {
+            fetchSettings(outletId);
         }
-    }, [selectedOutlet?.id, fetchSettings]);
+    }, [outletId, fetchSettings]);
 
     const defaultValues = useMemo(() => ({
         printHeight: receiptData?.printHeight || 0,
@@ -55,7 +53,7 @@ export default function ReceiptSetting() {
     }), [receiptData]);
 
     const handleSubmit = async (values: any) => {
-        if (!selectedOutlet?.id) return;
+        if (!outletId) return;
 
         setIsSubmitting(true);
         try {
@@ -76,7 +74,7 @@ export default function ReceiptSetting() {
                 payload.photoString = fileEntry;
             }
 
-            const result = await ReceiptSettingService.update(selectedOutlet.id, payload);
+            const result = await ReceiptSettingService.update(outletId, payload);
 
             setReceiptData(result);
             setIsModalOpen(false);
@@ -130,7 +128,7 @@ export default function ReceiptSetting() {
             <Button
                 variant="ghost"
                 size="icon"
-                disabled={!selectedOutlet?.id || isFetching}
+                disabled={!outletId || isFetching}
                 onClick={() => setIsModalOpen(true)}
                 title="Pengaturan Cetak Struk"
             >

@@ -8,7 +8,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL")
 }
 
 // === ENUMS ===
@@ -500,7 +499,7 @@ model Order {
   paymentReminderSent Boolean @default(false)
 
   // Status alur pesanan secara keseluruhan
-  orderStatus OrderStatus @default(AWAITING_PAYMENT)
+  orderStatus        OrderStatus @default(AWAITING_PAYMENT)
   cancellationReason String? // jika orderStatus = CANCELLED 
 
   midtransTransactionToken String? @unique

@@ -17,6 +17,7 @@ import {
 import ReusableSheet from "@/components/ui/reuseable-sheet";
 import { UserDetail, useUserDetail } from "@/hooks/useUsers";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatCurrency, formatISOStringDate } from "@/lib/utils";
 
 interface Props {
     isOpen: boolean;
@@ -54,6 +55,8 @@ function UserDetailContent({
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    if (!data) return null
 
     return (
         <>
@@ -152,7 +155,7 @@ function UserDetailContent({
 
                                     <div className="flex items-center justify-between group">
                                         <p className="text-2xl font-mono tracking-wider">
-                                            {data.business.bankAccount.replace(/\d(?=\d{4})/g, "•")}
+                                            {data.business.bankAccount ? data.business.bankAccount.replace(/\d(?=\d{4})/g, "•") : '-'}
                                         </p>
                                         <button
                                             onClick={() => handleCopy(data.business.bankAccount)}
@@ -203,20 +206,22 @@ function UserDetailContent({
                         <section>
                             <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">History Terakhir</h4>
                             <div className="space-y-3">
-                                {[1, 2].map((i) => (
-                                    <div key={i} className="flex items-center justify-between p-3 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all cursor-pointer group">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:bg-white dark:group-hover:bg-slate-700 transition-colors">
-                                                <CreditCard size={14} />
+                                {!data.recentInvoice
+                                    ? <span className="text-red-500">Belum ada invoice</span>
+                                    : data.recentInvoice.map((i) => (
+                                        <div key={i.id} className="flex items-center justify-between p-3 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all cursor-pointer group">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:bg-white dark:group-hover:bg-slate-700 transition-colors">
+                                                    <CreditCard size={14} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight">Invoice #{i.invoiceNumber}</p>
+                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{formatISOStringDate(i.createdAt)}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight">Invoice #INV-2023-00{i}</p>
-                                                <p className="text-[10px] text-slate-400 dark:text-slate-500">12 Nov 2023</p>
-                                            </div>
+                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{formatCurrency(i.amount)}</span>
                                         </div>
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Rp 150.000</span>
-                                    </div>
-                                ))}
+                                    ))}
                             </div>
                         </section>
                     </div>

@@ -116,7 +116,7 @@ const baseColumns: ColumnDef<SubscriptionInvoiceRecord>[] = [
                 <div className="space-y-1">
                     <p className="text-sm font-semibold text-foreground">#{formatInvoiceCode(invoice.invoiceNumber)}</p>
                     <p className="text-xs text-muted-foreground">{formatDateTime(invoice.createdAt)}</p>
-                    <p className="text-xs text-muted-foreground">{invoice.subscription.plan.name}</p>
+                    <p className="text-xs text-muted-foreground">{invoice.subscription ? invoice.subscription.plan.name : '-'}</p>
                 </div>
             );
         },
@@ -127,6 +127,16 @@ const baseColumns: ColumnDef<SubscriptionInvoiceRecord>[] = [
         size: 220,
         cell: ({ row }) => {
             const invoice = row.original;
+
+            if (!invoice.business?.owner) {
+                return (
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium text-foreground">Deleted business</p>
+                        <p className="text-xs text-muted-foreground">Delete user · deleted@user.com</p>
+                        <p className="text-xs text-muted-foreground">-</p>
+                    </div>)
+            }
+
             const owner = invoice.business.owner;
             return (
                 <div className="space-y-1">
@@ -148,7 +158,7 @@ const baseColumns: ColumnDef<SubscriptionInvoiceRecord>[] = [
             return (
                 <div className="space-y-1">
                     <p className="text-sm font-semibold text-foreground">{formatCurrency(invoice.amount)}</p>
-                    <p className="text-xs text-muted-foreground">{invoice.subscription.plan.durationDays} hari · {invoice.subscription.plan.code}</p>
+                    <p className="text-xs text-muted-foreground">{invoice.subscription?.plan ? invoice.subscription.plan.durationDays : 0} hari · {invoice.subscription?.plan ? invoice.subscription.plan.code : '-'}</p>
                 </div>
             );
         },

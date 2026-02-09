@@ -18,6 +18,13 @@ interface CreateOperatingHoursInput {
     isOpen: boolean
 }
 
+export interface OperatingHoursInput {
+    dayOfWeek: number
+    openTime: Date
+    closeTime: Date
+    isOpen: boolean
+}
+
 interface UpdateOperatingHoursInput {
     openTime?: Date
     closeTime?: Date
@@ -54,11 +61,11 @@ export function useUpsertOperatingHours() {
     const queryClient = useQueryClient()
 
     return useMutation({
-        mutationFn: async (data: CreateOperatingHoursInput): Promise<OperatingHoursData> => {
-            return operatingHoursApi.upsert(data)
+        mutationFn: async (payload: { outletId: string, hours: OperatingHoursInput[] }): Promise<OperatingHoursData[]> => {
+            return await operatingHoursApi.upsert(payload.outletId, payload.hours)
         },
         onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ['operating-hours', data.outletId] })
+            queryClient.invalidateQueries({ queryKey: ['operating-hours', data[0].outletId] })
         },
     })
 }

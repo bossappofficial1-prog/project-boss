@@ -788,13 +788,13 @@ const mapPublicOrderResponse = (
 
   const mappedTransaction = transaction
     ? {
-        ...transaction,
-        expiryTime: transaction.expiresAt
-          ? transaction.expiresAt instanceof Date
-            ? transaction.expiresAt.toISOString()
-            : transaction.expiresAt
-          : ((transaction as any).expiryTime ?? null),
-      }
+      ...transaction,
+      expiryTime: transaction.expiresAt
+        ? transaction.expiresAt instanceof Date
+          ? transaction.expiresAt.toISOString()
+          : transaction.expiresAt
+        : ((transaction as any).expiryTime ?? null),
+    }
     : null;
 
   const mappedItems = (items ?? []).map((item: any) => ({
@@ -806,18 +806,18 @@ const mapPublicOrderResponse = (
 
   const mappedBookingSlot = bookingSlot
     ? {
-        ...bookingSlot,
-        startTime:
-          bookingSlot.startTime instanceof Date
-            ? bookingSlot.startTime.toISOString()
-            : bookingSlot.startTime,
-        endTime:
-          bookingSlot.endTime instanceof Date
-            ? bookingSlot.endTime.toISOString()
-            : bookingSlot.endTime,
-        date: bookingSlot.date instanceof Date ? bookingSlot.date.toISOString() : bookingSlot.date,
-        staff: null, // staff is not on booking slot schema
-      }
+      ...bookingSlot,
+      startTime:
+        bookingSlot.startTime instanceof Date
+          ? bookingSlot.startTime.toISOString()
+          : bookingSlot.startTime,
+      endTime:
+        bookingSlot.endTime instanceof Date
+          ? bookingSlot.endTime.toISOString()
+          : bookingSlot.endTime,
+      date: bookingSlot.date instanceof Date ? bookingSlot.date.toISOString() : bookingSlot.date,
+      staff: null, // staff is not on booking slot schema
+    }
     : null;
 
   const normalizedOrder = {
@@ -995,6 +995,59 @@ export async function updateServiceQueueStatusService(
   const allowedNext = SERVICE_QUEUE_TRANSITIONS[orderRecord.orderStatus] ?? [];
   if (!allowedNext.includes(nextStatus)) {
     throw new AppError("Transisi status tidak valid untuk pesanan ini", HttpStatus.BAD_REQUEST);
+  }
+
+  // Block confirming manual payment if no proof uploaded
+  if (
+    orderRecord.orderStatus === OrderStatus.AWAITING_PAYMENT &&
+    nextStatus === OrderStatus.PROCESSING
+  ) {
+    const tx = (orderRecord as any).transaction;
+    if (tx?.isManual && !tx?.paymentProofUrl) {
+      throw new AppError(
+        "Tidak dapat mengkonfirmasi pembayaran. Bukti pembayaran belum dikirimkan oleh customer.",
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  // Block advancing beyond PROCESSING for future-date bookings
+  const REQUIRES_TODAY: OrderStatus[] = [
+    OrderStatus.READY,
+    OrderStatus.ON_GOING,
+    OrderStatus.COMPLETED,
+  ];
+
+  if (REQUIRES_TODAY.includes(nextStatus)) {
+    const bookingSlot = (orderRecord as any).items?.find(
+      (item: any) => item.bookingSlot,
+    )?.bookingSlot;
+    const bookingDate = (orderRecord as any).bookingDate;
+
+    const scheduledDate = bookingSlot?.startTime
+      ? new Date(bookingSlot.startTime)
+      : bookingDate
+        ? new Date(bookingDate)
+        : null;
+
+    if (scheduledDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const schedDay = new Date(scheduledDate);
+      schedDay.setHours(0, 0, 0, 0);
+
+      if (schedDay.getTime() > today.getTime()) {
+        const formatted = schedDay.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        });
+        throw new AppError(
+          `Pesanan ini dijadwalkan untuk ${formatted}. Tidak dapat mengubah status menjadi ${nextStatus === OrderStatus.READY ? "Siap" : nextStatus === OrderStatus.ON_GOING ? "Sedang Dilayani" : "Selesai"} sebelum tanggal jadwal.`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
   }
 
   const updatedOrder = await updateOrderStatusService(orderId, nextStatus, reason);

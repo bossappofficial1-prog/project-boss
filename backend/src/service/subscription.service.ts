@@ -14,7 +14,7 @@ export class SubscriptionService {
             throw new AppError('Invoice tidak ditemukan', HttpStatus.NOT_FOUND);
         }
 
-        if (invoice.subscription.business.id !== businessId) {
+        if (invoice.subscription?.business.id !== businessId) {
             throw new AppError('Invoice tidak milik bisnis Anda', HttpStatus.FORBIDDEN);
         }
 
@@ -28,7 +28,7 @@ export class SubscriptionService {
 
         const result = await SubscriptionRepository.submitPaymentProof({
             invoiceId,
-            subscriptionId: invoice.subscriptionId,
+            subscriptionId: invoice.subscriptionId || `default`,
             businessId,
             proofUrl,
         });
@@ -46,7 +46,7 @@ export class SubscriptionService {
             throw new AppError('Invoice tidak ditemukan', HttpStatus.NOT_FOUND);
         }
 
-        if (invoice.subscription.business.id !== businessId) {
+        if (invoice.subscription?.business.id !== businessId) {
             throw new AppError('Invoice tidak milik bisnis Anda', HttpStatus.FORBIDDEN);
         }
 
@@ -116,7 +116,7 @@ export class SubscriptionService {
                     subscriptionId: pendingInvoice.subscriptionId,
                     rejectionReason: pendingInvoice.rejectionReason,
                     proofImage: pendingInvoice.proofImage,
-                    plan: pendingInvoice.subscription.plan,
+                    plan: pendingInvoice.subscription?.plan,
                 }
                 : null,
         };
@@ -132,7 +132,7 @@ export class SubscriptionService {
             createdAt: invoice.createdAt,
             paidAt: invoice.paidAt,
             subscriptionId: invoice.subscriptionId,
-            plan: invoice.subscription.plan,
+            plan: invoice.subscription?.plan,
         }));
 
         return {

@@ -32,7 +32,7 @@ export const staffSchema = z.object({
 
   status: StaffStatusEnum.default("ACTIVE"),
 
-  outletId: z.string().uuid("ID Outlet harus valid"),
+  outletId: z.string(),
 
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),

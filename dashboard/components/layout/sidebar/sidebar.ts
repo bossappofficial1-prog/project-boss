@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  Store,
   Package,
   Box,
   ShoppingBag,
@@ -9,6 +8,9 @@ import {
   TrendingDown,
   Receipt,
   CreditCard,
+  LayoutDashboardIcon,
+  StoreIcon,
+  UsersIcon,
 } from "lucide-react";
 
 interface MenuItem {
@@ -36,9 +38,15 @@ export const MENU_GROUPS: MenuGroup[] = [
     label: "Utama",
     items: [
       {
-        id: "dashboard",
+        id: "owner-dashboard",
         name: "Dashboard",
         href: "/owner/dashboard",
+        icon: LayoutDashboard,
+      },
+      {
+        id: "overview",
+        name: "Dashboard Bisnis",
+        href: "/owner/dashboard/business",
         icon: LayoutDashboard,
       },
       {
@@ -53,14 +61,22 @@ export const MENU_GROUPS: MenuGroup[] = [
     label: "Manajemen Outlet",
     items: [
       {
-        id: "outlet",
-        name: "Outlet",
-        icon: Store,
-        subItems: [
-          { name: "Dashboard Outlet", href: "/owner/dashboard/outlets" },
-          { name: "Kelola Outlet", href: "/owner/dashboard/outlets/manage" },
-          { name: "Kelola Kasir", href: "/owner/dashboard/outlets/staff" },
-        ],
+        id: 'dashboard-outlet',
+        icon: LayoutDashboardIcon,
+        name: "Dashboard Outlet",
+        href: "/owner/dashboard/outlets"
+      },
+      {
+        id: 'kelola-outlet',
+        icon: StoreIcon,
+        name: "Kelola Outlet",
+        href: "/owner/dashboard/outlets/manage"
+      },
+      {
+        id: 'kelola-kasir',
+        icon: UsersIcon,
+        name: "Kelola Kasir",
+        href: "/owner/dashboard/outlets/staff"
       },
     ],
   },

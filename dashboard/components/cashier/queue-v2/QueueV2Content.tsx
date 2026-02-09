@@ -1,0 +1,294 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { RefreshCw, Plus } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { QueueStatsBar } from "./QueueStatsBar";
+import { KanbanBoard } from "./KanbanBoard";
+import { QueueDetailSheet } from "./QueueDetailSheet";
+import { ProofPreviewDialog } from "./ProofPreviewDialog";
+
+import { useQueueV2Board, useQueueV2Transition, useInvalidateQueueV2 } from "@/hooks/api/use-queue-v2";
+import { useEmitSocket } from "@/hooks/useEmitSocket";
+import { useSocketEvent } from "@/hooks/useSocketEvent";
+import { SOCKET_EVENT, type SocketEvents } from "@/types/socket";
+import type { QueueV2Entry, QueueOrderStatus, QueueV2Board as BoardType } from "@/lib/apis/queue-v2";
+
+interface QueueV2ContentProps {
+    outletId: string;
+}
+
+interface ConfirmState {
+    entry: QueueV2Entry;
+    nextStatus: QueueOrderStatus;
+    title: string;
+    description: string;
+    confirmLabel: string;
+    confirmVariant?: "default" | "destructive";
+    showInput?: boolean;
+    inputPlaceholder?: string;
+    inputRequired?: boolean;
+}
+
+const STATUS_LABELS: Record<string, string> = {
+    AWAITING_PAYMENT: "Menunggu Bayar",
+    CONFIRMED: "Dikonfirmasi",
+    PROCESSING: "Diproses",
+    READY: "Siap Dilayani",
+    ON_GOING: "Sedang Dilayani",
+    COMPLETED: "Selesai",
+    CANCELLED: "Dibatalkan",
+};
+
+export function QueueV2Content({ outletId }: QueueV2ContentProps) {
+    const router = useRouter();
+    const { data, isLoading, refetch } = useQueueV2Board(outletId);
+    const transition = useQueueV2Transition();
+    const invalidateQueue = useInvalidateQueueV2();
+
+    const [detailEntry, setDetailEntry] = useState<QueueV2Entry | null>(null);
+    const [detailOpen, setDetailOpen] = useState(false);
+    const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [proofEntry, setProofEntry] = useState<QueueV2Entry | null>(null);
+    const [proofOpen, setProofOpen] = useState(false);
+
+    // Socket: join outlet room
+    const { emitEvent, isConnected } = useEmitSocket();
+
+    useEffect(() => {
+        if (!outletId || !isConnected) return;
+        emitEvent(SOCKET_EVENT.JOIN_OUTLET, { outletId });
+    }, [emitEvent, isConnected, outletId]);
+
+    // Socket: listen for queue updates
+    const handleQueueUpdate = useCallback(
+        (payload: SocketEvents[typeof SOCKET_EVENT.QUEUE_UPDATED]) => {
+            if (!payload || payload.outletId !== outletId) return;
+            invalidateQueue();
+        },
+        [outletId, invalidateQueue],
+    );
+
+    useSocketEvent(SOCKET_EVENT.QUEUE_UPDATED, handleQueueUpdate, {
+        enabled: Boolean(outletId),
+    });
+
+    // Handle primary action (advance status)
+    const handlePrimaryAction = useCallback(
+        (entry: QueueV2Entry, nextStatus: QueueOrderStatus) => {
+            const currentLabel = STATUS_LABELS[entry.orderStatus] ?? entry.orderStatus;
+            const nextLabel = STATUS_LABELS[nextStatus] ?? nextStatus;
+
+            setConfirmState({
+                entry,
+                nextStatus,
+                title: `Ubah Status Antrian`,
+                description: `Antrian #${entry.position} (${entry.productName}) - ${entry.customerName}\nStatus: "${currentLabel}" → "${nextLabel}"`,
+                confirmLabel: nextLabel,
+                confirmVariant: "default",
+            });
+            setConfirmOpen(true);
+        },
+        [],
+    );
+
+    // Handle cancel
+    const handleCancel = useCallback((entry: QueueV2Entry) => {
+        setConfirmState({
+            entry,
+            nextStatus: "CANCELLED",
+            title: "Batalkan Antrian",
+            description: `Apakah Anda yakin ingin membatalkan antrian #${entry.position} (${entry.customerName} - ${entry.productName})?`,
+            confirmLabel: "Batalkan",
+            confirmVariant: "destructive",
+            showInput: true,
+            inputPlaceholder: "Masukkan alasan pembatalan (wajib)...",
+            inputRequired: true,
+        });
+        setConfirmOpen(true);
+    }, []);
+
+    // Execute transition
+    const executeTransition = useCallback(
+        async (reason?: string) => {
+            if (!confirmState) return;
+
+            try {
+                await transition.mutateAsync({
+                    orderId: confirmState.entry.id,
+                    status: confirmState.nextStatus,
+                    reason,
+                });
+
+                const label = STATUS_LABELS[confirmState.nextStatus] ?? confirmState.nextStatus;
+                toast.success(`Antrian #${confirmState.entry.position} → ${label}`);
+                setConfirmOpen(false);
+                setConfirmState(null);
+                setDetailOpen(false);
+            } catch (error: any) {
+                const message =
+                    error?.response?.data?.message ?? error?.message ?? "Gagal mengubah status antrian";
+                toast.error(message);
+            }
+        },
+        [confirmState, transition],
+    );
+
+    // Detail sheet
+    const handleDetail = useCallback((entry: QueueV2Entry) => {
+        setDetailEntry(entry);
+        setDetailOpen(true);
+    }, []);
+
+    // View proof
+    const handleViewProof = useCallback((entry: QueueV2Entry) => {
+        setProofEntry(entry);
+        setProofOpen(true);
+    }, []);
+
+    const board = data?.board ?? { waiting: [], ready: [], inProgress: [], completed: [] };
+    const stats = data?.stats ?? {
+        totalActive: 0,
+        waitingCount: 0,
+        readyCount: 0,
+        inProgressCount: 0,
+        completedToday: 0,
+        cancelledToday: 0,
+        avgWaitMinutes: null,
+    };
+
+    if (isLoading) {
+        return <QueueV2Skeleton />;
+    }
+
+    return (
+        <div className="mx-auto max-w-[1600px] p-4 space-y-4">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                        Antrian Layanan
+                    </h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Kelola antrian layanan jasa secara real-time
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Button variant="outline" size="sm" onClick={() => refetch()}>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh
+                    </Button>
+                    <Button size="sm" onClick={() => router.push("/cashier/pos-v2")}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Tambah Antrian
+                    </Button>
+                </div>
+            </div>
+
+            {/* Stats */}
+            <QueueStatsBar stats={stats} />
+
+            {/* Kanban Board */}
+            <KanbanBoard
+                board={board}
+                onPrimaryAction={handlePrimaryAction}
+                onCancel={handleCancel}
+                onDetail={handleDetail}
+                onViewProof={handleViewProof}
+                pendingId={transition.isPending ? (confirmState?.entry.id ?? null) : null}
+            />
+
+            {/* Detail Sheet */}
+            <QueueDetailSheet
+                entry={detailEntry}
+                open={detailOpen}
+                onOpenChange={setDetailOpen}
+                onPrimaryAction={handlePrimaryAction}
+                onCancel={handleCancel}
+                onViewProof={handleViewProof}
+                isPending={transition.isPending}
+            />
+
+            {/* Proof Preview */}
+            <ProofPreviewDialog
+                entry={proofEntry}
+                open={proofOpen}
+                onOpenChange={setProofOpen}
+            />
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                open={confirmOpen && Boolean(confirmState)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setConfirmOpen(false);
+                        setConfirmState(null);
+                    }
+                }}
+                title={confirmState?.title ?? "Konfirmasi"}
+                description={confirmState?.description}
+                confirmLabel={confirmState?.confirmLabel ?? "Konfirmasi"}
+                confirmVariant={confirmState?.confirmVariant}
+                confirmLoading={transition.isPending}
+                onConfirm={executeTransition}
+                showInput={confirmState?.showInput}
+                inputPlaceholder={confirmState?.inputPlaceholder}
+                inputRequired={confirmState?.inputRequired}
+            />
+        </div>
+    );
+}
+
+function QueueV2Skeleton() {
+    return (
+        <div className="mx-auto max-w-[1600px] p-4 space-y-4">
+            {/* Header skeleton */}
+            <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                    <Skeleton className="h-6 w-40" />
+                    <Skeleton className="h-4 w-64" />
+                </div>
+                <div className="flex gap-3">
+                    <Skeleton className="h-9 w-24" />
+                    <Skeleton className="h-9 w-32" />
+                </div>
+            </div>
+
+            {/* Stats skeleton */}
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 rounded-md" />
+                ))}
+            </div>
+
+            {/* Board skeleton */}
+            <div className="hidden lg:grid lg:grid-cols-4 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="space-y-2">
+                        <Skeleton className="h-10 rounded-md" />
+                        {Array.from({ length: 3 }).map((_, j) => (
+                            <Skeleton key={j} className="h-36 rounded-md" />
+                        ))}
+                    </div>
+                ))}
+            </div>
+
+            {/* Mobile skeleton */}
+            <div className="lg:hidden space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="space-y-2">
+                        <Skeleton className="h-10 rounded-md" />
+                        <Skeleton className="h-36 rounded-md" />
+                        <Skeleton className="h-36 rounded-md" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}

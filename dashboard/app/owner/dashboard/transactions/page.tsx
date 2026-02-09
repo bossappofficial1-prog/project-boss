@@ -14,12 +14,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Eye, TrendingUp, TrendingDown, DollarSign, FileText } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
-import { format } from "date-fns";
+import { Search, Filter, Eye, TrendingUp, TrendingDown, DollarSign, FileText, FileDown, Loader2, CalendarIcon } from "lucide-react";
+import { formatCurrency, cn } from "@/lib/utils";
+import { format, subMonths } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
 import { DataTable } from "@/components/ui/data-table";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useExportTransactionReport } from "@/hooks/use-export-transaction-report";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +53,30 @@ export default function TransactionsPage() {
 
   // Proof preview state
   const [proofPreview, setProofPreview] = useState<{ url: string; transaction: any } | null>(null);
+
+  // Export PDF mutation
+  const exportReport = useExportTransactionReport();
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportDateRange, setExportDateRange] = useState<DateRange | undefined>({
+    from: subMonths(new Date(), 1),
+    to: new Date(),
+  });
+
+  const handleExportPDF = () => {
+    if (!exportDateRange?.from || !exportDateRange?.to) return;
+
+    exportReport.mutate(
+      {
+        startDate: exportDateRange.from.toISOString(),
+        endDate: exportDateRange.to.toISOString(),
+      },
+      {
+        onSuccess: () => {
+          setShowExportDialog(false);
+        },
+      },
+    );
+  };
 
   // Fetch transactions
   const { data, isLoading, isFetching, error, refetch } = useTransactionList({
@@ -162,6 +194,15 @@ export default function TransactionsPage() {
           <p className="mt-1 text-sm text-gray-500 font-poppins">
             Lihat dan kelola semua transaksi bisnis Anda
           </p>
+        </div>
+        <div className="mt-4 sm:mt-0">
+          <Button
+            onClick={() => setShowExportDialog(true)}
+            className="font-poppins"
+          >
+            <FileDown className="w-4 h-4 mr-2" />
+            Export Laporan PDF
+          </Button>
         </div>
       </div>
 
@@ -469,6 +510,93 @@ export default function TransactionsPage() {
           },
         ]}
       />
+
+      {/* Export PDF Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-poppins">Export Laporan PDF</DialogTitle>
+            <DialogDescription className="font-poppins">
+              Pilih rentang tanggal untuk laporan transaksi. Laporan akan dikirim ke email Anda.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground font-poppins">Rentang Tanggal</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal font-poppins",
+                      !exportDateRange && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {exportDateRange?.from ? (
+                      exportDateRange.to ? (
+                        <>
+                          {format(exportDateRange.from, "dd MMM yyyy", { locale: localeId })} —{" "}
+                          {format(exportDateRange.to, "dd MMM yyyy", { locale: localeId })}
+                        </>
+                      ) : (
+                        format(exportDateRange.from, "dd MMM yyyy", { locale: localeId })
+                      )
+                    ) : (
+                      <span>Pilih rentang tanggal</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={exportDateRange?.from}
+                    selected={exportDateRange}
+                    onSelect={setExportDateRange}
+                    numberOfMonths={2}
+                    disabled={(date) => date > new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {exportDateRange?.from && exportDateRange?.to && (
+              <div className="rounded-md bg-muted/50 p-3 text-sm font-poppins text-muted-foreground">
+                Laporan akan mencakup transaksi dari{" "}
+                <strong className="text-foreground">
+                  {format(exportDateRange.from, "dd MMMM yyyy", { locale: localeId })}
+                </strong>{" "}
+                sampai{" "}
+                <strong className="text-foreground">
+                  {format(exportDateRange.to, "dd MMMM yyyy", { locale: localeId })}
+                </strong>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowExportDialog(false)}
+              className="font-poppins"
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleExportPDF}
+              disabled={!exportDateRange?.from || !exportDateRange?.to || exportReport.isPending}
+              className="font-poppins"
+            >
+              {exportReport.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4 mr-2" />
+              )}
+              {exportReport.isPending ? "Memproses..." : "Export PDF"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Proof Preview Dialog */}
       <Dialog open={Boolean(proofPreview)} onOpenChange={(open) => !open && setProofPreview(null)}>

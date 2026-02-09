@@ -105,8 +105,12 @@ export async function updateProductService(id: string, data: UpdateProductInput)
     }
   }
 
-  if (data.image && existingProduct) {
-    ImageService.deleteImageByUrl(existingProduct.image)
+  try {
+    if (data.image && existingProduct) {
+      ImageService.deleteImageByUrl(existingProduct.image)
+    }
+  } catch (error) {
+    console.error('Terjadi masalah saar hapus gambar, error:', error)
   }
 
   await redis.del(`product:${id}`);

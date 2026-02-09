@@ -15,6 +15,7 @@ import {
   getOrderStatusLabel,
 } from "@/components/owner/orders/utils";
 import axios from "axios";
+import { apiClient } from "@/lib/apis/base";
 
 interface UseOrderActionsOptions {
   onSuccess?: () => Promise<void> | void;
@@ -53,40 +54,41 @@ export function useOrderActions({ onSuccess }: UseOrderActionsOptions = {}) {
   }, []);
 
   const handlePrint = async (orderId: string) => {
-    // setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:1234/api/v1/orders/${orderId}/receipt`, {
-        responseType: "blob",
-        withCredentials: true,
-      });
+      const response = await apiClient.get(
+        `orders/${orderId}/receipt`,
+        {
+          responseType: "blob",
+          withCredentials: true,
+        }
+      );
 
-      // 2. Buat object URL dari blob
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
 
-      // 3. Gunakan iframe tersembunyi untuk mencetak
       const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
       iframe.src = url;
+
       document.body.appendChild(iframe);
 
       iframe.onload = () => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-
-        // 4. Bersihkan resource setelah cetak
         setTimeout(() => {
-          document.body.removeChild(iframe);
-          URL.revokeObjectURL(url);
-          // setLoading(false);
-        }, 1000);
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        }, 500); // beri jeda agar PDF viewer siap
       };
     } catch (error) {
       console.error(error);
       alert("Terjadi kesalahan saat mencetak struk");
-      //   setLoading(false);
     }
   };
+
 
   const emitStatusUpdate = useCallback(
     (order: GoodsOrder, status: OrderStatus, reason?: string) => {
@@ -162,13 +164,13 @@ export function useOrderActions({ onSuccess }: UseOrderActionsOptions = {}) {
 
       const defaults = isCancellation
         ? {
-            title: "Batalkan pesanan",
-            confirmLabel: "Batalkan",
-            confirmVariant: "destructive" as const,
-            showInput: true,
-            inputPlaceholder: "Masukkan alasan pembatalan (wajib)...",
-            inputRequired: true,
-          }
+          title: "Batalkan pesanan",
+          confirmLabel: "Batalkan",
+          confirmVariant: "destructive" as const,
+          showInput: true,
+          inputPlaceholder: "Masukkan alasan pembatalan (wajib)...",
+          inputRequired: true,
+        }
         : {};
 
       setConfirmState({
