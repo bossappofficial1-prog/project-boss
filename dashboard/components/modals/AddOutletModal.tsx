@@ -135,21 +135,23 @@ export default function AddOutletModal({
 
       // Save operating hours
       const changedHours = Object.values(operatingHoursData).filter(d => d.isOpen !== undefined)
-      if (changedHours.length > 0) {
-        try {
-          await Promise.all(changedHours.map(h =>
-            upsertMutation.mutateAsync({
-              outletId: mode === 'edit' ? outletDetail!.id : result.id,
-              dayOfWeek: h.dayOfWeek,
-              openTime: new Date(`1970-01-01T${h.openTime}:00`),
-              closeTime: new Date(`1970-01-01T${h.closeTime}:00`),
-              isOpen: h.isOpen,
-            })
-          ))
-        } catch {
-          toast.warning('Outlet disimpan, tapi jam operasional gagal disimpan')
-        }
+      try {
+        upsertMutation.mutateAsync({
+          outletId: mode === 'edit' ? outletDetail!.id : result.id,
+          hours: changedHours.map((schedule) => ({
+            openTime: new Date(schedule.openTime),
+            closeTime: new Date(schedule.closeTime),
+            dayOfWeek: schedule.dayOfWeek,
+            isOpen: schedule.isOpen
+          }))
+        })
+        // await Promise.all(changedHours.map(h =>
+        // ))
+      } catch {
+        toast.warning('Outlet disimpan, tapi jam operasional gagal disimpan')
       }
+      // if (changedHours.length > 0) {
+      // }
 
       return result
     },

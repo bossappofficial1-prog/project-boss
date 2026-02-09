@@ -68,11 +68,11 @@ export function useExpenses(outletId?: string | null): UseExpensesResult {
     try {
       setLoading(true);
       setError(null);
-      const list = await expenseApi.listByOutlet(outletId, {
+      const result = await expenseApi.listByOutlet(outletId, {
         startDate: startISO,
         endDate: endISO,
       });
-      setExpenses(list || []);
+      setExpenses(result?.data || []);
     } catch (err: any) {
       console.error("Error fetching expenses:", err);
       setExpenses([]);

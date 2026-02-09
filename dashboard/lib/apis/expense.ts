@@ -27,6 +27,11 @@ export interface UpdateExpenseRequest {
   cashier?: string;
 }
 
+export interface ExpenseListResult {
+  data: Expense[];
+  summary: { totalTransaksi: number; totalPengeluaran: number };
+}
+
 export const expenseApi = {
   async create(data: CreateExpenseRequest): Promise<Expense> {
     return apiCall<Expense>("/expenses", {
@@ -38,12 +43,12 @@ export const expenseApi = {
   async listByOutlet(
     outletId: string,
     params?: { startDate?: string; endDate?: string },
-  ): Promise<Expense[]> {
+  ): Promise<ExpenseListResult> {
     const searchParams = new URLSearchParams();
     if (params?.startDate) searchParams.append("startDate", params.startDate);
     if (params?.endDate) searchParams.append("endDate", params.endDate);
     const qs = searchParams.toString();
-    return apiCall<Expense[]>(`/expenses/outlet/${outletId}${qs ? `?${qs}` : ""}`);
+    return apiCall<ExpenseListResult>(`/expenses/outlet/${outletId}${qs ? `?${qs}` : ""}`);
   },
 
   async update(id: string, data: UpdateExpenseRequest): Promise<Expense> {

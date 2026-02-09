@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { ProductType, ServiceStatus } from "@prisma/client";
 
-/* =====================================================
- * SUB SCHEMA (SESUAI SUBTABLE PRISMA)
- * ===================================================== */
-
 // ProductGoods
 const productGoodsSchema = z.object({
   currentStock: z.number().int().min(0).optional(), // default di DB
@@ -37,21 +33,13 @@ const productServiceSchema = z.object({
   bookingInWorkHours: z.boolean().default(true).optional(),
 });
 
-/* =====================================================
- * BASE PRODUCT (PRISMA PRODUCT)
- * ===================================================== */
-
 const baseProductSchema = {
   name: z.string().min(1, { message: "Nama produk tidak boleh kosong" }),
   description: z.string().optional(),
   status: z.nativeEnum(ServiceStatus).optional(),
-  outletId: z.string().uuid({ message: "Outlet ID tidak valid" }),
+  outletId: z.string(),
   image: z.string().optional(),
 };
-
-/* =====================================================
- * CREATE PRODUCT
- * ===================================================== */
 
 export const createProductSchema = z.discriminatedUnion("type", [
   // GOODS

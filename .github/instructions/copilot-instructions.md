@@ -180,13 +180,13 @@ export const useUserProfile = () => {
 ### Aturan UI & Styling (shadcn/ui)
 
 - Komponen Dasar: Selalu gunakan komponen dari components/ui.
-- Form: Wajib menggunakan komponen reusable-form.tsx yang mengintegrasikan react-hook-form dan zod untuk konsistensi pembuatan form.
+- Form: Wajib menggunakan komponen reusable-form.tsx yang mengintegrasikan react-hook-form dan zod untuk konsistensi pembuatan form `/dashboard/components/ui/reuseable-form.tsx`.
 - Design Tokens:
   - Gunakan rounded-md untuk semua elemen yang memiliki sudut tumpul (buttons, cards, inputs).
   - Gunakan shadow-md untuk memberikan kedalaman atau elevasi pada komponen container/card.
 - Responsivitas: Gunakan pendekatan Mobile First dengan utility classes Tailwind (contoh: w-full md:w-1/2).
 - Loading State: Gunakan Skeleton dari shadcn saat status isLoading dari React Query bernilai true.
-- Tabel: Gunakan data-table.tsx pada `/dasboard/components/data-table.tsx`
+- Tabel: Gunakan data-table.tsx pada `/dashboard/components/ui/data-table.tsx`
 - SOC: Selalu pisahkan page ke dalam beberapa komponent terpisah, dan cukup panggil \*\*Content.tsx di page.tsx. di page.tsx gunakan metadata untuk title dan yang relefan.
 - spacing: space-\*-3, gap-3, rounded-md
 
@@ -204,3 +204,4 @@ export const useUserProfile = () => {
 ### Other
 
 - Jangan terlalu banyak menggunakan komentar: contohnya ini (`// ─── Helpers ────────────────────────────────────────────`). gunakan comentar yang penting saja, dan tidak terlalu panjang
+- buat global function jika itu kemungkinan bakalan digunakan secara berulang, contoh formatcurreny, formatdateisstring, dll

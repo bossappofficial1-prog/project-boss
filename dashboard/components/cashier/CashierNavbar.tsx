@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, ShoppingBag, ShoppingCart, Users, Package, Receipt } from "lucide-react";
+import { LogOut, ShoppingBag, ShoppingCart, Users, Package, Receipt, Zap, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,14 @@ interface CashierNavbarProps {
 }
 
 const navItems = [
-  { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
-  { href: "/cashier/orders", label: "Pesanan Barang", icon: ShoppingBag },
-  { href: "/cashier/queue", label: "Antrian", icon: Users },
-  { href: "/cashier/pob", label: "POB", icon: Package },
+  { href: "/cashier/pos-v2", label: "POS", icon: Zap },
+  { href: "/cashier/pos", label: "POS Lama", icon: ShoppingCart },
+  { href: "/cashier/orders-v2", label: "Pesanan Barang", icon: ShoppingBag },
+  { href: "/cashier/orders", label: "Pesanan Lama", icon: ShoppingBag },
+  { href: "/cashier/queue-v2", label: "Antrian", icon: LayoutGrid },
+  { href: "/cashier/queue", label: "Antrian Lama", icon: Users },
+  { href: "/cashier/pob-v2", label: "POB", icon: Package },
+  { href: "/cashier/pob", label: "POB Lama", icon: Package },
   { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
 ];
 

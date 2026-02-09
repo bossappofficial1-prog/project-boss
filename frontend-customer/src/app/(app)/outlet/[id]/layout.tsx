@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
         : undefined;
 
     return {
-        title: `${outlet.name} | ${outlet.business?.name ?? "Boss App"}`,
+        title: `${outlet.name} - ${outlet.business?.name ?? "Boss App"}`,
         description: outlet.description || `Kunjungi ${outlet.name} untuk layanan terbaik. ${outlet.address ? `Berlokasi di ${outlet.address}` : ''}`,
         keywords: [
             outlet.name,
