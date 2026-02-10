@@ -39,6 +39,7 @@ export type AppBarProps = {
   onMenuClick?: () => void;
   searchValue?: string;
   showThemeToggle?: boolean;
+  showPartnerToggle?: boolean;
 
   // Styling props
   variant?: AppBarVariant;
@@ -60,6 +61,7 @@ export default function AppBar({
   showSearch = false,
   showMenu = false,
   showThemeToggle = true,
+  showPartnerToggle = true,
   onSearchClick,
   onSearch,
   onMenuClick,
@@ -141,11 +143,6 @@ export default function AppBar({
   };
 
   const handleSearchClick = () => (onSearchClick ? onSearchClick() : setIsSearchActive((s) => !s));
-
-  const handleSearch = (query: string) => {
-    if (onSearch) onSearch(query);
-    setIsSearchActive(false);
-  };
 
   const baseClasses = `
     flex items-center justify-center
@@ -231,7 +228,7 @@ export default function AppBar({
           )}
 
           {showThemeToggle && !isSearchActive && <ThemeModeToggle />}
-          {!isSearchActive && <PartnerMenuDropdown />}
+          {showPartnerToggle && !isSearchActive && <PartnerMenuDropdown />}
           {rightContent}
 
           {showMenu && (

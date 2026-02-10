@@ -21,15 +21,12 @@ function CategoryCard({ category }: CategoryCardProps) {
     return (
         <Link
             href={`/search?q=${encodeURIComponent(category.slug)}`}
-            className="group flex flex-col gap-2 rounded-md border border-border/60 bg-card p-4 transition hover:border-primary/50 hover:shadow-md"
+            className="flex flex-none flex-col items-center gap-1.5 px-3 py-2 rounded-xl transition-colors hover:bg-muted/50 active:scale-95 min-w-[72px]"
         >
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />
             </span>
-            <span className="text-sm font-semibold text-foreground">{category.title}</span>
-            {category.description && (
-                <span className="text-xs leading-snug text-muted-foreground line-clamp-2">{category.description}</span>
-            )}
+            <span className="text-[11px] font-medium text-foreground text-center leading-tight line-clamp-1">{category.title}</span>
         </Link>
     )
 }

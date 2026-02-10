@@ -92,6 +92,7 @@ export function ProductDetails({ outletId, productId }: Props) {
       centerTitle: true,
       showBackButton: true,
       showThemeToggle: false,
+      showPartnerToggle: false,
       onLeftClick:
         from === "saved-products"
           ? () => router.back()

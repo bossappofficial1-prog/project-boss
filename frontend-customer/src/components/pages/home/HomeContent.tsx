@@ -1,17 +1,11 @@
 "use client"
 
-import React, { Suspense, useEffect, useMemo, useCallback } from "react"
+import React, { useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import {
-    ArrowUpRight,
-    Gift,
     Heart,
     History,
-    LayoutGrid,
     MapPin,
-    Store,
-    TrendingUp,
-    Users,
 } from "lucide-react"
 
 import { HeroCarousel } from "@/components/pages/home/HeroCarousel"
@@ -27,6 +21,20 @@ import OutletCard from "@/components/pages/home/cards/OutletCard"
 import PopularItemCard from "@/components/pages/home/cards/PopularItemCard"
 import PromoCard from "@/components/pages/home/cards/PromoCard"
 import QuickActionCard from "@/components/pages/home/cards/QuickActionCard"
+
+const QUICK_ACTIONS = [
+    { key: "orders", href: "/orders", icon: History },
+    { key: "favorites", href: "/favorites", icon: Heart },
+    { key: "nearby", href: "/nearby", icon: MapPin },
+] as const
+
+function EmptyPlaceholder({ message }: { message: string }) {
+    return (
+        <div className="rounded-xl border border-dashed border-border/40 bg-muted/10 px-4 py-6 text-center text-sm text-muted-foreground">
+            {message}
+        </div>
+    )
+}
 
 function HomeSections() {
     const { data, isLoading, error, refetch } = useHomeSummary()
@@ -55,13 +63,7 @@ function HomeSections() {
         [languageRegion]
     )
 
-    const summary = data ?? ({} as Partial<HomeSummaryResponse>);
-
-    const quickActions = useMemo(() => [
-        { key: "orders", href: "/orders", icon: History },
-        { key: "favorites", href: "/favorites", icon: Heart },
-        { key: "nearby", href: "/nearby", icon: MapPin },
-    ] as const, []);
+    const summary = data ?? ({} as Partial<HomeSummaryResponse>)
 
     const quickActionLabels = useMemo(() => ({
         orders: {
@@ -76,7 +78,7 @@ function HomeSections() {
             title: t("quickActions.nearby.title"),
             description: t("quickActions.nearby.description"),
         },
-    }), [t]);
+    }), [t])
 
     if (isLoading) return <LoadingState message={t("loading")} />
     if (error)
@@ -89,33 +91,53 @@ function HomeSections() {
 
     const {
         banners = [], categories = [], outlets = [], popularItems = [], promos = []
-    } = summary;
+    } = summary
 
     return (
-        <div className="space-y-8 pb-20 pt-2">
+        <div className="space-y-6 pb-20">
+            {/* Hero */}
             <HeroCarousel banners={banners} />
 
-            {/* --- CATEGORIES SECTION --- */}
-            <section className="space-y-4" id="categories">
-                <HomeSectionHeader title={t("sections.categories.title")} subtitle={t("sections.categories.subtitle")} actionLabel={t("sections.categories.action")} href="/search" icon={<LayoutGrid className="h-4 w-4" />} />
-                {categories.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">{t("empty.categories")}</div>
-                ) : (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {/* Quick Actions — compact row */}
+            <section className="px-1">
+                <div className="grid grid-cols-3 gap-2">
+                    {QUICK_ACTIONS.map((action) => (
+                        <QuickActionCard
+                            key={action.key}
+                            action={action}
+                            labels={quickActionLabels[action.key]}
+                        />
+                    ))}
+                </div>
+            </section>
+
+            {/* Categories */}
+            {categories.length > 0 && (
+                <section className="space-y-3">
+                    <HomeSectionHeader
+                        title={t("sections.categories.title")}
+                        actionLabel={t("sections.categories.action")}
+                        href="/search"
+                    />
+                    <DivXScroll className="-mx-4 flex gap-2 px-4 pb-1 md:mx-0 md:px-0">
                         {categories.map((category) => (
                             <CategoryCard key={category.id} category={category} />
                         ))}
-                    </div>
-                )}
-            </section>
+                    </DivXScroll>
+                </section>
+            )}
 
-            {/* --- FEATURED OUTLETS SECTION --- */}
-            <section className="space-y-4" id="featured-outlets">
-                <HomeSectionHeader title={t("sections.featured.title")} subtitle={t("sections.featured.subtitle")} actionLabel={t("sections.featured.action")} href="/outlets" icon={<Store className="h-4 w-4" />} />
+            {/* Featured Outlets */}
+            <section className="space-y-3">
+                <HomeSectionHeader
+                    title={t("sections.featured.title")}
+                    actionLabel={t("sections.featured.action")}
+                    href="/outlets"
+                />
                 {outlets.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">{t("empty.outlets")}</div>
+                    <EmptyPlaceholder message={t("empty.outlets")} />
                 ) : (
-                    <DivXScroll className="flex gap-2 pb-2 pl-4 pr-8 md:mx-0 md:pl-0 md:pr-0">
+                    <DivXScroll className="-mx-4 flex gap-3 px-4 pb-1 md:mx-0 md:px-0">
                         {outlets.map((outlet) => (
                             <OutletCard
                                 key={outlet.id}
@@ -129,45 +151,34 @@ function HomeSections() {
                 )}
             </section>
 
-            {/* --- POPULAR ITEMS SECTION --- */}
-            <section className="space-y-4" id="popular-items">
-                <HomeSectionHeader
-                    title={t("sections.popular.title")}
-                    subtitle={t("sections.popular.subtitle")}
-                    icon={<TrendingUp className="h-4 w-4" />}
-                />
-                {popularItems.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-                        {t("empty.popular")}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-                        {popularItems.map((item) => (
+            {/* Popular Items */}
+            {popularItems.length > 0 && (
+                <section className="space-y-3">
+                    <HomeSectionHeader
+                        title={t("sections.popular.title")}
+                    />
+                    <div className="space-y-2">
+                        {popularItems.map((item, index) => (
                             <PopularItemCard
                                 key={item.id}
                                 item={item}
+                                rank={index + 1}
                                 numberFormatter={numberFormatter}
                                 currencyFormatter={currencyFormatter}
                                 t={t}
                             />
                         ))}
                     </div>
-                )}
-            </section>
+                </section>
+            )}
 
-            {/* --- PROMOS SECTION --- */}
-            <section className="space-y-4" id="promos">
-                <HomeSectionHeader
-                    title={t("sections.promos.title")}
-                    subtitle={t("sections.promos.subtitle")}
-                    icon={<Gift className="h-4 w-4" />}
-                />
-                {promos.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-                        {t("empty.promos")}
-                    </div>
-                ) : (
-                    <DivXScroll className="-mx-4 flex gap-3 pb-2 pl-4 pr-8 md:mx-0 md:pl-0 md:pr-0">
+            {/* Promos */}
+            {promos.length > 0 && (
+                <section className="space-y-3">
+                    <HomeSectionHeader
+                        title={t("sections.promos.title")}
+                    />
+                    <DivXScroll className="-mx-4 flex gap-3 px-4 pb-1 md:mx-0 md:px-0">
                         {promos.map((promo) => (
                             <PromoCard
                                 key={promo.id}
@@ -178,26 +189,8 @@ function HomeSections() {
                             />
                         ))}
                     </DivXScroll>
-                )}
-            </section>
-
-            {/* --- QUICK ACTIONS SECTION --- */}
-            <section className="space-y-4" id="quick-action">
-                <HomeSectionHeader
-                    title={t("sections.quickActions.title")}
-                    subtitle={t("sections.quickActions.subtitle")}
-                    icon={<ArrowUpRight className="h-4 w-4" />}
-                />
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    {quickActions.map((action) => (
-                        <QuickActionCard
-                            key={action.key}
-                            action={action}
-                            labels={quickActionLabels[action.key]}
-                        />
-                    ))}
-                </div>
-            </section>
+                </section>
+            )}
         </div>
     )
 }
@@ -207,8 +200,8 @@ export function HomeContent() {
     const t = useTranslations("homePage")
     const { setAppBar, resetAppBar } = useAppBarV2()
     const handleSearch = useCallback((query: string) => {
-        router.push(`/search?q=${encodeURIComponent(query)}`);
-    }, [router]);
+        router.push(`/search?q=${encodeURIComponent(query)}`)
+    }, [router])
 
     useEffect(() => {
         setAppBar({
@@ -216,13 +209,8 @@ export function HomeContent() {
             showSearch: true,
             onSearch: handleSearch,
         })
-
         return () => resetAppBar()
     }, [resetAppBar, setAppBar, t, handleSearch])
 
-    return (
-        <div className="space-y-6">
-            <HomeSections />
-        </div>
-    )
+    return <HomeSections />
 }

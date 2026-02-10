@@ -257,6 +257,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
         showBackButton: true,
         centerTitle: true,
         showThemeToggle: false,
+        showPartnerToggle: false,
         ...(onLeftClickHandler ? { onLeftClick: onLeftClickHandler } : {}),
       });
     }
@@ -353,7 +354,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
       </div>
 
       {/* Outlet Info Card - overlapping hero */}
-      <div className="relative -mt-16 mx-1">
+      <div className="relative -mt-16">
         <div className="rounded-xl bg-background border border-border/60 shadow-lg p-4 space-y-3">
           {/* Status + Name */}
           <div className="flex items-start justify-between gap-3">
