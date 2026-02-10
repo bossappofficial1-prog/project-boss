@@ -178,7 +178,7 @@ export const getBookingSlotByOutlet = asyncHandler(async (req: Request, res: Res
     );
   }
 
-  const parsedDate = parseISO(dateString);
+  const parsedDate = new Date(dateString);
   if (!isValid(parsedDate)) {
     return ResponseUtil.badRequest(res, "Format tanggal tidak valid atau tanggal tidak ada.");
   }
