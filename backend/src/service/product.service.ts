@@ -16,12 +16,7 @@ import {
 import { getOutletByIdService } from "./outlet.service";
 import { PlanLimitService } from "./plan-limit.service";
 import { generateDefaultBookingSlots } from "./booking.service";
-import {
-  Product,
-  ProductType,
-  ServiceStatus,
-  Prisma,
-} from "@prisma/client";
+import { Product, ProductType, ServiceStatus, Prisma } from "@prisma/client";
 import { config } from "../config";
 import { ImageService } from "./image.service";
 
@@ -54,10 +49,11 @@ export async function getProductByIdService(id: string) {
   const { outlet, ...productData } = product as any;
 
   // Flatten images from productImages relation
-  const images = productData.productImages?.map((img: any) => ({
-    url: img.url,
-    alt: img.alt || undefined,
-  })) || [];
+  const images =
+    productData.productImages?.map((img: any) => ({
+      url: img.url,
+      alt: img.alt || undefined,
+    })) || [];
 
   // Extract booking slots if the product is a service
   const bookingSlots = productData.service?.bookingSlots || [];
@@ -88,18 +84,41 @@ export async function updateProductService(id: string, data: UpdateProductInput)
   const existingProduct = await getProductByIdService(id);
   const product = await ProductRepository.update(id, data);
 
-  // If service duration changed, we must clear existing generated slots as they are no longer valid
-  if (data.service?.durationMinutes && product.type === "SERVICE") {
-    const prevDuration = (existingProduct as any).service?.durationMinutes;
-    if (prevDuration !== data.service.durationMinutes) {
+  // Check if service parameters that affect scheduling have changed
+  if (product.type === "SERVICE" && data.service) {
+    const s = data.service;
+    const hoursChanged =
+      s.durationMinutes !== undefined ||
+      s.bookingInWorkHours !== undefined ||
+      s.mondayOpen !== undefined ||
+      s.mondayClose !== undefined ||
+      s.tuesdayOpen !== undefined ||
+      s.tuesdayClose !== undefined ||
+      s.wednesdayOpen !== undefined ||
+      s.wednesdayClose !== undefined ||
+      s.thursdayOpen !== undefined ||
+      s.thursdayClose !== undefined ||
+      s.fridayOpen !== undefined ||
+      s.fridayClose !== undefined ||
+      s.saturdayOpen !== undefined ||
+      s.saturdayClose !== undefined ||
+      s.sundayOpen !== undefined ||
+      s.sundayClose !== undefined;
+
+    if (hoursChanged) {
       // Find the productServiceId to clear related slots
       const svc = await db.productService.findFirst({ where: { productId: id } });
       if (svc) {
+        // Delete all future AVAILABLE slots so they can be regenerated with new settings
+        // We keep BOOKED slots to preserve order history
         await db.bookingSlot.deleteMany({
           where: {
             productServiceId: svc.id,
-            status: "AVAILABLE" // Only delete available slots to avoid breaking existing orders
-          }
+            status: "AVAILABLE",
+            startTime: {
+              gte: new Date(), // Only delete future slots
+            },
+          },
         });
       }
     }
@@ -107,10 +126,10 @@ export async function updateProductService(id: string, data: UpdateProductInput)
 
   try {
     if (data.image && existingProduct) {
-      ImageService.deleteImageByUrl(existingProduct.image)
+      ImageService.deleteImageByUrl(existingProduct.image);
     }
   } catch (error) {
-    console.error('Terjadi masalah saar hapus gambar, error:', error)
+    console.error("Terjadi masalah saar hapus gambar, error:", error);
   }
 
   await redis.del(`product:${id}`);
@@ -129,10 +148,12 @@ export async function deleteProductService(id: string) {
   const product = await ProductRepository.delete(id);
 
   try {
-    if (product && product.image) { ImageService.deleteImageByUrl(product.image) }
+    if (product && product.image) {
+      ImageService.deleteImageByUrl(product.image);
+    }
     await redis.del(`product:${id}`);
   } catch (error) {
-    console.log(`gagal hapus gambar, error:`, error)
+    console.log(`gagal hapus gambar, error:`, error);
   }
 
   const businessId = existingProduct.outlet?.business?.id;
@@ -177,7 +198,9 @@ export async function bulkCreateProductsFromExcelService(
         });
 
       const files = walk(workDir!);
-      excelPath = files.find((f) => [".xlsx", ".xls", ".csv"].includes(path.extname(f).toLowerCase())) || null;
+      excelPath =
+        files.find((f) => [".xlsx", ".xls", ".csv"].includes(path.extname(f).toLowerCase())) ||
+        null;
 
       if (!excelPath) {
         throw new AppError("Zip does not contain a valid Excel file.", HttpStatus.BAD_REQUEST);
@@ -207,7 +230,7 @@ export async function bulkCreateProductsFromExcelService(
       return (allowed as any).includes(s) ? (s as T) : undefined;
     };
 
-    const parseString = (v: any) => v ? String(v).trim() : undefined;
+    const parseString = (v: any) => (v ? String(v).trim() : undefined);
 
     const readSheetRows = (sheet: ExcelJS.Worksheet): Record<string, any>[] => {
       const result: Record<string, any>[] = [];
@@ -232,7 +255,9 @@ export async function bulkCreateProductsFromExcelService(
     const goodsSheet = wb.getWorksheet("Produk Barang");
     if (goodsSheet) {
       readSheetRows(goodsSheet).forEach((row) => {
-        const status = normalizeEnum<ServiceStatus>(row["Status"], Object.values(ServiceStatus)) || ServiceStatus.ACTIVE;
+        const status =
+          normalizeEnum<ServiceStatus>(row["Status"], Object.values(ServiceStatus)) ||
+          ServiceStatus.ACTIVE;
         const rowData: any = {
           name: parseString(row["Nama Produk"]),
           description: parseString(row["Deskripsi"]),
@@ -261,7 +286,9 @@ export async function bulkCreateProductsFromExcelService(
     const serviceSheet = wb.getWorksheet("Produk Jasa");
     if (serviceSheet) {
       readSheetRows(serviceSheet).forEach((row) => {
-        const status = normalizeEnum<ServiceStatus>(row["Status"], Object.values(ServiceStatus)) || ServiceStatus.ACTIVE;
+        const status =
+          normalizeEnum<ServiceStatus>(row["Status"], Object.values(ServiceStatus)) ||
+          ServiceStatus.ACTIVE;
         const rowData: any = {
           name: parseString(row["Nama Layanan"]),
           description: parseString(row["Deskripsi"]),
@@ -294,28 +321,36 @@ export async function bulkCreateProductsFromExcelService(
       const fallbackSheet = wb.worksheets[0];
       if (fallbackSheet) {
         readSheetRows(fallbackSheet).forEach((row) => {
-          const type = normalizeEnum<ProductType>(row["Tipe Produk"], Object.values(ProductType)) || ProductType.GOODS;
-          const status = normalizeEnum<ServiceStatus>(row["Status"], Object.values(ServiceStatus)) || ServiceStatus.ACTIVE;
+          const type =
+            normalizeEnum<ProductType>(row["Tipe Produk"], Object.values(ProductType)) ||
+            ProductType.GOODS;
+          const status =
+            normalizeEnum<ServiceStatus>(row["Status"], Object.values(ServiceStatus)) ||
+            ServiceStatus.ACTIVE;
           const base: any = {
             name: parseString(row["Nama Produk"]),
             description: parseString(row["Deskripsi"]),
-            type, status, outletId,
+            type,
+            status,
+            outletId,
             image: parseString(row["Nama File Gambar"]),
           };
           let rowData: any;
           if (type === ProductType.GOODS) {
             rowData = {
-              ...base, goods: {
+              ...base,
+              goods: {
                 sellingPrice: toNumber(row["Harga Jual"]) || 0,
                 averageHpp: toNumber(row["Harga Pokok"]) || 0,
                 unit: parseString(row["Satuan"]) || "pcs",
                 currentStock: toNumber(row["Jumlah Stok"]) || 0,
                 minStock: toNumber(row["Minimal Stok"]) || 0,
-              }
+              },
             };
           } else {
             rowData = {
-              ...base, service: {
+              ...base,
+              service: {
                 sellingPrice: toNumber(row["Harga Jual"]) || 0,
                 durationMinutes: toNumber(row["Durasi Layanan (menit)"]) || 60,
                 providerName: parseString(row["Nama Provider"]) || base.name,
@@ -324,7 +359,7 @@ export async function bulkCreateProductsFromExcelService(
                 commissionType: normalizeEnum(row["Tipe Komisi"], ["PERCENTAGE", "FIXED"]),
                 commissionValue: toNumber(row["Nilai Komisi"]),
                 maxParallel: toNumber(row["Kapasitas Paralel"]) || 1,
-              }
+              },
             };
           }
           const validation = createProductSchema.safeParse(rowData);
@@ -350,7 +385,7 @@ export async function bulkCreateProductsFromExcelService(
       select: { id: true, name: true, type: true },
     });
 
-    const byName = new Map(existingProducts.map(p => [p.name.toLowerCase(), p]));
+    const byName = new Map(existingProducts.map((p) => [p.name.toLowerCase(), p]));
     const uploadsDir = path.join(process.cwd(), "uploads");
     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -405,9 +440,13 @@ export async function bulkCreateProductsFromExcelService(
             where: { id: found.id },
             data: {
               ...productPayload,
-              ...(r.type === "GOODS" ? { goods: { upsert: { update: r.goods!, create: r.goods! } } } : {}),
-              ...(r.type === "SERVICE" ? { service: { upsert: { update: r.service!, create: r.service! } } } : {}),
-            }
+              ...(r.type === "GOODS"
+                ? { goods: { upsert: { update: r.goods!, create: r.goods! } } }
+                : {}),
+              ...(r.type === "SERVICE"
+                ? { service: { upsert: { update: r.service!, create: r.service! } } }
+                : {}),
+            },
           });
           updatedCount++;
         } else {
@@ -417,7 +456,7 @@ export async function bulkCreateProductsFromExcelService(
               outletId,
               ...(r.type === "GOODS" ? { goods: { create: r.goods! } } : {}),
               ...(r.type === "SERVICE" ? { service: { create: r.service! } } : {}),
-            }
+            },
           });
 
           if (created.type === "SERVICE" && r.service?.durationMinutes) {
@@ -433,13 +472,36 @@ export async function bulkCreateProductsFromExcelService(
 
     // Generate booking slots after transaction commits so data is visible
     if (serviceProductsToGenerateSlots.length > 0) {
-      const outlet = await db.outlet.findUnique({ where: { id: outletId }, include: { operatingHours: true } });
+      const outlet = await db.outlet.findUnique({
+        where: { id: outletId },
+        include: { operatingHours: true },
+      });
       if (outlet?.operatingHours.length) {
+        // Map outlet hours to service hours format
+        const dayMap = [
+          "sunday",
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+        ];
+        const serviceHoursFromOutlet: any = {};
+
+        for (const oh of outlet.operatingHours) {
+          if (oh.isOpen) {
+            const dayName = dayMap[oh.dayOfWeek];
+            serviceHoursFromOutlet[`${dayName}Open`] = oh.openTime;
+            serviceHoursFromOutlet[`${dayName}Close`] = oh.closeTime;
+          }
+        }
+
         for (const sp of serviceProductsToGenerateSlots) {
           try {
             await generateDefaultBookingSlots({
               productId: sp.productId,
-              operatingHours: outlet.operatingHours,
+              serviceOperatingHours: serviceHoursFromOutlet,
               serviceDurationMinutes: sp.durationMinutes,
               daysToGenerate: 30,
             });
@@ -481,18 +543,24 @@ export async function generateProductImportTemplateService(): Promise<ExcelJS.Wo
     fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } },
     alignment: { vertical: "middle", horizontal: "center", wrapText: true },
     border: {
-      top: { style: "thin" }, left: { style: "thin" },
-      bottom: { style: "thin" }, right: { style: "thin" },
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
     },
   };
 
   const cellBorder: Partial<ExcelJS.Borders> = {
-    top: { style: "thin" }, left: { style: "thin" },
-    bottom: { style: "thin" }, right: { style: "thin" },
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
   };
 
   const applyHeaderStyle = (sheet: ExcelJS.Worksheet) => {
-    sheet.getRow(1).eachCell((cell) => { Object.assign(cell, { style: headerStyle }); });
+    sheet.getRow(1).eachCell((cell) => {
+      Object.assign(cell, { style: headerStyle });
+    });
     sheet.getRow(1).height = 24;
   };
 
@@ -513,9 +581,15 @@ export async function generateProductImportTemplateService(): Promise<ExcelJS.Wo
 
   // Example row
   const exGoods = gs.addRow({
-    name: "Sampo Premium", desc: "Sampo anti rontok", unit: "pcs",
-    stock: 50, minStock: 10, hpp: 15000, price: 25000,
-    status: "ACTIVE", image: "sampo.jpg",
+    name: "Sampo Premium",
+    desc: "Sampo anti rontok",
+    unit: "pcs",
+    stock: 50,
+    minStock: 10,
+    hpp: 15000,
+    price: 25000,
+    status: "ACTIVE",
+    image: "sampo.jpg",
   });
   exGoods.eachCell((cell) => {
     cell.border = cellBorder;
@@ -542,10 +616,18 @@ export async function generateProductImportTemplateService(): Promise<ExcelJS.Wo
 
   // Example row
   const exService = ss.addRow({
-    name: "Potong Rambut", desc: "Potong rambut pria", price: 50000,
-    duration: 30, provider: "Budi", phone: "081234567890",
-    email: "budi@mail.com", commType: "PERCENTAGE", commValue: 30,
-    parallel: 1, status: "ACTIVE", image: "potong.jpg",
+    name: "Potong Rambut",
+    desc: "Potong rambut pria",
+    price: 50000,
+    duration: 30,
+    provider: "Budi",
+    phone: "081234567890",
+    email: "budi@mail.com",
+    commType: "PERCENTAGE",
+    commValue: 30,
+    parallel: 1,
+    status: "ACTIVE",
+    image: "potong.jpg",
   });
   exService.eachCell((cell) => {
     cell.border = cellBorder;
@@ -589,7 +671,9 @@ export async function generateProductImportTemplateService(): Promise<ExcelJS.Wo
   guideData.forEach((row, i) => {
     const r = guide.addRow(row);
     if (i === 0) {
-      r.eachCell((cell) => { Object.assign(cell, { style: headerStyle }); });
+      r.eachCell((cell) => {
+        Object.assign(cell, { style: headerStyle });
+      });
       r.height = 24;
     } else if (String(row[0]).startsWith("===")) {
       r.getCell(1).font = { bold: true, size: 11 };
@@ -654,7 +738,7 @@ export async function exportProductsToExcelService(
       const col = sheet.getColumn(key);
       const cell = row.getCell(col.number);
       if (typeof cell.value === "number") {
-        cell.numFmt = '#,##0';
+        cell.numFmt = "#,##0";
       }
     });
   };
@@ -683,9 +767,8 @@ export async function exportProductsToExcelService(
 
     goodsProducts.forEach((p, i) => {
       const g = p.goods!;
-      const margin = g.sellingPrice > 0
-        ? ((g.sellingPrice - g.averageHpp) / g.sellingPrice * 100)
-        : 0;
+      const margin =
+        g.sellingPrice > 0 ? ((g.sellingPrice - g.averageHpp) / g.sellingPrice) * 100 : 0;
 
       const row = gs.addRow({
         no: i + 1,
@@ -707,15 +790,20 @@ export async function exportProductsToExcelService(
 
       // Status color
       const statusCell = row.getCell(gs.getColumn("status").number);
-      statusCell.font = p.status === "ACTIVE"
-        ? { color: { argb: "FF16A34A" } }
-        : { color: { argb: "FFDC2626" } };
+      statusCell.font =
+        p.status === "ACTIVE" ? { color: { argb: "FF16A34A" } } : { color: { argb: "FFDC2626" } };
 
       // Low stock warning
       if (g.currentStock === 0) {
-        row.getCell(gs.getColumn("stock").number).font = { color: { argb: "FFDC2626" }, bold: true };
+        row.getCell(gs.getColumn("stock").number).font = {
+          color: { argb: "FFDC2626" },
+          bold: true,
+        };
       } else if (g.minStock !== null && g.currentStock <= g.minStock) {
-        row.getCell(gs.getColumn("stock").number).font = { color: { argb: "FFF59E0B" }, bold: true };
+        row.getCell(gs.getColumn("stock").number).font = {
+          color: { argb: "FFF59E0B" },
+          bold: true,
+        };
       }
 
       // Margin percentage format
@@ -738,7 +826,8 @@ export async function exportProductsToExcelService(
         price: "",
         margin: "",
         stockValue: goodsProducts.reduce(
-          (s, p) => s + (p.goods ? p.goods.currentStock * p.goods.averageHpp : 0), 0,
+          (s, p) => s + (p.goods ? p.goods.currentStock * p.goods.averageHpp : 0),
+          0,
         ),
         status: "",
         createdAt: "",
@@ -785,9 +874,8 @@ export async function exportProductsToExcelService(
         phone: sv.providerPhone || "-",
         email: sv.providerEmail || "-",
         commType: commLabel,
-        commValue: sv.commissionType === "PERCENTAGE"
-          ? `${sv.commissionValue}%`
-          : sv.commissionValue,
+        commValue:
+          sv.commissionType === "PERCENTAGE" ? `${sv.commissionValue}%` : sv.commissionValue,
         parallel: sv.maxParallel,
         status: p.status === "ACTIVE" ? "Aktif" : "Non-Aktif",
         createdAt: p.createdAt.toLocaleDateString("id-ID"),
@@ -799,14 +887,13 @@ export async function exportProductsToExcelService(
       // Komisi nominal format
       const commCell = row.getCell(ss.getColumn("commValue").number);
       if (typeof commCell.value === "number") {
-        commCell.numFmt = '#,##0';
+        commCell.numFmt = "#,##0";
       }
 
       // Status color
       const statusCell = row.getCell(ss.getColumn("status").number);
-      statusCell.font = p.status === "ACTIVE"
-        ? { color: { argb: "FF16A34A" } }
-        : { color: { argb: "FFDC2626" } };
+      statusCell.font =
+        p.status === "ACTIVE" ? { color: { argb: "FF16A34A" } } : { color: { argb: "FFDC2626" } };
     });
   }
 
