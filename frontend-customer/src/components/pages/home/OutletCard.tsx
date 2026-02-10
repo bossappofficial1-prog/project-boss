@@ -95,13 +95,13 @@ export function OutletCard({ outlet, alignment = "vertical", from }: OutletCardP
     if (alignment === "horizontal") {
         return (
             <Link id={outlet.id} href={{ pathname: `/outlet/${outlet.id}`, ...(from && from !== "" ? { query: { from: from } } : {}) }} className="block group">
-                <div className="flex gap-3 bg-card shadow-md rounded-sm border hover:shadow-md hover:border-border/60 transition-all duration-300 p-2.5">
-                    <div className="w-24 h-24 rounded-md overflow-hidden shrink-0">
+                <div className="flex gap-3 bg-card rounded-xl border border-border/50 hover:border-primary/20 hover:shadow-md transition-all duration-200 p-2.5 active:scale-[0.99]">
+                    <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0">
                         <OutletImage outlet={outlet} imageSize="80px" />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <OutletHeader name={outlet.name} />
-                        <OutletInfo outlet={outlet} showPhone={true} />
+                        <OutletInfo outlet={outlet} showPhone={false} />
                     </div>
                 </div>
             </Link>
@@ -110,13 +110,13 @@ export function OutletCard({ outlet, alignment = "vertical", from }: OutletCardP
 
     return (
         <Link href={{ pathname: `/outlet/${outlet.id}`, ...(from && from !== "" ? { query: { from: from } } : {}) }} className="block h-full group">
-            <Card className="flex flex-col gap-2 w-full h-full overflow-hidden border border-border/30 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-lg p-0">
+            <Card className="flex flex-col gap-0 w-full h-full overflow-hidden border border-border/40 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 rounded-xl p-0">
                 <div className="w-full h-40">
                     <OutletImage outlet={outlet} imageSize="(max-width: 768px) 100vw, 200px" />
                 </div>
                 <CardContent className="p-3 flex-grow flex flex-col justify-between">
                     <OutletHeader name={outlet.name} />
-                    <OutletInfo outlet={outlet} showPhone={true} />
+                    <OutletInfo outlet={outlet} showPhone={false} />
                 </CardContent>
             </Card>
         </Link>

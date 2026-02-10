@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { ArrowUpRight, type LucideIcon } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 interface QuickActionCardProps {
     action: {
@@ -17,22 +17,18 @@ interface QuickActionCardProps {
 }
 
 function QuickActionCard({ action, labels }: QuickActionCardProps) {
-    const Icon = action.icon;
+    const Icon = action.icon
     return (
         <Link
             href={action.href}
-            className="group flex items-start gap-3 rounded-md border border-border/60 bg-card p-4 shadow-sm transition hover:border-primary/50 hover:shadow-md"
+            className="flex flex-col items-center gap-1.5 rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/70 active:scale-95"
         >
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Icon className="h-5 w-5" />
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Icon className="h-4.5 w-4.5" />
             </span>
-            <div className="flex-1 space-y-1">
-                <p className="text-sm font-semibold text-foreground">{labels.title}</p>
-                <p className="text-xs leading-snug text-muted-foreground">{labels.description}</p>
-            </div>
-            <ArrowUpRight className="h-4 w-4 text-muted-foreground transition group-hover:text-primary" />
+            <span className="text-xs text-center font-medium text-foreground">{labels.title}</span>
         </Link>
     )
 }
 
-export default React.memo(QuickActionCard);
+export default React.memo(QuickActionCard)

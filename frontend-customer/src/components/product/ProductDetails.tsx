@@ -22,6 +22,9 @@ import {
   Layers,
   Store,
   Bookmark,
+  ChevronRight,
+  Package,
+  Wrench,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -89,6 +92,7 @@ export function ProductDetails({ outletId, productId }: Props) {
       centerTitle: true,
       showBackButton: true,
       showThemeToggle: false,
+      showPartnerToggle: false,
       onLeftClick:
         from === "saved-products"
           ? () => router.back()
@@ -172,11 +176,11 @@ export function ProductDetails({ outletId, productId }: Props) {
           value: product?.type === "GOODS" ? t("labels.product") : t("labels.service"),
         },
         product &&
-          getServiceDuration(product) && {
-            icon: Clock,
-            label: t("labels.duration"),
-            value: `${getServiceDuration(product)} ${t("labels.minutes")}`,
-          },
+        getServiceDuration(product) && {
+          icon: Clock,
+          label: t("labels.duration"),
+          value: `${getServiceDuration(product)} ${t("labels.minutes")}`,
+        },
       ].filter(Boolean) as Array<{
         icon: React.ComponentType<{ className?: string }>;
         label: string;
@@ -210,25 +214,32 @@ export function ProductDetails({ outletId, productId }: Props) {
   }
 
   return (
-    <div className="pb-16">
+    <div className="pb-24">
       <HeroImage product={product} />
 
-      <div className="p-5 space-y-6 -mt-16 relative z-40 bg-background rounded-t-md shadow-lg">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-gray-300 rounded-full mt-3" />
-
-        <HeaderSection product={product} outlet={outlet} t={t} tCommon={tCommon} />
-
-        <OutletCard outlet={outlet} t={t} />
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-          {productDetailsList.map((item, index) => (
-            <DetailCard key={index} icon={item.icon} label={item.label} value={item.value} />
-          ))}
+      {/* Content Sheet */}
+      <div className="relative z-40 -mt-8 rounded-t-2xl bg-background shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
         </div>
 
-        {formattedDescription && (
-          <DescriptionSection description={formattedDescription} productType={product.type} t={t} />
-        )}
+        <div className="px-5 pb-6 space-y-5">
+          <HeaderSection product={product} outlet={outlet} t={t} tCommon={tCommon} />
+
+          {/* Detail chips */}
+          <div className="flex flex-wrap gap-2">
+            {productDetailsList.map((item, index) => (
+              <DetailChip key={index} icon={item.icon} label={item.label} value={item.value} />
+            ))}
+          </div>
+
+          <OutletCard outlet={outlet} t={t} />
+
+          {formattedDescription && (
+            <DescriptionSection description={formattedDescription} productType={product.type} t={t} />
+          )}
+        </div>
       </div>
 
       <BottomActions
@@ -262,7 +273,7 @@ type HeroImageProps = {
 const HeroImage: React.FC<HeroImageProps> = ({ product }) => {
   if (product.images && product.images.length > 1) {
     return (
-      <div className="relative h-72 bg-muted -mx-4 -mt-4">
+      <div className="relative h-72 sm:h-80 bg-muted -mx-4 -mt-4 overflow-hidden">
         <ProductImagesSlider
           aspectRatio="16/9"
           showControls
@@ -279,21 +290,25 @@ const HeroImage: React.FC<HeroImageProps> = ({ product }) => {
   const imageUrl = product.images?.[0]?.url || product.image;
   if (imageUrl) {
     return (
-      <div className="relative h-72 bg-muted -mx-4 -mt-4">
+      <div className="relative h-72 sm:h-80 bg-muted -mx-4 -mt-4 overflow-hidden">
         <ImageRender
           src={imageUrl}
           alt={product.name}
           className="object-cover w-full h-full"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="relative h-72 flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/20 -mx-4 -mt-4">
-      <Store className="w-20 h-20 text-primary/40" />
+    <div className="relative h-72 sm:h-80 flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/15 to-primary/25 -mx-4 -mt-4">
+      {product.type === "GOODS" ? (
+        <Package className="w-16 h-16 text-primary/30" />
+      ) : (
+        <Wrench className="w-16 h-16 text-primary/30" />
+      )}
     </div>
   );
 };
@@ -308,47 +323,51 @@ type HeaderSectionProps = {
   tCommon: (key: NestedKeyOf<Messages["common"]>) => string;
 };
 const HeaderSection: React.FC<HeaderSectionProps> = ({ product, outlet, t, tCommon }) => (
-  <div className="pt-6 space-y-4">
-    <div className="flex items-center gap-2 flex-wrap">
+  <div className="space-y-3">
+    {/* Badges row */}
+    <div className="flex items-center gap-1.5 flex-wrap">
       <Badge
         variant="outline"
-        className="font-medium rounded-full px-3 py-1 border-primary/20 bg-primary/5 text-primary">
+        className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold border-primary/20 bg-primary/5 text-primary">
         {product.type === "GOODS" ? t("labels.product") : t("labels.service")}
       </Badge>
       <Badge
         variant={outlet.isOpen ? "default" : "secondary"}
         className={cn(
-          "rounded-full px-3 flex items-center gap-1.5",
-          outlet.isOpen && "bg-green-100 text-green-700 hover:bg-green-200",
+          "rounded-full px-2.5 py-0.5 text-[11px] font-semibold flex items-center gap-1",
+          outlet.isOpen
+            ? "bg-green-50 text-green-700 border border-green-200"
+            : "bg-gray-100 text-gray-500",
         )}>
         <span
           className={cn(
-            "w-2 h-2 rounded-full",
-            outlet.isOpen ? "bg-green-500 animate-pulse" : "bg-gray-400",
+            "w-1.5 h-1.5 rounded-full",
+            outlet.isOpen ? "bg-green-500" : "bg-gray-400",
           )}
         />
         {outlet.isOpen ? tCommon("open") : tCommon("closed")}
       </Badge>
-      <Badge
-        variant={product.status === "ACTIVE" ? "outline" : "destructive"}
-        className={cn(
-          "font-medium",
-          product.status === "ACTIVE" ? "bg-green-50 text-green-600 border-green-200" : "",
-        )}>
-        {product.status === "ACTIVE" ? t("labels.available") : t("labels.outOfStock")}
-      </Badge>
+      {product.status !== "ACTIVE" && (
+        <Badge
+          variant="destructive"
+          className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+          {t("labels.outOfStock")}
+        </Badge>
+      )}
     </div>
 
-    <h1 className="text-3xl font-bold tracking-tight">{product.name}</h1>
+    {/* Product name */}
+    <h1 className="text-2xl font-bold tracking-tight leading-tight">{product.name}</h1>
 
-    <p className="flex items-baseline gap-2">
-      <span className="text-3xl font-extrabold text-primary">
+    {/* Price */}
+    <div className="flex items-baseline gap-1.5">
+      <span className="text-2xl font-extrabold text-primary tabular-nums">
         {formatCurrency(getProductPrice(product))}
       </span>
       {getProductUnit(product) && (
-        <span className="text-base text-muted-foreground">/ {getProductUnit(product)}</span>
+        <span className="text-sm text-muted-foreground font-medium">/ {getProductUnit(product)}</span>
       )}
-    </p>
+    </div>
   </div>
 );
 
@@ -360,42 +379,34 @@ type OutletCardProps = {
   ) => string;
 };
 const OutletCard: React.FC<OutletCardProps> = ({ outlet, t }) => (
-  <div className="p-4 rounded-xl border border-muted hover:border-primary/20 bg-card/50 transition-all duration-200 hover:shadow-sm">
-    <Link href={`/outlet/${outlet.id}`} className="block">
-      <div className="flex items-center gap-2 mb-2">
-        <Store className="w-3.5 h-3.5 text-primary" />
-        <p className="text-xs font-medium text-muted-foreground">{t("labels.availableAt")}</p>
+  <Link
+    href={`/outlet/${outlet.id}`}
+    className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/20 transition-all duration-200 group">
+    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <Store className="w-5 h-5" />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t("labels.availableAt")}</p>
+      <h3 className="text-sm font-semibold truncate mt-0.5">{outlet.name}</h3>
+      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+        <MapPin className="w-3 h-3 shrink-0" />
+        <span className="truncate">{outlet.address}</span>
       </div>
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold truncate">{outlet.name}</h3>
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-            <MapPin className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{outlet.address}</span>
-          </div>
-        </div>
-        <div className="bg-primary/10 p-1.5 rounded-full">
-          <ArrowLeft size={16} className="text-primary rotate-180" />
-        </div>
-      </div>
-    </Link>
-  </div>
+    </div>
+    <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary transition-colors flex-shrink-0" />
+  </Link>
 );
 
-type DetailCardProps = {
+type DetailChipProps = {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
 };
-const DetailCard: React.FC<DetailCardProps> = ({ icon: Icon, label, value }) => (
-  <div className="p-3 rounded-xl border bg-card/50 flex items-center gap-3 hover:border-primary/20 hover:shadow-sm transition-all">
-    <div className="p-2.5 rounded-lg bg-primary/10">
-      <Icon className="w-5 h-5 text-primary" />
-    </div>
-    <div className="flex flex-col">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <div className="font-semibold text-sm mt-0.5">{value}</div>
-    </div>
+const DetailChip: React.FC<DetailChipProps> = ({ icon: Icon, label, value }) => (
+  <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-3 py-1.5">
+    <Icon className="w-3.5 h-3.5 text-primary" />
+    <span className="text-xs text-muted-foreground">{label}:</span>
+    <span className="text-xs font-semibold">{value}</span>
   </div>
 );
 
@@ -408,20 +419,15 @@ type DescriptionSectionProps = {
   ) => string;
 };
 const DescriptionSection: React.FC<DescriptionSectionProps> = ({ description, productType, t }) => (
-  <div className="pt-2">
-    <div className="flex items-center gap-2 mb-3">
-      <div className="h-6 w-1 rounded-full bg-primary" />
-      <h2 className="text-lg font-semibold">
-        {t("labels.description", {
-          type: productType === "GOODS" ? t("labels.product") : t("labels.service"),
-        })}
-      </h2>
-    </div>
-    <div className="p-4 rounded-xl border border-muted bg-card/30">
-      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-        {description}
-      </p>
-    </div>
+  <div>
+    <h2 className="text-sm font-semibold text-muted-foreground mb-2">
+      {t("labels.description", {
+        type: productType === "GOODS" ? t("labels.product") : t("labels.service"),
+      })}
+    </h2>
+    <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
+      {description}
+    </p>
   </div>
 );
 
@@ -446,16 +452,16 @@ const BottomActions: React.FC<BottomActionsProps> = ({
   onOpenSchedule,
   t,
 }) => (
-  <div className="fixed bottom-0 left-0 right-0 p-3 z-[101] bg-background/90 backdrop-blur-lg border-t shadow-lg-top">
-    <div className="max-w-md mx-auto flex items-center gap-3">
+  <div className="fixed bottom-0 left-0 right-0 z-[101] bg-background/95 backdrop-blur-xl border-t border-border/50">
+    <div className="max-w-md mx-auto flex items-center gap-2.5 px-4 py-3">
       <Button
         variant="outline"
         size="icon"
-        className="h-12 w-12 rounded-xl border-muted"
+        className="h-11 w-11 rounded-full border-border/60 flex-shrink-0 hover:bg-muted/80"
         onClick={onSave}>
         <Bookmark
           className={cn(
-            "w-6 h-6 transition-all duration-300",
+            "w-5 h-5 transition-all duration-300",
             isProductInSaved && "fill-blue-500 text-blue-500 scale-110",
           )}
         />
@@ -464,20 +470,20 @@ const BottomActions: React.FC<BottomActionsProps> = ({
       {product.type === "GOODS" && (
         <Button
           size="lg"
-          className="flex-1 h-12 rounded-xl"
+          className="flex-1 h-11 rounded-full font-semibold text-sm shadow-sm gap-2"
           onClick={onAddToCart}
           disabled={product.status !== "ACTIVE" || !outlet.isOpen}>
-          <ShoppingCart className="w-5 h-5 mr-2" /> {t("buttons.addToCart")}
+          <ShoppingCart className="w-4 h-4" /> {t("buttons.addToCart")}
         </Button>
       )}
 
       {product.type === "SERVICE" && (
         <Button
           size="lg"
-          className="flex-1 h-12 rounded-xl"
+          className="flex-1 h-11 rounded-full font-semibold text-sm shadow-sm gap-2"
           onClick={onOpenSchedule}
           disabled={product.status !== "ACTIVE" || !outlet.isOpen}>
-          <Clock className="w-5 h-5 mr-2" /> {t("buttons.bookService")}
+          <Clock className="w-4 h-4" /> {t("buttons.bookService")}
         </Button>
       )}
     </div>

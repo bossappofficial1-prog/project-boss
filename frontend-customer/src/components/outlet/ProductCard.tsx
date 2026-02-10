@@ -155,58 +155,56 @@ export default function ProductCard({
   return (
     <>
       <Card
-        className={`flex flex-row p-2.5 transition-all duration-300 w-full overflow-hidden relative gap-0 group border rounded-xl items-stretch ${
-          isDisabled
-            ? "opacity-60 cursor-not-allowed"
-            : "cursor-pointer hover:shadow-md hover:border-primary/20"
-        }`}
+        className={`flex flex-row p-3 transition-all duration-200 w-full overflow-hidden relative gap-0 group border border-border/60 rounded-xl items-stretch ${isDisabled
+            ? "opacity-50 cursor-not-allowed bg-muted/30"
+            : "cursor-pointer hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
+          }`}
         onClick={isDisabled ? undefined : handleCardClick}>
         {/* Image Section */}
-        <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 bg-muted overflow-hidden rounded-lg">
+        <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
           {product.image ? (
             <ImageColorThief
               src={product.image}
               alt={product.name}
-              className={`w-full h-full object-cover transition-transform duration-300 ${
-                !isDisabled && "group-hover:scale-105"
-              } ${isDisabled ? "grayscale" : ""}`}
+              className={`w-full h-full object-cover transition-transform duration-300 ${!isDisabled && "group-hover:scale-105"
+                } ${isDisabled ? "grayscale" : ""}`}
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/50">
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-muted to-muted/60 text-muted-foreground/40">
               {product.type === "GOODS" ? (
-                <Package className="w-10 h-10" />
+                <Package className="w-8 h-8" />
               ) : (
-                <Wrench className="w-10 h-10" />
+                <Wrench className="w-8 h-8" />
               )}
             </div>
           )}
 
           {/* Status Overlays */}
           {isOutOfStock && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <Badge className="bg-red-500/90 text-white border-none text-xs">Habis</Badge>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
+              <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">Habis</span>
             </div>
           )}
 
           {isInactive && !isOutOfStock && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <Badge className="bg-gray-500/90 text-white border-none text-xs">Nonaktif</Badge>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
+              <span className="text-[10px] font-bold text-white bg-gray-500 px-2 py-0.5 rounded-full">Nonaktif</span>
             </div>
           )}
 
           {/* Duration Badge for Services */}
           {product.type === "SERVICE" && productData.serviceDurationMinutes && !isDisabled && (
-            <Badge className="absolute top-1.5 right-1.5 backdrop-blur-sm bg-blue-500/90 text-white border-none text-[10px] px-1.5 py-0.5 shadow-sm">
-              <Clock className="w-2.5 h-2.5 mr-1" />
+            <span className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-blue-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
+              <Clock className="w-2.5 h-2.5" />
               {productData.serviceDurationMinutes}m
-            </Badge>
+            </span>
           )}
 
           {/* Low Stock Badge */}
           {isLowStock && !isInactive && (
-            <Badge className="absolute top-1.5 left-1.5 backdrop-blur-sm bg-orange-500/90 text-white border-none text-[10px] px-1.5 py-0.5 shadow-sm">
+            <span className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
               Stok: {productData.quantity}
-            </Badge>
+            </span>
           )}
         </div>
 
@@ -214,13 +212,12 @@ export default function ProductCard({
         <div className="pl-3 sm:pl-4 flex flex-col flex-grow justify-between min-w-0">
           <div className="flex-grow">
             <h3
-              className={`font-bold text-sm sm:text-base leading-tight line-clamp-2 transition-colors ${
-                !isDisabled && "group-hover:text-primary"
-              }`}>
+              className={`font-semibold text-sm leading-snug line-clamp-2 transition-colors ${!isDisabled && "group-hover:text-primary"
+                }`}>
               {product.name}
             </h3>
             {product.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5 leading-relaxed">
                 {product.description}
               </p>
             )}
@@ -228,7 +225,7 @@ export default function ProductCard({
 
           {/* Cart Indicator */}
           {inCartQuantity > 0 && (
-            <div className="flex items-center gap-1 text-xs text-primary font-medium pt-1 mt-1 border-t">
+            <div className="flex items-center gap-1 text-[11px] text-primary font-medium mt-1.5 bg-primary/5 rounded-md px-2 py-1 w-fit">
               <ShoppingCart className="w-3 h-3" />
               <span>
                 {inCartQuantity} {productData.unit || "item"} di keranjang
@@ -238,35 +235,35 @@ export default function ProductCard({
 
           {/* Price and Actions */}
           <div className="flex justify-between items-end mt-2 gap-2">
-            <div className="flex flex-col">
-              <p className="font-bold text-base sm:text-lg text-primary">
+            <div>
+              <p className="font-bold text-base text-primary tabular-nums">
                 Rp {productData.price.toLocaleString("id-ID")}
               </p>
               {product.type === "GOODS" && productData.unit && (
-                <span className="text-[10px] text-muted-foreground">per {productData.unit}</span>
+                <span className="text-[10px] text-muted-foreground leading-none">per {productData.unit}</span>
               )}
             </div>
 
             {!isDisabled && (
-              <div className="flex items-center gap-1 sm:gap-2">
+              <div className="flex items-center gap-1.5">
                 {product.type === "GOODS" ? (
                   <>
-                    <div className="flex items-center border rounded-full overflow-hidden h-7 sm:h-8 bg-background">
+                    <div className="flex items-center border border-border/80 rounded-full overflow-hidden h-7 bg-background shadow-sm">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-full w-7 sm:w-8 p-0 rounded-none hover:bg-primary/10"
+                        className="h-full w-7 p-0 rounded-none hover:bg-muted"
                         onClick={(e) => handleQuantityChange(-1, e)}
                         disabled={quantity <= 1}>
                         <Minus className="h-3 w-3" />
                       </Button>
-                      <span className="text-xs sm:text-sm font-semibold w-7 sm:w-8 text-center">
+                      <span className="text-xs font-semibold w-7 text-center tabular-nums">
                         {quantity}
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-full w-7 sm:w-8 p-0 rounded-none hover:bg-primary/10"
+                        className="h-full w-7 p-0 rounded-none hover:bg-muted"
                         onClick={(e) => handleQuantityChange(1, e)}
                         disabled={quantity >= maxQuantity - inCartQuantity}>
                         <Plus className="h-3 w-3" />
@@ -274,18 +271,18 @@ export default function ProductCard({
                     </div>
                     <Button
                       size="icon"
-                      className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0 shadow-sm"
+                      className="h-7 w-7 rounded-full flex-shrink-0 shadow-sm"
                       onClick={handleAddToCart}
                       disabled={inCartQuantity >= maxQuantity}>
-                      <ShoppingCart className="w-3.5 h-3.5" />
+                      <ShoppingCart className="w-3 h-3" />
                     </Button>
                   </>
                 ) : (
                   <Button
                     size="sm"
-                    className="h-8 px-3 text-xs shadow-sm"
+                    className="h-8 px-3 text-xs rounded-full shadow-sm gap-1"
                     onClick={handleAddToCart}>
-                    <Clock className="w-3 h-3 mr-1.5" />
+                    <Clock className="w-3 h-3" />
                     Jadwal
                   </Button>
                 )}

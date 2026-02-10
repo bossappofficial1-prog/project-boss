@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
-import type { ReactNode } from "react"
 import React from "react"
 
 interface HomeSectionHeaderProps {
@@ -10,26 +9,22 @@ interface HomeSectionHeaderProps {
     subtitle?: string
     actionLabel?: string
     href?: string
-    icon?: ReactNode
 }
 
-function HomeSectionHeader({ title, subtitle, actionLabel, href, icon }: HomeSectionHeaderProps) {
+function HomeSectionHeader({ title, subtitle, actionLabel, href }: HomeSectionHeaderProps) {
     return (
-        <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-                <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-                    {icon && <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">{icon}</span>}
-                    <span>{title}</span>
-                </div>
-                {subtitle && <p className="text-xs text-muted-foreground max-w-md leading-relaxed">{subtitle}</p>}
+        <div className="flex items-center justify-between gap-3">
+            <div>
+                <h2 className="text-base font-bold text-foreground">{title}</h2>
+                {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
             </div>
             {href && actionLabel && (
                 <Link
                     href={href}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                    className="flex items-center gap-0.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors flex-shrink-0"
                 >
-                    <span>{actionLabel}</span>
-                    <ChevronRight className="h-4 w-4" />
+                    {actionLabel}
+                    <ChevronRight className="h-3.5 w-3.5" />
                 </Link>
             )}
         </div>

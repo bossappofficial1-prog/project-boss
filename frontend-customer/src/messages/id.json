@@ -515,7 +515,10 @@
         "noOperatingHours": "Jam operasional tidak tersedia",
         "noOperatingHoursDescription": "Informasi jam buka outlet ini tidak tersedia",
         "outletNotFound": "Outlet tidak ditemukan",
-        "whatsappMessage": "Halo, saya tertarik dengan outlet {name}"
+        "whatsappMessage": "Halo, saya tertarik dengan outlet {name}",
+        "openMap": "Buka peta",
+        "favorite": "Favorit",
+        "favorited": "Difavoritkan"
     },
     "text": {
         "open": "Buka",
