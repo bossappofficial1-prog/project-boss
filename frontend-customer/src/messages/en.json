@@ -515,7 +515,10 @@
         "noOperatingHours": "Operating hours not available",
         "noOperatingHoursDescription": "Opening hours information for this outlet is not available",
         "outletNotFound": "Outlet not found",
-        "whatsappMessage": "Hello, I am interested in the outlet {name}"
+        "whatsappMessage": "Hello, I am interested in the outlet {name}",
+        "openMap": "Open map",
+        "favorite": "Favorite",
+        "favorited": "Favorited"
     },
     "text": {
         "open": "Open",
