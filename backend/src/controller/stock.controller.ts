@@ -9,6 +9,8 @@ import {
   getStockHistory,
   getLowStockProducts,
   recalculateHpp,
+  getStockOverview,
+  exportStockToExcel,
 } from "../service/stock.service";
 import {
   stockInSchema,
@@ -196,6 +198,47 @@ export async function recalculateHppController(req: Request, res: Response, next
       message: "HPP berhasil dihitung ulang",
       data: result,
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/stock/overview/:outletId
+ * Get stock overview stats for an outlet
+ */
+export async function getStockOverviewController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const outletId = ensureString(req.params?.outletId, "outletId");
+    const result = await getStockOverview(outletId);
+
+    res.status(HttpStatus.OK).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/stock/export/:outletId
+ * Export stock data to Excel (1 sheet per product)
+ */
+export async function exportStockController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const outletId = ensureString(req.params?.outletId, "outletId");
+    const workbook = await exportStockToExcel(outletId);
+
+    const fileName = `Laporan_Stok_${Date.now()}.xlsx`;
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+
+    await (workbook as any).xlsx.write(res);
+    res.end();
   } catch (error) {
     next(error);
   }

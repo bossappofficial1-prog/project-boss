@@ -19,10 +19,11 @@ import Console from "../utils/logger";
 import { ensureString } from "../utils/request";
 
 export const getProductImportTemplateController = asyncHandler(async (req: Request, res: Response) => {
-    const buffer = generateProductImportTemplateService();
+    const workbook = await generateProductImportTemplateService();
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=product_import_template.xlsx');
-    res.send(buffer);
+    res.setHeader('Content-Disposition', 'attachment; filename=template_import_produk.xlsx');
+    await workbook.xlsx.write(res);
+    res.end();
 });
 
 export const searchProductsByNameController = asyncHandler(async (req: Request, res: Response) => {
@@ -92,7 +93,7 @@ export const exportProductsController = asyncHandler(async (req: Request, res: R
     const outletId = ensureString(req.params?.outletId, 'outletId');
     const { type, search } = req.query;
 
-    const buffer = await exportProductsToExcelService(outletId, {
+    const workbook = await exportProductsToExcelService(outletId, {
         type: type as 'GOODS' | 'SERVICE' | undefined,
         search: search as string | undefined
     });
@@ -103,5 +104,7 @@ export const exportProductsController = asyncHandler(async (req: Request, res: R
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-    res.send(buffer);
+
+    await (workbook as any).xlsx.write(res);
+    res.end();
 });

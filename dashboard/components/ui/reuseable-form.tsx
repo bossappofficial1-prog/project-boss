@@ -490,15 +490,17 @@ function FieldInputSwitch<T extends FieldValues>({
     switch (field.type) {
         case `file`:
             return (
-                <ImageUploader
-                    onValueChange={formField.onChange}
-                    helperText={placeholderText}
-                    disabled={formField.disabled}
-                    maxSize={field.maxSizes}
-                    key={formField.name + (formField.value ? 'loaded' : 'empty')}
-                    accept={field.accept}
-                    value={formField.value}
-                />
+                <div className="w-[87dvw] md:w-full">
+                    <ImageUploader
+                        onValueChange={formField.onChange}
+                        helperText={placeholderText}
+                        disabled={formField.disabled}
+                        maxSize={field.maxSizes}
+                        key={formField.name + (formField.value ? 'loaded' : 'empty')}
+                        accept={field.accept}
+                        value={formField.value}
+                    />
+                </div>
             )
         case "select":
             return (

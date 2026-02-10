@@ -82,7 +82,7 @@ export default function DesktopTable({
               const product = props.row.original;
 
               return (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center w-[180px] gap-3">
                   <img
                     src={resolveUploadImageUrl(product.image)}
                     alt={product.name}
@@ -92,9 +92,11 @@ export default function DesktopTable({
                         "/defaults/default-product-image.png";
                     }}
                   />
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {product.name}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {product.name}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -128,8 +130,8 @@ export default function DesktopTable({
                     {formatCurrency(
                       product.service?.commissionType === "PERCENTAGE"
                         ? ((product.service?.sellingPrice ?? 0) *
-                            (product.service?.commissionValue ?? 0)) /
-                            100
+                          (product.service?.commissionValue ?? 0)) /
+                        100
                         : (product.service?.commissionValue ?? 0),
                     )}
                   </div>

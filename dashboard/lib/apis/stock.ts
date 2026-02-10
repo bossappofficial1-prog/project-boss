@@ -140,4 +140,22 @@ export const stockApi = {
       .get(`/stock/history/${productGoodsId}${qs ? `?${qs}` : ""}`)
       .then((res) => res.data);
   },
+
+  getOverview: (outletId: string): Promise<{
+    success: boolean;
+    data: {
+      totalProducts: number;
+      totalStockValue: number;
+      lowStockCount: number;
+      outOfStockCount: number;
+      recentMovements: Record<string, { count: number; totalQty: number }>;
+    };
+  }> => apiClient.get(`/stock/overview/${outletId}`).then((res) => res.data),
+
+  exportExcel: async (outletId: string): Promise<Blob> => {
+    const response = await apiClient.get(`/stock/export/${outletId}`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
 };
