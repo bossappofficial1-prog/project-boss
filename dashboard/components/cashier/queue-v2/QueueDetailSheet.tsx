@@ -38,9 +38,9 @@ const STATUS_CONFIG: Record<
 const PRIMARY_ACTIONS: Partial<
     Record<QueueOrderStatus, { nextStatus: QueueOrderStatus; label: string }>
 > = {
-    AWAITING_PAYMENT: { nextStatus: "PROCESSING", label: "Konfirmasi Pembayaran" },
-    CONFIRMED: { nextStatus: "PROCESSING", label: "Aktifkan Antrian" },
-    PROCESSING: { nextStatus: "READY", label: "Tandai Siap" },
+    AWAITING_PAYMENT: { nextStatus: "PROCESSING", label: "Proses Pesanan" },
+    PROCESSING: { nextStatus: "CONFIRMED", label: "Konfirmasi Antrian" },
+    CONFIRMED: { nextStatus: "READY", label: "Tandai Siap" },
     READY: { nextStatus: "ON_GOING", label: "Mulai Layanan" },
     ON_GOING: { nextStatus: "COMPLETED", label: "Selesaikan Layanan" },
 };
