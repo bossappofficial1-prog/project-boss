@@ -82,7 +82,7 @@ export class PosV2Repository {
                     midtransFee: 0,
                     appFee: 0,
                     paymentStatus: PaymentStatus.SUCCESS,
-                    orderStatus: hasService ? OrderStatus.CONFIRMED : OrderStatus.COMPLETED,
+                    orderStatus: hasService ? OrderStatus.PROCESSING : OrderStatus.COMPLETED,
                     handledByStaffId: cashierId,
                     bookingDate,
                 },

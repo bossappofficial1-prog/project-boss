@@ -39,8 +39,8 @@ const SERVICE_QUEUE_STATUSES: OrderStatus[] = [
 
 const SERVICE_QUEUE_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
   [OrderStatus.AWAITING_PAYMENT]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
-  [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
-  [OrderStatus.PROCESSING]: [OrderStatus.READY, OrderStatus.CANCELLED],
+  [OrderStatus.PROCESSING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
+  [OrderStatus.CONFIRMED]: [OrderStatus.READY, OrderStatus.CANCELLED],
   [OrderStatus.READY]: [OrderStatus.ON_GOING, OrderStatus.COMPLETED, OrderStatus.CANCELLED],
   [OrderStatus.ON_GOING]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
   [OrderStatus.COMPLETED]: [],
@@ -145,13 +145,24 @@ async function buildServiceQueueSnapshot(outletId: string): Promise<QueueSnapsho
 
   const total = enriched.length;
 
-  return enriched.map((entry, index) => ({
-    order: entry.order,
-    position: index + 1,
-    scheduledStart: entry.schedule.start,
-    scheduledEnd: entry.schedule.end,
-    total,
-  }));
+  // Per-service position: each service product gets its own queue numbering
+  const servicePositionCounters = new Map<string, number>();
+
+  return enriched.map((entry) => {
+    const serviceItem = entry.order.items?.find((item: any) => item.product?.type === "SERVICE");
+    const serviceProductId = serviceItem?.productId ?? "unknown";
+
+    const currentPos = (servicePositionCounters.get(serviceProductId) ?? 0) + 1;
+    servicePositionCounters.set(serviceProductId, currentPos);
+
+    return {
+      order: entry.order,
+      position: currentPos,
+      scheduledStart: entry.schedule.start,
+      scheduledEnd: entry.schedule.end,
+      total,
+    };
+  });
 }
 
 async function resolveQueueMetaForOrder(
@@ -174,10 +185,18 @@ async function resolveQueueMetaForOrder(
     return null;
   }
 
+  // Count only orders with the same service product
+  const serviceItem = (order as any).items?.find((item: any) => item.product?.type === "SERVICE");
+  const serviceProductId = serviceItem?.productId ?? "unknown";
+  const sameServiceCount = snapshot.filter((item) => {
+    const sItem = (item.order as any).items?.find((i: any) => i.product?.type === "SERVICE");
+    return (sItem?.productId ?? "unknown") === serviceProductId;
+  }).length;
+
   return {
     position: entry.position,
     totalAhead: Math.max(0, entry.position - 1),
-    totalOrders: snapshot.length,
+    totalOrders: sameServiceCount,
     scheduledStart: entry.scheduledStart ? entry.scheduledStart.toISOString() : null,
     scheduledEnd: entry.scheduledEnd ? entry.scheduledEnd.toISOString() : null,
     status,

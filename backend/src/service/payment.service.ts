@@ -848,7 +848,7 @@ export async function verifyManualPaymentService(orderId: string, verifierId: st
     where: { id: orderId },
     data: {
       paymentStatus: PaymentStatus.SUCCESS,
-      orderStatus: OrderStatus.CONFIRMED,
+      orderStatus: OrderStatus.PROCESSING,
     },
   });
 

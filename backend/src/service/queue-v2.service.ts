@@ -178,12 +178,18 @@ export class QueueV2Service {
         });
         enriched.sort((a, b) => a.sortValue - b.sortValue);
 
-        // Build board columns
+        // Build board columns with per-service position numbering
         const board: QueueBoard = { waiting: [], ready: [], inProgress: [], completed: [] };
-        let position = 1;
+        const servicePositionCounters = new Map<string, number>();
 
         for (const { order } of enriched) {
-            const entry = mapOrderToEntry(order, position);
+            const serviceItem = order.items?.find((item: any) => item.product?.type === "SERVICE");
+            const serviceProductId = serviceItem?.productId ?? "unknown";
+
+            const currentPos = (servicePositionCounters.get(serviceProductId) ?? 0) + 1;
+            servicePositionCounters.set(serviceProductId, currentPos);
+
+            const entry = mapOrderToEntry(order, currentPos);
             const status = order.orderStatus as OrderStatus;
 
             if (WAITING_STATUSES.includes(status)) {
@@ -193,7 +199,6 @@ export class QueueV2Service {
             } else if (status === OrderStatus.ON_GOING) {
                 board.inProgress.push(entry);
             }
-            position++;
         }
 
         // Completed today

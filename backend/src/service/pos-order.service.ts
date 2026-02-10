@@ -185,7 +185,7 @@ async function handleCashOrder(orderPayload: CreateOrderInput): Promise<CreatePo
       paymentStatus: PaymentStatus.SUCCESS,
       ...(orderPayload.bookingSlotId
         ? {
-          orderStatus: OrderStatus.CONFIRMED,
+          orderStatus: OrderStatus.PROCESSING,
         }
         : {
           orderStatus: OrderStatus.COMPLETED,

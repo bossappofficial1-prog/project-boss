@@ -27,11 +27,12 @@ export async function handlePaymentSuccess(orderId: string) {
     }
     let orderStatus: OrderStatus = order.orderStatus as OrderStatus;
     if (order.bookingSlot) {
-        orderStatus = OrderStatus.CONFIRMED;
+        orderStatus = OrderStatus.PROCESSING;
         await db.bookingSlot.update({
             where: { id: order.bookingSlot.id },
             data: { status: 'BOOKED' },
         });
+        await messagePublisher.publishServiceOrderProcessing(order.id);
     } else if (order.items.some(item => item.product.type === 'SERVICE')) {
         orderStatus = OrderStatus.PROCESSING;
         await messagePublisher.publishServiceOrderProcessing(order.id);
