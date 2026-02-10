@@ -43,6 +43,22 @@ export interface Service {
   bookingInWorkHours: boolean;
   createdAt: string;
   updatedAt: string;
+
+  // Operating hours (nullable)
+  mondayOpen?: Date | string | null;
+  mondayClose?: Date | string | null;
+  tuesdayOpen?: Date | string | null;
+  tuesdayClose?: Date | string | null;
+  wednesdayOpen?: Date | string | null;
+  wednesdayClose?: Date | string | null;
+  thursdayOpen?: Date | string | null;
+  thursdayClose?: Date | string | null;
+  fridayOpen?: Date | string | null;
+  fridayClose?: Date | string | null;
+  saturdayOpen?: Date | string | null;
+  saturdayClose?: Date | string | null;
+  sundayOpen?: Date | string | null;
+  sundayClose?: Date | string | null;
 }
 
 export interface OutletItem {

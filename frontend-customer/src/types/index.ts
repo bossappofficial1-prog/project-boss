@@ -260,7 +260,6 @@ export interface Item {
   product: Product; // Use full type since price/unit are now in subtables
 }
 
-
 export interface OrderQueueMeta {
   position: number;
   totalAhead: number;

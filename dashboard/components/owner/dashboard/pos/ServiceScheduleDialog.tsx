@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface BookingSlot {
   id: string;
@@ -314,41 +315,43 @@ export function ServiceScheduleDialog({
               </div>
             ) : hasSlots ? (
               <>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {slots.map((slot) => {
-                    const isSelected = slot.id === selectedSlotId;
-                    const slotStart = new Date(slot.startTime).getTime();
-                    const isPast = slotStart <= nowTs;
-                    const isDisabled = slot.status !== "AVAILABLE" || isPast;
+                <ScrollArea className="h-[300px] w-full rounded-md border border-slate-200 p-4 dark:border-slate-800">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {slots.map((slot) => {
+                      const isSelected = slot.id === selectedSlotId;
+                      const slotStart = new Date(slot.startTime).getTime();
+                      const isPast = slotStart <= nowTs;
+                      const isDisabled = slot.status !== "AVAILABLE" || isPast;
 
-                    return (
-                      <Button
-                        key={slot.id}
-                        type="button"
-                        variant={isSelected ? "default" : "outline"}
-                        onClick={() => handleSlotPick(slot.id)}
-                        disabled={isDisabled}
-                        title={isPast ? "Slot sudah melewati waktu mulai" : undefined}
-                        className={
-                          isSelected
-                            ? "justify-between bg-red-600 text-white hover:bg-red-500"
-                            : "justify-between border-slate-200 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                        }>
-                        <span className="text-sm font-semibold">
-                          {formatTimeRange(slot.startTime, slot.endTime)}
-                        </span>
-                        <Badge
-                          variant={
-                            slot.status === "AVAILABLE" && !isPast ? "secondary" : "outline"
+                      return (
+                        <Button
+                          key={slot.id}
+                          type="button"
+                          variant={isSelected ? "default" : "outline"}
+                          onClick={() => handleSlotPick(slot.id)}
+                          disabled={isDisabled}
+                          title={isPast ? "Slot sudah melewati waktu mulai" : undefined}
+                          className={
+                            isSelected
+                              ? "justify-between bg-red-600 text-white hover:bg-red-500"
+                              : "justify-between border-slate-200 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                           }>
-                          {isPast ? "Lewat" : slot.status === "AVAILABLE" ? "Tersedia" : "Penuh"}
-                        </Badge>
-                      </Button>
-                    );
-                  })}
-                </div>
+                          <span className="text-sm font-semibold">
+                            {formatTimeRange(slot.startTime, slot.endTime)}
+                          </span>
+                          <Badge
+                            variant={
+                              slot.status === "AVAILABLE" && !isPast ? "secondary" : "outline"
+                            }>
+                            {isPast ? "Lewat" : slot.status === "AVAILABLE" ? "Tersedia" : "Penuh"}
+                          </Badge>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
                 {!isLoading && hasSlots && !hasAvailableSlots && (
-                  <p className="text-xs text-amber-600 dark:text-amber-300">
+                  <p className="mt-2 text-xs text-amber-600 dark:text-amber-300">
                     Semua slot pada tanggal ini sudah terlewat atau penuh. Pilih tanggal lain.
                   </p>
                 )}

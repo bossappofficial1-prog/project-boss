@@ -65,6 +65,21 @@ export class ProductRepository {
               commissionValue: data.service.commissionValue,
               maxParallel: data.service.maxParallel,
               bookingInWorkHours: data.service.bookingInWorkHours,
+              // Operating hours
+              mondayOpen: data.service.mondayOpen,
+              mondayClose: data.service.mondayClose,
+              tuesdayOpen: data.service.tuesdayOpen,
+              tuesdayClose: data.service.tuesdayClose,
+              wednesdayOpen: data.service.wednesdayOpen,
+              wednesdayClose: data.service.wednesdayClose,
+              thursdayOpen: data.service.thursdayOpen,
+              thursdayClose: data.service.thursdayClose,
+              fridayOpen: data.service.fridayOpen,
+              fridayClose: data.service.fridayClose,
+              saturdayOpen: data.service.saturdayOpen,
+              saturdayClose: data.service.saturdayClose,
+              sundayOpen: data.service.sundayOpen,
+              sundayClose: data.service.sundayClose,
             },
           },
         },
@@ -124,13 +139,13 @@ export class ProductRepository {
         { outletId },
         ...(q && q !== ""
           ? [
-            {
-              name: {
-                contains: q,
-                mode: "insensitive" as Prisma.QueryMode,
+              {
+                name: {
+                  contains: q,
+                  mode: "insensitive" as Prisma.QueryMode,
+                },
               },
-            },
-          ]
+            ]
           : []),
         ...(accessed && accessed !== "OWNER"
           ? [{ status: "ACTIVE" } as Prisma.ProductWhereInput]
@@ -164,11 +179,15 @@ export class ProductRepository {
    * Updates product base info and its relational data (goods/service).
    */
   static async update(id: string, data: UpdateProductInput): Promise<Product> {
-    const { goods, service, ...baseData } = data;
+    const { goods, service, type, ...rest } = data;
 
     // Construct the update object for Prisma nested update
+    // Only include the base product fields, not the entire baseData spread
     const updateData: Prisma.ProductUpdateInput = {
-      ...baseData,
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.status !== undefined && { status: data.status }),
+      ...(data.image !== undefined && { image: data.image }),
     };
 
     if (goods) {

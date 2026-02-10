@@ -10,8 +10,8 @@ const productGoodsSchema = z.object({
   averageHpp: z.number().positive({ message: "averageHpp harus > 0" }),
 });
 
-// ProductService
-const productServiceSchema = z.object({
+// ProductService - Base schema without refinement (for .partial() usage)
+const productServiceBaseSchema = z.object({
   durationMinutes: z.number().int().positive({ message: "Durasi layanan wajib diisi" }),
   sellingPrice: z.number().positive({ message: "Harga jual harus > 0" }),
 
@@ -31,7 +31,54 @@ const productServiceSchema = z.object({
   maxParallel: z.number().int().min(1).optional(),
 
   bookingInWorkHours: z.boolean().default(true).optional(),
+
+  // Operating hours untuk setiap hari
+  mondayOpen: z.coerce.date().nullable().optional(),
+  mondayClose: z.coerce.date().nullable().optional(),
+  tuesdayOpen: z.coerce.date().nullable().optional(),
+  tuesdayClose: z.coerce.date().nullable().optional(),
+  wednesdayOpen: z.coerce.date().nullable().optional(),
+  wednesdayClose: z.coerce.date().nullable().optional(),
+  thursdayOpen: z.coerce.date().nullable().optional(),
+  thursdayClose: z.coerce.date().nullable().optional(),
+  fridayOpen: z.coerce.date().nullable().optional(),
+  fridayClose: z.coerce.date().nullable().optional(),
+  saturdayOpen: z.coerce.date().nullable().optional(),
+  saturdayClose: z.coerce.date().nullable().optional(),
+  sundayOpen: z.coerce.date().nullable().optional(),
+  sundayClose: z.coerce.date().nullable().optional(),
 });
+
+// ProductService - With refinement validation (for create)
+const productServiceSchema = productServiceBaseSchema.refine(
+  (data) => {
+    // Validation: jika ada open time, maka close time juga harus ada (dan sebaliknya)
+    // Validation: close time harus lebih besar dari open time
+    const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+    for (const day of days) {
+      const open = (data as any)[`${day}Open`];
+      const close = (data as any)[`${day}Close`];
+
+      // Jika salah satu ada, keduanya harus ada
+      if ((open && !close) || (!open && close)) {
+        return false;
+      }
+
+      // Jika keduanya ada, close harus lebih besar dari open
+      if (open && close && close <= open) {
+        return false;
+      }
+    }
+    return true;
+  },
+  {
+    message: "Jam tutup harus lebih besar dari jam buka untuk setiap hari yang diset",
+  },
+);
+
+/* =====================================================
+ * BASE PRODUCT (PRISMA PRODUCT)
+ * ===================================================== */
 
 const baseProductSchema = {
   name: z.string().min(1, { message: "Nama produk tidak boleh kosong" }),
@@ -91,7 +138,8 @@ export const updateProductSchema = z
       status: z.nativeEnum(ServiceStatus).optional(),
       image: z.string().optional(),
 
-      service: productServiceSchema.partial().optional(),
+      // Use base schema without refinement for partial updates
+      service: productServiceBaseSchema.partial().optional(),
       goods: z.never().optional(),
     }),
   ])
