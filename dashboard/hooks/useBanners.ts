@@ -88,7 +88,7 @@ export const useBulkUpdateBanner = (
     onSuccess: (data, variables, context) => {
       toast.success("Berhasil update posisi banner");
       queryClient.invalidateQueries({ queryKey: ["banners"] });
-      onSuccess?.(data, variables, context, undefined as any);
+      onSuccess?.(data, variables, context);
     },
     ...restOptions,
   });
