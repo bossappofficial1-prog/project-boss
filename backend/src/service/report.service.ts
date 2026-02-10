@@ -296,11 +296,11 @@ export class ReportService {
         const trend =
           dOrders.length > 0
             ? Array.from({ length: 8 }).map((_, h) => {
-                const hourOrders = dOrders.filter(
-                  (o) => o.createdAt.getHours() >= h * 3 && o.createdAt.getHours() < (h + 1) * 3,
-                );
-                return hourOrders.reduce((sum, curr) => sum + curr.totalAmount, 0);
-              })
+              const hourOrders = dOrders.filter(
+                (o) => o.createdAt.getHours() >= h * 3 && o.createdAt.getHours() < (h + 1) * 3,
+              );
+              return hourOrders.reduce((sum, curr) => sum + curr.totalAmount, 0);
+            })
             : [0, 0, 0, 0, 0, 0, 0, 0];
 
         return {
