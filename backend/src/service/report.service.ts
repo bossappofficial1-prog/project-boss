@@ -1,5 +1,6 @@
 import { db } from "../config/prisma";
 import { OrderStatus } from "@prisma/client";
+import * as ExcelJS from "exceljs";
 import {
   getOutletByIdService,
   getAllOutletService,
@@ -567,5 +568,220 @@ export class ReportService {
 
     // 4. Combine Lists
     return [...cashierList, ...serviceList];
+  }
+
+  // ─── Excel Export ───
+
+  private static excelHeaderStyle: Partial<ExcelJS.Style> = {
+    font: { bold: true, color: { argb: "FFFFFFFF" }, size: 11 },
+    fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } },
+    alignment: { vertical: "middle", horizontal: "center", wrapText: true },
+    border: {
+      top: { style: "thin" }, left: { style: "thin" },
+      bottom: { style: "thin" }, right: { style: "thin" },
+    },
+  };
+
+  private static cellBorder: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" }, left: { style: "thin" },
+    bottom: { style: "thin" }, right: { style: "thin" },
+  };
+
+  private static applyHeaderStyle(sheet: ExcelJS.Worksheet) {
+    sheet.getRow(1).eachCell((cell) => {
+      Object.assign(cell, { style: ReportService.excelHeaderStyle });
+    });
+    sheet.getRow(1).height = 24;
+  }
+
+  private static applyRowBorder(row: ExcelJS.Row) {
+    row.eachCell((cell) => { cell.border = ReportService.cellBorder; });
+  }
+
+  private static setCurrencyFormat(row: ExcelJS.Row, colNumbers: number[]) {
+    colNumbers.forEach((n) => {
+      const cell = row.getCell(n);
+      if (typeof cell.value === "number") cell.numFmt = "#,##0";
+    });
+  }
+
+  static async exportOutletReportToExcel(
+    outletId: string,
+    date: string,
+    type: "daily" | "weekly" | "monthly",
+    viewMode: "time" | "compare",
+    ownerId?: string,
+  ): Promise<ExcelJS.Workbook> {
+    let data: any[];
+    let outletName = "Semua Outlet";
+
+    if (viewMode === "compare" && ownerId) {
+      data = await this.getCompareOutletsReport(date, type as any, ownerId);
+    } else {
+      data = await this.getOutletReport(outletId, date, type);
+      if (outletId !== "all") {
+        try {
+          const outlet = await getOutletByIdService(outletId);
+          outletName = outlet.name;
+        } catch { /* keep default */ }
+      }
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "BOSS App";
+    workbook.created = new Date();
+
+    const typeLabel = viewMode === "compare" ? "Perbandingan Outlet"
+      : type === "daily" ? "Harian" : type === "weekly" ? "Mingguan" : "Bulanan";
+
+    const sheet = workbook.addWorksheet(`Laporan ${typeLabel}`);
+    sheet.columns = [
+      { header: "No", key: "no", width: 6 },
+      { header: viewMode === "compare" ? "Outlet" : "Periode", key: "label", width: 28 },
+      { header: "Jml Transaksi", key: "trx", width: 15 },
+      { header: "Pendapatan", key: "pendapatan", width: 20 },
+      { header: "Pembelian Stok", key: "pembelian", width: 18 },
+      { header: "Pengeluaran", key: "pengeluaran", width: 18 },
+      { header: "Gaji/Komisi", key: "gaji", width: 18 },
+      { header: "Laba Bersih", key: "laba", width: 20 },
+    ];
+    this.applyHeaderStyle(sheet);
+
+    const currCols = [4, 5, 6, 7, 8]; // pendapatan, pembelian, pengeluaran, gaji, laba
+    const totals = { trx: 0, pendapatan: 0, pembelian: 0, pengeluaran: 0, gaji: 0, laba: 0 };
+
+    data.forEach((item: any, i: number) => {
+      const row = sheet.addRow({
+        no: i + 1,
+        label: item.label,
+        trx: item.jumlahTransaksi,
+        pendapatan: item.totalPendapatan,
+        pembelian: item.totalPembelian,
+        pengeluaran: item.totalPengeluaran,
+        gaji: item.gajiStaf,
+        laba: item.labaBersih,
+      });
+      this.applyRowBorder(row);
+      this.setCurrencyFormat(row, currCols);
+
+      const labaCell = row.getCell(8);
+      if (typeof labaCell.value === "number") {
+        labaCell.font = labaCell.value >= 0
+          ? { color: { argb: "FF16A34A" }, bold: true }
+          : { color: { argb: "FFDC2626" }, bold: true };
+      }
+
+      totals.trx += item.jumlahTransaksi;
+      totals.pendapatan += item.totalPendapatan;
+      totals.pembelian += item.totalPembelian;
+      totals.pengeluaran += item.totalPengeluaran;
+      totals.gaji += item.gajiStaf;
+      totals.laba += item.labaBersih;
+    });
+
+    const totalRow = sheet.addRow({ no: "", label: "TOTAL", ...totals });
+    totalRow.eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.border = ReportService.cellBorder;
+    });
+    this.setCurrencyFormat(totalRow, currCols);
+
+    // Info sheet
+    const info = workbook.addWorksheet("Info");
+    info.getColumn(1).width = 20;
+    info.getColumn(2).width = 40;
+    [
+      ["Laporan", `Laporan Outlet - ${typeLabel}`],
+      ["Outlet", outletName],
+      ["Tanggal Export", new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })],
+      ["Periode", date || new Date().toISOString().split("T")[0]],
+    ].forEach((r) => info.addRow(r));
+
+    return workbook;
+  }
+
+  static async exportStaffReportToExcel(
+    outletId: string,
+    date: string,
+    type: "daily" | "weekly" | "monthly",
+  ): Promise<ExcelJS.Workbook> {
+    const data = await this.getStaffReport(outletId, date, type);
+
+    let outletName = "Semua Outlet";
+    if (outletId !== "all") {
+      try {
+        const outlet = await getOutletByIdService(outletId);
+        outletName = outlet.name;
+      } catch { /* keep default */ }
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "BOSS App";
+    workbook.created = new Date();
+
+    const typeLabel = type === "daily" ? "Harian" : type === "weekly" ? "Mingguan" : "Bulanan";
+    const cashiers = data.filter((d: any) => d.type === "CASHIER");
+    const services = data.filter((d: any) => d.type === "SERVICE");
+
+    // Sheet: Kasir
+    const cs = workbook.addWorksheet("Kinerja Kasir");
+    cs.columns = [
+      { header: "No", key: "no", width: 6 },
+      { header: "Nama Kasir", key: "name", width: 25 },
+      { header: "Jumlah Transaksi", key: "trx", width: 18 },
+      { header: "Total Penjualan", key: "revenue", width: 22 },
+    ];
+    this.applyHeaderStyle(cs);
+
+    let totalCashierTrx = 0, totalCashierRevenue = 0;
+    cashiers.forEach((c: any, i: number) => {
+      const row = cs.addRow({ no: i + 1, name: c.name, trx: c.transactionCount, revenue: c.revenue });
+      this.applyRowBorder(row);
+      this.setCurrencyFormat(row, [4]);
+      totalCashierTrx += c.transactionCount;
+      totalCashierRevenue += c.revenue;
+    });
+
+    const cashierTotal = cs.addRow({ no: "", name: "TOTAL", trx: totalCashierTrx, revenue: totalCashierRevenue });
+    cashierTotal.eachCell((cell) => { cell.font = { bold: true }; cell.border = ReportService.cellBorder; });
+    this.setCurrencyFormat(cashierTotal, [4]);
+
+    // Sheet: Staff Layanan
+    const ss = workbook.addWorksheet("Kinerja Staff Layanan");
+    ss.columns = [
+      { header: "No", key: "no", width: 6 },
+      { header: "Nama Provider", key: "name", width: 25 },
+      { header: "Jumlah Layanan", key: "trx", width: 18 },
+      { header: "Total Komisi", key: "commission", width: 22 },
+    ];
+    this.applyHeaderStyle(ss);
+
+    let totalServiceTrx = 0, totalServiceComm = 0;
+    services.forEach((s: any, i: number) => {
+      const row = ss.addRow({ no: i + 1, name: s.name, trx: s.transactionCount, commission: s.commission });
+      this.applyRowBorder(row);
+      this.setCurrencyFormat(row, [4]);
+      totalServiceTrx += s.transactionCount;
+      totalServiceComm += s.commission;
+    });
+
+    const serviceTotal = ss.addRow({ no: "", name: "TOTAL", trx: totalServiceTrx, commission: totalServiceComm });
+    serviceTotal.eachCell((cell) => { cell.font = { bold: true }; cell.border = ReportService.cellBorder; });
+    this.setCurrencyFormat(serviceTotal, [4]);
+
+    // Info sheet
+    const info = workbook.addWorksheet("Info");
+    info.getColumn(1).width = 20;
+    info.getColumn(2).width = 40;
+    [
+      ["Laporan", `Kinerja Staff - ${typeLabel}`],
+      ["Outlet", outletName],
+      ["Tanggal Export", new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })],
+      ["Periode", date || new Date().toISOString().split("T")[0]],
+      ["Total Kasir", String(cashiers.length)],
+      ["Total Staff Layanan", String(services.length)],
+    ].forEach((r) => info.addRow(r));
+
+    return workbook;
   }
 }

@@ -1,4 +1,5 @@
 import { apiCall } from './base';
+import { apiClient } from './base';
 
 export interface DailyReportRow {
 	tanggal: string; // YYYY-MM-DD
@@ -56,6 +57,28 @@ export const reportApi = {
 			endDate: endISO,
 		});
 		return apiCall<FinancialSummary>(`/reports/financial-summary?${searchParams.toString()}`);
+	},
+
+	async exportOutletExcel(
+		outletId: string,
+		params: { type: string; date?: string; viewMode?: string }
+	): Promise<Blob> {
+		const response = await apiClient.get(`/reports/export/outlet/${outletId}`, {
+			params,
+			responseType: 'blob',
+		});
+		return response.data;
+	},
+
+	async exportStaffExcel(
+		outletId: string,
+		params: { type: string; date?: string }
+	): Promise<Blob> {
+		const response = await apiClient.get(`/reports/export/staff/${outletId}`, {
+			params,
+			responseType: 'blob',
+		});
+		return response.data;
 	},
 };
 

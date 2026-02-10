@@ -39,7 +39,7 @@ export const MENU_GROUPS: MenuGroup[] = [
     items: [
       {
         id: "owner-dashboard",
-        name: "Dashboard",
+        name: "Overview",
         href: "/owner/dashboard",
         icon: LayoutDashboard,
       },
