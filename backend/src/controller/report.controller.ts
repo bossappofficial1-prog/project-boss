@@ -103,3 +103,51 @@ export const exportTransactionReportController = asyncHandler(async (req: Reques
 
   return ResponseUtil.success(res, null, HttpStatus.OK, 'Laporan sedang diproses. Akan dikirim ke email Anda.');
 });
+
+const exportOutletQuerySchema = z.object({
+  type: z.enum(["daily", "weekly", "monthly"]),
+  date: z.string().optional(),
+  viewMode: z.enum(["time", "compare"]).default("time"),
+});
+
+export const exportOutletReportExcelController = asyncHandler(async (req: Request, res: Response) => {
+  const outletId = req.params.outletId as string;
+  const query = exportOutletQuerySchema.parse(req.query);
+  const ownerId = req.storedUser?.id;
+
+  const workbook = await ReportService.exportOutletReportToExcel(
+    outletId,
+    query.date || new Date().toISOString(),
+    query.type,
+    query.viewMode,
+    ownerId,
+  );
+
+  const filename = `Laporan_Outlet_${new Date().toISOString().split("T")[0]}.xlsx`;
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  await workbook.xlsx.write(res);
+  res.end();
+});
+
+const exportStaffQuerySchema = z.object({
+  type: z.enum(["daily", "weekly", "monthly"]),
+  date: z.string().optional(),
+});
+
+export const exportStaffReportExcelController = asyncHandler(async (req: Request, res: Response) => {
+  const outletId = req.params.outletId as string;
+  const query = exportStaffQuerySchema.parse(req.query);
+
+  const workbook = await ReportService.exportStaffReportToExcel(
+    outletId,
+    query.date || new Date().toISOString(),
+    query.type,
+  );
+
+  const filename = `Laporan_Staff_${new Date().toISOString().split("T")[0]}.xlsx`;
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  await workbook.xlsx.write(res);
+  res.end();
+});

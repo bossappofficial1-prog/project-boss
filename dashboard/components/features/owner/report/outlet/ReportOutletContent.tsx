@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Calendar as CalendarIcon,
   FileSpreadsheet,
@@ -14,11 +14,14 @@ import {
   Users,
   Receipt,
   BarChart3,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useReportOutlet, useCompareOutletsReport } from "@/hooks/useReport";
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { ReportOutleTable, Totals } from "./ReportOutletTable";
 import { SummaryCard } from "../SummaryCard";
+import reportApi from "@/lib/apis/report";
 
 type FilterType = "daily" | "weekly" | "monthly";
 type CompareFilterType = "daily" | "monthly" | "yearly";
@@ -42,6 +45,7 @@ export default function ReportOutlerContent() {
 
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [outletFilter, setOutletFilter] = useState<string>(selectedOutlet?.id || "all");
+  const [isExporting, setIsExporting] = useState(false);
 
   React.useEffect(() => {
     if (selectedOutlet?.id) {
@@ -102,6 +106,31 @@ export default function ReportOutlerContent() {
     setCurrentDate(newDate);
   };
 
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const activeType = viewMode === "time" ? filterType : compareFilterType;
+      const blob = await reportApi.exportOutletExcel(outletFilter, {
+        type: activeType,
+        date: currentDate.toISOString(),
+        viewMode,
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Laporan_Outlet_${new Date().toISOString().split("T")[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Berhasil mengexport laporan outlet");
+    } catch {
+      toast.error("Gagal mengexport laporan outlet");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [outletFilter, filterType, compareFilterType, currentDate, viewMode]);
+
   return (
     <>
       {/* Header */}
@@ -151,8 +180,12 @@ export default function ReportOutlerContent() {
           <button className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-500 dark:text-slate-400">
             <Download className="w-5 h-5" />
           </button>
-          <button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-md flex items-center gap-2 text-sm transition-all shadow-lg shadow-emerald-900/20">
-            <FileSpreadsheet className="w-4 h-4" /> Export Excel
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2.5 px-5 rounded-md flex items-center gap-2 text-sm transition-all shadow-lg shadow-emerald-900/20">
+            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+            {isExporting ? "Mengexport..." : "Export Excel"}
           </button>
         </div>
       </div>

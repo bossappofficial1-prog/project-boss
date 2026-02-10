@@ -127,6 +127,7 @@ export class PaymentRepository {
       where: { id: orderId },
       data: {
         paymentStatus: status,
+        cancellationReason: `Cancel by system (payment expired)`,
         orderStatus: "CANCELLED",
       },
     });
@@ -264,10 +265,10 @@ export class PaymentRepository {
           bookingDate: slotRecord ? slotRecord.startTime : null,
           ...(staffId
             ? {
-                handledByStaff: {
-                  connect: { id: staffId },
-                },
-              }
+              handledByStaff: {
+                connect: { id: staffId },
+              },
+            }
             : {}),
           guestCustomer: {
             connectOrCreate: {

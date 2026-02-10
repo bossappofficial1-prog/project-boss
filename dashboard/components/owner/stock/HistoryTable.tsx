@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,31 +33,29 @@ interface HistoryTableProps {
   unit?: string;
 }
 
-// Type badge colors
-const typeConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+const typeConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "success" | "warning" | "outline"; icon: React.ReactNode }> = {
   IN: {
     label: "Masuk",
-    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    variant: "success",
     icon: <ArrowDownCircle className="h-3 w-3" />,
   },
   OUT: {
     label: "Keluar",
-    color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    variant: "destructive",
     icon: <ArrowUpCircle className="h-3 w-3" />,
   },
   ADJUSTMENT: {
     label: "Penyesuaian",
-    color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    variant: "secondary",
     icon: <Settings className="h-3 w-3" />,
   },
   RETURN: {
     label: "Retur",
-    color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+    variant: "warning",
     icon: <RotateCcw className="h-3 w-3" />,
   },
 };
 
-// Reference type labels
 const refTypeLabels: Record<string, string> = {
   ORDER: "Pesanan",
   PURCHASE: "Pembelian",
@@ -79,15 +77,15 @@ export default function HistoryTable({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History className="h-4 w-4" />
             Riwayat Stok
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
+              <Skeleton key={i} className="h-12 w-full rounded-md" />
             ))}
           </div>
         </CardContent>
@@ -99,15 +97,15 @@ export default function HistoryTable({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History className="h-4 w-4" />
             Riwayat Stok
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12">
-            <RefreshCw className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Belum ada riwayat pergerakan stok</p>
+          <div className="py-12 text-center">
+            <RefreshCw className="mx-auto mb-3 h-12 w-12 text-muted-foreground/20" />
+            <p className="text-sm text-muted-foreground">Belum ada riwayat pergerakan stok</p>
           </div>
         </CardContent>
       </Card>
@@ -118,24 +116,26 @@ export default function HistoryTable({
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Riwayat Stok
-            <Badge variant="secondary" className="ml-2">
-              {logs.length} catatan
-            </Badge>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <History className="h-4 w-4" />
+                Riwayat Stok
+              </CardTitle>
+              <CardDescription>{logs.length} catatan pergerakan</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 dark:bg-gray-800/50">
+                <TableRow>
                   <TableHead className="w-[160px]">Tanggal</TableHead>
                   <TableHead className="w-[100px]">Tipe</TableHead>
                   <TableHead className="w-[80px] text-right">Qty</TableHead>
                   <TableHead className="w-[120px] text-right">HPP/Unit</TableHead>
-                  <TableHead className="w-[100px]">Ref. Type</TableHead>
+                  <TableHead className="w-[100px]">Referensi</TableHead>
                   <TableHead className="min-w-[150px]">Catatan</TableHead>
                   <TableHead className="w-[80px] text-center">Faktur</TableHead>
                   <TableHead className="w-[100px] text-right">Saldo</TableHead>
@@ -148,35 +148,36 @@ export default function HistoryTable({
                   const isNegative = log.type === "OUT" || log.type === "RETURN";
 
                   return (
-                    <TableRow key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <TableCell className="font-medium text-sm">
+                    <TableRow key={log.id}>
+                      <TableCell className="text-sm tabular-nums">
                         {formatDate(log.createdAt)}
                       </TableCell>
                       <TableCell>
-                        <Badge className={`${config.color} flex items-center gap-1 w-fit`}>
+                        <Badge variant={config.variant} className="gap-1 text-xs">
                           {config.icon}
                           {config.label}
                         </Badge>
                       </TableCell>
                       <TableCell
-                        className={`text-right font-semibold ${isPositive ? "text-green-600" : isNegative ? "text-red-600" : "text-blue-600"}`}>
+                        className={`text-right font-semibold tabular-nums ${isPositive
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : isNegative
+                              ? "text-destructive"
+                              : "text-primary"
+                          }`}>
                         {isPositive ? "+" : isNegative ? "-" : ""}
                         {Math.abs(log.quantity)} {unit}
                       </TableCell>
-                      <TableCell className="text-right text-sm">
+                      <TableCell className="text-right text-sm tabular-nums">
                         {log.hppPerUnit ? formatCurrency(log.hppPerUnit) : "-"}
                       </TableCell>
-                      <TableCell className="text-sm">
-                        {log.referenceType ? (
-                          <span className="text-gray-600 dark:text-gray-400">
-                            {refTypeLabels[log.referenceType] || log.referenceType}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
+                      <TableCell className="text-sm text-muted-foreground">
+                        {log.referenceType
+                          ? refTypeLabels[log.referenceType] || log.referenceType
+                          : "-"}
                       </TableCell>
                       <TableCell
-                        className="text-sm text-gray-600 dark:text-gray-400 max-w-[200px] truncate"
+                        className="max-w-[200px] truncate text-sm text-muted-foreground"
                         title={log.notes || ""}>
                         {log.notes || "-"}
                       </TableCell>
@@ -184,16 +185,15 @@ export default function HistoryTable({
                         {log.faktur ? (
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
+                            size="icon-sm"
                             onClick={() => setPreviewImage(log.faktur)}>
-                            <ImageIcon className="h-4 w-4 text-blue-600" />
+                            <ImageIcon className="h-4 w-4 text-primary" />
                           </Button>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-bold">
+                      <TableCell className="text-right font-bold tabular-nums">
                         {log.runningBalance ?? "-"} {unit}
                       </TableCell>
                     </TableRow>
@@ -208,9 +208,9 @@ export default function HistoryTable({
       {/* Image Preview Modal */}
       {previewImage && (
         <div
-          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
           onClick={() => setPreviewImage(null)}>
-          <div className="relative max-w-3xl max-h-[90vh]">
+          <div className="relative max-h-[90vh] max-w-3xl">
             <Button
               variant="ghost"
               size="icon"
@@ -221,7 +221,7 @@ export default function HistoryTable({
             <img
               src={previewImage}
               alt="Faktur"
-              className="max-w-full max-h-[80vh] object-contain rounded-lg"
+              className="max-h-[80vh] max-w-full rounded-md object-contain"
               onClick={(e) => e.stopPropagation()}
             />
           </div>

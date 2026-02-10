@@ -13,6 +13,7 @@ import { authApi } from "@/lib/api";
 import { apiClient } from "@/lib/apis/base";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
+import { SocketCashierProvider } from "@/contexts/SocketCashierContext";
 
 // Context for cashier data
 interface CashierContextValue {
@@ -80,7 +81,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-slate-600 dark:text-slate-400">Memuat data kasir...</p>
         </div>
-        <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
+        <Toaster position="top-right" richColors toastOptions={{ duration: 5000 }} />
       </div>
     );
   }
@@ -118,7 +119,8 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <SocketProvider outletId={outletData.id}>
+    //<SocketProvider outletId={outletData.id}>
+    <SocketCashierProvider outletId={outletData.id}>
       <CashierOutletProvider outlet={outletData}>
         <CashierContext.Provider value={{ cashierData, outletData }}>
           <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -128,6 +130,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
           <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
         </CashierContext.Provider>
       </CashierOutletProvider>
-    </SocketProvider>
+    </SocketCashierProvider>
+    //</SocketProvider>
   );
 }

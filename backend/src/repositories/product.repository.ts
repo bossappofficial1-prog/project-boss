@@ -238,4 +238,24 @@ export class ProductRepository {
       },
     });
   }
+
+  static async findForExport(
+    outletId: string,
+    filters?: { type?: "GOODS" | "SERVICE"; search?: string },
+  ) {
+    const where: Prisma.ProductWhereInput = { outletId };
+    if (filters?.type) where.type = filters.type;
+    if (filters?.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: "insensitive" } },
+        { description: { contains: filters.search, mode: "insensitive" } },
+      ];
+    }
+
+    return db.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: { goods: true, service: true },
+    });
+  }
 }

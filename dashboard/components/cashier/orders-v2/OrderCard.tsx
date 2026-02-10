@@ -4,6 +4,7 @@ import { Clock, ChevronRight, X, Printer, ShoppingBag, CreditCard, ImageIcon } f
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { OrderV2Entry, GoodsOrderStatus } from "@/lib/apis/orders-v2";
+import { formatCurrency } from "@/components/owner/orders/utils";
 
 interface OrderCardProps {
     entry: OrderV2Entry;
@@ -76,14 +77,6 @@ function formatTime(dateStr: string): string {
     return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 }
 
-function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-    }).format(amount);
-}
-
 function getPaymentLabel(method: string | null): string {
     if (!method) return "Online";
     const normalized = method.toLowerCase();
@@ -95,6 +88,7 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
     const primary = PRIMARY_ACTIONS[entry.orderStatus];
     const isTerminal = entry.orderStatus === "COMPLETED" || entry.orderStatus === "CANCELLED";
     const itemCount = entry.items.reduce((sum, i) => sum + i.quantity, 0);
+
 
     return (
         <div

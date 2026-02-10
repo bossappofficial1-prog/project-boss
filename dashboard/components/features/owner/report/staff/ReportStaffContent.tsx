@@ -1,23 +1,26 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
   Download,
   FileSpreadsheet,
+  Loader2,
   Receipt,
   Users,
   Wallet,
 } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import { useReportStaff } from "@/hooks/useReport";
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { ReportStaffTable } from "./ReportStaffTable";
 import { SummaryCard } from "../SummaryCard";
 import { DateFilterControl } from "./DateFilterControl";
 import { SelectOption } from "@/components/shared/SelectOption";
+import reportApi from "@/lib/apis/report";
 
 type FilterType = "daily" | "weekly" | "monthly";
 
@@ -33,6 +36,7 @@ export default function ReportStaffContent() {
   const [filterType, setFilterType] = useState<FilterType>("daily");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [outletFilter, setOutletFilter] = useState<string>(selectedOutlet?.id || "all");
+  const [isExporting, setIsExporting] = useState(false);
 
   React.useEffect(() => {
     if (selectedOutlet?.id) {
@@ -66,6 +70,29 @@ export default function ReportStaffContent() {
     setCurrentDate(newDate);
   };
 
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const blob = await reportApi.exportStaffExcel(outletFilter, {
+        type: filterType,
+        date: format(currentDate, "yyyy-MM-dd"),
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Laporan_Staff_${new Date().toISOString().split("T")[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Berhasil mengexport laporan staff");
+    } catch {
+      toast.error("Gagal mengexport laporan staff");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [outletFilter, filterType, currentDate]);
+
   return (
     <>
       {/* Header */}
@@ -96,8 +123,12 @@ export default function ReportStaffContent() {
           <button className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-500 dark:text-slate-400">
             <Download className="w-5 h-5" />
           </button>
-          <button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-md flex items-center gap-2 text-sm transition-all shadow-lg shadow-emerald-900/20">
-            <FileSpreadsheet className="w-4 h-4" /> Export Excel
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2.5 px-5 rounded-md flex items-center gap-2 text-sm transition-all shadow-lg shadow-emerald-900/20">
+            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+            {isExporting ? "Mengexport..." : "Export Excel"}
           </button>
         </div>
       </div>
