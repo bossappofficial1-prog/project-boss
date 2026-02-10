@@ -85,6 +85,7 @@ export async function findTransactionsByFilter(filter: TransactionsFilter) {
         },
       },
     },
+    orderBy: { createdAt: `desc` }
   });
 }
 

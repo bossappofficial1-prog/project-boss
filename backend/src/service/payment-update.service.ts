@@ -10,7 +10,7 @@ export async function handlePaymentSuccess(orderId: string) {
     let order = await db.order.findUnique({
         where: { id: orderId },
         include: {
-            items: { include: { product: true } },
+            items: { include: { product: true, bookingSlot: true } },
             outlet: true,
             guestCustomer: true,
             transaction: true
@@ -26,10 +26,12 @@ export async function handlePaymentSuccess(orderId: string) {
         return;
     }
     let orderStatus: OrderStatus = order.orderStatus as OrderStatus;
-    if (order.bookingSlot) {
+    const bookingSlotItem = order.items.find((item: any) => item.bookingSlot);
+    const bookingSlot = (bookingSlotItem as any)?.bookingSlot;
+    if (bookingSlot) {
         orderStatus = OrderStatus.PROCESSING;
         await db.bookingSlot.update({
-            where: { id: order.bookingSlot.id },
+            where: { id: bookingSlot.id },
             data: { status: 'BOOKED' },
         });
         await messagePublisher.publishServiceOrderProcessing(order.id);
@@ -55,20 +57,20 @@ export async function handlePaymentSuccess(orderId: string) {
                 data: { status: PaymentStatus.SUCCESS },
             });
 
-            // 4. Kurangi quantity produk untuk GOODS
+            // 4. Kurangi stock produk untuk GOODS
             for (const item of order.items) {
                 if (item.product.type === 'GOODS') {
-                    await tx.product.update({
-                        where: { id: item.productId },
-                        data: { quantity: { decrement: item.quantity } },
+                    await tx.productGoods.update({
+                        where: { productId: item.productId },
+                        data: { currentStock: { decrement: item.quantity } },
                     });
                 }
             }
 
             // Logika booking slot jika ada
-            if (order.bookingSlot) {
+            if (bookingSlot) {
                 await tx.bookingSlot.update({
-                    where: { id: order.bookingSlot.id },
+                    where: { id: bookingSlot.id },
                     data: { status: 'BOOKED' },
                 });
             }
@@ -137,8 +139,7 @@ export async function handlePaymentFailure(orderId: string) {
     const order = await db.order.findUnique({
         where: { id: orderId },
         include: {
-            items: { include: { product: true } },
-            bookingSlot: true,
+            items: { include: { product: true, bookingSlot: true } },
             outlet: true,
             guestCustomer: true,
             transaction: true,
@@ -160,9 +161,10 @@ export async function handlePaymentFailure(orderId: string) {
         data: { paymentStatus: 'FAILED', orderStatus: 'CANCELLED' },
     });
 
-    if (order.bookingSlot) {
+    const failedBookingSlot = order.items.find((item) => item.bookingSlot)?.bookingSlot;
+    if (failedBookingSlot) {
         await db.bookingSlot.update({
-            where: { id: order.bookingSlot.id },
+            where: { id: failedBookingSlot.id },
             data: { status: 'AVAILABLE' },
         });
     }

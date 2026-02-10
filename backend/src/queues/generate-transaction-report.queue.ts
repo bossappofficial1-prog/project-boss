@@ -80,7 +80,7 @@ export class GenerateTransactionReportQueue extends BaseQueue<GenerateTransactio
                 pendingCount,
                 generatedAt: format(new Date(), 'dd MMM yyyy HH:mm:ss', { locale: localeId }),
                 transactions: transactions.map((trx, index) => ({
-                    id: trx.externalId || `TRX-${String(index + 1).padStart(3, '0')}`,
+                    id: trx.orderId || `TRX-${String(index + 1).padStart(3, '0')}`,
                     date: format(new Date(trx.createdAt), 'dd MMM HH:mm'),
                     outletName: trx.order?.outlet?.name || '-',
                     amount: trx.amount,
