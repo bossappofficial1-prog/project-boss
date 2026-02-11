@@ -88,7 +88,6 @@ export class SubscriptionService {
     static async getOwnerSubscriptionOverview(businessId: string) {
         const business = await SubscriptionRepository.getBusinessWithCurrentSubscription(businessId);
 
-        console.log(businessId, business)
         if (!business) {
             throw new AppError('Bisnis tidak ditemukan', HttpStatus.NOT_FOUND);
         }

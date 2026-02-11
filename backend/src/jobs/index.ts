@@ -2,6 +2,7 @@ import { paymentProofCleanupQueue, scheduleDailyPaymentProofCleanup } from "../q
 import Console from "../utils/logger";
 import { processPaymentProofCleanup } from "./paymentProofCleanup.job"
 import { cleanupScheduler } from "./cleanup.job";
+import { checkSubscriptionExpireJob } from "./check-subscription-expire.job";
 
 export const setUpJobs = () => {
     Console.log(`Init jobs`);
@@ -16,5 +17,5 @@ export const setUpJobs = () => {
     });
 
     cleanupScheduler.register()
-
+    checkSubscriptionExpireJob.register()
 }

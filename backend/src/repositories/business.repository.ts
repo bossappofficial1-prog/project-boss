@@ -15,6 +15,41 @@ export class BusinessRepository {
         });
     }
 
+    static async getExpiredBusinessSubscriptionsCandidate() {
+        return db.business.findMany({
+            where: {
+                AND: [
+                    { subscriptionEndDate: { lte: new Date(Date.now()) } },
+                    { subscriptionStatus: { notIn: ['EXPIRED', 'SUSPENDED'] } }
+                ]
+            },
+            select: { id: true }
+        })
+    }
+
+    static async markBusinessSubscriptionsAsExpired(businessIds: string[]) {
+        return db.$transaction(async (tx) => {
+            for (const id of businessIds) {
+                const business = await tx.business.update({
+                    where: { id },
+                    data: {
+                        subscriptionStatus: 'EXPIRED',
+                    },
+                    select: { currentSubscriptionId: true }
+                })
+
+                if (business.currentSubscriptionId) {
+                    await tx.businessSubscription.update({
+                        where: { id: business.currentSubscriptionId },
+                        data: {
+                            status: 'EXPIRED',
+                        }
+                    })
+                }
+            }
+        })
+    }
+
     static async findByOwnerId(ownerId: string): Promise<Business | null> {
         return db.business.findUnique({
             where: { ownerId },
