@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { Search, Package } from "lucide-react";
+import { Search, Package, Plus, Minus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { resolveUploadImageUrl } from "@/lib/url";
 import type { POBProduct } from "@/hooks/api/use-pob-v2";
 
@@ -14,6 +15,8 @@ interface ProductCatalogProps {
     searchQuery: string;
     onSearchChange: (query: string) => void;
     onSelectProduct: (product: POBProduct) => void;
+    onIncrementProduct?: (product: POBProduct) => void;
+    onDecrementProduct?: (productId: string) => void;
     cartQuantities: Record<string, number>;
 }
 
@@ -25,6 +28,8 @@ export function ProductCatalog({
     searchQuery,
     onSearchChange,
     onSelectProduct,
+    onIncrementProduct,
+    onDecrementProduct,
     cartQuantities,
 }: ProductCatalogProps) {
     return (
@@ -59,11 +64,9 @@ export function ProductCatalog({
                         const imageUrl = resolveUploadImageUrl(product.image);
 
                         return (
-                            <button
+                            <div
                                 key={product.id}
-                                type="button"
-                                onClick={() => onSelectProduct(product)}
-                                className="group relative flex flex-col overflow-hidden rounded-md border bg-card text-left transition-all hover:shadow-md hover:border-primary/40 active:scale-[0.98]"
+                                className="group relative flex flex-col overflow-hidden rounded-md border bg-card transition-all hover:shadow-md hover:border-primary/40"
                             >
                                 {qty > 0 && (
                                     <div className="absolute right-2 top-2 z-10 flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground">
@@ -71,7 +74,11 @@ export function ProductCatalog({
                                     </div>
                                 )}
 
-                                <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+                                <button
+                                    type="button"
+                                    onClick={() => onSelectProduct(product)}
+                                    className="relative aspect-[4/3] w-full overflow-hidden bg-muted active:scale-[0.98] transition-transform"
+                                >
                                     {imageUrl ? (
                                         <img
                                             src={imageUrl}
@@ -83,9 +90,9 @@ export function ProductCatalog({
                                             <Package className="h-8 w-8 text-muted-foreground/40" />
                                         </div>
                                     )}
-                                </div>
+                                </button>
 
-                                <div className="flex flex-1 flex-col gap-1 p-2.5">
+                                <div className="flex flex-1 flex-col gap-1.5 p-2.5">
                                     <p className="text-sm font-medium leading-tight line-clamp-2">
                                         {product.name}
                                     </p>
@@ -102,8 +109,38 @@ export function ProductCatalog({
                                             </span>
                                         )}
                                     </div>
+                                    
+                                    {qty > 0 && onIncrementProduct && onDecrementProduct && (
+                                        <div className="flex items-center gap-1 pt-1">
+                                            <Button
+                                                size="icon"
+                                                variant="outline"
+                                                className="h-7 w-7 shrink-0"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onDecrementProduct(product.id);
+                                                }}
+                                            >
+                                                <Minus className="h-3 w-3" />
+                                            </Button>
+                                            <div className="flex-1 text-center text-xs font-semibold">
+                                                {qty}
+                                            </div>
+                                            <Button
+                                                size="icon"
+                                                variant="outline"
+                                                className="h-7 w-7 shrink-0"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onIncrementProduct(product);
+                                                }}
+                                            >
+                                                <Plus className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
-                            </button>
+                            </div>
                         );
                     })}
                 </div>

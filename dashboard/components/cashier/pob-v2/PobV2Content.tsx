@@ -96,6 +96,33 @@ export function PobV2Content() {
         });
     }, []);
 
+    const handleIncrementFromCatalog = React.useCallback((product: POBProduct) => {
+        if (!product.goods) return;
+        setCart((prev) => {
+            const existing = prev[product.id];
+            if (!existing) return prev;
+            return {
+                ...prev,
+                [product.id]: { ...existing, quantity: existing.quantity + 1 },
+            };
+        });
+    }, []);
+
+    const handleDecrementFromCatalog = React.useCallback((productId: string) => {
+        setCart((prev) => {
+            const existing = prev[productId];
+            if (!existing) return prev;
+            if (existing.quantity <= 1) {
+                const { [productId]: _, ...rest } = prev;
+                return rest;
+            }
+            return {
+                ...prev,
+                [productId]: { ...existing, quantity: existing.quantity - 1 },
+            };
+        });
+    }, []);
+
     const handleUpdateQuantity = React.useCallback((productId: string, quantity: number) => {
         setCart((prev) => {
             const item = prev[productId];
@@ -247,6 +274,8 @@ export function PobV2Content() {
                             searchQuery={searchQuery}
                             onSearchChange={setSearchQuery}
                             onSelectProduct={handleAddToCart}
+                            onIncrementProduct={handleIncrementFromCatalog}
+                            onDecrementProduct={handleDecrementFromCatalog}
                             cartQuantities={cartQuantities}
                         />
                     </CardContent>
