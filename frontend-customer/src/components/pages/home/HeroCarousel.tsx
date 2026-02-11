@@ -6,6 +6,7 @@ import { useMemo } from "react"
 import { useCarousel } from "@/hooks/useCarousel"
 import { useTranslations } from "@/hooks/useI18n"
 import type { HomeBanner } from "@/types/home"
+import Image from "next/image"
 
 interface HeroCarouselProps {
     banners: HomeBanner[]
@@ -66,12 +67,13 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                         >
                             {/* Image */}
                             <div className="absolute inset-0">
-                                <img
+                                <Image
                                     src={banner.imageUrl}
                                     alt={banner.title ?? "Banner"}
                                     className="h-full w-full object-cover transition-transform duration-[8s] ease-out"
                                     style={{ transform: index === active ? "scale(1.05)" : "scale(1)" }}
                                     sizes="100vw"
+                                    fill
                                 />
                                 {/* Multi-layer gradient */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
@@ -88,7 +90,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                                         <h2 className="text-xl font-bold leading-snug text-white line-clamp-2 sm:text-2xl md:text-3xl drop-shadow-md">
                                             {banner.title ?? t("hero.defaultTitle")}
                                         </h2>
-                                        <p className="mt-2 text-sm leading-relaxed text-white/80 line-clamp-2 sm:text-base max-w-sm">
+                                        <p className="mt-2 text-sm leading-relaxed text-white/80 line-clamp-2 sm:text-base max-w-xs md:max-w-sm">
                                             {banner.subtitle ?? t("hero.defaultSubtitle")}
                                         </p>
                                         {banner.cta && banner.cta.payload && (

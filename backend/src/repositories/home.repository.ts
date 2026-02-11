@@ -87,6 +87,7 @@ export class HomeRepository {
             p.name,
             p.image,
             p.type,
+            p."outletId",
             COALESCE(pg."sellingPrice", ps."sellingPrice", 0) AS price,
             CAST(SUM(oi.quantity) AS INTEGER) AS sold_count
             FROM "Product" p
@@ -113,6 +114,7 @@ export class HomeRepository {
             id: item.id,
             name: item.name,
             type: item.type,
+            outletId: item.outletId,
             price: Number(item.price ?? 0),
             image: item.image,
             soldCount: Number(item.sold_count ?? 0),

@@ -107,3 +107,18 @@ export const useDeleteBanner = () => {
     },
   });
 };
+
+export const useBulkDeleteBanner = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const result = await apiClient.post(`/banners/bulk-delete`, { ids });
+      return result.data.data as { count: number };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["banners"] });
+      toast.success(`${data.count} banner berhasil dihapus`)
+    },
+  });
+};

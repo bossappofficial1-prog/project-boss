@@ -11,7 +11,6 @@ export async function getHomeSummaryService(searchQuery?: string) {
     const [popularItems] = await Promise.all([
         HomeRepository.findPopularItems()
     ]);
-
     // Additional home content: banners, categories, popular items, promos
     const rawBanners = await BannerRepository.findActiveBanners(100)
     const banners = rawBanners.map(b => ({

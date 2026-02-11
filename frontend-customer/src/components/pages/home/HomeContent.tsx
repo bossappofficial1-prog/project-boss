@@ -119,7 +119,7 @@ function HomeSections() {
                         actionLabel={t("sections.categories.action")}
                         href="/search"
                     />
-                    <DivXScroll className="-mx-4 flex gap-2 px-4 pb-1 md:mx-0 md:px-0">
+                    <DivXScroll className="gap-3">
                         {categories.map((category) => (
                             <CategoryCard key={category.id} category={category} />
                         ))}
@@ -137,7 +137,7 @@ function HomeSections() {
                 {outlets.length === 0 ? (
                     <EmptyPlaceholder message={t("empty.outlets")} />
                 ) : (
-                    <DivXScroll className="-mx-4 flex gap-3 px-4 pb-1 md:mx-0 md:px-0">
+                    <DivXScroll className="gap-3">
                         {outlets.map((outlet) => (
                             <OutletCard
                                 key={outlet.id}

@@ -5,6 +5,7 @@ import { Gift } from 'lucide-react'
 import { ImageRender } from "@/components/shared/Image"
 import type { HomePopularItem } from '@/types/home'
 import { Messages, NestedKeyOf } from '@/hooks/useI18n'
+import Link from 'next/link'
 
 interface PopularItemCardProps {
     item: HomePopularItem;
@@ -16,7 +17,7 @@ interface PopularItemCardProps {
 
 function PopularItemCard({ item, rank, numberFormatter, currencyFormatter, t }: PopularItemCardProps) {
     return (
-        <div className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/30 active:bg-muted/50">
+        <Link href={`/outlet/${item.outletId}/product/${item.id}?from=home`} className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/30 active:bg-muted/50">
             {/* Rank number */}
             <span className={`flex-shrink-0 w-6 text-center text-sm font-bold tabular-nums ${rank <= 3 ? 'text-primary' : 'text-muted-foreground/50'}`}>
                 {rank}
@@ -42,7 +43,7 @@ function PopularItemCard({ item, rank, numberFormatter, currencyFormatter, t }: 
             <span className="flex-shrink-0 text-sm font-semibold text-primary tabular-nums">
                 {currencyFormatter.format(item.price ?? 0)}
             </span>
-        </div>
+        </Link>
     )
 }
 

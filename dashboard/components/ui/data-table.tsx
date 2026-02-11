@@ -511,7 +511,7 @@ export function DataTable<TData, TValue>({
                                   className={cn(
                                     "h-4 w-4",
                                     action.variant === "destructive" &&
-                                      "text-red-600 focus:text-red-600",
+                                    "text-red-600 focus:text-red-600",
                                   )}
                                 />
                               )}
@@ -1022,7 +1022,14 @@ export function DataTable<TData, TValue>({
                       key={index}
                       variant={action.variant === "destructive" ? "destructive" : "outline"}
                       size="sm"
-                      onClick={() => action.onClick(selectedRows)}
+                      onClick={async () => {
+                        try {
+                          await action.onClick(selectedRows)
+                          table.resetRowSelection()
+                        } catch (error) {
+
+                        }
+                      }}
                       className="flex items-center gap-2">
                       {Icon && <Icon className="h-4 w-4" />}
                       {action.label}
@@ -1123,13 +1130,13 @@ export function DataTable<TData, TValue>({
                         key={row.id}
                         row={row}
                         isEnabled={enableRowDrag}
-                        // key={row.id}
-                        // data-state={row.getIsSelected() && "selected"}
-                        // className={cn(
-                        //     onRowClick && "cursor-pointer hover:bg-muted/50",
-                        //     "transition-colors"
-                        // )}
-                        // onClick={() => onRowClick?.(row.original)}
+                      // key={row.id}
+                      // data-state={row.getIsSelected() && "selected"}
+                      // className={cn(
+                      //     onRowClick && "cursor-pointer hover:bg-muted/50",
+                      //     "transition-colors"
+                      // )}
+                      // onClick={() => onRowClick?.(row.original)}
                       >
                         {row.getVisibleCells().map((cell) => (
                           <TableCell key={cell.id}>

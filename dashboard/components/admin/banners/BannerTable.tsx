@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 type BannerTableProps = {
     data: Banner[];
     isLoading: boolean;
+    onBulkDelete: (selectedIds: string[]) => void
     onEdit: (banner: Banner) => void;
     onDelete: (banner: Banner) => void;
     onReOrder?: (payload: { id: string, order: number }[]) => void;
@@ -18,7 +19,8 @@ export function BannerTable(
         isLoading = true,
         onDelete,
         onEdit,
-        onReOrder
+        onReOrder,
+        onBulkDelete
     }: BannerTableProps
 ) {
     const [tableData, setTableData] = useState(data);
@@ -79,9 +81,19 @@ export function BannerTable(
     return (
         <DataTable
             showColumnVisibility={false}
-            pageSize={5}
+            pageSize={10}
             isLoading={isLoading}
             columns={columns}
+            bulkActions={[
+                {
+                    label: 'Hapus Semua',
+                    onClick: (selected) => onBulkDelete(selected.map(b => b.id)),
+                    variant: `destructive`,
+                    icon: Trash2
+                }
+            ]}
+            enableRowSelection
+
             onRowReorder={({ data, payload }) => {
                 setTableData(data)
                 onReOrder?.(payload.map(item => ({ id: String(item.id), order: item.order })))

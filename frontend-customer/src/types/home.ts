@@ -16,6 +16,7 @@ export interface HomeCategory {
 
 export interface HomePopularItem {
     id: string
+    outletId: string;
     name: string
     price: number
     image?: string | null

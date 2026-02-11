@@ -94,7 +94,7 @@ export function ProductDetails({ outletId, productId }: Props) {
       showThemeToggle: false,
       showPartnerToggle: false,
       onLeftClick:
-        from === "saved-products"
+        (from === "saved-products" || from === "home")
           ? () => router.back()
           : () => router.push(`/outlet/${outletId}?from=product`),
       rightContent: (
