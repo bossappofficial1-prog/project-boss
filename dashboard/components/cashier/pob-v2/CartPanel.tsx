@@ -56,7 +56,7 @@ export function CartPanel({
                 </Button>
             </div>
 
-            <ScrollArea className="max-h-[400px] lg:max-h-[calc(100vh-520px)]">
+            <ScrollArea className="max-h-[280px] lg:max-h-[350px]">
                 <div className="space-y-3 pr-3">
                     {items.map((item) => {
                         const unit = item.product.goods?.unit ?? "pcs";
