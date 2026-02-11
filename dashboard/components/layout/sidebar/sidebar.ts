@@ -61,22 +61,22 @@ export const MENU_GROUPS: MenuGroup[] = [
     label: "Manajemen Outlet",
     items: [
       {
-        id: 'dashboard-outlet',
+        id: "dashboard-outlet",
         icon: LayoutDashboardIcon,
         name: "Dashboard Outlet",
-        href: "/owner/dashboard/outlets"
+        href: "/owner/dashboard/outlets",
       },
       {
-        id: 'kelola-outlet',
+        id: "kelola-outlet",
         icon: StoreIcon,
         name: "Kelola Outlet",
-        href: "/owner/dashboard/outlets/manage"
+        href: "/owner/dashboard/outlets/manage",
       },
       {
-        id: 'kelola-kasir',
+        id: "kelola-kasir",
         icon: UsersIcon,
         name: "Kelola Kasir",
-        href: "/owner/dashboard/outlets/staff"
+        href: "/owner/dashboard/outlets/staff",
       },
     ],
   },
@@ -97,35 +97,35 @@ export const MENU_GROUPS: MenuGroup[] = [
       },
     ],
   },
-  {
-    label: "Transaksi",
-    items: [
-      {
-        id: "pos",
-        name: "Point of Sale",
-        href: "/owner/dashboard/pos",
-        icon: ShoppingBag,
-      },
-      {
-        id: "pob",
-        name: "Point of Buy",
-        href: "/owner/dashboard/pob",
-        icon: ShoppingBag,
-      },
-      {
-        id: "orders",
-        name: "Lihat Pesanan",
-        href: "/owner/dashboard/orders",
-        icon: ShoppingBag,
-      },
-      {
-        id: "queue",
-        name: "Antrian",
-        href: "/owner/dashboard/queue",
-        icon: Clock,
-      },
-    ],
-  },
+  // {
+  //   label: "Transaksi",
+  //   items: [
+  //     {
+  //       id: "pos",
+  //       name: "Point of Sale",
+  //       href: "/owner/dashboard/pos",
+  //       icon: ShoppingBag,
+  //     },
+  //     {
+  //       id: "pob",
+  //       name: "Point of Buy",
+  //       href: "/owner/dashboard/pob",
+  //       icon: ShoppingBag,
+  //     },
+  //     {
+  //       id: "orders",
+  //       name: "Lihat Pesanan",
+  //       href: "/owner/dashboard/orders",
+  //       icon: ShoppingBag,
+  //     },
+  //     {
+  //       id: "queue",
+  //       name: "Antrian",
+  //       href: "/owner/dashboard/queue",
+  //       icon: Clock,
+  //     },
+  //   ],
+  // },
   {
     label: "Keuangan",
     items: [
