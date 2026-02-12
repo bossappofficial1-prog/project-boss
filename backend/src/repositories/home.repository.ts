@@ -47,6 +47,7 @@ export class HomeRepository {
                     business: {
                         select: { name: true },
                     },
+                    operatingHours: true,
                     _count: {
                         select: {
                             orders: {
@@ -64,6 +65,7 @@ export class HomeRepository {
                 business: {
                     select: { name: true },
                 },
+                operatingHours: true,
                 _count: {
                     select: {
                         orders: {

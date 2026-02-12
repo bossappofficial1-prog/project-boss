@@ -518,7 +518,11 @@
         "whatsappMessage": "Hello, I am interested in the outlet {name}",
         "openMap": "Open map",
         "favorite": "Favorite",
-        "favorited": "Favorited"
+        "favorited": "Favorited",
+        "searchPlaceholder": "Search products or services...",
+        "searchResults": "{count} results found",
+        "noSearchResults": "No results found",
+        "noSearchResultsDescription": "No products or services match your search"
     },
     "text": {
         "open": "Open",
