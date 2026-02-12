@@ -125,7 +125,7 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
                         onClick={() => {
                             handleResendVerificationCode()
                         }}
-                        className="text-indigo-600 font-semibold hover:underline"
+                        className="text-red-600 font-bold hover:text-red-700 hover:underline"
                     >
                         Kirim Ulang
                     </button>
@@ -133,9 +133,13 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
             </div>
 
             <div className="flex flex-col gap-3 pt-2">
-                <Button className="w-full" onClick={handleVerifyOtp} disabled={verificationCode?.length! < 6 || isLoading}>
-                    Verifikasi & Lanjut
-                </Button>
+                <button
+                    onClick={handleVerifyOtp}
+                    disabled={verificationCode?.length! < 6 || isLoading}
+                    className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none"
+                >
+                    {isLoading ? 'Memproses...' : 'Verifikasi & Lanjut'}
+                </button>
             </div>
         </div>
     )

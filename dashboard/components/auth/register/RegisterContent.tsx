@@ -18,12 +18,14 @@ import { RegisterStep1 } from '@/components/auth/register/RegisterStep1';
 import { RegisterStep2 } from '@/components/auth/register/RegisterStep2';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlan';
 
+import Image from 'next/image';
+
 const getPlanColor = (code: string, isSelected: boolean) => {
-    if (isSelected) return "border-indigo-600 bg-white ring-1 ring-indigo-600 shadow-md";
+    if (isSelected) return "border-red-600 bg-white ring-1 ring-red-600 shadow-md";
 
     switch (code) {
-        case 'PRO': return "border-indigo-200 bg-indigo-50/30 hover:border-indigo-300";
-        case 'BASIC': return "border-blue-200 bg-blue-50/30 hover:border-blue-300";
+        case 'PRO': return "border-red-200 bg-red-50/30 hover:border-red-300";
+        case 'BASIC': return "border-slate-200 bg-slate-50/30 hover:border-slate-300";
         default: return "border-slate-200 hover:border-slate-300";
     }
 };
@@ -210,33 +212,57 @@ export default function RegistrationContent() {
     };
 
     return (
-        <div className="min-h-screen light-page bg-slate-50 flex flex-col md:flex-row font-sans text-slate-900">
+        <div className="min-h-screen w-full flex bg-white font-sans text-slate-900">
 
-            {/* LEFT SIDE: BANNER */}
-            <div className="hidden md:flex md:w-5/12 lg:w-1/2 bg-slate-900 text-white p-12 flex-col justify-between relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-                    <div className="absolute right-0 top-0 w-[500px] h-[500px] bg-indigo-500 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="absolute left-0 bottom-0 w-[500px] h-[500px] bg-blue-500 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2"></div>
+            {/* Left Side: Professional/Brand Area */}
+            <div className="hidden lg:flex w-1/2 relative bg-[#0B1120] overflow-hidden flex-col justify-between p-16 text-white text-sans">
+                {/* Abstract 3D Geometric Shapes Background */}
+                <div className="absolute inset-0 z-0 pointer-events-none">
+                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-blue-600/30 to-purple-600/10 blur-[80px]" />
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-indigo-600/20 to-blue-500/10 blur-[60px]" />
+                    <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] rounded-full bg-blue-500/10 blur-[100px]" />
+                    
+                    {/* Geometric Accents */}
+                    <div className="absolute top-20 right-20 w-24 h-24 border border-white/10 rounded-2xl transform rotate-12 backdrop-blur-sm opacity-50" />
+                    <div className="absolute bottom-32 left-10 w-32 h-32 border border-white/5 rounded-full backdrop-blur-md opacity-40" />
                 </div>
 
-                <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-8">
-                        <div className="h-8 w-8 bg-indigo-500 rounded-lg flex items-center justify-center">
-                            <Store className="h-5 w-5 text-white" />
-                        </div>
-                        <span className="font-bold text-xl tracking-tight">BossApp</span>
-                    </div>
-                    <h1 className="text-4xl font-bold leading-tight mb-4">
-                        Kelola Bisnis Anda <br /> <span className="text-indigo-400">Lebih Profesional.</span>
+                {/* Spacer to maintain vertical balance with justify-between */}
+                <div className="relative z-10"></div>
+
+                {/* Main Text Content */}
+                <div className="relative z-10 max-w-lg mb-12">
+                    <h1 className="text-5xl font-bold leading-[1.15] mb-6 tracking-tight">
+                        Kelola Bisnis Anda <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-white">
+                            Lebih Profesional
+                        </span>
                     </h1>
-                    <p className="text-slate-400 text-lg max-w-md">
-                        Satu platform untuk semua kebutuhan operasional bisnis. Mulai dari kasir, inventori, hingga laporan keuangan.
+                    <p className="text-lg text-slate-400 font-light leading-relaxed">
+                        Platform terintegrasi untuk memaksimalkan efisiensi operasional dan pertumbuhan bisnis Anda dalam satu dashboard yang elegan.
                     </p>
+                </div>
+
+                {/* Footer/Copyright */}
+                <div className="relative z-10 text-sm text-slate-500">
+                    &copy; {new Date().getFullYear()} BOSS Business Management. All rights reserved.
                 </div>
             </div>
 
-            <div className="flex-1 flex max-h-[100dvh] flex-col items-center  p-6 md:p-12 overflow-y-auto">
-                <div className="w-full max-w-lg">
+            <div className="w-full lg:w-1/2 flex flex-col items-center p-8 lg:p-12 relative bg-white overflow-y-auto">
+                <div className="w-full max-w-[440px] space-y-6">
+
+                     {/* Logo View */}
+                    <div className="flex justify-center mb-6">
+                        <Image
+                        src="/Logo Boss.png"
+                        alt="Logo BOSS"
+                        width={140}
+                        height={50}
+                        className="h-16 w-auto object-contain"
+                        priority
+                        />
+                    </div>
 
                     {!showOtpInput && (
                         <div className="flex items-center justify-between mb-8 px-2">
@@ -244,8 +270,8 @@ export default function RegistrationContent() {
                                 <div key={s} className="flex items-center">
                                     <div className={cn(
                                         "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors",
-                                        step === s ? "border-indigo-600 bg-indigo-600 text-white" :
-                                            step > s ? "border-indigo-600 bg-white text-indigo-600" :
+                                        step === s ? "border-red-600 bg-red-600 text-white" :
+                                            step > s ? "border-red-600 bg-white text-red-600" :
                                                 "border-slate-200 bg-white text-slate-400"
                                     )}>
                                         {step > s ? <Check className="h-4 w-4" /> : s}
@@ -253,7 +279,7 @@ export default function RegistrationContent() {
                                     {s < 3 && (
                                         <div className={cn(
                                             "w-12 h-0.5 mx-2 transition-colors",
-                                            step > s ? "bg-indigo-600" : "bg-slate-200"
+                                            step > s ? "bg-red-600" : "bg-slate-200"
                                         )}></div>
                                     )}
                                 </div>
@@ -262,7 +288,7 @@ export default function RegistrationContent() {
                     )}
 
                     {/* FORM CONTENT */}
-                    <div className="space-y-6 md:p-8 md:border md:rounded-2xl">
+                    <div className="space-y-6">
 
                         {step === 1 && showOtpInput && (
                             <OtpInputVerification
@@ -323,7 +349,7 @@ export default function RegistrationContent() {
                                                     {plan.isPopular && (
                                                         <span className={cn(
                                                             "absolute top-0 right-0 px-3 py-1 text-[10px] font-bold rounded-bl-xl rounded-tr-lg text-white",
-                                                            isSelected ? "bg-indigo-600" : "bg-slate-400"
+                                                            isSelected ? "bg-red-600" : "bg-slate-400"
                                                         )}>
                                                             POPULAR
                                                         </span>
@@ -339,9 +365,9 @@ export default function RegistrationContent() {
                                                         </div>
                                                         <div className={cn(
                                                             "h-5 w-5 rounded-full border-2 flex items-center justify-center",
-                                                            isSelected ? "border-indigo-600" : "border-slate-300"
+                                                            isSelected ? "border-red-600" : "border-slate-300"
                                                         )}>
-                                                            {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-indigo-600" />}
+                                                            {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-red-600" />}
                                                         </div>
                                                     </div>
 
@@ -372,19 +398,29 @@ export default function RegistrationContent() {
                                 </div>
 
                                 <div className="pt-2 flex gap-3">
-                                    <Button variant="secondary" onClick={handleBack} disabled={isSubmitting}>
-                                        <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-                                    </Button>
-                                    <Button className="flex-1" onClick={handleSubmit} disabled={isSubmitting}>
+                                    <button 
+                                        type="button"
+                                        onClick={handleBack} 
+                                        disabled={isSubmitting}
+                                        className="px-6 h-12 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition-all duration-200"
+                                    >
+                                        Kembali
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none" 
+                                        onClick={handleSubmit} 
+                                        disabled={isSubmitting}
+                                    >
                                         {formData.selectedPlan === 'TRIAL' ? 'Mulai Gratis Sekarang' : 'Lanjut ke Pembayaran'}
-                                    </Button>
+                                    </button>
                                 </div>
                             </div>
                         )}
 
                     </div>
 
-                    <p className="text-center text-xs text-slate-400 mt-8">
+                    <p className="text-center text-xs text-slate-400 mt-8 pb-4">
                         &copy; 2024 BossApp SaaS. All rights reserved.
                     </p>
                 </div>

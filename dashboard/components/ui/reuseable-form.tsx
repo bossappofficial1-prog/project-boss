@@ -457,7 +457,7 @@ function RenderField<T extends FieldValues>({
                     className={cn(
                         "col-span-1", // default mobile
                         field.colSpan && COL_SPAN_MAP[field.colSpan as keyof typeof COL_SPAN_MAP],
-                        field.className
+                        // field.className <--- Removed this because it duplicates styling on the container, causing layout issues (e.g. specific heights applied to container instead of input)
                     )}
                 >
                     <FormLabel htmlFor={field.name}>{field.label}</FormLabel>
