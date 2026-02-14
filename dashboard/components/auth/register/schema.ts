@@ -65,7 +65,7 @@ export type OtpVerificationInput = z.infer<typeof otpVerificationSchema>;
 export type RegisterStep2Input = z.infer<typeof registerStep2Schema>;
 export type RegisterStep3Input = z.infer<typeof registerStep3Schema>;
 
-const INPUT_STYLE = "rounded-xl border-slate-200 h-12 bg-white focus-visible:ring-2 focus-visible:ring-red-500/20 focus-visible:border-red-500 transition-all font-medium placeholder:text-slate-400";
+// const INPUT_STYLE = "rounded-xl border-slate-200 h-12 bg-white focus-visible:ring-2 focus-visible:ring-red-500/20 focus-visible:border-red-500 transition-all font-medium placeholder:text-slate-400";
 
 export const fieldRegisterStep1: FormFieldConfig<RegisterStep1Input>[] = [
     {
@@ -74,7 +74,7 @@ export const fieldRegisterStep1: FormFieldConfig<RegisterStep1Input>[] = [
         icon: User,
         type: 'text',
         placeholder: 'Contoh: Budi Santoso',
-        className: INPUT_STYLE
+        // className: INPUT_STYLE
     },
     {
         label: 'Email Bisnis',
@@ -82,7 +82,7 @@ export const fieldRegisterStep1: FormFieldConfig<RegisterStep1Input>[] = [
         icon: Mail,
         type: 'email',
         placeholder: 'owner@bisnis.com',
-        className: INPUT_STYLE
+        // className: INPUT_STYLE
     },
     {
         label: 'Nomor WhatsApp',
@@ -90,7 +90,7 @@ export const fieldRegisterStep1: FormFieldConfig<RegisterStep1Input>[] = [
         icon: Phone,
         type: 'tel',
         placeholder: '0812...',
-        className: INPUT_STYLE
+        // className: INPUT_STYLE
     },
     {
         label: 'Password',
@@ -98,7 +98,7 @@ export const fieldRegisterStep1: FormFieldConfig<RegisterStep1Input>[] = [
         icon: Lock,
         type: 'password',
         placeholder: 'Min. 8 karakter',
-        className: INPUT_STYLE
+        // className: INPUT_STYLE
     },
 ];
 
@@ -109,7 +109,7 @@ export const fieldRegisterStep2: FormFieldConfig<RegisterStep2Input>[] = [
         icon: Store,
         type: 'text',
         placeholder: 'Contoh: Kopi Kenangan Senja',
-        className: INPUT_STYLE
+        // className: INPUT_STYLE
     },
     {
         label: 'Deskripsi Singkat (Opsional)',

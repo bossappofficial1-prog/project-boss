@@ -191,7 +191,7 @@ export default function AddOrEditProductServiceModal({
   };
 
   const handleSubmit = async (values: ProductFormValues | FormData) => {
-    const fileEntry = (values as FormData).get(" file");
+    const fileEntry = (values as FormData).get("file");
     const file = fileEntry instanceof File ? fileEntry : null;
     const otherValues = values as FormData;
     const formType = otherValues.get("type") as ProductFormValues["type"] | null;
