@@ -820,6 +820,10 @@
                 "title": "Processing Payment",
                 "description": "Your payment is being verified by the outlet."
             },
+            "awaitingVerification": {
+                "title": "Awaiting Confirmation",
+                "description": "Your payment proof has been submitted and is being reviewed by the outlet."
+            },
             "success": {
                 "title": "Payment Successful",
                 "description": "Thank you! The outlet has received your payment."

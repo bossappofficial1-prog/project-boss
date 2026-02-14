@@ -820,6 +820,10 @@
                 "title": "Pembayaran Diproses",
                 "description": "Pembayaranmu sedang diverifikasi oleh outlet."
             },
+            "awaitingVerification": {
+                "title": "Menunggu Konfirmasi",
+                "description": "Bukti pembayaran telah dikirim dan sedang ditinjau oleh outlet."
+            },
             "success": {
                 "title": "Pembayaran Berhasil",
                 "description": "Terima kasih! Outlet telah menerima pembayaranmu."

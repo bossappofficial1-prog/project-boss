@@ -63,7 +63,7 @@ orderRouter.get("/:outletId/queue", protect, authorizeOwnerOrCashier, listServic
 // Endpoint internal untuk consumer mendapatkan data order untuk notifikasi
 orderRouter.get("/:id/notification-data", getOrderNotificationDataController);
 
-orderRouter.post("/create-payment", validateSchema(CreatePaymentSchema), createPaymentController)
+orderRouter.post("/create-payment", validateBusinessHours, validateSchema(CreatePaymentSchema), createPaymentController)
 orderRouter.get("/:orderId/payment", createPaymentController)
 
 export default orderRouter;

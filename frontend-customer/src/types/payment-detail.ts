@@ -10,10 +10,27 @@ export interface PaymentDetailData {
     id: string;
     status: string;
     totalAmount: number;
+    outletInfo?: PaymentDetailOutletInfo;
     payment: PaymentDetailPayment;
     customerDetails: PaymentDetailCustomer;
     feeDetail: PaymentDetailFeeDetail;
     items: PaymentDetailItem[];
+}
+
+export interface PaymentDetailOutletInfo {
+    name: string;
+    isWithinOperatingHours: boolean;
+    todaySchedule: {
+        isOpen: boolean;
+        openTime: string;
+        closeTime: string;
+    } | null;
+    operatingHours: Array<{
+        dayOfWeek: number;
+        isOpen: boolean;
+        openTime: string;
+        closeTime: string;
+    }>;
 }
 
 export interface PaymentDetailCustomer {
