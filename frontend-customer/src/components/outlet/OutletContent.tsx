@@ -3,7 +3,7 @@
 import { useFavorites } from "@/hooks/useFavorites";
 import { useTranslations } from "@/hooks/useI18n";
 import { Button } from "../ui/button";
-import { Heart, MapPin, Package, Phone, Share2, Store, Wrench, Clock, MessageCircle, Navigation, ChevronRight } from "lucide-react";
+import { Heart, MapPin, Package, Phone, Share2, Store, Wrench, Clock, MessageCircle, Navigation, ChevronRight, Search, X } from "lucide-react";
 import { ShareOutlet } from "../shared/ShareOutlet";
 import { ImageRender } from "../shared/Image";
 import { resolveCustomerImageUrl } from "@/lib/url";
@@ -22,6 +22,9 @@ import { formatTime, toMapDestination } from "@/lib/utils";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
 import { EmptyStates } from "../base/EmptyStates";
 import { ImageColorThief } from "../shared/ImageColorThief";
+import { Input } from "../ui/input";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useSearchProductsByOutlet } from "@/hooks/useSearchProductsByOutlet";
 
 const formatOperatingHours = (operatingHours: OperatingHourType[], locale: LanguageType) => {
   if (typeof window === "undefined") return;
@@ -194,6 +197,9 @@ export function OutletContent({ outletId }: { outletId: string }) {
     return storedSelectedTabs ?? "products";
   });
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   const from = useSearchParams().get("from");
 
   const router = useRouter();
@@ -210,22 +216,39 @@ export function OutletContent({ outletId }: { outletId: string }) {
       {
         queryKey: ["products", outletId],
         queryFn: () => ProductService.getAllByOutlet(outletId),
-        enabled: !!outletId,
+        enabled: !!outletId && !debouncedSearchQuery,
       },
     ],
   });
 
   const [outletQuery, productQuery] = results;
 
+  const trimmedSearch = debouncedSearchQuery.trim();
+
+  const searchResult = useSearchProductsByOutlet({
+    outletId,
+    search: trimmedSearch,
+    enabled: !!trimmedSearch,
+  });
+
+  const displayedProducts = useMemo(() => {
+    if (trimmedSearch && searchResult.data) {
+      return searchResult.data.data ?? [];
+    }
+    return productQuery.data ?? [];
+  }, [trimmedSearch, searchResult.data, productQuery.data]);
+
   const services = useMemo(
-    () => productQuery.data?.filter((p) => p.type === "SERVICE") ?? [],
-    [productQuery.data],
+    () => displayedProducts?.filter((p) => p.type === "SERVICE") ?? [],
+    [displayedProducts],
   );
   const goods = useMemo(
-    () => productQuery.data?.filter((p) => p.type === "GOODS") ?? [],
-    [productQuery.data],
+    () => displayedProducts?.filter((p) => p.type === "GOODS") ?? [],
+    [displayedProducts],
   );
   const isOutletFavorite = outletQuery.data ? isFavorite(outletQuery.data.id) : false;
+
+  const isLoadingSearch = trimmedSearch && searchResult.isLoading;
 
   useEffect(() => {
     if (typeof window !== "undefined" && from && from !== "") {
@@ -452,25 +475,71 @@ export function OutletContent({ outletId }: { outletId: string }) {
             ))}
           </TabsList>
 
+          {/* Search Input - only show in products and services tabs */}
+          {(selectedTabs === "products" || selectedTabs === "services") && (
+            <div className="relative mt-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder={t("searchPlaceholder")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10 h-10 rounded-lg border-border/60 focus-visible:ring-primary/20"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Search Results Count */}
+          {trimmedSearch && !isLoadingSearch && (selectedTabs === "products" || selectedTabs === "services") && (
+            <div className="mt-2 px-1">
+              <p className="text-xs text-muted-foreground">
+                {t("searchResults", { count: displayedProducts.length })}
+              </p>
+            </div>
+          )}
+
           <TabsContent value="products" className="mt-3 space-y-2">
-            {goods.length ? (
+            {isLoadingSearch ? (
+              <LoadingState />
+            ) : goods.length ? (
               <div className="grid gap-2">
                 {goods.map((p) => (
                   <ProductCard key={p.id} product={p} outlet={outlet} />
                 ))}
               </div>
+            ) : trimmedSearch ? (
+              <EmptyState 
+                title={t("noSearchResults")} 
+                description={t("noSearchResultsDescription")} 
+              />
             ) : (
               <EmptyState title={t("noProducts")} description={t("noProductsDescription")} />
             )}
           </TabsContent>
 
           <TabsContent value="services" className="mt-3 space-y-2">
-            {services.length ? (
+            {isLoadingSearch ? (
+              <LoadingState />
+            ) : services.length ? (
               <div className="grid gap-2">
                 {services.map((p) => (
                   <ProductCard key={p.id} product={p} outlet={outlet} />
                 ))}
               </div>
+            ) : trimmedSearch ? (
+              <EmptyState 
+                title={t("noSearchResults")} 
+                description={t("noSearchResultsDescription")} 
+                icon={<Wrench className="text-muted-foreground" />}
+              />
             ) : (
               <EmptyState
                 title={t("noServices")}

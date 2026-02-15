@@ -5,6 +5,7 @@ import { AppError } from '../errors/app-error';
 import { messagePublisher } from './message-publisher.service';
 import { SocketEmitter } from '../socket/socket-emiiter';
 import { MidtransWebhookPayloadType } from '../types/Others';
+import { OperatingHoursRepository } from '../repositories/operating-hours.repository';
 
 export async function handlePaymentSuccess(orderId: string) {
     let order = await db.order.findUnique({
@@ -117,6 +118,28 @@ export async function handlePaymentSuccess(orderId: string) {
     try {
         const customerPhone = order.guestCustomer?.phone;
         if (customerPhone) {
+            // Check if order was placed outside operating hours
+            const operatingHours = await OperatingHoursRepository.findByOutletId(order.outlet.id);
+            const now = new Date();
+            const currentDay = now.getDay();
+            const todaySchedule = operatingHours.find(oh => oh.dayOfWeek === currentDay);
+
+            let isWithinOperatingHours = false;
+            let outletOpenTime: string | null = null;
+            if (todaySchedule && todaySchedule.isOpen) {
+                const openTime = new Date(todaySchedule.openTime);
+                const closeTime = new Date(todaySchedule.closeTime);
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                const openMinutes = openTime.getHours() * 60 + openTime.getMinutes();
+                const closeMinutes = closeTime.getHours() * 60 + closeTime.getMinutes();
+                isWithinOperatingHours = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+                outletOpenTime = `${String(openTime.getHours()).padStart(2, '0')}:${String(openTime.getMinutes()).padStart(2, '0')}`;
+            }
+
+            const operatingHoursMessage = !isWithinOperatingHours && outletOpenTime
+                ? `Pembayaran berhasil! Pesanan akan dikonfirmasi saat jam operasional outlet (buka pukul ${outletOpenTime}).`
+                : 'Pembayaran berhasil diproses';
+
             SocketEmitter.getInstance().emitToCustomer(customerPhone, {
                 orderId: order.id,
                 amount: order.totalAmount!,
@@ -124,8 +147,8 @@ export async function handlePaymentSuccess(orderId: string) {
                 transactionStatus: 'settlement',
                 isManual: Boolean(order.transaction?.isManual),
                 paymentMethod: order.transaction?.paymentMethod || 'unknown',
-                message: 'Pembayaran berhasil diproses',
-                type: 'payment_success'
+                message: operatingHoursMessage,
+                type: 'payment_success',
             });
             console.log(`📡 Emitted customer payment_success event for ${customerPhone}`);
         }

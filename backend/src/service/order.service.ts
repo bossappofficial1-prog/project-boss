@@ -477,8 +477,12 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
     data: {
       midtransTransactionToken: midtransTransaction.token,
       midtransRedirectUrl: midtransTransaction.redirect_url,
+      orderStatus: OrderStatus.AWAITING_PAYMENT,
     },
   });
+
+  // Schedule 10-minute payment expiry
+  await orderExpiryJob.add(order.id);
 
   return { order: updatedOrder, midtransTransaction };
 }

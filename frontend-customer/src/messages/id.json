@@ -518,7 +518,11 @@
         "whatsappMessage": "Halo, saya tertarik dengan outlet {name}",
         "openMap": "Buka peta",
         "favorite": "Favorit",
-        "favorited": "Difavoritkan"
+        "favorited": "Difavoritkan",
+        "searchPlaceholder": "Cari produk atau layanan...",
+        "searchResults": "{count} hasil ditemukan",
+        "noSearchResults": "Tidak ditemukan",
+        "noSearchResultsDescription": "Tidak ada produk atau layanan yang cocok dengan pencarian Anda"
     },
     "text": {
         "open": "Buka",
@@ -815,6 +819,10 @@
             "processing": {
                 "title": "Pembayaran Diproses",
                 "description": "Pembayaranmu sedang diverifikasi oleh outlet."
+            },
+            "awaitingVerification": {
+                "title": "Menunggu Konfirmasi",
+                "description": "Bukti pembayaran telah dikirim dan sedang ditinjau oleh outlet."
             },
             "success": {
                 "title": "Pembayaran Berhasil",

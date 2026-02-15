@@ -121,6 +121,7 @@ export const createOrderController = asyncHandler(async (req: Request, res: Resp
   return ResponseUtil.success(res, {
     orderId: order.id,
     totalAmount: order.totalAmount,
+    paymentExpiresAt: order.paymentStatus === "PENDING" ? new Date(Date.now() + 10 * 60 * 1000).toISOString() : null,
     ...(midtransTransaction
       ? {
           midtransTransactionToken: (midtransTransaction as any).token,

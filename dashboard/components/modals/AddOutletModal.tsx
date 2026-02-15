@@ -57,7 +57,15 @@ export default function AddOutletModal({
   const form = useForm<OutletFormData>({
     resolver: zodResolver(outletSchema) as any,
     mode: 'onChange',
-    defaultValues: { status: 'ACTIVE' },
+    defaultValues: {
+      name: '',
+      address: '',
+      phone: '',
+      description: '',
+      status: 'ACTIVE',
+      latitude: undefined,
+      longitude: undefined,
+    },
   })
 
   const { data: outletDetail } = useQuery({
@@ -71,13 +79,13 @@ export default function AddOutletModal({
     if (!outletDetail || !open || mode !== 'edit') return
 
     form.reset({
-      name: outletDetail.name,
+      name: outletDetail.name || '',
       address: outletDetail.address || '',
       phone: outletDetail.phone || '',
       description: outletDetail.description || '',
       status: outletDetail.isOpen ? 'ACTIVE' : 'INACTIVE',
-      latitude: outletDetail.latitude,
-      longitude: outletDetail.longitude,
+      latitude: outletDetail.latitude || undefined,
+      longitude: outletDetail.longitude || undefined,
     })
 
     const hours = outletDetail.operatingHours?.length
@@ -140,7 +148,7 @@ export default function AddOutletModal({
           outletId: mode === 'edit' ? outletDetail!.id : result.id,
           hours: changedHours.map((schedule) => ({
             openTime: new Date(`1970-01-01T${schedule.openTime}:00`),
-            closeTime: new Date(`1970-01-01T${schedule.openTime}:00`),
+            closeTime: new Date(`1970-01-01T${schedule.closeTime}:00`),
             dayOfWeek: schedule.dayOfWeek,
             isOpen: schedule.isOpen
           }))
@@ -161,7 +169,15 @@ export default function AddOutletModal({
           : []),
       ])
       onSuccess?.()
-      form.reset({ status: 'ACTIVE' })
+      form.reset({
+        name: '',
+        address: '',
+        phone: '',
+        description: '',
+        status: 'ACTIVE',
+        latitude: undefined,
+        longitude: undefined,
+      })
       setOperatingHoursData({})
       onOpenChange(false)
     },
@@ -278,7 +294,15 @@ export default function AddOutletModal({
       form={form}
       schema={outletSchema}
       fields={fields}
-      defaultValues={{ status: 'ACTIVE' }}
+      defaultValues={{
+        name: '',
+        address: '',
+        phone: '',
+        description: '',
+        status: 'ACTIVE',
+        latitude: undefined,
+        longitude: undefined,
+      }}
       onSubmit={(values) => mutate(values)}
       isLoading={isSubmitting}
       submitDisabled={mode === 'add' && !businessId}
