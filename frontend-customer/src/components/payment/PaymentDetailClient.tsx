@@ -86,6 +86,7 @@ type StatusTone = "info" | "success" | "warning" | "danger";
 type StatusKey =
   | "PENDING"
   | "PROCESSING"
+  | "AWAITING_VERIFICATION"
   | "SUCCESS"
   | "FAILED"
   | "EXPIRED"
@@ -116,6 +117,13 @@ const STATUS_PRESENTATION: Record<StatusKey, StatusPresentation> = {
     infoType: "processing",
     titleKey: "status.processing.title",
     descriptionKey: "status.processing.description",
+  },
+  AWAITING_VERIFICATION: {
+    tone: "warning",
+    icon: <Clock className="w-5 h-5" />,
+    infoType: "processing",
+    titleKey: "status.awaitingVerification.title",
+    descriptionKey: "status.awaitingVerification.description",
   },
   SUCCESS: {
     tone: "success",
@@ -181,8 +189,8 @@ function normalizeStatus(status?: string): StatusKey {
   if (!status) return "UNKNOWN";
   const upper = status.toUpperCase();
   if (["AWAITING_PAYMENT", "PENDING"].includes(upper)) return "PENDING";
-  if (["PROCESSING", "AWAITING_VERIFICATION"].includes(upper))
-    return "PROCESSING";
+  if (upper === "AWAITING_VERIFICATION") return "AWAITING_VERIFICATION";
+  if (upper === "PROCESSING") return "PROCESSING";
   if (["SETTLEMENT", "SUCCESS", "PAID", "COMPLETED"].includes(upper))
     return "SUCCESS";
   if (["FAILURE", "FAILED", "DENY"].includes(upper)) return "FAILED";
@@ -369,6 +377,7 @@ export function PaymentDetailClient({
 
   const showCountdown =
     expiryTime &&
+    !isAwaitingVerification &&
     (normalizedStatus === "PENDING" || normalizedStatus === "PROCESSING");
   const showManual =
     paymentData.payment.isManual &&
@@ -492,6 +501,44 @@ export function PaymentDetailClient({
       {/* Countdown Timer */}
       {showCountdown && (
         <CountdownTimer expiryTime={expiryTime!} compact={false} />
+      )}
+
+      {/* Awaiting Verification Notice */}
+      {isAwaitingVerification && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-3 flex items-start gap-3">
+          <Clock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+              Menunggu Konfirmasi Pembayaran
+            </p>
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 leading-relaxed">
+              Bukti pembayaran Anda telah dikirim dan sedang ditinjau oleh pihak outlet. Anda akan menerima notifikasi setelah pembayaran dikonfirmasi.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Operating Hours Confirmation Notice */}
+      {normalizedStatus === "SUCCESS" && paymentData.outletInfo && !paymentData.outletInfo.isWithinOperatingHours && paymentData.outletInfo.todaySchedule?.isOpen && (
+        <div className="rounded-md border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 flex items-start gap-3">
+          <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+              Konfirmasi Sesuai Jam Operasional
+            </p>
+            <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-0.5 leading-relaxed">
+              Pembayaran Anda berhasil! Pesanan akan dikonfirmasi saat jam operasional outlet{" "}
+              <span className="font-semibold">
+                {paymentData.outletInfo.name}
+              </span>{" "}
+              (buka pukul{" "}
+              <span className="font-semibold">
+                {new Date(paymentData.outletInfo.todaySchedule.openTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+              ).
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Payment Overview */}

@@ -41,6 +41,7 @@ import { SocketEmitter } from "../socket/socket-emiiter";
 import { schedulePaymentExpiration } from "../queues/payment.queue";
 import { PaymentRepository } from "../repositories/payment.repository";
 import { orderExpiryJob } from "../jobs/payment-expiry.job";
+import { OperatingHoursRepository } from "../repositories/operating-hours.repository";
 
 // Konstanta untuk fee rates
 const TRANSACTION_FEE_RATE = 0.02;
@@ -290,7 +291,7 @@ async function handleMidtransCharge(payload: MidtransPayload, orderId: string) {
     const midtransResponse = (await coreApi.charge(payload)) as MidtransWebhookPayloadType;
     const expiresAt = midtransResponse.expiry_time
       ? new Date(midtransResponse.expiry_time)
-      : new Date(Date.now() + 15 * 60 * 1000);
+      : new Date(Date.now() + 10 * 60 * 1000);
 
     await db.transaction.create({
       data: {
@@ -372,12 +373,12 @@ export async function createMidtransTransactionService(
     item_details: itemDetails,
     expiry: {
       unit: "minute",
-      duration: 15,
+      duration: 10,
     },
   };
 
   const transaction = await snap.createTransaction(parameter);
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
   await db.transaction.create({
     data: {
@@ -693,6 +694,18 @@ export async function createPaymentService(data: CreatePaymentPayload) {
   // Handle Midtrans charge
   const result = await handleMidtransCharge(payload, orderId);
 
+  // Set order to AWAITING_PAYMENT
+  await db.order.update({
+    where: { id: orderId },
+    data: {
+      orderStatus: OrderStatus.AWAITING_PAYMENT,
+      paymentStatus: PaymentStatus.PENDING,
+    },
+  });
+
+  // Schedule 10-minute payment expiry
+  await orderExpiryJob.add(orderId);
+
   // Emit notification to business outlet
   try {
     SocketEmitter.getInstance().emitNotificationToOutlet(outletId, {
@@ -972,10 +985,42 @@ export async function getPaymentOrderService(orderId: string) {
 
   const convertMidtrans = transaction.rawMidtrans as unknown as PaymentResponse | null;
 
+  // Fetch outlet operating hours
+  const operatingHours = await OperatingHoursRepository.findByOutletId(outlet.id);
+  const now = new Date();
+  const currentDay = now.getDay();
+  const todaySchedule = operatingHours.find(oh => oh.dayOfWeek === currentDay);
+
+  // Determine if currently within operating hours
+  let isWithinOperatingHours = false;
+  if (todaySchedule && todaySchedule.isOpen) {
+    const openTime = new Date(todaySchedule.openTime);
+    const closeTime = new Date(todaySchedule.closeTime);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const openMinutes = openTime.getHours() * 60 + openTime.getMinutes();
+    const closeMinutes = closeTime.getHours() * 60 + closeTime.getMinutes();
+    isWithinOperatingHours = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+  }
+
   return {
     id: transaction.orderId,
     status: order.orderStatus,
     totalAmount: transaction.amount,
+    outletInfo: {
+      name: outlet.name,
+      isWithinOperatingHours,
+      todaySchedule: todaySchedule ? {
+        isOpen: todaySchedule.isOpen,
+        openTime: todaySchedule.openTime,
+        closeTime: todaySchedule.closeTime,
+      } : null,
+      operatingHours: operatingHours.map(oh => ({
+        dayOfWeek: oh.dayOfWeek,
+        isOpen: oh.isOpen,
+        openTime: oh.openTime,
+        closeTime: oh.closeTime,
+      })),
+    },
     payment: {
       status: transaction.status,
       method: convertMidtrans ? `MIDTRANS` : `MANUAL`,

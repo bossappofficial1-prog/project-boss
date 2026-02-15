@@ -110,6 +110,7 @@ export default function OutletsSection({
         {outlets.map((outlet, index) => {
           const isSelected = outlet.id === selectedOutlet;
           const isActionSelected = selectedForAction === outlet.id;
+          const isOutletActive = outlet.isOpen !== false;
 
           return (
             <div
@@ -214,14 +215,21 @@ export default function OutletsSection({
                   )}
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {isSelected ? (
-                      <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-3 py-1 text-xs font-medium text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
-                        <span className="mr-1.5 flex h-2 w-2 animate-pulse rounded-full bg-current" />
-                        Outlet Aktif
-                      </span>
+                    {isOutletActive ? (
+                      isSelected ? (
+                        <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-3 py-1 text-xs font-medium text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+                          <span className="mr-1.5 flex h-2 w-2 animate-pulse rounded-full bg-current" />
+                          Outlet Aktif
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 transition-colors group-hover:border-red-200 group-hover:bg-red-50 group-hover:text-red-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:border-red-800 dark:group-hover:bg-red-950/20 dark:group-hover:text-red-300">
+                          Klik untuk pilih
+                        </span>
+                      )
                     ) : (
-                      <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 transition-colors group-hover:border-red-200 group-hover:bg-red-50 group-hover:text-red-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:border-red-800 dark:group-hover:bg-red-950/20 dark:group-hover:text-red-300">
-                        Klik untuk pilih
+                      <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                        <span className="mr-1.5 flex h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500" />
+                        Outlet Nonaktif
                       </span>
                     )}
                   </div>
