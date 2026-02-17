@@ -3,7 +3,7 @@
 import { useFavorites } from "@/hooks/useFavorites";
 import { useTranslations } from "@/hooks/useI18n";
 import { Button } from "../ui/button";
-import { Heart, MapPin, Package, Phone, Share2, Store, Wrench, Clock, MessageCircle, Navigation, ChevronRight, Search, X } from "lucide-react";
+import { Heart, MapPin, Package, Phone, Share2, Store, Wrench, Clock, MessageCircle, Navigation, ChevronRight, Search, X, Ticket } from "lucide-react";
 import { ShareOutlet } from "../shared/ShareOutlet";
 import { ImageRender } from "../shared/Image";
 import { resolveCustomerImageUrl } from "@/lib/url";
@@ -246,6 +246,10 @@ export function OutletContent({ outletId }: { outletId: string }) {
     () => displayedProducts?.filter((p) => p.type === "GOODS") ?? [],
     [displayedProducts],
   );
+  const tickets = useMemo(
+    () => displayedProducts?.filter((p) => p.type === "TICKET") ?? [],
+    [displayedProducts],
+  );
   const isOutletFavorite = outletQuery.data ? isFavorite(outletQuery.data.id) : false;
 
   const isLoadingSearch = trimmedSearch && searchResult.isLoading;
@@ -456,10 +460,11 @@ export function OutletContent({ outletId }: { outletId: string }) {
             localStorage.setItem("selectedTabs", value);
           }}
           className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-11 rounded-lg bg-muted/60 p-1">
+          <TabsList className="grid w-full grid-cols-4 h-11 rounded-lg bg-muted/60 p-1">
             {[
               { value: "products", icon: Package, label: t("products"), count: goods.length },
               { value: "services", icon: Wrench, label: t("services"), count: services.length },
+              { value: "tickets", icon: Ticket, label: "Tiket", count: tickets.length },
               { value: "hours", icon: Clock, label: t("openingHours") },
             ].map(({ value, icon: Icon, label, count }) => (
               <TabsTrigger
@@ -476,7 +481,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
           </TabsList>
 
           {/* Search Input - only show in products and services tabs */}
-          {(selectedTabs === "products" || selectedTabs === "services") && (
+          {(selectedTabs === "products" || selectedTabs === "services" || selectedTabs === "tickets") && (
             <div className="relative mt-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -498,7 +503,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
           )}
 
           {/* Search Results Count */}
-          {trimmedSearch && !isLoadingSearch && (selectedTabs === "products" || selectedTabs === "services") && (
+          {trimmedSearch && !isLoadingSearch && (selectedTabs === "products" || selectedTabs === "services" || selectedTabs === "tickets") && (
             <div className="mt-2 px-1">
               <p className="text-xs text-muted-foreground">
                 {t("searchResults", { count: displayedProducts.length })}
@@ -516,9 +521,9 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 ))}
               </div>
             ) : trimmedSearch ? (
-              <EmptyState 
-                title={t("noSearchResults")} 
-                description={t("noSearchResultsDescription")} 
+              <EmptyState
+                title={t("noSearchResults")}
+                description={t("noSearchResultsDescription")}
               />
             ) : (
               <EmptyState title={t("noProducts")} description={t("noProductsDescription")} />
@@ -535,9 +540,9 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 ))}
               </div>
             ) : trimmedSearch ? (
-              <EmptyState 
-                title={t("noSearchResults")} 
-                description={t("noSearchResultsDescription")} 
+              <EmptyState
+                title={t("noSearchResults")}
+                description={t("noSearchResultsDescription")}
                 icon={<Wrench className="text-muted-foreground" />}
               />
             ) : (
@@ -545,6 +550,30 @@ export function OutletContent({ outletId }: { outletId: string }) {
                 title={t("noServices")}
                 description={t("noServicesDescription")}
                 icon={<Wrench className="text-muted-foreground" />}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="tickets" className="mt-3 space-y-2">
+            {isLoadingSearch ? (
+              <LoadingState />
+            ) : tickets.length ? (
+              <div className="grid gap-2">
+                {tickets.map((p) => (
+                  <ProductCard key={p.id} product={p} outlet={outlet} />
+                ))}
+              </div>
+            ) : trimmedSearch ? (
+              <EmptyState
+                title={t("noSearchResults")}
+                description={t("noSearchResultsDescription")}
+                icon={<Ticket className="text-muted-foreground" />}
+              />
+            ) : (
+              <EmptyState
+                title="Belum ada tiket"
+                description="Outlet ini belum menjual tiket"
+                icon={<Ticket className="text-muted-foreground" />}
               />
             )}
           </TabsContent>

@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, ShoppingBag, ShoppingCart, Package, Receipt, Zap, LayoutGrid } from "lucide-react";
+import { LogOut, ShoppingBag, ShoppingCart, Package, Receipt, Zap, LayoutGrid, Ticket, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { apiClient } from "@/lib/apis/base";
 import { cn } from "@/lib/utils";
 import ReceiptSetting from "../ReceiptSetting";
 import { useOutletContext } from "../providers/CashierOutletProvider";
+import { Badge } from "../ui/badge";
+import { QueryClient, useQuery } from "@tanstack/react-query";
 
 interface CashierNavbarProps {
   cashierName: string;
@@ -20,9 +22,10 @@ interface CashierNavbarProps {
 
 const navItems = [
   { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
-  { href: "/cashier/orders", label: "Pesanan Barang", icon: ShoppingBag },
-  { href: "/cashier/queue", label: "Antrian", icon: LayoutGrid },
+  { href: "/cashier/orders", badge: 0, label: "Pesanan Barang", icon: ShoppingBag },
+  { href: "/cashier/queue", badge: 0, label: "Antrian", icon: LayoutGrid },
   { href: "/cashier/pob", label: "POB", icon: Package },
+  { href: "/cashier/ticket-scan", label: "Scan Tiket", icon: Ticket },
   { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
 ];
 
@@ -41,6 +44,28 @@ export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
       toast.error("Gagal logout");
     }
   };
+
+  const { data } = useQuery({
+    queryKey: ['badge-count', selectedOutletId],
+    queryFn: async () => (await apiClient.get(`/orders/v2/${selectedOutletId}/badge`)).data.data as {
+      orderBadgeCount: number,
+      serviceBadgeCount: number
+    },
+    enabled: !!selectedOutletId
+  })
+
+  const navItems = useMemo(() => [
+    { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
+    { href: "/cashier/orders", badge: data?.orderBadgeCount, label: "Pesanan Barang", icon: ShoppingBag },
+    { href: "/cashier/queue", badge: data?.serviceBadgeCount, label: "Antrian", icon: LayoutGrid },
+    { href: "/cashier/pob", label: "POB", icon: Package },
+    { href: "/cashier/ticket-scan", label: "Scan Tiket", icon: Ticket },
+    { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
+  ], [data]);
+
+  useEffect(() => {
+    console.log('badge data updated', data)
+  }, [data])
 
   return (
     <header className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -64,12 +89,17 @@ export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                  "flex items-center relative gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
                     : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800",
                 )}>
                 <Icon className="h-4 w-4" />
+                {!!item.badge && item.badge > 0 && (
+                  <Badge className="absolute -top-0 -right-1 w-5 h-5 text-[0.8em] rounded-full flex items-center justify-center">
+                    {item.badge > 99 ? 99 + '+' : item.badge}
+                  </Badge>
+                )}
                 {item.label}
               </Link>
             );

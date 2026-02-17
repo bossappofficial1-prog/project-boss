@@ -105,13 +105,23 @@ export function PosV2Content() {
             return;
         }
 
-        // GOODS product
+        // GOODS / TICKET product
         setCart((prev) => {
             const current = prev[product.id]?.quantity ?? 0;
-            if ((product.stock ?? 0) > 0 && current + 1 > (product.stock ?? 0)) {
-                toast.error(`Stok "${product.name}" tidak cukup`);
-                return prev;
+
+            if (product.type === "GOODS") {
+                if ((product.stock ?? 0) > 0 && current + 1 > (product.stock ?? 0)) {
+                    toast.error(`Stok "${product.name}" tidak cukup`);
+                    return prev;
+                }
+            } else if (product.type === "TICKET") {
+                const available = (product.totalQuota ?? 0) - (product.soldCount ?? 0);
+                if (available > 0 && current + 1 > available) {
+                    toast.error(`Kuota tiket "${product.name}" tidak cukup`);
+                    return prev;
+                }
             }
+
             return {
                 ...prev,
                 [product.id]: { product, quantity: current + 1 },
@@ -124,10 +134,20 @@ export function PosV2Content() {
             const line = prev[productId];
             if (!line) return prev;
             if (line.product.type === "SERVICE") return prev; // service always qty 1
-            if ((line.product.stock ?? 0) > 0 && line.quantity + 1 > (line.product.stock ?? 0)) {
-                toast.error(`Stok "${line.product.name}" tidak cukup`);
-                return prev;
+
+            if (line.product.type === "GOODS") {
+                if ((line.product.stock ?? 0) > 0 && line.quantity + 1 > (line.product.stock ?? 0)) {
+                    toast.error(`Stok "${line.product.name}" tidak cukup`);
+                    return prev;
+                }
+            } else if (line.product.type === "TICKET") {
+                const available = (line.product.totalQuota ?? 0) - (line.product.soldCount ?? 0);
+                if (available > 0 && line.quantity + 1 > available) {
+                    toast.error(`Kuota tiket "${line.product.name}" tidak cukup`);
+                    return prev;
+                }
             }
+
             return { ...prev, [productId]: { ...line, quantity: line.quantity + 1 } };
         });
     };
@@ -248,7 +268,7 @@ export function PosV2Content() {
                 {/* Left: Product catalog */}
                 <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
                     <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Produk & Layanan</CardTitle>
+                        <CardTitle className="text-base">Produk, Layanan & Tiket</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <ProductCatalog

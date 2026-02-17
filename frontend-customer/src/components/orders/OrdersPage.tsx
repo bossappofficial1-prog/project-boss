@@ -195,6 +195,7 @@ export default function OrdersPage() {
     } = useQuery<OrderDetail[], Error>({
         queryKey: ["orders"],
         queryFn: Order.getOrderDetails,
+        enabled: !!profileUser?.phone
     });
 
     // Single combined memo: filter → search → sort → group (replaces 5 separate memos)

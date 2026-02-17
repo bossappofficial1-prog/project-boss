@@ -82,16 +82,40 @@ const serviceSchema = z.object({
 
 export type ServiceSchemaType = z.infer<typeof serviceSchema>;
 
+const ticketSchema = z.object({
+  sellingPrice: z.coerce.number().min(1, "Harga tiket harus > 0"),
+  eventDate: z.coerce.date("Tanggal event wajib diisi"),
+  eventEndDate: z.coerce.date().nullable().optional(),
+  venue: z.string().min(1, "Nama venue wajib diisi"),
+  venueAddress: z.string().nullable().optional(),
+  mapUrl: z.preprocess((val) => (val === "" ? undefined : val), z.string().url().nullable().optional()),
+  totalQuota: z.coerce.number().min(1, "Total kuota minimal 1"),
+  maxPerOrder: z.coerce.number().min(1).optional(),
+  saleStartDate: z.coerce.date().nullable().optional(),
+  saleEndDate: z.coerce.date().nullable().optional(),
+  terms: z.string().nullable().optional(),
+});
+
+export type TicketSchemaType = z.infer<typeof ticketSchema>;
+
 export const productSchema = z.discriminatedUnion("type", [
   baseSchema.extend({
     type: z.literal("GOODS"),
     goods: goodsSchema,
-    service: z.preprocess(() => undefined, z.undefined().optional()), // Paksa jadi undefined
+    service: z.preprocess(() => undefined, z.undefined().optional()),
+    ticket: z.preprocess(() => undefined, z.undefined().optional()),
   }),
   baseSchema.extend({
     type: z.literal("SERVICE"),
     service: serviceSchema,
-    goods: z.preprocess(() => undefined, z.undefined().optional()), // Paksa jadi undefined
+    goods: z.preprocess(() => undefined, z.undefined().optional()),
+    ticket: z.preprocess(() => undefined, z.undefined().optional()),
+  }),
+  baseSchema.extend({
+    type: z.literal("TICKET"),
+    ticket: ticketSchema,
+    goods: z.preprocess(() => undefined, z.undefined().optional()),
+    service: z.preprocess(() => undefined, z.undefined().optional()),
   }),
 ]);
 
@@ -161,6 +185,29 @@ export default function AddOrEditProductServiceModal({
             sundayClose: parseDate(initialData.service?.sundayClose),
           },
           goods: undefined,
+          ticket: undefined,
+        } satisfies ProductFormValues;
+      }
+
+      if (initialData.type === "TICKET") {
+        return {
+          ...baseNormalized,
+          type: "TICKET" as const,
+          ticket: {
+            sellingPrice: initialData.ticket?.sellingPrice ?? 0,
+            eventDate: parseDate(initialData.ticket?.eventDate) ?? new Date(),
+            eventEndDate: parseDate(initialData.ticket?.eventEndDate),
+            venue: initialData.ticket?.venue ?? "",
+            venueAddress: initialData.ticket?.venueAddress ?? null,
+            mapUrl: initialData.ticket?.mapUrl ?? null,
+            totalQuota: initialData.ticket?.totalQuota ?? 100,
+            maxPerOrder: initialData.ticket?.maxPerOrder ?? 5,
+            saleStartDate: parseDate(initialData.ticket?.saleStartDate),
+            saleEndDate: parseDate(initialData.ticket?.saleEndDate),
+            terms: initialData.ticket?.terms ?? null,
+          },
+          goods: undefined,
+          service: undefined,
         } satisfies ProductFormValues;
       }
 
@@ -219,6 +266,27 @@ export default function AddOrEditProductServiceModal({
       };
 
       payload.goods = goods;
+    } else if (formType === "TICKET") {
+      const ticket: TicketSchemaType = {
+        sellingPrice: Number(otherValues.get("ticket[sellingPrice]")) || 0,
+        eventDate: new Date(otherValues.get("ticket[eventDate]") as string),
+        eventEndDate: otherValues.get("ticket[eventEndDate]")
+          ? new Date(otherValues.get("ticket[eventEndDate]") as string)
+          : null,
+        venue: (otherValues.get("ticket[venue]") || "") as string,
+        venueAddress: (otherValues.get("ticket[venueAddress]") as string) || null,
+        mapUrl: (otherValues.get("ticket[mapUrl]") as string) || null,
+        totalQuota: Number(otherValues.get("ticket[totalQuota]")) || 100,
+        maxPerOrder: Number(otherValues.get("ticket[maxPerOrder]")) || 5,
+        saleStartDate: otherValues.get("ticket[saleStartDate]")
+          ? new Date(otherValues.get("ticket[saleStartDate]") as string)
+          : null,
+        saleEndDate: otherValues.get("ticket[saleEndDate]")
+          ? new Date(otherValues.get("ticket[saleEndDate]") as string)
+          : null,
+        terms: (otherValues.get("ticket[terms]") as string) || null,
+      };
+      payload.ticket = ticket;
     } else {
       const providerEmail = otherValues.get("service[providerEmail]") as string;
       const providerPhone = otherValues.get("service[providerPhone]") as string;
@@ -313,6 +381,10 @@ export default function AddOrEditProductServiceModal({
         {
           label: "Jasa (Layanan)",
           value: "SERVICE",
+        },
+        {
+          label: "Tiket (Event)",
+          value: "TICKET",
         },
       ],
     },
@@ -493,6 +565,89 @@ export default function AddOrEditProductServiceModal({
           }}
         />
       ),
+    },
+
+    // product === ticket
+    {
+      name: "ticket.sellingPrice" as any,
+      label: "Harga Tiket *",
+      type: "currency",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.totalQuota" as any,
+      label: "Total Kuota *",
+      type: "number",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.eventDate" as any,
+      label: "Tanggal Event *",
+      type: "datetime-local",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.eventEndDate" as any,
+      label: "Tanggal Selesai (opsional)",
+      type: "datetime-local",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.venue" as any,
+      label: "Nama Venue *",
+      type: "text",
+      colSpan: "full",
+      placeholder: "contoh: Stadion GBK, Pelabuhan Merak",
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.venueAddress" as any,
+      label: "Alamat Venue (opsional)",
+      type: "text",
+      colSpan: "full",
+      placeholder: "Alamat lengkap venue",
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.mapUrl" as any,
+      label: "Link Google Maps (opsional)",
+      type: "text",
+      colSpan: "full",
+      placeholder: "https://maps.google.com/...",
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.maxPerOrder" as any,
+      label: "Maks per Order",
+      type: "number",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.saleStartDate" as any,
+      label: "Mulai Penjualan (opsional)",
+      type: "datetime-local",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.saleEndDate" as any,
+      label: "Tutup Penjualan (opsional)",
+      type: "datetime-local",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.terms" as any,
+      label: "Syarat & Ketentuan (opsional)",
+      type: "textarea",
+      colSpan: "full",
+      placeholder: "Syarat dan ketentuan tiket",
+      condition: (values) => values.type === "TICKET",
     },
     {
       name: "file",

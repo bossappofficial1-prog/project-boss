@@ -6,12 +6,13 @@ import { messagePublisher } from './message-publisher.service';
 import { SocketEmitter } from '../socket/socket-emiiter';
 import { MidtransWebhookPayloadType } from '../types/Others';
 import { OperatingHoursRepository } from '../repositories/operating-hours.repository';
+import { generateTicketCode } from '../utils/code-generator';
 
 export async function handlePaymentSuccess(orderId: string) {
     let order = await db.order.findUnique({
         where: { id: orderId },
         include: {
-            items: { include: { product: true, bookingSlot: true } },
+            items: { include: { product: { include: { ticket: true } }, bookingSlot: true } },
             outlet: true,
             guestCustomer: true,
             transaction: true
@@ -65,6 +66,19 @@ export async function handlePaymentSuccess(orderId: string) {
                         where: { productId: item.productId },
                         data: { currentStock: { decrement: item.quantity } },
                     });
+                }
+            }
+
+            // 5. Generate TicketCode untuk TICKET items
+            for (const item of order.items) {
+                if (item.product.type === 'TICKET' && item.product.ticket) {
+                    const ticketCodes = Array.from({ length: item.quantity }, () => ({
+                        code: generateTicketCode(),
+                        orderItemId: item.id,
+                        productTicketId: item.product.ticket!.id,
+                        status: 'VALID' as const,
+                    }));
+                    await tx.ticketCode.createMany({ data: ticketCodes });
                 }
             }
 
@@ -162,7 +176,15 @@ export async function handlePaymentFailure(orderId: string) {
     const order = await db.order.findUnique({
         where: { id: orderId },
         include: {
-            items: { include: { product: true, bookingSlot: true } },
+            items: {
+                include: {
+                    product: {
+                        include: { goods: true, ticket: true },
+                    },
+                    bookingSlot: true,
+                    ticketCodes: true,
+                },
+            },
             outlet: true,
             guestCustomer: true,
             transaction: true,
@@ -179,18 +201,39 @@ export async function handlePaymentFailure(orderId: string) {
         return;
     }
 
-    await db.order.update({
-        where: { id: orderId },
-        data: { paymentStatus: 'FAILED', orderStatus: 'CANCELLED' },
-    });
+    await db.$transaction(async (tx) => {
+        for (const item of order.items) {
+            if (item.product.type === "GOODS" && (item.product as any).goods) {
+                await tx.productGoods.update({
+                    where: { id: (item.product as any).goods.id },
+                    data: { currentStock: { increment: item.quantity } },
+                });
+            }
 
-    const failedBookingSlot = order.items.find((item) => item.bookingSlot)?.bookingSlot;
-    if (failedBookingSlot) {
-        await db.bookingSlot.update({
-            where: { id: failedBookingSlot.id },
-            data: { status: 'AVAILABLE' },
+            if (item.product.type === "TICKET" && (item.product as any).ticket) {
+                await tx.productTicket.update({
+                    where: { id: (item.product as any).ticket.id },
+                    data: { soldCount: { decrement: item.quantity } },
+                });
+                await tx.ticketCode.updateMany({
+                    where: { orderItemId: item.id },
+                    data: { status: "CANCELLED" },
+                });
+            }
+
+            if (item.bookingSlot) {
+                await tx.bookingSlot.update({
+                    where: { id: item.bookingSlot.id },
+                    data: { status: 'AVAILABLE' },
+                });
+            }
+        }
+
+        await tx.order.update({
+            where: { id: orderId },
+            data: { paymentStatus: 'FAILED', orderStatus: 'CANCELLED' },
         });
-    }
+    });
 
     // Emit notification to business outlet
     try {
@@ -225,8 +268,6 @@ export async function handlePaymentFailure(orderId: string) {
     } catch (customerSocketError) {
         console.error('❌ Error emitting customer payment_failed event:', customerSocketError);
     }
-
-    // Tidak perlu kembalikan quantity karena belum dikurangi saat checkout
 }
 
 export async function processMidtransPaymentNotification(payload: MidtransWebhookPayloadType) {

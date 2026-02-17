@@ -29,7 +29,16 @@ export class OrdersV2Repository {
                         OrderStatus.READY,
                     ],
                 },
-                items: { some: { product: { type: "GOODS" } } },
+                items: {
+                    some: {
+                        product: {
+                            OR: [
+                                { type: "GOODS" },
+                                { type: 'TICKET' }
+                            ]
+                        }
+                    }
+                },
             },
             include: goodsOrderInclude,
             orderBy: { createdAt: "desc" },
@@ -44,7 +53,16 @@ export class OrdersV2Repository {
             where: {
                 outletId,
                 orderStatus: OrderStatus.COMPLETED,
-                items: { some: { product: { type: "GOODS" } } },
+                items: {
+                    some: {
+                        product: {
+                            OR: [
+                                { type: "GOODS" },
+                                { type: 'TICKET' }
+                            ]
+                        }
+                    }
+                },
                 updatedAt: { gte: startOfDay },
             },
             include: goodsOrderInclude,
@@ -62,7 +80,16 @@ export class OrdersV2Repository {
                 where: {
                     outletId,
                     orderStatus: OrderStatus.COMPLETED,
-                    items: { some: { product: { type: "GOODS" } } },
+                    items: {
+                        some: {
+                            product: {
+                                OR: [
+                                    { type: "GOODS" },
+                                    { type: 'TICKET' }
+                                ]
+                            }
+                        }
+                    },
                     updatedAt: { gte: startOfDay },
                 },
             }),
@@ -70,7 +97,16 @@ export class OrdersV2Repository {
                 where: {
                     outletId,
                     orderStatus: OrderStatus.CANCELLED,
-                    items: { some: { product: { type: "GOODS" } } },
+                    items: {
+                        some: {
+                            product: {
+                                OR: [
+                                    { type: "GOODS" },
+                                    { type: 'TICKET' }
+                                ]
+                            }
+                        }
+                    },
                     updatedAt: { gte: startOfDay },
                 },
             }),
@@ -78,7 +114,16 @@ export class OrdersV2Repository {
                 where: {
                     outletId,
                     orderStatus: OrderStatus.COMPLETED,
-                    items: { some: { product: { type: "GOODS" } } },
+                    items: {
+                        some: {
+                            product: {
+                                OR: [
+                                    { type: "GOODS" },
+                                    { type: 'TICKET' }
+                                ]
+                            }
+                        }
+                    },
                     updatedAt: { gte: startOfDay },
                 },
                 _sum: { totalAmount: true },
@@ -90,5 +135,53 @@ export class OrdersV2Repository {
             cancelledCount,
             revenue: Number(revenue._sum.totalAmount ?? 0),
         };
+    }
+
+    static async getBadgeQueueAndOrderCount(outletId: string) {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+
+
+
+        return await Promise.all([
+            db.order.count({
+                where: {
+                    outletId,
+                    orderStatus: { in: ['AWAITING_PAYMENT', 'PROCESSING'] },
+                    items: {
+                        some: {
+                            product: {
+                                OR: [
+                                    { type: 'GOODS' },
+                                    { type: 'TICKET' }
+                                ]
+                            }
+                        }
+                    },
+                    updatedAt: {
+                        gte: startOfDay,
+                        lt: endOfDay
+                    }
+                }
+            }),
+            db.order.count({
+                where: {
+                    outletId,
+                    orderStatus: { in: ['AWAITING_PAYMENT', 'PROCESSING'] },
+                    items: {
+                        some: {
+                            product: { type: 'SERVICE' }
+                        }
+                    },
+                    updatedAt: {
+                        gte: startOfDay,
+                        lt: endOfDay
+                    }
+                }
+            })
+        ]);
     }
 }

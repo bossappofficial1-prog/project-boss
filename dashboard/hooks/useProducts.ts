@@ -7,7 +7,7 @@ export interface Product {
     description?: string;
     costPrice: number;
     price: number;
-    type: 'GOODS' | 'SERVICE';
+    type: 'GOODS' | 'SERVICE' | 'TICKET';
     quantity?: number;
     unit?: string;
     status: 'ACTIVE' | 'INACTIVE';
@@ -29,7 +29,7 @@ export interface CreateProductData {
     description?: string;
     costPrice: number;
     price: number;
-    type: 'GOODS' | 'SERVICE';
+    type: 'GOODS' | 'SERVICE' | 'TICKET';
     quantity?: number;
     unit?: string;
     status?: 'ACTIVE' | 'INACTIVE';
@@ -43,7 +43,7 @@ export interface UpdateProductData {
     description?: string;
     costPrice?: number;
     price?: number;
-    type?: 'GOODS' | 'SERVICE';
+    type?: 'GOODS' | 'SERVICE' | 'TICKET';
     quantity?: number;
     unit?: string;
     status?: 'ACTIVE' | 'INACTIVE';
@@ -207,7 +207,7 @@ export const productApi = {
         return response.blob();
     },
 
-    exportData: async (outletId: string, filters?: { type?: 'GOODS' | 'SERVICE'; search?: string }): Promise<Blob> => {
+    exportData: async (outletId: string, filters?: { type?: 'GOODS' | 'SERVICE' | 'TICKET'; search?: string }): Promise<Blob> => {
         const token = localStorage.getItem('authToken');
         const searchParams = new URLSearchParams();
         if (filters?.type) searchParams.append('type', filters.type);

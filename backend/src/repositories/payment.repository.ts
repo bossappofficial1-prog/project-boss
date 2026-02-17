@@ -6,7 +6,7 @@ import { Messages } from "../constants/message";
 import { HttpStatus } from "../constants/http-status";
 import { getStaffAvailabilityForWindow } from "../service/staff.service";
 
-type ProductWithDetails = Prisma.ProductGetPayload<{ include: { goods: true; service: true } }>;
+type ProductWithDetails = Prisma.ProductGetPayload<{ include: { goods: true; service: true; ticket: true } }>;
 
 export class PaymentRepository {
   static async getProductsByIds(productIds: string[]): Promise<ProductWithDetails[]> {
@@ -18,6 +18,7 @@ export class PaymentRepository {
       include: {
         goods: true,
         service: true,
+        ticket: true,
       },
     });
   }
@@ -32,7 +33,7 @@ export class PaymentRepository {
   ): Promise<{ available: boolean; product: ProductWithDetails | null; message: string }> {
     const product = await db.product.findUnique({
       where: { id: productId },
-      include: { goods: true, service: true },
+      include: { goods: true, service: true, ticket: true },
     });
 
     if (!product) {
@@ -89,7 +90,7 @@ export class PaymentRepository {
       include: {
         items: {
           include: {
-            product: { include: { goods: true } },
+            product: { include: { goods: true, ticket: true } },
             bookingSlot: true,
           },
         },
@@ -107,6 +108,13 @@ export class PaymentRepository {
           data: {
             currentStock: { increment: item.quantity },
           },
+        });
+      }
+
+      if (item.product.type === "TICKET" && item.product.ticket) {
+        await db.productTicket.update({
+          where: { id: item.product.ticket.id },
+          data: { soldCount: { decrement: item.quantity } },
         });
       }
 
@@ -145,7 +153,7 @@ export class PaymentRepository {
             items: {
               include: {
                 product: {
-                  include: { goods: true, service: true },
+                  include: { goods: true, service: true, ticket: true },
                 },
               },
             },
@@ -290,7 +298,7 @@ export class PaymentRepository {
       for (const item of items) {
         const product = await tr.product.findUnique({
           where: { id: item.productId },
-          include: { goods: true, service: true },
+          include: { goods: true, service: true, ticket: true },
         });
 
         if (!product) {
@@ -310,6 +318,22 @@ export class PaymentRepository {
           }
         }
 
+        if (product.type === "TICKET") {
+          if (!product.ticket) {
+            throw new AppError(
+              `Data tiket tidak ditemukan untuk produk ${product.name}`,
+              HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+          }
+          const availableQuota = product.ticket.totalQuota - product.ticket.soldCount;
+          if (availableQuota < item.quantity) {
+            throw new AppError(
+              `Kuota tiket tidak cukup untuk ${product.name}. Tersisa: ${availableQuota}`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+        }
+
         const orderItem = await tr.orderItem.create({
           data: {
             orderId,
@@ -323,6 +347,13 @@ export class PaymentRepository {
           await tr.productGoods.update({
             where: { productId: product.id },
             data: { currentStock: { decrement: item.quantity } },
+          });
+        }
+
+        if (product.type === "TICKET" && product.ticket) {
+          await tr.productTicket.update({
+            where: { id: product.ticket.id },
+            data: { soldCount: { increment: item.quantity } },
           });
         }
 
@@ -356,7 +387,7 @@ export class PaymentRepository {
         include: {
           items: {
             include: {
-              product: { include: { goods: true } },
+              product: { include: { goods: true, ticket: true } },
               bookingSlot: true,
             },
           },
@@ -372,6 +403,13 @@ export class PaymentRepository {
           await tr.productGoods.update({
             where: { productId: item.productId },
             data: { currentStock: { increment: item.quantity } },
+          });
+        }
+
+        if (item.product.type === "TICKET" && item.product.ticket) {
+          await tr.productTicket.update({
+            where: { id: item.product.ticket.id },
+            data: { soldCount: { decrement: item.quantity } },
           });
         }
 
@@ -401,7 +439,9 @@ export class PaymentRepository {
     if (product.type === "GOODS") {
       return product.goods?.sellingPrice ?? 0;
     }
-
+    if (product.type === "TICKET") {
+      return product.ticket?.sellingPrice ?? 0;
+    }
     return product.service?.sellingPrice ?? 0;
   }
 }

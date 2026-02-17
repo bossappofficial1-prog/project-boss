@@ -4,13 +4,14 @@ export interface Product {
   status: "ACTIVE" | "INACTIVE";
   description?: string;
   image: string;
-  type: "GOODS" | "SERVICE";
+  type: "GOODS" | "SERVICE" | "TICKET";
   outletId: string;
   images?: { url: string; alt?: string }[];
   createdAt: string;
   updatedAt: string;
   goods?: Goods;
   service?: Service;
+  ticket?: Ticket;
 }
 
 export interface Goods {
@@ -37,6 +38,25 @@ export interface Service {
   commissionValue: number;
   maxParallel: number;
   bookingInWorkHours?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Ticket {
+  id: string;
+  productId: string;
+  sellingPrice: number;
+  eventDate: string;
+  eventEndDate?: string | null;
+  venue: string;
+  venueAddress?: string | null;
+  mapUrl?: string | null;
+  totalQuota: number;
+  soldCount: number;
+  maxPerOrder: number;
+  saleStartDate?: string | null;
+  saleEndDate?: string | null;
+  terms?: string | null;
   createdAt: string;
   updatedAt: string;
 }

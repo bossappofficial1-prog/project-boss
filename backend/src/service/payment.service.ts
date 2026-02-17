@@ -90,16 +90,26 @@ async function validateItemsAndPrepareData(inputItems: any[], outletId: string) 
       throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
-    const priceProduct =
-      (product.type === "GOODS" ? product.goods?.sellingPrice : product.service?.sellingPrice) ?? 0;
+    const priceProduct = () => {
+      let price = 0
+      switch (product.type) {
+        case 'GOODS': price = product.goods?.sellingPrice ?? 0; break;
+        case 'SERVICE': price = product.service?.sellingPrice ?? 0; break;
+        case 'TICKET': price = product.ticket?.sellingPrice ?? 0; break;
+        default: price = 0; break;
+      }
 
-    const subtotal = priceProduct * item.quantity;
+      return price
+    }
+    // (product.type === "GOODS" ? product.goods?.sellingPrice : product.service?.sellingPrice) ?? 0;
+
+    const subtotal = priceProduct() * item.quantity;
     totalProductPrice += subtotal;
 
     itemDetails.push({
       id: product.id,
       name: product.name,
-      price: priceProduct,
+      price: priceProduct(),
       quantity: item.quantity,
     });
   }

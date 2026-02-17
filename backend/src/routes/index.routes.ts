@@ -33,6 +33,7 @@ import subscriptionRouter from "./subscription.route";
 import posV2Router from "./pos-v2.route";
 import queueV2Router from "./queue-v2.route";
 import ordersV2Router from "./orders-v2.route";
+import ticketRouter from "./ticket.route";
 
 const apiRouter = Router();
 
@@ -65,6 +66,7 @@ apiRouter.use('/receipt-setting', receiptRouter)
 apiRouter.use('/pos/v2', posV2Router);
 apiRouter.use('/queue/v2', queueV2Router);
 apiRouter.use('/orders/v2', ordersV2Router);
+apiRouter.use('/tickets', ticketRouter);
 apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
 apiRouter.get('/test-event/:outletId', (req, res) => {
   const outletId = req.params.outletId;

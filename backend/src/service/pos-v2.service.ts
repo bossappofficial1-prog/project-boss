@@ -16,26 +16,37 @@ export interface PosV2OrderResult {
 }
 
 export class PosV2Service {
-    static async getProducts(outletId: string, search?: string, type?: "GOODS" | "SERVICE") {
+    static async getProducts(outletId: string, search?: string, type?: "GOODS" | "SERVICE" | "TICKET") {
         const products = await PosV2Repository.getProductsByOutlet(outletId, search, type);
 
-        return products.map((p) => ({
-            id: p.id,
-            name: p.name,
-            description: p.description,
-            image: p.image,
-            type: p.type,
-            status: p.status,
-            price: p.type === "GOODS"
-                ? (p.goods?.sellingPrice ?? 0)
-                : (p.service?.sellingPrice ?? 0),
-            stock: p.type === "GOODS" ? (p.goods?.currentStock ?? 0) : null,
-            unit: p.type === "GOODS" ? (p.goods?.unit ?? "pcs") : null,
-            goodsId: p.goods?.id ?? null,
-            serviceId: p.service?.id ?? null,
-            durationMinutes: p.service?.durationMinutes ?? null,
-            providerName: p.service?.providerName ?? null,
-        }));
+        return products.map((p) => {
+            let price = 0;
+            if (p.type === "GOODS") price = p.goods?.sellingPrice ?? 0;
+            else if (p.type === "SERVICE") price = p.service?.sellingPrice ?? 0;
+            else if (p.type === "TICKET") price = p.ticket?.sellingPrice ?? 0;
+
+            return {
+                id: p.id,
+                name: p.name,
+                description: p.description,
+                image: p.image,
+                type: p.type,
+                status: p.status,
+                price,
+                stock: p.type === "GOODS" ? (p.goods?.currentStock ?? 0) : null,
+                unit: p.type === "GOODS" ? (p.goods?.unit ?? "pcs") : null,
+                goodsId: p.goods?.id ?? null,
+                serviceId: p.service?.id ?? null,
+                ticketId: p.ticket?.id ?? null,
+                durationMinutes: p.service?.durationMinutes ?? null,
+                providerName: p.service?.providerName ?? null,
+                totalQuota: p.ticket?.totalQuota ?? null,
+                soldCount: p.ticket?.soldCount ?? null,
+                eventDate: p.ticket?.eventDate?.toISOString() ?? null,
+                eventEndDate: p.ticket?.eventEndDate?.toISOString() ?? null,
+                venue: p.ticket?.venue ?? null,
+            };
+        });
     }
 
     static async createOrder(
@@ -75,6 +86,11 @@ export class PosV2Service {
             productGoodsId: string;
             quantity: number;
             orderId: string;
+        }> = [];
+        const ticketUpdates: Array<{
+            productTicketId: string;
+            productId: string;
+            quantity: number;
         }> = [];
 
         for (const item of items) {
@@ -126,6 +142,32 @@ export class PosV2Service {
                     quantity: 1,
                     priceAtTimeOfOrder: price,
                 });
+            } else if (product.type === "TICKET") {
+                if (!product.ticket) {
+                    throw new AppError(
+                        `Data tiket "${product.name}" tidak lengkap`,
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+                const availableQuota = product.ticket.totalQuota - product.ticket.soldCount;
+                if (availableQuota < item.quantity) {
+                    throw new AppError(
+                        `Kuota tiket "${product.name}" tidak cukup. Tersedia: ${availableQuota}`,
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+                const price = product.ticket.sellingPrice;
+                subtotal += price * item.quantity;
+                orderItems.push({
+                    productId: product.id,
+                    quantity: item.quantity,
+                    priceAtTimeOfOrder: price,
+                });
+                ticketUpdates.push({
+                    productTicketId: product.ticket.id,
+                    productId: product.id,
+                    quantity: item.quantity,
+                });
             }
         }
 
@@ -169,6 +211,7 @@ export class PosV2Service {
             cashierId,
             items: orderItems,
             stockUpdates,
+            ticketUpdates,
             hasService,
             bookingSlotId,
             bookingDate: bookingDate ? new Date(bookingDate) : null,

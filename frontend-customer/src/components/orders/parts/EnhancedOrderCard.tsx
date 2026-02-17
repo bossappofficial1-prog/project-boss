@@ -19,6 +19,7 @@ import {
     Loader2,
     CalendarPlus,
     AlertCircle,
+    Ticket,
 } from "lucide-react";
 import { useTranslations } from "@/hooks/useI18n";
 import dynamic from "next/dynamic";
@@ -125,6 +126,12 @@ function EnhancedOrderCard({
     const remainingCount = Math.max(0, order.items.length - MAX_VISIBLE_ITEMS);
 
     const hasServiceProduct = order.items.some((i) => i.product.type === "SERVICE");
+    const hasTicketItems = order.items.some(
+        (i) => i.product.type === "TICKET" && i.ticketCodes?.length,
+    );
+    const ticketCodeCount = order.items.reduce(
+        (sum, i) => sum + (i.ticketCodes?.length ?? 0), 0,
+    );
     const isCalendarEligible =
         hasServiceProduct &&
         (order.orderStatus === OrderStatus.CONFIRMED ||
@@ -219,7 +226,7 @@ function EnhancedOrderCard({
                     </div>
 
                     {/* Status Badge */}
-                    <div className="px-3 pb-2">
+                    <div className="px-3 pb-2 flex items-center gap-2 flex-wrap">
                         <span
                             className={cn(
                                 "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border",
@@ -230,6 +237,12 @@ function EnhancedOrderCard({
                             <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", status.dotColor)} />
                             {statusLabels[order.orderStatus] || order.orderStatus}
                         </span>
+                        {hasTicketItems && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400">
+                                <Ticket className="w-3 h-3" />
+                                {ticketCodeCount} tiket
+                            </span>
+                        )}
                     </div>
 
                     {/* Items list */}

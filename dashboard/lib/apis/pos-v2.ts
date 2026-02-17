@@ -5,15 +5,21 @@ export interface PosV2Product {
     name: string;
     description: string | null;
     image: string | null;
-    type: "GOODS" | "SERVICE";
+    type: "GOODS" | "SERVICE" | "TICKET";
     status: "ACTIVE";
     price: number;
     stock: number | null;
     unit: string | null;
     goodsId: string | null;
     serviceId: string | null;
+    ticketId: string | null;
     durationMinutes: number | null;
     providerName: string | null;
+    totalQuota: number | null;
+    soldCount: number | null;
+    eventDate: string | null;
+    eventEndDate: string | null;
+    venue: string | null;
 }
 
 export interface PosV2OrderRequest {
@@ -78,7 +84,7 @@ export interface AvailableStaff {
 }
 
 export const posV2Api = {
-    async getProducts(outletId: string, search?: string, type?: "GOODS" | "SERVICE"): Promise<PosV2Product[]> {
+    async getProducts(outletId: string, search?: string, type?: "GOODS" | "SERVICE" | "TICKET"): Promise<PosV2Product[]> {
         const params = new URLSearchParams({ outletId });
         if (search?.trim()) params.append("search", search.trim());
         if (type) params.append("type", type);

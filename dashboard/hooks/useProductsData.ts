@@ -9,12 +9,13 @@ export interface ProductItem {
   name: string;
   description: string;
   image?: string;
-  type: "SERVICE" | "GOODS";
+  type: "SERVICE" | "GOODS" | "TICKET";
   status: "ACTIVE" | "INACTIVE";
   createdAt: string;
   updatedAt: string;
   goods?: Goods;
   service?: Service;
+  ticket?: Ticket;
 }
 
 export interface Goods {
@@ -59,6 +60,25 @@ export interface Service {
   saturdayClose?: Date | string | null;
   sundayOpen?: Date | string | null;
   sundayClose?: Date | string | null;
+}
+
+export interface Ticket {
+  id: string;
+  productId: string;
+  sellingPrice: number;
+  eventDate: string;
+  eventEndDate?: string | null;
+  venue: string;
+  venueAddress?: string | null;
+  mapUrl?: string | null;
+  totalQuota: number;
+  soldCount: number;
+  maxPerOrder: number;
+  saleStartDate?: string | null;
+  saleEndDate?: string | null;
+  terms?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface OutletItem {

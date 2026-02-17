@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, ShoppingBag, Clock } from "lucide-react";
+import { Search, ShoppingBag, Clock, Ticket } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { resolveUploadImageUrl } from "@/lib/url";
 import type { PosV2Product } from "@/lib/apis/pos-v2";
 
-type FilterType = "ALL" | "GOODS" | "SERVICE";
+type FilterType = "ALL" | "GOODS" | "SERVICE" | "TICKET";
 
 interface ProductCatalogProps {
     products: PosV2Product[];
@@ -45,14 +45,14 @@ export function ProductCatalog({
                     />
                 </div>
                 <div className="flex items-center gap-2">
-                    {(["ALL", "GOODS", "SERVICE"] as FilterType[]).map((f) => (
+                    {(["ALL", "GOODS", "SERVICE", "TICKET"] as FilterType[]).map((f) => (
                         <Button
                             key={f}
                             size="sm"
                             variant={filter === f ? "default" : "outline"}
                             onClick={() => setFilter(f)}
                             className={filter === f ? "bg-blue-600 hover:bg-blue-500" : ""}>
-                            {f === "ALL" ? "Semua" : f === "GOODS" ? "Barang" : "Layanan"}
+                            {f === "ALL" ? "Semua" : f === "GOODS" ? "Barang" : f === "SERVICE" ? "Layanan" : "Tiket"}
                         </Button>
                     ))}
                 </div>
@@ -73,17 +73,20 @@ export function ProductCatalog({
                     {filtered.map((product) => {
                         const qty = cartQuantities[product.id] ?? 0;
                         const isGoods = product.type === "GOODS";
+                        const isTicket = product.type === "TICKET";
                         const outOfStock = isGoods && (product.stock ?? 0) <= 0;
+                        const ticketSoldOut = isTicket && (product.totalQuota ?? 0) > 0 && ((product.soldCount ?? 0) >= (product.totalQuota ?? 0));
+                        const disabled = outOfStock || ticketSoldOut;
                         const imageUrl = resolveUploadImageUrl(product.image ?? undefined);
 
                         return (
                             <button
                                 key={product.id}
                                 type="button"
-                                disabled={outOfStock}
+                                disabled={disabled}
                                 onClick={() => onAddToCart(product)}
                                 className={`relative flex flex-col overflow-hidden rounded-md border text-left transition-all
-                  ${outOfStock
+                  ${disabled
                                         ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60 dark:border-slate-800 dark:bg-slate-900/40"
                                         : "border-slate-200 bg-white hover:border-blue-400 hover:shadow-md active:scale-[0.98] dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-blue-500"
                                     }`}>
@@ -109,9 +112,11 @@ export function ProductCatalog({
                                     <Badge
                                         className={`absolute right-1.5 top-1.5 text-[10px] ${isGoods
                                             ? "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300"
-                                            : "bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300"
+                                            : isTicket
+                                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300"
+                                                : "bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300"
                                             }`}>
-                                        {isGoods ? "Barang" : "Jasa"}
+                                        {isGoods ? "Barang" : isTicket ? "Tiket" : "Jasa"}
                                     </Badge>
 
                                     {/* Cart badge */}
@@ -133,6 +138,11 @@ export function ProductCatalog({
                                     {isGoods ? (
                                         <p className={`text-[11px] ${outOfStock ? "text-red-500" : "text-slate-500 dark:text-slate-400"}`}>
                                             {outOfStock ? "Habis" : `Stok: ${product.stock} ${product.unit ?? ""}`}
+                                        </p>
+                                    ) : isTicket ? (
+                                        <p className={`flex items-center gap-1 text-[11px] ${ticketSoldOut ? "text-red-500" : "text-slate-500 dark:text-slate-400"}`}>
+                                            <Ticket className="h-3 w-3" />
+                                            {ticketSoldOut ? "Sold Out" : `${(product.totalQuota ?? 0) - (product.soldCount ?? 0)} tersisa`}
                                         </p>
                                     ) : (
                                         <p className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">

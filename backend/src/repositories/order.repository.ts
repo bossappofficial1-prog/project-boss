@@ -57,10 +57,12 @@ export class OrderRepository {
             product: {
               include: {
                 goods: true,
-                service: true
+                service: true,
+                ticket: true,
               }
             },
             bookingSlot: true,
+            ticketCodes: true,
           },
         },
         guestCustomer: true,
@@ -105,6 +107,15 @@ export class OrderRepository {
                 outletId: true,
                 goods: { select: { unit: true, sellingPrice: true } },
                 service: { select: { durationMinutes: true, sellingPrice: true } },
+                ticket: { select: { sellingPrice: true, eventDate: true, eventEndDate: true, venue: true, venueAddress: true } },
+              },
+            },
+            ticketCodes: {
+              select: {
+                id: true,
+                code: true,
+                status: true,
+                redeemedAt: true,
               },
             },
           },

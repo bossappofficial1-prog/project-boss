@@ -257,7 +257,15 @@ export interface Item {
   id: string;
   priceAtTimeOfOrder: number;
   quantity: number;
-  product: Product; // Use full type since price/unit are now in subtables
+  product: Product;
+  ticketCodes?: TicketCode[];
+}
+
+export interface TicketCode {
+  id: string;
+  code: string;
+  status: "VALID" | "REDEEMED" | "CANCELLED" | "EXPIRED";
+  redeemedAt: string | null;
 }
 
 export interface OrderQueueMeta {

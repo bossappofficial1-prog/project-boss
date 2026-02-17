@@ -1,4 +1,4 @@
-import { BookingSlotStatus, OrderStatus, PaymentStatus } from "@prisma/client";
+import { BookingSlotStatus, OrderStatus, PaymentStatus, TicketCodeStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { getRabbitMQChannel } from "../config/rabbitmq";
 import { messagePublisher } from "./message-publisher.service";
@@ -17,7 +17,7 @@ import { SocketEmitter } from "../socket/socket-emiiter";
 import { MidtransTransactionStatus, PaymentResponse } from "../types/Others";
 import Console from "../utils/logger";
 import { orderExpiryJob } from "../jobs/payment-expiry.job";
-import { formatDateTime } from "../utils";
+import { CodeGeneratorUtil, formatDateTime, generateTicketCode } from "../utils";
 
 type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> &
   Record<string, any>;
@@ -77,6 +77,7 @@ const queueOrderInclude = {
           // staff: true, // Removed as BookingSlot does not have staff relation
         },
       },
+      ticketCodes: true,
     },
   },
   guestCustomer: true,
@@ -498,8 +499,9 @@ export async function updateOrderStatusService(
     include: {
       items: {
         include: {
-          product: true,
+          product: { include: { goods: true, ticket: true } },
           bookingSlot: true,
+          ticketCodes: true,
         },
       },
       guestCustomer: true,
@@ -513,7 +515,7 @@ export async function updateOrderStatusService(
     throw new Error("Order not found");
   }
 
-  const order = orderData as any;
+  const order = orderData;
 
   // Handle CANCELLED status - release resources
   if (status === OrderStatus.CANCELLED) {
@@ -525,7 +527,7 @@ export async function updateOrderStatusService(
           where: { id: bookingSlot.id },
           data: {
             status: BookingSlotStatus.AVAILABLE,
-            orderItemId: null, // Release order item link
+            orderItemId: null,
           },
         });
       }
@@ -540,17 +542,29 @@ export async function updateOrderStatusService(
         });
       }
 
-      // Return stock for GOODS items
+      // Return stock for GOODS & TICKET items
       for (const item of order.items) {
-        if (item.product.type === "GOODS") {
+        if (item.product.type === "GOODS" && item.product.goods) {
           await tx.productGoods.update({
             where: { productId: item.productId },
             data: {
-              currentStock: {
-                increment: item.quantity,
-              },
+              currentStock: { increment: item.quantity },
             },
           });
+        }
+
+        if (item.product.type === "TICKET" && item.product.ticket) {
+          await tx.productTicket.update({
+            where: { id: item.product.ticket.id },
+            data: { soldCount: { decrement: item.quantity } },
+          });
+
+          if (item.ticketCodes?.length > 0) {
+            await tx.ticketCode.updateMany({
+              where: { orderItemId: item.id },
+              data: { status: "CANCELLED" },
+            });
+          }
         }
       }
     });
@@ -580,11 +594,42 @@ export async function updateOrderStatusService(
     });
   }
 
+  if (
+    status === "COMPLETED" &&
+    orderData.items.some(item => item.product.type === 'TICKET')
+  ) {
+    const data = orderData.items
+      .filter(item => item.product.type === 'TICKET')
+      .flatMap(item =>
+        Array.from({ length: item.quantity }, () => ({
+          code: generateTicketCode(),
+          orderItemId: item.id,
+          status: 'VALID' as TicketCodeStatus
+        }))
+      )
+
+    await db.$transaction(async (trx) => {
+      await trx.ticketCode.createMany({
+        data
+      })
+
+      if (order.transaction?.id) {
+        await trx.transaction.update({
+          where: {
+            id: order.transaction.id,
+          },
+          data: { status: PaymentStatus.SUCCESS },
+        });
+      }
+    })
+  }
+
   const updatePayload = {
     orderStatus: status,
     ...(reason && status === OrderStatus.CANCELLED ? { cancellationReason: reason } : {}),
     ...(status === OrderStatus.PROCESSING ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
     ...(status === OrderStatus.CANCELLED ? { paymentStatus: PaymentStatus.CANCELLED } : {}),
+    ...(status === OrderStatus.COMPLETED ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
   };
   Console.log(`[SERVICE] Updating Order ${orderId} with payload:`, JSON.stringify(updatePayload));
 
@@ -924,6 +969,17 @@ export async function cancelOrderByCustomerService(
           },
         });
       }
+
+      if (item.product.type === "TICKET" && item.product.ticket) {
+        await tx.productTicket.update({
+          where: { id: item.product.ticket.id },
+          data: { soldCount: { decrement: item.quantity } },
+        });
+        await tx.ticketCode.updateMany({
+          where: { orderItemId: item.id },
+          data: { status: "CANCELLED" },
+        });
+      }
     }
 
     if (orderRecord.bookingSlot) {
@@ -1101,6 +1157,15 @@ export async function expirePaymentOrder(orderId: string) {
   const orderData = await db.order.findUnique({
     where: { id: orderId },
     include: {
+      items: {
+        include: {
+          product: {
+            include: { goods: true, ticket: true },
+          },
+          ticketCodes: true,
+          bookingSlot: true,
+        },
+      },
       guestCustomer: true,
       transaction: true,
     },
@@ -1119,7 +1184,50 @@ export async function expirePaymentOrder(orderId: string) {
     return;
   }
 
-  await PaymentRepository.updatePaymentStatusByOrder(orderId, `EXPIRED`);
+  await db.$transaction(async (tx) => {
+    for (const item of order.items) {
+      if (item.product.type === "GOODS" && item.product.goods) {
+        await tx.productGoods.update({
+          where: { id: item.product.goods.id },
+          data: { currentStock: { increment: item.quantity } },
+        });
+      }
+
+      if (item.product.type === "TICKET" && item.product.ticket) {
+        await tx.productTicket.update({
+          where: { id: item.product.ticket.id },
+          data: { soldCount: { decrement: item.quantity } },
+        });
+        await tx.ticketCode.updateMany({
+          where: { orderItemId: item.id },
+          data: { status: "CANCELLED" },
+        });
+      }
+
+      if (item.bookingSlot) {
+        await tx.bookingSlot.update({
+          where: { id: item.bookingSlot.id },
+          data: { status: BookingSlotStatus.AVAILABLE, orderItemId: null },
+        });
+      }
+    }
+
+    if (order.transaction) {
+      await tx.transaction.update({
+        where: { id: order.transaction.id },
+        data: { status: PaymentStatus.EXPIRED },
+      });
+    }
+
+    await tx.order.update({
+      where: { id: orderId },
+      data: {
+        orderStatus: OrderStatus.CANCELLED,
+        paymentStatus: PaymentStatus.EXPIRED,
+      },
+    });
+  });
+
   SocketEmitter.getInstance().emitToOrder(orderId, {
     message: `Payment for ${orderId} has expired`,
     order_id: orderId,
