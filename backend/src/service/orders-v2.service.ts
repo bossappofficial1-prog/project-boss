@@ -62,6 +62,7 @@ function mapOrder(order: any): OrderEntry {
             productName: item.product?.name ?? "Produk",
             quantity: item.quantity,
             price: Number(item.priceAtTimeOfOrder),
+            productType: item.product.type
         })),
         paymentMethod: method,
         isManualPayment: isManual,
@@ -141,5 +142,11 @@ export class OrdersV2Service {
         };
 
         return { board, stats };
+    }
+
+    static async getBadgeQueueAndOrderCount(outletId: string) {
+        const [orderBadgeCount, serviceBadgeCount] = await OrdersV2Repository.getBadgeQueueAndOrderCount(outletId);
+
+        return { orderBadgeCount, serviceBadgeCount }
     }
 }

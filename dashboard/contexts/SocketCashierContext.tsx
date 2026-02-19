@@ -2,6 +2,7 @@
 
 import { getSocket } from "@/lib/socket-v2"
 import { formatCurrency } from "@/lib/utils"
+import { useQueryClient } from "@tanstack/react-query"
 import { ShoppingBag, User, CreditCard, ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import React, { createContext, useContext, useEffect, useRef, useState } from "react"
@@ -17,6 +18,7 @@ export const SocketCashierProvider = ({
     const [socket, setSocket] = useState<Socket | null>(null)
     const notifAudioRef = useRef<HTMLAudioElement | null>(null)
     const router = useRouter()
+    const qc = useQueryClient()
 
     useEffect(() => {
         const socketInstance = getSocket();
@@ -32,6 +34,7 @@ export const SocketCashierProvider = ({
                 notifAudioRef.current = new Audio('/sounds/order-incoming.wav');
                 notifAudioRef.current.load();
             }
+            qc.invalidateQueries({ queryKey: ['badge-count', outletId] });
 
             toast.success("Order Masuk", {
                 description: (
@@ -77,12 +80,12 @@ export const SocketCashierProvider = ({
         return () => {
             socket.off("orderEvent");
         };
-    }, [socket, outletId])
+    }, [socket, outletId, qc])
 
     return (
-        <SocketCashierContext value={socket}>
+        <SocketCashierContext.Provider value={socket}>
             {children}
-        </SocketCashierContext>
+        </SocketCashierContext.Provider>
     )
 }
 

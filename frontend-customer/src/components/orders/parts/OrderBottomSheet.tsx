@@ -37,6 +37,7 @@ import { useTranslations } from "@/hooks/useI18n";
 import dynamic from "next/dynamic";
 
 const CountdownTimer = dynamic(() => import("./CountdownTimer"), { ssr: false });
+const TicketQRCard = dynamic(() => import("./TicketQRCard"), { ssr: false });
 
 type ActionType =
     | "contact"
@@ -118,6 +119,12 @@ export default function OrderBottomSheet({
 
     const hasServiceProduct = order.items.some(
         (item) => item.product.type === "SERVICE",
+    );
+    const hasTicketProduct = order.items.some(
+        (item) => item.product.type === "TICKET",
+    );
+    const ticketItems = order.items.filter(
+        (item) => item.product.type === "TICKET" && item.ticketCodes?.length,
     );
     const queueMeta = order.queueMeta ?? null;
     const scheduledStart =
@@ -430,6 +437,30 @@ export default function OrderBottomSheet({
                                 ))}
                             </div>
                         </div>
+
+                        {/* Ticket QR Codes */}
+                        {hasTicketProduct && ticketItems.length > 0 && (
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                    Tiket Anda
+                                </p>
+                                <div className="space-y-3">
+                                    {ticketItems.flatMap((item) =>
+                                        (item.ticketCodes ?? []).map((tc, idx) => (
+                                            <TicketQRCard
+                                                key={tc.id}
+                                                ticketCode={tc}
+                                                productName={item.product.name}
+                                                index={idx}
+                                            />
+                                        ))
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground text-center">
+                                    Tunjukkan QR code saat datang ke lokasi event
+                                </p>
+                            </div>
+                        )}
 
                         {/* Payment Summary */}
                         <div className="space-y-2">

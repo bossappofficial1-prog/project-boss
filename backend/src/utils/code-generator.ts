@@ -373,3 +373,12 @@ export const generateBusinessId = (): string => {
 export const generateOutletId = (): string => {
     return `OUT-${generateRandomString(10)}`;
 };
+
+/**
+ * Generate kode tiket unik
+ * Format: TIX-[8 Karakter Acak]
+ * Contoh Output: TIX-X92M1A12
+ */
+export const generateTicketCode = (): string => {
+    return `TIX-${generateRandomString(8)}`;
+};

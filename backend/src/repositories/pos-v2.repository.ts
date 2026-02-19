@@ -1,8 +1,9 @@
 import { db } from "../config/prisma";
 import { PaymentStatus, ManualPaymentType, OrderStatus } from "@prisma/client";
+import { generateTicketCode } from "../utils";
 
 export class PosV2Repository {
-    static async getProductsByOutlet(outletId: string, search?: string, type?: "GOODS" | "SERVICE") {
+    static async getProductsByOutlet(outletId: string, search?: string, type?: "GOODS" | "SERVICE" | "TICKET") {
         return db.product.findMany({
             where: {
                 outletId,
@@ -31,6 +32,17 @@ export class PosV2Repository {
                         maxParallel: true,
                     },
                 },
+                ticket: {
+                    select: {
+                        id: true,
+                        sellingPrice: true,
+                        totalQuota: true,
+                        soldCount: true,
+                        eventDate: true,
+                        eventEndDate: true,
+                        venue: true,
+                    },
+                },
             },
             orderBy: { name: "asc" },
         });
@@ -46,6 +58,7 @@ export class PosV2Repository {
             include: {
                 goods: true,
                 service: true,
+                ticket: true,
             },
         });
     }
@@ -68,9 +81,14 @@ export class PosV2Repository {
             quantity: number;
             orderId: string;
         }>;
+        ticketUpdates: Array<{
+            productTicketId: string;
+            productId: string;
+            quantity: number;
+        }>;
         bookingSlotId?: string;
     }) {
-        const { orderId, customerId, outletId, totalAmount, cashierId, bookingDate, hasService, items, stockUpdates, bookingSlotId } = params;
+        const { orderId, customerId, outletId, totalAmount, cashierId, bookingDate, hasService, items, stockUpdates, ticketUpdates, bookingSlotId } = params;
 
         return db.$transaction(async (tx) => {
             const order = await tx.order.create({
@@ -116,6 +134,26 @@ export class PosV2Repository {
                     where: { id: stock.productGoodsId },
                     data: { currentStock: { decrement: stock.quantity } },
                 });
+            }
+
+            // Ticket: increment soldCount + generate TicketCode
+            for (const ticket of ticketUpdates) {
+                await tx.productTicket.update({
+                    where: { id: ticket.productTicketId },
+                    data: { soldCount: { increment: ticket.quantity } },
+                });
+            }
+
+            // Generate ticket codes for ticket items
+            for (const createdItem of createdItems) {
+                const ticketUpdate = ticketUpdates.find((tu) => tu.productId === createdItem.productId);
+                if (ticketUpdate) {
+                    const ticketCodes = Array.from({ length: createdItem.quantity }, () => ({
+                        code: generateTicketCode(),
+                        orderItemId: createdItem.id,
+                    }));
+                    await tx.ticketCode.createMany({ data: ticketCodes });
+                }
             }
 
             // Link booking slot to service order item

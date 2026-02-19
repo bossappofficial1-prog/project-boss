@@ -23,10 +23,11 @@ import {
 import ImportDataModal from '@/components/modals/ImportDataModal'
 import AddOrEditProductServiceModal from '@/components/modals/AddProductServiceModal'
 import ConfirmationModal from '@/components/ui/confirmation-modal'
+import TicketDetailDialog from './TicketDetailDialog'
 
 import {
     Package, Wrench, AlertCircle, Plus, Upload, Download,
-    PenBox, Trash2, Boxes, TrendingUp, Clock,
+    PenBox, Trash2, Boxes, TrendingUp, Clock, Ticket, Eye,
 } from 'lucide-react'
 
 function PageSkeleton() {
@@ -85,6 +86,7 @@ export default function ProductsContent() {
     const [showAddOrEditModal, setShowAddOrEditModal] = useState(false)
     const [showImportModal, setShowImportModal] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [showTicketDetail, setShowTicketDetail] = useState(false)
     const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null)
     const [actionLoading, setActionLoading] = useState(false)
     const [action, setAction] = useState<'add' | 'edit'>('add')
@@ -104,6 +106,7 @@ export default function ProductsContent() {
     const overview = useMemo(() => {
         const goods = products.filter((p) => p.type === 'GOODS')
         const services = products.filter((p) => p.type === 'SERVICE')
+        const tickets = products.filter((p) => p.type === 'TICKET')
         const active = products.filter((p) => p.status === 'ACTIVE')
         const lowStock = goods.filter((p) => {
             if (!p.goods) return false
@@ -111,7 +114,7 @@ export default function ProductsContent() {
             if (p.goods.minStock && p.goods.currentStock <= p.goods.minStock) return true
             return false
         })
-        return { goods: goods.length, services: services.length, active: active.length, lowStock: lowStock.length }
+        return { goods: goods.length, services: services.length, tickets: tickets.length, active: active.length, lowStock: lowStock.length }
     }, [products])
 
     const handleDelete = async (productId: string) => {
@@ -225,7 +228,7 @@ export default function ProductsContent() {
                 )}
 
                 {/* Overview Cards */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                     <OverviewCard
                         icon={<Boxes className="h-5 w-5" />}
                         label="Total Produk"
@@ -245,6 +248,12 @@ export default function ProductsContent() {
                         variant="success"
                     />
                     <OverviewCard
+                        icon={<Ticket className="h-5 w-5" />}
+                        label="Tiket"
+                        value={overview.tickets}
+                        variant="default"
+                    />
+                    <OverviewCard
                         icon={<AlertCircle className="h-5 w-5" />}
                         label="Stok Rendah"
                         value={overview.lowStock}
@@ -259,15 +268,17 @@ export default function ProductsContent() {
                         <TabsTrigger value="all">Semua</TabsTrigger>
                         <TabsTrigger value="goods">Barang</TabsTrigger>
                         <TabsTrigger value="service">Jasa</TabsTrigger>
+                        <TabsTrigger value="ticket">Tiket</TabsTrigger>
                     </TabsList>
 
-                    {['all', 'goods', 'service'].map((tab) => (
+                    {['all', 'goods', 'service', 'ticket'].map((tab) => (
                         <TabsContent key={tab} value={tab} className="mt-3">
                             <DataTable
                                 data={
                                     tab === 'all' ? products
                                         : tab === 'goods' ? products.filter((p) => p.type === 'GOODS')
-                                            : products.filter((p) => p.type === 'SERVICE')
+                                            : tab === 'service' ? products.filter((p) => p.type === 'SERVICE')
+                                                : products.filter((p) => p.type === 'TICKET')
                                 }
                                 onRefresh={handleRefreshData}
                                 isRefreshing={isLoading}
@@ -304,8 +315,8 @@ export default function ProductsContent() {
                                                     />
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-medium truncate">{p.name}</p>
-                                                        <Badge variant="outline" className={`text-[10px] mt-0.5 ${p.type === 'GOODS' ? 'border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400' : 'border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400'}`}>
-                                                            {p.type === 'GOODS' ? 'Barang' : 'Jasa'}
+                                                        <Badge variant="outline" className={`text-[10px] mt-0.5 ${p.type === 'GOODS' ? 'border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400' : p.type === 'SERVICE' ? 'border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400' : 'border-emerald-200 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400'}`}>
+                                                            {p.type === 'GOODS' ? 'Barang' : p.type === 'SERVICE' ? 'Jasa' : 'Tiket'}
                                                         </Badge>
                                                     </div>
                                                 </div>
@@ -317,7 +328,7 @@ export default function ProductsContent() {
                                         header: 'Harga',
                                         cell(props) {
                                             const p = props.row.original as ProductItem
-                                            const price = p.type === 'GOODS' ? p.goods?.sellingPrice : p.service?.sellingPrice
+                                            const price = p.type === 'GOODS' ? p.goods?.sellingPrice : p.type === 'TICKET' ? p.ticket?.sellingPrice : p.service?.sellingPrice
                                             return (
                                                 <div>
                                                     <p className="font-medium tabular-nums">{formatCurrency(price ?? 0)}</p>
@@ -331,6 +342,11 @@ export default function ProductsContent() {
                                                             Komisi: {p.service.commissionType === 'PERCENTAGE'
                                                                 ? `${p.service.commissionValue}%`
                                                                 : formatCurrency(p.service.commissionValue)}
+                                                        </p>
+                                                    )}
+                                                    {p.type === 'TICKET' && p.ticket && (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Kuota: {p.ticket.totalQuota - p.ticket.soldCount} tersisa
                                                         </p>
                                                     )}
                                                 </div>
@@ -353,6 +369,20 @@ export default function ProductsContent() {
                                                         {p.goods?.minStock != null && (
                                                             <p className="text-xs text-muted-foreground">Min: {p.goods.minStock}</p>
                                                         )}
+                                                    </div>
+                                                )
+                                            }
+                                            if (p.type === 'TICKET' && p.ticket) {
+                                                const available = p.ticket.totalQuota - p.ticket.soldCount
+                                                const isSoldOut = available <= 0
+                                                return (
+                                                    <div className="space-y-0.5">
+                                                        <p className={`text-sm tabular-nums ${isSoldOut ? 'text-destructive font-semibold' : ''}`}>
+                                                            {isSoldOut ? 'Habis' : `${available}/${p.ticket.totalQuota} tiket`}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {new Date(p.ticket.eventDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                        </p>
                                                     </div>
                                                 )
                                             }
@@ -379,14 +409,24 @@ export default function ProductsContent() {
                                         },
                                     },
                                 ]}
-                                rowActions={() => [
+                                rowActions={(row: ProductItem) => [
+                                    ...(row.type === 'TICKET' ? [{
+                                        label: 'Detail',
+                                        icon: Eye,
+                                        variant: 'ghost' as const,
+                                        className: 'text-amber-700 hover:text-amber-800 hover:bg-amber-100',
+                                        onClick(r: ProductItem) {
+                                            setSelectedProduct(r)
+                                            setShowTicketDetail(true)
+                                        },
+                                    }] : []),
                                     {
                                         label: 'Edit',
                                         icon: PenBox,
                                         variant: 'ghost' as const,
                                         className: 'text-blue-700 hover:text-blue-800 hover:bg-blue-100',
-                                        onClick(row: ProductItem) {
-                                            setSelectedProduct(row)
+                                        onClick(r: ProductItem) {
+                                            setSelectedProduct(r)
                                             setAction('edit')
                                             setShowAddOrEditModal(true)
                                         },
@@ -396,8 +436,8 @@ export default function ProductsContent() {
                                         icon: Trash2,
                                         variant: 'ghost' as const,
                                         className: 'text-red-500 hover:text-red-600 hover:bg-red-100',
-                                        onClick(row: ProductItem) {
-                                            setSelectedProduct(row)
+                                        onClick(r: ProductItem) {
+                                            setSelectedProduct(r)
                                             setShowDeleteModal(true)
                                         },
                                     },
@@ -442,6 +482,12 @@ export default function ProductsContent() {
                     loading={actionLoading}
                 />
             )}
+
+            <TicketDetailDialog
+                product={selectedProduct}
+                open={showTicketDetail}
+                onOpenChange={setShowTicketDetail}
+            />
         </>
     )
 }

@@ -89,7 +89,6 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
     const isTerminal = entry.orderStatus === "COMPLETED" || entry.orderStatus === "CANCELLED";
     const itemCount = entry.items.reduce((sum, i) => sum + i.quantity, 0);
 
-
     return (
         <div
             className={`group relative rounded-md border-l-4 ${config.borderColor} bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
@@ -158,12 +157,12 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                 {/* Actions */}
                 {!isTerminal && (
                     <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                        {primary && (
+                        {primary && entry.isManualPayment && entry.paymentProofUrl && (
                             <Button
                                 size="sm"
                                 className="flex-1 h-8 text-xs"
                                 disabled={isPending}
-                                onClick={() => onPrimaryAction?.(entry, primary.nextStatus)}
+                                onClick={() => onPrimaryAction?.(entry, entry.items.some((itm) => itm.productType === 'TICKET') ? 'COMPLETED' : primary.nextStatus)}
                             >
                                 {primary.label}
                                 <ChevronRight className="w-3 h-3 ml-1" />

@@ -13,6 +13,7 @@ export interface OrderItemEntry {
     productName: string;
     quantity: number;
     price: number;
+    productType: 'TICKET' | 'GOODS' | 'SERVICE'
 }
 
 export interface OrderV2Entry {

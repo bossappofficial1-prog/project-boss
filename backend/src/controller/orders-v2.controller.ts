@@ -14,3 +14,10 @@ export const ordersV2GetBoard = asyncHandler(async (req: Request, res: Response)
     const result = await OrdersV2Service.getBoard(outletId, userIdentifier, validateAsOwner);
     return ResponseUtil.success(res, result);
 });
+
+export const getBadgeQueueAndOrderCount = asyncHandler(async (req: Request, res: Response) => {
+    const outletId = req.params.outletId as string;
+
+    const result = await OrdersV2Service.getBadgeQueueAndOrderCount(outletId)
+    return ResponseUtil.success(res, result);
+})

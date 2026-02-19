@@ -20,6 +20,7 @@ enum UserRole {
 enum ProductType {
   GOODS // Produk barang yang memiliki stok
   SERVICE // Layanan jasa
+  TICKET // Tiket event (konser, kapal, wisata, dll)
 }
 
 // Status pembayaran yang lebih sederhana untuk internal aplikasi
@@ -89,6 +90,13 @@ enum StockMovementType {
   OUT // Barang keluar (via order)
   ADJUSTMENT // Koreksi stok
   RETURN // Retur
+}
+
+enum TicketCodeStatus {
+  VALID // Tiket masih berlaku, belum digunakan
+  REDEEMED // Tiket sudah digunakan/di-scan
+  CANCELLED // Tiket dibatalkan
+  EXPIRED // Tiket sudah expired (event lewat)
 }
 
 // Model untuk pengguna
@@ -302,6 +310,9 @@ model Staff {
   // Relasi ke pesanan yang di-handle oleh kasir
   ordersHandled Order[]
 
+  // Relasi ke tiket yang di-redeem oleh staff
+  ticketCodesRedeemed TicketCode[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -324,6 +335,7 @@ model Product {
   // Subtables (one-to-one polymorphic)
   goods   ProductGoods?
   service ProductService?
+  ticket  ProductTicket?
   image   String?         @default("/defaults/default-product-image.png")
 
   orderItems OrderItem[]
@@ -392,26 +404,62 @@ model ProductService {
   bookingInWorkHours Boolean @default(true)
 
   // Operating hours untuk setiap hari (jika null berarti tutup di hari tersebut)
-  mondayOpen    DateTime?
-  mondayClose   DateTime?
-  tuesdayOpen   DateTime?
-  tuesdayClose  DateTime?
-  wednesdayOpen DateTime?
+  mondayOpen     DateTime?
+  mondayClose    DateTime?
+  tuesdayOpen    DateTime?
+  tuesdayClose   DateTime?
+  wednesdayOpen  DateTime?
   wednesdayClose DateTime?
-  thursdayOpen  DateTime?
-  thursdayClose DateTime?
-  fridayOpen    DateTime?
-  fridayClose   DateTime?
-  saturdayOpen  DateTime?
-  saturdayClose DateTime?
-  sundayOpen    DateTime?
-  sundayClose   DateTime?
+  thursdayOpen   DateTime?
+  thursdayClose  DateTime?
+  fridayOpen     DateTime?
+  fridayClose    DateTime?
+  saturdayOpen   DateTime?
+  saturdayClose  DateTime?
+  sundayOpen     DateTime?
+  sundayClose    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([productId])
   @@index([providerName])
+}
+
+// Subtable untuk produk TICKET (tiket event)
+model ProductTicket {
+  id        String  @id @default(uuid())
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // Pricing
+  sellingPrice Float
+
+  // Event info
+  eventDate    DateTime // Tanggal & waktu event
+  eventEndDate DateTime? // Opsional, akhir event
+  venue        String // Nama tempat/venue
+  venueAddress String? // Alamat lengkap
+  mapUrl       String? // Link Google Maps
+
+  // Quota / stock management
+  totalQuota  Int // Total tiket tersedia
+  soldCount   Int @default(0) // Tiket terjual
+  maxPerOrder Int @default(5) // Maks tiket per transaksi
+
+  // Sales window
+  saleStartDate DateTime? // Kapan penjualan dibuka
+  saleEndDate   DateTime? // Kapan penjualan ditutup
+
+  // Additional info
+  terms String? // Syarat & ketentuan
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([eventDate])
+  @@index([soldCount])
 }
 
 // Log untuk tracking barang masuk/keluar (untuk HPP calculation)
@@ -553,9 +601,34 @@ model OrderItem {
   product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
   // Relasi: Satu pesanan bisa book satu slot (untuk service)
   bookingSlot BookingSlot?
+  // Relasi: Kode tiket untuk produk tipe TICKET
+  ticketCodes TicketCode[]
 
   @@index([orderId])
   @@index([productId])
+}
+
+// Model untuk mencatat kode tiket unik (QR code) per OrderItem
+model TicketCode {
+  id     String           @id @default(uuid())
+  code   String           @unique // Kode unik untuk QR (format: TIX-XXXXX)
+  status TicketCodeStatus @default(VALID)
+
+  // Relasi ke OrderItem
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  // Info redemption
+  redeemedAt   DateTime?
+  redeemedById String? // Staff/User yang melakukan redeem
+  redeemedBy   Staff?    @relation(fields: [redeemedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@index([orderItemId])
+  @@index([status])
 }
 
 // Model untuk mencatat setiap transaksi pembayaran

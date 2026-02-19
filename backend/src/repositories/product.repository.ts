@@ -13,6 +13,7 @@ export class ProductRepository {
       include: {
         goods: true,
         service: true,
+        ticket: true,
       },
     });
   }
@@ -44,8 +45,7 @@ export class ProductRepository {
           goods: true,
         },
       });
-    } else {
-      // ProductType.SERVICE
+    } else if (data.type === ProductType.SERVICE) {
       return db.product.create({
         data: {
           name: data.name,
@@ -87,6 +87,36 @@ export class ProductRepository {
           service: true,
         },
       });
+    } else {
+      // ProductType.TICKET
+      return db.product.create({
+        data: {
+          name: data.name,
+          description: data.description,
+          type: data.type,
+          status: data.status,
+          outletId: data.outletId,
+          image: data.image,
+          ticket: {
+            create: {
+              sellingPrice: data.ticket.sellingPrice,
+              eventDate: data.ticket.eventDate,
+              eventEndDate: data.ticket.eventEndDate,
+              venue: data.ticket.venue,
+              venueAddress: data.ticket.venueAddress,
+              mapUrl: data.ticket.mapUrl,
+              totalQuota: data.ticket.totalQuota,
+              maxPerOrder: data.ticket.maxPerOrder,
+              saleStartDate: data.ticket.saleStartDate,
+              saleEndDate: data.ticket.saleEndDate,
+              terms: data.ticket.terms,
+            },
+          },
+        },
+        include: {
+          ticket: true,
+        },
+      });
     }
   }
 
@@ -107,6 +137,7 @@ export class ProductRepository {
             },
           },
         },
+        ticket: true,
         outlet: {
           select: {
             business: {
@@ -139,13 +170,13 @@ export class ProductRepository {
         { outletId },
         ...(q && q !== ""
           ? [
-              {
-                name: {
-                  contains: q,
-                  mode: "insensitive" as Prisma.QueryMode,
-                },
+            {
+              name: {
+                contains: q,
+                mode: "insensitive" as Prisma.QueryMode,
               },
-            ]
+            },
+          ]
           : []),
         ...(accessed && accessed !== "OWNER"
           ? [{ status: "ACTIVE" } as Prisma.ProductWhereInput]
@@ -164,6 +195,7 @@ export class ProductRepository {
         include: {
           goods: true,
           service: true,
+          ticket: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -202,12 +234,19 @@ export class ProductRepository {
       };
     }
 
+    if ((data as any).ticket) {
+      updateData.ticket = {
+        update: (data as any).ticket,
+      };
+    }
+
     return db.product.update({
       where: { id },
       data: updateData,
       include: {
         goods: true,
         service: true,
+        ticket: true,
       },
     });
   }
@@ -235,13 +274,14 @@ export class ProductRepository {
       include: {
         goods: true,
         service: true,
+        ticket: true,
       },
     });
   }
 
   static async findForExport(
     outletId: string,
-    filters?: { type?: "GOODS" | "SERVICE"; search?: string },
+    filters?: { type?: "GOODS" | "SERVICE" | "TICKET"; search?: string },
   ) {
     const where: Prisma.ProductWhereInput = { outletId };
     if (filters?.type) where.type = filters.type;
@@ -255,7 +295,7 @@ export class ProductRepository {
     return db.product.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      include: { goods: true, service: true },
+      include: { goods: true, service: true, ticket: true },
     });
   }
 }

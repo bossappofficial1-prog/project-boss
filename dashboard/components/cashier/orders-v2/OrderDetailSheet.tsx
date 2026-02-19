@@ -146,20 +146,22 @@ export function OrderDetailSheet({
                             {entry.items.map((item, i) => (
                                 <div
                                     key={i}
-                                    className="flex items-center justify-between rounded-md border border-slate-200 dark:border-slate-700 px-3 py-2"
+                                    className="rounded-md border border-slate-200 dark:border-slate-700 px-3 py-2"
                                 >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <ShoppingBag className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-                                                {item.productName}
-                                            </p>
-                                            <p className="text-xs text-slate-500">{item.quantity}x @ {formatCurrency(item.price)}</p>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <ShoppingBag className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                                                    {item.productName}
+                                                </p>
+                                                <p className="text-xs text-slate-500">{item.quantity}x @ {formatCurrency(item.price)}</p>
+                                            </div>
                                         </div>
+                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap ml-3">
+                                            {formatCurrency(item.quantity * item.price)}
+                                        </p>
                                     </div>
-                                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap ml-3">
-                                        {formatCurrency(item.quantity * item.price)}
-                                    </p>
                                 </div>
                             ))}
                         </div>

@@ -76,6 +76,21 @@ const productServiceSchema = productServiceBaseSchema.refine(
   },
 );
 
+// ProductTicket
+const productTicketSchema = z.object({
+  sellingPrice: z.number().positive({ message: "Harga jual harus > 0" }),
+  eventDate: z.coerce.date({ required_error: "Tanggal event wajib diisi" }),
+  eventEndDate: z.coerce.date().nullable().optional(),
+  venue: z.string().min(1, { message: "Nama venue wajib diisi" }),
+  venueAddress: z.string().nullable().optional(),
+  mapUrl: z.string().url().nullable().optional(),
+  totalQuota: z.number().int().min(1, { message: "Total kuota minimal 1" }),
+  maxPerOrder: z.number().int().min(1).optional(),
+  saleStartDate: z.coerce.date().nullable().optional(),
+  saleEndDate: z.coerce.date().nullable().optional(),
+  terms: z.string().nullable().optional(),
+});
+
 /* =====================================================
  * BASE PRODUCT (PRISMA PRODUCT)
  * ===================================================== */
@@ -96,6 +111,7 @@ export const createProductSchema = z.discriminatedUnion("type", [
 
     goods: productGoodsSchema,
     service: z.never().optional(),
+    ticket: z.never().optional(),
   }),
 
   // SERVICE
@@ -105,6 +121,17 @@ export const createProductSchema = z.discriminatedUnion("type", [
 
     service: productServiceSchema,
     goods: z.never().optional(),
+    ticket: z.never().optional(),
+  }),
+
+  // TICKET
+  z.object({
+    ...baseProductSchema,
+    type: z.literal(ProductType.TICKET),
+
+    ticket: productTicketSchema,
+    goods: z.never().optional(),
+    service: z.never().optional(),
   }),
 ]);
 
@@ -127,6 +154,7 @@ export const updateProductSchema = z
 
       goods: productGoodsSchema.partial().optional(),
       service: z.never().optional(),
+      ticket: z.never().optional(),
     }),
 
     // SERVICE
@@ -141,6 +169,21 @@ export const updateProductSchema = z
       // Use base schema without refinement for partial updates
       service: productServiceBaseSchema.partial().optional(),
       goods: z.never().optional(),
+      ticket: z.never().optional(),
+    }),
+
+    // TICKET
+    z.object({
+      type: z.literal(ProductType.TICKET),
+
+      name: z.string().optional(),
+      description: z.string().optional(),
+      status: z.nativeEnum(ServiceStatus).optional(),
+      image: z.string().optional(),
+
+      ticket: productTicketSchema.partial().optional(),
+      goods: z.never().optional(),
+      service: z.never().optional(),
     }),
   ])
   .refine(
