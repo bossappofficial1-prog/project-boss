@@ -525,6 +525,9 @@ model GuestCustomer {
   // Relasi: Satu guest customer bisa punya banyak order
   orders Order[]
 
+  // Relasi: Many-to-many ke Order melalui tabel Membership
+  memberships Membership[]
+
   createdAt DateTime @default(now())
 
   @@index([email])
@@ -575,6 +578,9 @@ model Order {
   // Relasi: Satu pesanan dibayar dengan satu transaksi
   transaction Transaction?
 
+  // Relasi: Many-to-many ke GuestCustomer melalui tabel Membership
+  memberships Membership[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -584,6 +590,27 @@ model Order {
   @@index([handledByStaffId])
   @@index([orderStatus])
   @@index([paymentStatus])
+}
+
+// Tabel junction many-to-many antara GuestCustomer dan Order
+model Membership {
+  id String @id @default(uuid())
+
+  // Relasi ke GuestCustomer
+  guestCustomerId String
+  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+
+  // Relasi ke Order
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Field tambahan untuk membership
+  joinedAt DateTime  @default(now())
+  point    Int @default(0)
+
+  @@unique([guestCustomerId, orderId])
+  @@index([guestCustomerId])
+  @@index([orderId])
 }
 
 // Item-item yang ada di dalam sebuah pesanan

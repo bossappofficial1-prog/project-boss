@@ -34,44 +34,51 @@ import posV2Router from "./pos-v2.route";
 import queueV2Router from "./queue-v2.route";
 import ordersV2Router from "./orders-v2.route";
 import ticketRouter from "./ticket.route";
+import memberRouter from "./member.route";
 
 const apiRouter = Router();
 
-apiRouter.use('/users', userRouter)
-apiRouter.use('/subscription-plans', subscriptionPlanRouter)
-apiRouter.use('/subscription', subscriptionRouter)
-apiRouter.use('/auth', authRouter)
-apiRouter.use('/admin', adminRouter)
-apiRouter.use('/banners', bannerRouter)
-apiRouter.use('/products', productRouter)
-apiRouter.use('/orders', orderRouter)
-apiRouter.use('/server', serverRouter)
-apiRouter.use('/dashboard', dashboardRouter)
-apiRouter.use('/business', businessRouter)
-apiRouter.use('/bookings', bookingRouter)
-apiRouter.use('/payments', paymentRouter)
-apiRouter.use('/outlets', outletRouter)
-apiRouter.use('/home', homeRouter)
-apiRouter.use('/expenses', expenseRouter)
-apiRouter.use('/reports', reportRouter)
-apiRouter.use('/staff', staffRouter)
-apiRouter.use('/operating-hours', operatingHoursRouter)
-apiRouter.use('/upload', uploadRouter)
-apiRouter.use('/security', securityRouter)
-apiRouter.use('/queue-monitoring', queueMonitoringRouter)
-apiRouter.use('/notifications', notificationRouter)
-apiRouter.use('/transactions', transactionRouter)
+apiRouter.use("/users", userRouter);
+apiRouter.use("/subscription-plans", subscriptionPlanRouter);
+apiRouter.use("/subscription", subscriptionRouter);
+apiRouter.use("/auth", authRouter);
+apiRouter.use("/admin", adminRouter);
+apiRouter.use("/banners", bannerRouter);
+apiRouter.use("/products", productRouter);
+apiRouter.use("/orders", orderRouter);
+apiRouter.use("/server", serverRouter);
+apiRouter.use("/dashboard", dashboardRouter);
+apiRouter.use("/business", businessRouter);
+apiRouter.use("/bookings", bookingRouter);
+apiRouter.use("/payments", paymentRouter);
+apiRouter.use("/outlets", outletRouter);
+apiRouter.use("/home", homeRouter);
+apiRouter.use("/expenses", expenseRouter);
+apiRouter.use("/reports", reportRouter);
+apiRouter.use("/staff", staffRouter);
+apiRouter.use("/operating-hours", operatingHoursRouter);
+apiRouter.use("/upload", uploadRouter);
+apiRouter.use("/security", securityRouter);
+apiRouter.use("/queue-monitoring", queueMonitoringRouter);
+apiRouter.use("/notifications", notificationRouter);
+apiRouter.use("/transactions", transactionRouter);
 apiRouter.use("/stock", stockRouter);
-apiRouter.use('/receipt-setting', receiptRouter)
-apiRouter.use('/pos/v2', posV2Router);
-apiRouter.use('/queue/v2', queueV2Router);
-apiRouter.use('/orders/v2', ordersV2Router);
-apiRouter.use('/tickets', ticketRouter);
-apiRouter.get("/payment-methods", async (req, res) => { ResponseUtil.success(res, paymentMethod) })
-apiRouter.get('/test-event/:outletId', (req, res) => {
+apiRouter.use("/receipt-setting", receiptRouter);
+apiRouter.use("/pos/v2", posV2Router);
+apiRouter.use("/queue/v2", queueV2Router);
+apiRouter.use("/orders/v2", ordersV2Router);
+apiRouter.use("/tickets", ticketRouter);
+apiRouter.use("/members", memberRouter);
+apiRouter.get("/payment-methods", async (req, res) => {
+  ResponseUtil.success(res, paymentMethod);
+});
+apiRouter.get("/test-event/:outletId", (req, res) => {
   const outletId = req.params.outletId;
-  SocketEmitter.getInstance().emitNotificationToOutlet(outletId, { message: 'Test', timestamp: new Date() })
-  return ResponseUtil.success(res, {})
-})
+  SocketEmitter.getInstance().emitNotificationToOutlet(outletId, {
+    message: "Test",
+    timestamp: new Date(),
+  });
+  return ResponseUtil.success(res, {});
+});
 
 export default apiRouter;

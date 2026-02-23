@@ -1,5 +1,62 @@
 # Prisma Schema Changelog
 
+## [2026-02-23] - Tambah Relasi Many-to-Many Membership (GuestCustomer ↔ Order)
+
+### 🆕 Model Baru
+
+#### **Membership** (Tabel Junction GuestCustomer ↔ Order)
+
+```prisma
+model Membership {
+  id              String        @id @default(uuid())
+  guestCustomerId String
+  guestCustomer   GuestCustomer @relation(...)
+  orderId         String
+  order           Order         @relation(...)
+  joinedAt        DateTime      @default(now())
+  point           int           @default(0)
+
+  @@unique([guestCustomerId, orderId])
+  @@index([guestCustomerId])
+  @@index([orderId])
+}
+```
+
+**Fungsi:**
+
+- Menyimpan hubungan many-to-many antara `GuestCustomer` dan `Order`
+- Field `joinedAt` mencatat kapan membership dibuat
+- Field `note` untuk catatan opsional per-membership
+
+**Constraint:**
+
+- `@@unique([guestCustomerId, orderId])` — satu customer tidak bisa duplicate membership di order yang sama
+
+### 🔄 Model yang Dimodifikasi
+
+#### **GuestCustomer**
+
+- Ditambahkan relasi `memberships Membership[]`
+
+#### **Order**
+
+- Ditambahkan relasi `memberships Membership[]`
+
+### 📊 Diagram Relasi
+
+```
+GuestCustomer ──< Membership >─── Order
+     1..N               N..1
+```
+
+### 🛠 Migration Command
+
+```bash
+npx prisma migrate dev --name add_membership_many_to_many
+```
+
+---
+
 ## [2026-01-20] - Major Schema Refactoring
 
 ### 🎯 Tujuan Refactoring
