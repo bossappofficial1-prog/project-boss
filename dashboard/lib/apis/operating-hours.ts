@@ -1,3 +1,4 @@
+import { OperatingHoursInput } from '@/hooks/useOperatingHours'
 import { apiClient } from './base'
 
 export interface OperatingHoursData {
@@ -37,8 +38,8 @@ export const operatingHoursApi = {
     },
 
     // Upsert operating hours (create or update)
-    upsert: (data: CreateOperatingHoursInput): Promise<OperatingHoursData> => {
-        return apiClient.put('/operating-hours/upsert', data).then(res => res.data.data)
+    upsert: (outletId: string, hours: OperatingHoursInput[]) => {
+        return apiClient.put(`/operating-hours/${outletId}/upsert`, { hours }).then(res => res.data.data)
     },
 
     // Update existing operating hours

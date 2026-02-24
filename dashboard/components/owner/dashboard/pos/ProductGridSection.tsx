@@ -20,6 +20,7 @@ export interface ProductGridSectionProps {
   isLoading: boolean;
   onAddProduct: (product: POSProduct) => void;
   cartQuantities: Record<string, number>;
+  hideFilters?: boolean;
 }
 
 const FILTER_OPTIONS: Array<{ value: "ALL" | "GOODS" | "SERVICE"; label: string }> = [
@@ -40,6 +41,7 @@ export function ProductGridSection({
   isLoading,
   onAddProduct,
   cartQuantities,
+  hideFilters,
 }: ProductGridSectionProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -86,21 +88,23 @@ export function ProductGridSection({
             Cari
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          {FILTER_OPTIONS.map((filter) => (
-            <Button
-              key={filter.value}
-              variant={activeFilter === filter.value ? "default" : "secondary"}
-              className={
-                activeFilter === filter.value
-                  ? "bg-red-600 hover:bg-red-500"
-                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800"
-              }
-              onClick={() => onFilterChange(filter.value)}>
-              {filter.label}
-            </Button>
-          ))}
-        </div>
+        {!hideFilters && (
+          <div className="flex items-center gap-2">
+            {FILTER_OPTIONS.map((filter) => (
+              <Button
+                key={filter.value}
+                variant={activeFilter === filter.value ? "default" : "secondary"}
+                className={
+                  activeFilter === filter.value
+                    ? "bg-red-600 hover:bg-red-500"
+                    : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800"
+                }
+                onClick={() => onFilterChange(filter.value)}>
+                {filter.label}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="relative min-h-[200px]">
         {isLoading && (

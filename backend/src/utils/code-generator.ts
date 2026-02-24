@@ -355,3 +355,30 @@ export class CodeGeneratorUtil {
         return generateRandomNumber(length);
     }
 }
+
+/**
+ * Generate ID untuk Bisnis baru
+ * Format: BIZ-[10 Karakter Acak]
+ * Contoh Output: BIZ-X92M1A12DF
+ */
+export const generateBusinessId = (): string => {
+    return `BIZ-${generateRandomString(10)}`;
+};
+
+/**
+ * Generate ID untuk Outlet/Cabang
+ * Format: OUT-[10 Karakter Acak]
+ * Contoh Output: OUT-88A2B1CCDF
+ */
+export const generateOutletId = (): string => {
+    return `OUT-${generateRandomString(10)}`;
+};
+
+/**
+ * Generate kode tiket unik
+ * Format: TIX-[8 Karakter Acak]
+ * Contoh Output: TIX-X92M1A12
+ */
+export const generateTicketCode = (): string => {
+    return `TIX-${generateRandomString(8)}`;
+};

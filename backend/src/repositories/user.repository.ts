@@ -87,29 +87,46 @@ export class UserRepository {
     }
 
     static async getById(userId: string) {
-        return db.user.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                name: true,
-                avatar: true,
-                role: true,
-                email: true,
-                isVerified: true,
-                phone: true,
-                business: {
-                    select: {
-                        name: true,
-                        description: true,
-                        bankName: true,
-                        bankAccount: true,
-                        accountHolder: true,
-                        subscriptionStatus: true,
-                        subscriptionPlan: true,
-                        subscriptionEndDate: true
+        return db.$transaction(async (trx) => {
+            const user = await trx.user.findUnique({
+                where: { id: userId },
+                select: {
+                    id: true,
+                    name: true,
+                    avatar: true,
+                    role: true,
+                    email: true,
+                    isVerified: true,
+                    phone: true,
+                    business: {
+                        select: {
+                            id: true,
+                            name: true,
+                            description: true,
+                            bankName: true,
+                            bankAccount: true,
+                            accountHolder: true,
+                            subscriptionStatus: true,
+                            subscriptionPlan: true,
+                            subscriptionEndDate: true,
+                        },
                     }
                 }
-            }
+            })
+
+            const recentInvoice = await trx.subscriptionInvoice.findMany({
+                where: { businessId: user?.business?.id },
+                select: {
+                    id: true,
+                    invoiceNumber: true,
+                    amount: true,
+                    createdAt: true
+                },
+                take: 5,
+                orderBy: { createdAt: 'desc' }
+            })
+
+            return { user, recentInvoice }
         })
     }
 

@@ -1,4 +1,4 @@
-import xlsx from "xlsx";
+import * as ExcelJS from "exceljs";
 import path from "path";
 import fs from "fs";
 import extract from "extract-zip";
@@ -14,13 +14,9 @@ import {
   createProductSchema,
 } from "../schemas/product.schema";
 import { getOutletByIdService } from "./outlet.service";
+import { PlanLimitService } from "./plan-limit.service";
 import { generateDefaultBookingSlots } from "./booking.service";
-import {
-  Product,
-  ProductType,
-  ServiceStatus,
-  Prisma,
-} from "@prisma/client";
+import { Product, ProductType, ServiceStatus, Prisma } from "@prisma/client";
 import { config } from "../config";
 import { ImageService } from "./image.service";
 
@@ -28,8 +24,16 @@ import { ImageService } from "./image.service";
  * Creates a single product and associated records.
  */
 export async function createProductService(data: CreateProductInput) {
-  await getOutletByIdService(data.outletId);
+  const outlet = await getOutletByIdService(data.outletId);
+  const businessId = outlet.businessId;
+
+  if (!businessId) {
+    throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
+  }
+
+  await PlanLimitService.assertCanCreateProduct(businessId);
   const createdProduct = await ProductRepository.create(data);
+  await PlanLimitService.invalidateUsageCache(businessId);
   return createdProduct;
 }
 
@@ -45,10 +49,11 @@ export async function getProductByIdService(id: string) {
   const { outlet, ...productData } = product as any;
 
   // Flatten images from productImages relation
-  const images = productData.productImages?.map((img: any) => ({
-    url: img.url,
-    alt: img.alt || undefined,
-  })) || [];
+  const images =
+    productData.productImages?.map((img: any) => ({
+      url: img.url,
+      alt: img.alt || undefined,
+    })) || [];
 
   // Extract booking slots if the product is a service
   const bookingSlots = productData.service?.bookingSlots || [];
@@ -79,25 +84,52 @@ export async function updateProductService(id: string, data: UpdateProductInput)
   const existingProduct = await getProductByIdService(id);
   const product = await ProductRepository.update(id, data);
 
-  // If service duration changed, we must clear existing generated slots as they are no longer valid
-  if (data.service?.durationMinutes && product.type === "SERVICE") {
-    const prevDuration = (existingProduct as any).service?.durationMinutes;
-    if (prevDuration !== data.service.durationMinutes) {
+  // Check if service parameters that affect scheduling have changed
+  if (product.type === "SERVICE" && data.service) {
+    const s = data.service;
+    const hoursChanged =
+      s.durationMinutes !== undefined ||
+      s.bookingInWorkHours !== undefined ||
+      s.mondayOpen !== undefined ||
+      s.mondayClose !== undefined ||
+      s.tuesdayOpen !== undefined ||
+      s.tuesdayClose !== undefined ||
+      s.wednesdayOpen !== undefined ||
+      s.wednesdayClose !== undefined ||
+      s.thursdayOpen !== undefined ||
+      s.thursdayClose !== undefined ||
+      s.fridayOpen !== undefined ||
+      s.fridayClose !== undefined ||
+      s.saturdayOpen !== undefined ||
+      s.saturdayClose !== undefined ||
+      s.sundayOpen !== undefined ||
+      s.sundayClose !== undefined;
+
+    if (hoursChanged) {
       // Find the productServiceId to clear related slots
       const svc = await db.productService.findFirst({ where: { productId: id } });
       if (svc) {
+        // Delete all future AVAILABLE slots so they can be regenerated with new settings
+        // We keep BOOKED slots to preserve order history
         await db.bookingSlot.deleteMany({
           where: {
             productServiceId: svc.id,
-            status: "AVAILABLE" // Only delete available slots to avoid breaking existing orders
-          }
+            status: "AVAILABLE",
+            startTime: {
+              gte: new Date(), // Only delete future slots
+            },
+          },
         });
       }
     }
   }
 
-  if (data.image && existingProduct) {
-    ImageService.deleteImageByUrl(existingProduct.image)
+  try {
+    if (data.image && existingProduct) {
+      ImageService.deleteImageByUrl(existingProduct.image);
+    }
+  } catch (error) {
+    console.error("Terjadi masalah saar hapus gambar, error:", error);
   }
 
   await redis.del(`product:${id}`);
@@ -108,11 +140,27 @@ export async function updateProductService(id: string, data: UpdateProductInput)
  * Deletes a product and clears its cache.
  */
 export async function deleteProductService(id: string) {
-  await getProductByIdService(id);
+  const existingProduct = await ProductRepository.findById(id);
+  if (!existingProduct) {
+    throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
+  }
+
   const product = await ProductRepository.delete(id);
 
-  if (product && product.image) { ImageService.deleteImageByUrl(product.image) }
-  await redis.del(`product:${id}`);
+  try {
+    if (product && product.image) {
+      ImageService.deleteImageByUrl(product.image);
+    }
+    await redis.del(`product:${id}`);
+  } catch (error) {
+    console.log(`gagal hapus gambar, error:`, error);
+  }
+
+  const businessId = existingProduct.outlet?.business?.id;
+  if (businessId) {
+    await PlanLimitService.invalidateUsageCache(businessId);
+  }
+
   return product;
 }
 
@@ -150,20 +198,23 @@ export async function bulkCreateProductsFromExcelService(
         });
 
       const files = walk(workDir!);
-      excelPath = files.find((f) => [".xlsx", ".xls", ".csv"].includes(path.extname(f).toLowerCase())) || null;
+      excelPath =
+        files.find((f) => [".xlsx", ".xls", ".csv"].includes(path.extname(f).toLowerCase())) ||
+        null;
 
       if (!excelPath) {
         throw new AppError("Zip does not contain a valid Excel file.", HttpStatus.BAD_REQUEST);
       }
     }
 
-    let worksheet: xlsx.WorkSheet;
     const targetPath = excelPath || file.path;
-    const workbook = targetPath ? xlsx.readFile(targetPath) : xlsx.read(file.buffer, { type: "buffer" });
-    const sheetName = workbook.SheetNames[0];
-    worksheet = workbook.Sheets[sheetName];
+    const wb = new ExcelJS.Workbook();
+    if (targetPath) {
+      await wb.xlsx.readFile(targetPath);
+    } else {
+      await wb.xlsx.load(file.buffer as any);
+    }
 
-    const rawData = xlsx.utils.sheet_to_json(worksheet);
     const rows: (CreateProductInput & { _rowNumber: number })[] = [];
     const errors: { row: number; errors: any }[] = [];
 
@@ -179,56 +230,151 @@ export async function bulkCreateProductsFromExcelService(
       return (allowed as any).includes(s) ? (s as T) : undefined;
     };
 
-    const parseString = (v: any) => v ? String(v).trim() : undefined;
+    const parseString = (v: any) => (v ? String(v).trim() : undefined);
 
-    rawData.forEach((row: any, index: number) => {
-      const type = normalizeEnum<ProductType>(row["Tipe Produk"], Object.values(ProductType)) || ProductType.GOODS;
-      const status = normalizeEnum<ServiceStatus>(row["Status"], Object.values(ServiceStatus)) || ServiceStatus.ACTIVE;
+    const readSheetRows = (sheet: ExcelJS.Worksheet): Record<string, any>[] => {
+      const result: Record<string, any>[] = [];
+      const headerRow = sheet.getRow(1);
+      const headers: string[] = [];
+      headerRow.eachCell((cell, colNumber) => {
+        headers[colNumber] = String(cell.value ?? "").trim();
+      });
+      sheet.eachRow((row, rowNumber) => {
+        if (rowNumber <= 1) return;
+        const obj: Record<string, any> = {};
+        row.eachCell((cell, colNumber) => {
+          if (headers[colNumber]) obj[headers[colNumber]] = cell.value;
+        });
+        obj._rowNumber = rowNumber;
+        result.push(obj);
+      });
+      return result;
+    };
 
-      const base: any = {
-        name: parseString(row["Nama Produk"]),
-        description: parseString(row["Deskripsi"]),
-        type,
-        status,
-        outletId,
-        image: parseString(row["Nama File Gambar"]),
-      };
-
-      let rowData: any;
-      if (type === ProductType.GOODS) {
-        rowData = {
-          ...base,
+    // Read "Produk Barang" sheet
+    const goodsSheet = wb.getWorksheet("Produk Barang");
+    if (goodsSheet) {
+      readSheetRows(goodsSheet).forEach((row) => {
+        const status =
+          normalizeEnum<ServiceStatus>(row["Status"], Object.values(ServiceStatus)) ||
+          ServiceStatus.ACTIVE;
+        const rowData: any = {
+          name: parseString(row["Nama Produk"]),
+          description: parseString(row["Deskripsi"]),
+          type: ProductType.GOODS,
+          status,
+          outletId,
+          image: parseString(row["Nama File Gambar"]),
           goods: {
             sellingPrice: toNumber(row["Harga Jual"]) || 0,
-            averageHpp: toNumber(row["Harga Pokok"]) || 0,
+            averageHpp: toNumber(row["Harga Pokok (HPP)"]) || 0,
             unit: parseString(row["Satuan"]) || "pcs",
             currentStock: toNumber(row["Jumlah Stok"]) || 0,
-            minStock: toNumber(row["Minimal Stok"]) || 0,
-          }
+            minStock: toNumber(row["Stok Minimum"]) || 0,
+          },
         };
-      } else {
-        rowData = {
-          ...base,
+        const validation = createProductSchema.safeParse(rowData);
+        if (validation.success) {
+          rows.push({ ...validation.data, _rowNumber: row._rowNumber });
+        } else {
+          errors.push({ row: row._rowNumber, errors: validation.error.flatten() });
+        }
+      });
+    }
+
+    // Read "Produk Jasa" sheet
+    const serviceSheet = wb.getWorksheet("Produk Jasa");
+    if (serviceSheet) {
+      readSheetRows(serviceSheet).forEach((row) => {
+        const status =
+          normalizeEnum<ServiceStatus>(row["Status"], Object.values(ServiceStatus)) ||
+          ServiceStatus.ACTIVE;
+        const rowData: any = {
+          name: parseString(row["Nama Layanan"]),
+          description: parseString(row["Deskripsi"]),
+          type: ProductType.SERVICE,
+          status,
+          outletId,
+          image: parseString(row["Nama File Gambar"]),
           service: {
-            sellingPrice: toNumber(row["Harga Jual"]) || 0,
-            durationMinutes: toNumber(row["Durasi Layanan (menit)"]) || 60,
-            providerName: parseString(row["Nama Provider"]) || base.name,
-            providerPhone: parseString(row["Nomor Telepon Provider"]),
+            sellingPrice: toNumber(row["Harga"]) || 0,
+            durationMinutes: toNumber(row["Durasi (menit)"]) || 60,
+            providerName: parseString(row["Nama Provider"]) || parseString(row["Nama Layanan"]),
+            providerPhone: parseString(row["Telepon Provider"]),
             providerEmail: parseString(row["Email Provider"]),
             commissionType: normalizeEnum(row["Tipe Komisi"], ["PERCENTAGE", "FIXED"]),
             commissionValue: toNumber(row["Nilai Komisi"]),
             maxParallel: toNumber(row["Kapasitas Paralel"]) || 1,
-          }
+          },
         };
-      }
+        const validation = createProductSchema.safeParse(rowData);
+        if (validation.success) {
+          rows.push({ ...validation.data, _rowNumber: row._rowNumber });
+        } else {
+          errors.push({ row: row._rowNumber, errors: validation.error.flatten() });
+        }
+      });
+    }
 
-      const validation = createProductSchema.safeParse(rowData);
-      if (validation.success) {
-        rows.push({ ...validation.data, _rowNumber: index + 2 });
-      } else {
-        errors.push({ row: index + 2, errors: validation.error.flatten() });
+    // Fallback: legacy single-sheet format
+    if (!goodsSheet && !serviceSheet) {
+      const fallbackSheet = wb.worksheets[0];
+      if (fallbackSheet) {
+        readSheetRows(fallbackSheet).forEach((row) => {
+          const type =
+            normalizeEnum<ProductType>(row["Tipe Produk"], Object.values(ProductType)) ||
+            ProductType.GOODS;
+          const status =
+            normalizeEnum<ServiceStatus>(row["Status"], Object.values(ServiceStatus)) ||
+            ServiceStatus.ACTIVE;
+          const base: any = {
+            name: parseString(row["Nama Produk"]),
+            description: parseString(row["Deskripsi"]),
+            type,
+            status,
+            outletId,
+            image: parseString(row["Nama File Gambar"]),
+          };
+          let rowData: any;
+          if (type === ProductType.GOODS) {
+            rowData = {
+              ...base,
+              goods: {
+                sellingPrice: toNumber(row["Harga Jual"]) || 0,
+                averageHpp: toNumber(row["Harga Pokok"]) || 0,
+                unit: parseString(row["Satuan"]) || "pcs",
+                currentStock: toNumber(row["Jumlah Stok"]) || 0,
+                minStock: toNumber(row["Minimal Stok"]) || 0,
+              },
+            };
+          } else {
+            rowData = {
+              ...base,
+              service: {
+                sellingPrice: toNumber(row["Harga Jual"]) || 0,
+                durationMinutes: toNumber(row["Durasi Layanan (menit)"]) || 60,
+                providerName: parseString(row["Nama Provider"]) || base.name,
+                providerPhone: parseString(row["Nomor Telepon Provider"]),
+                providerEmail: parseString(row["Email Provider"]),
+                commissionType: normalizeEnum(row["Tipe Komisi"], ["PERCENTAGE", "FIXED"]),
+                commissionValue: toNumber(row["Nilai Komisi"]),
+                maxParallel: toNumber(row["Kapasitas Paralel"]) || 1,
+              },
+            };
+          }
+          const validation = createProductSchema.safeParse(rowData);
+          if (validation.success) {
+            rows.push({ ...validation.data, _rowNumber: row._rowNumber });
+          } else {
+            errors.push({ row: row._rowNumber, errors: validation.error.flatten() });
+          }
+        });
       }
-    });
+    }
+
+    if (rows.length === 0 && errors.length === 0) {
+      throw new AppError("File tidak mengandung data produk.", HttpStatus.BAD_REQUEST);
+    }
 
     if (errors.length > 0) {
       throw new AppError("Validation failed for some rows.", HttpStatus.BAD_REQUEST, errors);
@@ -239,7 +385,7 @@ export async function bulkCreateProductsFromExcelService(
       select: { id: true, name: true, type: true },
     });
 
-    const byName = new Map(existingProducts.map(p => [p.name.toLowerCase(), p]));
+    const byName = new Map(existingProducts.map((p) => [p.name.toLowerCase(), p]));
     const uploadsDir = path.join(process.cwd(), "uploads");
     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -274,6 +420,7 @@ export async function bulkCreateProductsFromExcelService(
 
     let createdCount = 0;
     let updatedCount = 0;
+    const serviceProductsToGenerateSlots: { productId: string; durationMinutes: number }[] = [];
 
     await db.$transaction(async (tx) => {
       for (const r of rows) {
@@ -293,9 +440,13 @@ export async function bulkCreateProductsFromExcelService(
             where: { id: found.id },
             data: {
               ...productPayload,
-              ...(r.type === "GOODS" ? { goods: { upsert: { update: r.goods!, create: r.goods! } } } : {}),
-              ...(r.type === "SERVICE" ? { service: { upsert: { update: r.service!, create: r.service! } } } : {}),
-            }
+              ...(r.type === "GOODS"
+                ? { goods: { upsert: { update: r.goods!, create: r.goods! } } }
+                : {}),
+              ...(r.type === "SERVICE"
+                ? { service: { upsert: { update: r.service!, create: r.service! } } }
+                : {}),
+            },
           });
           updatedCount++;
         } else {
@@ -305,24 +456,62 @@ export async function bulkCreateProductsFromExcelService(
               outletId,
               ...(r.type === "GOODS" ? { goods: { create: r.goods! } } : {}),
               ...(r.type === "SERVICE" ? { service: { create: r.service! } } : {}),
-            }
+            },
           });
 
           if (created.type === "SERVICE" && r.service?.durationMinutes) {
-            const outlet = await tx.outlet.findUnique({ where: { id: outletId }, include: { operatingHours: true } });
-            if (outlet?.operatingHours.length) {
-              await generateDefaultBookingSlots({
-                productId: created.id,
-                operatingHours: outlet.operatingHours,
-                serviceDurationMinutes: r.service.durationMinutes,
-                daysToGenerate: 30
-              });
-            }
+            serviceProductsToGenerateSlots.push({
+              productId: created.id,
+              durationMinutes: r.service.durationMinutes,
+            });
           }
           createdCount++;
         }
       }
     });
+
+    // Generate booking slots after transaction commits so data is visible
+    if (serviceProductsToGenerateSlots.length > 0) {
+      const outlet = await db.outlet.findUnique({
+        where: { id: outletId },
+        include: { operatingHours: true },
+      });
+      if (outlet?.operatingHours.length) {
+        // Map outlet hours to service hours format
+        const dayMap = [
+          "sunday",
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+        ];
+        const serviceHoursFromOutlet: any = {};
+
+        for (const oh of outlet.operatingHours) {
+          if (oh.isOpen) {
+            const dayName = dayMap[oh.dayOfWeek];
+            serviceHoursFromOutlet[`${dayName}Open`] = oh.openTime;
+            serviceHoursFromOutlet[`${dayName}Close`] = oh.closeTime;
+          }
+        }
+
+        for (const sp of serviceProductsToGenerateSlots) {
+          try {
+            await generateDefaultBookingSlots({
+              productId: sp.productId,
+              serviceOperatingHours: serviceHoursFromOutlet,
+              serviceDurationMinutes: sp.durationMinutes,
+              daysToGenerate: 30,
+            });
+          } catch (e) {
+            // Non-critical: log but don't fail the import
+            console.error(`Failed to generate booking slots for product ${sp.productId}:`, e);
+          }
+        }
+      }
+    }
 
     return { created: createdCount, updated: updatedCount, total: rows.length };
   } finally {
@@ -340,80 +529,373 @@ export async function searchProductsByNameService(name: string) {
 
 /**
  * Generates an Excel template for product importing.
+ * Sheet 1: "Produk Barang" — columns for GOODS products
+ * Sheet 2: "Produk Jasa"  — columns for SERVICE products
+ * Sheet 3: "Panduan"      — instructions for the user
  */
-export function generateProductImportTemplateService(): Buffer {
-  const headers = [
-    "Nama Produk", "Deskripsi", "Tipe Produk", "Status", "Harga Jual",
-    "Harga Pokok", "Jumlah Stok", "Minimal Stok", "Satuan",
-    "Durasi Layanan (menit)", "Nama Provider", "Nomor Telepon Provider",
-    "Email Provider", "Tipe Komisi", "Nilai Komisi", "Kapasitas Paralel",
-    "Nama File Gambar"
+export async function generateProductImportTemplateService(): Promise<ExcelJS.Workbook> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "BOSS App";
+  workbook.created = new Date();
+
+  const headerStyle: Partial<ExcelJS.Style> = {
+    font: { bold: true, color: { argb: "FFFFFFFF" }, size: 11 },
+    fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } },
+    alignment: { vertical: "middle", horizontal: "center", wrapText: true },
+    border: {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    },
+  };
+
+  const cellBorder: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+
+  const applyHeaderStyle = (sheet: ExcelJS.Worksheet) => {
+    sheet.getRow(1).eachCell((cell) => {
+      Object.assign(cell, { style: headerStyle });
+    });
+    sheet.getRow(1).height = 24;
+  };
+
+  // ─── Sheet: Produk Barang ───
+  const gs = workbook.addWorksheet("Produk Barang");
+  gs.columns = [
+    { header: "Nama Produk", key: "name", width: 28 },
+    { header: "Deskripsi", key: "desc", width: 25 },
+    { header: "Satuan", key: "unit", width: 10 },
+    { header: "Jumlah Stok", key: "stock", width: 12 },
+    { header: "Stok Minimum", key: "minStock", width: 14 },
+    { header: "Harga Pokok (HPP)", key: "hpp", width: 18 },
+    { header: "Harga Jual", key: "price", width: 18 },
+    { header: "Status", key: "status", width: 12 },
+    { header: "Nama File Gambar", key: "image", width: 20 },
+  ];
+  applyHeaderStyle(gs);
+
+  // Example row
+  const exGoods = gs.addRow({
+    name: "Sampo Premium",
+    desc: "Sampo anti rontok",
+    unit: "pcs",
+    stock: 50,
+    minStock: 10,
+    hpp: 15000,
+    price: 25000,
+    status: "ACTIVE",
+    image: "sampo.jpg",
+  });
+  exGoods.eachCell((cell) => {
+    cell.border = cellBorder;
+    cell.font = { italic: true, color: { argb: "FF6B7280" } };
+  });
+
+  // ─── Sheet: Produk Jasa ───
+  const ss = workbook.addWorksheet("Produk Jasa");
+  ss.columns = [
+    { header: "Nama Layanan", key: "name", width: 28 },
+    { header: "Deskripsi", key: "desc", width: 25 },
+    { header: "Harga", key: "price", width: 18 },
+    { header: "Durasi (menit)", key: "duration", width: 14 },
+    { header: "Nama Provider", key: "provider", width: 20 },
+    { header: "Telepon Provider", key: "phone", width: 18 },
+    { header: "Email Provider", key: "email", width: 22 },
+    { header: "Tipe Komisi", key: "commType", width: 14 },
+    { header: "Nilai Komisi", key: "commValue", width: 14 },
+    { header: "Kapasitas Paralel", key: "parallel", width: 16 },
+    { header: "Status", key: "status", width: 12 },
+    { header: "Nama File Gambar", key: "image", width: 20 },
+  ];
+  applyHeaderStyle(ss);
+
+  // Example row
+  const exService = ss.addRow({
+    name: "Potong Rambut",
+    desc: "Potong rambut pria",
+    price: 50000,
+    duration: 30,
+    provider: "Budi",
+    phone: "081234567890",
+    email: "budi@mail.com",
+    commType: "PERCENTAGE",
+    commValue: 30,
+    parallel: 1,
+    status: "ACTIVE",
+    image: "potong.jpg",
+  });
+  exService.eachCell((cell) => {
+    cell.border = cellBorder;
+    cell.font = { italic: true, color: { argb: "FF6B7280" } };
+  });
+
+  // ─── Sheet: Panduan ───
+  const guide = workbook.addWorksheet("Panduan");
+  guide.getColumn(1).width = 30;
+  guide.getColumn(2).width = 50;
+
+  const guideData = [
+    ["Kolom", "Keterangan"],
+    ["", ""],
+    ["=== PRODUK BARANG ===", ""],
+    ["Nama Produk", "Wajib. Nama produk barang."],
+    ["Deskripsi", "Opsional. Deskripsi singkat."],
+    ["Satuan", "Opsional. Default: pcs. Contoh: pcs, kg, liter."],
+    ["Jumlah Stok", "Opsional. Default: 0."],
+    ["Stok Minimum", "Opsional. Default: 0. Alert jika stok di bawah ini."],
+    ["Harga Pokok (HPP)", "Opsional. Default: 0."],
+    ["Harga Jual", "Opsional. Default: 0."],
+    ["Status", "ACTIVE atau INACTIVE. Default: ACTIVE."],
+    ["Nama File Gambar", "Opsional. Nama file gambar di dalam ZIP."],
+    ["", ""],
+    ["=== PRODUK JASA ===", ""],
+    ["Nama Layanan", "Wajib. Nama layanan/jasa."],
+    ["Deskripsi", "Opsional. Deskripsi singkat."],
+    ["Harga", "Opsional. Default: 0."],
+    ["Durasi (menit)", "Opsional. Default: 60."],
+    ["Nama Provider", "Opsional. Default: nama layanan."],
+    ["Telepon Provider", "Opsional."],
+    ["Email Provider", "Opsional."],
+    ["Tipe Komisi", "PERCENTAGE atau FIXED. Default: PERCENTAGE."],
+    ["Nilai Komisi", "Opsional. Default: 0."],
+    ["Kapasitas Paralel", "Opsional. Default: 1."],
+    ["Status", "ACTIVE atau INACTIVE. Default: ACTIVE."],
+    ["Nama File Gambar", "Opsional. Nama file gambar di dalam ZIP."],
   ];
 
-  const worksheet = xlsx.utils.aoa_to_sheet([headers]);
-  const workbook = xlsx.utils.book_new();
-  xlsx.utils.book_append_sheet(workbook, worksheet, "Products");
+  guideData.forEach((row, i) => {
+    const r = guide.addRow(row);
+    if (i === 0) {
+      r.eachCell((cell) => {
+        Object.assign(cell, { style: headerStyle });
+      });
+      r.height = 24;
+    } else if (String(row[0]).startsWith("===")) {
+      r.getCell(1).font = { bold: true, size: 11 };
+    }
+  });
 
-  // Hidden list sheet for dropdowns
-  const listSheet = xlsx.utils.aoa_to_sheet([
-    ["GOODS", "ACTIVE", "PERCENTAGE"],
-    ["SERVICE", "INACTIVE", "FIXED"],
-  ]);
-  xlsx.utils.book_append_sheet(workbook, listSheet, "_lists");
-
-  const buffer = xlsx.write(workbook, { bookType: "xlsx", type: "buffer" });
-  return buffer;
+  return workbook;
 }
 
 /**
  * Exports products to an Excel file.
+ * - Sheet "Produk Barang": all GOODS products
+ * - Sheet "Produk Jasa": all SERVICE products
+ * Each sheet has columns specific to its type.
  */
 export async function exportProductsToExcelService(
   outletId: string,
   filters?: { type?: "GOODS" | "SERVICE"; search?: string },
-): Promise<Buffer> {
+) {
   await getOutletByIdService(outletId);
 
-  const where: any = { outletId };
-  if (filters?.type) where.type = filters.type;
-  if (filters?.search) {
-    where.OR = [
-      { name: { contains: filters.search, mode: "insensitive" } },
-      { description: { contains: filters.search, mode: "insensitive" } },
+  const products = await ProductRepository.findForExport(outletId, filters);
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "BOSS App";
+  workbook.created = new Date();
+
+  const headerStyle = {
+    font: { bold: true, color: { argb: "FFFFFFFF" }, size: 11 },
+    fill: { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FF2563EB" } },
+    alignment: { vertical: "middle" as const, horizontal: "center" as const, wrapText: true },
+    border: {
+      top: { style: "thin" as const },
+      left: { style: "thin" as const },
+      bottom: { style: "thin" as const },
+      right: { style: "thin" as const },
+    },
+  };
+
+  const cellBorder = {
+    top: { style: "thin" as const },
+    left: { style: "thin" as const },
+    bottom: { style: "thin" as const },
+    right: { style: "thin" as const },
+  };
+
+  const applyHeaderStyle = (sheet: ExcelJS.Worksheet) => {
+    sheet.getRow(1).eachCell((cell) => {
+      Object.assign(cell, { style: headerStyle });
+    });
+    sheet.getRow(1).height = 24;
+  };
+
+  const applyRowBorder = (row: ExcelJS.Row) => {
+    row.eachCell((cell) => {
+      cell.border = cellBorder;
+    });
+  };
+
+  const formatCurrencyCells = (row: ExcelJS.Row, sheet: ExcelJS.Worksheet, keys: string[]) => {
+    keys.forEach((key) => {
+      const col = sheet.getColumn(key);
+      const cell = row.getCell(col.number);
+      if (typeof cell.value === "number") {
+        cell.numFmt = "#,##0";
+      }
+    });
+  };
+
+  const goodsProducts = products.filter((p) => p.type === "GOODS");
+  const serviceProducts = products.filter((p) => p.type === "SERVICE");
+
+  // ─── Sheet: Produk Barang ───
+  if (!filters?.type || filters.type === "GOODS") {
+    const gs = workbook.addWorksheet("Produk Barang");
+    gs.columns = [
+      { header: "No", key: "no", width: 6 },
+      { header: "Nama Produk", key: "name", width: 28 },
+      { header: "Deskripsi", key: "desc", width: 25 },
+      { header: "Satuan", key: "unit", width: 10 },
+      { header: "Stok", key: "stock", width: 10 },
+      { header: "Stok Minimum", key: "minStock", width: 14 },
+      { header: "HPP Rata-rata", key: "hpp", width: 18 },
+      { header: "Harga Jual", key: "price", width: 18 },
+      { header: "Margin (%)", key: "margin", width: 12 },
+      { header: "Nilai Stok", key: "stockValue", width: 20 },
+      { header: "Status", key: "status", width: 12 },
+      { header: "Dibuat", key: "createdAt", width: 16 },
     ];
+    applyHeaderStyle(gs);
+
+    goodsProducts.forEach((p, i) => {
+      const g = p.goods!;
+      const margin =
+        g.sellingPrice > 0 ? ((g.sellingPrice - g.averageHpp) / g.sellingPrice) * 100 : 0;
+
+      const row = gs.addRow({
+        no: i + 1,
+        name: p.name,
+        desc: p.description || "-",
+        unit: g.unit,
+        stock: g.currentStock,
+        minStock: g.minStock ?? "-",
+        hpp: g.averageHpp,
+        price: g.sellingPrice,
+        margin: Math.round(margin * 10) / 10,
+        stockValue: g.currentStock * g.averageHpp,
+        status: p.status === "ACTIVE" ? "Aktif" : "Non-Aktif",
+        createdAt: p.createdAt.toLocaleDateString("id-ID"),
+      });
+
+      applyRowBorder(row);
+      formatCurrencyCells(row, gs, ["hpp", "price", "stockValue"]);
+
+      // Status color
+      const statusCell = row.getCell(gs.getColumn("status").number);
+      statusCell.font =
+        p.status === "ACTIVE" ? { color: { argb: "FF16A34A" } } : { color: { argb: "FFDC2626" } };
+
+      // Low stock warning
+      if (g.currentStock === 0) {
+        row.getCell(gs.getColumn("stock").number).font = {
+          color: { argb: "FFDC2626" },
+          bold: true,
+        };
+      } else if (g.minStock !== null && g.currentStock <= g.minStock) {
+        row.getCell(gs.getColumn("stock").number).font = {
+          color: { argb: "FFF59E0B" },
+          bold: true,
+        };
+      }
+
+      // Margin percentage format
+      const marginCell = row.getCell(gs.getColumn("margin").number);
+      if (typeof marginCell.value === "number") {
+        marginCell.numFmt = '0.0"%"';
+      }
+    });
+
+    // Totals row
+    if (goodsProducts.length > 0) {
+      const totalRow = gs.addRow({
+        no: "",
+        name: "TOTAL",
+        desc: "",
+        unit: "",
+        stock: goodsProducts.reduce((s, p) => s + (p.goods?.currentStock ?? 0), 0),
+        minStock: "",
+        hpp: "",
+        price: "",
+        margin: "",
+        stockValue: goodsProducts.reduce(
+          (s, p) => s + (p.goods ? p.goods.currentStock * p.goods.averageHpp : 0),
+          0,
+        ),
+        status: "",
+        createdAt: "",
+      });
+      totalRow.eachCell((cell) => {
+        cell.font = { bold: true };
+        cell.border = cellBorder;
+      });
+      formatCurrencyCells(totalRow, gs, ["stockValue"]);
+    }
   }
 
-  const products = await db.product.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: { goods: true, service: true },
-  });
+  // ─── Sheet: Produk Jasa ───
+  if (!filters?.type || filters.type === "SERVICE") {
+    const ss = workbook.addWorksheet("Produk Jasa");
+    ss.columns = [
+      { header: "No", key: "no", width: 6 },
+      { header: "Nama Layanan", key: "name", width: 28 },
+      { header: "Deskripsi", key: "desc", width: 25 },
+      { header: "Harga", key: "price", width: 18 },
+      { header: "Durasi (menit)", key: "duration", width: 14 },
+      { header: "Provider", key: "provider", width: 20 },
+      { header: "Telepon Provider", key: "phone", width: 18 },
+      { header: "Email Provider", key: "email", width: 22 },
+      { header: "Tipe Komisi", key: "commType", width: 14 },
+      { header: "Nilai Komisi", key: "commValue", width: 14 },
+      { header: "Kapasitas Paralel", key: "parallel", width: 16 },
+      { header: "Status", key: "status", width: 12 },
+      { header: "Dibuat", key: "createdAt", width: 16 },
+    ];
+    applyHeaderStyle(ss);
 
-  const headers = [
-    "No", "Nama Produk", "Deskripsi", "Tipe", "Harga Modal", "Harga Jual",
-    "Stok", "Satuan", "Status", "Durasi Layanan (menit)", "Kapasitas Paralel",
-    "Nama Provider", "Tanggal Dibuat"
-  ];
+    serviceProducts.forEach((p, i) => {
+      const sv = p.service!;
+      const commLabel = sv.commissionType === "PERCENTAGE" ? "Persentase" : "Nominal";
 
-  const data = products.map((p, i) => [
-    i + 1,
-    p.name,
-    p.description || "",
-    p.type === "GOODS" ? "Barang" : "Jasa",
-    p.type === "GOODS" ? p.goods?.averageHpp : 0,
-    p.type === "GOODS" ? p.goods?.sellingPrice : p.service?.sellingPrice,
-    p.type === "GOODS" ? p.goods?.currentStock : "N/A",
-    p.type === "GOODS" ? p.goods?.unit : "N/A",
-    p.status === "ACTIVE" ? "Aktif" : "Non-Aktif",
-    p.type === "SERVICE" ? p.service?.durationMinutes : "N/A",
-    p.type === "SERVICE" ? p.service?.maxParallel : "N/A",
-    p.type === "SERVICE" ? p.service?.providerName : "N/A",
-    p.createdAt.toLocaleDateString("id-ID"),
-  ]);
+      const row = ss.addRow({
+        no: i + 1,
+        name: p.name,
+        desc: p.description || "-",
+        price: sv.sellingPrice,
+        duration: sv.durationMinutes,
+        provider: sv.providerName,
+        phone: sv.providerPhone || "-",
+        email: sv.providerEmail || "-",
+        commType: commLabel,
+        commValue:
+          sv.commissionType === "PERCENTAGE" ? `${sv.commissionValue}%` : sv.commissionValue,
+        parallel: sv.maxParallel,
+        status: p.status === "ACTIVE" ? "Aktif" : "Non-Aktif",
+        createdAt: p.createdAt.toLocaleDateString("id-ID"),
+      });
 
-  const worksheet = xlsx.utils.aoa_to_sheet([headers, ...data]);
-  const workbook = xlsx.utils.book_new();
-  xlsx.utils.book_append_sheet(workbook, worksheet, "Data");
+      applyRowBorder(row);
+      formatCurrencyCells(row, ss, ["price"]);
 
-  return xlsx.write(workbook, { bookType: "xlsx", type: "buffer" });
+      // Komisi nominal format
+      const commCell = row.getCell(ss.getColumn("commValue").number);
+      if (typeof commCell.value === "number") {
+        commCell.numFmt = "#,##0";
+      }
+
+      // Status color
+      const statusCell = row.getCell(ss.getColumn("status").number);
+      statusCell.font =
+        p.status === "ACTIVE" ? { color: { argb: "FF16A34A" } } : { color: { argb: "FFDC2626" } };
+    });
+  }
+
+  return workbook;
 }

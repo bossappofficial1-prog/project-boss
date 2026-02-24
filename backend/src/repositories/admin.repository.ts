@@ -672,6 +672,399 @@ export class AdminRepository {
         };
     }
 
+    static async getRevenueInsights() {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfPrevMonth = new Date(startOfMonth);
+        endOfPrevMonth.setDate(endOfPrevMonth.getDate() - 1);
+
+        const [
+            monthOrderAggregate,
+            prevMonthRevenueAggregate,
+            lifetimeOrderAggregate,
+            subscriptionInvoiceAggregate,
+            activeSubscriptions,
+            cancelledThisMonth,
+            paymentMethodsRaw,
+            planDistributionRaw,
+            topBusinessesRaw
+        ] = await Promise.all([
+            db.order.aggregate({
+                where: {
+                    paymentStatus: 'SUCCESS',
+                    createdAt: { gte: startOfMonth }
+                },
+                _sum: {
+                    totalAmount: true,
+                    appFee: true,
+                    midtransFee: true
+                },
+                _avg: { totalAmount: true },
+                _count: { _all: true }
+            }),
+            db.order.aggregate({
+                where: {
+                    paymentStatus: 'SUCCESS',
+                    createdAt: {
+                        gte: startOfPrevMonth,
+                        lte: endOfPrevMonth
+                    }
+                },
+                _sum: { totalAmount: true }
+            }),
+            db.order.aggregate({
+                where: { paymentStatus: 'SUCCESS' },
+                _sum: {
+                    totalAmount: true,
+                    appFee: true,
+                    midtransFee: true
+                }
+            }),
+            db.subscriptionInvoice.aggregate({
+                where: {
+                    status: 'SUCCESS',
+                    createdAt: { gte: startOfMonth }
+                },
+                _sum: { amount: true }
+            }),
+            db.businessSubscription.count({ where: { status: 'ACTIVE' } }),
+            db.businessSubscription.count({
+                where: {
+                    status: 'CANCELLED',
+                    updatedAt: { gte: startOfMonth }
+                }
+            }),
+            db.transaction.groupBy({
+                by: ['paymentMethod'],
+                where: { status: 'SUCCESS' },
+                _sum: { amount: true },
+                _count: { _all: true }
+            }),
+            db.business.groupBy({
+                by: ['subscriptionPlan'],
+                _count: { _all: true }
+            }),
+            db.$queryRaw<{
+                businessId: string;
+                businessName: string;
+                totalRevenue: number;
+                totalOrders: bigint;
+            }[]>`
+                SELECT b.id as "businessId",
+                       b.name as "businessName",
+                       SUM(o."totalAmount") as "totalRevenue",
+                       COUNT(o.id) as "totalOrders"
+                FROM "Order" o
+                INNER JOIN "Outlet" ot ON o."outletId" = ot.id
+                INNER JOIN "Business" b ON ot."businessId" = b.id
+                WHERE o."paymentStatus" = 'SUCCESS'
+                GROUP BY b.id, b.name
+                ORDER BY SUM(o."totalAmount") DESC
+                LIMIT 5;
+            `
+        ]);
+
+        const totalRevenueMTD = Number(monthOrderAggregate._sum.totalAmount || 0);
+        const appFeeMTD = Number(monthOrderAggregate._sum.appFee || 0);
+        const midtransFeeMTD = Number(monthOrderAggregate._sum.midtransFee || 0);
+        const netRevenueMTD = totalRevenueMTD - appFeeMTD - midtransFeeMTD;
+        const totalTransactionsMTD = monthOrderAggregate._count?._all || 0;
+        const averageOrderValue = Number(monthOrderAggregate._avg?.totalAmount || 0);
+        const previousRevenue = Number(prevMonthRevenueAggregate._sum.totalAmount || 0);
+        const revenueGrowth = previousRevenue > 0
+            ? ((totalRevenueMTD - previousRevenue) / previousRevenue) * 100
+            : totalRevenueMTD > 0 ? 100 : 0;
+        const mrr = Number(subscriptionInvoiceAggregate._sum.amount || 0);
+        const arr = mrr * 12;
+        const churnRate = activeSubscriptions > 0
+            ? (cancelledThisMonth / activeSubscriptions) * 100
+            : 0;
+
+        const paymentTotal = paymentMethodsRaw.reduce((sum, item) => sum + Number(item._sum.amount || 0), 0);
+        const paymentMethods = paymentMethodsRaw.map(item => {
+            const totalAmount = Number(item._sum.amount || 0);
+            return {
+                method: item.paymentMethod || 'UNSPECIFIED',
+                totalAmount,
+                transactionCount: item._count._all,
+                percentage: paymentTotal > 0 ? (totalAmount / paymentTotal) * 100 : 0
+            };
+        });
+
+        const planTotal = planDistributionRaw.reduce((sum, item) => sum + item._count._all, 0);
+        const subscriptionPlans = planDistributionRaw.map(item => ({
+            plan: item.subscriptionPlan,
+            businesses: item._count._all,
+            percentage: planTotal > 0 ? (item._count._all / planTotal) * 100 : 0
+        }));
+
+        const lifetimeGross = Number(lifetimeOrderAggregate._sum.totalAmount || 0);
+        const lifetimeAppFee = Number(lifetimeOrderAggregate._sum.appFee || 0);
+        const lifetimeMidtransFee = Number(lifetimeOrderAggregate._sum.midtransFee || 0);
+        const lifetimeNet = lifetimeGross - lifetimeAppFee - lifetimeMidtransFee;
+
+        const topBusinesses = topBusinessesRaw.map(row => ({
+            businessId: row.businessId,
+            businessName: row.businessName,
+            totalRevenue: Number(row.totalRevenue || 0),
+            totalOrders: Number(row.totalOrders || 0)
+        }));
+
+        return {
+            summary: {
+                windowStart: startOfMonth.toISOString(),
+                windowEnd: now.toISOString(),
+                totalRevenue: totalRevenueMTD,
+                netRevenue: netRevenueMTD,
+                totalTransactions: totalTransactionsMTD,
+                averageOrderValue,
+                revenueGrowth,
+                mrr,
+                arr,
+                churnRate,
+                activeSubscriptions
+            },
+            feeBreakdown: {
+                grossRevenue: lifetimeGross,
+                appFees: lifetimeAppFee,
+                paymentFees: lifetimeMidtransFee,
+                netRevenue: lifetimeNet
+            },
+            paymentMethods,
+            subscriptionPlans,
+            topBusinesses
+        };
+    }
+
+    static async getSubscriptionIncomeOverview(options: { months: number }) {
+        const months = Math.min(Math.max(options.months, 1), 24);
+        const now = new Date();
+        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfRange = new Date(startOfCurrentMonth);
+        startOfRange.setMonth(startOfRange.getMonth() - (months - 1));
+        const previousMonthStart = new Date(startOfCurrentMonth);
+        previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
+        const previousMonthEnd = new Date(startOfCurrentMonth);
+        previousMonthEnd.setDate(previousMonthEnd.getDate() - 1);
+        const renewalWindowEnd = new Date(now);
+        renewalWindowEnd.setDate(renewalWindowEnd.getDate() + 30);
+        const overdueThreshold = new Date(now);
+        overdueThreshold.setDate(overdueThreshold.getDate() - 7);
+
+        const [
+            currentInvoiceAggregate,
+            previousInvoiceAggregate,
+            invoiceTrendRaw,
+            planCounts,
+            planRevenueRaw,
+            invoiceStatusRaw,
+            activeSubscriptions,
+            expiringSoonCount,
+            overdueAggregate,
+            upcomingRenewalsRaw,
+            recentInvoicesRaw
+        ] = await Promise.all([
+            db.subscriptionInvoice.aggregate({
+                where: {
+                    status: 'SUCCESS',
+                    createdAt: { gte: startOfCurrentMonth }
+                },
+                _sum: { amount: true },
+                _count: { _all: true }
+            }),
+            db.subscriptionInvoice.aggregate({
+                where: {
+                    status: 'SUCCESS',
+                    createdAt: {
+                        gte: previousMonthStart,
+                        lte: previousMonthEnd
+                    }
+                },
+                _sum: { amount: true }
+            }),
+            db.$queryRaw<{
+                period: Date;
+                revenue: number;
+                invoices: bigint;
+            }[]>`
+                SELECT
+                    DATE_TRUNC('month', "createdAt") as period,
+                    SUM("amount") as revenue,
+                    COUNT(*) as invoices
+                FROM "SubscriptionInvoice"
+                WHERE "status" = 'SUCCESS'
+                    AND "createdAt" >= ${startOfRange}
+                GROUP BY DATE_TRUNC('month', "createdAt")
+                ORDER BY period ASC;
+            `,
+            db.business.groupBy({
+                by: ['subscriptionPlan'],
+                where: {
+                    subscriptionStatus: {
+                        in: ['ACTIVE', 'TRIAL', 'PAST_DUE']
+                    }
+                },
+                _count: { _all: true }
+            }),
+            db.$queryRaw<{
+                planCode: string | null;
+                planName: string | null;
+                revenue: number;
+            }[]>`
+                SELECT
+                    COALESCE(sp.code, b."subscriptionPlan") as "planCode",
+                    COALESCE(sp.name, b."subscriptionPlan") as "planName",
+                    SUM(si."amount") as revenue
+                FROM "SubscriptionInvoice" si
+                INNER JOIN "BusinessSubscription" bs ON si."subscriptionId" = bs.id
+                INNER JOIN "Business" b ON bs."businessId" = b.id
+                LEFT JOIN "SubscriptionPlan" sp ON bs."planId" = sp.id
+                WHERE si."status" = 'SUCCESS'
+                    AND si."createdAt" >= ${startOfCurrentMonth}
+                GROUP BY COALESCE(sp.code, b."subscriptionPlan"), COALESCE(sp.name, b."subscriptionPlan");
+            `,
+            db.subscriptionInvoice.groupBy({
+                by: ['status'],
+                _count: { _all: true },
+                _sum: { amount: true }
+            }),
+            db.businessSubscription.count({ where: { status: 'ACTIVE' } }),
+            db.businessSubscription.count({
+                where: {
+                    status: 'ACTIVE',
+                    endDate: {
+                        gte: now,
+                        lte: renewalWindowEnd
+                    }
+                }
+            }),
+            db.subscriptionInvoice.aggregate({
+                where: {
+                    status: {
+                        in: ['PENDING', 'PROOF_SUBMITTED', 'AWAITING_VERIFICATION']
+                    },
+                    createdAt: { lte: overdueThreshold }
+                },
+                _count: { _all: true },
+                _sum: { amount: true }
+            }),
+            db.businessSubscription.findMany({
+                where: {
+                    status: 'ACTIVE',
+                    endDate: {
+                        gte: now,
+                        lte: renewalWindowEnd
+                    }
+                },
+                orderBy: { endDate: 'asc' },
+                take: 6,
+                include: {
+                    business: { select: { id: true, name: true, subscriptionPlan: true } },
+                    plan: { select: { name: true, code: true } }
+                }
+            }),
+            db.subscriptionInvoice.findMany({
+                orderBy: { createdAt: 'desc' },
+                take: 8,
+                include: {
+                    business: { select: { id: true, name: true, subscriptionPlan: true } },
+                    subscription: {
+                        include: { plan: true }
+                    }
+                }
+            })
+        ]);
+
+        const mrr = Number(currentInvoiceAggregate._sum.amount || 0);
+        const invoicesThisMonth = currentInvoiceAggregate._count?._all || 0;
+        const arr = mrr * 12;
+        const previousMrr = Number(previousInvoiceAggregate._sum.amount || 0);
+        const mrrGrowth = previousMrr > 0
+            ? ((mrr - previousMrr) / previousMrr) * 100
+            : mrr > 0 ? 100 : 0;
+        const averageContractValue = invoicesThisMonth > 0 ? mrr / invoicesThisMonth : 0;
+
+        const revenueTrend = invoiceTrendRaw.map(item => ({
+            date: item.period instanceof Date ? item.period.toISOString() : String(item.period),
+            revenue: Number(item.revenue || 0),
+            invoices: Number(item.invoices || 0n)
+        }));
+
+        const totalActiveBusinesses = planCounts.reduce((sum, plan) => sum + plan._count._all, 0);
+        const planRevenueMap = new Map<string, { revenue: number; name: string }>();
+        planRevenueRaw.forEach(plan => {
+            const key = plan.planCode || 'UNSPECIFIED';
+            planRevenueMap.set(key, {
+                revenue: Number(plan.revenue || 0),
+                name: plan.planName || key
+            });
+        });
+
+        const planDistribution = planCounts.map(plan => {
+            const planKey = plan.subscriptionPlan || 'UNSPECIFIED';
+            const revenueInfo = planRevenueMap.get(planKey);
+            const businesses = plan._count._all;
+            return {
+                planCode: planKey,
+                planName: revenueInfo?.name || planKey,
+                businesses,
+                percentage: totalActiveBusinesses > 0 ? (businesses / totalActiveBusinesses) * 100 : 0,
+                mrrContribution: revenueInfo?.revenue || 0
+            };
+        });
+
+        const invoiceStatus = invoiceStatusRaw.map(item => ({
+            status: item.status,
+            invoices: item._count._all,
+            amount: Number(item._sum.amount || 0)
+        }));
+
+        const upcomingRenewals = upcomingRenewalsRaw.map(renewal => ({
+            subscriptionId: renewal.id,
+            businessId: renewal.businessId,
+            businessName: renewal.business.name,
+            planCode: renewal.plan?.code || renewal.business.subscriptionPlan,
+            planName: renewal.plan?.name || renewal.business.subscriptionPlan,
+            endsAt: renewal.endDate.toISOString(),
+            daysRemaining: Math.max(0, Math.ceil((renewal.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        }));
+
+        const recentInvoices = recentInvoicesRaw.map(invoice => ({
+            id: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            businessId: invoice.businessId,
+            businessName: invoice.business?.name ?? 'business name',
+            amount: invoice.amount,
+            status: invoice.status,
+            issuedAt: invoice.createdAt.toISOString(),
+            paidAt: invoice.paidAt ? invoice.paidAt.toISOString() : null,
+            planName: invoice.subscription?.plan?.name || (invoice.business?.subscriptionPlan ?? 'plan')
+        }));
+
+        return {
+            summary: {
+                mrr,
+                arr,
+                mrrGrowth,
+                activeSubscriptions,
+                expiringSoon: expiringSoonCount,
+                overdueInvoices: overdueAggregate._count?._all || 0,
+                overdueAmount: Number(overdueAggregate._sum.amount || 0),
+                averageContractValue
+            },
+            revenueTrend: {
+                period: 'monthly',
+                months,
+                points: revenueTrend
+            },
+            planDistribution,
+            invoiceStatus,
+            upcomingRenewals,
+            recentInvoices
+        };
+    }
+
     // === USER MANAGEMENT ===
 
 

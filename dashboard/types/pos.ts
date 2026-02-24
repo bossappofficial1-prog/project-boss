@@ -16,4 +16,5 @@ export interface POSCartLine {
   bookingSlotId?: string;
   bookingStart?: string;
   bookingEnd?: string;
+  staffId?: string;
 }

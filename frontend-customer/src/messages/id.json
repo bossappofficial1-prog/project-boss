@@ -515,7 +515,14 @@
         "noOperatingHours": "Jam operasional tidak tersedia",
         "noOperatingHoursDescription": "Informasi jam buka outlet ini tidak tersedia",
         "outletNotFound": "Outlet tidak ditemukan",
-        "whatsappMessage": "Halo, saya tertarik dengan outlet {name}"
+        "whatsappMessage": "Halo, saya tertarik dengan outlet {name}",
+        "openMap": "Buka peta",
+        "favorite": "Favorit",
+        "favorited": "Difavoritkan",
+        "searchPlaceholder": "Cari produk atau layanan...",
+        "searchResults": "{count} hasil ditemukan",
+        "noSearchResults": "Tidak ditemukan",
+        "noSearchResultsDescription": "Tidak ada produk atau layanan yang cocok dengan pencarian Anda"
     },
     "text": {
         "open": "Buka",
@@ -534,6 +541,7 @@
         "history_and_status": "Riwayat dan status pesanan Anda",
         "order_singular": "pesanan",
         "order_plural": "pesanan",
+        "and_more_items": "... dan {count} item lainnya",
         "found": "ditemukan",
         "error_title": "Belum Ada Pesanan",
         "error_message": "Anda belum memiliki pesanan saat ini. Mulai jelajahi outlet dan pesan sekarang!",
@@ -661,7 +669,9 @@
             "awaiting_payment": "Menunggu Pembayaran",
             "processing": "Diproses",
             "confirmed": "Dikonfirmasi",
+            "confirmed_service": "Booking Dikonfirmasi",
             "ready": "Siap Diambil",
+            "ready_service": "Siap Dimulai",
             "on_going": "Sedang Berlangsung",
             "completed": "Selesai"
         },
@@ -809,6 +819,10 @@
             "processing": {
                 "title": "Pembayaran Diproses",
                 "description": "Pembayaranmu sedang diverifikasi oleh outlet."
+            },
+            "awaitingVerification": {
+                "title": "Menunggu Konfirmasi",
+                "description": "Bukti pembayaran telah dikirim dan sedang ditinjau oleh outlet."
             },
             "success": {
                 "title": "Pembayaran Berhasil",

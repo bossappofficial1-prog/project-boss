@@ -1,92 +1,37 @@
-import { Request, Response, NextFunction } from "express";
-import { db } from "../config/prisma";
+import { NextFunction, Request, Response } from "express";
+import { asyncHandler } from "./error.middleware";
 import { AppError } from "../errors/app-error";
 import { HttpStatus } from "../constants/http-status";
+import { PlanLimitService } from "../service/plan-limit.service";
 
-/**
- * Middleware to check if a business has an active subscription
- * Should be applied to routes that require active subscription
- */
-export async function checkActiveSubscription(req: Request, res: Response, next: NextFunction) {
-  try {
-    // Extract businessId from authenticated user
-    // Assuming req.user is populated by authentication middleware
-    const user = (req as any).user;
+export const requireActiveSubscription = asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
+    const businessId = req.storedUser?.businessId;
 
-    if (!user) {
-      throw new AppError("User not authenticated", HttpStatus.UNAUTHORIZED);
+    if (!businessId) {
+        throw new AppError("Bisnis tidak ditemukan pada sesi Anda", HttpStatus.FORBIDDEN);
     }
 
-    // Get business associated with user
-    const business = await db.business.findUnique({
-      where: {
-        ownerId: user.id,
-      },
-      select: {
-        id: true,
-        subscriptionStatus: true,
-        subscriptionEndDate: true,
-        subscriptionPlan: true,
-      },
-    });
-
-    if (!business) {
-      throw new AppError("Business not found for user", HttpStatus.NOT_FOUND);
-    }
-
-    // Check if subscription is active
-    if (business.subscriptionStatus !== "ACTIVE") {
-      throw new AppError(
-        `Subscription is ${business.subscriptionStatus}. Please contact support.`,
-        HttpStatus.FORBIDDEN,
-      );
-    }
-
-    // Check if subscription has expired
-    if (business.subscriptionEndDate && business.subscriptionEndDate < new Date()) {
-      throw new AppError(
-        "Subscription has expired. Please renew your subscription.",
-        HttpStatus.FORBIDDEN,
-      );
-    }
-
-    // Subscription is valid, proceed
-    // Optionally attach business info to request for downstream use
-    (req as any).business = business;
-
+    const context = await PlanLimitService.assertSubscriptionActive(businessId);
+    req.subscriptionContext = context;
     next();
-  } catch (error) {
-    next(error);
-  }
-}
+});
 
-/**
- * Optional: Middleware to check for specific subscription plans
- * Example: checkSubscriptionPlan(['PRO', 'ENTERPRISE'])
- */
-export function checkSubscriptionPlan(allowedPlans: string[]) {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const business = (req as any).business;
+export const requireSubscriptionPlan = (allowedPlans: string[]) =>
+    asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
+        const businessId = req.storedUser?.businessId;
 
-      if (!business) {
-        // Business should be populated by checkActiveSubscription middleware
-        throw new AppError(
-          "Business information not found. Apply checkActiveSubscription middleware first.",
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
+        if (!businessId) {
+            throw new AppError("Bisnis tidak ditemukan pada sesi Anda", HttpStatus.FORBIDDEN);
+        }
 
-      if (!allowedPlans.includes(business.subscriptionPlan)) {
-        throw new AppError(
-          `This feature requires a ${allowedPlans.join(" or ")} subscription plan. Current plan: ${business.subscriptionPlan}`,
-          HttpStatus.FORBIDDEN,
-        );
-      }
+        const context = req.subscriptionContext ?? (await PlanLimitService.assertSubscriptionActive(businessId));
+        if (!allowedPlans.includes(context.currentSubscription?.plan?.code ?? "")) {
+            throw new AppError(
+                `Fitur ini memerlukan paket ${allowedPlans.join(" atau ")}. Paket Anda saat ini: ${context.currentSubscription?.plan?.code ?? "-"}`,
+                HttpStatus.FORBIDDEN,
+            );
+        }
 
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
+        req.subscriptionContext = context;
+        next();
+    });

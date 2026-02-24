@@ -211,9 +211,9 @@ export async function createUserByAdmin(dtoUser: createUserByAdminInput) {
 }
 
 export async function getUserByIdService2(userId: string) {
-    const user = await UserRepository.getById(userId)
+    const result = await UserRepository.getById(userId)
 
-    if (!user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!result.user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-    return user
+    return { ...result.user, recentInvoice: result.recentInvoice }
 }

@@ -77,6 +77,7 @@ export class BookingRepository {
         date: true,
         status: true,
         orderItemId: true,
+        productServiceId: true,
       },
     });
 

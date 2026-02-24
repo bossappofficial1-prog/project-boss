@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../errors/app-error';
 import { HttpStatus } from '../constants/http-status';
 import { db } from '../config/prisma';
+import { OperatingHoursRepository } from '../repositories/operating-hours.repository';
 
 export const validateGuestCustomer = (req: Request, res: Response, next: NextFunction) => {
     const { guestCustomer } = req.body;
@@ -74,21 +75,53 @@ export const validateGuestCustomer = (req: Request, res: Response, next: NextFun
 
 /**
  * Validate business hours for orders
+ * - Allow orders outside operating hours as long as the outlet is open that day
+ * - Block orders on days when the outlet is closed (isOpen = false)
  */
-export const validateBusinessHours = (req: Request, res: Response, next: NextFunction) => {
+export const validateBusinessHours = async (req: Request, res: Response, next: NextFunction) => {
+    const { outletId } = req.body;
+
+    if (!outletId) {
+        throw new AppError("Outlet ID diperlukan", HttpStatus.BAD_REQUEST);
+    }
+
     const now = new Date();
-    const currentHour = now.getHours();
     const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
 
-    // Basic business hours: 8 AM to 10 PM, Monday to Sunday
-    const isBusinessHour = currentHour >= 8 && currentHour <= 22;
+    const operatingHours = await OperatingHoursRepository.findByOutletId(outletId);
 
-    if (!isBusinessHour) {
+    // If no operating hours configured, allow the order
+    if (!operatingHours || operatingHours.length === 0) {
+        return next();
+    }
+
+    const todaySchedule = operatingHours.find(oh => oh.dayOfWeek === currentDay);
+
+    // If no schedule for today or outlet is closed today, reject
+    if (!todaySchedule || !todaySchedule.isOpen) {
+        const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+        // Find next open day
+        const nextOpenDay = operatingHours
+            .filter(oh => oh.isOpen)
+            .sort((a, b) => {
+                const dayA = a.dayOfWeek <= currentDay ? a.dayOfWeek + 7 : a.dayOfWeek;
+                const dayB = b.dayOfWeek <= currentDay ? b.dayOfWeek + 7 : b.dayOfWeek;
+                return dayA - dayB;
+            })[0];
+
+        const nextOpenInfo = nextOpenDay
+            ? ` Outlet buka kembali hari ${dayNames[nextOpenDay.dayOfWeek]}.`
+            : '';
+
         throw new AppError(
-            "Pemesanan hanya dapat dilakukan pada jam operasional (08:00 - 22:00)",
+            `Outlet tutup pada hari ${dayNames[currentDay]}.${nextOpenInfo}`,
             HttpStatus.BAD_REQUEST
         );
     }
+
+    // Store operating hours in request for later use (e.g. response)
+    (req as any).outletOperatingHours = todaySchedule;
 
     next();
 };

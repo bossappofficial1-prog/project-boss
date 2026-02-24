@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Laporan Transaksi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background-color: white;
+            color: #1e293b;
+            font-size: 12px;
+            line-height: 1.5;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 15mm;
+            }
+        }
+
+        .report-content {
+            width: 100%;
+        }
+
+        .kop-surat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid #0f172a;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+
+        .kop-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .kop-logo {
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kop-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .kop-logo-fallback {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: 2px;
+        }
+
+        .kop-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kop-address {
+            font-size: 9px;
+            color: #64748b;
+            line-height: 1.4;
+            margin-top: 3px;
+        }
+
+        .kop-right {
+            text-align: right;
+        }
+
+        .kop-doc-label {
+            font-size: 8px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .kop-doc-number {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* ========== INFO MITRA ========== */
+        .info-mitra {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+        }
+
+        .info-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .info-business-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            font-family: Georgia, 'Times New Roman', serif;
+        }
+
+        .info-business-id {
+            font-size: 11px;
+            color: #475569;
+        }
+
+        .info-business-id span {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 700;
+        }
+
+        .info-period {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        /* ========== RINGKASAN / SUMMARY CARDS ========== */
+        .summary-row {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            flex: 1;
+            padding: 10px 14px;
+            border-left: 4px solid;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .summary-card.revenue {
+            border-left-color: #4f46e5;
+        }
+
+        .summary-card.transactions {
+            border-left-color: #10b981;
+        }
+
+        .summary-card.pending {
+            border-left-color: #f59e0b;
+        }
+
+        .summary-card-label {
+            font-size: 9px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .summary-card-value {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 2px;
+        }
+
+        .summary-card.pending .summary-card-value {
+            color: #d97706;
+        }
+
+        /* ========== TABLE ========== */
+        .table-wrapper {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            page-break-inside: auto;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        thead th {
+            background-color: #1e293b !important;
+            color: #ffffff !important;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9px;
+            padding: 8px 10px;
+            text-align: left;
+            letter-spacing: 0.5px;
+        }
+
+        thead th.text-right {
+            text-align: right;
+        }
+
+        thead th.text-center {
+            text-align: center;
+        }
+
+        tbody tr {
+            page-break-inside: avoid;
+        }
+
+        tbody td {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 6px 10px;
+            font-size: 11px;
+            color: #334155;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f8fafc !important;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        td.col-no {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 10px;
+            width: 35px;
+        }
+
+        td.col-id {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 700;
+            color: #475569;
+        }
+
+        td.col-amount {
+            text-align: right;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 700;
+        }
+
+        td.col-status {
+            text-align: center;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border: 1px solid transparent;
+        }
+
+        .bg-success {
+            background-color: #dcfce7 !important;
+            color: #14532d !important;
+            border-color: #bbf7d0 !important;
+        }
+
+        .bg-pending {
+            background-color: #fef9c3 !important;
+            color: #713f12 !important;
+            border-color: #fde047 !important;
+        }
+
+        .bg-failed {
+            background-color: #fee2e2 !important;
+            color: #7f1d1d !important;
+            border-color: #fecaca !important;
+        }
+
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94a3b8;
+        }
+
+        .empty-state-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* ========== FOOTER ========== */
+        .report-footer {
+            border-top: 1px solid #cbd5e1;
+            padding-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 20px;
+        }
+
+        .footer-disclaimer {
+            font-size: 8px;
+            color: #94a3b8;
+            max-width: 450px;
+            line-height: 1.4;
+        }
+
+        .footer-disclaimer strong {
+            color: #64748b;
+        }
+
+        .footer-generated {
+            font-size: 8px;
+            color: #94a3b8;
+            font-family: 'Courier New', Courier, monospace;
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="report-content">
+
+        <div class="kop-surat">
+            <div class="kop-left">
+                <div class="kop-logo">
+                    {{#if logoBase64}}
+                    <img src="{{logoBase64}}" alt="Logo" />
+                    {{else}}
+                    <span class="kop-logo-fallback">BOSS</span>
+                    {{/if}}
+                </div>
+                <div>
+                    <div class="kop-title">BOSS App</div>
+                    <div class="kop-address">
+                        Gedung Cyber 2, Jakarta Selatan 12950<br>
+                        Helpdesk: (021) 500-123
+                    </div>
+                </div>
+            </div>
+            <div class="kop-right">
+                <div class="kop-doc-label">Nomor Dokumen</div>
+                <div class="kop-doc-number">{{docNumber}}</div>
+            </div>
+        </div>
+
+        <div class="info-mitra">
+            <div>
+                <div class="info-label">Data Mitra</div>
+                <div class="info-business-name">{{businessName}}</div>
+                <div class="info-business-id">ID: <span>{{businessId}}</span></div>
+            </div>
+            <div style="text-align: right;">
+                <div class="info-label">Periode</div>
+                <div class="info-period">{{period}}</div>
+            </div>
+        </div>
+
+        <!-- ===== RINGKASAN ===== -->
+        <div class="summary-row">
+            <div class="summary-card revenue">
+                <div class="summary-card-label">Total Pendapatan</div>
+                <div class="summary-card-value">{{formatRupiah totalRevenue}}</div>
+            </div>
+            <div class="summary-card transactions">
+                <div class="summary-card-label">Total Transaksi</div>
+                <div class="summary-card-value">{{totalTransactions}} Trx</div>
+            </div>
+            <div class="summary-card pending">
+                <div class="summary-card-label">Pending</div>
+                <div class="summary-card-value">{{pendingCount}} Trx</div>
+            </div>
+        </div>
+
+        <!-- ===== TABEL TRANSAKSI ===== -->
+        {{#if transactions.length}}
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: center; width: 35px;">No</th>
+                        <th>ID Transaksi</th>
+                        <th>Waktu</th>
+                        <th>Outlet</th>
+                        <th class="text-right">Nominal</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each transactions}}
+                    <tr>
+                        <td class="col-no">{{rowNumber @index}}</td>
+                        <td class="col-id">{{this.id}}</td>
+                        <td>{{this.date}}</td>
+                        <td>{{this.outletName}}</td>
+                        <td class="col-amount">{{formatRupiah this.amount}}</td>
+                        <td class="col-status">
+                            <span class="badge {{statusColorClass this.status}}">{{this.status}}</span>
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{else}}
+        <div class="table-wrapper">
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-text">Tidak ada transaksi pada periode ini.</div>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- ===== FOOTER ===== -->
+        {{!-- <div class="report-footer">
+            <div class="footer-disclaimer">
+                <strong>DISCLAIMER:</strong> Dokumen ini digenerate otomatis oleh sistem PT. Digital Solusi Nusantara.
+                Sah tanpa tanda tangan basah.
+            </div>
+            <div class="footer-generated">
+                Generated: {{generatedAt}}
+            </div>
+        </div> --}}
+    </div>
+</body>
+
+</html>

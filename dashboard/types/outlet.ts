@@ -26,6 +26,26 @@ export interface OutletInfo {
     }[];
 }
 
+export interface OutletResponseStandard {
+    id: string
+    name: string
+    description: string
+    address: string
+    phone: string
+    createdAt: string
+    image: string
+    updatedAt: string
+    latitude: number
+    longitude: number
+    isOpen: boolean
+    businessId: string
+    manualBankName?: string
+    manualBankAccount?: string
+    manualAccountHolder?: string
+    manualPaymentNote?: string
+    manualQrImageUrl: string
+}
+
 // === REVENUE METRICS ===
 export interface RevenueMetrics {
     totalRevenue: number;

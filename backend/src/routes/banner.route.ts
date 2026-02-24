@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { bulkUpdateBannerController, createBannerController, deleteBannerController, getBannersController, updateBannerController } from "../controller/banner.controller";
+import { bulkDeleteBannerController, bulkUpdateBannerController, createBannerController, deleteBannerController, getBannersController, updateBannerController } from "../controller/banner.controller";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { validateSchema } from "../middleware/zod.middleware";
 import { bulkOrderSchema, createBannerSchema, updateBannerSchema } from "../schemas/banner.schema";
@@ -19,6 +19,12 @@ bannerRouter.post(
     validateSchema(createBannerSchema),
     createBannerController
 )
+
+bannerRouter.post(
+    '/bulk-delete',
+    bulkDeleteBannerController
+)
+
 bannerRouter.patch(
     '/bulk-update',
     validateSchema(bulkOrderSchema),

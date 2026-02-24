@@ -1,11 +1,14 @@
 import { z } from "zod";
 
-export const createOperatingHoursSchema = z.object({
-    outletId: z.string().uuid("ID outlet tidak valid"),
+const hoursSchema = z.object({
     dayOfWeek: z.number().min(0).max(6),
     openTime: z.coerce.date(),
     closeTime: z.coerce.date(),
     isOpen: z.boolean().default(true),
+})
+
+export const createOperatingHoursSchema = z.object({
+    hours: z.array(hoursSchema),
 });
 
 export const updateOperatingHoursSchema = z.object({

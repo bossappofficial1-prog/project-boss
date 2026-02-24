@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import BannerForm, { BannerFormValues } from './BannerForm';
-import { Banner, useBanners, useBulkUpdateBanner, useCreateBanner, useDeleteBanner, useUpdateBanner } from '@/hooks/useBanners';
+import { Banner, useBanners, useBulkDeleteBanner, useBulkUpdateBanner, useCreateBanner, useDeleteBanner, useUpdateBanner } from '@/hooks/useBanners';
 import { BannerTable } from './BannerTable';
 import { uploadApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -22,6 +22,8 @@ export default function GlobalBannerContent() {
     const { mutate: createBanner, isPending: createLoading } = useCreateBanner()
     const { mutate: updateBanner, isPending: updateLoading } = useUpdateBanner()
     const { mutate: deleteBanner, isPaused: deleteLoading } = useDeleteBanner()
+    const { mutateAsync: bullkDeleteBanner } = useBulkDeleteBanner()
+
     const queryClient = useQueryClient();
     const { mutate: bulkOrderUpdate } = useBulkUpdateBanner({
         onMutate: async ({ data }) => {
@@ -143,6 +145,7 @@ export default function GlobalBannerContent() {
         setSelectedBanner(banner)
         setIsEdit(true)
         setMode('edit')
+        setFormKey(prev => prev + 1)
     }
 
     const handleDelete = (banner: Banner) => {
@@ -207,6 +210,7 @@ export default function GlobalBannerContent() {
                                 setIsEdit(false)
                                 setSelectedBanner(null)
                                 setMode('create')
+                                setFormKey(prev => prev - 1)
                             }}
                             size={`sm`}
                             className='cursor-pointer bg-yellow-500 hover:bg-yellow-700'
@@ -225,6 +229,7 @@ export default function GlobalBannerContent() {
                 {/* LEFT COLUMN: LIST BANNERS */}
                 <div className="lg:col-span-7 space-y-4">
                     <BannerTable
+                        onBulkDelete={bullkDeleteBanner}
                         onReOrder={(payload) => bulkOrderUpdate({ data: payload })}
                         data={banners || []}
                         isLoading={isLoading}

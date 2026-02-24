@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { OutletCard } from "@/components/home/OutletCard";
+import { OutletCard } from "@/components/pages/home/OutletCard";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchOutlets } from "@/hooks/useSearchOutlets";
-import { Loader2, Store } from "lucide-react";
+import { Loader2, Store, ChevronDown } from "lucide-react";
 import { EmptyState, ErrorState, LoadingState } from "@/components/Base";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
 import { useTranslations } from "@/hooks/useI18n";
@@ -35,7 +35,6 @@ export default function OutletsPage() {
     useEffect(() => {
         setAppBar({
             title: t("title"),
-            // subtitle: t("subtitle"),
             showBackButton: true,
             showSearch: true,
             onSearch: handleAppBarSearch,
@@ -95,15 +94,7 @@ export default function OutletsPage() {
     };
 
     return (
-        <>
-            {/* <section className="space-y-2">
-                <div className="space-y-1">
-                    <p className="text-base font-semibold text-foreground md:text-2xl">{t("title")}</p>
-                    <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-                    <p className="text-xs text-muted-foreground">{t("searchDescription")}</p>
-                </div>
-            </section> */}
-
+        <div className="space-y-4 pb-8">
             {isLoading && !hasResults ? (
                 <LoadingState message={t("loading")} />
             ) : isError ? (
@@ -115,42 +106,49 @@ export default function OutletsPage() {
             ) : !hasResults ? (
                 renderEmptyOrPrompt()
             ) : (
-                <section className="space-y-2">
-                    <div className="flex flex-col gap-1 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
-                        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <>
+                    {/* Results header */}
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium text-muted-foreground">
                             {t("results", { count: shownCount, total: total || shownCount })}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{t("resultsHint")}</span>
+                        </p>
                     </div>
-                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+
+                    {/* Outlet grid */}
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                         {outlets.map((outlet) => (
                             <OutletCard key={outlet.id} outlet={outlet as any} alignment="horizontal" />
                         ))}
                     </div>
-                    <div className="flex justify-center pt-1">
+
+                    {/* Load more */}
+                    <div className="flex justify-center pt-2">
                         {hasNextPage ? (
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={handleLoadMore}
                                 disabled={isFetchingNextPage}
-                                className="w-full max-w-xs px-6"
+                                className="w-full max-w-xs h-9 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground gap-1.5"
                             >
                                 {isFetchingNextPage ? (
                                     <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                         {t("loadingMore")}
                                     </>
                                 ) : (
-                                    t("loadMore")
+                                    <>
+                                        <ChevronDown className="h-3.5 w-3.5" />
+                                        {t("loadMore")}
+                                    </>
                                 )}
                             </Button>
                         ) : (
-                            <p className="text-xs text-muted-foreground">{t("noMore")}</p>
+                            <p className="text-[11px] text-muted-foreground/60">{t("noMore")}</p>
                         )}
                     </div>
-                </section>
+                </>
             )}
-        </>
+        </div>
     );
 }

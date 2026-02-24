@@ -9,6 +9,20 @@ export class BannerRepository {
             select: { id: true, imageUrl: true }
         })
     }
+
+    static async getImageUrlBannerByIds(ids: string[]) {
+        return db.banner.findMany({
+            where: { id: { in: ids } },
+            select: { imageUrl: true }
+        })
+    }
+
+    static async bulkDelete(ids: string[]) {
+        return db.banner.deleteMany({
+            where: { id: { in: ids } },
+        })
+    }
+
     static async findActiveBanners(limit = 10) {
         return db.banner.findMany({
             where: { isActive: true },

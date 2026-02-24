@@ -16,6 +16,7 @@ import { getProductByIdService } from "../service/product.service";
 import { AppError } from "../errors/app-error";
 import { isBefore, isValid, parseISO, startOfDay } from "date-fns";
 import { HttpStatus } from "../constants/http-status";
+import { ensureString } from "../utils/request";
 
 export const createBookingSlotController = asyncHandler(async (req: Request, res: Response) => {
   const payload: CreateBookingSlotInput = req.body;
@@ -24,14 +25,14 @@ export const createBookingSlotController = asyncHandler(async (req: Request, res
 });
 
 export const getBookingSlotByIdController = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = ensureString(req.params?.id, "id");
   const slot = await getBookingSlotByIdService(id);
   return ResponseUtil.success(res, slot);
 });
 
 export const getBookingSlotsByProductIdController = asyncHandler(
   async (req: Request, res: Response) => {
-    const { productId } = req.params;
+    const productId = ensureString(req.params?.productId, "productId");
 
     // Get product to extract productServiceId
     const product = await getProductByIdService(productId);
@@ -80,7 +81,7 @@ const parseDateTimeFromParams = (dateStr: string, timeValue: string, label: stri
 
 export const getAvailableStaffForProductController = asyncHandler(
   async (req: Request, res: Response) => {
-    const { productId } = req.params;
+    const productId = ensureString(req.params?.productId, "productId");
     const { date, startTime, endTime, slotId } = req.query;
 
     if (!date && !slotId) {
@@ -144,21 +145,21 @@ export const getAvailableStaffForProductController = asyncHandler(
 );
 
 export const updateBookingSlotController = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = ensureString(req.params?.id, "id");
   const payload: UpdateBookingSlotInput = req.body;
   const bookingSlot = await updateBookingSlotService(id, payload);
   return ResponseUtil.success(res, bookingSlot);
 });
 
 export const deleteBookingSlotController = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = ensureString(req.params?.id, "id");
   await deleteBookingSlotService(id);
   return ResponseUtil.success(res, { message: "Booking slot deleted successfully." });
 });
 
 export const getBookingSlotByOutlet = asyncHandler(async (req: Request, res: Response) => {
   const { date } = req.query;
-  const { productId } = req.params;
+  const productId = ensureString(req.params?.productId, "productId");
 
   // Require date query and parse into a Date object
   if (!date) {
@@ -177,7 +178,7 @@ export const getBookingSlotByOutlet = asyncHandler(async (req: Request, res: Res
     );
   }
 
-  const parsedDate = parseISO(dateString);
+  const parsedDate = new Date(dateString);
   if (!isValid(parsedDate)) {
     return ResponseUtil.badRequest(res, "Format tanggal tidak valid atau tanggal tidak ada.");
   }

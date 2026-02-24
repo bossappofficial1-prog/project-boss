@@ -13,7 +13,7 @@ export interface CartItem {
     name: string;
     price: number;
     quantity: number;
-    type: 'GOODS' | 'SERVICE';
+    type: 'GOODS' | 'SERVICE' | 'TICKET';
     image?: string;
     unit?: string;
     maxQuantity?: number; // For GOODS with limited stock
@@ -60,12 +60,21 @@ export const useCart = create<CartState>()(
                 const slotInfo = selectedSchedule?.slot;
                 const staffInfo = selectedSchedule?.staff;
 
-                // Validasi: Dalam satu outlet, tidak boleh ada campuran GOODS dan SERVICE
+                // Validasi: Hanya boleh 1 layanan (SERVICE) dalam keranjang
+                if (product.type === 'SERVICE') {
+                    const existingService = items.find(item => item.type === 'SERVICE' && item.productId !== product.id);
+                    if (existingService) {
+                        throw new Error('Hanya boleh menambahkan 1 layanan dalam keranjang. Silakan hapus layanan sebelumnya atau checkout terlebih dahulu.');
+                    }
+                }
+
+                // Validasi: Dalam satu outlet, tidak boleh ada campuran GOODS/TICKET dan SERVICE
                 const existingItemsInOutlet = items.filter(item => item.outletId === outletId);
                 if (existingItemsInOutlet.length > 0) {
-                    const existingProductTypes = [...new Set(existingItemsInOutlet.map(item => item.type))];
-                    if (!existingProductTypes.includes(product.type)) {
-                        throw new Error(`Tidak dapat menambahkan ${product.type === 'GOODS' ? 'produk' : 'layanan'} ke outlet yang sudah berisi ${existingProductTypes.includes('GOODS') ? 'produk' : 'layanan'}. Silakan checkout terlebih dahulu atau pilih outlet lain.`);
+                    const hasService = existingItemsInOutlet.some(item => item.type === 'SERVICE');
+                    const isAddingService = product.type === 'SERVICE';
+                    if ((hasService && !isAddingService) || (!hasService && isAddingService)) {
+                        throw new Error(`Tidak dapat menambahkan ${isAddingService ? 'layanan' : 'produk'} ke outlet yang sudah berisi ${hasService ? 'layanan' : 'produk'}. Silakan checkout terlebih dahulu atau pilih outlet lain.`);
                     }
                 }
 
@@ -132,12 +141,20 @@ export const useCart = create<CartState>()(
                         outletName,
                         productId: product.id,
                         name: product.name,
-                        price: product.type === 'GOODS' ? product.goods?.sellingPrice || 0 : product.service?.sellingPrice || 0,
+                        price: product.type === 'GOODS'
+                            ? product.goods?.sellingPrice || 0
+                            : product.type === 'TICKET'
+                                ? product.ticket?.sellingPrice || 0
+                                : product.service?.sellingPrice || 0,
                         quantity,
                         type: product.type,
                         image: product.image,
-                        unit: product.type === 'GOODS' ? product.goods?.unit : undefined,
-                        maxQuantity: product.type === 'GOODS' ? product.goods?.currentStock || undefined : undefined,
+                        unit: product.type === 'GOODS' ? product.goods?.unit : product.type === 'TICKET' ? 'tiket' : undefined,
+                        maxQuantity: product.type === 'GOODS'
+                            ? product.goods?.currentStock || undefined
+                            : product.type === 'TICKET'
+                                ? Math.min(product.ticket?.maxPerOrder ?? 99, (product.ticket?.totalQuota ?? 0) - (product.ticket?.soldCount ?? 0))
+                                : undefined,
                         serviceDurationMinutes: product.type === 'SERVICE' ? product.service?.durationMinutes || undefined : undefined,
                         selectedSlot: product.type === 'SERVICE' ? slotInfo?.id : undefined,
                         slotStartTime: product.type === 'SERVICE' ? slotInfo?.startTime : undefined,

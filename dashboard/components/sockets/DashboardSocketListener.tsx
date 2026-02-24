@@ -7,20 +7,32 @@ import { SOCKET_EVENT } from "@/types/socket";
 import { toast } from "sonner";
 
 export function DashboardSocketListener() {
-    const audioRef = useRef<HTMLAudioElement | null>(null)
+    const notifAudioRef = useRef<HTMLAudioElement | null>(null)
+    const orderAudioRef = useRef<HTMLAudioElement | null>(null)
     const { socket, isConnected } = useSocket();
     const { selectedOutletId } = useOutletContext();
 
     useEffect(() => {
         if (!socket && !selectedOutletId) return;
-        if (!audioRef.current) {
-            audioRef.current = new Audio('/sounds/new-order-notification.mp3');
-            audioRef.current.load();
+        if (!notifAudioRef.current) {
+            notifAudioRef.current = new Audio('/sounds/new-order-notification.mp3');
+            notifAudioRef.current.load();
+        }
+        if (!orderAudioRef.current) {
+            orderAudioRef.current = new Audio('/sounds/order-incoming.wav');
+            orderAudioRef.current.load();
         }
 
         const handleNotification = (payload: any) => {
-            toast.info('Notifikasi', { description: payload.message, duration: Infinity, richColors: true });
-            audioRef.current?.play()
+            const isNewOrder = payload.message?.toLowerCase().includes('pesanan baru');
+            const audio = isNewOrder ? orderAudioRef.current : notifAudioRef.current;
+
+            toast.info(isNewOrder ? 'Order Masuk!' : 'Notifikasi', {
+                description: payload.message,
+                duration: Infinity,
+                richColors: true,
+            });
+            audio?.play()
                 .catch((err) => console.warn('Audio gagal diputar:', err))
         }
 

@@ -37,11 +37,11 @@ export class StockLogRepository {
       ...(filters?.type && { type: filters.type }),
       ...(filters?.startDate || filters?.endDate
         ? {
-            createdAt: {
-              ...(filters.startDate && { gte: filters.startDate }),
-              ...(filters.endDate && { lte: filters.endDate }),
-            },
-          }
+          createdAt: {
+            ...(filters.startDate && { gte: filters.startDate }),
+            ...(filters.endDate && { lte: filters.endDate }),
+          },
+        }
         : {}),
     };
 
@@ -123,5 +123,91 @@ export class StockLogRepository {
     });
 
     return result._sum.quantity || 0;
+  }
+
+  /**
+   * Get stock overview stats for an outlet
+   */
+  static async getOutletOverview(outletId: string) {
+    const products = await db.product.findMany({
+      where: { outletId, type: "GOODS", status: "ACTIVE" },
+      include: { goods: true },
+    });
+
+    let totalProducts = 0;
+    let totalStockValue = 0;
+    let lowStockCount = 0;
+    let outOfStockCount = 0;
+
+    for (const product of products) {
+      if (!product.goods) continue;
+      totalProducts++;
+      totalStockValue += product.goods.currentStock * product.goods.averageHpp;
+      if (product.goods.currentStock === 0) {
+        outOfStockCount++;
+      } else if (
+        product.goods.minStock !== null &&
+        product.goods.currentStock <= product.goods.minStock
+      ) {
+        lowStockCount++;
+      }
+    }
+
+    // Recent movement counts (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const productGoodsIds = products
+      .filter((p) => p.goods)
+      .map((p) => p.goods!.id);
+
+    const recentMovements = productGoodsIds.length > 0
+      ? await db.stockLog.groupBy({
+        by: ["type"],
+        where: {
+          productGoodsId: { in: productGoodsIds },
+          createdAt: { gte: thirtyDaysAgo },
+        },
+        _sum: { quantity: true },
+        _count: true,
+      })
+      : [];
+
+    const movementSummary: Record<string, { count: number; totalQty: number }> = {};
+    for (const m of recentMovements) {
+      movementSummary[m.type] = {
+        count: m._count,
+        totalQty: m._sum.quantity || 0,
+      };
+    }
+
+    return {
+      totalProducts,
+      totalStockValue,
+      lowStockCount,
+      outOfStockCount,
+      recentMovements: movementSummary,
+    };
+  }
+
+  /**
+   * Get all products with their stock logs for Excel export
+   */
+  static async getExportData(outletId: string) {
+    const products = await db.product.findMany({
+      where: { outletId, type: "GOODS", status: "ACTIVE" },
+      include: {
+        goods: {
+          include: {
+            stockLogs: {
+              orderBy: { createdAt: "desc" },
+            },
+          },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return products.filter((p) => p.goods !== null);
   }
 }

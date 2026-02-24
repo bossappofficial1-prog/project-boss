@@ -515,7 +515,14 @@
         "noOperatingHours": "Operating hours not available",
         "noOperatingHoursDescription": "Opening hours information for this outlet is not available",
         "outletNotFound": "Outlet not found",
-        "whatsappMessage": "Hello, I am interested in the outlet {name}"
+        "whatsappMessage": "Hello, I am interested in the outlet {name}",
+        "openMap": "Open map",
+        "favorite": "Favorite",
+        "favorited": "Favorited",
+        "searchPlaceholder": "Search products or services...",
+        "searchResults": "{count} results found",
+        "noSearchResults": "No results found",
+        "noSearchResultsDescription": "No products or services match your search"
     },
     "text": {
         "open": "Open",
@@ -534,6 +541,7 @@
         "history_and_status": "History and status of your orders",
         "order_singular": "order",
         "order_plural": "orders",
+        "and_more_items": "... and {count} other items",
         "found": "found",
         "error_title": "No Orders Yet",
         "error_message": "You don't have any orders yet. Start exploring outlets and order now!",
@@ -661,7 +669,9 @@
             "awaiting_payment": "Awaiting Payment",
             "processing": "Processing",
             "confirmed": "Confirmed",
+            "confirmed_service": "Booking Confirmed",
             "ready": "Ready for Pickup",
+            "ready_service": "Ready to Start",
             "on_going": "On Going",
             "completed": "Completed"
         },
@@ -809,6 +819,10 @@
             "processing": {
                 "title": "Processing Payment",
                 "description": "Your payment is being verified by the outlet."
+            },
+            "awaitingVerification": {
+                "title": "Awaiting Confirmation",
+                "description": "Your payment proof has been submitted and is being reviewed by the outlet."
             },
             "success": {
                 "title": "Payment Successful",

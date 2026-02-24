@@ -1,0 +1,34 @@
+import { PdfBaseService } from './pdf-base.service';
+
+export interface TransactionReportData {
+    docNumber: string;
+    businessName: string;
+    businessId: string;
+    period: string;
+    totalRevenue: number;
+    totalTransactions: number;
+    pendingCount: number;
+    transactions: Array<{
+        id: string;
+        date: string;
+        outletName: string;
+        amount: number;
+        status: string;
+    }>;
+    generatedAt: string;
+}
+
+export const generateTransactionReportPDF = async (data: TransactionReportData): Promise<Buffer> => {
+    return PdfBaseService.generate({
+        templateName: 'transaction-report.hbs',
+        data,
+        landscape: true,
+        format: 'A4',
+        headerFooter: {
+            headerLeft: data.docNumber,
+            headerRight: `${data.businessName} — ${data.period}`,
+            footerLeft: '<strong>DISCLAIMER:</strong> Dokumen ini digenerate otomatis oleh sistem Business One Stop System. Sah tanpa tanda tangan basah.',
+            showPageNumber: true,
+        },
+    });
+};

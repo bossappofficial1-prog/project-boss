@@ -14,6 +14,7 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
     const [isLoading, setIsLoading] = useState(false)
     const [errorMessage, setErrorMessage] = useState('')
     const router = useRouter()
+    const [successMessage, setSuccessMessage] = useState('')
 
     const [timer, setTimer] = useState(() => {
         if (typeof window === "undefined") return 0;
@@ -43,6 +44,20 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
         setTimer(DURATION);
     };
 
+    const handleResendVerificationCode = async () => {
+        try {
+            const result = await apiClient.post(`/auth/resend-verification`, { email })
+            if (result.data.success) {
+                setErrorMessage('')
+                setSuccessMessage(result.data.message)
+                startTimer()
+            }
+        } catch (error: unknown) {
+            const errors = error as AxiosError
+            setErrorMessage((errors.response?.data as any).message ?? 'Terjadi kendala saat mengirim otp')
+        }
+    }
+
     const handleVerifyOtp = async () => {
         try {
             setIsLoading(true)
@@ -58,6 +73,7 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
             const axiosError = error as AxiosError;
             const errorMessage = (axiosError.response?.data as any).message as string;
             setErrorMessage(errorMessage.includes('Invalid input data.') ? 'Masukkan kode OTP' : errorMessage)
+            setSuccessMessage('')
         } finally { setIsLoading(false) }
     }
 
@@ -77,6 +93,10 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
 
             {errorMessage && <Alert className="border-red-500 bg-red-500/20 text-red-700">
                 <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>}
+
+            {successMessage && <Alert className="border-green-500 bg-green-500/20 text-green-700">
+                <AlertDescription>{successMessage}</AlertDescription>
             </Alert>}
 
             <div className="flex justify-center gap-2">
@@ -102,8 +122,10 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
                     <span className="text-slate-400 font-medium">Kirim ulang dalam {timer}s</span>
                 ) : (
                     <button
-                        onClick={() => { startTimer() }}
-                        className="text-indigo-600 font-semibold hover:underline"
+                        onClick={() => {
+                            handleResendVerificationCode()
+                        }}
+                        className="text-red-600 font-bold hover:text-red-700 hover:underline"
                     >
                         Kirim Ulang
                     </button>
@@ -111,9 +133,13 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
             </div>
 
             <div className="flex flex-col gap-3 pt-2">
-                <Button className="w-full" onClick={handleVerifyOtp} disabled={verificationCode?.length! < 6 || isLoading}>
-                    Verifikasi & Lanjut
-                </Button>
+                <button
+                    onClick={handleVerifyOtp}
+                    disabled={verificationCode?.length! < 6 || isLoading}
+                    className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none"
+                >
+                    {isLoading ? 'Memproses...' : 'Verifikasi & Lanjut'}
+                </button>
             </div>
         </div>
     )

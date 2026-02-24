@@ -5,6 +5,7 @@ import * as ExcelJS from 'exceljs';
 import { BusinessRepository } from "../repositories/business.repository";
 import { CreateBusinessInput, UpdateBusinessInput } from "../schemas/business.schema";
 import { DateUtil } from "../utils";
+import { redis } from "../config/redis";
 
 export async function createBusinessService(data: CreateBusinessInput, ownerId: string) {
     const existingBusiness = await BusinessRepository.findByOwnerId(ownerId);
@@ -12,6 +13,10 @@ export async function createBusinessService(data: CreateBusinessInput, ownerId: 
         throw new AppError("Anda sudah memiliki bisnis.", HttpStatus.CONFLICT);
     }
     const business = await BusinessRepository.create(data, ownerId);
+
+    // Invalidate cached user data so /auth/me returns fresh business info
+    await redis.del(`user:${ownerId}`);
+
     return business;
 }
 
@@ -41,7 +46,13 @@ export async function updateBusinessService(id: string, data: UpdateBusinessInpu
     if (business.id !== id) {
         throw new AppError("Anda tidak berhak mengubah bisnis ini.", HttpStatus.FORBIDDEN);
     }
-    const updatedBusiness = await BusinessRepository.update(id, data);
+
+    const { defaultTransactionFeeBearer, ...payload } = data
+    const updatedBusiness = await BusinessRepository.update(id, payload);
+
+    // Invalidate cached user data so /auth/me returns updated business
+    await redis.del(`user:${ownerId}`);
+
     return updatedBusiness;
 }
 
@@ -52,9 +63,9 @@ export async function updateBankAccountService(businessId: string, ownerId: stri
         throw new AppError('You are not authorized to update this business', HttpStatus.FORBIDDEN);
     }
 
+    redis.del(`user:${ownerId}`)
     return BusinessRepository.update(businessId, {
         ...data,
-        defaultTransactionFeeBearer: "CUSTOMER"
     });
 }
 

@@ -1,6 +1,8 @@
 import { StockMovementType } from "@prisma/client";
 import { db } from "../config/prisma";
 import { StockLogRepository } from "../repositories/stock-log.repository";
+import { OutletRepository } from "../repositories/outlet.repository";
+import * as ExcelJS from "exceljs";
 import {
   StockInInput,
   StockOutInput,
@@ -490,4 +492,248 @@ export async function recalculateHpp(productGoodsId: string) {
     previousHpp: productGoods.averageHpp,
     newHpp: newAverageHpp,
   };
+}
+
+/**
+ * Get stock overview for an outlet
+ * Returns summary stats: total products, stock value, low/out-of-stock, recent movements
+ */
+export async function getStockOverview(outletId: string) {
+  const outlet = await db.outlet.findUnique({ where: { id: outletId } });
+  if (!outlet) {
+    throw new AppError("Outlet tidak ditemukan", HttpStatus.NOT_FOUND);
+  }
+  return StockLogRepository.getOutletOverview(outletId);
+}
+
+/**
+ * Export stock data to Excel workbook
+ * Sheet 1: Ringkasan (summary of all products)
+ * Sheet 2+: Per-product stock movement history
+ */
+export async function exportStockToExcel(outletId: string) {
+  const outlet = await OutletRepository.findById(outletId);
+  if (!outlet) {
+    throw new AppError("Outlet tidak ditemukan", HttpStatus.NOT_FOUND);
+  }
+
+  const products = await StockLogRepository.getExportData(outletId);
+
+  if (products.length === 0) {
+    throw new AppError("Tidak ada produk barang untuk diexport", HttpStatus.BAD_REQUEST);
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "BOSS App";
+  workbook.created = new Date();
+
+  const headerStyle = {
+    font: { bold: true, color: { argb: "FFFFFFFF" }, size: 11 },
+    fill: { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FF2563EB" } },
+    alignment: { vertical: "middle" as const, horizontal: "center" as const, wrapText: true },
+    border: {
+      top: { style: "thin" as const },
+      left: { style: "thin" as const },
+      bottom: { style: "thin" as const },
+      right: { style: "thin" as const },
+    },
+  };
+
+  const cellBorder = {
+    top: { style: "thin" as const },
+    left: { style: "thin" as const },
+    bottom: { style: "thin" as const },
+    right: { style: "thin" as const },
+  };
+
+  // ─── Sheet 1: Ringkasan ───
+  const summary = workbook.addWorksheet("Ringkasan");
+  summary.columns = [
+    { header: "No", key: "no", width: 6 },
+    { header: "Nama Produk", key: "name", width: 30 },
+    { header: "Stok Saat Ini", key: "currentStock", width: 15 },
+    { header: "Stok Minimum", key: "minStock", width: 15 },
+    { header: "Satuan", key: "unit", width: 12 },
+    { header: "HPP Rata-rata", key: "averageHpp", width: 20 },
+    { header: "Harga Jual", key: "sellingPrice", width: 20 },
+    { header: "Nilai Stok", key: "stockValue", width: 22 },
+    { header: "Margin (%)", key: "margin", width: 14 },
+    { header: "Status", key: "status", width: 14 },
+  ];
+
+  // Apply header style
+  summary.getRow(1).eachCell((cell) => {
+    Object.assign(cell, { style: headerStyle });
+  });
+
+  products.forEach((product, index) => {
+    const goods = product.goods!;
+    const stockValue = goods.currentStock * goods.averageHpp;
+    const margin =
+      goods.sellingPrice > 0
+        ? (((goods.sellingPrice - goods.averageHpp) / goods.sellingPrice) * 100).toFixed(1)
+        : "0";
+
+    let status = "Tersedia";
+    if (goods.currentStock === 0) {
+      status = "Habis";
+    } else if (goods.minStock !== null && goods.currentStock <= goods.minStock) {
+      status = "Stok Rendah";
+    }
+
+    const row = summary.addRow({
+      no: index + 1,
+      name: product.name,
+      currentStock: goods.currentStock,
+      minStock: goods.minStock ?? "-",
+      unit: goods.unit,
+      averageHpp: goods.averageHpp,
+      sellingPrice: goods.sellingPrice,
+      stockValue,
+      margin: `${margin}%`,
+      status,
+    });
+
+    row.eachCell((cell) => {
+      cell.border = cellBorder;
+    });
+
+    // Format currency columns
+    ["averageHpp", "sellingPrice", "stockValue"].forEach((key) => {
+      const col = summary.getColumn(key);
+      const cellRef = row.getCell(col.number);
+      cellRef.numFmt = '#,##0';
+    });
+
+    // Color status
+    const statusCell = row.getCell(summary.getColumn("status").number);
+    if (status === "Habis") {
+      statusCell.font = { color: { argb: "FFDC2626" }, bold: true };
+    } else if (status === "Stok Rendah") {
+      statusCell.font = { color: { argb: "FFF59E0B" }, bold: true };
+    } else {
+      statusCell.font = { color: { argb: "FF16A34A" } };
+    }
+  });
+
+  // Totals row
+  const totalRow = summary.addRow({
+    no: "",
+    name: "TOTAL",
+    currentStock: products.reduce((sum, p) => sum + (p.goods?.currentStock ?? 0), 0),
+    minStock: "",
+    unit: "",
+    averageHpp: "",
+    sellingPrice: "",
+    stockValue: products.reduce(
+      (sum, p) => sum + (p.goods ? p.goods.currentStock * p.goods.averageHpp : 0),
+      0,
+    ),
+    margin: "",
+    status: "",
+  });
+  totalRow.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.border = cellBorder;
+  });
+  totalRow.getCell(summary.getColumn("stockValue").number).numFmt = '#,##0';
+
+  // ─── Sheet 2+: Per-product history ───
+  const typeLabels: Record<string, string> = {
+    IN: "Masuk",
+    OUT: "Keluar",
+    ADJUSTMENT: "Penyesuaian",
+    RETURN: "Retur",
+  };
+
+  for (const product of products) {
+    const goods = product.goods!;
+    const logs = goods.stockLogs || [];
+
+    // Sheet name max 31 chars
+    const sheetName = product.name.length > 28
+      ? product.name.substring(0, 28) + "..."
+      : product.name;
+
+    const sheet = workbook.addWorksheet(sheetName);
+
+    // Product info header
+    sheet.mergeCells("A1:G1");
+    const titleCell = sheet.getCell("A1");
+    titleCell.value = product.name;
+    titleCell.font = { bold: true, size: 14 };
+
+    sheet.mergeCells("A2:G2");
+    sheet.getCell("A2").value =
+      `Stok: ${goods.currentStock} ${goods.unit} | HPP Rata-rata: Rp ${goods.averageHpp.toLocaleString("id-ID")} | Harga Jual: Rp ${goods.sellingPrice.toLocaleString("id-ID")}`;
+    sheet.getCell("A2").font = { size: 10, color: { argb: "FF666666" } };
+
+    // Empty row
+    sheet.addRow([]);
+
+    // History table header
+    const historyHeaderRow = sheet.addRow([
+      "No",
+      "Tanggal",
+      "Tipe",
+      "Jumlah",
+      "HPP/Unit",
+      "Referensi",
+      "Catatan",
+    ]);
+    historyHeaderRow.eachCell((cell) => {
+      Object.assign(cell, { style: headerStyle });
+    });
+
+    sheet.getColumn(1).width = 6;
+    sheet.getColumn(2).width = 22;
+    sheet.getColumn(3).width = 15;
+    sheet.getColumn(4).width = 12;
+    sheet.getColumn(5).width = 18;
+    sheet.getColumn(6).width = 20;
+    sheet.getColumn(7).width = 30;
+
+    if (logs.length === 0) {
+      const emptyRow = sheet.addRow(["", "Belum ada riwayat stok", "", "", "", "", ""]);
+      emptyRow.getCell(2).font = { italic: true, color: { argb: "FF999999" } };
+    } else {
+      logs.forEach((log, idx) => {
+        const row = sheet.addRow([
+          idx + 1,
+          new Date(log.createdAt).toLocaleString("id-ID", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }),
+          typeLabels[log.type] || log.type,
+          log.quantity,
+          log.hppPerUnit ?? "-",
+          log.referenceType
+            ? `${log.referenceType}${log.referenceId ? ` #${log.referenceId.substring(0, 8)}` : ""}`
+            : "-",
+          log.notes || "-",
+        ]);
+
+        row.eachCell((cell) => {
+          cell.border = cellBorder;
+        });
+
+        // Format HPP column
+        if (log.hppPerUnit !== null) {
+          row.getCell(5).numFmt = '#,##0';
+        }
+
+        // Color type
+        const typeCell = row.getCell(3);
+        if (log.type === "IN") {
+          typeCell.font = { color: { argb: "FF16A34A" } };
+        } else if (log.type === "OUT") {
+          typeCell.font = { color: { argb: "FFDC2626" } };
+        } else if (log.type === "RETURN") {
+          typeCell.font = { color: { argb: "FFF59E0B" } };
+        }
+      });
+    }
+  }
+
+  return workbook;
 }

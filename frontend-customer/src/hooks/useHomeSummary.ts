@@ -6,6 +6,7 @@ export function useHomeSummary() {
     return useQuery<HomeSummaryResponse>({
         queryKey: ['home', 'summary'],
         queryFn: () => api.getData<HomeSummaryResponse>('/home'),
-        staleTime: 1000 * 60
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 10,
     })
 }

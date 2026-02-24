@@ -10,17 +10,17 @@ import {
 } from "../controller/staff.controller";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
-import { checkStaffLimit } from "../middleware/subscription-limits.middleware";
+import { requireActiveSubscription } from "../middleware/subscription.middleware";
 
 const staffRouter = Router();
 
 // Semua rute di bawah ini dilindungi dan hanya untuk Owner
 staffRouter.use(protect, authorize(UserRole.OWNER));
 
-staffRouter.post("/", checkStaffLimit, validateSchema(staffSchema), createStaffController);
-staffRouter.get("/outlet/:outletId", getStaffByOutletController);
-staffRouter.get("/:id", getStaffByIdController);
-staffRouter.patch("/:id", validateSchema(updateStaffSchema), updateStaffController);
-staffRouter.delete("/:id", deleteStaffController);
+staffRouter.post("/", requireActiveSubscription, validateSchema(staffSchema), createStaffController);
+staffRouter.get("/outlet/:outletId", requireActiveSubscription, getStaffByOutletController);
+staffRouter.get("/:id", requireActiveSubscription, getStaffByIdController);
+staffRouter.patch("/:id", requireActiveSubscription, validateSchema(updateStaffSchema), updateStaffController);
+staffRouter.delete("/:id", requireActiveSubscription, deleteStaffController);
 
 export default staffRouter;

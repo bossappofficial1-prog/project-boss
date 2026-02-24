@@ -1,132 +1,91 @@
+import { PaymentStatus, SubscriptionStatus } from "@prisma/client";
 import { db } from "../config/prisma";
-import { SubscriptionStatus } from "@prisma/client";
 
 export class SubscriptionRepository {
-    /**
-     * Create a new business subscription
-     */
-    static async createSubscription(data: {
-        businessId: string;
-        planId: string;
-        startDate: Date;
-        endDate: Date;
-        status: SubscriptionStatus;
-        autoRenew?: boolean;
-    }) {
-        return db.businessSubscription.create({
-            data: {
-                businessId: data.businessId,
-                planId: data.planId,
-                startDate: data.startDate,
-                endDate: data.endDate,
-                status: data.status,
-                autoRenew: data.autoRenew ?? true,
-            },
-        });
-    }
-
-    /**
-     * Create subscription invoice
-     */
-    static async createInvoice(data: {
-        invoiceNumber: string;
-        amount: number;
-        businessId: string;
-        subscriptionId: string;
-        paymentUrl?: string;
-        externalId?: string;
-    }) {
-        return db.subscriptionInvoice.create({
-            data: {
-                invoiceNumber: data.invoiceNumber,
-                amount: data.amount,
-                status: "PENDING",
-                businessId: data.businessId,
-                subscriptionId: data.subscriptionId,
-                paymentUrl: data.paymentUrl,
-                externalId: data.externalId,
-            },
-        });
-    }
-
-    /**
-     * Get active subscription for a business
-     */
-    static async getActiveSubscription(businessId: string) {
-        return db.businessSubscription.findFirst({
-            where: {
-                businessId,
-                status: "ACTIVE",
-            },
-            include: {
-                plan: true,
-            },
-        });
-    }
-
-    /**
-     * Get subscription by ID
-     */
-    static async getById(subscriptionId: string) {
-        return db.businessSubscription.findUnique({
-            where: { id: subscriptionId },
-            include: {
-                plan: true,
-                business: true,
-            },
-        });
-    }
-
-    /**
-     * Update subscription status
-     */
-    static async updateStatus(subscriptionId: string, status: SubscriptionStatus) {
-        return db.businessSubscription.update({
-            where: { id: subscriptionId },
-            data: { status },
-        });
-    }
-
-    /**
-     * Get invoice by ID
-     */
-    static async getInvoiceById(invoiceId: string) {
+    static async getInvoiceWithPlan(invoiceId: string) {
         return db.subscriptionInvoice.findUnique({
             where: { id: invoiceId },
             include: {
                 subscription: {
                     include: {
                         plan: true,
+                        business: true,
                     },
                 },
-                business: true,
             },
         });
     }
 
-    /**
-     * Update invoice status
-     */
-    static async updateInvoiceStatus(invoiceId: string, status: string) {
-        return db.subscriptionInvoice.update({
-            where: { id: invoiceId },
-            data: { 
-                status: status as any,
-                ...(status === "SUCCESS" && { paidAt: new Date() }),
+    static async submitPaymentProof(params: {
+        invoiceId: string;
+        subscriptionId: string;
+        businessId: string;
+        proofUrl: string;
+    }) {
+        const { invoiceId, subscriptionId, businessId, proofUrl } = params;
+
+        return db.$transaction(async (tx) => {
+            const updatedInvoice = await tx.subscriptionInvoice.update({
+                where: { id: invoiceId },
+                data: {
+                    proofImage: proofUrl,
+                    proofUploadedAt: new Date(),
+                    status: PaymentStatus.PROOF_SUBMITTED,
+                },
+            });
+
+            const updatedSubscription = await tx.businessSubscription.update({
+                where: { id: subscriptionId },
+                data: {
+                    status: SubscriptionStatus.PROOF_SUBMITTED,
+                },
+            });
+
+            const updatedBusiness = await tx.business.update({
+                where: { id: businessId },
+                data: {
+                    subscriptionStatus: SubscriptionStatus.PROOF_SUBMITTED,
+                },
+            });
+
+            return {
+                invoice: updatedInvoice,
+                subscription: updatedSubscription,
+                business: updatedBusiness,
+            };
+        });
+    }
+
+    static async getBusinessWithCurrentSubscription(businessId: string) {
+        return db.business.findUnique({
+            where: { id: businessId },
+            include: {
+                currentSubscription: {
+                    include: {
+                        plan: true,
+                        invoices: {
+                            orderBy: { createdAt: "desc" },
+                            take: 1,
+                        },
+                    },
+                },
             },
         });
     }
 
-    /**
-     * Get invoices for a business
-     */
-    static async getInvoicesByBusinessId(businessId: string) {
-        return db.subscriptionInvoice.findMany({
-            where: { businessId },
+    static async getLatestPendingInvoice(businessId: string) {
+        return db.subscriptionInvoice.findFirst({
+            where: {
+                businessId,
+                status: {
+                    in: [PaymentStatus.PENDING, PaymentStatus.PROOF_SUBMITTED],
+                },
+            },
             include: {
                 subscription: {
                     include: {
                         plan: true,
+                        invoices: true,
                     },
                 },
             },
@@ -134,58 +93,102 @@ export class SubscriptionRepository {
         });
     }
 
-    /**
-     * Get plan by code
-     */
-    static async getPlanByCode(code: string) {
-        return db.subscriptionPlan.findUnique({
-            where: { code },
-        });
-    }
+    static async listInvoicesByBusiness(
+        businessId: string,
+        options: { page?: number; limit?: number } = {},
+    ) {
+        const page = Math.max(options.page ?? 1, 1);
+        const limit = Math.min(Math.max(options.limit ?? 10, 1), 50);
+        const skip = (page - 1) * limit;
 
-    /**
-     * Get expiring subscriptions (within next N days)
-     */
-    static async getExpiringSubscriptions(daysFromNow: number) {
-        const now = new Date();
-        const futureDate = new Date();
-        futureDate.setDate(now.getDate() + daysFromNow);
-
-        return db.businessSubscription.findMany({
-            where: {
-                status: "ACTIVE",
-                endDate: {
-                    gte: now,
-                    lte: futureDate,
-                },
-            },
-            include: {
-                business: {
-                    include: {
-                        owner: true,
+        const [total, invoices] = await db.$transaction([
+            db.subscriptionInvoice.count({ where: { businessId } }),
+            db.subscriptionInvoice.findMany({
+                where: { businessId },
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limit,
+                include: {
+                    subscription: {
+                        include: {
+                            plan: true,
+                        },
                     },
                 },
-                plan: true,
+            }),
+        ]);
+
+        return {
+            data: invoices,
+            total,
+            page,
+            limit,
+            totalPages: Math.max(Math.ceil(total / limit), 1),
+        };
+    }
+
+    static async hasUsedTrial(businessId: string) {
+        const trialSubscription = await db.businessSubscription.findFirst({
+            where: {
+                businessId,
+                plan: {
+                    is: {
+                        code: "TRIAL",
+                    },
+                },
             },
+            select: { id: true },
+        });
+
+        return Boolean(trialSubscription);
+    }
+
+    static async createRenewalSubscription(params: {
+        businessId: string;
+        planId: string;
+        price: number;
+        startDate: Date;
+        endDate: Date;
+    }) {
+        const { businessId, planId, price, startDate, endDate } = params;
+
+        return db.$transaction(async (tx) => {
+            const subscription = await tx.businessSubscription.create({
+                data: {
+                    businessId,
+                    planId,
+                    status: SubscriptionStatus.AWAITING_PAYMENT,
+                    startDate,
+                    endDate,
+                },
+                include: {
+                    plan: true,
+                },
+            });
+
+            const invoice = await tx.subscriptionInvoice.create({
+                data: {
+                    invoiceNumber: this.generateInvoiceNumber(businessId),
+                    amount: price,
+                    status: PaymentStatus.PENDING,
+                    businessId,
+                    subscriptionId: subscription.id,
+                },
+                include: {
+                    subscription: {
+                        include: {
+                            plan: true,
+                        },
+                    },
+                },
+            });
+
+            return { subscription, invoice };
         });
     }
 
-    /**
-     * Get expired subscriptions
-     */
-    static async getExpiredSubscriptions() {
-        const now = new Date();
-
-        return db.businessSubscription.findMany({
-            where: {
-                status: "ACTIVE",
-                endDate: {
-                    lt: now,
-                },
-            },
-            include: {
-                business: true,
-            },
-        });
+    private static generateInvoiceNumber(businessId: string) {
+        const shortId = businessId.replace(/-/g, "").slice(0, 6).toUpperCase();
+        return `INV-${shortId}-${Date.now()}`;
     }
 }

@@ -86,3 +86,23 @@ export const changePasswordSchema = z.object({
 });
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const completeRegisterSchema = z.object({
+    businessName: z
+        .string({ message: 'Wajib diisi' })
+        .min(3, { message: "Nama bisnis minimal 3 karakter" })
+        .max(100, { message: "Nama bisnis terlalu panjang" }),
+
+    description: z
+        .string({
+            message: 'Wajib diisi'
+        })
+        .max(255, { message: "Deskripsi maksimal 255 karakter" })
+        .optional(),
+    selectedPlan: z
+        .string()
+        .nonempty({ message: "Plan wajib dipilih" })
+        .transform(str => str.toUpperCase())
+});
+
+export type CompleteRegisterValues = z.infer<typeof completeRegisterSchema>

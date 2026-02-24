@@ -30,6 +30,7 @@ interface UserData {
         name: string;
         email: string;
         role: string;
+        avatar?: string
         // Add other user fields as needed
     };
     outlets: Outlet[];

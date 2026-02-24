@@ -3,8 +3,11 @@
 import React, { useMemo } from "react";
 import { productApi, uploadApi } from "@/lib/api";
 import z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { FormFieldConfig, ReusableForm } from "../ui/reuseable-form";
 import { ProductItem } from "@/hooks/useProductsData";
+import ServiceOperatingHoursSection from "./ServiceOperatingHoursSection";
 
 type Props = {
   open: boolean;
@@ -29,6 +32,13 @@ const baseSchema = z.object({
     ])
     .optional(),
 });
+
+const parseDate = (date: string | Date | null | undefined): Date | null => {
+  if (!date) return null;
+  if (date instanceof Date) return date;
+  return new Date(date);
+};
+
 // 1. Definisikan Schema per bagian secara eksplisit
 const goodsSchema = z.object({
   currentStock: z.coerce.number().min(0, "Stok minimal 0"),
@@ -52,20 +62,60 @@ const serviceSchema = z.object({
   commissionType: z.enum(["PERCENTAGE", "FIXED"]),
   commissionValue: z.coerce.number().min(0),
   bookingInWorkHours: z.boolean().default(true),
+
+  // Operating hours (nullable)
+  mondayOpen: z.coerce.date().nullable().optional(),
+  mondayClose: z.coerce.date().nullable().optional(),
+  tuesdayOpen: z.coerce.date().nullable().optional(),
+  tuesdayClose: z.coerce.date().nullable().optional(),
+  wednesdayOpen: z.coerce.date().nullable().optional(),
+  wednesdayClose: z.coerce.date().nullable().optional(),
+  thursdayOpen: z.coerce.date().nullable().optional(),
+  thursdayClose: z.coerce.date().nullable().optional(),
+  fridayOpen: z.coerce.date().nullable().optional(),
+  fridayClose: z.coerce.date().nullable().optional(),
+  saturdayOpen: z.coerce.date().nullable().optional(),
+  saturdayClose: z.coerce.date().nullable().optional(),
+  sundayOpen: z.coerce.date().nullable().optional(),
+  sundayClose: z.coerce.date().nullable().optional(),
 });
 
 export type ServiceSchemaType = z.infer<typeof serviceSchema>;
+
+const ticketSchema = z.object({
+  sellingPrice: z.coerce.number().min(1, "Harga tiket harus > 0"),
+  eventDate: z.coerce.date("Tanggal event wajib diisi"),
+  eventEndDate: z.coerce.date().nullable().optional(),
+  venue: z.string().min(1, "Nama venue wajib diisi"),
+  venueAddress: z.string().nullable().optional(),
+  mapUrl: z.preprocess((val) => (val === "" ? undefined : val), z.string().url().nullable().optional()),
+  totalQuota: z.coerce.number().min(1, "Total kuota minimal 1"),
+  maxPerOrder: z.coerce.number().min(1).optional(),
+  saleStartDate: z.coerce.date().nullable().optional(),
+  saleEndDate: z.coerce.date().nullable().optional(),
+  terms: z.string().nullable().optional(),
+});
+
+export type TicketSchemaType = z.infer<typeof ticketSchema>;
 
 export const productSchema = z.discriminatedUnion("type", [
   baseSchema.extend({
     type: z.literal("GOODS"),
     goods: goodsSchema,
-    service: z.preprocess(() => undefined, z.undefined().optional()), // Paksa jadi undefined
+    service: z.preprocess(() => undefined, z.undefined().optional()),
+    ticket: z.preprocess(() => undefined, z.undefined().optional()),
   }),
   baseSchema.extend({
     type: z.literal("SERVICE"),
     service: serviceSchema,
-    goods: z.preprocess(() => undefined, z.undefined().optional()), // Paksa jadi undefined
+    goods: z.preprocess(() => undefined, z.undefined().optional()),
+    ticket: z.preprocess(() => undefined, z.undefined().optional()),
+  }),
+  baseSchema.extend({
+    type: z.literal("TICKET"),
+    ticket: ticketSchema,
+    goods: z.preprocess(() => undefined, z.undefined().optional()),
+    service: z.preprocess(() => undefined, z.undefined().optional()),
   }),
 ]);
 
@@ -118,8 +168,46 @@ export default function AddOrEditProductServiceModal({
             providerEmail: initialData.service?.providerEmail ?? "",
             providerPhone: initialData.service?.providerPhone ?? "",
             bookingInWorkHours: initialData.service?.bookingInWorkHours ?? true,
+            // Operating hours
+            mondayOpen: parseDate(initialData.service?.mondayOpen),
+            mondayClose: parseDate(initialData.service?.mondayClose),
+            tuesdayOpen: parseDate(initialData.service?.tuesdayOpen),
+            tuesdayClose: parseDate(initialData.service?.tuesdayClose),
+            wednesdayOpen: parseDate(initialData.service?.wednesdayOpen),
+            wednesdayClose: parseDate(initialData.service?.wednesdayClose),
+            thursdayOpen: parseDate(initialData.service?.thursdayOpen),
+            thursdayClose: parseDate(initialData.service?.thursdayClose),
+            fridayOpen: parseDate(initialData.service?.fridayOpen),
+            fridayClose: parseDate(initialData.service?.fridayClose),
+            saturdayOpen: parseDate(initialData.service?.saturdayOpen),
+            saturdayClose: parseDate(initialData.service?.saturdayClose),
+            sundayOpen: parseDate(initialData.service?.sundayOpen),
+            sundayClose: parseDate(initialData.service?.sundayClose),
           },
           goods: undefined,
+          ticket: undefined,
+        } satisfies ProductFormValues;
+      }
+
+      if (initialData.type === "TICKET") {
+        return {
+          ...baseNormalized,
+          type: "TICKET" as const,
+          ticket: {
+            sellingPrice: initialData.ticket?.sellingPrice ?? 0,
+            eventDate: parseDate(initialData.ticket?.eventDate) ?? new Date(),
+            eventEndDate: parseDate(initialData.ticket?.eventEndDate),
+            venue: initialData.ticket?.venue ?? "",
+            venueAddress: initialData.ticket?.venueAddress ?? null,
+            mapUrl: initialData.ticket?.mapUrl ?? null,
+            totalQuota: initialData.ticket?.totalQuota ?? 100,
+            maxPerOrder: initialData.ticket?.maxPerOrder ?? 5,
+            saleStartDate: parseDate(initialData.ticket?.saleStartDate),
+            saleEndDate: parseDate(initialData.ticket?.saleEndDate),
+            terms: initialData.ticket?.terms ?? null,
+          },
+          goods: undefined,
+          service: undefined,
         } satisfies ProductFormValues;
       }
 
@@ -178,6 +266,27 @@ export default function AddOrEditProductServiceModal({
       };
 
       payload.goods = goods;
+    } else if (formType === "TICKET") {
+      const ticket: TicketSchemaType = {
+        sellingPrice: Number(otherValues.get("ticket[sellingPrice]")) || 0,
+        eventDate: new Date(otherValues.get("ticket[eventDate]") as string),
+        eventEndDate: otherValues.get("ticket[eventEndDate]")
+          ? new Date(otherValues.get("ticket[eventEndDate]") as string)
+          : null,
+        venue: (otherValues.get("ticket[venue]") || "") as string,
+        venueAddress: (otherValues.get("ticket[venueAddress]") as string) || null,
+        mapUrl: (otherValues.get("ticket[mapUrl]") as string) || null,
+        totalQuota: Number(otherValues.get("ticket[totalQuota]")) || 100,
+        maxPerOrder: Number(otherValues.get("ticket[maxPerOrder]")) || 5,
+        saleStartDate: otherValues.get("ticket[saleStartDate]")
+          ? new Date(otherValues.get("ticket[saleStartDate]") as string)
+          : null,
+        saleEndDate: otherValues.get("ticket[saleEndDate]")
+          ? new Date(otherValues.get("ticket[saleEndDate]") as string)
+          : null,
+        terms: (otherValues.get("ticket[terms]") as string) || null,
+      };
+      payload.ticket = ticket;
     } else {
       const providerEmail = otherValues.get("service[providerEmail]") as string;
       const providerPhone = otherValues.get("service[providerPhone]") as string;
@@ -191,6 +300,49 @@ export default function AddOrEditProductServiceModal({
         providerEmail: providerEmail && providerEmail.trim() !== "" ? providerEmail : undefined,
         providerPhone: providerPhone && providerPhone.trim() !== "" ? providerPhone : undefined,
         bookingInWorkHours: otherValues.get("service[bookingInWorkHours]") === "true",
+        // Operating hours
+        mondayOpen: otherValues.get("service[mondayOpen]")
+          ? new Date(otherValues.get("service[mondayOpen]") as string)
+          : null,
+        mondayClose: otherValues.get("service[mondayClose]")
+          ? new Date(otherValues.get("service[mondayClose]") as string)
+          : null,
+        tuesdayOpen: otherValues.get("service[tuesdayOpen]")
+          ? new Date(otherValues.get("service[tuesdayOpen]") as string)
+          : null,
+        tuesdayClose: otherValues.get("service[tuesdayClose]")
+          ? new Date(otherValues.get("service[tuesdayClose]") as string)
+          : null,
+        wednesdayOpen: otherValues.get("service[wednesdayOpen]")
+          ? new Date(otherValues.get("service[wednesdayOpen]") as string)
+          : null,
+        wednesdayClose: otherValues.get("service[wednesdayClose]")
+          ? new Date(otherValues.get("service[wednesdayClose]") as string)
+          : null,
+        thursdayOpen: otherValues.get("service[thursdayOpen]")
+          ? new Date(otherValues.get("service[thursdayOpen]") as string)
+          : null,
+        thursdayClose: otherValues.get("service[thursdayClose]")
+          ? new Date(otherValues.get("service[thursdayClose]") as string)
+          : null,
+        fridayOpen: otherValues.get("service[fridayOpen]")
+          ? new Date(otherValues.get("service[fridayOpen]") as string)
+          : null,
+        fridayClose: otherValues.get("service[fridayClose]")
+          ? new Date(otherValues.get("service[fridayClose]") as string)
+          : null,
+        saturdayOpen: otherValues.get("service[saturdayOpen]")
+          ? new Date(otherValues.get("service[saturdayOpen]") as string)
+          : null,
+        saturdayClose: otherValues.get("service[saturdayClose]")
+          ? new Date(otherValues.get("service[saturdayClose]") as string)
+          : null,
+        sundayOpen: otherValues.get("service[sundayOpen]")
+          ? new Date(otherValues.get("service[sundayOpen]") as string)
+          : null,
+        sundayClose: otherValues.get("service[sundayClose]")
+          ? new Date(otherValues.get("service[sundayClose]") as string)
+          : null,
       };
       payload.service = service;
     }
@@ -203,6 +355,14 @@ export default function AddOrEditProductServiceModal({
     onSuccess?.();
     handleClose(false);
   };
+
+  // Create explicit form instance
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(productSchema) as any,
+    defaultValues,
+  });
+
+  const formType = form.watch("type");
 
   // mulai perubahan
   const fields: FormFieldConfig<ProductFormValues>[] = [
@@ -221,6 +381,10 @@ export default function AddOrEditProductServiceModal({
         {
           label: "Jasa (Layanan)",
           value: "SERVICE",
+        },
+        {
+          label: "Tiket (Event)",
+          value: "TICKET",
         },
       ],
     },
@@ -357,6 +521,134 @@ export default function AddOrEditProductServiceModal({
       placeholder: "contoh: 081234567890",
       condition: (values) => values.type === "SERVICE",
     },
+    // Custom renderer for operating hours
+    {
+      name: "service.mondayOpen" as any,
+      label: "",
+      type: "custom",
+      colSpan: "full",
+      condition: (values) => values.type === "SERVICE",
+      renderCustom: () => (
+        <ServiceOperatingHoursSection
+          outletId={outletId!}
+          value={{
+            mondayOpen: form.watch("service.mondayOpen"),
+            mondayClose: form.watch("service.mondayClose"),
+            tuesdayOpen: form.watch("service.tuesdayOpen"),
+            tuesdayClose: form.watch("service.tuesdayClose"),
+            wednesdayOpen: form.watch("service.wednesdayOpen"),
+            wednesdayClose: form.watch("service.wednesdayClose"),
+            thursdayOpen: form.watch("service.thursdayOpen"),
+            thursdayClose: form.watch("service.thursdayClose"),
+            fridayOpen: form.watch("service.fridayOpen"),
+            fridayClose: form.watch("service.fridayClose"),
+            saturdayOpen: form.watch("service.saturdayOpen"),
+            saturdayClose: form.watch("service.saturdayClose"),
+            sundayOpen: form.watch("service.sundayOpen"),
+            sundayClose: form.watch("service.sundayClose"),
+          }}
+          onChange={(value) => {
+            form.setValue("service.mondayOpen", value.mondayOpen);
+            form.setValue("service.mondayClose", value.mondayClose);
+            form.setValue("service.tuesdayOpen", value.tuesdayOpen);
+            form.setValue("service.tuesdayClose", value.tuesdayClose);
+            form.setValue("service.wednesdayOpen", value.wednesdayOpen);
+            form.setValue("service.wednesdayClose", value.wednesdayClose);
+            form.setValue("service.thursdayOpen", value.thursdayOpen);
+            form.setValue("service.thursdayClose", value.thursdayClose);
+            form.setValue("service.fridayOpen", value.fridayOpen);
+            form.setValue("service.fridayClose", value.fridayClose);
+            form.setValue("service.saturdayOpen", value.saturdayOpen);
+            form.setValue("service.saturdayClose", value.saturdayClose);
+            form.setValue("service.sundayOpen", value.sundayOpen);
+            form.setValue("service.sundayClose", value.sundayClose);
+          }}
+        />
+      ),
+    },
+
+    // product === ticket
+    {
+      name: "ticket.sellingPrice" as any,
+      label: "Harga Tiket *",
+      type: "currency",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.totalQuota" as any,
+      label: "Total Kuota *",
+      type: "number",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.eventDate" as any,
+      label: "Tanggal Event *",
+      type: "datetime-local",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.eventEndDate" as any,
+      label: "Tanggal Selesai (opsional)",
+      type: "datetime-local",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.venue" as any,
+      label: "Nama Venue *",
+      type: "text",
+      colSpan: "full",
+      placeholder: "contoh: Stadion GBK, Pelabuhan Merak",
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.venueAddress" as any,
+      label: "Alamat Venue (opsional)",
+      type: "text",
+      colSpan: "full",
+      placeholder: "Alamat lengkap venue",
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.mapUrl" as any,
+      label: "Link Google Maps (opsional)",
+      type: "text",
+      colSpan: "full",
+      placeholder: "https://maps.google.com/...",
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.maxPerOrder" as any,
+      label: "Maks per Order",
+      type: "number",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.saleStartDate" as any,
+      label: "Mulai Penjualan (opsional)",
+      type: "datetime-local",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.saleEndDate" as any,
+      label: "Tutup Penjualan (opsional)",
+      type: "datetime-local",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.terms" as any,
+      label: "Syarat & Ketentuan (opsional)",
+      type: "textarea",
+      colSpan: "full",
+      placeholder: "Syarat dan ketentuan tiket",
+      condition: (values) => values.type === "TICKET",
+    },
     {
       name: "file",
       label: "Gambar Produk",
@@ -369,6 +661,7 @@ export default function AddOrEditProductServiceModal({
 
   return (
     <ReusableForm
+      form={form}
       withDialog
       gridCols={6}
       useFormData={false}

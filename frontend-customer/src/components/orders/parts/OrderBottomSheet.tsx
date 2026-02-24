@@ -1,387 +1,620 @@
-"use client"
+"use client";
 
-import { OrderDetail, OrderStatus, type OrderStatusType } from "@/types"
+import { OrderDetail, OrderStatus, type OrderStatusType } from "@/types";
 import {
     Sheet,
     SheetContent,
     SheetDescription,
     SheetHeader,
     SheetTitle,
-} from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { cn, formatCurrency, formatDateTime } from "@/lib/utils"
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn, formatCurrency, formatDateTime } from "@/lib/utils";
 import {
-    Clock, CreditCard, CheckCircle, XCircle, Hourglass, PackageCheck,
-    Store, User, Phone, Copy, RefreshCw, MessageCircle, Play, Loader2, CalendarPlus, ListOrdered
-} from "lucide-react"
-import { useSnackbar } from "@/hooks/useSnackbar"
-import { useTranslations } from "@/hooks/useI18n"
+    Clock,
+    CreditCard,
+    CheckCircle,
+    XCircle,
+    Hourglass,
+    PackageCheck,
+    Store,
+    User,
+    Phone,
+    Copy,
+    RefreshCw,
+    MessageCircle,
+    Play,
+    Loader2,
+    CalendarPlus,
+    ListOrdered,
+    AlertCircle,
+    Wallet,
+    CheckCircle2,
+} from "lucide-react";
+import { useSnackbar } from "@/hooks/useSnackbar";
+import { useTranslations } from "@/hooks/useI18n";
+import dynamic from "next/dynamic";
+
+const CountdownTimer = dynamic(() => import("./CountdownTimer"), { ssr: false });
+const TicketQRCard = dynamic(() => import("./TicketQRCard"), { ssr: false });
+
+type ActionType =
+    | "contact"
+    | "cancel"
+    | "reorder"
+    | "confirm"
+    | "pay"
+    | "calendar";
+
 interface OrderBottomSheetProps {
-    order: OrderDetail | null
-    isOpen: boolean
-    onClose: () => void
-    onAction?: (action: 'contact' | 'cancel' | 'reorder' | 'confirm' | 'pay' | 'calendar', order: OrderDetail) => void
-    pendingAction?: { orderId: string; action: 'contact' | 'cancel' | 'reorder' | 'confirm' | 'pay' | 'calendar' } | null
+    order: OrderDetail | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onAction?: (action: ActionType, order: OrderDetail) => void;
+    pendingAction?: { orderId: string; action: ActionType } | null;
 }
 
-export default function OrderBottomSheet({ order, isOpen, onClose, onAction, pendingAction }: OrderBottomSheetProps) {
-    const snackbar = useSnackbar()
-    const t = useTranslations('orders')
+const STATUS_MAP = {
+    [OrderStatus.AWAITING_PAYMENT]: {
+        icon: Hourglass,
+        dotColor: "bg-yellow-500",
+        textColor: "text-yellow-700 dark:text-yellow-400",
+        badgeBg:
+            "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800",
+    },
+    [OrderStatus.PROCESSING]: {
+        icon: Clock,
+        dotColor: "bg-blue-500",
+        textColor: "text-blue-700 dark:text-blue-400",
+        badgeBg:
+            "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800",
+    },
+    [OrderStatus.CONFIRMED]: {
+        icon: CheckCircle,
+        dotColor: "bg-cyan-500",
+        textColor: "text-cyan-700 dark:text-cyan-400",
+        badgeBg:
+            "bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800",
+    },
+    [OrderStatus.READY]: {
+        icon: PackageCheck,
+        dotColor: "bg-green-500",
+        textColor: "text-green-700 dark:text-green-400",
+        badgeBg:
+            "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800",
+    },
+    [OrderStatus.ON_GOING]: {
+        icon: Play,
+        dotColor: "bg-orange-500",
+        textColor: "text-orange-700 dark:text-orange-400",
+        badgeBg:
+            "bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800",
+    },
+    [OrderStatus.COMPLETED]: {
+        icon: CheckCircle,
+        dotColor: "bg-primary",
+        textColor: "text-primary",
+        badgeBg: "bg-primary/5 border-primary/20",
+    },
+    [OrderStatus.CANCELLED]: {
+        icon: XCircle,
+        dotColor: "bg-destructive",
+        textColor: "text-destructive",
+        badgeBg: "bg-destructive/5 border-destructive/20",
+    },
+} as const;
 
-    const statusConfig: any = {
-        AWAITING_PAYMENT: {
-            label: t('status.awaiting_payment'),
-            icon: Hourglass,
-            color: "text-yellow-600 dark:text-yellow-400",
-            bgColor: "bg-yellow-50 dark:bg-yellow-950/20"
-        },
-        PROCESSING: {
-            label: t('status.processing'),
-            icon: Clock,
-            color: "text-blue-600 dark:text-blue-400",
-            bgColor: "bg-blue-50 dark:bg-blue-950/20"
-        },
-        CONFIRMED: {
-            label: t('status.confirmed_label'),
-            icon: CheckCircle,
-            color: "text-cyan-600 dark:text-cyan-400",
-            bgColor: "bg-cyan-50 dark:bg-cyan-950/20"
-        },
-        READY: {
-            label: t('status.ready_label'),
-            icon: PackageCheck,
-            color: "text-green-600 dark:text-green-400",
-            bgColor: "bg-green-50 dark:bg-green-950/20"
-        },
-        ON_GOING: {
-            label: t('status.on_going_label'),
-            icon: Play,
-            color: "text-orange-600 dark:text-orange-400",
-            bgColor: "bg-orange-50 dark:bg-orange-950/20"
-        },
-        COMPLETED: {
-            label: t('status.completed_label'),
-            icon: CheckCircle,
-            color: "text-primary",
-            bgColor: "bg-primary/5"
-        },
-        CANCELLED: {
-            label: t('status.cancelled_label'),
-            icon: XCircle,
-            color: "text-destructive",
-            bgColor: "bg-destructive/5"
-        },
-    }
+export default function OrderBottomSheet({
+    order,
+    isOpen,
+    onClose,
+    onAction,
+    pendingAction,
+}: OrderBottomSheetProps) {
+    const snackbar = useSnackbar();
+    const t = useTranslations("orders");
 
-    // Check if order contains any service products
-    const hasServiceProduct = order?.items.some(item => item.product.type === "SERVICE") ?? false
-    const queueMeta = order?.queueMeta ?? null
-    const scheduledStart = order?.queueMeta?.scheduledStart ?? order?.bookingSlot?.startTime ?? order?.bookingDate ?? null
-    const scheduleLabel = scheduledStart ? formatDateTime(scheduledStart) : null
-    const isCalendarEligibleStatus = (status: OrderStatusType) =>
-        status === OrderStatus.CONFIRMED || status === OrderStatus.READY || status === OrderStatus.ON_GOING
+    if (!order) return null;
 
-    // Timeline for GOODS
-    const goodsTimelineSteps = [
-        { status: OrderStatus.AWAITING_PAYMENT, label: t('timeline.awaiting_payment') },
-        { status: OrderStatus.PROCESSING, label: t('timeline.processing') },
-        { status: OrderStatus.CONFIRMED, label: t('timeline.confirmed') },
-        { status: OrderStatus.READY, label: t('timeline.ready') },
-        { status: OrderStatus.COMPLETED, label: t('timeline.completed') },
-    ]
+    const hasServiceProduct = order.items.some(
+        (item) => item.product.type === "SERVICE",
+    );
+    const hasTicketProduct = order.items.some(
+        (item) => item.product.type === "TICKET",
+    );
+    const ticketItems = order.items.filter(
+        (item) => item.product.type === "TICKET" && item.ticketCodes?.length,
+    );
+    const queueMeta = order.queueMeta ?? null;
+    const scheduledStart =
+        order.queueMeta?.scheduledStart ??
+        order.bookingSlot?.startTime ??
+        order.bookingDate ??
+        null;
+    const scheduleLabel = scheduledStart ? formatDateTime(scheduledStart) : null;
 
-    // Timeline for SERVICE
-    const serviceTimelineSteps = [
-        { status: OrderStatus.AWAITING_PAYMENT, label: t('timeline.awaiting_payment') },
-        { status: OrderStatus.PROCESSING, label: t('timeline.processing') },
-        { status: OrderStatus.CONFIRMED, label: t('timeline.confirmed') },
-        { status: OrderStatus.READY, label: t('timeline.ready') },
-        { status: OrderStatus.ON_GOING, label: t('timeline.on_going') },
-        { status: OrderStatus.COMPLETED, label: t('timeline.completed') },
-    ]
+    const isCalendarEligible =
+        hasServiceProduct &&
+        (order.orderStatus === OrderStatus.CONFIRMED ||
+            order.orderStatus === OrderStatus.READY ||
+            order.orderStatus === OrderStatus.ON_GOING);
 
-    // Use appropriate timeline based on product type
-    const timelineSteps = hasServiceProduct ? serviceTimelineSteps : goodsTimelineSteps
+    const isCancelled = order.orderStatus === OrderStatus.CANCELLED;
 
-    if (!order) return null
+    // Context-aware timeline: different steps & labels for GOODS vs SERVICE
+    const timelineSteps = hasServiceProduct
+        ? [
+            {
+                status: OrderStatus.AWAITING_PAYMENT,
+                label: t("timeline.awaiting_payment"),
+            },
+            { status: OrderStatus.PROCESSING, label: t("timeline.processing") },
+            {
+                status: OrderStatus.CONFIRMED,
+                label: t("timeline.confirmed_service"),
+            },
+            { status: OrderStatus.READY, label: t("timeline.ready_service") },
+            { status: OrderStatus.ON_GOING, label: t("timeline.on_going") },
+            { status: OrderStatus.COMPLETED, label: t("timeline.completed") },
+        ]
+        : [
+            {
+                status: OrderStatus.AWAITING_PAYMENT,
+                label: t("timeline.awaiting_payment"),
+            },
+            { status: OrderStatus.PROCESSING, label: t("timeline.processing") },
+            { status: OrderStatus.CONFIRMED, label: t("timeline.confirmed") },
+            { status: OrderStatus.READY, label: t("timeline.ready") },
+            { status: OrderStatus.COMPLETED, label: t("timeline.completed") },
+        ];
 
-    const currentStatus = statusConfig[order.orderStatus] || statusConfig.PROCESSING
-    const CurrentStatusIcon = currentStatus.icon
+    const currentIndex = timelineSteps.findIndex(
+        (s) => s.status === order.orderStatus,
+    );
+
+    const statusLabels: Record<string, string> = {
+        [OrderStatus.AWAITING_PAYMENT]: t("status.awaiting_payment"),
+        [OrderStatus.PROCESSING]: t("status.processing"),
+        [OrderStatus.CONFIRMED]: t("status.confirmed_label"),
+        [OrderStatus.READY]: t("status.ready_label"),
+        [OrderStatus.ON_GOING]: t("status.on_going_label"),
+        [OrderStatus.COMPLETED]: t("status.completed_label"),
+        [OrderStatus.CANCELLED]: t("status.cancelled_label"),
+    };
+
+    const status =
+        STATUS_MAP[order.orderStatus] ?? STATUS_MAP[OrderStatus.PROCESSING];
+
+    const subtotal = order.totalAmount - order.midtransFee - order.appFee;
+    const showTransactionFee =
+        order.midtransFee > 0 &&
+        order.transaction?.paymentMethod !== "QRIS_OFFLINE" &&
+        order.transaction?.paymentMethod !== "OWNER_TRANSFER";
+
+    const isBusy = pendingAction?.orderId === order.id;
 
     const copyOrderId = () => {
-        navigator.clipboard.writeText(order.id)
-        snackbar.success(t('messages.orderIdCopied'))
-    }
-
-    const getStatusIndex = (status: string) => {
-        return timelineSteps.findIndex(step => step.status === status)
-    }
-
-    const currentIndex = getStatusIndex(order.orderStatus)
-    const isCancelled = order.orderStatus === OrderStatus.CANCELLED
+        navigator.clipboard.writeText(order.id);
+        snackbar.success(t("messages.orderIdCopied"));
+    };
 
     return (
-        <Sheet open={isOpen} onOpenChange={onClose} >
-            <SheetContent side="bottom" className="h-[90vh] z-[101] p-0 rounded-t-xl">
+        <Sheet open={isOpen} onOpenChange={onClose}>
+            <SheetContent
+                side="bottom"
+                className="h-[90vh] z-[101] p-0 rounded-t-xl"
+            >
                 <ScrollArea className="h-full">
-                    <SheetHeader className="p-6 pb-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <SheetTitle className="text-xl">{t('detail.title')}</SheetTitle>
-                            <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full", currentStatus.bgColor)}>
-                                <CurrentStatusIcon className={cn("w-4 h-4", currentStatus.color)} />
-                                <span className={cn("text-sm font-semibold", currentStatus.color)}>
-                                    {currentStatus.label}
-                                </span>
+                    {/* Header */}
+                    <SheetHeader className="px-4 pt-5 pb-3 space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                                <SheetTitle className="text-lg leading-tight">
+                                    {t("detail.title")}
+                                </SheetTitle>
+                                <SheetDescription className="flex items-center gap-1.5 mt-1.5">
+                                    <code className="text-[11px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                        #{order.id.slice(0, 12)}
+                                    </code>
+                                    <button
+                                        onClick={copyOrderId}
+                                        className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                                    >
+                                        <Copy className="w-3 h-3" />
+                                    </button>
+                                </SheetDescription>
                             </div>
+                            <span
+                                className={cn(
+                                    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border shrink-0",
+                                    status.badgeBg,
+                                    status.textColor,
+                                )}
+                            >
+                                <span
+                                    className={cn(
+                                        "w-1.5 h-1.5 rounded-full",
+                                        status.dotColor,
+                                    )}
+                                />
+                                {statusLabels[order.orderStatus] || order.orderStatus}
+                            </span>
                         </div>
-                        <SheetDescription className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">{t('detail.orderId')}:</span>
-                            <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                                {order.id.slice(0, 12)}...
-                            </code>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={copyOrderId}>
-                                <Copy className="w-3 h-3" />
-                            </Button>
-                        </SheetDescription>
                     </SheetHeader>
 
-                    <div className="px-6 pb-6 space-y-6">
-                        {/* Timeline - Only show if not cancelled */}
+                    <div className="px-4 pb-6 space-y-4">
+                        {/* Cancellation / Rejection Notes */}
+                        {isCancelled && order.cancellationReason && (
+                            <div className="px-3 py-2 rounded-md bg-destructive/5 border border-destructive/10">
+                                <div className="flex items-start gap-2">
+                                    <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-[11px] font-medium text-destructive mb-0.5">
+                                            Alasan pembatalan
+                                        </p>
+                                        <p className="text-[11px] text-destructive/70 leading-relaxed">
+                                            {order.cancellationReason}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {order.transaction?.status === "REJECTED_MANUAL" && (
+                            <div className="px-3 py-2 rounded-md bg-destructive/5 border border-destructive/10">
+                                <div className="flex items-start gap-2">
+                                    <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-[11px] font-medium text-destructive mb-0.5">
+                                            Bukti pembayaran ditolak
+                                        </p>
+                                        <p className="text-[11px] text-destructive/70 leading-relaxed">
+                                            {order.transaction.rejectionNote || "Tidak ada alasan"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Countdown Timer for AWAITING_PAYMENT */}
+                        {order.orderStatus === OrderStatus.AWAITING_PAYMENT &&
+                            order.transaction?.expiryTime && (
+                                <CountdownTimer
+                                    expiryTime={order.transaction.expiryTime}
+                                    compact={false}
+                                />
+                            )}
+
+                        {/* Timeline — horizontal stepper style */}
                         {!isCancelled && (
-                            <div className="space-y-4">
-                                <h3 className="font-semibold text-sm">{t('detail.progress')}</h3>
-                                <div className="relative space-y-4">
-                                    {timelineSteps.map((step, index) => {
-                                        const StepIcon = statusConfig[step.status]?.icon || Clock
-                                        const isCompleted = index <= currentIndex
-                                        const isCurrent = index === currentIndex
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                    {t("detail.progress")}
+                                </p>
+
+                                {/* Horizontal step indicators */}
+                                <div className="flex items-center gap-0">
+                                    {timelineSteps.map((step, idx) => {
+                                        const isCompleted = idx <= currentIndex;
+                                        const isCurrent = idx === currentIndex;
+                                        const isLast = idx === timelineSteps.length - 1;
 
                                         return (
-                                            <div key={step.status} className="flex items-start gap-3 relative">
-                                                {/* Connector Line */}
-                                                {index < timelineSteps.length - 1 && (
-                                                    <div className={cn(
-                                                        "absolute left-[15px] top-8 w-0.5 h-6",
-                                                        isCompleted ? "bg-primary" : "bg-border"
-                                                    )} />
-                                                )}
-
-                                                {/* Icon */}
-                                                <div className={cn(
-                                                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 ring-4 ring-background z-10",
-                                                    isCompleted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-                                                    isCurrent && "ring-primary/20"
-                                                )}>
-                                                    {isCompleted ? (
-                                                        <CheckCircle className="w-4 h-4" />
-                                                    ) : (
-                                                        <StepIcon className="w-4 h-4" />
-                                                    )}
-                                                </div>
-
-                                                {/* Label */}
-                                                <div className="flex-1 pt-1">
-                                                    <p className={cn(
-                                                        "text-sm font-medium",
-                                                        isCurrent ? "text-foreground" : "text-muted-foreground"
-                                                    )}>
+                                            <div
+                                                key={step.status}
+                                                className="flex items-center flex-1 min-w-0 last:flex-none"
+                                            >
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <div
+                                                        className={cn(
+                                                            "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all",
+                                                            isCompleted
+                                                                ? "bg-primary text-primary-foreground"
+                                                                : "bg-muted text-muted-foreground",
+                                                            isCurrent && "ring-2 ring-primary/30",
+                                                        )}
+                                                    >
+                                                        {isCompleted ? (
+                                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                                        ) : (
+                                                            <span className="text-[9px] font-bold">
+                                                                {idx + 1}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span
+                                                        className={cn(
+                                                            "text-[9px] text-center leading-tight max-w-[56px]",
+                                                            isCurrent
+                                                                ? "font-semibold text-foreground"
+                                                                : "text-muted-foreground",
+                                                        )}
+                                                    >
                                                         {step.label}
-                                                    </p>
-                                                    {isCurrent && (
-                                                        <p className="text-xs text-muted-foreground mt-0.5">
-                                                            {formatDateTime(order.updatedAt)}
-                                                        </p>
-                                                    )}
+                                                    </span>
                                                 </div>
-
-                                                {/* Badge for current */}
-                                                {isCurrent && (
-                                                    <Badge variant="outline" className="text-xs">
-                                                        {t('detail.currentStatus')}
-                                                    </Badge>
+                                                {/* Connector line */}
+                                                {!isLast && (
+                                                    <div
+                                                        className={cn(
+                                                            "h-0.5 flex-1 mx-0.5 mt-[-14px]",
+                                                            idx < currentIndex ? "bg-primary" : "bg-border",
+                                                        )}
+                                                    />
                                                 )}
                                             </div>
-                                        )
+                                        );
                                     })}
                                 </div>
+
+                                {/* Current status timestamp */}
+                                {currentIndex >= 0 && (
+                                    <p className="text-[10px] text-muted-foreground text-center">
+                                        {formatDateTime(order.updatedAt)}
+                                    </p>
+                                )}
                             </div>
                         )}
 
-                        {hasServiceProduct && (
-                            <div className="space-y-3">
-                                <h3 className="font-semibold text-sm">{t('detail.serviceQueue')}</h3>
-                                <div className="border rounded-md p-3 space-y-2 bg-muted/40">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <ListOrdered className="w-4 h-4" />
-                                            <span>{t('queue.positionLabel')}</span>
-                                        </div>
-                                        <span className="text-base font-semibold">
-                                            {queueMeta?.position ? `#${queueMeta.position}` : t('queue.positionPending')}
-                                        </span>
+                        {/* Queue Info for Service Orders */}
+                        {hasServiceProduct && queueMeta && (
+                            <div className="rounded-md border p-3 bg-muted/30 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <ListOrdered className="w-3.5 h-3.5" />
+                                        <span>{t("queue.positionLabel")}</span>
                                     </div>
-                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                        <span>
-                                            {queueMeta?.totalAhead && queueMeta.totalAhead > 0
-                                                ? t('queue.peopleAhead', { count: queueMeta.totalAhead })
-                                                : t('queue.noOneAhead')}
-                                        </span>
-                                        <span>
-                                            {scheduleLabel
-                                                ? t('queue.estimatedStart', { date: scheduleLabel })
-                                                : t('queue.schedulePending')}
-                                        </span>
-                                    </div>
+                                    <span className="text-sm font-bold">
+                                        {queueMeta.position
+                                            ? `#${queueMeta.position}`
+                                            : t("queue.positionPending")}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                    <span>
+                                        {queueMeta.totalAhead > 0
+                                            ? t("queue.peopleAhead", {
+                                                count: queueMeta.totalAhead,
+                                            })
+                                            : t("queue.noOneAhead")}
+                                    </span>
+                                    <span>
+                                        {scheduleLabel
+                                            ? t("queue.estimatedStart", { date: scheduleLabel })
+                                            : t("queue.schedulePending")}
+                                    </span>
                                 </div>
                             </div>
                         )}
 
-                        <Separator />
-
-                        {/* Outlet Info */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-sm">{t('detail.outletInfo')}</h3>
-                            <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
-                                <Store className="w-5 h-5 text-muted-foreground" />
-                                <span className="text-sm font-medium">{order.outlet.name}</span>
+                        {/* Outlet & Customer — combined row */}
+                        <div className="rounded-md border overflow-hidden">
+                            <div className="flex items-center gap-3 px-3 py-2.5 bg-muted/30">
+                                <Store className="w-4 h-4 text-muted-foreground shrink-0" />
+                                <span className="text-sm font-medium truncate">
+                                    {order.outlet.name}
+                                </span>
                             </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Customer Info */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-sm">{t('detail.customerInfo')}</h3>
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-3">
-                                    <User className="w-4 h-4 text-muted-foreground" />
-                                    <span className="text-sm">{order.customerDetails.name}</span>
+                            <div className="h-px bg-border" />
+                            <div className="px-3 py-2.5 space-y-1.5">
+                                <div className="flex items-center gap-2.5 text-xs">
+                                    <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                    <span>{order.customerDetails.name}</span>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <Phone className="w-4 h-4 text-muted-foreground" />
-                                    <span className="text-sm">{order.customerDetails.phone}</span>
+                                <div className="flex items-center gap-2.5 text-xs">
+                                    <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                    <span className="text-muted-foreground">
+                                        {order.customerDetails.phone}
+                                    </span>
                                 </div>
                             </div>
                         </div>
-
-                        <Separator />
 
                         {/* Items */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-sm">{t('detail.itemDetails')}</h3>
-                            <div className="space-y-2">
-                                {order.items.map(item => (
-                                    <div key={item.id} className="flex justify-between items-start text-sm p-3 rounded-md bg-muted/30">
-                                        <div className="flex-1">
-                                            <p className="font-medium">{item.product.name}</p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {item.quantity} x {formatCurrency(item.priceAtTimeOfOrder)}
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                {t("detail.itemDetails")}
+                            </p>
+                            <div className="rounded-md border divide-y">
+                                {order.items.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className="flex items-center justify-between px-3 py-2.5"
+                                    >
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium truncate">
+                                                {item.product.name}
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                {item.quantity} × {formatCurrency(item.priceAtTimeOfOrder)}
                                             </p>
                                         </div>
-                                        <p className="font-semibold">
+                                        <span className="text-sm font-semibold ml-3 shrink-0">
                                             {formatCurrency(item.quantity * item.priceAtTimeOfOrder)}
-                                        </p>
+                                        </span>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        <Separator />
+                        {/* Ticket QR Codes */}
+                        {hasTicketProduct && ticketItems.length > 0 && (
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                    Tiket Anda
+                                </p>
+                                <div className="space-y-3">
+                                    {ticketItems.flatMap((item) =>
+                                        (item.ticketCodes ?? []).map((tc, idx) => (
+                                            <TicketQRCard
+                                                key={tc.id}
+                                                ticketCode={tc}
+                                                productName={item.product.name}
+                                                index={idx}
+                                            />
+                                        ))
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground text-center">
+                                    Tunjukkan QR code saat datang ke lokasi event
+                                </p>
+                            </div>
+                        )}
 
                         {/* Payment Summary */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-sm">{t('detail.paymentSummary')}</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t('detail.subtotal')}</span>
-                                    <span>{formatCurrency(order.totalAmount - order.midtransFee - order.appFee)}</span>
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                {t("detail.paymentSummary")}
+                            </p>
+                            <div className="rounded-md border p-3 space-y-1.5">
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-muted-foreground">
+                                        {t("detail.subtotal")}
+                                    </span>
+                                    <span>{formatCurrency(subtotal)}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">{t('detail.serviceFee')}</span>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-muted-foreground">
+                                        {t("detail.serviceFee")}
+                                    </span>
                                     <span>{formatCurrency(order.appFee)}</span>
                                 </div>
-                                {/* Hide transaction fee for manual payment methods */}
-                                {order.midtransFee > 0 &&
-                                    order.transaction?.paymentMethod !== 'QRIS_OFFLINE' &&
-                                    order.transaction?.paymentMethod !== 'OWNER_TRANSFER' && (
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">{t('detail.transactionFee')}</span>
-                                            <span>{formatCurrency(order.midtransFee)}</span>
-                                        </div>
-                                    )}
-                                <Separator className="my-2" />
-                                <div className="flex justify-between font-bold text-base pt-1">
-                                    <span>{t('detail.totalPayment')}</span>
-                                    <span className="text-primary">{formatCurrency(order.totalAmount)}</span>
+                                {showTransactionFee && (
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-muted-foreground">
+                                            {t("detail.transactionFee")}
+                                        </span>
+                                        <span>{formatCurrency(order.midtransFee)}</span>
+                                    </div>
+                                )}
+                                <div className="h-px bg-border my-1" />
+                                <div className="flex justify-between items-center pt-0.5">
+                                    <span className="text-sm font-bold">
+                                        {t("detail.totalPayment")}
+                                    </span>
+                                    <span className="text-base font-bold text-primary">
+                                        {formatCurrency(order.totalAmount)}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
-                        <Separator />
-
                         {/* Payment Method */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-sm">{t('detail.paymentMethod')}</h3>
-                            <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
-                                <CreditCard className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm capitalize">
-                                    {order.transaction?.paymentMethod.replace(/_/g, " ") || "Unknown"}
-                                </span>
+                        <div className="flex items-center gap-2.5 px-3 py-2 rounded-md border bg-muted/20">
+                            <Wallet className="w-4 h-4 text-muted-foreground shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] text-muted-foreground leading-tight">
+                                    {t("detail.paymentMethod")}
+                                </p>
+                                <p className="text-xs font-medium capitalize truncate">
+                                    {order.transaction?.paymentMethod.replace(/_/g, " ") ||
+                                        "Unknown"}
+                                </p>
                             </div>
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="grid grid-cols-2 gap-3 pt-4">
-                            {hasServiceProduct && order.orderStatus && isCalendarEligibleStatus(order.orderStatus) && (
+                        {/* Actions */}
+                        <div className="space-y-2 pt-2">
+                            {/* Calendar action for service orders */}
+                            {isCalendarEligible && (
                                 <Button
                                     variant="outline"
-                                    className="w-full col-span-2"
-                                    onClick={() => onAction?.('calendar', order)}
+                                    className="w-full h-9 text-xs"
+                                    onClick={() => onAction?.("calendar", order)}
                                 >
-                                    <CalendarPlus className="w-4 h-4 mr-2" />
-                                    {t('actions.addToCalendar')}
+                                    <CalendarPlus className="w-3.5 h-3.5 mr-1.5" />
+                                    {t("actions.addToCalendar")}
                                 </Button>
                             )}
-                            {order.orderStatus !== OrderStatus.CANCELLED && order.orderStatus !== OrderStatus.COMPLETED && (
-                                <Button
-                                    variant="outline"
-                                    className="w-full"
-                                    onClick={() => onAction?.('contact', order)}
-                                    disabled={pendingAction?.orderId === order.id}
-                                >
-                                    <MessageCircle className="w-4 h-4 mr-2" />
-                                    {t('actions.contactOutlet')}
-                                </Button>
+
+                            {/* Pay button for awaiting payment */}
+                            {order.orderStatus === OrderStatus.AWAITING_PAYMENT && (
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="default"
+                                        className="flex-1 h-9 text-xs"
+                                        onClick={() => onAction?.("pay", order)}
+                                        disabled={isBusy}
+                                    >
+                                        {t("actions.pay")}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="flex-1 h-9 text-xs"
+                                        onClick={() => onAction?.("cancel", order)}
+                                        disabled={isBusy}
+                                    >
+                                        {isBusy && pendingAction?.action === "cancel" ? (
+                                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                                        ) : null}
+                                        {t("actions.cancel")}
+                                    </Button>
+                                </div>
                             )}
-                            {order.orderStatus === OrderStatus.COMPLETED && (
+
+                            {/* Contact for active orders */}
+                            {order.orderStatus !== OrderStatus.CANCELLED &&
+                                order.orderStatus !== OrderStatus.COMPLETED &&
+                                order.orderStatus !== OrderStatus.AWAITING_PAYMENT && (
+                                    <Button
+                                        variant="outline"
+                                        className="w-full h-9 text-xs"
+                                        onClick={() => onAction?.("contact", order)}
+                                        disabled={isBusy}
+                                    >
+                                        <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+                                        {t("actions.contactOutlet")}
+                                    </Button>
+                                )}
+
+                            {/* Confirm for READY orders */}
+                            {order.orderStatus === OrderStatus.READY && (
                                 <Button
-                                    variant="outline"
-                                    className="w-full col-span-2"
-                                    onClick={() => onAction?.('reorder', order)}
-                                    disabled={pendingAction?.orderId === order.id}
+                                    variant="default"
+                                    className="w-full h-9 text-xs"
+                                    onClick={() => onAction?.("confirm", order)}
+                                    disabled={isBusy}
                                 >
-                                    {pendingAction?.orderId === order.id && pendingAction?.action === 'reorder' ? (
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    {isBusy && pendingAction?.action === "confirm" ? (
+                                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                                     ) : (
-                                        <RefreshCw className="w-4 h-4 mr-2" />
+                                        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
                                     )}
-                                    {t('actions.reorder')}
+                                    {t("actions.confirm")}
                                 </Button>
                             )}
+
+                            {/* Reorder for completed/cancelled */}
+                            {(order.orderStatus === OrderStatus.COMPLETED ||
+                                order.orderStatus === OrderStatus.CANCELLED) && (
+                                    <Button
+                                        variant="outline"
+                                        className="w-full h-9 text-xs"
+                                        onClick={() => onAction?.("reorder", order)}
+                                        disabled={isBusy}
+                                    >
+                                        {isBusy && pendingAction?.action === "reorder" ? (
+                                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                                        ) : (
+                                            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                                        )}
+                                        {t("actions.reorder")}
+                                    </Button>
+                                )}
+
+                            {/* Close */}
                             <Button
-                                variant="default"
-                                className="w-full col-span-2"
+                                variant="secondary"
+                                className="w-full h-9 text-xs"
                                 onClick={onClose}
                             >
-                                {t('actions.close')}
+                                {t("actions.close")}
                             </Button>
                         </div>
                     </div>
                 </ScrollArea>
             </SheetContent>
         </Sheet>
-    )
+    );
 }

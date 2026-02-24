@@ -10,6 +10,10 @@ export class SubscriptionPlanRepository {
         return db.subscriptionPlan.findUnique({ where: { id } });
     }
 
+    static async getByCode(code: string) {
+        return db.subscriptionPlan.findUnique({ where: { code } });
+    }
+
     static async create(data: SubscriptionPlanInput) {
         return db.subscriptionPlan.create({
             data: {

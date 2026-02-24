@@ -8,6 +8,7 @@ import { orderCreationLimiter, orderManagementLimiter } from "../middleware/orde
 import { validateGuestCustomer, validateBusinessHours, validateOrderFrequency } from "../middleware/guest-validation.middleware";
 import { createPaymentController } from "../controller/payment.controller";
 import { CreatePaymentSchema } from "../schemas/payment-v2.schema";
+import { orderExpiryJob } from "../jobs/payment-expiry.job";
 
 const orderRouter = Router();
 
@@ -22,6 +23,13 @@ orderRouter.post("/",
 );
 
 orderRouter.get("/details/:phone", getOrderByCustomerPhoneController)
+orderRouter.get("/test/:orderId", async (req, res) => {
+    const orderId = req.params.orderId
+
+    await orderExpiryJob.add(orderId)
+
+    return res.json({ message: 'success' })
+})
 orderRouter.post("/:id/customer/cancel", validateSchema(customerCancelOrderSchema), cancelOrderByCustomerController);
 orderRouter.post("/:id/customer/confirm", validateSchema(customerConfirmOrderSchema), confirmOrderByCustomerController);
 orderRouter.post("/customer/:id/cancel", validateSchema(customerCancelOrderSchema), cancelOrderByCustomerController);
@@ -55,7 +63,7 @@ orderRouter.get("/:outletId/queue", protect, authorizeOwnerOrCashier, listServic
 // Endpoint internal untuk consumer mendapatkan data order untuk notifikasi
 orderRouter.get("/:id/notification-data", getOrderNotificationDataController);
 
-orderRouter.post("/create-payment", validateSchema(CreatePaymentSchema), createPaymentController)
+orderRouter.post("/create-payment", validateBusinessHours, validateSchema(CreatePaymentSchema), createPaymentController)
 orderRouter.get("/:orderId/payment", createPaymentController)
 
 export default orderRouter;

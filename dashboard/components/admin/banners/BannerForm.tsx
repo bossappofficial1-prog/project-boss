@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { FormFieldConfig, ReusableForm } from "@/components/ui/reuseable-form"
 import { ACCEPTED_FILE_TYPES } from "@/constants/file-types"
-import { FileText } from "lucide-react";
+import { AlignLeft, ArrowUpDown, CloudUpload, Eye, EyeOff, FileText, HardDrive, Image, Link, MousePointerClick, ToggleLeft, Type } from "lucide-react";
 import z from "zod";
 
 export const bannerSchema = z.object({
@@ -39,13 +39,14 @@ export default function BannerForm(
             label: `Judul Banner`,
             placeholder: `Contoh: penambahan fitur baru`,
             name: `title`,
-            colSpan: 'full'
+            colSpan: 'full',
+            icon: Type
         },
         {
             label: 'Sub Title',
             name: 'subtitle',
             type: 'textarea',
-            icon: FileText,
+            icon: AlignLeft,
             placeholder: 'Contoh: Sekarang pelanggan bisa booking langsung',
             colSpan: 'full'
         },
@@ -54,12 +55,14 @@ export default function BannerForm(
             name: 'imageUrl',
             type: 'file',
             colSpan: 'full',
+            icon: Image,
             accept: ACCEPTED_FILE_TYPES.IMAGE
         },
         {
             label: `Tipe Aksi (CTA)`,
             name: 'ctaType',
             type: 'select',
+            icon: MousePointerClick,
             placeholder: 'Pilih tipe aksi',
             colSpan: 6,
             options: [
@@ -72,6 +75,7 @@ export default function BannerForm(
             label: `Urutan (Sort)`,
             name: 'sortOrder',
             type: 'number',
+            icon: ArrowUpDown,
             colSpan: 6,
             placeholder: 'Contoh: 1'
         },
@@ -79,6 +83,7 @@ export default function BannerForm(
             label: `Link URL Tujuan`,
             name: `ctaPayload`,
             type: `text`,
+            icon: Link,
             placeholder(values) {
                 if (values.ctaType === 'deep-link') return 'Contoh: /outlet/promos';
                 return 'Contoh: https://olas.xyz'
@@ -91,9 +96,10 @@ export default function BannerForm(
             name: 'isActive',
             type: 'dual-option-switch',
             colSpan: 6,
+            className: 'w-fit',
             switchOptions: {
-                left: { label: 'Draft', value: 'draft', activeClass: 'text-muted-foreground' },
-                right: { label: 'Publish', value: 'publish', activeClass: 'text-green-600' },
+                left: { label: 'Draft', value: 'draft', activeClass: 'text-foreground', icon: HardDrive },
+                right: { label: 'Publish', value: 'publish', activeClass: 'text-primary', icon: CloudUpload },
             }
         },
     ]

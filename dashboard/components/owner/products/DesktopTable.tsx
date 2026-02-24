@@ -82,7 +82,7 @@ export default function DesktopTable({
               const product = props.row.original;
 
               return (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center w-[180px] gap-3">
                   <img
                     src={resolveUploadImageUrl(product.image)}
                     alt={product.name}
@@ -92,9 +92,11 @@ export default function DesktopTable({
                         "/defaults/default-product-image.png";
                     }}
                   />
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {product.name}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {product.name}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -128,8 +130,8 @@ export default function DesktopTable({
                     {formatCurrency(
                       product.service?.commissionType === "PERCENTAGE"
                         ? ((product.service?.sellingPrice ?? 0) *
-                            (product.service?.commissionValue ?? 0)) /
-                            100
+                          (product.service?.commissionValue ?? 0)) /
+                        100
                         : (product.service?.commissionValue ?? 0),
                     )}
                   </div>
@@ -166,6 +168,39 @@ export default function DesktopTable({
                 </div>
               ) : (
                 <div>Durasi: {formatDuration(product.service?.durationMinutes)}</div>
+              );
+            },
+          },
+          {
+            accessorKey: "operatingHours",
+            header: "Jam Operasional",
+            enableSorting: false,
+            cell(props) {
+              const product = props.row.original;
+
+              // Only show for SERVICE type
+              if (product.type !== "SERVICE") {
+                return <span className="text-gray-400">-</span>;
+              }
+
+              // Check if any operating hours are set
+              const hasHours =
+                product.service?.mondayOpen ||
+                product.service?.tuesdayOpen ||
+                product.service?.wednesdayOpen ||
+                product.service?.thursdayOpen ||
+                product.service?.fridayOpen ||
+                product.service?.saturdayOpen ||
+                product.service?.sundayOpen;
+
+              return hasHours ? (
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                  Sudah diatur
+                </Badge>
+              ) : (
+                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                  Belum diatur
+                </Badge>
               );
             },
           },

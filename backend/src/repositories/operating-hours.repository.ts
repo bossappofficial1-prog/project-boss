@@ -3,11 +3,11 @@ import { db } from "../config/prisma";
 import { CreateOperatingHoursInput, UpdateOperatingHoursInput } from "../schemas/operating-hours.schema";
 
 export class OperatingHoursRepository {
-    static async create(data: CreateOperatingHoursInput): Promise<OutletOperatingHours> {
-        return db.outletOperatingHours.create({
-            data,
-        });
-    }
+    // static async create(data: CreateOperatingHoursInput): Promise<OutletOperatingHours> {
+    //     return db.outletOperatingHours.create({
+    //         data,
+    //     });
+    // }
 
     static async findById(id: string): Promise<OutletOperatingHours | null> {
         return db.outletOperatingHours.findUnique({
@@ -37,20 +37,29 @@ export class OperatingHoursRepository {
         });
     }
 
-    static async upsertOperatingHours(outletId: string, dayOfWeek: number, data: CreateOperatingHoursInput): Promise<OutletOperatingHours> {
-        return db.outletOperatingHours.upsert({
-            where: {
-                outletId_dayOfWeek: {
+    static async upsertOperatingHours(outletId: string, data: CreateOperatingHoursInput) {
+        const transactionOperations = data.hours.map((schedule) => {
+            return db.outletOperatingHours.upsert({
+                where: {
+                    outletId_dayOfWeek: {
+                        outletId,
+                        dayOfWeek: schedule.dayOfWeek
+                    }
+                },
+                update: {
+                    openTime: schedule.openTime,
+                    closeTime: schedule.closeTime,
+                    isOpen: schedule.isOpen
+                },
+                create: {
                     outletId,
-                    dayOfWeek
+                    closeTime: schedule.closeTime,
+                    openTime: schedule.openTime,
+                    dayOfWeek: schedule.dayOfWeek,
+                    isOpen: schedule.isOpen
                 }
-            },
-            update: {
-                openTime: data.openTime,
-                closeTime: data.closeTime,
-                isOpen: data.isOpen
-            },
-            create: data
-        });
+            })
+        })
+        return db.$transaction(transactionOperations);
     }
 }

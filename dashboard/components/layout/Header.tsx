@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import ThemeToggle from '../ThemeToggle';
 import ConfirmationModal from '@/components/ui/confirmation-modal';
@@ -27,9 +27,10 @@ import {
   LogOut,
   ChevronDown,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useOutletContext } from '../providers/OutletProvider';
 
 export default function Header() {
+  const { selectedOutlet } = useOutletContext();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { data: userData, isLoading: isUserLoading } = useUserData();
   const { open, toggleSidebar, state } = useSidebar();
@@ -100,7 +101,7 @@ export default function Header() {
         <ThemeToggle />
 
         {/* Receipt Setting */}
-        <ReceiptSetting />
+        <ReceiptSetting outletId={selectedOutlet?.id} />
 
         <Separator orientation="vertical" className="h-8 hidden sm:block" />
 
@@ -112,6 +113,7 @@ export default function Header() {
               className="relative h-10 gap-2 rounded-xl px-2 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <Avatar className="h-8 w-8 bg-gradient-to-br from-red-500 to-red-700 shadow-md">
+                <AvatarImage src={user?.avatar ?? '/defaults/default-avatar.jpg'} />
                 <AvatarFallback className="bg-transparent text-white text-sm font-bold">
                   {isUserLoading ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -203,6 +205,7 @@ export default function Header() {
         cancelText="Batal"
         confirmVariant="destructive"
         onConfirm={handleLogoutConfirm}
+
         icon={
           <LogOut className="h-6 w-6 text-red-600 dark:text-red-400" />
         }

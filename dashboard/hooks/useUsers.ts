@@ -22,6 +22,14 @@ export interface UserDetail {
     isVerified: boolean
     phone?: string
     business: Business
+    recentInvoice?: RecentInvoice[]
+}
+
+export interface RecentInvoice {
+    id: string;
+    invoiceNumber: string;
+    amount: number;
+    createdAt: string;
 }
 
 export interface Business {

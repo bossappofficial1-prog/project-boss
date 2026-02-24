@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { ProductType, ServiceStatus } from "@prisma/client";
 
-/* =====================================================
- * SUB SCHEMA (SESUAI SUBTABLE PRISMA)
- * ===================================================== */
-
 // ProductGoods
 const productGoodsSchema = z.object({
   currentStock: z.number().int().min(0).optional(), // default di DB
@@ -14,8 +10,8 @@ const productGoodsSchema = z.object({
   averageHpp: z.number().positive({ message: "averageHpp harus > 0" }),
 });
 
-// ProductService
-const productServiceSchema = z.object({
+// ProductService - Base schema without refinement (for .partial() usage)
+const productServiceBaseSchema = z.object({
   durationMinutes: z.number().int().positive({ message: "Durasi layanan wajib diisi" }),
   sellingPrice: z.number().positive({ message: "Harga jual harus > 0" }),
 
@@ -35,6 +31,64 @@ const productServiceSchema = z.object({
   maxParallel: z.number().int().min(1).optional(),
 
   bookingInWorkHours: z.boolean().default(true).optional(),
+
+  // Operating hours untuk setiap hari
+  mondayOpen: z.coerce.date().nullable().optional(),
+  mondayClose: z.coerce.date().nullable().optional(),
+  tuesdayOpen: z.coerce.date().nullable().optional(),
+  tuesdayClose: z.coerce.date().nullable().optional(),
+  wednesdayOpen: z.coerce.date().nullable().optional(),
+  wednesdayClose: z.coerce.date().nullable().optional(),
+  thursdayOpen: z.coerce.date().nullable().optional(),
+  thursdayClose: z.coerce.date().nullable().optional(),
+  fridayOpen: z.coerce.date().nullable().optional(),
+  fridayClose: z.coerce.date().nullable().optional(),
+  saturdayOpen: z.coerce.date().nullable().optional(),
+  saturdayClose: z.coerce.date().nullable().optional(),
+  sundayOpen: z.coerce.date().nullable().optional(),
+  sundayClose: z.coerce.date().nullable().optional(),
+});
+
+// ProductService - With refinement validation (for create)
+const productServiceSchema = productServiceBaseSchema.refine(
+  (data) => {
+    // Validation: jika ada open time, maka close time juga harus ada (dan sebaliknya)
+    // Validation: close time harus lebih besar dari open time
+    const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+    for (const day of days) {
+      const open = (data as any)[`${day}Open`];
+      const close = (data as any)[`${day}Close`];
+
+      // Jika salah satu ada, keduanya harus ada
+      if ((open && !close) || (!open && close)) {
+        return false;
+      }
+
+      // Jika keduanya ada, close harus lebih besar dari open
+      if (open && close && close <= open) {
+        return false;
+      }
+    }
+    return true;
+  },
+  {
+    message: "Jam tutup harus lebih besar dari jam buka untuk setiap hari yang diset",
+  },
+);
+
+// ProductTicket
+const productTicketSchema = z.object({
+  sellingPrice: z.number().positive({ message: "Harga jual harus > 0" }),
+  eventDate: z.coerce.date({ required_error: "Tanggal event wajib diisi" }),
+  eventEndDate: z.coerce.date().nullable().optional(),
+  venue: z.string().min(1, { message: "Nama venue wajib diisi" }),
+  venueAddress: z.string().nullable().optional(),
+  mapUrl: z.string().url().nullable().optional(),
+  totalQuota: z.number().int().min(1, { message: "Total kuota minimal 1" }),
+  maxPerOrder: z.number().int().min(1).optional(),
+  saleStartDate: z.coerce.date().nullable().optional(),
+  saleEndDate: z.coerce.date().nullable().optional(),
+  terms: z.string().nullable().optional(),
 });
 
 /* =====================================================
@@ -45,13 +99,9 @@ const baseProductSchema = {
   name: z.string().min(1, { message: "Nama produk tidak boleh kosong" }),
   description: z.string().optional(),
   status: z.nativeEnum(ServiceStatus).optional(),
-  outletId: z.string().uuid({ message: "Outlet ID tidak valid" }),
+  outletId: z.string(),
   image: z.string().optional(),
 };
-
-/* =====================================================
- * CREATE PRODUCT
- * ===================================================== */
 
 export const createProductSchema = z.discriminatedUnion("type", [
   // GOODS
@@ -61,6 +111,7 @@ export const createProductSchema = z.discriminatedUnion("type", [
 
     goods: productGoodsSchema,
     service: z.never().optional(),
+    ticket: z.never().optional(),
   }),
 
   // SERVICE
@@ -70,6 +121,17 @@ export const createProductSchema = z.discriminatedUnion("type", [
 
     service: productServiceSchema,
     goods: z.never().optional(),
+    ticket: z.never().optional(),
+  }),
+
+  // TICKET
+  z.object({
+    ...baseProductSchema,
+    type: z.literal(ProductType.TICKET),
+
+    ticket: productTicketSchema,
+    goods: z.never().optional(),
+    service: z.never().optional(),
   }),
 ]);
 
@@ -92,6 +154,7 @@ export const updateProductSchema = z
 
       goods: productGoodsSchema.partial().optional(),
       service: z.never().optional(),
+      ticket: z.never().optional(),
     }),
 
     // SERVICE
@@ -103,8 +166,24 @@ export const updateProductSchema = z
       status: z.nativeEnum(ServiceStatus).optional(),
       image: z.string().optional(),
 
-      service: productServiceSchema.partial().optional(),
+      // Use base schema without refinement for partial updates
+      service: productServiceBaseSchema.partial().optional(),
       goods: z.never().optional(),
+      ticket: z.never().optional(),
+    }),
+
+    // TICKET
+    z.object({
+      type: z.literal(ProductType.TICKET),
+
+      name: z.string().optional(),
+      description: z.string().optional(),
+      status: z.nativeEnum(ServiceStatus).optional(),
+      image: z.string().optional(),
+
+      ticket: productTicketSchema.partial().optional(),
+      goods: z.never().optional(),
+      service: z.never().optional(),
     }),
   ])
   .refine(

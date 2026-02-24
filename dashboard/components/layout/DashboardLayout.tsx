@@ -49,6 +49,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
           {/* Sonner Toaster for custom notifications */}
           <Toaster
             position="top-right"
+            richColors
             toastOptions={{
               duration: 5000,
             }}

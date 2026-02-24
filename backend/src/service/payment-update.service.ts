@@ -5,13 +5,14 @@ import { AppError } from '../errors/app-error';
 import { messagePublisher } from './message-publisher.service';
 import { SocketEmitter } from '../socket/socket-emiiter';
 import { MidtransWebhookPayloadType } from '../types/Others';
+import { OperatingHoursRepository } from '../repositories/operating-hours.repository';
+import { generateTicketCode } from '../utils/code-generator';
 
 export async function handlePaymentSuccess(orderId: string) {
     let order = await db.order.findUnique({
         where: { id: orderId },
         include: {
-            items: { include: { product: true } },
-            bookingSlot: true,
+            items: { include: { product: { include: { ticket: true } }, bookingSlot: true } },
             outlet: true,
             guestCustomer: true,
             transaction: true
@@ -27,12 +28,15 @@ export async function handlePaymentSuccess(orderId: string) {
         return;
     }
     let orderStatus: OrderStatus = order.orderStatus as OrderStatus;
-    if (order.bookingSlot) {
-        orderStatus = OrderStatus.CONFIRMED;
+    const bookingSlotItem = order.items.find((item: any) => item.bookingSlot);
+    const bookingSlot = (bookingSlotItem as any)?.bookingSlot;
+    if (bookingSlot) {
+        orderStatus = OrderStatus.PROCESSING;
         await db.bookingSlot.update({
-            where: { id: order.bookingSlot.id },
+            where: { id: bookingSlot.id },
             data: { status: 'BOOKED' },
         });
+        await messagePublisher.publishServiceOrderProcessing(order.id);
     } else if (order.items.some(item => item.product.type === 'SERVICE')) {
         orderStatus = OrderStatus.PROCESSING;
         await messagePublisher.publishServiceOrderProcessing(order.id);
@@ -55,20 +59,33 @@ export async function handlePaymentSuccess(orderId: string) {
                 data: { status: PaymentStatus.SUCCESS },
             });
 
-            // 4. Kurangi quantity produk untuk GOODS
+            // 4. Kurangi stock produk untuk GOODS
             for (const item of order.items) {
                 if (item.product.type === 'GOODS') {
-                    await tx.product.update({
-                        where: { id: item.productId },
-                        data: { quantity: { decrement: item.quantity } },
+                    await tx.productGoods.update({
+                        where: { productId: item.productId },
+                        data: { currentStock: { decrement: item.quantity } },
                     });
                 }
             }
 
+            // 5. Generate TicketCode untuk TICKET items
+            for (const item of order.items) {
+                if (item.product.type === 'TICKET' && item.product.ticket) {
+                    const ticketCodes = Array.from({ length: item.quantity }, () => ({
+                        code: generateTicketCode(),
+                        orderItemId: item.id,
+                        productTicketId: item.product.ticket!.id,
+                        status: 'VALID' as const,
+                    }));
+                    await tx.ticketCode.createMany({ data: ticketCodes });
+                }
+            }
+
             // Logika booking slot jika ada
-            if (order.bookingSlot) {
+            if (bookingSlot) {
                 await tx.bookingSlot.update({
-                    where: { id: order.bookingSlot.id },
+                    where: { id: bookingSlot.id },
                     data: { status: 'BOOKED' },
                 });
             }
@@ -115,6 +132,28 @@ export async function handlePaymentSuccess(orderId: string) {
     try {
         const customerPhone = order.guestCustomer?.phone;
         if (customerPhone) {
+            // Check if order was placed outside operating hours
+            const operatingHours = await OperatingHoursRepository.findByOutletId(order.outlet.id);
+            const now = new Date();
+            const currentDay = now.getDay();
+            const todaySchedule = operatingHours.find(oh => oh.dayOfWeek === currentDay);
+
+            let isWithinOperatingHours = false;
+            let outletOpenTime: string | null = null;
+            if (todaySchedule && todaySchedule.isOpen) {
+                const openTime = new Date(todaySchedule.openTime);
+                const closeTime = new Date(todaySchedule.closeTime);
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                const openMinutes = openTime.getHours() * 60 + openTime.getMinutes();
+                const closeMinutes = closeTime.getHours() * 60 + closeTime.getMinutes();
+                isWithinOperatingHours = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+                outletOpenTime = `${String(openTime.getHours()).padStart(2, '0')}:${String(openTime.getMinutes()).padStart(2, '0')}`;
+            }
+
+            const operatingHoursMessage = !isWithinOperatingHours && outletOpenTime
+                ? `Pembayaran berhasil! Pesanan akan dikonfirmasi saat jam operasional outlet (buka pukul ${outletOpenTime}).`
+                : 'Pembayaran berhasil diproses';
+
             SocketEmitter.getInstance().emitToCustomer(customerPhone, {
                 orderId: order.id,
                 amount: order.totalAmount!,
@@ -122,8 +161,8 @@ export async function handlePaymentSuccess(orderId: string) {
                 transactionStatus: 'settlement',
                 isManual: Boolean(order.transaction?.isManual),
                 paymentMethod: order.transaction?.paymentMethod || 'unknown',
-                message: 'Pembayaran berhasil diproses',
-                type: 'payment_success'
+                message: operatingHoursMessage,
+                type: 'payment_success',
             });
             console.log(`📡 Emitted customer payment_success event for ${customerPhone}`);
         }
@@ -137,8 +176,15 @@ export async function handlePaymentFailure(orderId: string) {
     const order = await db.order.findUnique({
         where: { id: orderId },
         include: {
-            items: { include: { product: true } },
-            bookingSlot: true,
+            items: {
+                include: {
+                    product: {
+                        include: { goods: true, ticket: true },
+                    },
+                    bookingSlot: true,
+                    ticketCodes: true,
+                },
+            },
             outlet: true,
             guestCustomer: true,
             transaction: true,
@@ -155,17 +201,39 @@ export async function handlePaymentFailure(orderId: string) {
         return;
     }
 
-    await db.order.update({
-        where: { id: orderId },
-        data: { paymentStatus: 'FAILED', orderStatus: 'CANCELLED' },
-    });
+    await db.$transaction(async (tx) => {
+        for (const item of order.items) {
+            if (item.product.type === "GOODS" && (item.product as any).goods) {
+                await tx.productGoods.update({
+                    where: { id: (item.product as any).goods.id },
+                    data: { currentStock: { increment: item.quantity } },
+                });
+            }
 
-    if (order.bookingSlot) {
-        await db.bookingSlot.update({
-            where: { id: order.bookingSlot.id },
-            data: { status: 'AVAILABLE' },
+            if (item.product.type === "TICKET" && (item.product as any).ticket) {
+                await tx.productTicket.update({
+                    where: { id: (item.product as any).ticket.id },
+                    data: { soldCount: { decrement: item.quantity } },
+                });
+                await tx.ticketCode.updateMany({
+                    where: { orderItemId: item.id },
+                    data: { status: "CANCELLED" },
+                });
+            }
+
+            if (item.bookingSlot) {
+                await tx.bookingSlot.update({
+                    where: { id: item.bookingSlot.id },
+                    data: { status: 'AVAILABLE' },
+                });
+            }
+        }
+
+        await tx.order.update({
+            where: { id: orderId },
+            data: { paymentStatus: 'FAILED', orderStatus: 'CANCELLED' },
         });
-    }
+    });
 
     // Emit notification to business outlet
     try {
@@ -200,8 +268,6 @@ export async function handlePaymentFailure(orderId: string) {
     } catch (customerSocketError) {
         console.error('❌ Error emitting customer payment_failed event:', customerSocketError);
     }
-
-    // Tidak perlu kembalikan quantity karena belum dikurangi saat checkout
 }
 
 export async function processMidtransPaymentNotification(payload: MidtransWebhookPayloadType) {

@@ -17,6 +17,24 @@ export const createBannerController = asyncHandler(async (req: Request, res: Res
     return ResponseUtil.success(res, created, HttpStatus.CREATED);
 });
 
+export const bulkDeleteBannerController = asyncHandler(async (req: Request, res: Response) => {
+    const ids = req.body.ids as string[]
+    const images = await BannerRepository.getImageUrlBannerByIds(ids)
+    const deleted = await BannerRepository.bulkDelete(ids);
+
+    if (deleted.count > 0 && images.length > 0) {
+        for (const image of images) {
+            try {
+                ImageService.deleteImageByUrl(image.imageUrl)
+            } catch (error) {
+                console.log(error)
+            }
+        }
+    }
+
+    return ResponseUtil.success(res, deleted, HttpStatus.CREATED);
+});
+
 export const updateBannerController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const banner = await BannerRepository.findById(id as string)

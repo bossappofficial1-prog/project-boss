@@ -6,20 +6,21 @@ import { OutletRepository } from "../repositories/outlet.repository";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 import { getBusinessByOwnerIdService } from "./business.service";
 import { getIsOutletOpen, calculateDistance, validateCoordinates, calculateBoundingBox, validatePaginationParams, validateRadius, mapOutletsWithOpenStatus, removeOperatingHoursFromOutlets } from "../utils/outlet.utils";
-import Redis from "ioredis";
 import { ImageService } from "./image.service";
 import { EventPublisher } from "../events/publisher";
-
-// Redis client
-const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
+import { PlanLimitService } from "./plan-limit.service";
+import { redis } from "../config/redis";
 
 export async function createOutletService(data: CreateOutletInput, ownerId: string) {
     const business = await getBusinessByOwnerIdService(ownerId);
+    redis.del(`user:${ownerId}`)
     if (business.id !== data.businessId) {
         throw new AppError("Anda tidak berhak menambahkan outlet ke bisnis ini.", HttpStatus.FORBIDDEN);
     }
+    await PlanLimitService.assertCanCreateOutlet(business.id);
     const outlet = await OutletRepository.create(data);
     await EventPublisher.publishOutletCreated(outlet);
+    await PlanLimitService.invalidateUsageCache(business.id);
     return outlet;
 }
 
@@ -116,7 +117,6 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
 export async function getOutletByIdService(id: string, date?: Date) {
     const today = date || new Date();
     const outletRaw = await OutletRepository.findById(id)
-
     if (!outletRaw) {
         throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
@@ -173,9 +173,7 @@ export async function updateOutletService(id: string, data: UpdateOutletInput, o
     if (data.manualQrImageUrl && outlet.manualQrImageUrl) {
         ImageService.deleteImageByUrl(outlet.manualQrImageUrl)
     }
-    // hapus gambar sebelumnya jika ada di local
-    if (data.image && outlet.image) ImageService.deleteImageByUrl(outlet.image);
-
+    redis.del(`user:${ownerId}`)
     if (data.manualQrImageUrl && outlet.manualQrImageUrl) ImageService.deleteImageByUrl(outlet.manualQrImageUrl);
     return updatedOutlet;
 }
@@ -187,7 +185,9 @@ export async function deleteOutletService(id: string, ownerId: string) {
         throw new AppError("Anda tidak berhak menghapus outlet ini.", HttpStatus.FORBIDDEN);
     }
     const deletedOutlet = await OutletRepository.delete(id);
+    redis.del(`user:${ownerId}`)
     if (outlet.image) ImageService.deleteImageByUrl(outlet.image);
+    await PlanLimitService.invalidateUsageCache(business.id);
     return deletedOutlet;
 }
 

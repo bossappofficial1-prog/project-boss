@@ -5,7 +5,7 @@ import { Messages } from "../../constants/message";
 import { HttpStatus } from "../../constants/http-status";
 import { db } from "../../config/prisma";
 import { getOutletByIdService } from "../outlet.service";
-import { generateOrderCode } from "../../utils";
+import { generateOrderCode, generateTicketCode } from "../../utils";
 import { getBusinessByIdService } from "../business.service";
 
 export interface OrderCreationResult {
@@ -21,18 +21,18 @@ export interface OrderCreationResult {
  * manages stock for goods, and calculates transaction fees.
  */
 export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCreationResult> {
-  const { items, outletId, bookingSlotId, staffId } = data;
+  const { items, outletId, bookingSlotId, staffId, cashierId } = data;
 
   // 1. Validate Booking Slot if provided
   const slot = bookingSlotId
     ? await db.bookingSlot.findUnique({
-        where: { id: bookingSlotId },
-        include: {
-          productService: {
-            include: { product: true },
-          },
+      where: { id: bookingSlotId },
+      include: {
+        productService: {
+          include: { product: true },
         },
-      })
+      },
+    })
     : null;
 
   if (bookingSlotId) {
@@ -47,7 +47,7 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
     }
   }
 
-  // 2. Validate Staff if provided
+  // 2. Validate Staff (Service Provider) if provided
   if (staffId) {
     const staff = await db.staff.findUnique({
       where: { id: staffId },
@@ -61,7 +61,21 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
       throw new AppError("Staff is currently inactive.", HttpStatus.BAD_REQUEST);
   }
 
-  const handledByStaffId = staffId ?? null;
+  // 3. Validate Cashier if provided
+  if (cashierId) {
+    const cashier = await db.staff.findUnique({
+      where: { id: cashierId },
+      select: { id: true, status: true, outletId: true },
+    });
+
+    if (!cashier) throw new AppError("Cashier not found.", HttpStatus.NOT_FOUND);
+    if (cashier.outletId !== outletId)
+      throw new AppError("Cashier does not belong to this outlet.", HttpStatus.FORBIDDEN);
+    // Note: Cashier status check might be needed but assuming logged in cashier is active
+  }
+
+  // Prioritize cashierId for the order handler, fallback to staffId (service provider) if legacy behavior needed
+  const handledByStaffId = cashierId ?? staffId ?? null;
   const slotStart = slot ? new Date(slot.startTime) : null;
   const slotEnd = slot ? new Date(slot.endTime) : null;
   let slotMaxParallel: number | null = null;
@@ -97,7 +111,7 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
       for (const item of items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
-          include: { goods: true, service: true },
+          include: { goods: true, service: true, ticket: true },
         });
 
         if (!product || product.outletId !== outletId || product.status !== "ACTIVE") {
@@ -121,6 +135,44 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
             );
           }
           price = product.goods.sellingPrice;
+        } else if (product.type === "TICKET") {
+          if (!product.ticket)
+            throw new AppError(
+              `Data missing for ticket: ${product.name}`,
+              HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+          const availableQuota = product.ticket.totalQuota - product.ticket.soldCount;
+          if (availableQuota < item.quantity) {
+            throw new AppError(
+              `Kuota tiket tidak cukup untuk ${product.name}. Tersisa: ${availableQuota}`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+          if (product.ticket.maxPerOrder && item.quantity > product.ticket.maxPerOrder) {
+            throw new AppError(
+              `Maksimal ${product.ticket.maxPerOrder} tiket per order untuk ${product.name}`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+          if (new Date(product.ticket.eventDate) < new Date()) {
+            throw new AppError(
+              `Event untuk ${product.name} sudah berakhir`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+          if (product.ticket.saleEndDate && new Date(product.ticket.saleEndDate) < new Date()) {
+            throw new AppError(
+              `Penjualan tiket untuk ${product.name} sudah ditutup`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+          if (product.ticket.saleStartDate && new Date(product.ticket.saleStartDate) > new Date()) {
+            throw new AppError(
+              `Penjualan tiket untuk ${product.name} belum dibuka`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+          price = product.ticket.sellingPrice;
         } else {
           if (!product.service)
             throw new AppError(
@@ -223,7 +275,11 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
         items.map(async (item) => {
           const prod = productDetails.find((p) => p.id === item.productId);
           const price =
-            prod?.type === "GOODS" ? prod.goods.sellingPrice : prod.service.sellingPrice;
+            prod?.type === "GOODS"
+              ? prod.goods.sellingPrice
+              : prod?.type === "TICKET"
+                ? prod.ticket.sellingPrice
+                : prod.service.sellingPrice;
 
           return await tx.orderItem.create({
             data: {
@@ -254,6 +310,24 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
             where: { id: prod.goods.id },
             data: { currentStock: { decrement: item.quantity } },
           });
+        }
+
+        // Increment soldCount for TICKET products
+        if (prod?.type === "TICKET" && prod.ticket) {
+          await tx.productTicket.update({
+            where: { id: prod.ticket.id },
+            data: { soldCount: { increment: item.quantity } },
+          });
+
+          // Generate TicketCode records for each ticket quantity
+          const createdItem = createdItems.find((ci) => ci.productId === item.productId);
+          if (createdItem) {
+            const ticketCodes = Array.from({ length: item.quantity }, () => ({
+              code: generateTicketCode(),
+              orderItemId: createdItem.id,
+            }));
+            await tx.ticketCode.createMany({ data: ticketCodes });
+          }
         }
       }
 

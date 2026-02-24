@@ -1,9 +1,13 @@
+import type { Business, Outlet, SubscriptionPlan, ProductType as ProductTypeEnum } from "@prisma/client";
+
 const {
   PrismaClient,
   ProductType,
   UserRole,
   ServiceStatus,
   SubscriptionStatus,
+  PaymentStatus,
+  OrderStatus,
 } = require("@prisma/client");
 const { hash } = require("bcryptjs");
 const { Pool } = require("pg");
@@ -12,8 +16,240 @@ const { PrismaPg } = require("@prisma/adapter-pg");
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
+const DAY_IN_MS = 1000 * 60 * 60 * 24;
+
+type OutletCatalogProduct = {
+  productId: string;
+  price: number;
+  type: ProductTypeEnum;
+};
+
+type OutletProductCatalog = Record<string, OutletCatalogProduct[]>;
+
+const roundCurrency = (value: number): number => Math.round(value * 100) / 100;
+
+const sanitizeForCode = (value: string): string => {
+  const sanitized = value.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  return (sanitized || "BIZ").toUpperCase();
+};
 
 const forceReseed = process.argv.includes("--force") || process.argv.includes("-f");
+
+// Subscription Plan Features Definition
+const SUBSCRIPTION_PLANS = [
+  {
+    name: "Trial",
+    code: "TRIAL",
+    price: 0,
+    durationDays: 14,
+    isPopular: false,
+    features: {
+      maxOutlets: 1,
+      maxProducts: 10,
+      maxStaff: 1,
+      canExportReport: false,
+      supportLevel: "EMAIL"
+    }
+  },
+  {
+    name: "Basic",
+    code: "BASIC",
+    price: 99000,
+    durationDays: 30,
+    isPopular: false,
+    features: {
+      maxOutlets: 3,
+      maxProducts: 100,
+      maxStaff: 5,
+      canExportReport: true,
+      supportLevel: "WHATSAPP"
+    }
+  },
+  {
+    name: "Pro",
+    code: "PRO",
+    price: 199000,
+    durationDays: 30,
+    isPopular: true,
+    features: {
+      maxOutlets: -1,
+      maxProducts: -1,
+      maxStaff: -1,
+      canExportReport: true,
+      supportLevel: "PRIORITY"
+    }
+  }
+];
+
+async function seedSubscriptionPlans() {
+  console.log("💳 Creating subscription plans...");
+
+  await Promise.all(
+    SUBSCRIPTION_PLANS.map((plan) =>
+      prisma.subscriptionPlan.upsert({
+        where: { code: plan.code },
+        update: {
+          name: plan.name,
+          price: plan.price,
+          durationDays: plan.durationDays,
+          features: plan.features,
+          isPopular: plan.isPopular,
+          isActive: true,
+        },
+        create: {
+          name: plan.name,
+          code: plan.code,
+          price: plan.price,
+          durationDays: plan.durationDays,
+          features: plan.features,
+          isPopular: plan.isPopular,
+          isActive: true,
+        },
+      })
+    )
+  );
+
+  console.log(`✅ ${SUBSCRIPTION_PLANS.length} subscription plans synced.`);
+}
+
+async function seedBusinessSubscriptionsAndInvoices(businesses: Business[]) {
+  if (!businesses.length) return;
+
+  console.log("🧾 Creating business subscriptions and invoices...");
+
+  const plans: SubscriptionPlan[] = await prisma.subscriptionPlan.findMany();
+  if (!plans.length) {
+    throw new Error(
+      "Subscription plans must be seeded before creating business subscriptions.",
+    );
+  }
+
+  const planMap: Record<string, SubscriptionPlan> = {};
+  plans.forEach((plan) => {
+    planMap[plan.code] = plan;
+  });
+
+  for (let i = 0; i < businesses.length; i++) {
+    const business = businesses[i];
+    const targetPlan = planMap[business.subscriptionPlan] || planMap.BASIC || plans[0];
+    const startDate = new Date();
+    const endDate = new Date(startDate.getTime() + targetPlan.durationDays * DAY_IN_MS);
+
+    const subscription = await prisma.businessSubscription.create({
+      data: {
+        businessId: business.id,
+        planId: targetPlan.id,
+        status: SubscriptionStatus.ACTIVE,
+        startDate,
+        endDate,
+      },
+    });
+
+    await prisma.business.update({
+      where: { id: business.id },
+      data: {
+        currentSubscriptionId: subscription.id,
+        subscriptionPlan: targetPlan.code,
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+        subscriptionStartDate: startDate,
+        subscriptionEndDate: endDate,
+      },
+    });
+
+    const invoiceNumber = `INV-${sanitizeForCode(business.name)}-${String(i + 1).padStart(3, "0")}`;
+
+    await prisma.subscriptionInvoice.create({
+      data: {
+        invoiceNumber,
+        amount: targetPlan.price,
+        status: PaymentStatus.SUCCESS,
+        paidAt: new Date(),
+        businessId: business.id,
+        subscriptionId: subscription.id,
+      },
+    });
+  }
+
+  console.log(`✅ ${businesses.length} business subscriptions and invoices created.`);
+}
+
+async function seedOutletTransactions(outlets: Outlet[], productsByOutlet: OutletProductCatalog) {
+  if (!outlets.length) return;
+
+  console.log("💰 Creating sample orders and transactions...");
+
+  let transactionCount = 0;
+
+  for (let i = 0; i < outlets.length; i++) {
+    const outlet = outlets[i];
+    const outletProducts = productsByOutlet[outlet.id] || [];
+
+    if (!outletProducts.length) {
+      console.warn(
+        `⚠️  Skipping transactions for outlet ${outlet.name} because no products were found.`,
+      );
+      continue;
+    }
+
+    const preferredProduct =
+      outletProducts.find((product) => product.type === ProductType.GOODS) || outletProducts[0];
+
+    const quantity = (i % 3) + 1;
+    const subtotal = preferredProduct.price * quantity;
+    const midtransFee = roundCurrency(subtotal * 0.007);
+    const appFee = roundCurrency(subtotal * 0.02);
+    const totalAmount = roundCurrency(subtotal + midtransFee + appFee);
+
+    const guestCustomer = await prisma.guestCustomer.create({
+      data: {
+        name: `Guest ${outlet.name}`,
+        phone: `+6281300${String(5000 + i).padStart(4, "0")}`,
+        email: `guest${i + 1}@example.com`,
+      },
+    });
+
+    const midtransToken = `MID-${outlet.id.slice(0, 8)}-${i + 1}`;
+
+    const order = await prisma.order.create({
+      data: {
+        totalAmount,
+        paymentStatus: PaymentStatus.SUCCESS,
+        orderStatus: OrderStatus.COMPLETED,
+        paymentReminderSent: true,
+        midtransTransactionToken: midtransToken,
+        midtransRedirectUrl: `https://payments.example.com/${midtransToken}`,
+        guestCustomerId: guestCustomer.id,
+        outletId: outlet.id,
+        midtransFee,
+        appFee,
+        items: {
+          create: [
+            {
+              quantity,
+              priceAtTimeOfOrder: preferredProduct.price,
+              productId: preferredProduct.productId,
+            },
+          ],
+        },
+      },
+    });
+
+    await prisma.transaction.create({
+      data: {
+        amount: totalAmount,
+        paymentMethod: "midtrans",
+        status: PaymentStatus.SUCCESS,
+        paymentUrl: order.midtransRedirectUrl,
+        externalId: `TRX-${midtransToken}`,
+        orderId: order.id,
+      },
+    });
+
+    transactionCount += 1;
+  }
+
+  console.log(`✅ ${transactionCount} sample transactions created (one per outlet).`);
+}
 
 function validateEnvironment() {
   const requiredEnvVars = ["DATABASE_URL"];
@@ -28,16 +264,24 @@ async function main() {
   console.log("🌱 Starting database seeding with VERIFIED images for both Outlets and Products...");
   validateEnvironment();
 
+  await seedSubscriptionPlans();
+
   if (forceReseed) {
     console.log("⚡ FORCE RESEED MODE: Clearing all existing data!");
     console.log("🗑️  Cleaning existing data...");
 
+    await prisma.transaction.deleteMany({});
+    await prisma.orderItem.deleteMany({});
+    await prisma.order.deleteMany({});
+    await prisma.guestCustomer.deleteMany({});
     await prisma.stockLog.deleteMany({}); // Added cleanup for StockLog
     await prisma.productGoods.deleteMany({}); // Added cleanup
     await prisma.productService.deleteMany({}); // Added cleanup
     await prisma.product.deleteMany({});
     await prisma.outletOperatingHours.deleteMany({});
     await prisma.outlet.deleteMany({});
+    await prisma.subscriptionInvoice.deleteMany({});
+    await prisma.businessSubscription.deleteMany({});
     // await prisma.wallet.deleteMany({}); // Removed Wallet
     await prisma.business.deleteMany({});
     await prisma.user.deleteMany({});
@@ -105,6 +349,8 @@ async function main() {
     ),
   );
   console.log("✅ 5 Businesses with wallets created.");
+
+  await seedBusinessSubscriptionsAndInvoices(businesses);
 
   const businessTypes = ["coffee", "food", "beauty", "electronics", "laundry"];
   const outletImages = {
@@ -363,6 +609,8 @@ async function main() {
     ],
   };
 
+  const outletProductCatalog: OutletProductCatalog = {};
+
   for (let i = 0; i < outlets.length; i++) {
     const outlet = outlets[i];
     const business = businesses.find((b) => b.id === outlet.businessId);
@@ -409,9 +657,21 @@ async function main() {
           image: template.images[0] || null,
         },
       });
+
+      if (!outletProductCatalog[outlet.id]) {
+        outletProductCatalog[outlet.id] = [];
+      }
+
+      outletProductCatalog[outlet.id].push({
+        productId: createdProduct.id,
+        price: template.price,
+        type: template.type,
+      });
     }
   }
   console.log("✅ Products with guaranteed images created.");
+
+  await seedOutletTransactions(outlets, outletProductCatalog);
 
   // --- 6. Summary ---
   console.log("\n📊 SEEDING SUMMARY:");
@@ -420,11 +680,19 @@ async function main() {
     prisma.business.count(),
     prisma.outlet.count(),
     prisma.product.count(),
+    prisma.businessSubscription.count(),
+    prisma.subscriptionInvoice.count(),
+    prisma.order.count(),
+    prisma.transaction.count(),
   ]);
   console.log(`👥 Users: ${counts[0]}`);
   console.log(`🏢 Businesses: ${counts[1]}`);
   console.log(`🏪 Outlets: ${counts[2]}`);
   console.log(`📦 Products: ${counts[3]}`);
+  console.log(`📄 Business Subscriptions: ${counts[4]}`);
+  console.log(`🧾 Subscription Invoices: ${counts[5]}`);
+  console.log(`🛒 Orders: ${counts[6]}`);
+  console.log(`💸 Transactions: ${counts[7]}`);
 
   console.log("\n✨ Database seeding completed successfully!");
 }

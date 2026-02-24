@@ -1,6 +1,7 @@
 import { $Enums, Business } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateBusinessInput, UpdateBusinessInput } from "../schemas/business.schema";
+import { generateBusinessId } from "../utils";
 
 export class BusinessRepository {
     static async create(data: CreateBusinessInput, ownerId: string): Promise<Business> {
@@ -9,8 +10,44 @@ export class BusinessRepository {
             data: {
                 ...cleanData,
                 ownerId,
+                id: generateBusinessId()
             },
         });
+    }
+
+    static async getExpiredBusinessSubscriptionsCandidate() {
+        return db.business.findMany({
+            where: {
+                AND: [
+                    { subscriptionEndDate: { lte: new Date(Date.now()) } },
+                    { subscriptionStatus: { notIn: ['EXPIRED', 'SUSPENDED'] } }
+                ]
+            },
+            select: { id: true }
+        })
+    }
+
+    static async markBusinessSubscriptionsAsExpired(businessIds: string[]) {
+        return db.$transaction(async (tx) => {
+            for (const id of businessIds) {
+                const business = await tx.business.update({
+                    where: { id },
+                    data: {
+                        subscriptionStatus: 'EXPIRED',
+                    },
+                    select: { currentSubscriptionId: true }
+                })
+
+                if (business.currentSubscriptionId) {
+                    await tx.businessSubscription.update({
+                        where: { id: business.currentSubscriptionId },
+                        data: {
+                            status: 'EXPIRED',
+                        }
+                    })
+                }
+            }
+        })
     }
 
     static async findByOwnerId(ownerId: string): Promise<Business | null> {
@@ -29,7 +66,7 @@ export class BusinessRepository {
         return db.business.findMany();
     }
 
-    static async update(id: string, data: UpdateBusinessInput): Promise<Business> {
+    static async update(id: string, data: Omit<UpdateBusinessInput, 'defaultTransactionFeeBearer'>): Promise<Business> {
         return db.business.update({
             where: { id },
             data,
@@ -144,5 +181,14 @@ export class BusinessRepository {
         ]);
 
         return { totalMerchants, totalLastMonth, totalMerchantThisMonth, totalMerchantSuspend, totalIncommingMerchantExpire }
+    }
+
+    static async completeRegister() {
+        return db.business.create({
+            data: {
+                name: ``,
+                ownerId: ``
+            }
+        })
     }
 }

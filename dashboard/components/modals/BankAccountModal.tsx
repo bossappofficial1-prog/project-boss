@@ -39,7 +39,6 @@ export default function BankAccountModal({ open, onOpenChange, businessId, creat
         return businessApi.createBusiness({
           name: createPayload.name,
           description: createPayload.description,
-          defaultTransactionFeeBearer: createPayload.defaultTransactionFeeBearer,
           bankName,
           bankAccount,
           accountHolder,
@@ -59,7 +58,7 @@ export default function BankAccountModal({ open, onOpenChange, businessId, creat
 
   const BANKS: Array<{ code: string; name: string; display: string; minLength?: number; maxLength?: number }> = require('@/data/banks.json')
 
-  const normalizedQuery = bankName.trim().toLowerCase()
+  const normalizedQuery = bankName?.trim().toLowerCase()
   const POPULAR_COUNT = 5
   const searchList = normalizedQuery
     ? BANKS.filter((b) => `${b.display} ${b.name}`.toLowerCase().includes(normalizedQuery))
@@ -83,11 +82,12 @@ export default function BankAccountModal({ open, onOpenChange, businessId, creat
   }
 
   useEffect(() => {
+    if (!bankAccount) return;
     setAccountError(validateAccountNumber(bankAccount))
   }, [bankAccount])
 
   // validate bankName against available banks
-  const isBankValid = !!BANKS.find((b) => b.display.toLowerCase() === bankName.trim().toLowerCase())
+  const isBankValid = !!BANKS.find((b) => b.display.toLowerCase() === bankName?.trim().toLowerCase())
 
 
   useEffect(() => {

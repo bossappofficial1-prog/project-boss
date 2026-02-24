@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
-import { loginService, getMeService, resendVerificationService, forgotPasswordService, resetPasswordService, changePasswordService, googleOAuthService, cashierLoginService, getCashierMeService } from "../service/auth.service";
+import { loginService, getMeService, resendVerificationService, forgotPasswordService, resetPasswordService, changePasswordService, googleOAuthService, cashierLoginService, getCashierMeService, completeOnboardingService } from "../service/auth.service";
 import { ResponseUtil } from "../utils/response";
 import { createUserService, verifyUserService } from "../service/user.service";
 import { HttpStatus } from "../constants/http-status";
@@ -8,10 +8,15 @@ import { config } from "../config";
 import { JwtUtil } from "../utils";
 import { redis } from "../config/redis";
 import { BusinessRepository } from "../repositories/business.repository";
+import { SubscriptionStatus } from "@prisma/client";
+import { UserRepository } from "../repositories/user.repository";
 
 export const verifyController = asyncHandler(async (req: Request, res: Response) => {
     const { email, code } = req.body;
     const user = await verifyUserService(email, code);
+    const business = user.business as (typeof user.business & { subscriptionStatus?: SubscriptionStatus }) | null;
+    await redis.set(`session:${user.id}`, JSON.stringify({ ...user, businessId: user.business?.id }), 'EX', 60 * 60 * 24);
+
     const token = JwtUtil.generate({
         sessionId: user.id,
         name: user.name,
@@ -19,7 +24,8 @@ export const verifyController = asyncHandler(async (req: Request, res: Response)
         email: user.email,
         isVerified: user.isVerified,
         provider: user.provider === 'local' ? 'email' : user.provider,
-        businessId: user.business?.id
+        businessId: business?.id,
+        subscriptionStatus: business?.subscriptionStatus
     });
 
     res.cookie("token", token, {
@@ -33,6 +39,59 @@ export const verifyController = asyncHandler(async (req: Request, res: Response)
     return ResponseUtil.success(res, user);
 });
 
+export const completeOnboardingController = asyncHandler(async (req: Request, res: Response) => {
+    const ownerId = req.storedUser?.id;
+
+    if (!ownerId) {
+        return ResponseUtil.error(res, "User tidak terautentikasi", undefined, HttpStatus.UNAUTHORIZED);
+    }
+
+    const onboardingResult = await completeOnboardingService(ownerId, req.body);
+
+    const user = await UserRepository.findById(ownerId);
+    if (!user) {
+        return ResponseUtil.error(res, "User tidak ditemukan", undefined, HttpStatus.NOT_FOUND);
+    }
+
+    const newToken = JwtUtil.generate({
+        sessionId: ownerId,
+        name: user.name,
+        role: user.role,
+        email: user.email,
+        isVerified: user.isVerified,
+        provider: user.provider === 'local' ? 'email' : user.provider,
+        businessId: onboardingResult.business.id,
+        subscriptionStatus: onboardingResult.business.subscriptionStatus,
+    });
+
+    await redis.set(
+        `session:${ownerId}`,
+        JSON.stringify({
+            ...user,
+            businessId: onboardingResult.business.id,
+            business: user.business ?? onboardingResult.business,
+            subscriptionStatus: onboardingResult.business.subscriptionStatus,
+        }),
+        'EX',
+        60 * 60 * 24
+    );
+
+    res.cookie("token", newToken, {
+        httpOnly: true,
+        secure: !!config.COOKIES_DOMAIN,
+        sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+        domain: config.COOKIES_DOMAIN,
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/'
+    });
+
+    return ResponseUtil.success(res, {
+        business: onboardingResult.business,
+        subscription: onboardingResult.subscription,
+        invoice: onboardingResult.invoice,
+        token: newToken,
+    }, HttpStatus.CREATED);
+});
 
 export const loginController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body;
@@ -54,8 +113,19 @@ export const loginController = asyncHandler(async (req: Request, res: Response) 
 
 
 export const getMeController = asyncHandler(async (req: Request, res: Response) => {
+
+    const cacheKey = `user:${req.storedUser?.id}`
+    const cacheData = await redis.get(cacheKey)
+    if (cacheData) {
+        console.log('get user from redis')
+        const data = JSON.parse(cacheData)
+        const { password, ...userWithoutPassword } = data.userWithoutBusiness
+        return ResponseUtil.success(res, { user: userWithoutPassword, outlets: data?.outlets ?? null, business: data?.business ?? null });
+    }
+
     const user = await getMeService(req.storedUser!.id);
 
+    await redis.set(cacheKey, JSON.stringify(user), 'EX', 5 * 60)
     const { password, ...userWithoutPassword } = user.userWithoutBusiness
 
     return ResponseUtil.success(res, { user: userWithoutPassword, outlets: user?.outlets ?? null, business: user?.business ?? null });
@@ -114,7 +184,7 @@ export const registerController = asyncHandler(async (req: Request, res: Respons
 export const resendVerificationController = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
     await resendVerificationService(email);
-    return ResponseUtil.success(res, { message: "Email verifikasi telah dikirim ulang" });
+    return ResponseUtil.success(res, { message: "Email verifikasi telah dikirim ulang" }, HttpStatus.OK, `Email verifikasi telah dikirim ulang ke ${email}`);
 });
 
 export const forgotPasswordController = asyncHandler(async (req: Request, res: Response) => {

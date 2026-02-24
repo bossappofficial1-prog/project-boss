@@ -6,6 +6,7 @@ import { getOrderByIdService } from '../service/order.service';
 import { asyncHandler } from '../middleware/error.middleware';
 import { ResponseUtil } from '../utils/response';
 import { handlePaymentSuccess, handlePaymentFailure } from '../service/payment-update.service';
+import { ensureString } from '../utils/request';
 
 const REMINDER_BEFORE_EXPIRY_MS = 3 * 60 * 1000; // 1 jam untuk test
 
@@ -47,7 +48,7 @@ export const getExpiringTransactions = asyncHandler(
 
 export const markReminderSent = asyncHandler(
     async (req: Request, res: Response) => {
-        const { orderId } = req.params;
+        const orderId = ensureString(req.params?.orderId, 'orderId');
 
         await db.order.update({
             where: { id: orderId },
@@ -59,7 +60,7 @@ export const markReminderSent = asyncHandler(
 
 export const getOrderDetails = asyncHandler(
     async (req: Request, res: Response) => {
-        const { orderId } = req.params;
+        const orderId = ensureString(req.params?.orderId, 'orderId');
 
         const order = await getOrderByIdService(orderId);
 
@@ -72,7 +73,7 @@ export const getOrderDetails = asyncHandler(
 
 export const getOutletQueue = asyncHandler(
     async (req: Request, res: Response) => {
-        const { outletId } = req.params;
+        const outletId = ensureString(req.params?.outletId, 'outletId');
         const queue = await db.order.findMany({
             where: { outletId, orderStatus: 'PROCESSING' },
             include: { guestCustomer: true },

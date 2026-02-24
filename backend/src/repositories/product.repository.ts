@@ -3,10 +3,7 @@ import { db } from "../config/prisma";
 import { CreateProductInput, UpdateProductInput } from "../schemas/product.schema";
 
 export class ProductRepository {
-  /**
-   * Finds multiple products by their IDs, including type-specific details.
-   */
-  static async findManyByIds(ids: string[]): Promise<Product[]> {
+  static async findManyByIds(ids: string[]) {
     return db.product.findMany({
       where: {
         id: {
@@ -16,6 +13,7 @@ export class ProductRepository {
       include: {
         goods: true,
         service: true,
+        ticket: true,
       },
     });
   }
@@ -47,8 +45,7 @@ export class ProductRepository {
           goods: true,
         },
       });
-    } else {
-      // ProductType.SERVICE
+    } else if (data.type === ProductType.SERVICE) {
       return db.product.create({
         data: {
           name: data.name,
@@ -68,11 +65,56 @@ export class ProductRepository {
               commissionValue: data.service.commissionValue,
               maxParallel: data.service.maxParallel,
               bookingInWorkHours: data.service.bookingInWorkHours,
+              // Operating hours
+              mondayOpen: data.service.mondayOpen,
+              mondayClose: data.service.mondayClose,
+              tuesdayOpen: data.service.tuesdayOpen,
+              tuesdayClose: data.service.tuesdayClose,
+              wednesdayOpen: data.service.wednesdayOpen,
+              wednesdayClose: data.service.wednesdayClose,
+              thursdayOpen: data.service.thursdayOpen,
+              thursdayClose: data.service.thursdayClose,
+              fridayOpen: data.service.fridayOpen,
+              fridayClose: data.service.fridayClose,
+              saturdayOpen: data.service.saturdayOpen,
+              saturdayClose: data.service.saturdayClose,
+              sundayOpen: data.service.sundayOpen,
+              sundayClose: data.service.sundayClose,
             },
           },
         },
         include: {
           service: true,
+        },
+      });
+    } else {
+      // ProductType.TICKET
+      return db.product.create({
+        data: {
+          name: data.name,
+          description: data.description,
+          type: data.type,
+          status: data.status,
+          outletId: data.outletId,
+          image: data.image,
+          ticket: {
+            create: {
+              sellingPrice: data.ticket.sellingPrice,
+              eventDate: data.ticket.eventDate,
+              eventEndDate: data.ticket.eventEndDate,
+              venue: data.ticket.venue,
+              venueAddress: data.ticket.venueAddress,
+              mapUrl: data.ticket.mapUrl,
+              totalQuota: data.ticket.totalQuota,
+              maxPerOrder: data.ticket.maxPerOrder,
+              saleStartDate: data.ticket.saleStartDate,
+              saleEndDate: data.ticket.saleEndDate,
+              terms: data.ticket.terms,
+            },
+          },
+        },
+        include: {
+          ticket: true,
         },
       });
     }
@@ -95,6 +137,7 @@ export class ProductRepository {
             },
           },
         },
+        ticket: true,
         outlet: {
           select: {
             business: {
@@ -127,13 +170,13 @@ export class ProductRepository {
         { outletId },
         ...(q && q !== ""
           ? [
-              {
-                name: {
-                  contains: q,
-                  mode: "insensitive" as Prisma.QueryMode,
-                },
+            {
+              name: {
+                contains: q,
+                mode: "insensitive" as Prisma.QueryMode,
               },
-            ]
+            },
+          ]
           : []),
         ...(accessed && accessed !== "OWNER"
           ? [{ status: "ACTIVE" } as Prisma.ProductWhereInput]
@@ -152,6 +195,7 @@ export class ProductRepository {
         include: {
           goods: true,
           service: true,
+          ticket: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -167,11 +211,15 @@ export class ProductRepository {
    * Updates product base info and its relational data (goods/service).
    */
   static async update(id: string, data: UpdateProductInput): Promise<Product> {
-    const { goods, service, ...baseData } = data;
+    const { goods, service, type, ...rest } = data;
 
     // Construct the update object for Prisma nested update
+    // Only include the base product fields, not the entire baseData spread
     const updateData: Prisma.ProductUpdateInput = {
-      ...baseData,
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.status !== undefined && { status: data.status }),
+      ...(data.image !== undefined && { image: data.image }),
     };
 
     if (goods) {
@@ -186,12 +234,19 @@ export class ProductRepository {
       };
     }
 
+    if ((data as any).ticket) {
+      updateData.ticket = {
+        update: (data as any).ticket,
+      };
+    }
+
     return db.product.update({
       where: { id },
       data: updateData,
       include: {
         goods: true,
         service: true,
+        ticket: true,
       },
     });
   }
@@ -219,7 +274,28 @@ export class ProductRepository {
       include: {
         goods: true,
         service: true,
+        ticket: true,
       },
+    });
+  }
+
+  static async findForExport(
+    outletId: string,
+    filters?: { type?: "GOODS" | "SERVICE" | "TICKET"; search?: string },
+  ) {
+    const where: Prisma.ProductWhereInput = { outletId };
+    if (filters?.type) where.type = filters.type;
+    if (filters?.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: "insensitive" } },
+        { description: { contains: filters.search, mode: "insensitive" } },
+      ];
+    }
+
+    return db.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: { goods: true, service: true, ticket: true },
     });
   }
 }

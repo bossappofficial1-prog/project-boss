@@ -158,8 +158,8 @@ interface ToogleFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
 interface SwitchFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
     type: 'dual-option-switch';
     switchOptions: {
-        left: { label: string; value: any; activeClass?: string };
-        right: { label: string; value: any; activeClass?: string };
+        left: { label: string; value: any; activeClass?: string, icon?: React.ComponentType<{ className?: string }> };
+        right: { label: string; value: any; activeClass?: string, icon?: React.ComponentType<{ className?: string }> };
     };
 }
 
@@ -457,7 +457,7 @@ function RenderField<T extends FieldValues>({
                     className={cn(
                         "col-span-1", // default mobile
                         field.colSpan && COL_SPAN_MAP[field.colSpan as keyof typeof COL_SPAN_MAP],
-                        field.className
+                        // field.className <--- Removed this because it duplicates styling on the container, causing layout issues (e.g. specific heights applied to container instead of input)
                     )}
                 >
                     <FormLabel htmlFor={field.name}>{field.label}</FormLabel>
@@ -490,20 +490,22 @@ function FieldInputSwitch<T extends FieldValues>({
     switch (field.type) {
         case `file`:
             return (
-                <ImageUploader
-                    onValueChange={formField.onChange}
-                    helperText={placeholderText}
-                    disabled={formField.disabled}
-                    maxSize={field.maxSizes}
-                    key={formField.name + (formField.value ? 'loaded' : 'empty')}
-                    accept={field.accept}
-                    value={formField.value}
-                />
+                <div className="w-[87dvw] md:w-full">
+                    <ImageUploader
+                        onValueChange={formField.onChange}
+                        helperText={placeholderText}
+                        disabled={formField.disabled}
+                        maxSize={field.maxSizes}
+                        key={formField.name + (formField.value ? 'loaded' : 'empty')}
+                        accept={field.accept}
+                        value={formField.value}
+                    />
+                </div>
             )
         case "select":
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <SelectOption
                         {...formField}
                         id={formField.name}
@@ -542,7 +544,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case "presentage":
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <InputPercentage
                         {...formField}
                         id={formField.name}
@@ -557,7 +559,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case "textarea":
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <Textarea
                         id={formField.name}
                         placeholder={placeholderText}
@@ -570,7 +572,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case "password":
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <PasswordInput
                         id={formField.name}
                         placeholder={placeholderText}
@@ -595,7 +597,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case "currency":
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <InputCurrency
                         {...formField}
                         id={formField.name}
@@ -614,7 +616,7 @@ function FieldInputSwitch<T extends FieldValues>({
         case 'number':
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <Input
                         id={formField.name}
                         type={'number'}
@@ -633,7 +635,7 @@ function FieldInputSwitch<T extends FieldValues>({
         default:
             return (
                 <div className="relative">
-                    {Icon && <Icon className={`absolute left-3 top-3 h-5 w-5 text-muted-foreground`} />}
+                    {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
                     <Input
                         id={formField.name}
                         type={field.type || "text"}

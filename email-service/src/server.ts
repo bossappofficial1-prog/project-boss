@@ -8,7 +8,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 
 // Create transporter
 const transporter = nodemailer.createTransport({
@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
 // Endpoint to send email
 app.post('/send-email', async (req, res) => {
     try {
-        const { to, subject, text, html, from } = req.body;
+        const { to, subject, text, html, from, attachments } = req.body;
 
         if (!to || !subject) {
             return res.status(400).json({ error: 'Missing required fields: to, subject' });
@@ -38,7 +38,7 @@ app.post('/send-email', async (req, res) => {
             html,
         };
 
-        const info = await transporter.sendMail(mailOptions);
+        const info = await transporter.sendMail({ ...mailOptions, attachments });
         console.log('Email sent:', info.messageId);
 
         res.json({ success: true, messageId: info.messageId });

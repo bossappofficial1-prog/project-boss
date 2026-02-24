@@ -1,8 +1,9 @@
 import { HomeRepository } from "../repositories/home.repository";
 import { BannerRepository } from "../repositories/banner.repository";
+import { mapOutletsWithOpenStatus, removeOperatingHoursFromOutlets } from "../utils/outlet.utils";
 
 export async function getHomeSummaryService(searchQuery?: string) {
-    const [umkm, transactions, outlets] = await Promise.all([
+    const [umkm, transactions, outletsRaw] = await Promise.all([
         HomeRepository.countVerifiedUmkm(),
         HomeRepository.countSuccessfulTransactions(),
         HomeRepository.findTopOutlets(searchQuery)
@@ -12,7 +13,9 @@ export async function getHomeSummaryService(searchQuery?: string) {
         HomeRepository.findPopularItems()
     ]);
 
-    // Additional home content: banners, categories, popular items, promos
+    const outletsWithStatus = mapOutletsWithOpenStatus(outletsRaw);
+    const outlets = removeOperatingHoursFromOutlets(outletsWithStatus);
+
     const rawBanners = await BannerRepository.findActiveBanners(100)
     const banners = rawBanners.map(b => ({
         id: b.id,
@@ -22,7 +25,6 @@ export async function getHomeSummaryService(searchQuery?: string) {
         cta: { type: b.ctaType || "url", payload: b.ctaPayload || "" }
     }))
 
-    // Categories: lightweight static categories for quick navigation
     const categories = [
         { id: 'cat-food', slug: 'food', title: 'Makanan', description: 'Kuliner favorit di sekitarmu', icon: 'food' },
         { id: 'cat-drink', slug: 'drink', title: 'Minuman', description: 'Kopi, teh, dan minuman segar', icon: 'drink' },

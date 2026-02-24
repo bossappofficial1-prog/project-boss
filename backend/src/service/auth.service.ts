@@ -1,14 +1,17 @@
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
-import { LoginInput, CashierLoginInput } from "../schemas/auth.schema";
-import { BcryptUtil, JwtUtil } from "../utils";
+import { LoginInput, CashierLoginInput, CompleteRegisterValues } from "../schemas/auth.schema";
+import { BcryptUtil, CodeGeneratorUtil, JwtUtil } from "../utils";
 import { getUserByEmailService, getUserByIdService, updateUserPasswordService, createUserWithGoogleService } from "./user.service";
 import { UserRepository } from "../repositories/user.repository";
 import { StaffRepository } from "../repositories/staff.repository";
 import { redis } from "../config/redis";
 import { randomUUID } from "crypto";
 import { messagePublisher } from "./message-publisher.service";
+import { BusinessRepository } from "../repositories/business.repository";
+import { SubscriptionPlanRepository } from "../repositories/subscription-plan.repository";
+import { OnboardingRepository } from "../repositories/onboarding.repository";
 
 export async function loginService(data: LoginInput) {
     const user = await getUserByEmailService(data.email);
@@ -23,7 +26,7 @@ export async function loginService(data: LoginInput) {
         throw new AppError(Messages.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
     }
 
-    await redis.set(`session:${user.id}`, JSON.stringify(user), 'EX', 60 * 60 * 24);
+    await redis.set(`session:${user.id}`, JSON.stringify({ ...user, businessId: user.business?.id }), 'EX', 60 * 60 * 24);
 
     const token = JwtUtil.generate({
         sessionId: user.id,
@@ -32,7 +35,8 @@ export async function loginService(data: LoginInput) {
         email: user.email,
         isVerified: user.isVerified,
         provider: user.provider === 'local' ? 'email' : user.provider,
-        businessId: user.business?.id
+        businessId: user.business?.id,
+        subscriptionStatus: user.business?.subscriptionStatus
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
@@ -159,8 +163,15 @@ export async function resendVerificationService(email: string) {
     await redis.set(rateLimitKey, (attemptCount + 1).toString(), 'EX', ttlSeconds);
 
     // Generate new verification code
-    const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    await redis.set(`verification:${email}`, verificationCode, 'EX', 60 * 15); // 15 minutes
+    const verificationCode = CodeGeneratorUtil.generate(6);
+    await redis.set(`verification:${email}`, verificationCode, 'EX', 60 * 10);
+    const expiryCode = new Date()
+    expiryCode.setMinutes(expiryCode.getMinutes() + 10)
+
+    await UserRepository.update(user.id, {
+        verificationCode,
+        verificationCodeExpires: expiryCode
+    })
 
     // Send email via message queue
     await messagePublisher.publishResendVerificationEmail(email, verificationCode);
@@ -252,7 +263,7 @@ export async function googleOAuthService(profile: {
     }
 
     // Create session and JWT token
-    await redis.set(`session:${user.id}`, JSON.stringify(user), 'EX', 60 * 60 * 24);
+    await redis.set(`session:${user.id}`, JSON.stringify({ ...user, businessId: user.business?.id }), 'EX', 60 * 60 * 24);
     const token = JwtUtil.generate({
         sessionId: user.id,
         role: user.role,
@@ -267,4 +278,34 @@ export async function googleOAuthService(profile: {
         user,
         token,
     };
+}
+
+export async function completeOnboardingService(ownerId: string, data: CompleteRegisterValues) {
+    const owner = await UserRepository.findById(ownerId);
+    if (!owner) {
+        throw new AppError("User tidak ditemukan", HttpStatus.NOT_FOUND);
+    }
+
+    if (!owner.isVerified) {
+        throw new AppError("Akun belum terverifikasi", HttpStatus.BAD_REQUEST);
+    }
+
+    const existingBusiness = await BusinessRepository.findByOwnerId(ownerId);
+    if (existingBusiness) {
+        throw new AppError("Bisnis sudah terdaftar", HttpStatus.BAD_REQUEST);
+    }
+
+    const planCode = data.selectedPlan.toUpperCase();
+    const plan = await SubscriptionPlanRepository.getByCode(planCode);
+
+    if (!plan) {
+        throw new AppError(`Paket langganan ${planCode} tidak ditemukan`, HttpStatus.NOT_FOUND);
+    }
+
+    return OnboardingRepository.completeOnboarding({
+        ownerId,
+        businessName: data.businessName,
+        description: data.description,
+        plan,
+    });
 }

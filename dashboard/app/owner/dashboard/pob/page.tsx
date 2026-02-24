@@ -254,7 +254,8 @@ export default function POBPage() {
             onSearchQueryChange={setSearchQuery}
             onSearch={handleSearch}
             activeFilter="GOODS"
-            onFilterChange={() => {}} // Disable filter change
+            hideFilters={true}
+            onFilterChange={() => { }} // Disable filter change
             isLoading={isLoadingProducts}
             onAddProduct={handleAddProduct}
             cartQuantities={cartQuantities}

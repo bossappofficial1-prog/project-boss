@@ -1,0 +1,264 @@
+import { AppError } from "../errors/app-error";
+import { HttpStatus } from "../constants/http-status";
+import { PosV2Repository } from "../repositories/pos-v2.repository";
+import { CreatePosV2OrderInput } from "../schemas/pos-v2.schema";
+import { generateOrderCode } from "../utils";
+import { SocketEmitter } from "../socket/socket-emiiter";
+
+export interface PosV2OrderResult {
+    orderId: string;
+    totalAmount: number;
+    itemCount: number;
+    cashReceived: number;
+    change: number;
+    customerName: string;
+    createdAt: string;
+}
+
+export class PosV2Service {
+    static async getProducts(outletId: string, search?: string, type?: "GOODS" | "SERVICE" | "TICKET") {
+        const products = await PosV2Repository.getProductsByOutlet(outletId, search, type);
+
+        return products.map((p) => {
+            let price = 0;
+            if (p.type === "GOODS") price = p.goods?.sellingPrice ?? 0;
+            else if (p.type === "SERVICE") price = p.service?.sellingPrice ?? 0;
+            else if (p.type === "TICKET") price = p.ticket?.sellingPrice ?? 0;
+
+            return {
+                id: p.id,
+                name: p.name,
+                description: p.description,
+                image: p.image,
+                type: p.type,
+                status: p.status,
+                price,
+                stock: p.type === "GOODS" ? (p.goods?.currentStock ?? 0) : null,
+                unit: p.type === "GOODS" ? (p.goods?.unit ?? "pcs") : null,
+                goodsId: p.goods?.id ?? null,
+                serviceId: p.service?.id ?? null,
+                ticketId: p.ticket?.id ?? null,
+                durationMinutes: p.service?.durationMinutes ?? null,
+                providerName: p.service?.providerName ?? null,
+                totalQuota: p.ticket?.totalQuota ?? null,
+                soldCount: p.ticket?.soldCount ?? null,
+                eventDate: p.ticket?.eventDate?.toISOString() ?? null,
+                eventEndDate: p.ticket?.eventEndDate?.toISOString() ?? null,
+                venue: p.ticket?.venue ?? null,
+            };
+        });
+    }
+
+    static async createOrder(
+        input: CreatePosV2OrderInput,
+        cashierId: string | null,
+    ): Promise<PosV2OrderResult> {
+        const { customer, outletId, items, cashReceived = 0, bookingSlotId, bookingDate, staffId } = input;
+
+        // Validate products exist and belong to outlet
+        const productIds = items.map((i) => i.productId);
+        const products = await PosV2Repository.getProductsByIds(productIds, outletId);
+
+        if (products.length !== productIds.length) {
+            const found = new Set(products.map((p) => p.id));
+            const missing = productIds.filter((id) => !found.has(id));
+            throw new AppError(
+                `Produk tidak ditemukan atau tidak aktif: ${missing.join(", ")}`,
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        // Validate: max 1 service per order
+        const serviceProducts = products.filter((p) => p.type === "SERVICE");
+        if (serviceProducts.length > 1) {
+            throw new AppError("Maksimal 1 layanan per transaksi POS", HttpStatus.BAD_REQUEST);
+        }
+
+        // Validate stock and calculate total
+        let subtotal = 0;
+        let hasService = false;
+        const orderItems: Array<{
+            productId: string;
+            quantity: number;
+            priceAtTimeOfOrder: number;
+        }> = [];
+        const stockUpdates: Array<{
+            productGoodsId: string;
+            quantity: number;
+            orderId: string;
+        }> = [];
+        const ticketUpdates: Array<{
+            productTicketId: string;
+            productId: string;
+            quantity: number;
+        }> = [];
+
+        for (const item of items) {
+            const product = products.find((p) => p.id === item.productId)!;
+
+            if (product.type === "GOODS") {
+                if (!product.goods) {
+                    throw new AppError(
+                        `Data barang "${product.name}" tidak lengkap`,
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+                if (product.goods.currentStock < item.quantity) {
+                    throw new AppError(
+                        `Stok "${product.name}" tidak cukup. Tersedia: ${product.goods.currentStock}`,
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+                const price = product.goods.sellingPrice;
+                subtotal += price * item.quantity;
+                orderItems.push({
+                    productId: product.id,
+                    quantity: item.quantity,
+                    priceAtTimeOfOrder: price,
+                });
+                stockUpdates.push({
+                    productGoodsId: product.goods.id,
+                    quantity: item.quantity,
+                    orderId: "",
+                });
+            } else if (product.type === "SERVICE") {
+                if (!product.service) {
+                    throw new AppError(
+                        `Data layanan "${product.name}" tidak lengkap`,
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+                if (!bookingSlotId) {
+                    throw new AppError(
+                        `Pilih jadwal untuk layanan "${product.name}"`,
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+                hasService = true;
+                const price = product.service.sellingPrice;
+                subtotal += price * 1; // Service always qty 1
+                orderItems.push({
+                    productId: product.id,
+                    quantity: 1,
+                    priceAtTimeOfOrder: price,
+                });
+            } else if (product.type === "TICKET") {
+                if (!product.ticket) {
+                    throw new AppError(
+                        `Data tiket "${product.name}" tidak lengkap`,
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+                const availableQuota = product.ticket.totalQuota - product.ticket.soldCount;
+                if (availableQuota < item.quantity) {
+                    throw new AppError(
+                        `Kuota tiket "${product.name}" tidak cukup. Tersedia: ${availableQuota}`,
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+                const price = product.ticket.sellingPrice;
+                subtotal += price * item.quantity;
+                orderItems.push({
+                    productId: product.id,
+                    quantity: item.quantity,
+                    priceAtTimeOfOrder: price,
+                });
+                ticketUpdates.push({
+                    productTicketId: product.ticket.id,
+                    productId: product.id,
+                    quantity: item.quantity,
+                });
+            }
+        }
+
+        if (subtotal < 1000) {
+            throw new AppError("Minimum order Rp 1.000", HttpStatus.BAD_REQUEST);
+        }
+
+        if (subtotal > 50_000_000) {
+            throw new AppError("Maksimum order Rp 50.000.000", HttpStatus.BAD_REQUEST);
+        }
+
+        // Validate cash
+        if (cashReceived < subtotal) {
+            throw new AppError(
+                `Cash kurang. Total: Rp ${subtotal.toLocaleString("id-ID")}, Diterima: Rp ${cashReceived.toLocaleString("id-ID")}`,
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        // Create or find customer
+        const guestCustomer = await PosV2Repository.findOrCreateCustomer(
+            customer.name,
+            customer.phone,
+        );
+
+        // Generate order ID
+        const orderId = generateOrderCode(
+            { name: "POS", maxLength: 12 },
+            { randomLength: 6 },
+        );
+
+        // Set orderId for stock updates
+        stockUpdates.forEach((su) => (su.orderId = orderId));
+
+        // Create order atomically
+        const { order } = await PosV2Repository.createCashOrder({
+            orderId,
+            customerId: guestCustomer.id,
+            outletId,
+            totalAmount: subtotal,
+            cashierId,
+            items: orderItems,
+            stockUpdates,
+            ticketUpdates,
+            hasService,
+            bookingSlotId,
+            bookingDate: bookingDate ? new Date(bookingDate) : null,
+        });
+
+        // Emit real-time event (non-blocking)
+        try {
+            SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
+                orderId: order.id,
+                amount: subtotal,
+                customerName: guestCustomer.name,
+                paymentMethod: "cash",
+                timestamp: new Date(),
+            });
+        } catch {
+            // Silent fail - socket is non-critical
+        }
+
+        return {
+            orderId: order.id,
+            totalAmount: subtotal,
+            itemCount: items.reduce((sum, i) => sum + i.quantity, 0),
+            cashReceived,
+            change: cashReceived - subtotal,
+            customerName: guestCustomer.name,
+            createdAt: order.createdAt.toISOString(),
+        };
+    }
+
+    static async getCashSummary(outletId: string) {
+        return PosV2Repository.getCashSummaryToday(outletId);
+    }
+
+    static async getRecentOrders(outletId: string) {
+        const orders = await PosV2Repository.getRecentOrders(outletId, 20);
+
+        return orders.map((o) => ({
+            id: o.id,
+            totalAmount: o.totalAmount,
+            customerName: o.guestCustomer.name,
+            itemCount: o.items.reduce((sum, i) => sum + i.quantity, 0),
+            itemsSummary: o.items
+                .slice(0, 3)
+                .map((i) => i.product.name)
+                .join(", "),
+            cashier: o.handledByStaff?.name ?? "-",
+            createdAt: o.createdAt.toISOString(),
+        }));
+    }
+}
