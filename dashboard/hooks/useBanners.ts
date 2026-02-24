@@ -88,7 +88,6 @@ export const useBulkUpdateBanner = (
     onSuccess: (data, variables, context) => {
       toast.success("Berhasil update posisi banner");
       queryClient.invalidateQueries({ queryKey: ["banners"] });
-      onSuccess?.(data, variables, context);
     },
     ...restOptions,
   });
@@ -118,7 +117,7 @@ export const useBulkDeleteBanner = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["banners"] });
-      toast.success(`${data.count} banner berhasil dihapus`)
+      toast.success(`${data.count} banner berhasil dihapus`);
     },
   });
 };

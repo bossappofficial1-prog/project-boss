@@ -1029,7 +1029,8 @@
         "shareText": "Lihat {type}: {name}",
         "shareType": {
             "GOODS": "produk",
-            "SERVICE": "layanan"
+            "SERVICE": "layanan",
+            "TICKET": "tiket"
         },
         "empty": {
             "title": "Produk tidak ditemukan"

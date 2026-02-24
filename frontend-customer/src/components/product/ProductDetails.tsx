@@ -94,7 +94,7 @@ export function ProductDetails({ outletId, productId }: Props) {
       showThemeToggle: false,
       showPartnerToggle: false,
       onLeftClick:
-        (from === "saved-products" || from === "home")
+        from === "saved-products" || from === "home"
           ? () => router.back()
           : () => router.push(`/outlet/${outletId}?from=product`),
       rightContent: (
@@ -176,11 +176,11 @@ export function ProductDetails({ outletId, productId }: Props) {
           value: product?.type === "GOODS" ? t("labels.product") : t("labels.service"),
         },
         product &&
-        getServiceDuration(product) && {
-          icon: Clock,
-          label: t("labels.duration"),
-          value: `${getServiceDuration(product)} ${t("labels.minutes")}`,
-        },
+          getServiceDuration(product) && {
+            icon: Clock,
+            label: t("labels.duration"),
+            value: `${getServiceDuration(product)} ${t("labels.minutes")}`,
+          },
       ].filter(Boolean) as Array<{
         icon: React.ComponentType<{ className?: string }>;
         label: string;
@@ -237,7 +237,11 @@ export function ProductDetails({ outletId, productId }: Props) {
           <OutletCard outlet={outlet} t={t} />
 
           {formattedDescription && (
-            <DescriptionSection description={formattedDescription} productType={product.type} t={t} />
+            <DescriptionSection
+              description={formattedDescription}
+              productType={product.type}
+              t={t}
+            />
           )}
         </div>
       </div>
@@ -340,10 +344,7 @@ const HeaderSection: React.FC<HeaderSectionProps> = ({ product, outlet, t, tComm
             : "bg-gray-100 text-gray-500",
         )}>
         <span
-          className={cn(
-            "w-1.5 h-1.5 rounded-full",
-            outlet.isOpen ? "bg-green-500" : "bg-gray-400",
-          )}
+          className={cn("w-1.5 h-1.5 rounded-full", outlet.isOpen ? "bg-green-500" : "bg-gray-400")}
         />
         {outlet.isOpen ? tCommon("open") : tCommon("closed")}
       </Badge>
@@ -365,7 +366,9 @@ const HeaderSection: React.FC<HeaderSectionProps> = ({ product, outlet, t, tComm
         {formatCurrency(getProductPrice(product))}
       </span>
       {getProductUnit(product) && (
-        <span className="text-sm text-muted-foreground font-medium">/ {getProductUnit(product)}</span>
+        <span className="text-sm text-muted-foreground font-medium">
+          / {getProductUnit(product)}
+        </span>
       )}
     </div>
   </div>
@@ -386,7 +389,9 @@ const OutletCard: React.FC<OutletCardProps> = ({ outlet, t }) => (
       <Store className="w-5 h-5" />
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t("labels.availableAt")}</p>
+      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+        {t("labels.availableAt")}
+      </p>
       <h3 className="text-sm font-semibold truncate mt-0.5">{outlet.name}</h3>
       <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
         <MapPin className="w-3 h-3 shrink-0" />
@@ -425,9 +430,7 @@ const DescriptionSection: React.FC<DescriptionSectionProps> = ({ description, pr
         type: productType === "GOODS" ? t("labels.product") : t("labels.service"),
       })}
     </h2>
-    <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
-      {description}
-    </p>
+    <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">{description}</p>
   </div>
 );
 

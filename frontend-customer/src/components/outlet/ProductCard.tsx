@@ -5,7 +5,17 @@ import { OutletDetails } from "@/types";
 import { SelectedSchedule } from "@/types/booking-slots";
 import { useState, useCallback, useMemo } from "react";
 import { Card } from "../ui/card";
-import { Clock, Minus, Package, Plus, ShoppingCart, Wrench, Ticket, MapPin, Calendar } from "lucide-react";
+import {
+  Clock,
+  Minus,
+  Package,
+  Plus,
+  ShoppingCart,
+  Wrench,
+  Ticket,
+  MapPin,
+  Calendar,
+} from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { ScheduleModal } from "./ScheduleModal";
@@ -70,7 +80,9 @@ export default function ProductCard({
 
   const isOutOfStock =
     (product.type === "GOODS" && productData.quantity !== null && productData.quantity <= 0) ||
-    (product.type === "TICKET" && productData.ticketAvailable !== null && productData.ticketAvailable <= 0);
+    (product.type === "TICKET" &&
+      productData.ticketAvailable !== null &&
+      productData.ticketAvailable <= 0);
   const isLowStock =
     product.type === "GOODS" &&
     productData.quantity !== null &&
@@ -173,15 +185,16 @@ export default function ProductCard({
     [addItem, outlet.id, outlet.name, product, snackbar],
   );
 
-  const isDisabled = isOutOfStock || isInactive || outletNotOpen || !!isEventPassed;
+  const isDisabled = isOutOfStock || isInactive || !!isEventPassed;
 
   return (
     <>
       <Card
-        className={`flex flex-row p-3 transition-all duration-200 w-full overflow-hidden relative gap-0 group border border-border/60 rounded-xl items-stretch ${isDisabled
-          ? "opacity-50 cursor-not-allowed bg-muted/30"
-          : "cursor-pointer hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
-          }`}
+        className={`flex flex-row p-3 transition-all duration-200 w-full overflow-hidden relative gap-0 group border border-border/60 rounded-xl items-stretch ${
+          isDisabled
+            ? "opacity-50 cursor-not-allowed bg-muted/30"
+            : "cursor-pointer hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
+        }`}
         onClick={isDisabled ? undefined : handleCardClick}>
         {/* Image Section */}
         <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -189,8 +202,9 @@ export default function ProductCard({
             <ImageColorThief
               src={product.image}
               alt={product.name}
-              className={`w-full h-full object-cover transition-transform duration-300 ${!isDisabled && "group-hover:scale-105"
-                } ${isDisabled ? "grayscale" : ""}`}
+              className={`w-full h-full object-cover transition-transform duration-300 ${
+                !isDisabled && "group-hover:scale-105"
+              } ${isDisabled ? "grayscale" : ""}`}
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-muted to-muted/60 text-muted-foreground/40">
@@ -207,19 +221,25 @@ export default function ProductCard({
           {/* Status Overlays */}
           {isOutOfStock && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
-              <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">Habis</span>
+              <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
+                Habis
+              </span>
             </div>
           )}
 
           {isInactive && !isOutOfStock && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
-              <span className="text-[10px] font-bold text-white bg-gray-500 px-2 py-0.5 rounded-full">Nonaktif</span>
+              <span className="text-[10px] font-bold text-white bg-gray-500 px-2 py-0.5 rounded-full">
+                Nonaktif
+              </span>
             </div>
           )}
 
           {isEventPassed && !isOutOfStock && !isInactive && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
-              <span className="text-[10px] font-bold text-white bg-gray-500 px-2 py-0.5 rounded-full">Event Selesai</span>
+              <span className="text-[10px] font-bold text-white bg-gray-500 px-2 py-0.5 rounded-full">
+                Event Selesai
+              </span>
             </div>
           )}
 
@@ -235,7 +255,10 @@ export default function ProductCard({
           {product.type === "TICKET" && product.ticket && !isDisabled && (
             <span className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-emerald-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
               <Calendar className="w-2.5 h-2.5" />
-              {new Date(product.ticket.eventDate).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
+              {new Date(product.ticket.eventDate).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "short",
+              })}
             </span>
           )}
 
@@ -247,19 +270,24 @@ export default function ProductCard({
           )}
 
           {/* Ticket Remaining Badge */}
-          {product.type === "TICKET" && productData.ticketAvailable !== null && productData.ticketAvailable > 0 && productData.ticketAvailable <= 10 && !isDisabled && (
-            <span className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
-              Sisa: {productData.ticketAvailable}
-            </span>
-          )}
+          {product.type === "TICKET" &&
+            productData.ticketAvailable !== null &&
+            productData.ticketAvailable > 0 &&
+            productData.ticketAvailable <= 10 &&
+            !isDisabled && (
+              <span className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
+                Sisa: {productData.ticketAvailable}
+              </span>
+            )}
         </div>
 
         {/* Content Section */}
         <div className="pl-3 sm:pl-4 flex flex-col flex-grow justify-between min-w-0">
           <div className="flex-grow">
             <h3
-              className={`font-semibold text-sm leading-snug line-clamp-2 transition-colors ${!isDisabled && "group-hover:text-primary"
-                }`}>
+              className={`font-semibold text-sm leading-snug line-clamp-2 transition-colors ${
+                !isDisabled && "group-hover:text-primary"
+              }`}>
               {product.name}
             </h3>
             {product.description && (
@@ -286,7 +314,9 @@ export default function ProductCard({
                 Rp {productData.price.toLocaleString("id-ID")}
               </p>
               {product.type === "GOODS" && productData.unit && (
-                <span className="text-[10px] text-muted-foreground leading-none">per {productData.unit}</span>
+                <span className="text-[10px] text-muted-foreground leading-none">
+                  per {productData.unit}
+                </span>
               )}
               {product.type === "TICKET" && product.ticket?.venue && (
                 <span className="text-[10px] text-muted-foreground leading-none flex items-center gap-0.5">

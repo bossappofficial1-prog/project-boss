@@ -1029,7 +1029,8 @@
         "shareText": "Check out {type}: {name}",
         "shareType": {
             "GOODS": "product",
-            "SERVICE": "service"
+            "SERVICE": "service",
+            "TICKET": "ticket"
         },
         "empty": {
             "title": "Product not found"
