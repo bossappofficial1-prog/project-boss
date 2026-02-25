@@ -4,7 +4,7 @@
   "main": "dist/src/index.js",
   "scripts": {
     "dev": "ts-node-dev --ignore-watch node_modules --respawn --transpile-only -r dotenv/config --watch .env src/index.ts",
-    "build": "tsc && cp -r ./templates/ ./dist/templates/",
+    "build": "tsc && cp -r ./templates/ ./templates/",
     "start": "node dist/src/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
