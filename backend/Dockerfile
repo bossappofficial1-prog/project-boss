@@ -33,6 +33,8 @@ COPY package*.json ./
 # Install HANYA dependensi production (ukuran sangat kecil)
 RUN npm ci --omit=dev
 
+RUN npm install -g prisma
+
 # COPY file hasil build dan folder penting dari stage builder
 COPY --from=builder /app/backend/dist ./dist
 COPY --from=builder /app/backend/public ./public
@@ -45,7 +47,6 @@ COPY --from=builder /app/backend/node_modules/@prisma ./node_modules/@prisma
 EXPOSE 1234
 
 # CMD dijalankan saat container start.
-# Hapus 'npx prisma generate' di sini karena sudah di-copy dari builder.
 CMD sh -c 'npx prisma migrate deploy && \
     if [ "$NODE_ENV" = "development" ]; then \
         if [ "$FORCE_RESEED" = "true" ]; then \
@@ -55,4 +56,4 @@ CMD sh -c 'npx prisma migrate deploy && \
             echo "🌱 Normal seeding (skip if data exists)..."; \
             npm run db:seed; \
         fi; \
-    fi && node dist/index.js' 
+    fi && node dist/index.js'

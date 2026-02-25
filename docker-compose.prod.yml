@@ -121,12 +121,8 @@ services:
       - ./npm/data:/data
       - ./npm/letsencrypt:/etc/letsencrypt
     networks:
-      - project_network
+      - default
     depends_on:
       - backend
       - frontend-customer
       - dashboard
-
-networks:
-  project_network:
-    driver: bridge
