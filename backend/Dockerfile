@@ -22,6 +22,7 @@ WORKDIR /app/backend
 # Deklarasi ENV
 ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
+# (Anda bisa menambahkan ENV SMTP dll di docker-compose nanti, 
 # lebih aman daripada di-hardcode di Dockerfile)
 
 # Install dependensi sistem yang dibutuhkan Prisma di Alpine
@@ -40,20 +41,16 @@ COPY --from=builder /app/backend/dist ./dist
 COPY --from=builder /app/backend/public ./public
 COPY --from=builder /app/backend/prisma ./prisma
 
+# KUNCI PRISMA: Copy spesifik Prisma Client yang sudah di-generate dari builder
 # agar kita tidak perlu membawa seluruh node_modules builder
 COPY --from=builder /app/backend/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/backend/node_modules/@prisma ./node_modules/@prisma
 
+# PENTING: Hapus file .env bawaan dari lokal (jika ada) yang menimpa variabel Docker
+RUN rm -f .env prisma/.env
+
 EXPOSE 1234
 
 # CMD dijalankan saat container start.
-CMD sh -c 'npx prisma migrate deploy && \
-    if [ "$NODE_ENV" = "development" ]; then \
-        if [ "$FORCE_RESEED" = "true" ]; then \
-            echo "🔄 Force reseeding enabled..."; \
-            npm run db:seed -- --force; \
-        else \
-            echo "🌱 Normal seeding (skip if data exists)..."; \
-            npm run db:seed; \
-        fi; \
-    fi && node dist/index.js'
+# Hapus 'npx prisma generate' di sini karena sudah di-copy dari builder.
+CMD node dist/index.js
