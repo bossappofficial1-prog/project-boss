@@ -49,7 +49,7 @@ app.use(
   }),
 );
 
-app.set('trust proxy', 1)
+// app.set('trust proxy', 1)
 
 //Rate limiting untuk melindungi dari serangan brute-force dan penyalahgunaan
 app.use(generalLimiter);
