@@ -81,7 +81,7 @@ services:
     restart: always
     environment:
       NODE_ENV: production
-      SERVER_API_URL: http://backend:1234/api/v1
+      SERVER_API_URL: https://api.bossapp.id/api/v1
 
     depends_on:
       backend:
