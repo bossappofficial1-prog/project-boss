@@ -39,6 +39,7 @@ RUN npm install -g prisma
 
 COPY --from=builder /app/backend/dist ./dist
 COPY --from=builder /app/backend/public ./public
+COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/backend/prisma ./prisma
 COPY --from=builder /app/backend/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/backend/node_modules/@prisma ./node_modules/@prisma
