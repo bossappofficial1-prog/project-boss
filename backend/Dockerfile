@@ -53,4 +53,4 @@ EXPOSE 1234
 
 # CMD dijalankan saat container start.
 # Hapus 'npx prisma generate' di sini karena sudah di-copy dari builder.
-CMD node dist/index.js
+CMD node dist/src/index.js
