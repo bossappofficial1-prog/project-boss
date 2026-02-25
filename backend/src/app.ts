@@ -49,6 +49,8 @@ app.use(
   }),
 );
 
+app.set('trust proxy', true)
+
 //Rate limiting untuk melindungi dari serangan brute-force dan penyalahgunaan
 app.use(generalLimiter);
 

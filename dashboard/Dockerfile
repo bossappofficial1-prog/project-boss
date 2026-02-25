@@ -1,6 +1,8 @@
 # Use the official Node.js 18 Alpine image as the base
 FROM node:18-alpine AS base
 
+RUN apk add --no-cache libc6-compat
+
 # Set the working directory
 WORKDIR /app/dashboard
 
@@ -14,13 +16,13 @@ ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 ENV NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 ENV JWT_SECRET=${JWT_SECRET}
-ENV NEXT_PUBLIC_REMOTE_PATTERNS=$NEXT_PUBLIC_REMOTE_PATTERNS
+ENV NEXT_PUBLIC_REMOTE_PATTERNS=${NEXT_PUBLIC_REMOTE_PATTERNS}
 
-# Copy package.json and package-lock.json (if available)
+# Copy package.json dan package-lock.json terlebih dahulu untuk caching instalasi
 COPY package*.json ./
 
-# Install dependencies
-RUN npm i
+# Jika sering gagal, ganti kembali ke npm i
+RUN npm ci
 
 # Copy the rest of the application code
 COPY . .
@@ -28,21 +30,19 @@ COPY . .
 # Build the Next.js application
 RUN npm run build
 
-# Production stage
+# --- Production stage ---
 FROM node:18-alpine AS production
 
-# Set the working directory
 WORKDIR /app/dashboard
 
-# Copy package.json and package-lock.json
+# Copy package files
 COPY --from=base /app/dashboard/package*.json ./
 
 # Copy the built application from the base stage
 COPY --from=base /app/dashboard/.next ./.next
 COPY --from=base /app/dashboard/public ./public
-
-# Install only production dependencies
-RUN npm i --only=production
+# Copy node_modules is needed unless you use Next.js standalone output feature
+COPY --from=base /app/dashboard/node_modules ./node_modules
 
 # Expose the port the app runs on
 EXPOSE 3010
