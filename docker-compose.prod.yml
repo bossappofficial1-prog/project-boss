@@ -89,7 +89,7 @@ services:
       rabbitmq:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "3000"
     env_file:
       - .env.frontend-customer
 
@@ -98,7 +98,7 @@ services:
     pull_policy: always
     container_name: project-boss-dashboard-dev
     ports:
-      - "3010:3010"
+      - "3010"
     environment:
       NODE_ENV: production
     depends_on:
