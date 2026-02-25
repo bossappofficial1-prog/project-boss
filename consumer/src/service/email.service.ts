@@ -23,6 +23,7 @@ export class EmailService {
             logger.info(`Email sent to ${options.to}: ${response.data.messageId}`, { component: 'EmailService' });
             return response.data;
         } catch (error: any) {
+            console.log(error)
             logger.error(`Error sending email to ${options.to}`, { component: 'EmailService', error: error.response?.data || error.message });
             throw new Error('Failed to send email.');
         }
