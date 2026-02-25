@@ -108,3 +108,25 @@ services:
       - .env.dashboard
     networks:
       - default
+
+  nginx-proxy-manager:
+    image: "jc21/nginx-proxy-manager:latest"
+    container_name: nginx_proxy_manager
+    restart: unless-stopped
+    ports:
+      - "80:80" # Port HTTP publik
+      - "81:81" # Port Dasbor Web Admin NPM
+      - "443:443" # Port HTTPS publik
+    volumes:
+      - ./npm/data:/data
+      - ./npm/letsencrypt:/etc/letsencrypt
+    networks:
+      - project_network
+    depends_on:
+      - backend
+      - frontend-customer
+      - dashboard
+
+networks:
+  project_network:
+    driver: bridge
