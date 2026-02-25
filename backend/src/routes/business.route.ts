@@ -8,7 +8,8 @@ import {
     updateBankAccountController,
     getAllBusinessesAdminController,
     getKPIsBusinessesController,
-    exportTenantDataController
+    exportTenantDataController,
+    getUsageStatisticsController
 } from "../controller/business.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createBusinessSchema, updateBusinessSchema } from "../schemas/business.schema";
@@ -27,6 +28,7 @@ businessRouter.get("/:id", getBusinessByIdController);
 // Rute yang dilindungi dan hanya untuk Owner
 businessRouter.post("/", protect, authorize(UserRole.OWNER), validateSchema(createBusinessSchema), createBusinessController);
 businessRouter.get("/my/business", protect, authorize(UserRole.OWNER), getMyBusinessController);
+businessRouter.get("/usage-statistics", protect, authorize(UserRole.OWNER), getUsageStatisticsController);
 businessRouter.patch("/:id", protect, authorize(UserRole.OWNER), validateSchema(updateBusinessSchema), updateBusinessController);
 businessRouter.put('/:id/bank-account', protect, updateBankAccountController);
 

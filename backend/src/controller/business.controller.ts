@@ -13,6 +13,7 @@ import {
 } from "../service/business.service";
 import { Messages } from "../constants/message";
 import { $Enums } from "@prisma/client";
+import { getUsageStatistics } from "../middleware/subscription-limits.middleware";
 
 export const getAllBusinessesController = asyncHandler(async (req: Request, res: Response) => {
     const businesses = await getAllBusinessesService();
@@ -77,4 +78,19 @@ export const updateBankAccountController = asyncHandler(async (req: Request, res
     const { bankName, bankAccount, accountHolder } = req.body;
     const business = await updateBankAccountService(req.params.id as string, req.storedUser?.id!, { bankName, bankAccount, accountHolder });
     ResponseUtil.success(res, business, HttpStatus.OK, "Informasi rekening bank berhasil diperbarui.");
+});
+
+export const getUsageStatisticsController = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.storedUser!.id;
+    const { BusinessRepository } = await import("../repositories/business.repository");
+    const business = await BusinessRepository.findByOwnerId(userId);
+    
+    if (!business) {
+        return ResponseUtil.error(res, "Bisnis tidak ditemukan", HttpStatus.NOT_FOUND);
+    }
+
+    const { getUsageStatistics } = await import("../middleware/subscription-limits.middleware");
+    const statistics = await getUsageStatistics(business.id);
+
+    return ResponseUtil.success(res, statistics);
 });
