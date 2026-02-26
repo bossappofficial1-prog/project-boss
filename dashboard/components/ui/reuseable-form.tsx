@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { InputPercentage } from "./input-presentage";
 import { DualOptionSwitch } from "./dual-option-switch";
 import { SegmentedControl } from "./segmented-control";
+import { DateTimePicker } from "./datetime-picker";
 
 function objectToFormData(obj: any, form?: FormData, namespace?: string): FormData {
   const fd = form || new FormData();
@@ -538,6 +539,17 @@ function FieldInputSwitch<T extends FieldValues>({
           onValueChange={formField.onChange}
           disabled={field.disabled}
           options={field.switchOptions!}
+          value={formField.value!}
+        />
+      );
+    case "datetime-local":
+      return (
+        <DateTimePicker
+          {...formField}
+          className={field.className}
+          id={formField.name}
+          onChange={formField.onChange}
+          disabled={field.disabled}
           value={formField.value!}
         />
       );

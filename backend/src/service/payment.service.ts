@@ -1083,7 +1083,7 @@ export async function getPaymentOrderService(orderId: string) {
       const productPrice =
         (item.product.type === "GOODS"
           ? item.product.goods?.sellingPrice
-          : item.product.service?.sellingPrice) ?? 0;
+          : (item.product.type === 'TICKET' ? item.product.ticket?.sellingPrice : item.product.service?.sellingPrice)) ?? 0;
       return {
         id: item.id,
         name: item.product.name,

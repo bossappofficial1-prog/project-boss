@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { productApi } from '@/lib/api'
-import { Upload, Download, FileSpreadsheet, FolderArchive, X, AlertCircle, CheckCircle2, Info } from 'lucide-react'
+import { Upload, Download, FileSpreadsheet, FolderArchive, X, AlertCircle, CheckCircle2, Info, AlertTriangle } from 'lucide-react'
 
 type Props = {
   open: boolean
@@ -22,9 +22,24 @@ type SheetPreview = {
   rows: Array<Record<string, any>>
 }
 
+// Tambahkan tipe untuk menampung struktur error dari API
+type ValidationError = {
+  row: number
+  errors: {
+    formErrors?: string[]
+    fieldErrors?: Record<string, string[]>
+  }
+}
+
+type ErrorMessage = {
+  type: string
+  message: string
+}
+
 export default function ImportDataModal({ open, onOpenChange, outletId, onImported }: Props) {
   const [file, setFile] = React.useState<File | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = React.useState<ValidationError[]>([]) // State baru
   const [info, setInfo] = React.useState<string | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
   const [isParsing, setIsParsing] = React.useState(false)
@@ -37,6 +52,7 @@ export default function ImportDataModal({ open, onOpenChange, outletId, onImport
     setFile(null)
     setInfo(null)
     setError(null)
+    setValidationErrors([])
     setIsUploading(false)
     setIsParsing(false)
     setSheets([])
@@ -80,6 +96,7 @@ export default function ImportDataModal({ open, onOpenChange, outletId, onImport
   const onFileSelected = async (f: File | null) => {
     setError(null)
     setInfo(null)
+    setValidationErrors([]) // Reset error validasi saat ganti file
     setSheets([])
     setFile(f)
     if (!f) return
@@ -106,14 +123,26 @@ export default function ImportDataModal({ open, onOpenChange, outletId, onImport
     try {
       setIsUploading(true)
       setError(null)
+      setValidationErrors([])
+
       const result = await productApi.bulkImport(outletId, file)
+
       const created = result?.created ?? result?.data?.created ?? 0
       const updated = result?.updated ?? result?.data?.updated ?? 0
       const total = result?.total ?? result?.data?.total ?? 0
       setInfo(`Import selesai — ${created} baru, ${updated} diperbarui, ${total} total diproses.`)
       onImported?.()
     } catch (err: any) {
-      setError(err?.message || 'Gagal mengunggah data import')
+      // Mapping API Error response
+      const apiErrors = err?.response?.data?.errors || err?.errors
+      const apiMessage = err?.response?.data?.message || err?.message
+
+      if (apiErrors && Array.isArray(apiErrors)) {
+        setValidationErrors(apiErrors)
+        setError(apiMessage || 'Validasi gagal pada beberapa baris.')
+      } else {
+        setError(apiMessage || 'Gagal mengunggah data import')
+      }
     } finally {
       setIsUploading(false)
     }
@@ -135,11 +164,47 @@ export default function ImportDataModal({ open, onOpenChange, outletId, onImport
     }
   }
 
+  // Helper untuk mengekstrak pesan error per baris beserta sumber tab/kategorinya
+  const getFlattenedErrors = (errorItem: ValidationError): ErrorMessage[] => {
+    const msgs: ErrorMessage[] = []
+
+    // Error di luar kategori spesifik (form level)
+    if (errorItem.errors?.formErrors) {
+      errorItem.errors.formErrors.forEach(msg => {
+        msgs.push({ type: 'Umum', message: msg })
+      })
+    }
+
+    // Error spesifik di kolom tertentu (goods, services, dll)
+    if (errorItem.errors?.fieldErrors) {
+      Object.entries(errorItem.errors.fieldErrors).forEach(([field, fieldMsgs]) => {
+        if (Array.isArray(fieldMsgs)) {
+          // Terjemahkan field key agar lebih ramah user
+          let typeLabel = field
+          if (field.toLowerCase() === 'goods') typeLabel = 'Barang'
+          if (field.toLowerCase() === 'services') typeLabel = 'Jasa'
+
+          fieldMsgs.forEach(msg => {
+            msgs.push({ type: typeLabel, message: msg })
+          })
+        }
+      })
+    }
+    return msgs
+  }
+
   const isZipChosen = file?.name?.toLowerCase().endsWith('.zip')
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="
+    w-full
+    max-w-[95vw]
+    md:max-w-[600px]
+    lg:max-w-[800px]
+    max-h-[90vh]
+    overflow-y-auto
+  ">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
@@ -157,13 +222,43 @@ export default function ImportDataModal({ open, onOpenChange, outletId, onImport
             Pilih outlet terlebih dahulu agar dapat mengimport data.
           </div>
         )}
+
+        {/* General Error Message */}
         {error && (
           <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-            <span className="flex-1">{error}</span>
-            <button onClick={() => setError(null)} className="shrink-0"><X className="h-4 w-4" /></button>
+            <span className="flex-1 font-medium">{error}</span>
+            <button onClick={() => { setError(null); setValidationErrors([]); }} className="shrink-0"><X className="h-4 w-4" /></button>
           </div>
         )}
+
+        {/* Detailed Validation Errors Box */}
+        {validationErrors.length > 0 && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 space-y-3 max-h-48 overflow-y-auto">
+            <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              Detail Error Validasi:
+            </div>
+            <ul className="space-y-2">
+              {validationErrors.map((errItem, idx) => {
+                const msgs = getFlattenedErrors(errItem)
+                return (
+                  <li key={idx} className="text-xs text-destructive/90 bg-white dark:bg-black/20 p-2 rounded border border-destructive/10">
+                    <span className="font-semibold block mb-1">Baris ke-{errItem.row - 1}:</span>
+                    <ul className="list-disc list-inside space-y-0.5 ml-1">
+                      {msgs.map((msg, i) => (
+                        <li key={i}>
+                          <span className="font-semibold opacity-70">[{msg.type}]</span> {msg.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+
         {info && (
           <div className="flex items-center gap-2 rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-3 text-sm text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -267,7 +362,9 @@ export default function ImportDataModal({ open, onOpenChange, outletId, onImport
                 </TabsList>
                 {sheets.map((s) => (
                   <TabsContent key={s.name} value={s.name} className="mt-2">
-                    <div className="overflow-auto rounded-md max-w-[460px] border max-h-60">
+                    <div className="overflow-auto rounded-md max-w-[95vw]
+                      md:max-w-[33.5rem]
+                      lg:max-w-[46rem] border max-h-60">
                       <table className="min-w-full text-xs">
                         <thead className="bg-muted sticky top-0">
                           <tr>
@@ -297,7 +394,7 @@ export default function ImportDataModal({ open, onOpenChange, outletId, onImport
 
           {/* Actions */}
           <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-between">
-            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate} disabled={isUploading}>
               <Download className="mr-2 h-4 w-4" />
               Download Template
             </Button>

@@ -134,18 +134,18 @@ export default function ReportOutlerContent() {
   return (
     <>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
+      <div className="flex flex-col xl:flex-row xl:items-start justify-between mb-6 lg:mb-8 gap-5">
+        <div className="w-full xl:w-auto">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Receipt className="text-emerald-500 w-7 h-7" />
+            <Receipt className="text-emerald-500 w-7 h-7 shrink-0" />
             Laporan Outlet
           </h1>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
             {viewMode === "time" && (
               <select
                 value={outletFilter}
                 onChange={(e) => setOutletFilter(e.target.value)}
-                className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                className="w-full sm:w-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 <option value="all">Semua Outlet</option>
                 {outlets.map((outlet) => (
                   <option key={outlet.id} value={outlet.id}>
@@ -162,36 +162,40 @@ export default function ReportOutlerContent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex items-center">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full xl:w-auto">
+          {/* Toggle View Mode */}
+          <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex items-center w-full md:w-auto shrink-0">
             <button
               onClick={() => setViewMode("time")}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === "time" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300"}`}>
+              className={`flex-1 md:flex-none justify-center px-3 py-2 text-sm font-medium rounded-md transition-all ${viewMode === "time" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300"}`}>
               Laporan Waktu
             </button>
             <button
               onClick={() => setViewMode("compare")}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${viewMode === "compare" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300"}`}>
-              <BarChart3 className="w-4 h-4" />
+              className={`flex-1 md:flex-none justify-center px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${viewMode === "compare" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300"}`}>
+              <BarChart3 className="w-4 h-4 shrink-0" />
               Bandingkan Outlet
             </button>
           </div>
 
-          <button className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-500 dark:text-slate-400">
-            <Download className="w-5 h-5" />
-          </button>
-          <button
-            onClick={handleExport}
-            disabled={isExporting}
-            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2.5 px-5 rounded-md flex items-center gap-2 text-sm transition-all shadow-lg shadow-emerald-900/20">
-            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
-            {isExporting ? "Mengexport..." : "Export Excel"}
-          </button>
+          {/* Export Actions */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <button className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-500 dark:text-slate-400 hidden sm:block">
+              <Download className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="flex-1 md:flex-none justify-center bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2.5 px-5 rounded-md flex items-center gap-2 text-sm transition-all shadow-lg shadow-emerald-900/20">
+              {isExporting ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <FileSpreadsheet className="w-4 h-4 shrink-0" />}
+              {isExporting ? "Mengexport..." : "Export Excel"}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      {/* Cards - Menyesuaikan grid agar proporsional di mobile */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4 mb-8">
         <SummaryCard
           title="Pendapatan"
           value={totals.totalPendapatan}
@@ -212,17 +216,21 @@ export default function ReportOutlerContent() {
           value={totals.gajiStaf}
           icon={<Users className="w-4 h-4 text-indigo-500" />}
         />
-        <SummaryCard
-          title="Laba Bersih"
-          value={totals.labaBersih}
-          icon={<Wallet className="w-4 h-4 text-emerald-500" />}
-          highlight
-        />
+        <div className="col-span-2 md:col-span-1 lg:col-span-1">
+          <SummaryCard
+            title="Laba Bersih"
+            value={totals.labaBersih}
+            icon={<Wallet className="w-4 h-4 text-emerald-500" />}
+            highlight
+          />
+        </div>
       </div>
 
       {/* Table Control */}
-      <div className="bg-white dark:bg-[#1e293b] p-2 rounded-lg border border-slate-200 dark:border-slate-800 mb-6 flex flex-wrap items-center justify-between gap-4 shadow-md dark:shadow-xl">
-        <div className="flex bg-slate-100 dark:bg-[#0f172a] p-1 rounded-md border border-slate-200 dark:border-slate-700">
+      <div className="bg-white dark:bg-[#1e293b] p-3 rounded-xl border border-slate-200 dark:border-slate-800 mb-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-sm dark:shadow-md">
+
+        {/* Filters Box */}
+        <div className="flex w-full lg:w-auto bg-slate-100 dark:bg-[#0f172a] p-1 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto hide-scrollbar">
           {viewMode === "time" ? (
             <>
               <FilterButton active={filterType === "daily"} onClick={() => setFilterType("daily")}>
@@ -260,27 +268,31 @@ export default function ReportOutlerContent() {
           )}
         </div>
 
-        <div className="flex items-center gap-6 px-2">
+        {/* Date Selector */}
+        <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
           <button
             onClick={() => adjustDate(-1)}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <div className="flex items-center gap-3 font-bold text-slate-900 dark:text-white">
-            <CalendarIcon className="w-5 h-5 text-emerald-500" />
-            <span className="min-w-[180px] text-center text-lg">
+
+          <div className="flex items-center justify-center gap-2 lg:gap-3 font-bold text-slate-900 dark:text-white flex-1 lg:flex-none min-w-0">
+            <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
+            <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
               {viewMode === "time"
                 ? formatPeriodLabel(filterType, currentDate)
                 : formatComparePeriodLabel(compareFilterType, currentDate)}
             </span>
           </div>
+
           <button
             onClick={() => adjustDate(1)}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
             <ChevronRight className="w-6 h-6" />
           </button>
         </div>
 
+        {/* Verif Indicator */}
         <div className="hidden lg:flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 pr-4 uppercase tracking-widest font-bold">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
           Data Terverifikasi
@@ -312,7 +324,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({ children, active, onClick }
   return (
     <button
       onClick={onClick}
-      className={`px-5 py-2 text-xs font-bold transition-all rounded-md ${active ? "bg-emerald-600 text-white shadow-md" : "text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"}`}>
+      className={`flex-1 lg:flex-none px-3 sm:px-5 py-2 text-xs sm:text-sm font-bold transition-all rounded-md whitespace-nowrap ${active ? "bg-emerald-600 text-white shadow-md" : "text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"}`}>
       {children}
     </button>
   );

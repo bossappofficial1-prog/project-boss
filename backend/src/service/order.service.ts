@@ -821,7 +821,7 @@ export async function completeServiceOrderService(orderId: string) {
 export async function getOrderByCustomerPhoneService(phone: string) {
   const customerOrder = await OrderRepository.getOrderByCustomerPhone(phone);
 
-  if (!customerOrder || customerOrder.length === 0)
+  if (!customerOrder)
     throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
 
   const queueCache = new Map<string, QueueSnapshotEntry[]>();
@@ -1215,7 +1215,7 @@ export async function expirePaymentOrder(orderId: string) {
     if (order.transaction) {
       await tx.transaction.update({
         where: { id: order.transaction.id },
-        data: { status: PaymentStatus.EXPIRED },
+        data: { status: PaymentStatus.EXPIRED, rejectionNote: '[SYSTEM] Payment expire.' },
       });
     }
 
@@ -1224,6 +1224,7 @@ export async function expirePaymentOrder(orderId: string) {
       data: {
         orderStatus: OrderStatus.CANCELLED,
         paymentStatus: PaymentStatus.EXPIRED,
+        cancellationReason: '[SYSTEM] Payment expire.'
       },
     });
   });
@@ -1246,6 +1247,4 @@ export async function expirePaymentOrder(orderId: string) {
     message: "Pembayaran kedaluwarsa",
     type: "payment_expired",
   });
-
-  await orderExpiryJob.remove(orderId);
 }

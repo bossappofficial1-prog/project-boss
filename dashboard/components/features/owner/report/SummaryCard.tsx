@@ -7,17 +7,19 @@ interface SummaryCardProps {
     icon?: React.ReactNode;
     highlight?: boolean;
     description?: string;
+    isCurrency?: boolean;
 }
 
 export function SummaryCard({
     title,
     value,
     icon,
+    isCurrency = true,
     highlight = false,
     description
 }: SummaryCardProps) {
 
-    const displayValue = typeof value === "number"
+    const displayValue = typeof value === "number" && isCurrency
         ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value)
         : value;
 

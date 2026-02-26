@@ -260,11 +260,11 @@ function PartnerMenuDropdown() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger className="" asChild>
         <Button
           variant="ghost"
           size="sm"
-          className="hover:bg-accent rounded-xl transition-all duration-200 px-3 gap-2"
+          className="hover:bg-accent border-red-500 border-2 rounded-full transition-all duration-200 px-3 gap-2"
           aria-label="Menu Mitra"
           title="Akses Partner"
         >

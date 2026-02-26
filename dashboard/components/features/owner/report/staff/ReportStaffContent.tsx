@@ -137,6 +137,7 @@ export default function ReportStaffContent() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <SummaryCard
             title="Total Transaksi"
+            isCurrency={false}
             value={totals.transactions}
             icon={<Receipt className="w-4 h-4 text-slate-500" />}
           />
