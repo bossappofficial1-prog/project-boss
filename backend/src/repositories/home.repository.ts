@@ -1,85 +1,96 @@
-import { Prisma, UserRole } from "@prisma/client";
 import { db } from "../config/prisma";
 
-interface PopularItemRow {
-    id: string;
-    name: string;
-    price: Prisma.Decimal | number | null;
-    image: string | null;
-    sold_count: bigint | number | null;
-}
-
 export class HomeRepository {
-    private static readonly successfulOrderFilter: Prisma.OrderWhereInput = {
-        transaction: {
-            status: "SUCCESS",
-        },
-    };
-
-    static countVerifiedUmkm() {
-        return db.user.count({
-            where: {
-                role: UserRole.OWNER,
-                isVerified: true,
-            },
-        });
+    static async countVerifiedUmkm() {
+        const result = await db.$queryRaw<{ count: number }[]>`
+            SELECT CAST(COUNT(*) AS INTEGER) as count
+            FROM "User"
+            WHERE role = 'OWNER' AND "isVerified" = true;
+        `;
+        return result[0]?.count || 0;
     }
 
-    static countSuccessfulTransactions() {
-        return db.transaction.count({
-            where: {
-                status: "SUCCESS",
-            },
-        });
+    static async countSuccessfulTransactions() {
+        const result = await db.$queryRaw<{ count: number }[]>`
+            SELECT CAST(COUNT(*) AS INTEGER) as count
+            FROM "Transaction"
+            WHERE status = 'SUCCESS';
+        `;
+        return result[0]?.count || 0;
     }
 
-    static findTopOutlets(searchQuery?: string) {
+    static async findTopOutlets(searchQuery?: string) {
+        let rawOutlets: any[];
+
         if (searchQuery) {
-            return db.outlet.findMany({
-                where: {
-                    OR: [
-                        { name: { contains: searchQuery, mode: "insensitive" } },
-                        { business: { name: { contains: searchQuery, mode: "insensitive" } } },
-                    ],
-                },
-                take: 6,
-                include: {
-                    business: {
-                        select: { name: true },
-                    },
-                    operatingHours: true,
-                    _count: {
-                        select: {
-                            orders: {
-                                where: HomeRepository.successfulOrderFilter,
-                            },
-                        },
-                    },
-                },
-            });
+            const searchParam = `%${searchQuery}%`;
+            rawOutlets = await db.$queryRaw<any[]>`
+                SELECT 
+                    o.*,
+                    json_build_object('name', b.name) as business,
+                    COALESCE(
+                        (
+                            SELECT json_agg(row_to_json(oh.*))
+                            FROM "OutletOperatingHours" oh
+                            WHERE oh."outletId" = o.id
+                        ), 
+                        '[]'::json
+                    ) as "operatingHours",
+                    json_build_object('orders', COALESCE(order_counts.successful_orders, 0)) as "_count"
+                FROM "Outlet" o
+                JOIN "Business" b ON o."businessId" = b.id
+                LEFT JOIN (
+                    SELECT ord."outletId", COUNT(ord.id)::int as successful_orders
+                    FROM "Order" ord
+                    JOIN "Transaction" tr ON tr."orderId" = ord.id
+                    WHERE tr.status = 'SUCCESS'
+                    GROUP BY ord."outletId"
+                ) order_counts ON order_counts."outletId" = o.id
+                WHERE o.name ILIKE ${searchParam} 
+                   OR b.name ILIKE ${searchParam}
+                LIMIT 6;
+            `;
+        } else {
+            rawOutlets = await db.$queryRaw<any[]>`
+                SELECT 
+                    o.*,
+                    json_build_object('name', b.name) as business,
+                    COALESCE(
+                        (
+                            SELECT json_agg(row_to_json(oh.*))
+                            FROM "OutletOperatingHours" oh
+                            WHERE oh."outletId" = o.id
+                        ), 
+                        '[]'::json
+                    ) as "operatingHours",
+                    json_build_object('orders', COALESCE(order_counts.successful_orders, 0)) as "_count"
+                FROM "Outlet" o
+                JOIN "Business" b ON o."businessId" = b.id
+                LEFT JOIN (
+                    SELECT ord."outletId", COUNT(ord.id)::int as successful_orders
+                    FROM "Order" ord
+                    JOIN "Transaction" tr ON tr."orderId" = ord.id
+                    WHERE tr.status = 'SUCCESS'
+                    GROUP BY ord."outletId"
+                ) order_counts ON order_counts."outletId" = o.id
+                ORDER BY COALESCE(order_counts.successful_orders, 0) DESC
+                LIMIT 6;
+            `;
         }
 
-        return db.outlet.findMany({
-            take: 6,
-            include: {
-                business: {
-                    select: { name: true },
-                },
-                operatingHours: true,
-                _count: {
-                    select: {
-                        orders: {
-                            where: HomeRepository.successfulOrderFilter,
-                        },
-                    },
-                },
-            },
-            orderBy: {
-                orders: {
-                    _count: "desc",
-                },
-            },
-        });
+        // Karena hasil json_agg dari postgres akan mengembalikan tanggal (Date) sebagai format string ISO,
+        // kita perlu melakukan mapping ulang agar formatnya menjadi objek JavaScript `Date` 
+        // persis seperti *output* default dari Prisma Client.
+        return rawOutlets.map(outlet => ({
+            ...outlet,
+            operatingHours: outlet.operatingHours.map((oh: any) => ({
+                ...oh,
+                openTime: new Date(oh.openTime),
+                closeTime: new Date(oh.closeTime),
+                createdAt: new Date(oh.createdAt),
+                updatedAt: new Date(oh.updatedAt)
+            }))
+        }));
     }
 
     static async findPopularItems(limit = 8) {
@@ -110,7 +121,7 @@ export class HomeRepository {
                 ps."sellingPrice"
             ORDER BY sold_count DESC
             LIMIT ${limit}
-    `;
+        `;
 
         return rawItems.map((item) => ({
             id: item.id,
