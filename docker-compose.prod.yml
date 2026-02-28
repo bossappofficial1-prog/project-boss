@@ -9,7 +9,7 @@ services:
       timeout: 3s
       retries: 5
     ports:
-      - "6379:6379"
+      - "6379"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -19,8 +19,8 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5672"
+      - "15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 5s
@@ -45,7 +45,7 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       PORT: 1234
     ports:
-      - "1234:1234"
+      - "1234"
     volumes:
       - ./uploads:/app/backend/uploads
     healthcheck:
@@ -89,7 +89,7 @@ services:
       rabbitmq:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "3000"
     env_file:
       - .env.frontend-customer
 
@@ -98,7 +98,7 @@ services:
     pull_policy: always
     container_name: project-boss-dashboard-dev
     ports:
-      - "3010:3010"
+      - "3010"
     environment:
       NODE_ENV: production
     depends_on:
