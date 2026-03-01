@@ -14,6 +14,8 @@ import PaymentMethodsList from './PaymentMethodsList';
 import { formatCurrency } from '@/lib/utils';
 import { PaymentMethod } from '@/types';
 import { useTranslations } from '@/hooks/useI18n';
+import { useFeatureGuide } from '@/hooks/useFeatureGuide';
+import { GuideStep } from '@/providers/FeatureGuideProvider';
 
 // Order Summary Component
 const OrderSummary: React.FC<CheckoutProps & {
@@ -120,6 +122,7 @@ const CheckoutButton: React.FC<{
                     <Button
                         size="lg"
                         className="px-8 h-12"
+                        data-guide-target="checkout-create-order"
                         onClick={onCheckout}
                         disabled={disabled}
                     >
@@ -134,6 +137,43 @@ const CheckoutButton: React.FC<{
 const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, grandTotal }) => {
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
     const router = useRouter();
+    const t = useTranslations("checkout");
+
+    const checkoutGuideSteps = useMemo<GuideStep[]>(() => [
+        {
+            id: "checkout-overview",
+            title: "Konfirmasi ringkasan pesanan",
+            description: "Pastikan subtotal dan detail outlet sudah sesuai sebelum memilih metode pembayaran.",
+            target: '[data-guide-target="checkout-order-summary"]',
+            placement: "bottom",
+            focusPadding: 18,
+        },
+        {
+            id: "checkout-payment-method",
+            title: "Pilih metode pembayaran",
+            description: "Bandingkan metode yang tersedia lalu pilih yang paling cocok untuk transaksi kamu.",
+            target: '[data-guide-target="checkout-payment-methods"]',
+            placement: "top",
+            focusPadding: 18,
+        },
+        {
+            id: "checkout-create-order",
+            title: "Buat order",
+            description: "Setelah metode dipilih, tekan tombol ini untuk melanjutkan ke proses pembayaran.",
+            target: '[data-guide-target="checkout-create-order"]',
+            placement: "top",
+            focusPadding: 16,
+        },
+    ], []);
+
+    useFeatureGuide({
+        id: "checkout-page-guide",
+        steps: checkoutGuideSteps,
+        autoStart: true,
+        runOnceKey: "guide:checkout-page",
+        delay: 900,
+        enabled: outlets.length > 0,
+    });
 
     // Calculate dynamic fees based on selected payment method
     const { dynamicTransactionFee, dynamicApplicationFee, dynamicGrandTotal } = useMemo(() => {
@@ -197,24 +237,41 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, grandTotal }
 
     return (
         <div className="space-y-4">
+            <Card className="py-0">
+                <CardContent className="p-4">
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium">Checkout</p>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">1. Ringkasan</div>
+                            <div className="rounded-md border bg-primary/10 text-primary px-2 py-1.5 text-center font-semibold">2. Checkout</div>
+                            <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">3. Pembayaran</div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Order Summary */}
-            <OrderSummary
-                outlets={outlets}
-                subtotal={subtotal}
-                totalTransactionFee={dynamicTransactionFee}
-                applicationFee={dynamicApplicationFee}
-                grandTotal={grandTotal}
-                selectedPaymentMethod={selectedPaymentMethod}
-                dynamicTransactionFee={dynamicTransactionFee}
-                dynamicApplicationFee={dynamicApplicationFee}
-                dynamicGrandTotal={dynamicGrandTotal}
-            />
+            <div data-guide-target="checkout-order-summary">
+                <OrderSummary
+                    outlets={outlets}
+                    subtotal={subtotal}
+                    totalTransactionFee={dynamicTransactionFee}
+                    applicationFee={dynamicApplicationFee}
+                    grandTotal={grandTotal}
+                    selectedPaymentMethod={selectedPaymentMethod}
+                    dynamicTransactionFee={dynamicTransactionFee}
+                    dynamicApplicationFee={dynamicApplicationFee}
+                    dynamicGrandTotal={dynamicGrandTotal}
+                />
+            </div>
 
             {/* Payment Methods */}
-            <PaymentMethodsList
-                onSelectPayment={handleSelectPayment}
-                selectedPayment={selectedPaymentMethod}
-            />
+            <div data-guide-target="checkout-payment-methods">
+                <PaymentMethodsList
+                    onSelectPayment={handleSelectPayment}
+                    selectedPayment={selectedPaymentMethod}
+                />
+            </div>
 
             {/* Checkout Button */}
             <CheckoutButton

@@ -1041,20 +1041,32 @@
             "type": "Type",
             "product": "Product",
             "service": "Service",
+            "ticket": "Ticket",
             "duration": "Duration",
             "minutes": "minutes",
             "status": "Status",
             "available": "Available",
             "outOfStock": "Out of Stock",
             "availableAt": "Available at",
-            "description": "Description {type}"
+            "description": "Description {type}",
+            "ticketInfo": "Ticket Info",
+            "eventDate": "Event Date",
+            "venue": "Venue",
+            "venueAddress": "Venue Address",
+            "quota": "Quota",
+            "maxPerOrder": "Max per Order",
+            "salePeriod": "Sale Period",
+            "eventPassed": "Event has ended",
+            "ticketTerms": "Terms & Conditions"
         },
         "buttons": {
             "productUnavailable": "Product Unavailable",
             "storeClosed": "Store Closed",
             "addToCart": "Add to Cart",
             "serviceUnavailable": "Service Unavailable",
-            "bookService": "Book Service"
+            "bookService": "Book Service",
+            "buyTicket": "Buy Ticket",
+            "openMap": "Open Map"
         }
     },
     "notFound": {

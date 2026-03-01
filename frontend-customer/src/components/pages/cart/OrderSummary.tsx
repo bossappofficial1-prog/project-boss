@@ -130,6 +130,7 @@ export const OrderSummary = memo(({
                     <Button
                         size="lg"
                         className="w-full text-base"
+                        data-guide-target="cart-proceed-checkout"
                         disabled={hasUnscheduledServices || !selectedOutletId || hasMixedProducts}
                         onClick={handleCheckout}
                     >

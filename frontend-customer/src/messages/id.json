@@ -1041,20 +1041,32 @@
             "type": "Tipe",
             "product": "Produk",
             "service": "Layanan",
+            "ticket": "Tiket",
             "duration": "Durasi",
             "minutes": "menit",
             "status": "Status",
             "available": "Tersedia",
             "outOfStock": "Habis",
             "availableAt": "Tersedia di",
-            "description": "Deskripsi {type}"
+            "description": "Deskripsi {type}",
+            "ticketInfo": "Info Tiket",
+            "eventDate": "Tanggal Event",
+            "venue": "Lokasi",
+            "venueAddress": "Alamat Lokasi",
+            "quota": "Kuota",
+            "maxPerOrder": "Maks per Pesanan",
+            "salePeriod": "Periode Penjualan",
+            "eventPassed": "Event sudah berakhir",
+            "ticketTerms": "Syarat & Ketentuan"
         },
         "buttons": {
             "productUnavailable": "Produk Tidak Tersedia",
             "storeClosed": "Toko Sedang Tutup",
             "addToCart": "Tambah Keranjang",
             "serviceUnavailable": "Layanan Tidak Tersedia",
-            "bookService": "Booking Layanan"
+            "bookService": "Booking Layanan",
+            "buyTicket": "Beli Tiket",
+            "openMap": "Buka Peta"
         }
     },
     "notFound": {

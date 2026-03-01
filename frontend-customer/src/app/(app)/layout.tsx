@@ -7,10 +7,19 @@ import { Suspense } from "react";
 import { AppBarProviderV2 } from "@/context/AppBarContextV2";
 import AppBar from "@/components/AppBarV2";
 import { LoadingState } from "@/components/Base";
+import { useState } from 'react'
 import { OfflineOverlay } from "@/components/OfflineOverlay";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-    const queryClient = new QueryClient();
+    const [queryClient] = useState(() => new QueryClient({
+        defaultOptions: {
+            queries: {
+                staleTime: 1000 * 60 * 5,
+                gcTime: 1000 * 60 * 10,
+                refetchOnWindowFocus: false,
+            },
+        },
+    }));
     return (
         <QueryClientProvider client={queryClient}>
             <AppBarProviderV2>

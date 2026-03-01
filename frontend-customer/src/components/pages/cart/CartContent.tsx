@@ -15,6 +15,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CartOutletGroup } from "./CartOutletGroup";
 import { OrderSummary } from "./OrderSummary";
 import { useRouter } from "next/navigation";
+import { useFeatureGuide } from "@/hooks/useFeatureGuide";
+import { GuideStep } from "@/providers/FeatureGuideProvider";
 
 export function CartContent() {
     const { items, getTotalItems, getTotalPrice, updateQuantity, updateItem, removeItem } = useCart();
@@ -23,6 +25,50 @@ export function CartContent() {
     const [showValidationAlert, setShowValidationAlert] = useState(false);
     const router = useRouter();
     const t = useTranslations("cart");
+
+    const cartGuideSteps = useMemo<GuideStep[]>(() => [
+        {
+            id: "cart-overview",
+            title: "Ringkasan keranjang",
+            description: "Area ini membantu kamu memilih outlet dan memastikan item siap lanjut checkout.",
+            target: '[data-guide-target="cart-page-overview"]',
+            placement: "bottom",
+            focusPadding: 20,
+        },
+        {
+            id: "cart-rules",
+            title: "Peraturan checkout",
+            description: "Cek aturan ini dulu agar proses checkout tidak gagal di tahap berikutnya.",
+            target: '[data-guide-target="cart-checkout-rules"]',
+            placement: "bottom",
+            focusPadding: 16,
+        },
+        {
+            id: "cart-outlet-list",
+            title: "Daftar item per outlet",
+            description: "Pilih outlet yang ingin diproses terlebih dahulu, lalu atur jumlah item sesuai kebutuhan.",
+            target: '[data-guide-target="cart-outlet-list"]',
+            placement: "right",
+            focusPadding: 18,
+        },
+        {
+            id: "cart-order-summary",
+            title: "Lanjut ke checkout",
+            description: "Setelah outlet dipilih dan item valid, gunakan tombol ini untuk melanjutkan pembayaran.",
+            target: '[data-guide-target="cart-proceed-checkout"]',
+            placement: "left",
+            focusPadding: 18,
+        },
+    ], []);
+
+    useFeatureGuide({
+        id: "cart-page-guide",
+        steps: cartGuideSteps,
+        autoStart: true,
+        runOnceKey: "guide:cart-page",
+        delay: 900,
+        enabled: items.length > 0,
+    });
 
     // Optimized handlers with useCallback
     const handleUpdateQuantity = useCallback((id: string, qty: number) => {
@@ -149,7 +195,7 @@ export function CartContent() {
     }
 
     return (
-        <div className="py-2">
+        <div className="py-2" data-guide-target="cart-page-overview">
             {/* Validation Alert */}
             {showValidationAlert && hasInvalidItems && (
                 <Card className="mb-4 border-destructive bg-destructive/5 p-0">
@@ -195,7 +241,7 @@ export function CartContent() {
             <div className="grid lg:grid-cols-3 gap-4 items-start">
                 <div className="lg:col-span-2 space-y-2">
                     {/* Rules Card */}
-                    <Card className="bg-blue-50 border p-0 border-blue-200 dark:bg-blue-900/40 dark:border-blue-700 rounded-md shadow-sm">
+                    <Card className="bg-blue-50 border p-0 border-blue-200 dark:bg-blue-900/40 dark:border-blue-700 rounded-md shadow-sm" data-guide-target="cart-checkout-rules">
                         <CardContent className='p-3'>
                             <div className="flex items-start gap-3">
                                 <div>
@@ -220,24 +266,26 @@ export function CartContent() {
                     </Card>
 
                     {/* Outlet Groups */}
-                    {Object.entries(cartState.itemsByOutlet).reverse().map(([outletId, { outletName, items: outletItems }]) => (
-                        <CartOutletGroup
-                            key={outletId}
-                            outletId={outletId}
-                            outletName={outletName}
-                            items={outletItems}
-                            isSelected={isSelectedOutlet === outletId}
-                            onSelectOutlet={setIsSelectedOutlet}
-                            onRevalidate={revalidate}
-                            isValidating={isValidating}
-                            slotDetails={safeSlotDetails}
-                            isItemValid={isItemValid}
-                            getInvalidReason={getInvalidReason}
-                            onUpdateQuantity={handleUpdateQuantity}
-                            onRemoveItem={handleRemoveItem}
-                            onUpdateSlot={handleUpdateSlot}
-                        />
-                    ))}
+                    <div data-guide-target="cart-outlet-list" className="space-y-2">
+                        {Object.entries(cartState.itemsByOutlet).reverse().map(([outletId, { outletName, items: outletItems }]) => (
+                            <CartOutletGroup
+                                key={outletId}
+                                outletId={outletId}
+                                outletName={outletName}
+                                items={outletItems}
+                                isSelected={isSelectedOutlet === outletId}
+                                onSelectOutlet={setIsSelectedOutlet}
+                                onRevalidate={revalidate}
+                                isValidating={isValidating}
+                                slotDetails={safeSlotDetails}
+                                isItemValid={isItemValid}
+                                getInvalidReason={getInvalidReason}
+                                onUpdateQuantity={handleUpdateQuantity}
+                                onRemoveItem={handleRemoveItem}
+                                onUpdateSlot={handleUpdateSlot}
+                            />
+                        ))}
+                    </div>
                 </div>
 
                 <div className="lg:col-span-1">

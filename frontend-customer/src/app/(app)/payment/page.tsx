@@ -13,9 +13,13 @@ export default function Payment() {
     const [paymentData, setPaymentData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
-    const { setAppBar } = useAppBarV2()
+    const { setAppBar, resetAppBar } = useAppBarV2()
 
-    useEffect(() => { typeof window !== undefined && setAppBar({ title: t("title"), showBackButton: true }) }, [t])
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        setAppBar({ title: t("title"), showBackButton: true });
+        return () => resetAppBar();
+    }, [setAppBar, resetAppBar, t])
 
     useEffect(() => {
         const loadPaymentData = () => {

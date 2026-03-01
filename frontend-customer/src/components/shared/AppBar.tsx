@@ -17,6 +17,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { STORAGE_PROFILE_KEY } from "@/constants";
+import { useFeatureGuide } from "@/hooks/useFeatureGuide";
+import { GuideStep } from "@/providers/FeatureGuideProvider";
 
 type AppBarVariant = "default" | "transparent";
 
@@ -144,6 +146,52 @@ export default function AppBar({
 
   const handleSearchClick = () => (onSearchClick ? onSearchClick() : setIsSearchActive((s) => !s));
 
+  const appBarGuideSteps = useMemo<GuideStep[]>(() => {
+    const steps: GuideStep[] = [
+      {
+        id: "appbar-actions-overview",
+        title: "Aksi cepat di App Bar",
+        description: "Di area ini kamu bisa mengatur tema aplikasi dan akses menu mitra.",
+        target: '[data-guide-target="appbar-actions-container"]',
+        placement: "bottom",
+        focusPadding: 20,
+      },
+    ];
+
+    if (showThemeToggle) {
+      steps.push({
+        id: "appbar-theme-toggle",
+        title: "Ubah mode tema",
+        description: "Pilih mode terang, gelap, atau ikuti sistem dari tombol ini.",
+        target: '[data-guide-target="appbar-theme-toggle"]',
+        placement: "bottom",
+        focusPadding: 18,
+      });
+    }
+
+    if (showPartnerToggle) {
+      steps.push({
+        id: "appbar-partner-menu",
+        title: "Akses menu mitra",
+        description: "Buka menu ini untuk masuk atau mendaftar sebagai mitra.",
+        target: '[data-guide-target="appbar-partner-menu"]',
+        placement: "bottom",
+        focusPadding: 18,
+      });
+    }
+
+    return steps;
+  }, [showPartnerToggle, showThemeToggle]);
+
+  useFeatureGuide({
+    id: "appbar-actions-guide",
+    steps: appBarGuideSteps,
+    autoStart: true,
+    runOnceKey: "guide:appbar-actions",
+    delay: 900,
+    enabled: !isSearchActive && (showThemeToggle || showPartnerToggle),
+  });
+
   const baseClasses = `
     flex items-center justify-center
     px-4 py-3 min-h-[54px]
@@ -216,7 +264,7 @@ export default function AppBar({
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0" data-guide-target="appbar-actions-container">
           {showSearch && (
             <Button
               variant="ghost"
@@ -227,8 +275,8 @@ export default function AppBar({
             </Button>
           )}
 
-          {showThemeToggle && !isSearchActive && <ThemeModeToggle />}
-          {showPartnerToggle && !isSearchActive && <PartnerMenuDropdown />}
+          {showThemeToggle && !isSearchActive && <ThemeModeToggle guideTarget="appbar-theme-toggle" />}
+          {showPartnerToggle && !isSearchActive && <PartnerMenuDropdown guideTarget="appbar-partner-menu" />}
           {rightContent}
 
           {showMenu && (
@@ -249,7 +297,7 @@ export default function AppBar({
 // Export additional icons for easy use
 export { Menu, Search, MoreVertical, X, ArrowLeft } from "lucide-react";
 
-function PartnerMenuDropdown() {
+function PartnerMenuDropdown({ guideTarget }: { guideTarget?: string }) {
   const handleLogin = () => {
     window.location.href = `${process.env.NEXT_PUBLIC_DASHBOARD_LOGIN_URL}`;
   };
@@ -264,6 +312,7 @@ function PartnerMenuDropdown() {
         <Button
           variant="ghost"
           size="sm"
+          data-guide-target={guideTarget}
           className="hover:bg-accent border-red-500 border-2 rounded-full transition-all duration-200 px-3 gap-2"
           aria-label="Menu Mitra"
           title="Akses Partner"
@@ -307,7 +356,7 @@ const persistThemePreference = (next: "light" | "dark" | "system") => {
   }
 };
 
-function ThemeModeToggle() {
+function ThemeModeToggle({ guideTarget }: { guideTarget?: string }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -345,6 +394,7 @@ function ThemeModeToggle() {
       <Button
         variant="ghost"
         size="icon"
+        data-guide-target={guideTarget}
         className="hover:bg-accent rounded-xl transition-all duration-200"
         aria-label="Ubah mode tema"
         title="Ubah mode tema"
@@ -360,6 +410,7 @@ function ThemeModeToggle() {
         <Button
           variant="ghost"
           size="icon"
+          data-guide-target={guideTarget}
           className="hover:bg-accent rounded-xl transition-all duration-200"
           aria-label="Ubah mode tema"
           title="Ubah mode tema">

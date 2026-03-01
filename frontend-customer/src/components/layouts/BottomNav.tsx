@@ -98,9 +98,12 @@ const bottomNavGuideSteps: GuideStep[] = [
         })),
 ];
 
+const MAIN_ROUTES = ["/", "/search", "/cart", "/nearby", "/profile", "/orders"] as const;
+
 export default function BottomNav() {
     const pathname = usePathname() ?? "/";
-    const mainRoutes = ["/", "/search", "/cart", "/nearby", "/profile", "/orders"];
+    const isMainRoute = MAIN_ROUTES.includes(pathname as (typeof MAIN_ROUTES)[number]);
+    const containerRef = React.useRef<HTMLDivElement | null>(null);
 
     useFeatureGuide({
         id: "bottom-nav-guide",
@@ -108,28 +111,41 @@ export default function BottomNav() {
         autoStart: true,
         runOnceKey: "guide:bottom-nav",
         delay: 1200,
-        enabled: mainRoutes.includes(pathname),
+        enabled: isMainRoute,
     });
 
-    // Reset CSS variable when BottomNav is hidden
+
     React.useEffect(() => {
-        if (!mainRoutes.includes(pathname)) {
+        if (!isMainRoute) {
             document.documentElement.style.setProperty("--bottomnav-height", "0px");
         }
-    }, [pathname, mainRoutes]);
+    }, [isMainRoute]);
 
-    if (!mainRoutes.includes(pathname)) return null;
+    React.useLayoutEffect(() => {
+        if (!isMainRoute || !containerRef.current) return;
+
+        const updateHeight = () => {
+            const h = Math.ceil(containerRef.current!.getBoundingClientRect().height);
+            document.documentElement.style.setProperty("--bottomnav-height", `${h}px`);
+        };
+
+        const raf = requestAnimationFrame(updateHeight);
+        const ro = new ResizeObserver(updateHeight);
+        ro.observe(containerRef.current);
+
+        return () => {
+            cancelAnimationFrame(raf);
+            ro.disconnect();
+        };
+    }, [isMainRoute]);
+
+    if (!isMainRoute) return null;
+
     return (
         <div
             className="fixed bottom-0 left-0 right-0 z-[99] px-4 py-2 bg-background/80 backdrop-blur-lg border-t"
             data-guide-target="bottom-nav-container"
-            ref={(el) => {
-                if (!el) return;
-                document.documentElement.style.setProperty(
-                    "--bottomnav-height",
-                    `${Math.ceil(el.getBoundingClientRect().height)}px`,
-                );
-            }}
+            ref={containerRef}
         >
             <nav
                 role="navigation"

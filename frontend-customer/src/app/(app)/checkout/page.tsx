@@ -19,9 +19,13 @@ export default function CheckoutPageWrapper() {
     const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
-    const { setAppBar } = useAppBarV2()
+    const { setAppBar, resetAppBar } = useAppBarV2()
 
-    useEffect(() => { typeof window !== undefined && setAppBar(CHECKOUT_APP_BAR_CONFIG) }, [])
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        setAppBar(CHECKOUT_APP_BAR_CONFIG);
+        return () => resetAppBar();
+    }, [setAppBar, resetAppBar]);
 
     useEffect(() => {
         const data = CheckoutService.getCheckoutDataFromStorage();

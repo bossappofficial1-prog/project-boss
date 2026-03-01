@@ -24,6 +24,8 @@ import { ManualPaymentResponse, PaymentMethodId } from "@/types";
 import { ImageRender } from "../shared/Image";
 import { Alert } from "../Base";
 import { useSnackbar } from "@/hooks/useSnackbar";
+import { useFeatureGuide } from "@/hooks/useFeatureGuide";
+import { GuideStep } from "@/providers/FeatureGuideProvider";
 
 interface PaymentPageProps {
   checkoutData: CheckoutData;
@@ -40,11 +42,12 @@ const CustomerInfoForm: React.FC<{
   customerInfo: CustomerInfo;
   onInfoChange: (info: CustomerInfo) => void;
   errors: Record<string, string>;
-}> = ({ customerInfo, onInfoChange, errors }) => {
+  guideTarget?: string;
+}> = ({ customerInfo, onInfoChange, errors, guideTarget }) => {
   const t = useTranslations("paymentPage");
 
   return (
-    <Card>
+    <Card data-guide-target={guideTarget}>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <User className="w-5 h-5 text-primary" />
@@ -101,11 +104,11 @@ const CustomerInfoForm: React.FC<{
 };
 
 // Order Summary Component for Payment
-const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkoutData }) => {
+const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData; guideTarget?: string }> = ({ checkoutData, guideTarget }) => {
   const t = useTranslations("paymentPage");
 
   return (
-    <Card>
+    <Card data-guide-target={guideTarget}>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Receipt className="w-5 h-5 text-primary" />
@@ -148,11 +151,11 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData }> = ({ checkou
 };
 
 // Payment Method Display Component
-const PaymentMethodDisplay: React.FC<{ method: PaymentMethod }> = ({ method }) => {
+const PaymentMethodDisplay: React.FC<{ method: PaymentMethod; guideTarget?: string }> = ({ method, guideTarget }) => {
   const t = useTranslations("paymentPage");
 
   return (
-    <Card>
+    <Card data-guide-target={guideTarget}>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-primary" />
@@ -187,11 +190,12 @@ const PaymentButton: React.FC<{
   onPay: () => void;
   amount: number;
   isLoading: boolean;
-}> = ({ onPay, amount, isLoading }) => {
+  guideTarget?: string;
+}> = ({ onPay, amount, isLoading, guideTarget }) => {
   const t = useTranslations("paymentPage");
 
   return (
-    <Card className="sticky bottom-0 py-0 border-t shadow-lg">
+    <Card className="sticky bottom-0 py-0 border-t shadow-lg" data-guide-target={guideTarget}>
       <CardContent className="p-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
@@ -223,6 +227,50 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
   const { items: cartItems, clearOutletItems } = useCart();
   const t = useTranslations("paymentPage");
   const snackbar = useSnackbar();
+
+  const paymentGuideSteps = React.useMemo<GuideStep[]>(() => [
+    {
+      id: "payment-customer-info",
+      title: "Lengkapi data pemesan",
+      description: "Isi nama dan nomor telepon aktif agar tim outlet mudah menghubungi kamu.",
+      target: '[data-guide-target="payment-customer-info"]',
+      placement: "bottom",
+      focusPadding: 18,
+    },
+    {
+      id: "payment-method",
+      title: "Cek metode pembayaran",
+      description: "Pastikan metode pembayaran yang dipilih sudah sesuai sebelum melanjutkan.",
+      target: '[data-guide-target="payment-method-display"]',
+      placement: "bottom",
+      focusPadding: 18,
+    },
+    {
+      id: "payment-summary",
+      title: "Review total pembayaran",
+      description: "Periksa ringkasan total untuk memastikan nominal transaksi sudah benar.",
+      target: '[data-guide-target="payment-order-summary"]',
+      placement: "top",
+      focusPadding: 18,
+    },
+    {
+      id: "payment-pay-now",
+      title: "Bayar sekarang",
+      description: "Tekan tombol ini untuk membuat order dan masuk ke proses pembayaran.",
+      target: '[data-guide-target="payment-pay-now"]',
+      placement: "top",
+      focusPadding: 16,
+    },
+  ], []);
+
+  useFeatureGuide({
+    id: "payment-page-guide",
+    steps: paymentGuideSteps,
+    autoStart: true,
+    runOnceKey: "guide:payment-page",
+    delay: 900,
+    enabled: Boolean(checkoutData?.outlets?.length),
+  });
 
   // Load customer info from ProfileSettings (if available)
   useEffect(() => {
@@ -442,21 +490,40 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
 
   return (
     <div className="space-y-4">
+      <Card className="py-0">
+        <CardContent className="p-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">{t("title")}</p>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">1. Ringkasan</div>
+              <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">2. Checkout</div>
+              <div className="rounded-md border bg-primary/10 text-primary px-2 py-1.5 text-center font-semibold">3. Pembayaran</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Customer Info Form */}
       <CustomerInfoForm
         customerInfo={customerInfo}
         onInfoChange={setCustomerInfo}
         errors={errors}
+        guideTarget="payment-customer-info"
       />
 
       {/* Payment Method Display */}
-      <PaymentMethodDisplay method={selectedPaymentMethod} />
+      <PaymentMethodDisplay method={selectedPaymentMethod} guideTarget="payment-method-display" />
 
       {/* Order Summary */}
-      <PaymentOrderSummary checkoutData={checkoutData} />
+      <PaymentOrderSummary checkoutData={checkoutData} guideTarget="payment-order-summary" />
 
       {/* Payment Button */}
-      <PaymentButton onPay={handlePayment} amount={checkoutData.grandTotal} isLoading={isLoading} />
+      <PaymentButton
+        onPay={handlePayment}
+        amount={checkoutData.grandTotal}
+        isLoading={isLoading}
+        guideTarget="payment-pay-now"
+      />
 
       {/* Leave Confirmation Dialog */}
       <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>

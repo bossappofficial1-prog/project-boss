@@ -174,6 +174,24 @@ export const useCart = create<CartState>()(
                 set({ items: items.filter(item => item.id !== itemId) });
             },
 
+            getItemById: (itemId: string) => {
+                const { items } = get();
+                return items.find(item => item.id === itemId);
+            },
+
+            getItemQuantity: (outletId: string, productId: string) => {
+                const { items } = get();
+                return items
+                    .filter(item => item.outletId === outletId && item.productId === productId)
+                    .reduce((total, item) => total + item.quantity, 0);
+            },
+
+            getSelectedSlot: (slotId: string) => {
+                const { items } = get();
+                const found = items.find(item => item.selectedSlot === slotId);
+                return found ? found.selectedSlot || '' : '';
+            },
+
             updateQuantity: (itemId: string, quantity: number) => {
                 if (quantity <= 0) {
                     get().removeItem(itemId);
@@ -234,16 +252,16 @@ export const useCart = create<CartState>()(
                 return items.filter(item => item.outletId === outletId);
             },
 
-            getItemById: (itemId: string) => {
-                const { items } = get();
-                return items.find(item => item.id === itemId);
-            },
+            // getItemById: (itemId: string) => {
+            //     const { items } = get();
+            //     return items.find(item => item.id === itemId);
+            // },
 
-            getSelectedSlot: (slotId: string) => {
-                const { items } = get();
-                const found = items.find(item => item.selectedSlot === slotId);
-                return found ? found.selectedSlot || '' : '';
-            },
+            // getSelectedSlot: (slotId: string) => {
+            //     const { items } = get();
+            //     const found = items.find(item => item.selectedSlot === slotId);
+            //     return found ? found.selectedSlot || '' : '';
+            // },
 
             getServiceInCart: (productId: string, outletId: string) => {
                 const { items } = get();

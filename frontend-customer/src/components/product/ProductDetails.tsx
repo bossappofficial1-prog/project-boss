@@ -14,7 +14,6 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/Base";
 import { EmptyStates } from "@/components/base/EmptyStates";
 import {
   ShoppingCart,
-  ArrowLeft,
   Clock,
   MapPin,
   Share2,
@@ -25,8 +24,12 @@ import {
   ChevronRight,
   Package,
   Wrench,
+  Ticket,
+  CalendarDays,
+  Users,
+  ExternalLink,
 } from "lucide-react";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, formatDateTime } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Product } from "@/types/product";
@@ -36,7 +39,14 @@ import { useAppBarV2 } from "@/context/AppBarContextV2";
 import { Messages, NestedKeyOf, useTranslations } from "@/hooks/useI18n";
 import { ProductImagesSlider } from "../shared/ProductImagesSlider";
 import { useSnackbar } from "@/hooks/useSnackbar";
-import { getProductPrice, getProductUnit, getServiceDuration } from "@/lib/utils/product";
+import {
+  getProductPrice,
+  getProductUnit,
+  getServiceDuration,
+  getTicketAvailableQuota,
+  isTicketEventPassed,
+  isTicketSoldOut,
+} from "@/lib/utils/product";
 
 type Props = {
   outletId: string;
@@ -45,7 +55,7 @@ type Props = {
 
 export function ProductDetails({ outletId, productId }: Props) {
   const router = useRouter();
-  const { addItem } = useCart();
+  const { addItem, getTotalItems } = useCart();
   const snackbar = useSnackbar();
   const { setAppBar, resetAppBar } = useAppBarV2();
   const { isProductSaved, toggleSaveProduct } = useSavedProducts();
@@ -80,6 +90,16 @@ export function ProductDetails({ outletId, productId }: Props) {
   const isProductInSaved = useMemo(
     () => (product ? isProductSaved(product.id) : false),
     [product, isProductSaved],
+  );
+
+  const ticketAvailableQuota = useMemo(
+    () => (product ? getTicketAvailableQuota(product) : null),
+    [product],
+  );
+  const ticketSoldOut = useMemo(() => (product ? isTicketSoldOut(product) : false), [product]);
+  const ticketEventPassed = useMemo(
+    () => (product ? isTicketEventPassed(product) : false),
+    [product],
   );
 
   // Setup AppBar
@@ -168,25 +188,41 @@ export function ProductDetails({ outletId, productId }: Props) {
         {
           icon: Layers,
           label: t("labels.category"),
-          value: product ? getProductUnit(product) || t("labels.general") : t("labels.general"),
+          value:
+            product?.type === "GOODS"
+              ? getProductUnit(product) || t("labels.general")
+              : product?.type === "TICKET"
+                ? t("labels.ticket")
+                : t("labels.general"),
         },
         {
           icon: Tag,
           label: t("labels.type"),
-          value: product?.type === "GOODS" ? t("labels.product") : t("labels.service"),
+          value:
+            product?.type === "GOODS"
+              ? t("labels.product")
+              : product?.type === "TICKET"
+                ? t("labels.ticket")
+                : t("labels.service"),
         },
         product &&
-          getServiceDuration(product) && {
-            icon: Clock,
-            label: t("labels.duration"),
-            value: `${getServiceDuration(product)} ${t("labels.minutes")}`,
-          },
+        getServiceDuration(product) && {
+          icon: Clock,
+          label: t("labels.duration"),
+          value: `${getServiceDuration(product)} ${t("labels.minutes")}`,
+        },
+        product?.type === "TICKET" &&
+        ticketAvailableQuota !== null && {
+          icon: Users,
+          label: t("labels.available"),
+          value: `${ticketAvailableQuota}`,
+        },
       ].filter(Boolean) as Array<{
         icon: React.ComponentType<{ className?: string }>;
         label: string;
         value: string;
       }>,
-    [product, t],
+    [product, t, ticketAvailableQuota],
   );
 
   // Loading & Error State
@@ -236,6 +272,15 @@ export function ProductDetails({ outletId, productId }: Props) {
 
           <OutletCard outlet={outlet} t={t} />
 
+          {product.type === "TICKET" && product.ticket && (
+            <TicketInfoSection
+              ticket={product.ticket}
+              isEventPassed={ticketEventPassed}
+              isSoldOut={ticketSoldOut}
+              t={t}
+            />
+          )}
+
           {formattedDescription && (
             <DescriptionSection
               description={formattedDescription}
@@ -253,6 +298,8 @@ export function ProductDetails({ outletId, productId }: Props) {
         onSave={handleToggleSaveProduct}
         onAddToCart={handleAddToCart}
         onOpenSchedule={() => setShowScheduleModal(true)}
+        ticketSoldOut={ticketSoldOut}
+        ticketEventPassed={ticketEventPassed}
         t={t}
       />
 
@@ -310,6 +357,8 @@ const HeroImage: React.FC<HeroImageProps> = ({ product }) => {
     <div className="relative h-72 sm:h-80 flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/15 to-primary/25 -mx-4 -mt-4">
       {product.type === "GOODS" ? (
         <Package className="w-16 h-16 text-primary/30" />
+      ) : product.type === "TICKET" ? (
+        <Ticket className="w-16 h-16 text-primary/30" />
       ) : (
         <Wrench className="w-16 h-16 text-primary/30" />
       )}
@@ -333,7 +382,11 @@ const HeaderSection: React.FC<HeaderSectionProps> = ({ product, outlet, t, tComm
       <Badge
         variant="outline"
         className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold border-primary/20 bg-primary/5 text-primary">
-        {product.type === "GOODS" ? t("labels.product") : t("labels.service")}
+        {product.type === "GOODS"
+          ? t("labels.product")
+          : product.type === "TICKET"
+            ? t("labels.ticket")
+            : t("labels.service")}
       </Badge>
       <Badge
         variant={outlet.isOpen ? "default" : "secondary"}
@@ -427,10 +480,113 @@ const DescriptionSection: React.FC<DescriptionSectionProps> = ({ description, pr
   <div>
     <h2 className="text-sm font-semibold text-muted-foreground mb-2">
       {t("labels.description", {
-        type: productType === "GOODS" ? t("labels.product") : t("labels.service"),
+        type:
+          productType === "GOODS"
+            ? t("labels.product")
+            : productType === "TICKET"
+              ? t("labels.ticket")
+              : t("labels.service"),
       })}
     </h2>
     <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">{description}</p>
+  </div>
+);
+
+type TicketInfoSectionProps = {
+  ticket: NonNullable<Product["ticket"]>;
+  isSoldOut: boolean;
+  isEventPassed: boolean;
+  t: (
+    key: NestedKeyOf<Messages["productDetails"]>,
+    values?: Record<string, string | number>,
+  ) => string;
+};
+const TicketInfoSection: React.FC<TicketInfoSectionProps> = ({
+  ticket,
+  isSoldOut,
+  isEventPassed,
+  t,
+}) => {
+  const availableQuota = Math.max(ticket.totalQuota - ticket.soldCount, 0);
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
+      <h2 className="text-sm font-semibold text-muted-foreground">{t("labels.ticketInfo")}</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <TicketInfoItem
+          icon={CalendarDays}
+          label={t("labels.eventDate")}
+          value={formatDateTime(ticket.eventDate)}
+        />
+        <TicketInfoItem icon={MapPin} label={t("labels.venue")} value={ticket.venue} />
+        <TicketInfoItem
+          icon={Users}
+          label={t("labels.quota")}
+          value={`${availableQuota}/${ticket.totalQuota}`}
+        />
+        <TicketInfoItem
+          icon={Ticket}
+          label={t("labels.maxPerOrder")}
+          value={`${ticket.maxPerOrder}`}
+        />
+      </div>
+
+      {(ticket.saleStartDate || ticket.saleEndDate) && (
+        <div className="rounded-md border border-border/60 bg-background px-3 py-2 space-y-1">
+          <p className="text-xs text-muted-foreground font-medium">{t("labels.salePeriod")}</p>
+          <p className="text-sm font-medium text-foreground">
+            {ticket.saleStartDate ? formatDateTime(ticket.saleStartDate) : "-"} -{" "}
+            {ticket.saleEndDate ? formatDateTime(ticket.saleEndDate) : "-"}
+          </p>
+        </div>
+      )}
+
+      {ticket.venueAddress && (
+        <p className="text-xs text-muted-foreground">
+          {t("labels.venueAddress")}: {ticket.venueAddress}
+        </p>
+      )}
+
+      {ticket.mapUrl && (
+        <Link
+          href={ticket.mapUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+        >
+          <ExternalLink className="w-3.5 h-3.5" /> {t("buttons.openMap")}
+        </Link>
+      )}
+
+      {(isSoldOut || isEventPassed) && (
+        <Badge variant="secondary" className="rounded-full">
+          {isEventPassed ? t("labels.eventPassed") : t("labels.outOfStock")}
+        </Badge>
+      )}
+
+      {ticket.terms && (
+        <div className="rounded-md border border-border/60 bg-background px-3 py-2 space-y-1">
+          <p className="text-xs text-muted-foreground font-medium">{t("labels.ticketTerms")}</p>
+          <p className="text-sm text-foreground/80 whitespace-pre-line">{ticket.terms}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+type TicketInfoItemProps = {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+};
+const TicketInfoItem: React.FC<TicketInfoItemProps> = ({ icon: Icon, label, value }) => (
+  <div className="rounded-md border border-border/60 bg-background px-3 py-2 space-y-1">
+    <div className="flex items-center gap-1.5 text-muted-foreground">
+      <Icon className="w-3.5 h-3.5" />
+      <p className="text-xs font-medium">{label}</p>
+    </div>
+    <p className="text-sm font-semibold">{value}</p>
   </div>
 );
 
@@ -441,6 +597,8 @@ type BottomActionsProps = {
   onSave: () => void;
   onAddToCart: () => void;
   onOpenSchedule: () => void;
+  ticketSoldOut: boolean;
+  ticketEventPassed: boolean;
   t: (
     key: NestedKeyOf<Messages["productDetails"]>,
     values?: Record<string, string | number>,
@@ -453,6 +611,8 @@ const BottomActions: React.FC<BottomActionsProps> = ({
   onSave,
   onAddToCart,
   onOpenSchedule,
+  ticketSoldOut,
+  ticketEventPassed,
   t,
 }) => (
   <div className="fixed bottom-0 left-0 right-0 z-[101] bg-background/95 backdrop-blur-xl border-t border-border/50">
@@ -487,6 +647,17 @@ const BottomActions: React.FC<BottomActionsProps> = ({
           onClick={onOpenSchedule}
           disabled={product.status !== "ACTIVE" || !outlet.isOpen}>
           <Clock className="w-4 h-4" /> {t("buttons.bookService")}
+        </Button>
+      )}
+
+      {product.type === "TICKET" && (
+        <Button
+          size="lg"
+          className="flex-1 h-11 rounded-full font-semibold text-sm shadow-sm gap-2"
+          onClick={onAddToCart}
+          disabled={product.status !== "ACTIVE" || !outlet.isOpen || ticketSoldOut || ticketEventPassed}
+        >
+          <Ticket className="w-4 h-4" /> {t("buttons.buyTicket")}
         </Button>
       )}
     </div>
