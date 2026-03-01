@@ -1,11 +1,12 @@
 import SubscriptionPaymentContent from "@/components/features/owner/subscription/payment/PaymentContent"
 
 type PaymentPageProps = {
-    params: {
+    params: Promise<{
         invoiceId: string
-    }
+    }>
 }
 
-export default function PaymentPage({ params }: PaymentPageProps) {
-    return (<SubscriptionPaymentContent invoiceId={params.invoiceId} />)
+export default async function PaymentPage({ params }: PaymentPageProps) {
+    const { invoiceId } = await params
+    return (<SubscriptionPaymentContent invoiceId={invoiceId} />)
 }

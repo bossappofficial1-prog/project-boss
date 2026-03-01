@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useMemo, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
     Heart,
     History,
@@ -202,6 +202,17 @@ export function HomeContent() {
     const handleSearch = useCallback((query: string) => {
         router.push(`/search?q=${encodeURIComponent(query)}`)
     }, [router])
+
+    const searchParams = useSearchParams()
+
+    useEffect(() => {
+        const currentParams = new URLSearchParams(searchParams.toString())
+
+        if (!currentParams.has('locale')) {
+            currentParams.set('locale', 'id')
+            router.replace(`?${currentParams.toString()}`)
+        }
+    }, [searchParams, router])
 
     useEffect(() => {
         setAppBar({

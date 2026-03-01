@@ -3,6 +3,7 @@ import Console from "../utils/logger";
 import { processPaymentProofCleanup } from "./paymentProofCleanup.job"
 import { cleanupScheduler } from "./cleanup.job";
 import { checkSubscriptionExpireJob } from "./check-subscription-expire.job";
+import { deletePaymentExpiryScheduler } from "./payment-expire-delete.job";
 
 export const setUpJobs = () => {
     Console.log(`Init jobs`);
@@ -18,4 +19,5 @@ export const setUpJobs = () => {
 
     cleanupScheduler.register()
     checkSubscriptionExpireJob.register()
+    deletePaymentExpiryScheduler.register()
 }

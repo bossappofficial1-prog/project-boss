@@ -39,6 +39,7 @@ export default function SavedProductsPage() {
             subtitle: t("subtitle"),
             centerTitle: true,
             showBackButton: true,
+            showPartnerToggle: false,
             onLeftClick: () => router.back()
         });
 

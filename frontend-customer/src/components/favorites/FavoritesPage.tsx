@@ -44,6 +44,7 @@ export default function FavoritesPage() {
             subtitle: validCount > 0 ? t('controls.availableOutlets', { count: validCount }) : t('subtitle'),
             showSearch: false,
             centerTitle: true,
+            showPartnerToggle: false,
             showBackButton: true,
         });
         return () => resetAppBar();

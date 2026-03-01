@@ -24,6 +24,7 @@ function SearchOutletContent() {
             subtitle: t('subtitle'),
             showSearch: true,
             showBackButton: true,
+            showPartnerToggle: false,
             onLeftClick() {
                 router.replace("/")
             },
