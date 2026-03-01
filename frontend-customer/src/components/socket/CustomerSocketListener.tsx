@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSocket } from "@/hooks/useSocket-v2";
 import { useSnackbar } from "@/context/SnackbarContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 type CustomerNotificationPayload = {
     orderId: string;
@@ -84,6 +85,7 @@ const buildNotificationMessage = (payload: CustomerNotificationPayload) => {
 export function CustomerSocketListener() {
     const { isConnected, joinCustomerRoom, onEvent, events } = useSocket();
     const { showSnackbar } = useSnackbar();
+    const queryClient = useQueryClient()
 
     const [customerIdentifier, setCustomerIdentifier] = useState<string | null>(() => {
         if (typeof window === "undefined") return null;
@@ -128,7 +130,10 @@ export function CustomerSocketListener() {
 
             const tone = mapStatusToTone(payload.transactionStatus ?? payload.status);
             const message = buildNotificationMessage(payload);
-            
+
+            // Revalidate query dengan key "orders"
+            queryClient.invalidateQueries({ queryKey: ['orders'] })
+
             showSnackbar(message, tone, 5000);
             if (typeof window !== "undefined") {
                 window.dispatchEvent(new CustomEvent("customer-notification", { detail: payload }));

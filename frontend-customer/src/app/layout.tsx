@@ -143,8 +143,8 @@ export default function Layout({
           <SnackbarProvider>
             <FeatureGuideProvider>
               <SocketProvider>
-                <CustomerSocketListener />
                 <RootLayout>
+                  <CustomerSocketListener />
                   {children}
                 </RootLayout>
               </SocketProvider>

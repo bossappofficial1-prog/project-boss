@@ -3,15 +3,13 @@
 import React, { useEffect, useState } from "react";
 import LoadingEffect from "@/components/shared/LoadingEffect";
 import dynamic from 'next/dynamic';
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { QueryClient } from "@tanstack/react-query";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import localforage from 'localforage';
 
-// Dynamically load the onboarding modal to avoid pulling heavy animation/icons
-// libraries into the initial bundle.
 const OnboardingModal = dynamic(() => import('../onboarding/OnboardingModal'), { ssr: false, loading: () => null });
-
-// Dynamically load PWA Install Prompt
 const PWAInstallPrompt = dynamic(() => import('../PWAInstallPrompt'), { ssr: false, loading: () => null });
-
-// Dynamically load Online Status Indicator
 const OnlineStatusIndicator = dynamic(() => import('../OnlineStatusIndicator'), { ssr: false, loading: () => null });
 
 type RootLayoutProps = {
@@ -21,21 +19,43 @@ type RootLayoutProps = {
     onLoaded?: () => void;
 };
 
+const queryStorage = localforage.createInstance({
+    name: 'boss-customer',
+    storeName: 'reactQueryCache',
+});
+
 export default function RootLayout({
     children,
     fallback,
     minDuration = 300,
     onLoaded,
 }: RootLayoutProps) {
-    // Keep loading disabled by default to avoid render-blocking overlay
-    // which hurts LCP in Lighthouse. If you need a loading overlay, prefer
-    // a lightweight skeleton or show it only for specific async actions.
+    const [queryClient] = useState(() => new QueryClient({
+        defaultOptions: {
+            queries: {
+                networkMode: 'offlineFirst',
+                staleTime: 1000 * 60 * 5,
+                gcTime: 1000 * 60 * 10,
+                refetchOnWindowFocus: false,
+                retry: 2,
+            },
+            mutations: {
+                retry: 0,
+            }
+        },
+    }));
+
+    const [persister] = useState(() => createAsyncStoragePersister({
+        storage: queryStorage,
+        key: 'boss-react-query',
+        throttleTime: 1000,
+        serialize: JSON.stringify,
+        deserialize: JSON.parse,
+    }));
     const [loading, setLoading] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
 
     useEffect(() => {
-        // onboarding: show once per browser unless user already saw it.
-        // Delay showing slightly so LCP isn't affected by modal/animations.
         let mounted = true;
         try {
             const seen = localStorage.getItem("hasSeenOnboarding");
@@ -85,7 +105,22 @@ export default function RootLayout({
     return (
         <div style={{ minHeight: "100vh", position: "relative" }}>
             <div className="bg-[var(--bg)] text-[var(--fg)]">
-                {children}
+                <PersistQueryClientProvider
+                    client={queryClient}
+                    persistOptions={{
+                        persister,
+                        buster: 'rq-v1',
+                        maxAge: 1000 * 60 * 60 * 24,
+                        dehydrateOptions: {
+                            shouldDehydrateQuery: (query) => query.state.status === 'success',
+                        },
+                    }}
+                    onSuccess={() => {
+                        queryClient.resumePausedMutations().catch(() => undefined);
+                    }}
+                >
+                    {children}
+                </PersistQueryClientProvider>
             </div>
 
             {/* loading overlay is disabled by default to improve LCP. */}

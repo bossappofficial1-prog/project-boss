@@ -203,7 +203,7 @@ export default function OrderBottomSheet({
         <Sheet open={isOpen} onOpenChange={onClose}>
             <SheetContent
                 side="bottom"
-                className="h-[90vh] z-[101] p-0 rounded-t-xl"
+                className="h-[90vh] p-0 rounded-t-xl pb-16"
             >
                 <ScrollArea className="h-full">
                     {/* Header */}

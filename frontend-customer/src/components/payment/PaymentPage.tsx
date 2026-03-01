@@ -26,6 +26,7 @@ import { Alert } from "../Base";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { useFeatureGuide } from "@/hooks/useFeatureGuide";
 import { GuideStep } from "@/providers/FeatureGuideProvider";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PaymentPageProps {
   checkoutData: CheckoutData;
@@ -220,6 +221,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: "", phone: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient()
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [hasStartedPayment, setHasStartedPayment] = useState(false);
@@ -450,12 +452,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
       CheckoutService.clearPaymentDataFromStorage();
       clearOutletItems(outletId);
 
-      // Redirect to success page
-      // if (isManualResponse(response)) {
-      //     router.push('/payment/manual');
-      // } else {
-      //     router.push('/payment/processing');
-      // }
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
 
       router.push(`/payment/${orderId}`);
     } catch (error) {
