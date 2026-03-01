@@ -195,7 +195,13 @@ export default function OrdersPage() {
     } = useQuery<OrderDetail[], Error>({
         queryKey: ["orders"],
         queryFn: Order.getOrderDetails,
-        enabled: !!profileUser?.phone
+        enabled: !!profileUser?.phone,
+        staleTime: 1000 * 30,
+        gcTime: 1000 * 60 * 10,
+        refetchOnMount: 'always',
+        refetchOnReconnect: 'always',
+        refetchOnWindowFocus: 'always',
+        refetchInterval: 1000 * 60,
     });
 
     // Single combined memo: filter → search → sort → group (replaces 5 separate memos)

@@ -80,6 +80,12 @@ export function ProductDetails({ outletId, productId }: Props) {
     queryFn: () => ProductService.getDetail(productId),
     enabled: Boolean(outletId && productId),
     retry: false,
+    staleTime: 1000 * 30,
+    gcTime: 1000 * 60 * 10,
+    refetchOnMount: 'always',
+    refetchOnReconnect: 'always',
+    refetchOnWindowFocus: 'always',
+    refetchInterval: 1000 * 60,
   });
 
   const outletQuery = useQuery<OutletType>({
@@ -87,6 +93,12 @@ export function ProductDetails({ outletId, productId }: Props) {
     queryFn: () => OutletService.getDetail(outletId),
     enabled: Boolean(outletId),
     retry: false,
+    staleTime: 1000 * 30,
+    gcTime: 1000 * 60 * 10,
+    refetchOnMount: 'always',
+    refetchOnReconnect: 'always',
+    refetchOnWindowFocus: 'always',
+    refetchInterval: 1000 * 60,
   });
 
   const product = productQuery.data;
