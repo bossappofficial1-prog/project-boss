@@ -79,16 +79,6 @@ export default function RootLayout({
         }
     }, []);
 
-    // removed waiting for window.load so the page can render quickly and
-    // avoid a render-blocking overlay that negatively impacts LCP.
-
-    const defaultFallback = (
-        // keep a minimal fallback markup for API compatibility; not shown by default
-        <div aria-live="polite" role="status" style={{ position: 'absolute', top: 0, left: 0 }}>
-            <LoadingEffect standalone />
-        </div>
-    );
-
     const handleCompleteOnboarding = () => {
         try {
             localStorage.setItem("hasSeenOnboarding", "1");
@@ -142,16 +132,3 @@ export default function RootLayout({
         </div>
     );
 }
-
-/* ---------- Inline styles (kept simple so no extra CSS files needed) ---------- */
-
-const overlayStyle: React.CSSProperties = {
-    position: "fixed",
-    inset: 0,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.5))",
-    zIndex: 9999,
-    flexDirection: "column",
-};
