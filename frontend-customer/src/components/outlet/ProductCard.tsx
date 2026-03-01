@@ -196,11 +196,10 @@ export default function ProductCard({
   return (
     <>
       <Card
-        className={`flex flex-row p-3 transition-all duration-200 w-full overflow-hidden relative gap-0 group border border-border/60 rounded-xl items-stretch ${
-          isDisabled
+        className={`flex flex-row p-3 transition-all duration-200 w-full overflow-hidden relative gap-0 group border border-border/60 rounded-xl items-stretch ${isDisabled
             ? "opacity-50 cursor-not-allowed bg-muted/30"
             : "cursor-pointer hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
-        }`}
+          }`}
         onClick={isDisabled ? undefined : handleCardClick}>
         {/* Image Section */}
         <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -208,9 +207,8 @@ export default function ProductCard({
             <ImageColorThief
               src={product.image}
               alt={product.name}
-              className={`w-full h-full object-cover transition-transform duration-300 ${
-                !isDisabled && "group-hover:scale-105"
-              } ${isDisabled ? "grayscale" : ""}`}
+              className={`w-full h-full object-cover transition-transform duration-300 ${!isDisabled && "group-hover:scale-105"
+                } ${isDisabled ? "grayscale" : ""}`}
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-muted to-muted/60 text-muted-foreground/40">
@@ -291,9 +289,8 @@ export default function ProductCard({
         <div className="pl-3 sm:pl-4 flex flex-col flex-grow justify-between min-w-0">
           <div className="flex-grow">
             <h3
-              className={`font-semibold text-sm leading-snug line-clamp-2 transition-colors ${
-                !isDisabled && "group-hover:text-primary"
-              }`}>
+              className={`font-semibold text-sm leading-snug line-clamp-2 transition-colors ${!isDisabled && "group-hover:text-primary"
+                }`}>
               {product.name}
             </h3>
             {product.description && (

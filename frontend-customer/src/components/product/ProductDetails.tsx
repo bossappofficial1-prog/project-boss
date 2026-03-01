@@ -449,24 +449,24 @@ const OutletCard: React.FC<OutletCardProps> = ({ outlet, t, locale }) => {
     : `/outlet/${outlet.id}`;
 
   return (
-  <Link
-    href={href}
-    className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/20 transition-all duration-200 group">
-    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-      <Store className="w-5 h-5" />
-    </div>
-    <div className="flex-1 min-w-0">
-      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-        {t("labels.availableAt")}
-      </p>
-      <h3 className="text-sm font-semibold truncate mt-0.5">{outlet.name}</h3>
-      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-        <MapPin className="w-3 h-3 shrink-0" />
-        <span className="truncate">{outlet.address}</span>
+    <Link
+      href={href}
+      className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/20 transition-all duration-200 group">
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Store className="w-5 h-5" />
       </div>
-    </div>
-    <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary transition-colors flex-shrink-0" />
-  </Link>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          {t("labels.availableAt")}
+        </p>
+        <h3 className="text-sm font-semibold truncate mt-0.5">{outlet.name}</h3>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+          <MapPin className="w-3 h-3 shrink-0" />
+          <span className="truncate">{outlet.address}</span>
+        </div>
+      </div>
+      <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary transition-colors flex-shrink-0" />
+    </Link>
   );
 };
 
