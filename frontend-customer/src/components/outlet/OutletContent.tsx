@@ -200,7 +200,15 @@ export function OutletContent({ outletId }: { outletId: string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const from = useSearchParams().get("from");
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
+  const locale = searchParams.get("locale");
+
+  const withLocale = useCallback((href: string) => {
+    if (!locale) return href;
+    const separator = href.includes("?") ? "&" : "?";
+    return `${href}${separator}locale=${encodeURIComponent(locale)}`;
+  }, [locale]);
 
   const router = useRouter();
 
@@ -267,11 +275,11 @@ export function OutletContent({ outletId }: { outletId: string }) {
       let onLeftClickHandler: (() => void) | undefined;
 
       if (prevPage == "search" && from == "product") {
-        onLeftClickHandler = () => router.replace("/search");
+        onLeftClickHandler = () => router.replace(withLocale("/search"));
       } else if (prevPage == "nearby" && from == "product") {
-        onLeftClickHandler = () => router.push("/nearby");
+        onLeftClickHandler = () => router.push(withLocale("/nearby"));
       } else if (from === "product" || from === "share") {
-        onLeftClickHandler = () => router.push("/");
+        onLeftClickHandler = () => router.push(withLocale("/"));
       } else if (from === "search" || from === "favorites" || from == "nearby") {
         onLeftClickHandler = () => router.back();
       } else {
@@ -292,7 +300,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
     return () => {
       resetAppBar();
     };
-  }, [setAppBar, resetAppBar, outletQuery.data?.name]);
+  }, [setAppBar, resetAppBar, outletQuery.data?.name, prevPage, from, router, withLocale]);
 
   const handleToggleFavorite = useCallback(() => {
     if (!outletQuery.data) return;
@@ -346,6 +354,10 @@ export function OutletContent({ outletId }: { outletId: string }) {
         action={{
           label: "Back to Home",
           onClick() {
+            if (locale) {
+              window.location.href = withLocale("/");
+              return;
+            }
             window.location.href = "/";
           },
         }}
@@ -517,7 +529,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
             ) : goods.length ? (
               <div className="grid gap-2">
                 {goods.map((p) => (
-                  <ProductCard key={p.id} product={p} outlet={outlet} />
+                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale ?? undefined} />
                 ))}
               </div>
             ) : trimmedSearch ? (
@@ -536,7 +548,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
             ) : services.length ? (
               <div className="grid gap-2">
                 {services.map((p) => (
-                  <ProductCard key={p.id} product={p} outlet={outlet} />
+                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale ?? undefined} />
                 ))}
               </div>
             ) : trimmedSearch ? (
@@ -560,7 +572,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
             ) : tickets.length ? (
               <div className="grid gap-2">
                 {tickets.map((p) => (
-                  <ProductCard key={p.id} product={p} outlet={outlet} />
+                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale ?? undefined} />
                 ))}
               </div>
             ) : trimmedSearch ? (

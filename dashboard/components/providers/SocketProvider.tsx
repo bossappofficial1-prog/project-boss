@@ -21,6 +21,8 @@ interface SocketProviderProps {
     outletId?: string | null; // Optional outlet ID - can be passed directly for cashier
 }
 
+const MAX_EVENT_HISTORY = 50;
+
 export function SocketProvider({ children, outletId: providedOutletId }: SocketProviderProps) {
     const router = useRouter();
 
@@ -48,7 +50,7 @@ export function SocketProvider({ children, outletId: providedOutletId }: SocketP
 
         socket.on('businessEvent', (payload) => {
             console.log('🏢 Business event received:', payload);
-            setBusinessEvents(prev => [payload, ...prev]);
+            setBusinessEvents(prev => [payload, ...prev].slice(0, MAX_EVENT_HISTORY));
 
             // Sonner notification for payment events
             if (payload.type === 'payment_created' || payload.type === 'payment_success' || payload.type === 'payment_failed') {
@@ -70,11 +72,14 @@ export function SocketProvider({ children, outletId: providedOutletId }: SocketP
                     variant = 'error';
                 }
 
+                const toastId = `payment-${payload.type}-${payload.orderId ?? payload.customerName ?? 'unknown'}`;
+
                 // Show toast with action button
                 if (variant === 'success') {
                     toast.success(title, {
+                        id: toastId,
                         description,
-                        duration: Infinity, // No auto-close
+                        duration: 10000,
                         action: {
                             label: "Lihat Pesanan",
                             onClick: () => {
@@ -88,8 +93,9 @@ export function SocketProvider({ children, outletId: providedOutletId }: SocketP
                     });
                 } else if (variant === 'error') {
                     toast.error(title, {
+                        id: toastId,
                         description,
-                        duration: Infinity, // No auto-close
+                        duration: 10000,
                         action: {
                             label: "Lihat Pesanan",
                             onClick: () => {
@@ -103,8 +109,9 @@ export function SocketProvider({ children, outletId: providedOutletId }: SocketP
                     });
                 } else {
                     toast(title, {
+                        id: toastId,
                         description,
-                        duration: Infinity, // No auto-close
+                        duration: 10000,
                         action: {
                             label: "Lihat Pesanan",
                             onClick: () => {
@@ -122,7 +129,7 @@ export function SocketProvider({ children, outletId: providedOutletId }: SocketP
 
         socket.on('orderEvent', (payload) => {
             console.log('📦 Order event received:', payload);
-            setOrderEvents(prev => [payload, ...prev]);
+            setOrderEvents(prev => [payload, ...prev].slice(0, MAX_EVENT_HISTORY));
         });
 
         // Cleanup on unmount

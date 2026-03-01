@@ -3,6 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 
 interface QuickActionCardProps {
     action: {
@@ -18,9 +19,15 @@ interface QuickActionCardProps {
 
 function QuickActionCard({ action, labels }: QuickActionCardProps) {
     const Icon = action.icon
+    const searchParams = useSearchParams()
+    const locale = searchParams?.get('locale')
+    const href = locale
+        ? `${action.href}${action.href.includes('?') ? '&' : '?'}locale=${encodeURIComponent(locale)}`
+        : action.href
+
     return (
         <Link
-            href={action.href}
+            href={href}
             className="flex flex-col items-center gap-1.5 rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/70 active:scale-95"
         >
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">

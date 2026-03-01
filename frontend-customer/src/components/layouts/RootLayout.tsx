@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 const OnboardingModal = dynamic(() => import('../onboarding/OnboardingModal'), { ssr: false, loading: () => null });
 
 // Dynamically load PWA Install Prompt
-// const PWAInstallPrompt = dynamic(() => import('../PWAInstallPrompt'), { ssr: false, loading: () => null });
+const PWAInstallPrompt = dynamic(() => import('../PWAInstallPrompt'), { ssr: false, loading: () => null });
 
 // Dynamically load Online Status Indicator
 const OnlineStatusIndicator = dynamic(() => import('../OnlineStatusIndicator'), { ssr: false, loading: () => null });
@@ -100,7 +100,7 @@ export default function RootLayout({
             )}
 
             {/* PWA Install Prompt */}
-            {/* <PWAInstallPrompt /> */}
+            <PWAInstallPrompt />
 
             {/* Online Status Indicator */}
             <OnlineStatusIndicator />

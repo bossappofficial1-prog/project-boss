@@ -6,7 +6,6 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminHeader from '@/components/admin/AdminHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { usePerformanceMonitor, useComponentMonitor } from '@/hooks/usePerformance';
 import { useSessionSecurity, useSecurityHeaders } from '@/hooks/useSecurity';
 import { useResponsiveBreakpoints } from '@/hooks/useResponsiveBreakpoints';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
@@ -117,9 +116,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const prefersReducedMotion = usePrefersReducedMotion();
     const mainContentId = useId();
 
-    // Performance and security monitoring
-    usePerformanceMonitor('AdminLayout');
-    useComponentMonitor('AdminLayout');
+    // Security monitoring
     useSessionSecurity(30); // 30 minute timeout
     useSecurityHeaders();
 

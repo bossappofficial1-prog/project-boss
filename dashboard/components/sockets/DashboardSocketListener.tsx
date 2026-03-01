@@ -26,10 +26,12 @@ export function DashboardSocketListener() {
         const handleNotification = (payload: any) => {
             const isNewOrder = payload.message?.toLowerCase().includes('pesanan baru');
             const audio = isNewOrder ? orderAudioRef.current : notifAudioRef.current;
+            const toastId = `notification-${payload.orderId ?? payload.id ?? payload.message ?? 'general'}`;
 
             toast.info(isNewOrder ? 'Order Masuk!' : 'Notifikasi', {
+                id: toastId,
                 description: payload.message,
-                duration: Infinity,
+                duration: 8000,
                 richColors: true,
             });
             audio?.play()

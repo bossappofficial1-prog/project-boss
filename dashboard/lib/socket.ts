@@ -2,6 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import { useEffect, useState } from 'react';
 
 let socket: Socket | null = null;
+const MAX_EVENT_HISTORY = 50;
 
 export const getSocket = (): Socket | null => {
     return socket;
@@ -98,14 +99,14 @@ export const useSocket = (outletId?: string) => {
 
         socketInstance.on('businessEvent', (payload) => {
             console.log('🏢 Business event received:', payload);
-            setBusinessEvents(prev => [payload, ...prev]);
+            setBusinessEvents(prev => [payload, ...prev].slice(0, MAX_EVENT_HISTORY));
 
             // Note: Browser notifications removed - now handled by SocketProvider with Sonner
         });
 
         socketInstance.on('orderEvent', (payload) => {
             console.log('📦 Order event received:', payload);
-            setOrderEvents(prev => [payload, ...prev]);
+            setOrderEvents(prev => [payload, ...prev].slice(0, MAX_EVENT_HISTORY));
         });
 
         // Auto-join business outlet room jika outletId disediakan dan valid

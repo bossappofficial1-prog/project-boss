@@ -1,8 +1,8 @@
 "use client"
 
 import React from "react";
-import { usePathname } from "next/navigation";
-import { Home, MapPin, Receipt, ShoppingCart, User } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { ClipboardList, Home, MapPin, ShoppingCart, User } from "lucide-react";
 import { NavItem } from "../shared/NavItem";
 import { useFeatureGuide } from "@/hooks/useFeatureGuide";
 import { GuideStep } from "@/providers/FeatureGuideProvider";
@@ -56,7 +56,7 @@ const menus: Menu[] = [
         id: "receipt",
         href: "/orders",
         label: "Orders",
-        icon: <Receipt className="w-5 h-5" />,
+        icon: <ClipboardList className="w-5 h-5" />,
         guide: {
             title: "Pantau status transaksi",
             description:
@@ -102,8 +102,17 @@ const MAIN_ROUTES = ["/", "/search", "/cart", "/nearby", "/profile", "/orders"] 
 
 export default function BottomNav() {
     const pathname = usePathname() ?? "/";
+    const searchParams = useSearchParams();
+    const locale = searchParams?.get('locale');
     const isMainRoute = MAIN_ROUTES.includes(pathname as (typeof MAIN_ROUTES)[number]);
     const containerRef = React.useRef<HTMLDivElement | null>(null);
+
+    const withLocale = React.useCallback((href: string) => {
+        if (!locale) return href;
+
+        const separator = href.includes('?') ? '&' : '?';
+        return `${href}${separator}locale=${encodeURIComponent(locale)}`;
+    }, [locale]);
 
     useFeatureGuide({
         id: "bottom-nav-guide",
@@ -160,7 +169,7 @@ export default function BottomNav() {
                     return (
                         <NavItem
                             key={menu.id}
-                            href={menu.href}
+                            href={withLocale(menu.href)}
                             label={menu.label}
                             ariaLabel={menu.label}
                             highlight={isActive}

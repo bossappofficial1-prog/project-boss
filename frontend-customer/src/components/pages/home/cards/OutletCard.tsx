@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Store, MapPin } from 'lucide-react'
 import { ImageColorThief } from '@/components/shared/ImageColorThief'
 import type { HomeOutletSummary } from '@/types/home'
@@ -15,6 +16,9 @@ interface OutletCardProps {
 }
 
 function OutletCard({ outlet, numberFormatter, t, tCommon }: OutletCardProps) {
+    const searchParams = useSearchParams()
+    const locale = searchParams?.get('locale')
+
     const ordersCount = outlet._count?.orders ?? 0
     const ordersLabel = ordersCount > 0
         ? t("sections.featured.orders", { count: numberFormatter.format(ordersCount) })
@@ -25,9 +29,13 @@ function OutletCard({ outlet, numberFormatter, t, tCommon }: OutletCardProps) {
             : `${Math.round(outlet.distance * 1000)} ${tCommon("m")}`
         : null
 
+    const href = locale
+        ? `/outlet/${outlet.id}?locale=${encodeURIComponent(locale)}`
+        : `/outlet/${outlet.id}`
+
     return (
         <Link
-            href={`/outlet/${outlet.id}`}
+            href={href}
             className="group flex w-[200px] flex-none flex-col overflow-hidden rounded-xl bg-card transition-all active:scale-[0.98]"
         >
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl">

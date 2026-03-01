@@ -64,7 +64,15 @@ export function ProductDetails({ outletId, productId }: Props) {
 
   const t = useTranslations("productDetails");
   const tCommon = useTranslations("common");
-  const from = useSearchParams().get("from");
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
+  const locale = searchParams.get("locale");
+
+  const withLocale = useCallback((href: string) => {
+    if (!locale) return href;
+    const separator = href.includes("?") ? "&" : "?";
+    return `${href}${separator}locale=${encodeURIComponent(locale)}`;
+  }, [locale]);
 
   // Query product dan outlet
   const productQuery = useQuery<Product>({
@@ -116,7 +124,7 @@ export function ProductDetails({ outletId, productId }: Props) {
       onLeftClick:
         from === "saved-products" || from === "home"
           ? () => router.back()
-          : () => router.push(`/outlet/${outletId}?from=product`),
+          : () => router.push(withLocale(`/outlet/${outletId}?from=product`)),
       rightContent: (
         <button
           onClick={() =>
@@ -137,7 +145,7 @@ export function ProductDetails({ outletId, productId }: Props) {
     });
 
     return () => resetAppBar();
-  }, [product, outletId, from, router, setAppBar, resetAppBar, t]);
+  }, [product, outletId, from, router, setAppBar, resetAppBar, t, withLocale]);
 
   // Action Handlers
   const handleToggleSaveProduct = useCallback(() => {
@@ -235,7 +243,7 @@ export function ProductDetails({ outletId, productId }: Props) {
       <EmptyStates.NotFound
         action={{
           label: "Back to Home",
-          onClick: () => router.push("/"),
+          onClick: () => router.push(withLocale("/")),
         }}
       />
     );
@@ -270,7 +278,7 @@ export function ProductDetails({ outletId, productId }: Props) {
             ))}
           </div>
 
-          <OutletCard outlet={outlet} t={t} />
+          <OutletCard outlet={outlet} t={t} locale={locale ?? undefined} />
 
           {product.type === "TICKET" && product.ticket && (
             <TicketInfoSection
@@ -433,10 +441,16 @@ type OutletCardProps = {
     key: NestedKeyOf<Messages["productDetails"]>,
     values?: Record<string, string | number>,
   ) => string;
+  locale?: string;
 };
-const OutletCard: React.FC<OutletCardProps> = ({ outlet, t }) => (
+const OutletCard: React.FC<OutletCardProps> = ({ outlet, t, locale }) => {
+  const href = locale
+    ? `/outlet/${outlet.id}?locale=${encodeURIComponent(locale)}`
+    : `/outlet/${outlet.id}`;
+
+  return (
   <Link
-    href={`/outlet/${outlet.id}`}
+    href={href}
     className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/20 transition-all duration-200 group">
     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
       <Store className="w-5 h-5" />
@@ -453,7 +467,8 @@ const OutletCard: React.FC<OutletCardProps> = ({ outlet, t }) => (
     </div>
     <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary transition-colors flex-shrink-0" />
   </Link>
-);
+  );
+};
 
 type DetailChipProps = {
   icon: React.ComponentType<{ className?: string }>;

@@ -95,6 +95,8 @@ export function useSessionSecurity(timeoutMinutes: number = 30) {
 // Hook for preventing common security issues
 export function useSecurityHeaders() {
     useEffect(() => {
+        let devToolsIntervalId: ReturnType<typeof setInterval> | null = null;
+
         // Set security-related meta tags and headers via client-side
         const setSecurityMeta = () => {
             // Prevent clickjacking
@@ -120,11 +122,17 @@ export function useSecurityHeaders() {
                     }
                 };
 
-                setInterval(detectDevTools, 1000);
+                devToolsIntervalId = setInterval(detectDevTools, 1000);
             }
         };
 
         setSecurityMeta();
+
+        return () => {
+            if (devToolsIntervalId) {
+                clearInterval(devToolsIntervalId);
+            }
+        };
     }, []);
 }
 

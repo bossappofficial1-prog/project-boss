@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import React from "react"
+import { useSearchParams } from "next/navigation"
 
 interface HomeSectionHeaderProps {
     title: string
@@ -12,6 +13,12 @@ interface HomeSectionHeaderProps {
 }
 
 function HomeSectionHeader({ title, subtitle, actionLabel, href }: HomeSectionHeaderProps) {
+    const searchParams = useSearchParams()
+    const locale = searchParams?.get('locale')
+    const targetHref = href
+        ? (locale ? `${href}${href.includes('?') ? '&' : '?'}locale=${encodeURIComponent(locale)}` : href)
+        : href
+
     return (
         <div className="flex items-center justify-between gap-3">
             <div>
@@ -20,7 +27,7 @@ function HomeSectionHeader({ title, subtitle, actionLabel, href }: HomeSectionHe
             </div>
             {href && actionLabel && (
                 <Link
-                    href={href}
+                    href={targetHref ?? href}
                     className="flex items-center gap-0.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors flex-shrink-0"
                 >
                     {actionLabel}

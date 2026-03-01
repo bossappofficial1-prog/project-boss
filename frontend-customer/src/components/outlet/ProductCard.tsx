@@ -27,9 +27,11 @@ import { Product } from "@/types/product";
 export default function ProductCard({
   product,
   outlet,
+  locale,
 }: {
   product: Product;
   outlet: OutletDetails;
+  locale?: string;
 }) {
   const { addItem, getOutletItems } = useCart();
   const snackbar = useSnackbar();
@@ -104,8 +106,12 @@ export default function ProductCard({
   const outletNotOpen = !outlet.isOpen;
 
   const handleCardClick = useCallback(() => {
-    router.push(`/outlet/${outlet.id}/product/${product.id}?from=outlet`);
-  }, [router, outlet.id, product.id]);
+    const baseHref = `/outlet/${outlet.id}/product/${product.id}?from=outlet`;
+    const href = locale
+      ? `${baseHref}&locale=${encodeURIComponent(locale)}`
+      : baseHref;
+    router.push(href);
+  }, [router, outlet.id, product.id, locale]);
 
   const handleAddToCart = useCallback(
     (e: React.MouseEvent) => {

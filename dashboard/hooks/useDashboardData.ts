@@ -27,6 +27,7 @@ export function useDashboardData(initialDate?: string) {
 
   // Initialize socket connection - use selectedOutlet.id if available
   const { isConnected, businessEvents } = useSocket(selectedOutlet?.id || '');
+  const latestBusinessEvent = useMemo(() => businessEvents[0] ?? null, [businessEvents]);
 
   // Monitor outlet changes for debugging
   useEffect(() => {
@@ -122,12 +123,12 @@ export function useDashboardData(initialDate?: string) {
   };
 
   useEffect(() => {
-    if (businessEvents.length > 0 && selectedOutlet?.id) {
+    if (latestBusinessEvent && selectedOutlet?.id) {
       fetchDashboardSummary(selectedOutlet.id);
       fetchOrderStats(selectedOutlet.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [businessEvents, selectedOutlet?.id]);
+  }, [latestBusinessEvent, selectedOutlet?.id]);
 
   // No need for custom event listener anymore - OutletProvider handles outlet changes
 
