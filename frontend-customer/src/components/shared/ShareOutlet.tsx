@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Share2, Copy, Facebook, MessageCircle, Mail, ExternalLink, Check } from 'lucide-react';
 import { useSnackbar } from '@/context/SnackbarContext';
+import { useLocalizedPath } from '@/hooks/useI18n';
 
 interface ShareOutletProps {
     outlet: {
@@ -27,16 +28,17 @@ export function ShareOutlet({ outlet, children }: ShareOutletProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
     const { showSnackbar } = useSnackbar()
+    const withLocalizedPath = useLocalizedPath()
 
     // Memoize share URL and text to avoid re-creating on each render
     const shareUrl = useMemo(() => {
         if (typeof window === 'undefined') return '';
         try {
-            return `${window.location.origin}/outlet/${outlet.id}?from=share`;
+            return `${window.location.origin}${withLocalizedPath(`/outlet/${outlet.id}?from=share`)}`;
         } catch {
             return '';
         }
-    }, [outlet.id]);
+    }, [outlet.id, withLocalizedPath]);
 
     const shareText = useMemo(() => `Lihat outlet ${outlet.name} di BOSS App`, [outlet.name]);
 

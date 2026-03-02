@@ -96,6 +96,7 @@ export default withPWA({
   aggressiveFrontEndNavCaching: false,
   reloadOnOnline: false,
   register: true,
+  cacheStartUrl: false,
   dynamicStartUrl: true,
   workboxOptions: {
     disableDevLogs: true,
