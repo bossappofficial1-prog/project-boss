@@ -1,6 +1,6 @@
 {
     "name": "BOSS",
-    "short_name": "Customer",
+    "short_name": "Boss",
     "description": "Boss Customer Application - Your best shopping companion",
     "background_color": "#ffffff",
     "theme_color": "#2563eb",
@@ -34,7 +34,7 @@
             "name": "Home",
             "short_name": "Home",
             "description": "Go to home page",
-            "url": "/",
+            "url": "/?locale=id",
             "icons": [
                 {
                     "src": "/icons/home-icon.png",
@@ -47,7 +47,7 @@
             "name": "Cart",
             "short_name": "Cart",
             "description": "View shopping cart",
-            "url": "/cart",
+            "url": "/cart?locale=id",
             "icons": [
                 {
                     "src": "/icons/cart-icon.png",
@@ -60,7 +60,7 @@
             "name": "Orders",
             "short_name": "Orders",
             "description": "View your orders",
-            "url": "/orders",
+            "url": "/orders?locale=id",
             "icons": [
                 {
                     "src": "/icons/orders-icon.png",

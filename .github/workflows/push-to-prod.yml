@@ -230,6 +230,18 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             echo "Docker Compose started successfully"
 
+      - name: Cleanup Unused Docker Images
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_SSH_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/prod
+            echo "Cleaning up unused Docker images..."
+            docker image prune -af
+            echo "Docker image cleanup completed"
+
       - name: Send Telegram Notification (Deploy)
         if: always()
         uses: appleboy/telegram-action@master
