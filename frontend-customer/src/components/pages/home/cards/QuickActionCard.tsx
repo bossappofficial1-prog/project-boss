@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
+import { useLocalizedPath } from '@/hooks/useI18n'
 
 interface QuickActionCardProps {
     action: {
@@ -19,11 +19,8 @@ interface QuickActionCardProps {
 
 function QuickActionCard({ action, labels }: QuickActionCardProps) {
     const Icon = action.icon
-    const searchParams = useSearchParams()
-    const locale = searchParams?.get('locale')
-    const href = locale
-        ? `${action.href}${action.href.includes('?') ? '&' : '?'}locale=${encodeURIComponent(locale)}`
-        : action.href
+    const withLocalizedPath = useLocalizedPath()
+    const href = withLocalizedPath(action.href)
 
     return (
         <Link

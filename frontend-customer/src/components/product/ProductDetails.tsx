@@ -36,7 +36,7 @@ import { Product } from "@/types/product";
 import { OutletType } from "@/types";
 import { ScheduleModal } from "../outlet/ScheduleModal";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
-import { Messages, NestedKeyOf, useTranslations } from "@/hooks/useI18n";
+import { Messages, NestedKeyOf, useLocale, useLocalizedPath, useTranslations } from "@/hooks/useI18n";
 import { ProductImagesSlider } from "../shared/ProductImagesSlider";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import {
@@ -66,13 +66,8 @@ export function ProductDetails({ outletId, productId }: Props) {
   const tCommon = useTranslations("common");
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
-  const locale = searchParams.get("locale");
-
-  const withLocale = useCallback((href: string) => {
-    if (!locale) return href;
-    const separator = href.includes("?") ? "&" : "?";
-    return `${href}${separator}locale=${encodeURIComponent(locale)}`;
-  }, [locale]);
+  const locale = useLocale();
+  const withLocalizedPath = useLocalizedPath();
 
   // Query product dan outlet
   const productQuery = useQuery<Product>({
@@ -136,7 +131,7 @@ export function ProductDetails({ outletId, productId }: Props) {
       onLeftClick:
         from === "saved-products" || from === "home"
           ? () => router.back()
-          : () => router.push(withLocale(`/outlet/${outletId}?from=product`)),
+          : () => router.push(withLocalizedPath(`/outlet/${outletId}?from=product`)),
       rightContent: (
         <button
           onClick={() =>
@@ -157,7 +152,7 @@ export function ProductDetails({ outletId, productId }: Props) {
     });
 
     return () => resetAppBar();
-  }, [product, outletId, from, router, setAppBar, resetAppBar, t, withLocale]);
+  }, [product, outletId, from, router, setAppBar, resetAppBar, t, withLocalizedPath]);
 
   // Action Handlers
   const handleToggleSaveProduct = useCallback(() => {
@@ -255,7 +250,7 @@ export function ProductDetails({ outletId, productId }: Props) {
       <EmptyStates.NotFound
         action={{
           label: "Back to Home",
-          onClick: () => router.push(withLocale("/")),
+          onClick: () => router.push(withLocalizedPath("/")),
         }}
       />
     );
@@ -290,7 +285,7 @@ export function ProductDetails({ outletId, productId }: Props) {
             ))}
           </div>
 
-          <OutletCard outlet={outlet} t={t} locale={locale ?? undefined} />
+          <OutletCard outlet={outlet} t={t} locale={locale} />
 
           {product.type === "TICKET" && product.ticket && (
             <TicketInfoSection
@@ -457,7 +452,7 @@ type OutletCardProps = {
 };
 const OutletCard: React.FC<OutletCardProps> = ({ outlet, t, locale }) => {
   const href = locale
-    ? `/outlet/${outlet.id}?locale=${encodeURIComponent(locale)}`
+    ? `/${locale}/outlet/${outlet.id}`
     : `/outlet/${outlet.id}`;
 
   return (

@@ -2,11 +2,10 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { Store, MapPin } from 'lucide-react'
 import { ImageColorThief } from '@/components/shared/ImageColorThief'
 import type { HomeOutletSummary } from '@/types/home'
-import type { Messages, NestedKeyOf } from '@/hooks/useI18n'
+import { useLocalizedPath, type Messages, type NestedKeyOf } from '@/hooks/useI18n'
 
 interface OutletCardProps {
     outlet: HomeOutletSummary;
@@ -16,8 +15,7 @@ interface OutletCardProps {
 }
 
 function OutletCard({ outlet, numberFormatter, t, tCommon }: OutletCardProps) {
-    const searchParams = useSearchParams()
-    const locale = searchParams?.get('locale')
+    const withLocalizedPath = useLocalizedPath()
 
     const ordersCount = outlet._count?.orders ?? 0
     const ordersLabel = ordersCount > 0
@@ -29,9 +27,7 @@ function OutletCard({ outlet, numberFormatter, t, tCommon }: OutletCardProps) {
             : `${Math.round(outlet.distance * 1000)} ${tCommon("m")}`
         : null
 
-    const href = locale
-        ? `/outlet/${outlet.id}?locale=${encodeURIComponent(locale)}`
-        : `/outlet/${outlet.id}`
+    const href = withLocalizedPath(`/outlet/${outlet.id}`)
 
     return (
         <Link

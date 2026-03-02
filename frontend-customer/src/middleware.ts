@@ -3,27 +3,38 @@ import { LanguageType } from './constants';
 
 export function middleware(request: NextRequest) {
     const { pathname, searchParams } = request.nextUrl;
-    const storedLocale = (request.cookies.get(`locale`)?.value || `id`) as LanguageType
-
-    // If no locale parameter exists, add it
-    if (!searchParams.has('locale') || !searchParams.get('locale')) {
-        const url = request.nextUrl.clone();
-        url.searchParams.set('locale', storedLocale);
-        return NextResponse.redirect(url);
-    }
-
-    // Check if the locale parameter is valid
-    const currentLocale = searchParams.get('locale') as string;
     const validLocales: LanguageType[] = ['id', 'en'];
+    const cookieLocale = request.cookies.get('locale')?.value;
+    const localeFromCookie = validLocales.includes(cookieLocale as LanguageType)
+        ? (cookieLocale as LanguageType)
+        : 'id';
+    const localeFromQuery = searchParams.get('locale');
+    const fallbackLocale = validLocales.includes(localeFromQuery as LanguageType)
+        ? (localeFromQuery as LanguageType)
+        : localeFromCookie;
 
-    if (!validLocales.includes(currentLocale as LanguageType)) {
-        const url = request.nextUrl.clone();
-        url.searchParams.set('locale', 'id');
-        return NextResponse.redirect(url);
+    const segments = pathname.split('/').filter(Boolean);
+    const firstSegment = segments[0];
+
+    if (validLocales.includes(firstSegment as LanguageType)) {
+        const locale = firstSegment as LanguageType;
+        const response = NextResponse.next();
+        response.cookies.set('locale', locale, { path: '/' });
+        return response;
     }
 
-    // Continue with the request
-    return NextResponse.next();
+    const isPotentialLocaleSegment = typeof firstSegment === 'string' && firstSegment.length === 2;
+    const normalizedPath = isPotentialLocaleSegment
+        ? `/${segments.slice(1).join('/')}` || '/'
+        : pathname;
+
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = normalizedPath === '/' ? `/${fallbackLocale}` : `/${fallbackLocale}${normalizedPath}`;
+    redirectUrl.searchParams.delete('locale');
+
+    const response = NextResponse.redirect(redirectUrl);
+    response.cookies.set('locale', fallbackLocale, { path: '/' });
+    return response;
 }
 
 export const config = {

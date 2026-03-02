@@ -1,11 +1,12 @@
 "use client"
 
 import React from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ClipboardList, Home, MapPin, ShoppingCart, User } from "lucide-react";
 import { NavItem } from "../shared/NavItem";
 import { useFeatureGuide } from "@/hooks/useFeatureGuide";
 import { GuideStep } from "@/providers/FeatureGuideProvider";
+import { useLocalizedPath } from "@/hooks/useI18n";
 
 type Menu = {
     id: string;
@@ -102,17 +103,15 @@ const MAIN_ROUTES = ["/", "/search", "/cart", "/nearby", "/profile", "/orders"] 
 
 export default function BottomNav() {
     const pathname = usePathname() ?? "/";
-    const searchParams = useSearchParams();
-    const locale = searchParams?.get('locale');
-    const isMainRoute = MAIN_ROUTES.includes(pathname as (typeof MAIN_ROUTES)[number]);
+    const withLocalizedPath = useLocalizedPath();
+
+    const pathSegments = pathname.split('/').filter(Boolean);
+    const pathWithoutLocale = ["id", "en"].includes(pathSegments[0] || "")
+        ? `/${pathSegments.slice(1).join('/')}` || "/"
+        : pathname;
+
+    const isMainRoute = MAIN_ROUTES.includes(pathWithoutLocale as (typeof MAIN_ROUTES)[number]);
     const containerRef = React.useRef<HTMLDivElement | null>(null);
-
-    const withLocale = React.useCallback((href: string) => {
-        if (!locale) return href;
-
-        const separator = href.includes('?') ? '&' : '?';
-        return `${href}${separator}locale=${encodeURIComponent(locale)}`;
-    }, [locale]);
 
     useFeatureGuide({
         id: "bottom-nav-guide",
@@ -163,13 +162,13 @@ export default function BottomNav() {
             >
                 {menus.map((menu) => {
                     const isActive =
-                        pathname === menu.href ||
-                        (menu.href !== "/" && pathname.startsWith(menu.href));
+                        pathWithoutLocale === menu.href ||
+                        (menu.href !== "/" && pathWithoutLocale.startsWith(menu.href));
 
                     return (
                         <NavItem
                             key={menu.id}
-                            href={withLocale(menu.href)}
+                            href={withLocalizedPath(menu.href)}
                             label={menu.label}
                             ariaLabel={menu.label}
                             highlight={isActive}

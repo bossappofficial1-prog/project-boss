@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { ImageColorThief } from "../shared/ImageColorThief";
 import { Product } from "@/types/product";
+import { useLocalizedPath } from "@/hooks/useI18n";
 
 export default function ProductCard({
   product,
@@ -36,6 +37,7 @@ export default function ProductCard({
   const { addItem, getOutletItems } = useCart();
   const snackbar = useSnackbar();
   const router = useRouter();
+  const withLocalizedPath = useLocalizedPath();
   const [quantity, setQuantity] = useState(1);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
@@ -106,12 +108,9 @@ export default function ProductCard({
   const outletNotOpen = !outlet.isOpen;
 
   const handleCardClick = useCallback(() => {
-    const baseHref = `/outlet/${outlet.id}/product/${product.id}?from=outlet`;
-    const href = locale
-      ? `${baseHref}&locale=${encodeURIComponent(locale)}`
-      : baseHref;
+    const href = withLocalizedPath(`/outlet/${outlet.id}/product/${product.id}?from=outlet`);
     router.push(href);
-  }, [router, outlet.id, product.id, locale]);
+  }, [router, outlet.id, product.id, withLocalizedPath]);
 
   const handleAddToCart = useCallback(
     (e: React.MouseEvent) => {

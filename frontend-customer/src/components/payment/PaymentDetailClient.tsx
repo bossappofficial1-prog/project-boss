@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { cn, formatCurrency, formatDateTime, copyToClipboard } from "@/lib/utils";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
-import { useTranslations } from "@/hooks/useI18n";
+import { useLocale, useTranslations } from "@/hooks/useI18n";
 import type {
   PaymentDetailData,
   PaymentDetailManual,
@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { PaymentService } from "@/services/paymentService";
 import { useSocket } from "@/hooks/useSocket-v2";
-import { useSearchParams } from "next/navigation";
 import {
   IMPORTANT_INFORMATION_PAYMENT,
   type ImportantInformationType,
@@ -337,7 +336,7 @@ export function PaymentDetailClient({
 }: PaymentDetailClientProps) {
   const t = useTranslations("paymentDetail");
   const tComp = useTranslations("paymentComponents");
-  const locale = (useSearchParams().get("locale") as "id" | "en") ?? "id";
+  const locale = useLocale();
 
   const [paymentData, setPaymentData] = useState<PaymentDetailData>(payment);
   const [isRefreshing, setIsRefreshing] = useState(false);

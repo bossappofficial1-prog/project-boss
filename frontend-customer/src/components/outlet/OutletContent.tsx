@@ -25,6 +25,7 @@ import { ImageColorThief } from "../shared/ImageColorThief";
 import { Input } from "../ui/input";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchProductsByOutlet } from "@/hooks/useSearchProductsByOutlet";
+import { useLocale, useLocalizedPath } from "@/hooks/useI18n";
 
 const formatOperatingHours = (operatingHours: OperatingHourType[], locale: LanguageType) => {
   if (typeof window === "undefined") return;
@@ -81,7 +82,7 @@ const OperatingHoursTab = ({
   operatingHours: OperatingHourType[];
   outletOpen: boolean;
 }) => {
-  const locale = useSearchParams().get("locale") as LanguageType;
+  const locale = useLocale() as LanguageType;
   const formattedHours = formatOperatingHours(operatingHours, locale);
   const currentStatus = getCurrentDayStatus(operatingHours, outletOpen);
   const today = new Date().getDay();
@@ -202,13 +203,8 @@ export function OutletContent({ outletId }: { outletId: string }) {
 
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
-  const locale = searchParams.get("locale");
-
-  const withLocale = useCallback((href: string) => {
-    if (!locale) return href;
-    const separator = href.includes("?") ? "&" : "?";
-    return `${href}${separator}locale=${encodeURIComponent(locale)}`;
-  }, [locale]);
+  const locale = useLocale();
+  const withLocalizedPath = useLocalizedPath();
 
   const router = useRouter();
 
@@ -287,11 +283,11 @@ export function OutletContent({ outletId }: { outletId: string }) {
       let onLeftClickHandler: (() => void) | undefined;
 
       if (prevPage == "search" && from == "product") {
-        onLeftClickHandler = () => router.replace(withLocale("/search"));
+        onLeftClickHandler = () => router.replace(withLocalizedPath("/search"));
       } else if (prevPage == "nearby" && from == "product") {
-        onLeftClickHandler = () => router.push(withLocale("/nearby"));
+        onLeftClickHandler = () => router.push(withLocalizedPath("/nearby"));
       } else if (from === "product" || from === "share") {
-        onLeftClickHandler = () => router.push(withLocale("/"));
+        onLeftClickHandler = () => router.push(withLocalizedPath("/"));
       } else if (from === "search" || from === "favorites" || from == "nearby") {
         onLeftClickHandler = () => router.back();
       } else {
@@ -312,7 +308,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
     return () => {
       resetAppBar();
     };
-  }, [setAppBar, resetAppBar, outletQuery.data?.name, prevPage, from, router, withLocale]);
+  }, [setAppBar, resetAppBar, outletQuery.data?.name, prevPage, from, router, withLocalizedPath]);
 
   const handleToggleFavorite = useCallback(() => {
     if (!outletQuery.data) return;
@@ -367,7 +363,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
           label: "Back to Home",
           onClick() {
             if (locale) {
-              window.location.href = withLocale("/");
+              window.location.href = withLocalizedPath("/");
               return;
             }
             window.location.href = "/";
@@ -541,7 +537,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
             ) : goods.length ? (
               <div className="grid gap-2">
                 {goods.map((p) => (
-                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale ?? undefined} />
+                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale} />
                 ))}
               </div>
             ) : trimmedSearch ? (
@@ -560,7 +556,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
             ) : services.length ? (
               <div className="grid gap-2">
                 {services.map((p) => (
-                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale ?? undefined} />
+                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale} />
                 ))}
               </div>
             ) : trimmedSearch ? (
@@ -584,7 +580,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
             ) : tickets.length ? (
               <div className="grid gap-2">
                 {tickets.map((p) => (
-                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale ?? undefined} />
+                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale} />
                 ))}
               </div>
             ) : trimmedSearch ? (

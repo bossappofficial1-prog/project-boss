@@ -1,15 +1,14 @@
 'use client'
 
 import { IMPORTANT_INFORMATION_PAYMENT, ImportantInformationPaymentType, ImportantInformationType } from "@/constants"
-import { useTranslations } from "@/hooks/useI18n";
-import { useSearchParams } from "next/navigation"
+import { useLocale, useTranslations } from "@/hooks/useI18n";
 
 interface ImportantInformationCardProps {
     type: ImportantInformationType
 }
 
 export function ImportantInformationCard({ type }: ImportantInformationCardProps) {
-    const locale = useSearchParams().get("locale") as "id" | "en";
+    const locale = useLocale();
     const t = useTranslations("text")
     const informationToShow = IMPORTANT_INFORMATION_PAYMENT[type][locale] || []
 

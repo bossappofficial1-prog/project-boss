@@ -114,7 +114,7 @@ export default function ProfileSettings() {
     };
 
     const goToFavorites = () => {
-        window.location.href = "/favorites"
+        router.push("/favorites")
     };
 
     const goToSavedProducts = () => {

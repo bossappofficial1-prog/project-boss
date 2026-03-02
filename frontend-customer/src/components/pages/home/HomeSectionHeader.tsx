@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import React from "react"
-import { useSearchParams } from "next/navigation"
+import { useLocalizedPath } from "@/hooks/useI18n"
 
 interface HomeSectionHeaderProps {
     title: string
@@ -13,11 +13,8 @@ interface HomeSectionHeaderProps {
 }
 
 function HomeSectionHeader({ title, subtitle, actionLabel, href }: HomeSectionHeaderProps) {
-    const searchParams = useSearchParams()
-    const locale = searchParams?.get('locale')
-    const targetHref = href
-        ? (locale ? `${href}${href.includes('?') ? '&' : '?'}locale=${encodeURIComponent(locale)}` : href)
-        : href
+    const withLocalizedPath = useLocalizedPath()
+    const targetHref = href ? withLocalizedPath(href) : href
 
     return (
         <div className="flex items-center justify-between gap-3">

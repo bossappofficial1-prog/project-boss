@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useMemo, useCallback } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import {
     Heart,
     History,
@@ -12,7 +12,7 @@ import { HeroCarousel } from "@/components/pages/home/HeroCarousel"
 import { DivXScroll } from "@/components/shared/DivXScroll"
 import { LoadingState, ErrorState } from "@/components/Base"
 import { useHomeSummary } from "@/hooks/useHomeSummary"
-import { useTranslations, useLocale } from "@/hooks/useI18n"
+import { useTranslations, useLocale, useLocalizedPath } from "@/hooks/useI18n"
 import { useAppBarV2 } from "@/context/AppBarContextV2"
 import type { HomeSummaryResponse } from "@/types/home"
 import HomeSectionHeader from "@/components/pages/home/HomeSectionHeader"
@@ -197,22 +197,12 @@ function HomeSections() {
 
 export function HomeContent() {
     const router = useRouter()
+    const withLocalizedPath = useLocalizedPath()
     const t = useTranslations("homePage")
     const { setAppBar, resetAppBar } = useAppBarV2()
     const handleSearch = useCallback((query: string) => {
-        router.push(`/search?q=${encodeURIComponent(query)}`)
-    }, [router])
-
-    const searchParams = useSearchParams()
-
-    useEffect(() => {
-        const currentParams = new URLSearchParams(searchParams.toString())
-
-        if (!currentParams.has('locale')) {
-            currentParams.set('locale', 'id')
-            router.replace(`?${currentParams.toString()}`)
-        }
-    }, [searchParams, router])
+        router.push(withLocalizedPath(`/search?q=${encodeURIComponent(query)}`))
+    }, [router, withLocalizedPath])
 
     useEffect(() => {
         setAppBar({

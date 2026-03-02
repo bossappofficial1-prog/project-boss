@@ -1,15 +1,53 @@
 "use client";
 
 import { LanguageType } from "@/constants";
-import { useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useMemo, useCallback } from "react";
 import enMessages from "../messages/en.json";
 
+const VALID_LOCALES: LanguageType[] = ["id", "en"];
+
+function getLocaleFromPathname(pathname?: string | null): LanguageType {
+    const firstSegment = pathname?.split("/").filter(Boolean)[0];
+
+    if (VALID_LOCALES.includes(firstSegment as LanguageType)) {
+        return firstSegment as LanguageType;
+    }
+
+    return "id";
+}
+
 export function useLocale(): LanguageType {
-    const searchParams = useSearchParams();
-    const locale = useMemo(() => (searchParams.get("locale") || "id") as LanguageType, [searchParams]);
+    const pathname = usePathname();
+    const locale = useMemo(() => getLocaleFromPathname(pathname), [pathname]);
 
     return locale;
+}
+
+export function useLocalizedPath() {
+    const locale = useLocale();
+
+    return useCallback((href: string) => {
+        if (!href) return `/${locale}`;
+
+        if (/^https?:\/\//i.test(href)) {
+            return href;
+        }
+
+        const [pathPart, queryPart] = href.split("?");
+        const normalizedPath = pathPart.startsWith("/") ? pathPart : `/${pathPart}`;
+        const segments = normalizedPath.split("/").filter(Boolean);
+
+        let localizedPath = normalizedPath;
+
+        if (segments.length > 0 && VALID_LOCALES.includes(segments[0] as LanguageType)) {
+            localizedPath = `/${locale}${segments.length > 1 ? `/${segments.slice(1).join("/")}` : ""}`;
+        } else {
+            localizedPath = normalizedPath === "/" ? `/${locale}` : `/${locale}${normalizedPath}`;
+        }
+
+        return queryPart ? `${localizedPath}?${queryPart}` : localizedPath;
+    }, [locale]);
 }
 
 export type Messages = typeof enMessages;

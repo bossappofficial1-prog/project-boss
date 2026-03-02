@@ -4,9 +4,8 @@ import React from 'react'
 import { Gift } from 'lucide-react'
 import { ImageRender } from "@/components/shared/Image"
 import type { HomePopularItem } from '@/types/home'
-import { Messages, NestedKeyOf } from '@/hooks/useI18n'
+import { Messages, NestedKeyOf, useLocalizedPath } from '@/hooks/useI18n'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 
 interface PopularItemCardProps {
     item: HomePopularItem;
@@ -17,11 +16,8 @@ interface PopularItemCardProps {
 }
 
 function PopularItemCard({ item, rank, numberFormatter, currencyFormatter, t }: PopularItemCardProps) {
-    const searchParams = useSearchParams()
-    const locale = searchParams?.get('locale')
-    const href = locale
-        ? `/outlet/${item.outletId}/product/${item.id}?from=home&locale=${encodeURIComponent(locale)}`
-        : `/outlet/${item.outletId}/product/${item.id}?from=home`
+    const withLocalizedPath = useLocalizedPath()
+    const href = withLocalizedPath(`/outlet/${item.outletId}/product/${item.id}?from=home`)
 
     return (
         <Link href={href} className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/30 active:bg-muted/50">
