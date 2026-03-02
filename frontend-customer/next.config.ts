@@ -97,7 +97,7 @@ export default withPWA({
   reloadOnOnline: false,
   register: true,
   cacheStartUrl: false,
-  dynamicStartUrl: true,
+  dynamicStartUrl: false,
   workboxOptions: {
     disableDevLogs: true,
     cleanupOutdatedCaches: true,
