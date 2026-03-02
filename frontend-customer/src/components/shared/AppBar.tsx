@@ -19,6 +19,7 @@ import {
 import { STORAGE_PROFILE_KEY } from "@/constants";
 import { useFeatureGuide } from "@/hooks/useFeatureGuide";
 import { GuideStep } from "@/providers/FeatureGuideProvider";
+import Link from "next/link";
 
 type AppBarVariant = "default" | "transparent";
 
@@ -326,17 +327,17 @@ function PartnerMenuDropdown({ guideTarget }: { guideTarget?: string }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogin} className="flex items-center gap-3 cursor-pointer">
           <LogIn className="h-4 w-4 text-primary" />
-          <div>
+          <Link target="_blank" href={process.env.NEXT_PUBLIC_DASHBOARD_LOGIN_URL ?? '/'}>
             <p className="text-sm font-medium">Masuk</p>
             <p className="text-xs text-muted-foreground">Akses dashboard partner</p>
-          </div>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleRegister} className="flex items-center gap-3 cursor-pointer">
           <Building2 className="h-4 w-4 text-orange-500" />
-          <div>
+          <Link target="_blank" href={process.env.NEXT_PUBLIC_DASHBOARD_REGISTER_URL ?? ''}>
             <p className="text-sm font-medium">Daftar Sebagai Mitra</p>
             <p className="text-xs text-muted-foreground">Register as partner</p>
-          </div>
+          </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

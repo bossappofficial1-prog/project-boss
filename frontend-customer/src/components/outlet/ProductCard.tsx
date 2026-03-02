@@ -196,8 +196,8 @@ export default function ProductCard({
     <>
       <Card
         className={`flex flex-row p-3 transition-all duration-200 w-full overflow-hidden relative gap-0 group border border-border/60 rounded-xl items-stretch ${isDisabled
-            ? "opacity-50 cursor-not-allowed bg-muted/30"
-            : "cursor-pointer hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
+          ? "opacity-50 cursor-not-allowed bg-muted/30"
+          : "cursor-pointer hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
           }`}
         onClick={isDisabled ? undefined : handleCardClick}>
         {/* Image Section */}

@@ -92,20 +92,16 @@ const nextConfig: NextConfig = {
 export default withPWA({
   disable: process.env.NODE_ENV === "development",
   dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
+  reloadOnOnline: false,
   register: true,
-  dynamicStartUrl: false,
-  fallbacks: {
-    document: '/offline.html'
-  },
+  dynamicStartUrl: true,
   workboxOptions: {
     disableDevLogs: true,
     cleanupOutdatedCaches: true,
     clientsClaim: true,
     skipWaiting: true,
-    navigateFallback: '/offline.html',
     runtimeCaching: [
       {
         urlPattern: ({ request, url }) => {
