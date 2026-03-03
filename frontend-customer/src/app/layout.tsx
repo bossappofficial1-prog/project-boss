@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import RootLayout from "@/components/layouts/RootLayout";
+import SerwistRegister from "@/components/SerwistRegister";
 import { CustomerSocketListener } from "@/components/socket/CustomerSocketListener";
 import { SocketProvider } from "@/context/SocketContext";
 import { ThemeProvider } from "next-themes";
@@ -134,6 +135,7 @@ export default function Layout({
       <body
         className={`${poppins.variable} font-poppins antialiased`}
       >
+        <SerwistRegister />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

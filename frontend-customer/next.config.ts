@@ -1,16 +1,5 @@
 import type { NextConfig } from "next";
-import withPWA from "@ducanh2912/next-pwa";
-
-const apiOrigin = (() => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!apiUrl) return null;
-
-  try {
-    return new URL(apiUrl).origin;
-  } catch {
-    return null;
-  }
-})();
+import withSerwist from "@serwist/next";
 
 type RemotePattern = {
   protocol?: "http" | "https";
@@ -89,97 +78,10 @@ const nextConfig: NextConfig = {
   // allowedDevOrigins: ["http://192.168.100.248:3000"]
 };
 
-export default withPWA({
+const withSerwistConfig = withSerwist({
+  swSrc: "src/sw.ts",
+  swDest: "public/sw.js",
   disable: process.env.NODE_ENV === "development",
-  dest: "public",
-  cacheOnFrontEndNav: false,
-  aggressiveFrontEndNavCaching: false,
-  reloadOnOnline: false,
-  register: true,
-  cacheStartUrl: false,
-  dynamicStartUrl: false,
-  workboxOptions: {
-    disableDevLogs: true,
-    cleanupOutdatedCaches: true,
-    clientsClaim: true,
-    skipWaiting: true,
-    runtimeCaching: [
-      {
-        urlPattern: ({ request, url }) => {
-          if (request.method !== 'GET' || request.destination !== '') {
-            return false;
-          }
+});
 
-          if (url.origin === self.location.origin && url.pathname.startsWith('/api')) {
-            return true;
-          }
-
-          if (apiOrigin && url.origin === apiOrigin) {
-            return true;
-          }
-
-          return false;
-        },
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'boss-api-cache-v1',
-          networkTimeoutSeconds: 4,
-          expiration: {
-            maxEntries: 120,
-            maxAgeSeconds: 60 * 60 * 24,
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
-          },
-        },
-      },
-      {
-        urlPattern: ({ request, url }) =>
-          request.destination === 'image' &&
-          (url.origin === self.location.origin || url.origin === apiOrigin),
-        handler: 'StaleWhileRevalidate',
-        options: {
-          cacheName: 'boss-image-cache-v1',
-          expiration: {
-            maxEntries: 300,
-            maxAgeSeconds: 60 * 60 * 24 * 30,
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
-          },
-        },
-      },
-      {
-        urlPattern: ({ url }) => url.pathname.startsWith('/_next/static/'),
-        handler: 'CacheFirst',
-        options: {
-          cacheName: 'boss-next-static-v1',
-          expiration: {
-            maxEntries: 200,
-            maxAgeSeconds: 60 * 60 * 24 * 30,
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
-          },
-        },
-      },
-      {
-        urlPattern: ({ request }) =>
-          request.destination === 'script' ||
-          request.destination === 'style' ||
-          request.destination === 'font',
-        handler: 'StaleWhileRevalidate',
-        options: {
-          cacheName: 'boss-static-resources-v1',
-          expiration: {
-            maxEntries: 200,
-            maxAgeSeconds: 60 * 60 * 24 * 30,
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
-          },
-        },
-      },
-    ],
-  },
-})(nextConfig);
+export default withSerwistConfig(nextConfig);
