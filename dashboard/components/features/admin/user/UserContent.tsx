@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Plus, } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -26,6 +26,10 @@ export default function UserContent() {
         limit: limit,
         page: page
     })
+
+    useEffect(()=>{
+         document.title = 'Management User'
+    },[])
 
     const deleteUser = useDeleteUser()
     const createUser = useCreateUser()
