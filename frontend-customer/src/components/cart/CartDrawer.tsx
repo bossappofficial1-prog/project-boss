@@ -20,7 +20,7 @@ import { BookingSlotType } from '@/types';
 import { BookingSlot } from '@/services/booking-slot';
 import FloatingButton from '../shared/FloatingButton';
 import { ROUTES_CART_DISABLED } from '@/constants';
-import { useTranslations } from "@/hooks/useI18n";
+import { useLocalizedPath, useTranslations } from "@/hooks/useI18n";
 import { isRouteDisabled } from '@/lib/utils';
 
 interface CartItemComponentProps {
@@ -385,12 +385,13 @@ export function FloatingCartButton({ className = '' }: { className?: string }) {
     const router = useRouter();
     const totalItems = getTotalItems();
     const [mounted, setMounted] = useState(false);
+   const withLocalizedPath = useLocalizedPath();
 
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    const isOutletPage = pathname?.startsWith('/outlet/');
+    const isOutletPage = withLocalizedPath('/outlet/');
 
     if (!mounted || totalItems === 0 || !isOutletPage || isRouteDisabled(pathname, ROUTES_CART_DISABLED)) return null;
 
