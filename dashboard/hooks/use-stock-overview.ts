@@ -19,5 +19,7 @@ export function useStockOverview(outletId: string | null | undefined) {
         queryKey: ["stock-overview", outletId],
         queryFn: () => fetchStockOverview(outletId!),
         enabled: !!outletId,
+        staleTime: 5 * 60_000,
+        gcTime: 10 * 60_000,
     })
 }

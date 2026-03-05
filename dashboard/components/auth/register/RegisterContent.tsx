@@ -19,6 +19,7 @@ import { RegisterStep2 } from '@/components/auth/register/RegisterStep2';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlan';
 
 import Image from 'next/image';
+import { toast } from 'sonner';
 
 const getPlanColor = (code: string, isSelected: boolean) => {
     if (isSelected) return "border-red-600 bg-white ring-1 ring-red-600 shadow-md";
@@ -200,12 +201,12 @@ export default function RegistrationContent() {
             } else if (invoiceId) {
                 router.push(`/subscription/payment/${invoiceId}`);
             } else {
-                alert('Invoice tidak ditemukan. Silakan hubungi support.');
+                toast.error('Invoice tidak ditemukan. Silakan hubungi support.');
             }
         } catch (error: any) {
             console.error('Onboarding error:', error);
             const errorMessage = error?.response?.data?.message || 'Gagal menyelesaikan registrasi. Silakan coba lagi.';
-            alert(`Error: ${errorMessage}`);
+            toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
@@ -221,7 +222,7 @@ export default function RegistrationContent() {
                     <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-blue-600/30 to-purple-600/10 blur-[80px]" />
                     <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-indigo-600/20 to-blue-500/10 blur-[60px]" />
                     <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] rounded-full bg-blue-500/10 blur-[100px]" />
-                    
+
                     {/* Geometric Accents */}
                     <div className="absolute top-20 right-20 w-24 h-24 border border-white/10 rounded-2xl transform rotate-12 backdrop-blur-sm opacity-50" />
                     <div className="absolute bottom-32 left-10 w-32 h-32 border border-white/5 rounded-full backdrop-blur-md opacity-40" />
@@ -233,7 +234,7 @@ export default function RegistrationContent() {
                 {/* Main Text Content */}
                 <div className="relative z-10 max-w-lg mb-12">
                     <h1 className="text-5xl font-bold leading-[1.15] mb-6 tracking-tight">
-                        Kelola Bisnis Anda <br/>
+                        Kelola Bisnis Anda <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-white">
                             Lebih Profesional
                         </span>
@@ -252,15 +253,15 @@ export default function RegistrationContent() {
             <div className="w-full lg:w-1/2 flex flex-col items-center p-8 lg:p-12 relative bg-white overflow-y-auto">
                 <div className="w-full max-w-[440px] space-y-6">
 
-                     {/* Logo View */}
+                    {/* Logo View */}
                     <div className="flex justify-center mb-6">
                         <Image
-                        src="/Logo Boss.png"
-                        alt="Logo BOSS"
-                        width={140}
-                        height={50}
-                        className="h-16 w-auto object-contain"
-                        priority
+                            src="/Logo Boss.png"
+                            alt="Logo BOSS"
+                            width={140}
+                            height={50}
+                            className="h-16 w-auto object-contain"
+                            priority
                         />
                     </div>
 
@@ -330,64 +331,121 @@ export default function RegistrationContent() {
                                     <p className="text-slate-500 text-sm">Sesuaikan dengan skala bisnis Anda saat ini.</p>
                                 </div>
 
-                                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
-                                    {isLoading ? <p>Loading data...</p>
-                                        : subscriptionPlans?.map((plan) => {
-                                            const visualFeatures = transformFeaturesToDisplay(plan.features as any);
-                                            const isSelected = formData.selectedPlan === plan.code;
+                                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent">
+                                    {isLoading ? (
+                                        <p className="text-sm text-muted-foreground">Loading data...</p>
+                                    ) : (
+                                        subscriptionPlans?.map((plan) => {
+                                            const visualFeatures = transformFeaturesToDisplay(plan.features as any)
+                                            const isSelected = formData.selectedPlan === plan.code
+
+                                            const hasPromo = plan.promo && plan.promo > 0
+                                            const finalPrice = hasPromo ? plan.promo : plan.price
+                                            const discount = hasPromo
+                                                ? Math.round(((plan.price - plan.promo) / plan.price) * 100)
+                                                : 0
 
                                             return (
                                                 <div
                                                     key={plan.code}
-                                                    onClick={() => setFormData({ ...formData, selectedPlan: plan.code })}
+                                                    onClick={() =>
+                                                        setFormData({ ...formData, selectedPlan: plan.code })
+                                                    }
                                                     className={cn(
-                                                        "relative border-2 rounded-xl p-4 cursor-pointer transition-all hover:shadow-md",
-                                                        getPlanColor(plan.code, isSelected)
+                                                        "relative rounded-xl border p-4 cursor-pointer transition-all duration-200",
+                                                        "hover:shadow-md hover:-translate-y-[1px]",
+                                                        isSelected
+                                                            ? "border-red-500 bg-red-50/40 shadow-sm"
+                                                            : "border-slate-200 bg-white hover:border-slate-300"
                                                     )}
                                                 >
-                                                    {/* Render Badge Popular jika ada (berdasarkan data isPopular) */}
+                                                    {/* Badge Popular */}
                                                     {plan.isPopular && (
-                                                        <span className={cn(
-                                                            "absolute top-0 right-0 px-3 py-1 text-[10px] font-bold rounded-bl-xl rounded-tr-lg text-white",
-                                                            isSelected ? "bg-red-600" : "bg-slate-400"
-                                                        )}>
+                                                        <span
+                                                            className={cn(
+                                                                "absolute -top-2 right-3 px-3 py-1 text-[10px] font-bold rounded-full shadow-sm",
+                                                                isSelected
+                                                                    ? "bg-red-600 text-white"
+                                                                    : "bg-amber-500 text-white"
+                                                            )}
+                                                        >
                                                             POPULAR
                                                         </span>
                                                     )}
 
-                                                    <div className="flex justify-between items-start mb-2">
+                                                    {/* Header */}
+                                                    <div className="flex justify-between items-start">
                                                         <div>
-                                                            <h3 className="font-bold text-slate-900">{plan.name}</h3>
-                                                            <div className="flex items-baseline gap-1">
-                                                                <span className="text-lg font-extrabold text-slate-900">{formatCurrency(plan.price)}</span>
-                                                                <span className="text-xs text-slate-500 font-medium">/ {plan.durationDays} hari</span>
+                                                            <h3 className="font-semibold text-slate-900 text-sm">
+                                                                {plan.name}
+                                                            </h3>
+
+                                                            {/* PRICE */}
+                                                            <div className="mt-1 flex items-end gap-2 flex-wrap">
+                                                                {hasPromo && (
+                                                                    <span className="text-xs line-through text-slate-400">
+                                                                        {formatCurrency(plan.price)}
+                                                                    </span>
+                                                                )}
+
+                                                                <span className="text-xl font-bold text-slate-900">
+                                                                    {formatCurrency(finalPrice)}
+                                                                </span>
+
+                                                                <span className="text-xs text-slate-500">
+                                                                    / {plan.durationDays} hari
+                                                                </span>
+
+                                                                {hasPromo && (
+                                                                    <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                                                        -{discount}%
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                        <div className={cn(
-                                                            "h-5 w-5 rounded-full border-2 flex items-center justify-center",
-                                                            isSelected ? "border-red-600" : "border-slate-300"
-                                                        )}>
-                                                            {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-red-600" />}
+
+                                                        {/* Radio Indicator */}
+                                                        <div
+                                                            className={cn(
+                                                                "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                                                                isSelected
+                                                                    ? "border-red-600"
+                                                                    : "border-slate-300"
+                                                            )}
+                                                        >
+                                                            {isSelected && (
+                                                                <div className="h-2.5 w-2.5 rounded-full bg-red-600" />
+                                                            )}
                                                         </div>
                                                     </div>
 
-                                                    {/* Deskripsi dihilangkan karena tidak ada di DB, atau bisa di generate manual via helper */}
-
-                                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4">
+                                                    {/* Features */}
+                                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 pt-3 border-t border-slate-100">
                                                         {visualFeatures.slice(0, 4).map((feat, idx) => (
-                                                            <div key={idx} className="flex items-center text-xs text-slate-600">
+                                                            <div key={idx} className="flex items-center text-xs">
                                                                 {feat.allowed ? (
-                                                                    <CheckCircle2 className="h-3 w-3 mr-1.5 text-green-500 flex-shrink-0" />
+                                                                    <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-green-500 flex-shrink-0" />
                                                                 ) : (
-                                                                    <X className="h-3 w-3 mr-1.5 text-slate-300 flex-shrink-0" />
+                                                                    <X className="h-3.5 w-3.5 mr-1.5 text-slate-300 flex-shrink-0" />
                                                                 )}
-                                                                <span className={!feat.allowed ? "text-slate-400 line-through" : ""}>{feat.label}</span>
+
+                                                                <span
+                                                                    className={cn(
+                                                                        "truncate",
+                                                                        feat.allowed
+                                                                            ? "text-slate-700"
+                                                                            : "text-slate-400 line-through"
+                                                                    )}
+                                                                >
+                                                                    {feat.label}
+                                                                </span>
                                                             </div>
                                                         ))}
                                                     </div>
                                                 </div>
                                             )
-                                        })}
+                                        })
+                                    )}
                                 </div>
 
                                 <div className="bg-slate-50 p-3 rounded-lg flex items-start gap-3 border border-slate-100">
@@ -398,18 +456,18 @@ export default function RegistrationContent() {
                                 </div>
 
                                 <div className="pt-2 flex gap-3">
-                                    <button 
+                                    <button
                                         type="button"
-                                        onClick={handleBack} 
+                                        onClick={handleBack}
                                         disabled={isSubmitting}
                                         className="px-6 h-12 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition-all duration-200"
                                     >
                                         Kembali
                                     </button>
-                                    <button 
+                                    <button
                                         type="button"
-                                        className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none" 
-                                        onClick={handleSubmit} 
+                                        className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none"
+                                        onClick={handleSubmit}
                                         disabled={isSubmitting}
                                     >
                                         {formData.selectedPlan === 'TRIAL' ? 'Mulai Gratis Sekarang' : 'Lanjut ke Pembayaran'}

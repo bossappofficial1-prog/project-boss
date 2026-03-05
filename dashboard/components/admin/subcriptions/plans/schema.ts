@@ -55,6 +55,12 @@ export const subscriptionPlanSchema = z.object({
         .min(0, {
             message: "Harga tidak boleh bernilai negatif",
         }),
+    promo: z
+        .number("Promo wajib diisi")
+        .min(0, {
+            message: "Harga tidak boleh bernilai negatif",
+        })
+        .optional(),
 
     durationDays: z
         .number("Durasi paket wajib diisi")
@@ -92,6 +98,12 @@ export const subscriptionPlanField: FormFieldConfig<subscriptionPlanvalues>[] = 
     {
         label: 'Harga',
         name: 'price',
+        type: 'currency',
+        colSpan: 3,
+    },
+    {
+        label: 'Promo (Optional)',
+        name: 'promo',
         type: 'currency',
         colSpan: 3,
     },

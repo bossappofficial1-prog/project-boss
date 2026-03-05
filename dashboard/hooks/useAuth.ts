@@ -9,8 +9,20 @@ import {
 } from '@/lib/auth';
 import { apiClient } from '@/lib/apis/base';
 
+interface Business {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+interface AuthMeData {
+  user: User;
+  business: Business | null;
+}
+
 interface UseAuthReturn {
   user: User | null;
+  business: Business | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
@@ -21,35 +33,46 @@ interface UseAuthReturn {
   isOwner: boolean;
 }
 
-const AUTH_SESSION_CACHE_KEY = 'auth-me-cache-v1';
+const AUTH_SESSION_CACHE_KEY = 'auth-me-cache-v2';
 
-function readCachedUser(): User | null {
+function readCachedData(): AuthMeData | undefined {
   try {
     const raw = sessionStorage.getItem(AUTH_SESSION_CACHE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as User;
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw);
+    // Validate structure — reject stale/old-format cache
+    if (!parsed?.user?.id || !parsed?.user?.role) return undefined;
+    return parsed as AuthMeData;
   } catch {
-    return null;
+    return undefined;
   }
 }
 
-async function fetchAuthMe(): Promise<User> {
+async function fetchAuthMe(): Promise<AuthMeData> {
   const response = await apiClient.get('/auth/me');
-  const userData = response.data.data.user;
-  return {
+  const responseData = response.data.data;
+  const userData = responseData.user;
+  const businessData = responseData.business ?? null;
+
+  const user: User = {
     id: userData.id,
     email: userData.email,
     name: userData.name,
     role: userData.role as UserRole,
     sessionId: userData.sessionId || userData.id,
+    businessId: userData.businessId ?? businessData?.id,
+    isVerified: userData.isVerified,
+    provider: userData.provider,
   };
+
+  return { user, business: businessData };
 }
 
 export function useAuth(): UseAuthReturn {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: user = null, isLoading } = useQuery<User | null>({
+  const { data, isLoading } = useQuery<AuthMeData>({
     queryKey: ['auth-me'],
     queryFn: fetchAuthMe,
     staleTime: 5 * 60_000,
@@ -57,17 +80,20 @@ export function useAuth(): UseAuthReturn {
     retry: 1,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
-    initialData: readCachedUser,
+    initialData: readCachedData,
   });
+
+  const user = data?.user ?? null;
+  const business = data?.business ?? null;
 
   // Sync fresh data to sessionStorage
   useEffect(() => {
-    if (user) {
+    if (data) {
       try {
-        sessionStorage.setItem(AUTH_SESSION_CACHE_KEY, JSON.stringify(user));
+        sessionStorage.setItem(AUTH_SESSION_CACHE_KEY, JSON.stringify(data));
       } catch { }
     }
-  }, [user]);
+  }, [data]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
@@ -107,6 +133,7 @@ export function useAuth(): UseAuthReturn {
 
   return {
     user,
+    business,
     isLoading,
     isAuthenticated,
     login,

@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
-import BusinessDashboardContent from "@/components/business/BusinessDashboardContent";
+'use client'
 
-export const metadata: Metadata = {
-    title: "Dashboard Bisnis",
-    description: "Ringkasan kinerja lintas outlet, pesanan, dan pendapatan bisnis Anda.",
-};
+import BusinessDashboardContent from "@/components/business/BusinessDashboardContent";
 
 export default function BusinessDashboardPage() {
     return <BusinessDashboardContent />;

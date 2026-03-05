@@ -53,7 +53,7 @@ export class PosV2Service {
         input: CreatePosV2OrderInput,
         cashierId: string | null,
     ): Promise<PosV2OrderResult> {
-        const { customer, outletId, items, cashReceived = 0, bookingSlotId, bookingDate, staffId } = input;
+        const { customer, outletId, items, cashReceived = 0, bookingSlotId, bookingDate, paymentMethod } = input;
 
         // Validate products exist and belong to outlet
         const productIds = items.map((i) => i.productId);
@@ -180,7 +180,7 @@ export class PosV2Service {
         }
 
         // Validate cash
-        if (cashReceived < subtotal) {
+        if (cashReceived < subtotal && paymentMethod === 'cash') {
             throw new AppError(
                 `Cash kurang. Total: Rp ${subtotal.toLocaleString("id-ID")}, Diterima: Rp ${cashReceived.toLocaleString("id-ID")}`,
                 HttpStatus.BAD_REQUEST,
@@ -234,7 +234,7 @@ export class PosV2Service {
             orderId: order.id,
             totalAmount: subtotal,
             itemCount: items.reduce((sum, i) => sum + i.quantity, 0),
-            cashReceived,
+            cashReceived: paymentMethod === 'qris' ? subtotal : cashReceived,
             change: cashReceived - subtotal,
             customerName: guestCustomer.name,
             createdAt: order.createdAt.toISOString(),

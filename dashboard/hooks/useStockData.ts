@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { authApi, productApi, stockApi } from "@/lib/api";
+import { useCallback, useMemo, useState } from "react";
+import { productApi, stockApi } from "@/lib/api";
 import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface StockItem {
   id: string;
@@ -36,77 +37,53 @@ export function useStockData() {
     outlets: contextOutlets,
     isLoading: contextLoading,
   } = useOutletContext();
-  const [items, setItems] = useState<StockItem[]>([]);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasBusinessProfile, setHasBusinessProfile] = useState(false);
-  const [hasOutlet, setHasOutlet] = useState(false);
 
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        const user = await authApi.me();
-        const hasBusiness = !!user.business?.id;
-        const hasBank = !!(user.business?.bankName && user.business?.accountNumber);
-        setHasBusinessProfile(hasBusiness && hasBank);
-        setHasOutlet(user.outlets.length > 0);
-        if (user.outlets.length === 0) setIsLoading(false);
-      } catch (e) {
-        console.error("Error fetching user data:", e);
-        setError("Gagal memuat data pengguna");
-        setIsLoading(false);
-      }
-    };
-    initialize();
-  }, []);
+  const stockQueryKey = useMemo(
+    () => ['stock-data', selectedOutletId, currentPage, itemsPerPage, searchQuery, statusFilter],
+    [selectedOutletId, currentPage, itemsPerPage, searchQuery, statusFilter],
+  );
 
-  const fetchStock = useCallback(async () => {
-    if (!selectedOutletId) return;
-    try {
-      setIsFetching(true);
-      const response = await stockApi.getByOutlet(selectedOutletId, {
+  const {
+    data: stockResponse,
+    isLoading: isQueryLoading,
+    isFetching,
+  } = useQuery({
+    queryKey: stockQueryKey,
+    queryFn: async () => {
+      const response = await stockApi.getByOutlet(selectedOutletId!, {
         page: currentPage,
         limit: itemsPerPage,
         type: "GOODS",
         search: searchQuery || undefined,
         status: statusFilter === "ALL" ? undefined : statusFilter,
       });
-      const data = Array.isArray(response.data) ? response.data : [];
-      // Ensure GOODS only for safety
-      const goodsOnly = data.filter((item) => item.type === "GOODS");
-      setItems(goodsOnly);
-      setTotalItems(response.pagination?.total ?? goodsOnly.length);
-      setTotalPages(response.pagination?.totalPages ?? 1);
-    } catch (e: any) {
-      console.error("Error fetching stock:", e);
-      setItems([]);
-      setError(e?.message || "Gagal memuat data stok");
-    } finally {
-      setIsFetching(false);
-      setIsLoading(false);
-    }
-  }, [currentPage, itemsPerPage, searchQuery, statusFilter, selectedOutletId]);
+      return response;
+    },
+    enabled: !!selectedOutletId && !contextLoading,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+  });
 
-  useEffect(() => {
-    if (selectedOutletId && !contextLoading) {
-      fetchStock();
-    }
-  }, [
-    selectedOutletId,
-    currentPage,
-    itemsPerPage,
-    searchQuery,
-    statusFilter,
-    fetchStock,
-    contextLoading,
-  ]);
+  const rawItems = useMemo(() => {
+    const data = Array.isArray(stockResponse?.data) ? stockResponse.data : [];
+    return data.filter((item: StockItem) => item.type === "GOODS");
+  }, [stockResponse]);
+
+  const totalItems = stockResponse?.pagination?.total ?? rawItems.length;
+  const totalPages = stockResponse?.pagination?.totalPages ?? 1;
+  const isLoading = contextLoading || isQueryLoading;
+  const hasOutlet = contextOutlets.length > 0;
+  const hasBusinessProfile = hasOutlet;
+
+  const fetchStock = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['stock-data', selectedOutletId] });
+  }, [queryClient, selectedOutletId]);
 
   const handleSearchClick = () => fetchStock();
 
@@ -170,8 +147,8 @@ export function useStockData() {
 
   // Derived visible list (GOODS-only already ensured) - further filter by status client-side for safety
   const visibleItems = useMemo(
-    () => items.filter((i: StockItem) => statusFilter === "ALL" || i.status === statusFilter),
-    [items, statusFilter],
+    () => rawItems.filter((i: StockItem) => statusFilter === "ALL" || i.status === statusFilter),
+    [rawItems, statusFilter],
   );
 
   return {

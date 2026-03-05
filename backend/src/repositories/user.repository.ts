@@ -67,6 +67,7 @@ export class UserRepository {
                                 id: true,
                                 name: true,
                                 businessId: true,
+                                slug: true,
                                 address: true,
                                 image: true,
                                 description: true,
@@ -78,7 +79,7 @@ export class UserRepository {
                                 createdAt: true,
                                 updatedAt: true
                             },
-                            orderBy: [{ createdAt: "desc" }]
+                            orderBy: { createdAt: "desc" }
                         }
                     }
                 }

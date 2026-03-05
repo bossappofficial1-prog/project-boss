@@ -18,7 +18,9 @@ export const useOutletsQuery = () => {
             return response;
         },
         staleTime: 1000 * 60 * 5, // 5 minutes
-        gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+        gcTime: 1000 * 60 * 10, // 10 minutes
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
         retry: 2,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     });

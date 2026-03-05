@@ -48,8 +48,8 @@ export function useRenewSubscription() {
         queryClient.invalidateQueries({ queryKey: ['owner-subscription', 'invoices'] }),
       ]);
     },
-    onError: (error) => {
-      toast.error(error?.message ?? 'Gagal membuat invoice perpanjangan');
+    onError: (error: any) => {
+      toast.error(error?.response?.data.message ?? 'Gagal membuat invoice perpanjangan');
     },
   });
 }

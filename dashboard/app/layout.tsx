@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { Toaster } from "sonner";
 import { cookies } from "next/headers";
 
 const poppins = Poppins({
@@ -16,7 +17,7 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010'),
   title: {
-    default: "BOSS Dashboard - Dukungan Operasional Bisnismu",
+    default: "BOSS Dashboard",
     template: "%s | BOSS Dashboard"
   },
   description: "Pantau outlet, transaksi, dan insight bisnis secara real-time lewat dashboard BOSS yang praktis.",
@@ -155,6 +156,7 @@ export default async function RootLayout({
       <body className={`${poppins.variable} font-poppins antialiased min-h-screen bg-background text-foreground`}>
         <ThemeProvider defaultTheme={theme}>
           <QueryProvider>{children}</QueryProvider>
+          <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>
     </html>

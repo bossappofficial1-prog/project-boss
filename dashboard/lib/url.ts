@@ -27,3 +27,13 @@ export function resolveUploadImageUrl(url?: string | null): string | undefined {
     return url;
   }
 }
+
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (error) {
+    console.error("Gagal menyalin teks:", error);
+    return false;
+  }
+}

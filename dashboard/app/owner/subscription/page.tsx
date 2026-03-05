@@ -17,7 +17,6 @@ import { PendingInvoiceCard } from '@/components/features/owner/subscription/Pen
 import { NoPendingInvoiceCard } from '@/components/features/owner/subscription/NoPendingInvoiceCard';
 import { EmptySubscriptionState } from '@/components/features/owner/subscription/EmptySubscriptionState';
 import { PlanSelectorDialog } from '@/components/features/owner/subscription/PlanSelectorDialog';
-import { parsePlanFeatures, getDaysRemaining } from '@/components/features/owner/subscription/helper';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlan';
 
 const PAGE_SIZE = 6;

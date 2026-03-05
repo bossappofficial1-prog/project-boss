@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { authApi, productApi } from "@/lib/api";
+import { useCallback, useMemo, useState } from "react";
+import { productApi } from "@/lib/api";
 import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface ProductItem {
   id: string;
@@ -94,72 +95,46 @@ export function useProductsData() {
     outlets: contextOutlets,
     isLoading: contextLoading,
   } = useOutletContext();
-  const [products, setProducts] = useState<ProductItem[]>([]);
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasBusinessProfile, setHasBusinessProfile] = useState<boolean>(false);
-  const [hasOutlet, setHasOutlet] = useState<boolean>(false);
 
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        const userData = await authApi.me();
+  const productsQueryKey = useMemo(
+    () => ['products', selectedOutletId, currentPage, itemsPerPage, searchQuery],
+    [selectedOutletId, currentPage, itemsPerPage, searchQuery],
+  );
 
-        const hasBusiness = !!userData.business?.id;
-        const hasBank = !!(userData.business?.bankName && userData.business?.accountNumber);
-        setHasBusinessProfile(hasBusiness && hasBank);
-        setHasOutlet(userData.outlets.length > 0);
-        if (userData.outlets.length === 0) setIsLoading(false);
-      } catch (e) {
-        console.error("Error fetching user data:", e);
-        setError("Gagal memuat data pengguna");
-        setIsLoading(false);
-      }
-    };
-
-    initializeData();
-  }, []);
-
-  // Reset to page 1 when outlet changes
-  useEffect(() => {
-    if (selectedOutletId) {
-      setCurrentPage(1);
-    }
-  }, [selectedOutletId]);
-
-  const fetchProducts = useCallback(async () => {
-    if (!selectedOutletId) return;
-    try {
-      setIsLoading(true);
-      const response = await productApi.getByOutlet(selectedOutletId, {
+  const {
+    data: productsResponse,
+    isLoading: isQueryLoading,
+    isFetching,
+  } = useQuery({
+    queryKey: productsQueryKey,
+    queryFn: async () => {
+      const response = await productApi.getByOutlet(selectedOutletId!, {
         page: currentPage,
         limit: itemsPerPage,
         search: searchQuery || undefined,
       });
+      return response;
+    },
+    enabled: !!selectedOutletId && !contextLoading,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+  });
 
-      const data = response.data;
-      const paginated = response.pagination;
+  const products = productsResponse?.data ?? [];
+  const totalPages = productsResponse?.pagination?.totalPages ?? 1;
+  const totalProducts = productsResponse?.pagination?.total ?? 0;
+  const isLoading = contextLoading || isQueryLoading;
+  const hasOutlet = contextOutlets.length > 0;
+  const hasBusinessProfile = hasOutlet; // If outlets exist, business profile is set up
 
-      setProducts(data);
-      setTotalPages(paginated.totalPages);
-      setTotalProducts(paginated.total);
-    } catch (e: any) {
-      console.error("Error fetching products:", e);
-      setProducts([]);
-      setError(e?.message || "Gagal memuat produk");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentPage, itemsPerPage, searchQuery, selectedOutletId]);
-
-  useEffect(() => {
-    if (selectedOutletId && !contextLoading) fetchProducts();
-  }, [selectedOutletId, currentPage, itemsPerPage, searchQuery, fetchProducts, contextLoading]);
+  const fetchProducts = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['products', selectedOutletId] });
+  }, [queryClient, selectedOutletId]);
 
   const handleSearch = (q: string) => {
     setSearchQuery((prev) => {
@@ -173,7 +148,7 @@ export function useProductsData() {
   const handleDeleteProduct = async (productId: string) => {
     try {
       await productApi.delete(productId);
-      await fetchProducts();
+      await queryClient.invalidateQueries({ queryKey: ['products', selectedOutletId] });
     } catch (e: any) {
       console.error("Error deleting product:", e);
       setError(e?.message || "Gagal menghapus produk. Silakan coba lagi.");
@@ -184,7 +159,7 @@ export function useProductsData() {
     try {
       const newStatus = product.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
       await productApi.update(product.id, { status: newStatus });
-      await fetchProducts();
+      await queryClient.invalidateQueries({ queryKey: ['products', selectedOutletId] });
     } catch (e: any) {
       console.error("Error updating product status:", e);
       setError(e?.message || "Gagal mengubah status produk. Silakan coba lagi.");

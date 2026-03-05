@@ -9,10 +9,10 @@ interface JwtPayload {
   businessId?: string;
   iat?: number;
   exp?: number;
-  provider?: 'local' | 'google'
-  isVerified?: boolean
-  email?: string
-  subscriptionStatus?: 'ACTIVE' | 'AWAITING_PAYMENT' | 'PROOF_SUBMITTED' | 'EXPIRED' | 'SUSPENDED' | 'CANCELLED' | 'PAST_DUE' | 'TRIAL'
+  provider?: 'local' | 'google';
+  isVerified?: boolean;
+  email?: string;
+  subscriptionStatus?: 'ACTIVE' | 'AWAITING_PAYMENT' | 'PROOF_SUBMITTED' | 'EXPIRED' | 'SUSPENDED' | 'CANCELLED' | 'PAST_DUE' | 'TRIAL';
 }
 
 const ROUTE_CONFIG = {
@@ -24,21 +24,6 @@ const ROUTE_CONFIG = {
     '/auth/login/cashier',
     '/unauthorized'
   ]),
-  adminOnlyRoutes: new Set([
-    '/admin',
-    '/admin/dashboard',
-    '/admin/businesses',
-    '/admin/users',
-    '/admin/analytics',
-    '/admin/reports',
-    '/admin/settings',
-    '/admin/system',
-    '/admin/support',
-    '/admin/withdrawals'
-  ]),
-  ownerOnlyRoutes: new Set(['/owner', '/owner/dashboard']),
-  cashierRoutes: new Set(['/cashier', '/cashier/pos', '/cashier/queue']),
-  sharedRoutes: new Set(['/profile', '/notifications'])
 } as const;
 
 const DEFAULT_REDIRECTS = {
@@ -46,38 +31,20 @@ const DEFAULT_REDIRECTS = {
   OWNER: '/owner/dashboard'
 } as const;
 
-// Helper functions for route checking
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || '');
+
 function isPublicRoute(pathname: string): boolean {
-  return ROUTE_CONFIG.publicRoutes.has(pathname) ||
-    Array.from(ROUTE_CONFIG.publicRoutes).some(route => pathname.startsWith(route));
-}
-
-function isAdminOnlyRoute(pathname: string): boolean {
-  return Array.from(ROUTE_CONFIG.adminOnlyRoutes).some(route => pathname.startsWith(route));
-}
-
-function isOwnerOnlyRoute(pathname: string): boolean {
-  return Array.from(ROUTE_CONFIG.ownerOnlyRoutes).some(route => pathname.startsWith(route));
-}
-
-function isSharedRoute(pathname: string): boolean {
-  return Array.from(ROUTE_CONFIG.sharedRoutes).some(route => pathname.startsWith(route));
+  return ROUTE_CONFIG.publicRoutes.has(pathname) || Array.from(ROUTE_CONFIG.publicRoutes).some(route => pathname.startsWith(route));
 }
 
 async function verifyJWT(token: string): Promise<JwtPayload | null> {
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const { payload } = await jose.jwtVerify(token, secret);
+    const { payload } = await jose.jwtVerify(token, JWT_SECRET);
 
-    if (!payload || !payload.sessionId || !payload.role) {
-      return null;
-    }
+    if (!payload || !payload.sessionId || !payload.role) return null;
+    if (payload.role !== 'ADMIN' && payload.role !== 'OWNER') return null;
 
-    if (payload.role !== 'ADMIN' && payload.role !== 'OWNER') {
-      return null;
-    }
-
-    const result: JwtPayload = {
+    return {
       sessionId: String(payload.sessionId),
       role: payload.role as 'ADMIN' | 'OWNER',
       name: payload.name as string,
@@ -87,11 +54,9 @@ async function verifyJWT(token: string): Promise<JwtPayload | null> {
       businessId: payload.businessId as string | undefined,
       iat: typeof payload.iat === 'number' ? payload.iat : undefined,
       exp: typeof payload.exp === 'number' ? payload.exp : undefined,
+      subscriptionStatus: payload.subscriptionStatus as JwtPayload['subscriptionStatus'],
     };
-
-    return result;
-  } catch (err) {
-    console.error('JWT verification error:', err);
+  } catch {
     return null;
   }
 }
@@ -101,150 +66,61 @@ function isTokenExpired(payload: JwtPayload): boolean {
   return Date.now() >= payload.exp * 1000;
 }
 
-function hasPermission(userRole: 'ADMIN' | 'OWNER', pathname: string): boolean {
-  if (isAdminOnlyRoute(pathname)) return userRole === 'ADMIN';
-  if (isOwnerOnlyRoute(pathname)) return userRole === 'OWNER';
-  if (isSharedRoute(pathname)) return true;
-  return true; // Default allow for other routes
-}
-
-function getRoleBasedRedirect(userRole: 'ADMIN' | 'OWNER'): string {
-  return DEFAULT_REDIRECTS[userRole];
-}
-
-function createRedirectResponse(url: URL, reason?: string): NextResponse {
-  const redirectUrl = new URL(url);
-  if (reason) {
-    redirectUrl.searchParams.set('reason', reason);
-  }
-  return NextResponse.redirect(redirectUrl);
-}
-
-function createLoginRedirect(request: NextRequest, pathname: string, reason?: string): NextResponse {
-  const loginUrl = new URL('/auth/login', request.url);
-  loginUrl.searchParams.set('redirect', pathname);
-  if (reason) {
-    loginUrl.searchParams.set('reason', reason);
-  }
-
-  const response = NextResponse.redirect(loginUrl);
-  response.cookies.delete('token');
-  return response;
-}
-
 export const middleware: NextMiddleware = async (request: NextRequest) => {
+  const isPrefetch = request.headers.get('next-router-prefetch') === '1' || request.headers.get('x-middleware-prefetch') === '1';
+  if (isPrefetch) return NextResponse.next();
+
   const { pathname } = request.nextUrl;
-
-  // Skip static files and API routes
-  if (
-    pathname.startsWith('/_next/') ||
-    pathname.startsWith('/api/') ||
-    pathname.startsWith('/static/') ||
-    pathname.includes('.')
-  ) {
-    return NextResponse.next();
-  }
-
   const token = request.cookies.get('token')?.value;
-  const cashierToken = request.cookies.get('cashier_token')?.value;
   const isPublic = isPublicRoute(pathname);
 
-  // Handle cashier routes separately (check this FIRST before other auth logic)
-  if (pathname.startsWith('/cashier')) {
-    if (!cashierToken) {
-      const loginUrl = new URL('/auth/login/cashier', request.url);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // Cashier authenticated - allow access to cashier routes
+  // No token — let request through (layouts handle auth redirect)
+  if (!token) {
     return NextResponse.next();
   }
 
-  // No token and accessing protected route → redirect to owner/admin login
-  if (!token && !isPublic) {
-    return createLoginRedirect(request, pathname);
+  // Token exists — try to verify
+  const payload = await verifyJWT(token);
+
+  // Invalid or expired token — let request through (layouts handle redirect)
+  if (!payload || isTokenExpired(payload)) {
+    const response = NextResponse.next();
+    response.cookies.delete('token');
+    return response;
   }
 
-  // Has token → validate it
-  if (token) {
-    const payload = await verifyJWT(token);
-
-    // Invalid or expired token → redirect to login
-    if (!payload || isTokenExpired(payload)) {
-      return createLoginRedirect(request, pathname, 'token_invalid_or_expired');
+  // Valid token + public route (except /unauthorized and /auth/register with step) → redirect to dashboard
+  if (isPublic && pathname !== '/unauthorized') {
+    if (pathname.startsWith('/auth/register') && request.nextUrl.searchParams.get('step')) {
+      return NextResponse.next();
     }
-
-    if (payload.role === 'OWNER' && !payload.businessId) {
-      if (pathname.startsWith('/auth/register')) {
-        return NextResponse.next();
-      }
-      const params = new URLSearchParams();
-
-      params.set('step', payload.isVerified ? '2' : '1');
-      params.set('isVerified', String(payload.isVerified));
-      params.set('email', String(payload.email));
-
-      if (payload.provider) params.set('provider', payload.provider);
-      if (payload.name) params.set('name', payload.name);
-
-      return NextResponse.redirect(
-        new URL(`/auth/register?${params.toString()}`, request.url)
-      );
-
-    }
-
-    if (isPublic && pathname !== '/unauthorized') {
-      if (pathname.startsWith('/auth/register') && request.nextUrl.searchParams.get('step')) {
-        return NextResponse.next();
-      }
-
-      return NextResponse.redirect(new URL(getRoleBasedRedirect(payload.role), request.url));
-    }
-
-    if (!['ADMIN', 'OWNER'].includes(payload.role)) {
-      return createLoginRedirect(request, pathname, 'invalid_role');
-    }
-
-    // Check subscription status for OWNER
-    if (payload.role === 'OWNER' && payload.subscriptionStatus && 
-        (payload.subscriptionStatus === 'AWAITING_PAYMENT' || payload.subscriptionStatus === 'PROOF_SUBMITTED')) {
-      // Allow access to subscription/payment and subscription/verification-pending pages
-      if (pathname.startsWith('/subscription/payment') || pathname.startsWith('/subscription/verification-pending')) {
-        return NextResponse.next();
-      }
-      
-      // Block access to other pages, redirect to verification pending
-      return NextResponse.redirect(new URL('/subscription/verification-pending', request.url));
-    }
-
-    // Insufficient permissions → redirect to unauthorized
-    if (!hasPermission(payload.role, pathname)) {
-      return createRedirectResponse(new URL('/unauthorized', request.url), 'insufficient_permissions');
-    }
-
-    // Root path → redirect to role-based dashboard
-    if (pathname === '/') {
-      return NextResponse.redirect(new URL(getRoleBasedRedirect(payload.role), request.url));
-    }
-
-    // Add user info to headers for server components
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set('x-user-id', payload.sessionId);
-    requestHeaders.set('x-user-role', payload.role);
-    if (payload.businessId) {
-      requestHeaders.set('x-business-id', payload.businessId);
-    }
-    requestHeaders.set('x-session-id', payload.sessionId);
-    requestHeaders.set('x-token-verified', 'true');
-
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    return NextResponse.redirect(new URL(DEFAULT_REDIRECTS[payload.role], request.url));
   }
 
-  return NextResponse.next();
+  // Subscription gating for OWNER
+  if (payload.role === 'OWNER' && payload.subscriptionStatus && ['AWAITING_PAYMENT', 'PROOF_SUBMITTED'].includes(payload.subscriptionStatus)) {
+    if (pathname.startsWith('/subscription/payment') || pathname.startsWith('/subscription/verification-pending')) {
+      return NextResponse.next();
+    }
+    return NextResponse.redirect(new URL('/subscription/verification-pending', request.url));
+  }
+
+  // Root path → redirect to role-based dashboard
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL(DEFAULT_REDIRECTS[payload.role], request.url));
+  }
+
+  // Inject headers if token is valid
+  const response = NextResponse.next();
+  response.headers.set('x-user-id', payload.sessionId);
+  response.headers.set('x-user-role', payload.role);
+  if (payload.businessId) response.headers.set('x-business-id', payload.businessId);
+  response.headers.set('x-session-id', payload.sessionId);
+  response.headers.set('x-token-verified', 'true');
+
+  return response;
 };
 
 export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|public|.*\\..*$).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|public|.*\\..*$).*)'],
 };

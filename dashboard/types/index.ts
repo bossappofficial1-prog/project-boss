@@ -169,6 +169,7 @@ export interface UpdateBusinessDto {
 export interface Outlet {
   id: string;
   name: string;
+  slug?: string;
   description?: string | null;
   address: string | null;
   phone?: string | null;

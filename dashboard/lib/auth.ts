@@ -9,6 +9,9 @@ export interface User {
   name: string;
   role: UserRole;
   sessionId: string;
+  businessId?: string;
+  isVerified?: boolean;
+  provider?: string;
 }
 
 export interface JwtPayload {

@@ -26,7 +26,7 @@ export const createPosV2OrderSchema = z.object({
         .array(posV2ItemSchema)
         .min(1, { message: "Minimal 1 item dalam pesanan" })
         .max(50, { message: "Maksimal 50 item berbeda" }),
-    paymentMethod: z.enum(["cash"], {
+    paymentMethod: z.enum(["cash", "qris"], {
         errorMap: () => ({ message: "Metode pembayaran saat ini hanya 'cash'" }),
     }),
     cashReceived: z

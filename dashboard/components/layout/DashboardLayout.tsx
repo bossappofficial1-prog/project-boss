@@ -1,22 +1,23 @@
 'use client';
 
-import { useState } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { OutletProvider } from '@/components/providers/OutletProvider';
-import { SocketProvider } from '@/components/providers/SocketProvider';
 import { Toaster } from 'sonner';
-import { DashboardSocketListener } from '../sockets/DashboardSocketListener';
 import { SidebarInset, SidebarProvider } from '../ui/sidebar';
+import { type UserRole } from '@/lib/auth';
 
 interface LayoutProps {
   children: React.ReactNode;
+  requiredRole?: UserRole | UserRole[];
 }
 
-export default function DashboardLayout({ children }: LayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { loading: isLoading } = useAuthGuard();
+export default function DashboardLayout({ children, requiredRole }: LayoutProps) {
+  const { loading: isLoading } = useAuthGuard({
+    requiredRole,
+    onboardingCheck: true,
+  });
 
   if (isLoading) {
     return (
@@ -31,30 +32,26 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
   return (
     <OutletProvider>
-      <DashboardSocketListener />
       <SidebarProvider defaultOpen={true}>
-        <SocketProvider>
-          <Sidebar />
-          <SidebarInset className="flex flex-col flex-1">
-            <Header />
+        <Sidebar />
+        <SidebarInset className="flex flex-col flex-1">
+          <Header />
 
-            {/* Main Content with Responsive Padding */}
-            <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
-              <div className="w-full mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8 xl:p-10 2xl:p-12">
-                {children}
-              </div>
-            </main>
-          </SidebarInset>
+          {/* Main Content with Responsive Padding */}
+          <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+            <div className="w-full mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8 xl:p-10 2xl:p-12">
+              {children}
+            </div>
+          </main>
+        </SidebarInset>
 
-          {/* Sonner Toaster for custom notifications */}
-          <Toaster
-            position="top-right"
-            richColors
-            toastOptions={{
-              duration: 5000,
-            }}
-          />
-        </SocketProvider>
+        <Toaster
+          position="top-right"
+          richColors
+          toastOptions={{
+            duration: 5000,
+          }}
+        />
       </SidebarProvider>
     </OutletProvider>
   );

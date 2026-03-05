@@ -15,5 +15,14 @@ export const StringUtil = {
             result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         return result;
+    },
+
+    slugify(text: string): string {
+        return text
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9\s-]/g, "") // hapus karakter selain huruf, angka, spasi
+            .replace(/\s+/g, "-") // spasi jadi -
+            .replace(/-+/g, "-"); // hilangkan - berlebih
     }
 };

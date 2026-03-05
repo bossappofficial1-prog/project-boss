@@ -17,7 +17,10 @@ import {
   Phone,
   Check,
   Store,
+  ClipboardCopy,
+  Link2,
 } from "lucide-react";
+import { copyToClipboard } from "@/lib/url";
 
 interface OutletsSectionProps {
   outlets: Outlet[];
@@ -53,6 +56,15 @@ export default function OutletsSection({
       duration: 2000,
     });
   };
+
+  const handleCopy = async (outletSlug: string) => {
+    try {
+      await copyToClipboard(`${process.env.NEXT_PUBLIC_CUSTOMER_URL}/outlet/${outletSlug}`);
+      toast.success('Berhasil salin link outlet')
+    } catch (error) {
+      toast.error('Gagal salin link outlet')
+    }
+  }
 
   if (!outlets || outlets.length === 0) {
     return (
@@ -115,11 +127,10 @@ export default function OutletsSection({
           return (
             <div
               key={outlet.id}
-              className={`group relative cursor-pointer overflow-hidden rounded-xl border-2 p-4 transition-all duration-300 sm:p-5 ${
-                isSelected
-                  ? "scale-[1.02] border-red-500 bg-red-50 shadow-lg dark:bg-red-950/20"
-                  : "border-gray-200 bg-white hover:scale-[1.01] hover:border-red-300 hover:shadow-lg dark:border-gray-600 dark:bg-gray-800 dark:hover:border-red-400"
-              }`}
+              className={`group relative cursor-pointer overflow-hidden rounded-xl border-2 p-4 transition-all duration-300 sm:p-5 ${isSelected
+                ? "scale-[1.02] border-red-500 bg-red-50 shadow-lg dark:bg-red-950/20"
+                : "border-gray-200 bg-white hover:scale-[1.01] hover:border-red-300 hover:shadow-lg dark:border-gray-600 dark:bg-gray-800 dark:hover:border-red-400"
+                }`}
               style={{ animationDelay: `${0.1 * index}s` }}
               onClick={() => handleSelectOutlet(outlet)}
               onMouseEnter={() => setSelectedForAction(outlet.id)}
@@ -128,9 +139,7 @@ export default function OutletsSection({
 
               {(onEditOutlet || onDeleteOutlet) && (
                 <div
-                  className={`absolute right-3 top-3 flex space-x-1 transition-all duration-200 ${
-                    isActionSelected ? "scale-100 opacity-100" : "scale-90 opacity-0"
-                  }`}>
+                  className={`absolute right-3 bottom-3 flex space-x-1 transition-all duration-200 `}>
                   {onEditOutlet && (
                     <Button
                       onClick={(e) => {
@@ -155,6 +164,16 @@ export default function OutletsSection({
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   )}
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopy(outlet.slug!)
+                    }}
+                    type="button"
+                    className="h-auto rounded-lg bg-black p-2 text-white shadow-lg transition-all duration-200 hover:bg-black/90 hover:shadow-xl"
+                    title="Salin link outlet ini untuk dibagikan">
+                    <Link2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               )}
 
@@ -175,11 +194,10 @@ export default function OutletsSection({
                     </div>
                   ) : (
                     <div
-                      className={`relative flex h-14 w-14 items-center justify-center rounded-xl shadow-md ${
-                        isSelected
-                          ? "bg-red-gradient"
-                          : "bg-gray-gradient dark:bg-gray-gradient-dark"
-                      }`}>
+                      className={`relative flex h-14 w-14 items-center justify-center rounded-xl shadow-md ${isSelected
+                        ? "bg-red-gradient"
+                        : "bg-gray-gradient dark:bg-gray-gradient-dark"
+                        }`}>
                       <Store className="h-7 w-7 text-white" />
                       {isSelected && (
                         <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white">
@@ -193,11 +211,10 @@ export default function OutletsSection({
                 <div className="min-w-0 flex-1">
                   <div className="mb-2 flex items-center justify-between">
                     <h3
-                      className={`truncate text-base font-semibold ${
-                        isSelected
-                          ? "text-red-700 dark:text-red-300"
-                          : "text-gray-900 dark:text-gray-100"
-                      }`}>
+                      className={`truncate text-base font-semibold ${isSelected
+                        ? "text-red-700 dark:text-red-300"
+                        : "text-gray-900 dark:text-gray-100"
+                        }`}>
                       {outlet.name}
                     </h3>
                   </div>
@@ -237,9 +254,8 @@ export default function OutletsSection({
               </div>
 
               <div
-                className={`pointer-events-none absolute inset-0 rounded-xl border-2 border-dashed transition-opacity duration-200 ${
-                  isActionSelected && !isSelected ? "border-red-400 opacity-20" : "opacity-0"
-                }`}
+                className={`pointer-events-none absolute inset-0 rounded-xl border-2 border-dashed transition-opacity duration-200 ${isActionSelected && !isSelected ? "border-red-400 opacity-20" : "opacity-0"
+                  }`}
               />
             </div>
           );

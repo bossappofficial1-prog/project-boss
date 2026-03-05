@@ -15,11 +15,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
 import { useCreateSubscriptionPlans, useDeleteSubscriptionPlans, useSubscriptionPlans, useUpdateSubscriptionPlans } from '@/hooks/useSubscriptionPlan';
 import { SubcriptionPlansForm } from './SubcriptionPlansForm';
 import { subscriptionPlanvalues } from './schema';
-import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 type PlanFeatures = {
@@ -102,59 +100,124 @@ export default function SubscriptionPlansContent() {
             {/* PLANS GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {plans?.map((plan) => (
-                    <Card key={plan.id} className={`p-6 relative group border-t-4 ${plan.isActive ? 'border-t-indigo-500' : 'border-t-slate-300'}`}>
-
+                    <Card
+                        key={plan.id}
+                        className={`relative p-6 rounded-xl border bg-background transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 group border-t-4 ${plan.isActive ? "border-t-indigo-500" : "border-t-slate-300"
+                            }`}
+                    >
                         {/* Status Badge */}
                         <div className="absolute top-4 right-4 flex gap-2">
                             {plan.isPopular && (
-                                <Badge variant="warning" >
-                                    <Star className="h-3 w-3 mr-1 fill-amber-700" /> Popular
+                                <Badge className="bg-amber-100 text-amber-700 border border-amber-200">
+                                    <Star className="h-3 w-3 mr-1 fill-amber-600" />
+                                    Popular
                                 </Badge>
                             )}
-                            {!plan.isActive && <Badge variant="secondary">Draft</Badge>}
+
+                            {!plan.isActive && (
+                                <Badge variant="secondary" className="text-xs">
+                                    Draft
+                                </Badge>
+                            )}
                         </div>
 
-                        {/* Plan Header */}
+                        {/* Header */}
                         <div className="mb-6">
-                            <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
-                            <code className="text-[10px] text-muted-foreground/90 font-mono bg-slate-100 px-1.5 py-0.5 rounded">{plan.code}</code>
-                            <div className="mt-3 flex items-baseline gap-1">
-                                <span className="text-3xl font-bold text-foreground">{formatCurrency(plan.price)}</span>
-                                <span className="text-sm text-muted-foreground">/ {plan.durationDays} hari</span>
+                            <h3 className="text-lg font-semibold text-foreground">
+                                {plan.name}
+                            </h3>
+
+                            <code className="mt-1 inline-block text-[11px] text-muted-foreground font-mono bg-slate-100 px-2 py-0.5 rounded">
+                                {plan.code}
+                            </code>
+
+                            {/* Price */}
+                            <div className="mt-4 flex items-end gap-2">
+                                {plan.promo > 0 && (
+                                    <span className="text-sm line-through text-muted-foreground">
+                                        {formatCurrency(plan.price)}
+                                    </span>
+                                )}
+
+                                <span className="text-3xl font-bold text-foreground">
+                                    {formatCurrency(plan.promo || plan.price)}
+                                </span>
+
+                                <span className="text-sm text-muted-foreground">
+                                    / {plan.durationDays} hari
+                                </span>
                             </div>
                         </div>
 
-                        {/* Features Preview */}
-                        <div className="space-y-3 mb-6 border-t border-b border-slate-100 py-4">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground flex items-center gap-2"><Store className="h-4 w-4" /> Max Outlets</span>
-                                <span className="font-semibold">{(plan.features as any).maxOutlets === -1 ? 'Unlimited' : (plan.features as any).maxOutlets}</span>
+                        {/* Features */}
+                        <div className="space-y-3 mb-6 border-y border-slate-100 py-4">
+
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="flex items-center gap-2 text-muted-foreground">
+                                    <Store className="h-4 w-4" />
+                                    Max Outlet
+                                </span>
+
+                                <span className="font-semibold text-foreground">
+                                    {(plan.features as any).maxOutlets === -1
+                                        ? "Unlimited"
+                                        : (plan.features as any).maxOutlets}
+                                </span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Max Produk</span>
-                                <span className="font-semibold">{(plan.features as any).maxProducts === -1 ? 'Unlimited' : (plan.features as any).maxProducts}</span>
+
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="flex items-center gap-2 text-muted-foreground">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    Max Produk
+                                </span>
+
+                                <span className="font-semibold text-foreground">
+                                    {(plan.features as any).maxProducts === -1
+                                        ? "Unlimited"
+                                        : (plan.features as any).maxProducts}
+                                </span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground flex items-center gap-2"><Settings className="h-4 w-4" /> Export Laporan</span>
+
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="flex items-center gap-2 text-muted-foreground">
+                                    <Settings className="h-4 w-4" />
+                                    Export Laporan
+                                </span>
+
                                 {(plan.features as any).canExportReport ? (
-                                    <span className="text-green-600 font-semibold text-xs bg-green-50 px-2 py-0.5 rounded">Yes</span>
+                                    <span className="text-green-600 font-semibold text-xs bg-green-50 px-2 py-1 rounded-md">
+                                        Enabled
+                                    </span>
                                 ) : (
-                                    <span className="text-muted-foreground/90 font-semibold text-xs bg-slate-100 px-2 py-0.5 rounded">No</span>
+                                    <span className="text-muted-foreground font-semibold text-xs bg-slate-100 px-2 py-1 rounded-md">
+                                        Disabled
+                                    </span>
                                 )}
                             </div>
                         </div>
 
                         {/* Actions */}
                         <div className="flex gap-2">
-                            <Button variant="outline" className="flex-1 gap-2" onClick={() => {
-                                setSelectedPlan(plan as any);
-                                setIsEditorOpen(true)
-                                setMode('edit')
-                            }}>
-                                <Edit3 className="h-4 w-4" /> Edit
+                            <Button
+                                variant="default"
+                                className="flex-1 gap-2"
+                                onClick={() => {
+                                    setSelectedPlan(plan as any);
+                                    setIsEditorOpen(true);
+                                    setMode("edit");
+                                }}
+                            >
+                                <Edit3 className="h-4 w-4" />
+                                Edit Plan
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => { handleDeleteClik(plan) }}>
-                                <Trash2 className="h-4 w-4 text-muted-foreground/90 hover:text-red-600" />
+
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleDeleteClik(plan)}
+                                className="hover:border-red-300 hover:bg-red-50"
+                            >
+                                <Trash2 className="h-4 w-4 text-muted-foreground group-hover:text-red-600" />
                             </Button>
                         </div>
                     </Card>

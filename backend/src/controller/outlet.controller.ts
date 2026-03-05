@@ -148,7 +148,7 @@ export const uploadQRISController = asyncHandler(async (req: Request, res: Respo
 });
 
 export const getQRISController = asyncHandler(async (req: Request, res: Response) => {
-    const outletId = req.params.outletId as string;
+    const outletId = req.params.id as string;
 
     const qrisData = await getQRISService(outletId);
 

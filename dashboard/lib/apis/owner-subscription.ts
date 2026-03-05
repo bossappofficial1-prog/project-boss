@@ -33,6 +33,7 @@ export interface SubscriptionPlanDetail {
   id: string;
   name: string;
   code: string;
+  promo: number;
   price: number;
   durationDays: number;
   isActive?: boolean;

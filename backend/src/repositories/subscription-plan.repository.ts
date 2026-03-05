@@ -6,6 +6,15 @@ export class SubscriptionPlanRepository {
         return db.subscriptionPlan.findMany({ orderBy: { createdAt: 'asc' } });
     }
 
+    static async existingBusinessName(name: string) {
+        const result = await db.business.findFirst({
+            where: { name },
+            select: { name: true }
+        })
+
+        return !!result?.name
+    }
+
     static async getById(id: string) {
         return db.subscriptionPlan.findUnique({ where: { id } });
     }
@@ -22,6 +31,7 @@ export class SubscriptionPlanRepository {
                 features: data.features,
                 name: data.name,
                 price: data.price,
+                promo: data.promo === 0 ? null : data.promo?.toString(),
                 isActive: data.isActive,
                 isPopular: data.isPopular,
             }
@@ -33,7 +43,7 @@ export class SubscriptionPlanRepository {
             where: {
                 id: subscribetionPlanId
             },
-            data
+            data: { ...data, promo: data.promo === 0 ? null : data.promo?.toString() }
         })
     }
 

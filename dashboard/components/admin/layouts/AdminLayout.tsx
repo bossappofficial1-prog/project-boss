@@ -1,16 +1,32 @@
+"use client";
+
 import { SidebarInset, SidebarProvider, SidebarRail, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AdminSidebar";
 import { SiteHeader } from "./SiteHeader";
 import { Toaster } from "sonner";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+    const { loading: isLoading } = useAuthGuard({ requiredRole: 'ADMIN' });
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-300 font-poppins">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <SidebarProvider defaultOpen>
             <Toaster
                 position="top-right"
                 richColors
                 toastOptions={{
-                    duration: 5000, // No auto-close
+                    duration: 5000,
                 }}
             />
             <AppSidebar />

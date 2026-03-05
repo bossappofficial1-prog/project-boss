@@ -192,7 +192,7 @@ export class SubscriptionService {
         const renewal = await SubscriptionRepository.createRenewalSubscription({
             businessId,
             planId: targetPlan.id,
-            price: targetPlan.price,
+            price: targetPlan.promo ? Number(targetPlan.promo) : targetPlan.price,
             startDate,
             endDate,
         });

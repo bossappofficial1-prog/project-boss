@@ -1,7 +1,6 @@
 import { subscriptionPlanvalues } from "@/components/admin/subcriptions/plans/schema"
 import { apiClient } from "@/lib/apis/base"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { error } from "console"
 import { toast } from "sonner"
 
 export interface SubcriptionPlan {
@@ -9,6 +8,7 @@ export interface SubcriptionPlan {
     name: string
     code: string
     price: number
+    promo: number;
     durationDays: number
     features: Features
     isActive: boolean

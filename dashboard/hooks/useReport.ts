@@ -14,7 +14,7 @@ export interface OutletReport {
 
 export function useReportOutlet(outletId: string, type: any, date?: string) {
   return useQuery({
-    queryKey: ["outler-report", type, date, outletId],
+    queryKey: ["outlet-report", type, date, outletId],
     enabled: !!outletId,
     queryFn: async (): Promise<OutletReport[]> => {
       return (
@@ -23,6 +23,8 @@ export function useReportOutlet(outletId: string, type: any, date?: string) {
         })
       ).data.data;
     },
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
   });
 }
 
@@ -36,6 +38,8 @@ export function useCompareOutletsReport(type: any, date?: string) {
         })
       ).data.data;
     },
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
   });
 }
 
@@ -60,5 +64,7 @@ export function useReportStaff(outletId: string, type: any, date?: string) {
         })
       ).data.data;
     },
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
   });
 }

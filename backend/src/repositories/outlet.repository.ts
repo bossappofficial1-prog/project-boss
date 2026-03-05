@@ -1,7 +1,7 @@
 import { Outlet, OutletOperatingHours, PaymentStatus, ProductType, ServiceStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
-import { generateOutletId } from "../utils";
+import { generateOutletId, StringUtil } from "../utils";
 
 export class OutletRepository {
     static async getAll() {
@@ -25,7 +25,7 @@ export class OutletRepository {
     static async create(data: CreateOutletInput): Promise<Outlet> {
         return db.$transaction(async (trx) => {
             const outlet = await trx.outlet.create({
-                data: { ...data, id: generateOutletId() },
+                data: { ...data, id: generateOutletId(), slug: StringUtil.slugify(data.name) },
             });
 
             await trx.receiptSetting.create({
@@ -100,7 +100,7 @@ export class OutletRepository {
     static async update(id: string, data: UpdateOutletInput): Promise<Outlet> {
         return db.outlet.update({
             where: { id },
-            data,
+            data: { ...data, slug: StringUtil.slugify(data.name!) },
         });
     }
 

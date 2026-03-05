@@ -11,6 +11,7 @@ import OperatingHoursManager from '@/components/ui/OperatingHoursManager'
 import { toast } from 'sonner'
 import { useUpsertOperatingHours } from '@/hooks/useOperatingHours'
 import { outletManagementApi, uploadApi } from '@/lib/api'
+import { useUserData } from '@/hooks/useUserData'
 import type { OutletDetail, OperatingHoursFormData } from '@/types/dashboard'
 import { parseOperatingHours } from '@/lib/utils'
 import { AxiosError } from 'axios'
@@ -51,6 +52,7 @@ export default function AddOutletModal({
 }: Props) {
   const queryClient = useQueryClient()
   const upsertMutation = useUpsertOperatingHours()
+  const { data: userData } = useUserData()
 
   const [operatingHoursData, setOperatingHoursData] = useState<Record<number, OperatingHoursFormData>>({})
 
@@ -67,6 +69,15 @@ export default function AddOutletModal({
       longitude: undefined,
     },
   })
+
+  // Pre-fill nama outlet dengan nama bisnis saat mode add
+  useEffect(() => {
+    if (!open || mode !== 'add') return
+    const businessName = userData?.business?.name
+    if (businessName && !form.getValues('name')) {
+      form.setValue('name', businessName)
+    }
+  }, [open, mode, userData?.business?.name])
 
   const { data: outletDetail } = useQuery({
     queryKey: ['outlet-detail', outlet?.id],

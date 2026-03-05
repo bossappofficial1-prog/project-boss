@@ -53,7 +53,7 @@ export class OnboardingRepository {
                 invoice = await tx.subscriptionInvoice.create({
                     data: {
                         invoiceNumber: this.generateInvoiceNumber(business.id),
-                        amount: plan.price,
+                        amount: plan.promo ? Number(plan.promo) : plan.price,
                         status: PaymentStatus.PENDING,
                         businessId: business.id,
                         subscriptionId: subscription.id,

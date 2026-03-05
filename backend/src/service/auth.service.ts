@@ -295,6 +295,10 @@ export async function completeOnboardingService(ownerId: string, data: CompleteR
         throw new AppError("Bisnis sudah terdaftar", HttpStatus.BAD_REQUEST);
     }
 
+    if (await (SubscriptionPlanRepository.existingBusinessName(data.businessName.trim()))) {
+        throw new AppError(`Nama bisnis ${data.businessName.trim()}, sudah tersedia.`)
+    }
+
     const planCode = data.selectedPlan.toUpperCase();
     const plan = await SubscriptionPlanRepository.getByCode(planCode);
 

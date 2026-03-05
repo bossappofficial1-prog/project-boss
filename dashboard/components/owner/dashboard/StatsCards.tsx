@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardHeader } from '@/components/ui/card';
 import type { DashboardStats } from '@/types/dashboard';
-import { Boxes, Cog, ShoppingCart, Wallet } from 'lucide-react';
+import { Package, ShoppingCart, Wallet, Wrench } from 'lucide-react';
 
 export function formatCurrencyIDR(amount: number) {
 	return new Intl.NumberFormat('id-ID', {
@@ -25,7 +25,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
 			valueClass: 'text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100',
 			description: 'Barang & Jasa',
 			descriptionClass: 'text-sm font-medium text-green-600 dark:text-green-400',
-			Icon: Boxes,
+			Icon: Package,
 			iconClass: 'bg-blue-500/10 text-blue-600',
 			delay: 0.1,
 		},
@@ -35,7 +35,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
 			valueClass: 'text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100',
 			description: 'Jasa Tersedia',
 			descriptionClass: 'text-sm font-medium text-blue-600 dark:text-blue-400',
-			Icon: Cog,
+			Icon: Wrench,
 			iconClass: 'bg-indigo-500/10 text-indigo-600',
 			delay: 0.2,
 		},
