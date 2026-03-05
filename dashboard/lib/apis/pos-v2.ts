@@ -22,6 +22,13 @@ export interface PosV2Product {
     venue: string | null;
 }
 
+export interface PosV2OutletQris {
+    outletId: string;
+    outletName: string;
+    businessName: string;
+    qrisImageUrl: string | null;
+}
+
 export interface PosV2OrderRequest {
     customer: {
         name: string;
@@ -32,7 +39,7 @@ export interface PosV2OrderRequest {
         productId: string;
         quantity: number;
     }>;
-    paymentMethod: "cash";
+    paymentMethod: "cash" | "qris";
     cashReceived?: number;
     notes?: string;
     bookingSlotId?: string;
@@ -114,6 +121,10 @@ export const posV2Api = {
         return apiCall<{ staff: AvailableStaff[]; slotId: string }>(
             `/pos/v2/products/${productId}/available-staff?slotId=${slotId}`,
         );
+    },
+
+    async getOutletQris(outletId: string): Promise<PosV2OutletQris> {
+        return apiCall<PosV2OutletQris>(`/outlets/${outletId}/qris`);
     },
 
     async getReceipt(orderId: string): Promise<Blob> {

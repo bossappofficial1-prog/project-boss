@@ -1,6 +1,5 @@
 import { CartItem } from "@/hooks/useCart";
 import { OutletSummary, CheckoutData } from "@/types/checkout";
-import { Outlet } from "./outlets";
 import { ManualPaymentResponse, PaymentMethod, PaymentMethodId } from "@/types";
 import api from "@/lib/api";
 
@@ -53,19 +52,12 @@ export class CheckoutService {
       >,
     );
 
-    // Calculate fees per outlet
-    const outletPromises = Object.values(outletGroups).map(async (group) => {
-      const outlet = await Outlet.getDetail(group.outletId);
-
-      return {
-        outletName: group.outletName,
-        outletId: group.outletId,
-        subtotal: group.subtotal,
-        items: group.items,
-      };
-    });
-
-    const outlets = await Promise.all(outletPromises);
+    const outlets = Object.values(outletGroups).map((group) => ({
+      outletName: group.outletName,
+      outletId: group.outletId,
+      subtotal: group.subtotal,
+      items: group.items,
+    }));
 
     // Calculate totals
     const subtotal = outlets.reduce((total, outlet) => total + outlet.subtotal, 0);

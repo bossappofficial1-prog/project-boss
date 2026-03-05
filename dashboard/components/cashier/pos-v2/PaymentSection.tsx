@@ -1,12 +1,13 @@
 "use client";
 
 import React from "react";
-import { Banknote, CreditCard } from "lucide-react";
+import { Banknote, CreditCard, QrCode } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
-export type PaymentMethodType = "cash";
+export type PaymentMethodType = "cash" | "qris";
 
 interface PaymentSectionProps {
     method: PaymentMethodType;
@@ -14,6 +15,8 @@ interface PaymentSectionProps {
     total: number;
     cashReceived: number;
     onCashReceivedChange: (value: number) => void;
+    qrisImageUrl?: string | null;
+    isLoadingQris?: boolean;
 }
 
 const fmt = new Intl.NumberFormat("id-ID");
@@ -26,6 +29,8 @@ export function PaymentSection({
     total,
     cashReceived,
     onCashReceivedChange,
+    qrisImageUrl,
+    isLoadingQris,
 }: PaymentSectionProps) {
     const change = cashReceived - total;
 
@@ -53,6 +58,18 @@ export function PaymentSection({
                     )}>
                     <Banknote className="h-4 w-4" />
                     Cash
+                </button>
+                <button
+                    type="button"
+                    onClick={() => onMethodChange("qris")}
+                    className={cn(
+                        "flex items-center gap-2 rounded-md border p-3 text-sm font-medium transition-all",
+                        method === "qris"
+                            ? "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300"
+                            : "border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-400",
+                    )}>
+                    <QrCode className="h-4 w-4" />
+                    QRIS
                 </button>
 
                 {/* Placeholder untuk metode tambahan di masa depan */}
@@ -110,6 +127,46 @@ export function PaymentSection({
                             )}>
                             <span>{change >= 0 ? "Kembalian" : "Kurang"}</span>
                             <span>Rp {fmt.format(Math.abs(change))}</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {method === "qris" && (
+                <div className="space-y-3">
+                    {isLoadingQris && (
+                        <div className="flex h-48 items-center justify-center rounded-md border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40">
+                            <p className="text-sm text-slate-400">Memuat QRIS...</p>
+                        </div>
+                    )}
+                    {!isLoadingQris && qrisImageUrl && (
+                        <div className="flex flex-col items-center gap-2 rounded-md border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Scan QR berikut untuk pembayaran
+                            </p>
+                            <div className="relative h-56 w-56">
+                                <Image
+                                    src={qrisImageUrl}
+                                    alt="QR Code Outlet"
+                                    fill
+                                    className="object-contain"
+                                    unoptimized
+                                />
+                            </div>
+                            <p className="text-center text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                Total: Rp {fmt.format(total)}
+                            </p>
+                        </div>
+                    )}
+                    {!isLoadingQris && !qrisImageUrl && (
+                        <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-yellow-300 bg-yellow-50 p-4 text-center dark:border-yellow-600/40 dark:bg-yellow-500/10">
+                            <QrCode className="h-8 w-8 text-yellow-500" />
+                            <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+                                QRIS belum diatur
+                            </p>
+                            <p className="text-xs text-yellow-600 dark:text-yellow-500">
+                                Upload gambar QRIS outlet terlebih dahulu di halaman pengaturan.
+                            </p>
                         </div>
                     )}
                 </div>

@@ -42,6 +42,7 @@ import { schedulePaymentExpiration } from "../queues/payment.queue";
 import { PaymentRepository } from "../repositories/payment.repository";
 import { orderExpiryJob } from "../jobs/payment-expiry.job";
 import { OperatingHoursRepository } from "../repositories/operating-hours.repository";
+import { validateFileMagicBytes, deleteFile, fileExists } from "../utils/file.utils";
 
 // Konstanta untuk fee rates
 const TRANSACTION_FEE_RATE = 0.02;
@@ -781,6 +782,28 @@ export async function cancelPaymentService(orderId: string) {
 }
 
 export async function uploadManualPaymentProofService(orderId: string, filePath: string) {
+  // Validate actual file content (magic bytes) — defends against MIME/extension spoofing
+  if (!fileExists(filePath)) {
+    throw new AppError('File tidak ditemukan setelah upload', HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeByExt: Record<string, string> = {
+    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+    '.png': 'image/png', '.webp': 'image/webp',
+    '.pdf': 'application/pdf',
+  };
+  const claimedMime = mimeByExt[ext] ?? 'application/octet-stream';
+  try {
+    await validateFileMagicBytes(filePath, claimedMime);
+  } catch (err) {
+    // Delete the file immediately if validation fails
+    try { deleteFile(filePath); } catch { /* ignore cleanup error */ }
+    throw new AppError(
+      err instanceof Error ? err.message : 'File tidak valid',
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
   const transaction = await ManualPaymentRepository.findManualTransactionByOrderId(orderId);
 
   if (!transaction) {

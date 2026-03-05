@@ -162,9 +162,10 @@ model Business {
 }
 
 model SubscriptionPlan {
-  id           String @id @default(uuid())
+  id           String  @id @default(uuid())
   name         String // "Basic", "Pro", "Enterprise"
-  code         String @unique // "BASIC", "PRO" (untuk referensi coding)
+  code         String  @unique // "BASIC", "PRO" (untuk referensi coding)
+  promo        String?
   price        Float // Harga per bulan
   durationDays Int // 30 hari, 365 hari, atau 14 (trial)
   features     Json

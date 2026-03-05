@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslations } from '@/hooks/useI18n';
 import { PaymentService } from '@/services/paymentService';
-import { AlertCircle, CheckCircle, FileText, UploadCloud, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, Loader2, UploadCloud, X } from 'lucide-react';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 10 MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 type ManualPaymentUploadProps = {
     orderId: string;
@@ -111,7 +111,7 @@ export function ManualPaymentUpload({ orderId, expiryTime, onSuccess }: ManualPa
                 {!selectedFile && !isExpired && (
                     <Input
                         type="file"
-                        accept="image/*,.pdf"
+                        accept="image/*"
                         disabled={status === 'uploading'}
                         onChange={handleFileChange}
                     />
@@ -163,7 +163,9 @@ export function ManualPaymentUpload({ orderId, expiryTime, onSuccess }: ManualPa
                         onClick={handleUpload}
                         disabled={!selectedFile || status === 'uploading' || isExpired}
                     >
-                        <UploadCloud className={`h-4 w-4 ${status === 'uploading' ? 'animate-spin' : ''}`} />
+                        {status !== 'uploading'
+                            ? <UploadCloud className={`h-4 w-4`} />
+                            : <Loader2 className='h-4 w-4 animate-spin' />}
                         {status === 'uploading' ? t('manualUpload.uploading') : t('manualUpload.uploadButton')}
                     </Button>
                     {selectedFile && (

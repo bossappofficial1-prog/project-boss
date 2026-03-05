@@ -78,6 +78,15 @@ export const subscriptionPlanSchema = z.object({
         .min(0, {
             message: "Harga tidak boleh bernilai negatif",
         }),
+    promo: z
+        .number({
+            required_error: "Harga wajib diisi",
+            invalid_type_error: "Harga harus berupa angka",
+        })
+        .min(0, {
+            message: "Harga tidak boleh bernilai negatif",
+        })
+        .optional(),
 
     durationDays: z
         .number({

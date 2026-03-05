@@ -270,6 +270,7 @@ export function CartContent() {
                         {Object.entries(cartState.itemsByOutlet).reverse().map(([outletId, { outletName, outletSlug, items: outletItems }]) => (
                             <CartOutletGroup
                                 key={outletId}
+                                outletId={outletId}
                                 outletSlug={outletSlug}
                                 outletName={outletName}
                                 items={outletItems}

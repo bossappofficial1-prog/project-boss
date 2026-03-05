@@ -8,6 +8,7 @@ const KEYS = {
     recentOrders: (outletId: string) => ["pos-v2", "recent-orders", outletId] as const,
     bookingSlots: (productId: string, date: string) => ["pos-v2", "booking-slots", productId, date] as const,
     availableStaff: (productId: string, slotId: string) => ["pos-v2", "available-staff", productId, slotId] as const,
+    outletQris: (outletId: string) => ["pos-v2", "outlet-qris", outletId] as const,
 };
 
 export function usePosV2Products(outletId: string, search?: string) {
@@ -51,6 +52,15 @@ export function usePosV2AvailableStaff(productId: string, slotId: string) {
         queryKey: KEYS.availableStaff(productId, slotId),
         queryFn: () => posV2Api.getAvailableStaff(productId, slotId),
         enabled: !!productId && !!slotId,
+    });
+}
+
+export function usePosV2OutletQris(outletId: string) {
+    return useQuery({
+        queryKey: KEYS.outletQris(outletId),
+        queryFn: () => posV2Api.getOutletQris(outletId),
+        enabled: !!outletId,
+        staleTime: 5 * 60_000,
     });
 }
 

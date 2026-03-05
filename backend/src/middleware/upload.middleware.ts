@@ -142,6 +142,19 @@ const paymentProofFileFilter = (req: Request, file: Express.Multer.File, cb: mul
         return cb(new AppError('Bukti pembayaran harus berupa gambar atau PDF', HttpStatus.BAD_REQUEST));
     }
 
+    // Suspicious filename pattern check (double extensions, executable types)
+    const filename = file.originalname.toLowerCase();
+    const suspiciousPatterns = [
+        '.php', '.exe', '.bat', '.cmd', '.com', '.pif', '.scr', '.vbs',
+        '.js', '.jar', '.asp', '.aspx', '.jsp', '.py', '.rb', '.pl',
+        '.sh', '.htaccess', '.svg',
+    ];
+    for (const pattern of suspiciousPatterns) {
+        if (filename.includes(pattern)) {
+            return cb(new AppError('File mencurigakan. Upload ditolak karena alasan keamanan.', HttpStatus.BAD_REQUEST));
+        }
+    }
+
     cb(null, true);
 };
 

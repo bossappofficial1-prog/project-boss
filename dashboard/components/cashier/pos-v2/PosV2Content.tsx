@@ -11,6 +11,7 @@ import {
     usePosV2CashSummary,
     usePosV2RecentOrders,
     usePosV2CreateOrder,
+    usePosV2OutletQris,
 } from "@/hooks/api/use-pos-v2";
 import type { PosV2Product, PosV2OrderResult } from "@/lib/apis/pos-v2";
 import { ProductCatalog } from "./ProductCatalog";
@@ -56,6 +57,7 @@ export function PosV2Content() {
     );
     const { data: cashSummary, isLoading: summaryLoading } = usePosV2CashSummary(outletId);
     const { data: recentOrders, isLoading: recentLoading } = usePosV2RecentOrders(outletId);
+    const { data: outletQris, isLoading: qrisLoading } = usePosV2OutletQris(outletId);
     const createOrder = usePosV2CreateOrder();
 
     // Derived state
@@ -81,9 +83,10 @@ export function PosV2Content() {
         if (!cartItems.length) return false;
         if (!isWalkIn && (!customerName.trim() || !customerPhone.trim())) return false;
         if (paymentMethod === "cash" && cashReceived < subtotal) return false;
+        if (paymentMethod === "qris" && !outletQris?.qrisImageUrl) return false;
         if (hasUnscheduledService) return false;
         return true;
-    }, [cartItems.length, isWalkIn, customerName, customerPhone, paymentMethod, cashReceived, subtotal, hasUnscheduledService]);
+    }, [cartItems.length, isWalkIn, customerName, customerPhone, paymentMethod, cashReceived, subtotal, hasUnscheduledService, outletQris]);
 
     // Cart handlers
     const handleAddToCart = (product: PosV2Product) => {
@@ -319,6 +322,8 @@ export function PosV2Content() {
                                 total={subtotal}
                                 cashReceived={cashReceived}
                                 onCashReceivedChange={setCashReceived}
+                                qrisImageUrl={outletQris?.qrisImageUrl}
+                                isLoadingQris={qrisLoading}
                             />
 
                             <Button
