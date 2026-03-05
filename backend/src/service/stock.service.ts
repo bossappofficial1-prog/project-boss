@@ -464,6 +464,33 @@ export async function getLowStockProducts(outletId: string) {
 }
 
 /**
+ * Get products with high stock / overstocked (currentStock >= maxStock)
+ */
+export async function getHighStockProducts(outletId: string) {
+  const products = await db.product.findMany({
+    where: {
+      outletId,
+      type: "GOODS",
+      goods: {
+        maxStock: { not: null },
+      },
+    },
+    include: {
+      goods: true,
+    },
+  });
+
+  // Filter in application layer for safety
+  const highStockProducts = products.filter((product) => {
+    if (!product.goods) return false;
+    if (product.goods.maxStock === null) return false;
+    return product.goods.currentStock >= product.goods.maxStock;
+  });
+
+  return highStockProducts;
+}
+
+/**
  * Manually recalculate HPP for a product goods
  * Useful for data corrections or audits
  */
@@ -553,6 +580,7 @@ export async function exportStockToExcel(outletId: string) {
     { header: "Nama Produk", key: "name", width: 30 },
     { header: "Stok Saat Ini", key: "currentStock", width: 15 },
     { header: "Stok Minimum", key: "minStock", width: 15 },
+    { header: "Stok Maksimum", key: "maxStock", width: 15 },
     { header: "Satuan", key: "unit", width: 12 },
     { header: "HPP Rata-rata", key: "averageHpp", width: 20 },
     { header: "Harga Jual", key: "sellingPrice", width: 20 },
@@ -579,6 +607,8 @@ export async function exportStockToExcel(outletId: string) {
       status = "Habis";
     } else if (goods.minStock !== null && goods.currentStock <= goods.minStock) {
       status = "Stok Rendah";
+    } else if (goods.maxStock !== null && goods.currentStock >= goods.maxStock) {
+      status = "Stok Berlebih";
     }
 
     const row = summary.addRow({
@@ -586,6 +616,7 @@ export async function exportStockToExcel(outletId: string) {
       name: product.name,
       currentStock: goods.currentStock,
       minStock: goods.minStock ?? "-",
+      maxStock: goods.maxStock ?? "-",
       unit: goods.unit,
       averageHpp: goods.averageHpp,
       sellingPrice: goods.sellingPrice,
@@ -602,7 +633,7 @@ export async function exportStockToExcel(outletId: string) {
     ["averageHpp", "sellingPrice", "stockValue"].forEach((key) => {
       const col = summary.getColumn(key);
       const cellRef = row.getCell(col.number);
-      cellRef.numFmt = '#,##0';
+      cellRef.numFmt = "#,##0";
     });
 
     // Color status
@@ -611,6 +642,8 @@ export async function exportStockToExcel(outletId: string) {
       statusCell.font = { color: { argb: "FFDC2626" }, bold: true };
     } else if (status === "Stok Rendah") {
       statusCell.font = { color: { argb: "FFF59E0B" }, bold: true };
+    } else if (status === "Stok Berlebih") {
+      statusCell.font = { color: { argb: "FF7C3AED" }, bold: true }; // Ungu untuk overstocked
     } else {
       statusCell.font = { color: { argb: "FF16A34A" } };
     }
@@ -636,7 +669,7 @@ export async function exportStockToExcel(outletId: string) {
     cell.font = { bold: true };
     cell.border = cellBorder;
   });
-  totalRow.getCell(summary.getColumn("stockValue").number).numFmt = '#,##0';
+  totalRow.getCell(summary.getColumn("stockValue").number).numFmt = "#,##0";
 
   // ─── Sheet 2+: Per-product history ───
   const typeLabels: Record<string, string> = {
@@ -651,9 +684,8 @@ export async function exportStockToExcel(outletId: string) {
     const logs = goods.stockLogs || [];
 
     // Sheet name max 31 chars
-    const sheetName = product.name.length > 28
-      ? product.name.substring(0, 28) + "..."
-      : product.name;
+    const sheetName =
+      product.name.length > 28 ? product.name.substring(0, 28) + "..." : product.name;
 
     const sheet = workbook.addWorksheet(sheetName);
 
@@ -719,7 +751,7 @@ export async function exportStockToExcel(outletId: string) {
 
         // Format HPP column
         if (log.hppPerUnit !== null) {
-          row.getCell(5).numFmt = '#,##0';
+          row.getCell(5).numFmt = "#,##0";
         }
 
         // Color type

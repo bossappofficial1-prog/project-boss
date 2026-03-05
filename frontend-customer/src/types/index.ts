@@ -246,7 +246,7 @@ export interface OrderDetail {
   createdAt: string;
   updatedAt: string;
   items: Item[];
-  outlet: Pick<OutletType, "id" | "name" | "phone" | "address">;
+  outlet: Pick<OutletType, "id" | "slug" | "name" | "phone" | "address">;
   transaction: Transaction | null;
   customerDetails: CustomerInfo & { id: string };
   bookingSlot?: OrderBookingSlot | null;

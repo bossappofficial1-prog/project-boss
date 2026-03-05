@@ -43,6 +43,7 @@ const parseDate = (date: string | Date | null | undefined): Date | null => {
 const goodsSchema = z.object({
   currentStock: z.coerce.number().min(0, "Stok minimal 0"),
   minStock: z.coerce.number().min(0).nullable().optional(),
+  maxStock: z.coerce.number().min(0).nullable().optional(),
   unit: z.string().min(1, "Unit wajib diisi"),
   sellingPrice: z.coerce.number().min(1, "Harga jual harus > 0"),
   averageHpp: z.coerce.number().min(1, "HPP harus > 0"),
@@ -88,7 +89,10 @@ const ticketSchema = z.object({
   eventEndDate: z.coerce.date().nullable().optional(),
   venue: z.string().min(1, "Nama venue wajib diisi"),
   venueAddress: z.string().nullable().optional(),
-  mapUrl: z.preprocess((val) => (val === "" ? undefined : val), z.string().url().nullable().optional()),
+  mapUrl: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.string().url().nullable().optional(),
+  ),
   totalQuota: z.coerce.number().min(1, "Total kuota minimal 1"),
   maxPerOrder: z.coerce.number().min(1).optional(),
   saleStartDate: z.coerce.date().nullable().optional(),
@@ -150,6 +154,7 @@ export default function AddOrEditProductServiceModal({
             averageHpp: initialData.goods?.averageHpp ?? 0,
             sellingPrice: initialData.goods?.sellingPrice ?? 0,
             minStock: initialData.goods?.minStock ?? null,
+            maxStock: initialData.goods?.maxStock ?? null,
           },
           service: undefined,
         } satisfies ProductFormValues;
@@ -226,6 +231,8 @@ export default function AddOrEditProductServiceModal({
         unit: "pcs",
         averageHpp: 0,
         sellingPrice: 0,
+        minStock: null,
+        maxStock: null,
       },
 
       service: { commissionType: "FIXED" } as any,
@@ -257,12 +264,15 @@ export default function AddOrEditProductServiceModal({
       payload.image = uploaded.url;
     }
     if (formType === "GOODS") {
-      const goods: GoodsSchemaType = {
+      const minStockRaw = otherValues.get("goods[minStock]");
+      const maxStockRaw = otherValues.get("goods[maxStock]");
+      const goods = {
         averageHpp: Number(otherValues.get("goods[averageHpp]")) || 0,
         currentStock: Number(otherValues.get("goods[currentStock]")),
         sellingPrice: Number(otherValues.get("goods[sellingPrice]")) || 0,
-        unit: (otherValues.get("service[unit]") || "pcs") as string,
-        minStock: Number(otherValues.get("goods[stock]")) || null,
+        unit: (otherValues.get("goods[unit]") || "pcs") as string,
+        minStock: minStockRaw !== null && minStockRaw !== "" ? Number(minStockRaw) : null,
+        maxStock: maxStockRaw !== null && maxStockRaw !== "" ? Number(maxStockRaw) : null,
       };
 
       payload.goods = goods;
@@ -426,12 +436,27 @@ export default function AddOrEditProductServiceModal({
       name: "goods.currentStock",
       label: "Stok Sekarang *",
       type: "number",
-      colSpan: 3,
+      colSpan: 2,
+      condition: (values) => values.type === "GOODS",
+    },
+    {
+      name: "goods.unit",
+      label: "Satuan *",
+      type: "text",
+      colSpan: 2,
+      placeholder: "pcs, kg, box...",
       condition: (values) => values.type === "GOODS",
     },
     {
       name: "goods.minStock",
-      label: "Minimal Stock (opsional)",
+      label: "Stok Minimum (opsional)",
+      type: "number",
+      colSpan: 3,
+      condition: (values) => values.type === "GOODS",
+    },
+    {
+      name: "goods.maxStock",
+      label: "Stok Maksimum (opsional)",
       type: "number",
       colSpan: 3,
       condition: (values) => values.type === "GOODS",
@@ -440,14 +465,7 @@ export default function AddOrEditProductServiceModal({
       name: "goods.sellingPrice",
       label: "Harga Jual *",
       type: "currency",
-      colSpan: 4,
-      condition: (values) => values.type === "GOODS",
-    },
-    {
-      name: "goods.unit",
-      label: "Satuan *",
-      type: "text",
-      colSpan: 2,
+      colSpan: "full",
       condition: (values) => values.type === "GOODS",
     },
 

@@ -209,12 +209,14 @@ export default function ServiceOperatingHoursSection({ outletId, value = {}, onC
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="lg"
             onClick={handleCopyFromOutlet}
             disabled={isLoading || !outletHours}
-            className="gap-2 shrink-0">
+            className="gap-2 shrink-0 py-6">
             <Copy className="h-4 w-4" />
-            <span className="hidden sm:inline">Copy dari Outlet</span>
+            <span className="hidden sm:inline">
+              Sesuaikan dengan <br /> jadwal outlet
+            </span>
           </Button>
         </div>
       </CardHeader>

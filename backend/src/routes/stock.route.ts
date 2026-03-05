@@ -8,6 +8,7 @@ import {
   stockReturnBulkController,
   getStockHistoryController,
   getLowStockController,
+  getHighStockController,
   recalculateHppController,
   getStockOverviewController,
   exportStockController,
@@ -27,6 +28,7 @@ router.post("/return-bulk", stockReturnBulkController);
 // Stock query endpoints
 router.get("/history/:productGoodsId", getStockHistoryController);
 router.get("/low-stock/:outletId", getLowStockController);
+router.get("/high-stock/:outletId", getHighStockController);
 router.get("/overview/:outletId", getStockOverviewController);
 router.get("/export/:outletId", exportStockController);
 

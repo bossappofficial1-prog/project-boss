@@ -16,7 +16,8 @@ export interface StockItem {
   goods?: {
     id: string;
     currentStock: number;
-    minStock?: number;
+    minStock?: number | null;
+    maxStock?: number | null;
     unit: string;
     averageHpp: number;
     sellingPrice: number;

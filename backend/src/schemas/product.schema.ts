@@ -5,6 +5,7 @@ import { ProductType, ServiceStatus } from "@prisma/client";
 const productGoodsSchema = z.object({
   currentStock: z.number().int().min(0).optional(), // default di DB
   minStock: z.number().int().min(0).nullable().optional(),
+  maxStock: z.number().int().min(0).nullable().optional(),
   unit: z.string().min(1, { message: "Unit wajib diisi" }),
   sellingPrice: z.number().positive({ message: "Harga jual harus > 0" }),
   averageHpp: z.number().positive({ message: "averageHpp harus > 0" }),

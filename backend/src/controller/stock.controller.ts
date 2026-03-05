@@ -8,6 +8,7 @@ import {
   recordReturnBulk,
   getStockHistory,
   getLowStockProducts,
+  getHighStockProducts,
   recalculateHpp,
   getStockOverview,
   exportStockToExcel,
@@ -173,6 +174,25 @@ export async function getLowStockController(req: Request, res: Response, next: N
   try {
     const outletId = ensureString(req.params?.outletId, "outletId");
     const products = await getLowStockProducts(outletId);
+
+    res.status(HttpStatus.OK).json({
+      success: true,
+      data: products,
+      total: products.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/stock/high-stock/:outletId
+ * Get products with high stock (overstocked, currentStock >= maxStock)
+ */
+export async function getHighStockController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const outletId = ensureString(req.params?.outletId, "outletId");
+    const products = await getHighStockProducts(outletId);
 
     res.status(HttpStatus.OK).json({
       success: true,

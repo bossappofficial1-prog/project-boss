@@ -92,16 +92,24 @@ async function validateItemsAndPrepareData(inputItems: any[], outletId: string) 
     }
 
     const priceProduct = () => {
-      let price = 0
+      let price = 0;
       switch (product.type) {
-        case 'GOODS': price = product.goods?.sellingPrice ?? 0; break;
-        case 'SERVICE': price = product.service?.sellingPrice ?? 0; break;
-        case 'TICKET': price = product.ticket?.sellingPrice ?? 0; break;
-        default: price = 0; break;
+        case "GOODS":
+          price = product.goods?.sellingPrice ?? 0;
+          break;
+        case "SERVICE":
+          price = product.service?.sellingPrice ?? 0;
+          break;
+        case "TICKET":
+          price = product.ticket?.sellingPrice ?? 0;
+          break;
+        default:
+          price = 0;
+          break;
       }
 
-      return price
-    }
+      return price;
+    };
     // (product.type === "GOODS" ? product.goods?.sellingPrice : product.service?.sellingPrice) ?? 0;
 
     const subtotal = priceProduct() * item.quantity;
@@ -602,14 +610,14 @@ export async function createPaymentService(data: CreatePaymentPayload) {
 
       try {
         // await paymentQueue.add({ orderId }, { delay });
-        await orderExpiryJob.add(orderId)
+        await orderExpiryJob.add(orderId);
         SocketEmitter.getInstance().emitToCashier(outletId, {
           orderId,
           amount: grossAmount,
           paymentMethod: manualType,
           customerName: customerDetails.name,
           timestamp: new Date(),
-        })
+        });
         SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
           orderId,
           amount: grossAmount,
@@ -784,22 +792,28 @@ export async function cancelPaymentService(orderId: string) {
 export async function uploadManualPaymentProofService(orderId: string, filePath: string) {
   // Validate actual file content (magic bytes) — defends against MIME/extension spoofing
   if (!fileExists(filePath)) {
-    throw new AppError('File tidak ditemukan setelah upload', HttpStatus.INTERNAL_SERVER_ERROR);
+    throw new AppError("File tidak ditemukan setelah upload", HttpStatus.INTERNAL_SERVER_ERROR);
   }
   const ext = path.extname(filePath).toLowerCase();
   const mimeByExt: Record<string, string> = {
-    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-    '.png': 'image/png', '.webp': 'image/webp',
-    '.pdf': 'application/pdf',
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".pdf": "application/pdf",
   };
-  const claimedMime = mimeByExt[ext] ?? 'application/octet-stream';
+  const claimedMime = mimeByExt[ext] ?? "application/octet-stream";
   try {
     await validateFileMagicBytes(filePath, claimedMime);
   } catch (err) {
     // Delete the file immediately if validation fails
-    try { deleteFile(filePath); } catch { /* ignore cleanup error */ }
+    try {
+      deleteFile(filePath);
+    } catch {
+      /* ignore cleanup error */
+    }
     throw new AppError(
-      err instanceof Error ? err.message : 'File tidak valid',
+      err instanceof Error ? err.message : "File tidak valid",
       HttpStatus.BAD_REQUEST,
     );
   }
@@ -843,7 +857,7 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
   await db.order.update({
     where: { id: orderId },
     data: {
-      orderStatus: OrderStatus.AWAITING_PAYMENT,
+      orderStatus: OrderStatus.PROCESSING,
       paymentStatus: PaymentStatus.AWAITING_VERIFICATION,
     },
   });
@@ -1019,7 +1033,7 @@ export async function getPaymentOrderService(orderId: string) {
   const operatingHours = await OperatingHoursRepository.findByOutletId(outlet.id);
   const now = new Date();
   const currentDay = now.getDay();
-  const todaySchedule = operatingHours.find(oh => oh.dayOfWeek === currentDay);
+  const todaySchedule = operatingHours.find((oh) => oh.dayOfWeek === currentDay);
 
   // Determine if currently within operating hours
   let isWithinOperatingHours = false;
@@ -1039,12 +1053,14 @@ export async function getPaymentOrderService(orderId: string) {
     outletInfo: {
       name: outlet.name,
       isWithinOperatingHours,
-      todaySchedule: todaySchedule ? {
-        isOpen: todaySchedule.isOpen,
-        openTime: todaySchedule.openTime,
-        closeTime: todaySchedule.closeTime,
-      } : null,
-      operatingHours: operatingHours.map(oh => ({
+      todaySchedule: todaySchedule
+        ? {
+            isOpen: todaySchedule.isOpen,
+            openTime: todaySchedule.openTime,
+            closeTime: todaySchedule.closeTime,
+          }
+        : null,
+      operatingHours: operatingHours.map((oh) => ({
         dayOfWeek: oh.dayOfWeek,
         isOpen: oh.isOpen,
         openTime: oh.openTime,
@@ -1057,38 +1073,38 @@ export async function getPaymentOrderService(orderId: string) {
       isManual: transaction.isManual,
       midtrans: convertMidtrans
         ? {
-          transaction_id: convertMidtrans?.transaction_id ?? null,
-          order_id: convertMidtrans?.order_id ?? null,
-          gross_amount: convertMidtrans?.gross_amount ?? null,
-          transaction_status: convertMidtrans?.transaction_status ?? null,
-          payment_type: convertMidtrans?.payment_type,
-          expiry_time: convertMidtrans?.expiry_time,
-          actions: convertMidtrans?.actions ?? null,
-          va_numbers: convertMidtrans?.va_numbers ?? null,
-          currency: "IDR",
-        }
+            transaction_id: convertMidtrans?.transaction_id ?? null,
+            order_id: convertMidtrans?.order_id ?? null,
+            gross_amount: convertMidtrans?.gross_amount ?? null,
+            transaction_status: convertMidtrans?.transaction_status ?? null,
+            payment_type: convertMidtrans?.payment_type,
+            expiry_time: convertMidtrans?.expiry_time,
+            actions: convertMidtrans?.actions ?? null,
+            va_numbers: convertMidtrans?.va_numbers ?? null,
+            currency: "IDR",
+          }
         : null,
       manual: transaction.isManual
         ? {
-          type: transaction.paymentMethod,
-          paymentProofUrl: transaction.paymentProofUrl,
-          intruction: {
-            manualType: transaction.paymentMethod,
-            outletName: outlet.name,
-            businessName: outlet.business.name,
-            note: null,
-            qrImageUrl: outlet.manualQrImageUrl,
-            expiry_time: transaction.expiresAt,
-            bankAccount:
-              transaction.paymentMethod === "manual-transfer"
-                ? {
-                  bankName: outlet.business.bankName,
-                  accountNumber: outlet.business.bankAccount,
-                  accountHolder: outlet.business.accountHolder,
-                }
-                : null,
-          },
-        }
+            type: transaction.paymentMethod,
+            paymentProofUrl: transaction.paymentProofUrl,
+            intruction: {
+              manualType: transaction.paymentMethod,
+              outletName: outlet.name,
+              businessName: outlet.business.name,
+              note: null,
+              qrImageUrl: outlet.manualQrImageUrl,
+              expiry_time: transaction.expiresAt,
+              bankAccount:
+                transaction.paymentMethod === "manual-transfer"
+                  ? {
+                      bankName: outlet.business.bankName,
+                      accountNumber: outlet.business.bankAccount,
+                      accountHolder: outlet.business.accountHolder,
+                    }
+                  : null,
+            },
+          }
         : null,
     },
     customerDetails: {
@@ -1103,7 +1119,9 @@ export async function getPaymentOrderService(orderId: string) {
       const productPrice =
         (item.product.type === "GOODS"
           ? item.product.goods?.sellingPrice
-          : (item.product.type === 'TICKET' ? item.product.ticket?.sellingPrice : item.product.service?.sellingPrice)) ?? 0;
+          : item.product.type === "TICKET"
+            ? item.product.ticket?.sellingPrice
+            : item.product.service?.sellingPrice) ?? 0;
       return {
         id: item.id,
         name: item.product.name,

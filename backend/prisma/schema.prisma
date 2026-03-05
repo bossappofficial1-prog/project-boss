@@ -360,6 +360,7 @@ model ProductGoods {
   // Goods-specific fields
   currentStock Int    @default(0)
   minStock     Int? // Alert threshold untuk low stock
+  maxStock     Int? // Alert threshold untuk over stock
   unit         String // Pcs, Kg, Box, Liter, dll
 
   // HPP (Harga Pokok Penjualan) - calculated from stock logs
