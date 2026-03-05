@@ -16,7 +16,8 @@ import {
     getQRISService,
     getOutletAnalytics,
     getOutletRevenueTrend,
-    getOutletIdsService
+    getOutletIdsService,
+    getOutletBySlugService
 } from "../service/outlet.service";
 
 export const findNearbyOutletsController = asyncHandler(async (req: Request, res: Response) => {
@@ -74,6 +75,12 @@ export const createOutletController = asyncHandler(async (req: Request, res: Res
 export const getOutletByIdController = asyncHandler(async (req: Request, res: Response) => {
     const id = req.params.id as string;
     const outlet = await getOutletByIdService(id);
+    return ResponseUtil.success(res, outlet);
+});
+
+export const getOutletBySlugController = asyncHandler(async (req: Request, res: Response) => {
+    const slug = req.params.slug as string;
+    const outlet = await getOutletBySlugService(slug);
     return ResponseUtil.success(res, outlet);
 });
 

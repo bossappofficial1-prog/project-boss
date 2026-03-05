@@ -10,5 +10,11 @@ export function useGetSlotProduct(productId: string, date?: Date | null) {
         queryKey: ["slots", productId, dateStr],
         queryFn: () => BookingSlot.getSlotByProductId(productId, dateStr as string),
         enabled: Boolean(productId && dateStr),
+        staleTime: 1000 * 30,
+        gcTime: 1000 * 60 * 10,
+        refetchOnMount: 'always',
+        refetchOnReconnect: 'always',
+        refetchOnWindowFocus: 'always',
+        refetchInterval: 1000 * 60,
     });
 }

@@ -980,6 +980,15 @@ export async function cancelOrderByCustomerService(
           data: { status: "CANCELLED" },
         });
       }
+      if (item.bookingSlot?.id) {
+        await tx.bookingSlot.update({
+          where: { id: item.bookingSlot.id },
+          data: {
+            status: BookingSlotStatus.AVAILABLE,
+            orderItemId: null,
+          },
+        });
+      }
     }
 
     if (orderRecord.bookingSlot) {

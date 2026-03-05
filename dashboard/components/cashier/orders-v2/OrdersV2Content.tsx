@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { RefreshCw, Plus } from "lucide-react";
@@ -16,11 +16,7 @@ import { ProofPreviewDialog } from "./ProofPreviewDialog";
 import {
     useOrdersV2Board,
     useOrdersV2UpdateStatus,
-    useInvalidateOrdersV2,
 } from "@/hooks/api/use-orders-v2";
-import { useEmitSocket } from "@/hooks/useEmitSocket";
-import { useSocketEvent } from "@/hooks/useSocketEvent";
-import { SOCKET_EVENT, type SocketEvents } from "@/types/socket";
 import { ordersV2Api } from "@/lib/apis/orders-v2";
 import type { OrderV2Entry, GoodsOrderStatus, OrdersV2Board } from "@/lib/apis/orders-v2";
 import { formatCurrency } from "@/components/owner/orders/utils";
@@ -54,7 +50,6 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
     const router = useRouter();
     const { data, isLoading, refetch } = useOrdersV2Board(outletId);
     const updateStatus = useOrdersV2UpdateStatus();
-    const invalidateOrders = useInvalidateOrdersV2();
 
     const [detailEntry, setDetailEntry] = useState<OrderV2Entry | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
@@ -62,41 +57,6 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [proofEntry, setProofEntry] = useState<OrderV2Entry | null>(null);
     const [proofOpen, setProofOpen] = useState(false);
-
-    // Socket: join outlet room
-    const { emitEvent, isConnected } = useEmitSocket();
-
-    useEffect(() => {
-        if (!outletId || !isConnected) return;
-        emitEvent(SOCKET_EVENT.JOIN_OUTLET, { outletId });
-    }, [emitEvent, isConnected, outletId]);
-
-    // Socket: listen for new payments / order status changes
-    const handlePaymentNew = useCallback(
-        (payload: SocketEvents[typeof SOCKET_EVENT.PAYMENT_NEW]) => {
-            if (!payload) return;
-            invalidateOrders();
-            toast.info(`Pembayaran baru: ${payload.customerName}`, {
-                description: `${formatCurrency(payload.amount)} via ${payload.paymentMethod}`,
-            });
-        },
-        [invalidateOrders],
-    );
-
-    useSocketEvent(SOCKET_EVENT.PAYMENT_NEW, handlePaymentNew, {
-        enabled: Boolean(outletId),
-    });
-
-    const handleOrderStatusChanged = useCallback(
-        () => {
-            invalidateOrders();
-        },
-        [invalidateOrders],
-    );
-
-    useSocketEvent(SOCKET_EVENT.ORDER_STATUS_CHANGED as any, handleOrderStatusChanged, {
-        enabled: Boolean(outletId),
-    });
 
     // Receipt printing via hidden iframe
     const handlePrint = useCallback(async (entry: OrderV2Entry) => {
@@ -179,14 +139,6 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
                     reason,
                 });
 
-                // Emit socket event
-                emitEvent(SOCKET_EVENT.ORDER_UPDATE_STATUS, {
-                    orderId: confirmState.entry.id,
-                    customerId: "anonymous",
-                    status: confirmState.nextStatus,
-                    reason,
-                });
-
                 const label = STATUS_LABELS[confirmState.nextStatus] ?? confirmState.nextStatus;
                 toast.success(`Pesanan #${confirmState.entry.id.slice(-8)} → ${label}`);
                 setConfirmOpen(false);
@@ -198,7 +150,7 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
                 toast.error(message);
             }
         },
-        [confirmState, updateStatus, emitEvent],
+        [confirmState, updateStatus],
     );
 
     // Detail sheet

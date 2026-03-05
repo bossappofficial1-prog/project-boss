@@ -10,7 +10,7 @@ import { memo, useCallback } from "react";
 import { CartItemCard } from "./CartItemCard";
 
 export const CartOutletGroup = memo(({
-    outletId,
+    outletSlug,
     outletName,
     items,
     isSelected,
@@ -24,7 +24,7 @@ export const CartOutletGroup = memo(({
     onRemoveItem,
     onUpdateSlot
 }: {
-    outletId: string;
+    outletSlug: string;
     outletName: string;
     items: CartItem[];
     isSelected: boolean;
@@ -48,13 +48,13 @@ export const CartOutletGroup = memo(({
 
     return (
         <Card
-            onClick={() => onSelectOutlet(outletId)}
+            onClick={() => onSelectOutlet(outletSlug)}
             className={`pt-0 py-0 gap-0 overflow-hidden rounded-md cursor-pointer transition-all ${isSelected ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "hover:border-primary/50"}`}
         >
             <CardHeader className="bg-muted/50 pt-3 px-3">
                 <CardTitle className="text-base flex items-center gap-2">
                     <Link
-                        href={`/outlet/${outletId}`}
+                        href={`/outlet/${outletSlug}`}
                         className='flex items-center gap-2 hover:opacity-85'
                         onClick={(e) => e.stopPropagation()}
                     >

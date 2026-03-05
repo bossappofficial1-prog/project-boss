@@ -21,10 +21,10 @@ export class Product {
       page: page.toString(),
       limit: limit.toString(),
     });
-    
+
     if (search) queryParams.append('q', search);
     if (type) queryParams.append('type', type);
-    
+
     const response = await api.get(`/products/outlet/${outletId}?${queryParams.toString()}`);
     return {
       data: response.data.data || [],

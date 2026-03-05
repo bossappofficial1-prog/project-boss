@@ -599,9 +599,6 @@ export async function createPaymentService(data: CreatePaymentPayload) {
         },
       });
 
-      const expireTime = new Date(expiresAt);
-      const delay = Math.max(0, expireTime.getTime() - new Date().getTime());
-
       try {
         // await paymentQueue.add({ orderId }, { delay });
         await orderExpiryJob.add(orderId)

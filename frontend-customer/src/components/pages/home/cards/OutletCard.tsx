@@ -27,7 +27,7 @@ function OutletCard({ outlet, numberFormatter, t, tCommon }: OutletCardProps) {
             : `${Math.round(outlet.distance * 1000)} ${tCommon("m")}`
         : null
 
-    const href = withLocalizedPath(`/outlet/${outlet.id}`)
+    const href = withLocalizedPath(`/outlet/${outlet.slug}`)
 
     return (
         <Link

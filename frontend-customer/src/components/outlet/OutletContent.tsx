@@ -184,7 +184,7 @@ export function LeftContentAppBarOutlet({
 
 const SESSION_KEY = "prev_page_to_outlet";
 
-export function OutletContent({ outletId }: { outletId: string }) {
+export function OutletContent({ slug }: { slug: string }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { setAppBar, resetAppBar } = useAppBarV2();
   const [prevPage] = useState(() => {
@@ -213,9 +213,9 @@ export function OutletContent({ outletId }: { outletId: string }) {
   const results = useQueries({
     queries: [
       {
-        queryKey: ["outlet", outletId],
-        queryFn: () => Outlet.getDetail(outletId),
-        enabled: !!outletId,
+        queryKey: ["outlet", slug],
+        queryFn: () => Outlet.getDetail(slug),
+        enabled: !!slug,
         staleTime: 1000 * 30,
         gcTime: 1000 * 60 * 10,
         refetchOnMount: 'always',
@@ -224,9 +224,9 @@ export function OutletContent({ outletId }: { outletId: string }) {
         refetchInterval: 1000 * 60,
       },
       {
-        queryKey: ["products", outletId],
-        queryFn: () => ProductService.getAllByOutlet(outletId),
-        enabled: !!outletId && !debouncedSearchQuery,
+        queryKey: ["products", slug],
+        queryFn: () => ProductService.getAllByOutlet(slug),
+        enabled: !!slug && !debouncedSearchQuery,
         staleTime: 1000 * 30,
         gcTime: 1000 * 60 * 10,
         refetchOnMount: 'always',
@@ -242,7 +242,7 @@ export function OutletContent({ outletId }: { outletId: string }) {
   const trimmedSearch = debouncedSearchQuery.trim();
 
   const searchResult = useSearchProductsByOutlet({
-    outletId,
+    outletId: results[0].data?.id!,
     search: trimmedSearch,
     enabled: !!trimmedSearch,
   });

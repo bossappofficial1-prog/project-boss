@@ -3,22 +3,23 @@ import axios from 'axios';
 import { OutletDetails } from "@/types/outlet";
 import { resolveCustomerImageUrl } from "@/lib/url";
 
-type Params = Promise<{ id: string }>;
+type Params = Promise<{ slug: string }>;
 
-async function getOutlet(id: string): Promise<OutletDetails | null> {
+async function getOutlet(slug: string): Promise<OutletDetails | null> {
+    console.log(slug)
     try {
-        const res = await axios.get(`${process.env.SERVER_API_URL}/outlets/${id}`);
+        const res = await axios.get(`${process.env.SERVER_API_URL}/outlets/slug/${slug}`);
         return res.data?.data || null;
     } catch (error) {
-        console.error(`Error fetching outlet ${id}:`, error);
+        console.error(`Error fetching outlet ${slug}:`, error);
         return null;
     }
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
     const resolvedParams = await params;
-    const id = typeof resolvedParams?.id === "string" ? resolvedParams.id : "";
-    if (!id) {
+    const slug = typeof resolvedParams?.slug === "string" ? resolvedParams.slug : "";
+    if (!slug) {
         return {
             title: "Outlet Tidak Ditemukan - Boss App",
             description: "Outlet yang Anda cari tidak ditemukan.",
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://bossapp.id";
-    const outlet = await getOutlet(id);
+    const outlet = await getOutlet(slug);
 
     // Default metadata when outlet is not found
     if (!outlet) {
@@ -87,7 +88,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
             type: "website",
             siteName: outlet.business?.name || "Boss App",
             locale: "id_ID",
-            url: `${baseUrl}/outlet/${id}`,
+            url: `${baseUrl}/outlet/${slug}`,
         },
         twitter: {
             card: "summary_large_image",
@@ -108,18 +109,18 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
             },
         },
         alternates: {
-            canonical: `${baseUrl}/outlet/${id}`,
+            canonical: `${baseUrl}/outlet/${slug}`,
         },
     };
 }
 
 export default async function Layout({ children, params }: { children: React.ReactNode; params: Params }) {
     const resolvedParams = await params;
-    const id = typeof resolvedParams?.id === "string" ? resolvedParams.id : "";
+    const slug = typeof resolvedParams?.slug === "string" ? resolvedParams.slug : "";
     let structuredData: string | null = null;
 
-    if (id) {
-        const outlet = await getOutlet(id);
+    if (slug) {
+        const outlet = await getOutlet(slug);
         if (outlet) {
             const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://bossapp.id";
             const safeImage = resolveCustomerImageUrl(outlet.image);
@@ -133,7 +134,7 @@ export default async function Layout({ children, params }: { children: React.Rea
                 name: outlet.name,
                 description: outlet.description || undefined,
                 image: absoluteImage,
-                url: `${baseUrl}/outlet/${id}`,
+                url: `${baseUrl}/outlet/${slug}`,
                 telephone: outlet.phone || undefined,
                 address: outlet.address ? {
                     '@type': 'PostalAddress',

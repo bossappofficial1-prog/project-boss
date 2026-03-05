@@ -26,9 +26,9 @@ export class CartValidationService {
     /**
      * Validasi ketersediaan outlet
      */
-    static async validateOutlet(outletId: string): Promise<ValidationResult> {
+    static async validateOutlet(slug: string): Promise<ValidationResult> {
         try {
-            const outlet = await OutletService.getDetail(outletId);
+            const outlet = await OutletService.getDetail(slug);
             return {
                 isValid: !!outlet,
                 data: outlet
@@ -67,7 +67,7 @@ export class CartValidationService {
      */
     static async validateCartItems(cartItems: Array<{
         id: string;
-        outletId: string;
+        slug: string;
         productId: string;
         name: string;
         outletName: string;
@@ -86,14 +86,14 @@ export class CartValidationService {
         }
 
         // Kumpulkan ID unik untuk outlet dan produk
-        const uniqueOutletIds = [...new Set(cartItems.map(item => item.outletId))];
+        const uniqueOutletSlugs = [...new Set(cartItems.map(item => item.slug))];
         const uniqueProductIds = [...new Set(cartItems.map(item => item.productId))];
 
         // Validasi outlet secara paralel
         const outletValidations = await Promise.all(
-            uniqueOutletIds.map(async (outletId) => ({
-                id: outletId,
-                result: await this.validateOutlet(outletId)
+            uniqueOutletSlugs.map(async (slug) => ({
+                id: slug,
+                result: await this.validateOutlet(slug)
             }))
         );
 
@@ -122,7 +122,7 @@ export class CartValidationService {
         }> = [];
 
         cartItems.forEach(item => {
-            const outletValidation = outletValidationMap.get(item.outletId);
+            const outletValidation = outletValidationMap.get(item.slug);
             const productValidation = productValidationMap.get(item.productId);
 
             // Cek outlet dulu
@@ -155,7 +155,7 @@ export class CartValidationService {
             summary: {
                 totalValid: validItems.length,
                 totalInvalid: invalidItems.length,
-                outletsChecked: uniqueOutletIds.length,
+                outletsChecked: uniqueOutletSlugs.length,
                 productsChecked: uniqueProductIds.length
             }
         };
@@ -167,7 +167,7 @@ export class CartValidationService {
     static async validateCartWithRetry(
         cartItems: Array<{
             id: string;
-            outletId: string;
+            slug: string;
             productId: string;
             name: string;
             outletName: string;

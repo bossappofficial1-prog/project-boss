@@ -167,7 +167,13 @@ export class ProductRepository {
 
     const where: Prisma.ProductWhereInput = {
       AND: [
-        { outletId },
+        {
+          OR: [
+            { outletId },
+            { outlet: { slug: outletId } },
+          ]
+        },
+
         ...(q && q !== ""
           ? [
             {

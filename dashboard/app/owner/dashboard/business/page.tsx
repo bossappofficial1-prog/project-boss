@@ -6,8 +6,6 @@ export const metadata: Metadata = {
     description: "Ringkasan kinerja lintas outlet, pesanan, dan pendapatan bisnis Anda.",
 };
 
-export const dynamic = "force-dynamic";
-
 export default function BusinessDashboardPage() {
     return <BusinessDashboardContent />;
 }

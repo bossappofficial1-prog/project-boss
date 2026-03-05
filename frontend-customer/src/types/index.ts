@@ -5,6 +5,7 @@ export * from "./home";
 export interface OutletType {
   id: string;
   name: string;
+  slug?: string;
   address: string;
   phone: string;
   createdAt: string;

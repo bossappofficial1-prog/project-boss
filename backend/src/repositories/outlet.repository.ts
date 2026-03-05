@@ -55,6 +55,25 @@ export class OutletRepository {
         });
     }
 
+    static async findBySlug(slug: string) {
+        return db.outlet.findUnique({
+            where: { slug },
+            include: {
+                business: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                        accountHolder: true,
+                        bankAccount: true,
+                        bankName: true
+                    }
+                },
+                operatingHours: true,
+            },
+        });
+    }
+
     static async findByIdWithProducts(id: string): Promise<any | null> {
         return db.outlet.findUnique({
             where: { id },

@@ -16,7 +16,8 @@ import {
     getQRISController,
     getOutletAnalyticsController,
     getOutletRevenueTrendController,
-    getOutletIdsController
+    getOutletIdsController,
+    getOutletBySlugController
 } from "../controller/outlet.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOutletSchema, updateOutletSchema, updateOutletLocationSchema } from "../schemas/outlet.schema";
@@ -32,6 +33,7 @@ outletRouter.get("/featured", getFeaturedOutletsController);
 outletRouter.get("/nearby", findNearbyOutletsController);
 outletRouter.get("/ids", getOutletIdsController);
 outletRouter.get("/:id", getOutletByIdController);
+outletRouter.get("/slug/:slug", getOutletBySlugController);
 outletRouter.get("/business/:businessId", getOutletsByBusinessIdController);
 
 // Rute yang dilindungi dan hanya untuk Owner

@@ -234,6 +234,7 @@ model SubscriptionInvoice {
 model Outlet {
   id          String   @id @default(uuid())
   name        String
+  slug        String?  @unique
   description String?
   address     String?
   phone       String?
@@ -270,6 +271,7 @@ model Outlet {
   receiptSettings receiptSetting?
 
   @@index([businessId])
+  @@index([slug])
   @@index([latitude, longitude]) // Indeks untuk query lokasi (bounding box)
   @@index([name]) // Indeks untuk pencarian nama outlet
   @@index([description]) // Indeks untuk pencarian deskripsi outlet
@@ -605,8 +607,8 @@ model Membership {
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   // Field tambahan untuk membership
-  joinedAt DateTime  @default(now())
-  point    Int @default(0)
+  joinedAt DateTime @default(now())
+  point    Int      @default(0)
 
   @@unique([guestCustomerId, orderId])
   @@index([guestCustomerId])

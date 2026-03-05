@@ -28,7 +28,7 @@ export function useCartValidation(options: UseCartValidationOptions = {}) {
     const cartItemsForValidation = useMemo(() =>
         items.map(item => ({
             id: item.id,
-            outletId: item.outletId,
+            slug: item.slug,
             productId: item.productId,
             name: item.name,
             outletName: item.outletName
@@ -43,7 +43,7 @@ export function useCartValidation(options: UseCartValidationOptions = {}) {
         error,
         refetch: revalidate
     } = useQuery<CartValidationResult>({
-        queryKey: ['cart-validation', cartItemsForValidation.map(i => `${i.outletId}-${i.productId}`).sort()],
+        queryKey: ['cart-validation', cartItemsForValidation.map(i => `${i.slug}-${i.productId}`).sort()],
         queryFn: () => CartValidationService.validateCartWithRetry(cartItemsForValidation),
         enabled: enabled && cartItemsForValidation.length > 0,
         staleTime: 2 * 60 * 1000, // 2 menit

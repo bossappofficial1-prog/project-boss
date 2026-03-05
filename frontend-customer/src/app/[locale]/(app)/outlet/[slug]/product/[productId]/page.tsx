@@ -1,17 +1,17 @@
 import { notFound } from "next/navigation";
 import { ProductDetails } from "@/components/product/ProductDetails";
 
-type Params = { id?: string; productId?: string };
+type Params = { slug?: string; productId?: string };
 
 export default async function ProductDetailPage({ params }: { params: Promise<Params> }) {
-    const { id, productId } = await params
+    const { slug, productId } = await params
 
-    const outletId = typeof id === "string" ? id : undefined;
+    const slugValid = typeof slug === "string" ? slug : undefined;
     const productIdValid = typeof productId === "string" ? productId : undefined;
 
-    if (!outletId || !productIdValid) {
+    if (!slugValid || !productIdValid) {
         notFound();
     }
 
-    return <ProductDetails outletId={outletId} productId={productIdValid} />;
+    return <ProductDetails slug={slugValid} productId={productIdValid} />;
 }

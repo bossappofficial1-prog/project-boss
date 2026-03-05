@@ -8,6 +8,7 @@ import { Product } from '@/types/product';
 export interface CartItem {
     id: string;
     outletId: string;
+    slug: string;
     outletName: string;
     productId: string;
     name: string;
@@ -31,7 +32,7 @@ interface CartState {
     isOpen: boolean;
 
     // Actions
-    addItem: (outletId: string, outletName: string, product: Product, quantity?: number, selectedSchedule?: SelectedSchedule) => boolean;
+    addItem: (outletId: string, outletName: string, slug: string, product: Product, quantity?: number, selectedSchedule?: SelectedSchedule) => boolean;
     removeItem: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
     updateItem: (itemId: string, updates: Partial<CartItem>) => void;
@@ -55,7 +56,7 @@ export const useCart = create<CartState>()(
             items: [],
             isOpen: false,
 
-            addItem: (outletId: string, outletName: string, product: Product, quantity = 1, selectedSchedule) => {
+            addItem: (outletId: string, outletName: string, slug: string, product: Product, quantity = 1, selectedSchedule) => {
                 const { items } = get();
                 const slotInfo = selectedSchedule?.slot;
                 const staffInfo = selectedSchedule?.staff;
@@ -125,6 +126,18 @@ export const useCart = create<CartState>()(
                             }
                         }
 
+                        if (product.type === 'TICKET' && product.ticket) {
+                            const availableQuota = Math.max(
+                                (product.ticket.totalQuota ?? 0) - (product.ticket.soldCount ?? 0),
+                                0,
+                            );
+                            const maxTicketQuantity = Math.min(product.ticket.maxPerOrder ?? 99, availableQuota);
+
+                            if (newQuantity > maxTicketQuantity) {
+                                return false;
+                            }
+                        }
+
                         updatedItems[existingItemIndex] = {
                             ...existingItem,
                             quantity: newQuantity
@@ -134,10 +147,29 @@ export const useCart = create<CartState>()(
                     set({ items: updatedItems });
                     return true;
                 } else {
+                    if (product.type === 'GOODS' && product.goods?.currentStock !== null) {
+                        if (quantity > product.goods?.currentStock!) {
+                            return false;
+                        }
+                    }
+
+                    if (product.type === 'TICKET' && product.ticket) {
+                        const availableQuota = Math.max(
+                            (product.ticket.totalQuota ?? 0) - (product.ticket.soldCount ?? 0),
+                            0,
+                        );
+                        const maxTicketQuantity = Math.min(product.ticket.maxPerOrder ?? 99, availableQuota);
+
+                        if (quantity > maxTicketQuantity) {
+                            return false;
+                        }
+                    }
+
                     // Add new item
                     const newItem: CartItem = {
                         id: `${outletId}-${product.id}-${Date.now()}`,
                         outletId,
+                        slug,
                         outletName,
                         productId: product.id,
                         name: product.name,

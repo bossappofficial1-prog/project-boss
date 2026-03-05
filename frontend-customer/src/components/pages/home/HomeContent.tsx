@@ -140,7 +140,7 @@ function HomeSections() {
                     <DivXScroll className="gap-3">
                         {outlets.map((outlet) => (
                             <OutletCard
-                                key={outlet.id}
+                                key={outlet.slug}
                                 outlet={outlet}
                                 numberFormatter={numberFormatter}
                                 t={t}

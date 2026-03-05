@@ -13,9 +13,7 @@ export function QueryProvider({ children }: PropsWithChildren) {
         gcTime: 10 * 60 * 1000, // 10 minutes
         // Retry failed requests 2 times
         retry: 2,
-        // Don't refetch on window focus in production
-        refetchOnWindowFocus: process.env.NODE_ENV === 'development',
-        // Don't refetch on reconnect
+        refetchOnWindowFocus: false,
         refetchOnReconnect: false,
       },
       mutations: {

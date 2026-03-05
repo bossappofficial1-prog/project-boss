@@ -131,6 +131,23 @@ export async function getOutletByIdService(id: string, date?: Date) {
     return { ...outlet, operatingHours, isOpen: isOpenOutlet, status: isOpenOutlet };
 }
 
+export async function getOutletBySlugService(id: string, date?: Date) {
+    const today = date || new Date();
+    const outletRaw = await OutletRepository.findBySlug(id)
+    if (!outletRaw) {
+        throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    const { operatingHours, ...outlet } = outletRaw;
+
+    const isOpenOutlet = outlet.isOpen && (
+        operatingHours.length > 0
+            ? getIsOutletOpen(operatingHours, today)
+            : false
+    );
+
+    return { ...outlet, operatingHours, isOpen: isOpenOutlet, status: isOpenOutlet };
+}
+
 export async function getAllOutletService() {
     const outlet = await OutletRepository.getAll();
     if (!outlet) {

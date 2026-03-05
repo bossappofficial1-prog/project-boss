@@ -1,19 +1,21 @@
 "use client";
 
-import React, { useEffect, useState, createContext, useContext } from "react";
+import React, { useEffect, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { LogOut, ShoppingBag } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { CashierNavbar } from "@/components/cashier/CashierNavbar";
-import { SocketProvider } from "@/components/providers/SocketProvider";
 import { CashierOutletProvider } from "@/components/providers/CashierOutletProvider";
 import { authApi } from "@/lib/api";
 import { apiClient } from "@/lib/apis/base";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { SocketCashierProvider } from "@/contexts/SocketCashierContext";
+
+const CASHIER_SESSION_CACHE_KEY = "cashier-auth-cache-v1";
 
 // Context for cashier data
 interface CashierContextValue {
@@ -36,13 +38,40 @@ export function useCashierContext() {
  */
 export default function CashierLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [cashierData, setCashierData] = useState<any>(null);
-  const [outletData, setOutletData] = useState<any>(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+
+  const {
+    data: cashierData,
+    isLoading: isLoadingAuth,
+    isFetching: isFetchingAuth,
+    isError: isCashierAuthError,
+  } = useQuery({
+    queryKey: ["cashier-auth"],
+    queryFn: async () => authApi.cashierMe(),
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    initialData: () => {
+      if (typeof window === "undefined") return undefined;
+
+      try {
+        const rawData = sessionStorage.getItem(CASHIER_SESSION_CACHE_KEY);
+        return rawData ? JSON.parse(rawData) : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+  });
+
+  const outletData = cashierData?.outlet;
 
   const handleLogout = async () => {
     try {
       await apiClient.post("/auth/logout");
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(CASHIER_SESSION_CACHE_KEY);
+      }
       toast.success("Logout berhasil");
       router.push("/auth/login/cashier");
     } catch (error) {
@@ -51,30 +80,24 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
     }
   };
 
-  // Fetch cashier data on mount
   useEffect(() => {
-    const fetchCashierData = async () => {
-      try {
-        setIsLoadingAuth(true);
-        const response = await authApi.cashierMe();
-        setCashierData(response);
+    if (!cashierData || typeof window === "undefined") return;
 
-        if (response.outlet) {
-          setOutletData(response.outlet);
-        }
-      } catch (error) {
-        console.error("Failed to fetch cashier data:", error);
-        toast.error("Sesi login tidak valid, silakan login kembali");
-        router.push("/auth/login/cashier");
-      } finally {
-        setIsLoadingAuth(false);
-      }
-    };
+    try {
+      sessionStorage.setItem(CASHIER_SESSION_CACHE_KEY, JSON.stringify(cashierData));
+    } catch {
+      // ignore session storage failures
+    }
+  }, [cashierData]);
 
-    fetchCashierData();
-  }, [router]);
+  useEffect(() => {
+    if (!isCashierAuthError) return;
 
-  if (isLoadingAuth) {
+    toast.error("Sesi login tidak valid, silakan login kembali");
+    router.replace("/auth/login/cashier");
+  }, [isCashierAuthError, router]);
+
+  if ((isLoadingAuth || isFetchingAuth) && !cashierData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

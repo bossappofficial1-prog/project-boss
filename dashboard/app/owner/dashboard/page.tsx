@@ -12,8 +12,7 @@ import BusinessProfileCard from "@/components/owner/dashboard/BusinessProfileCar
 import OutletsSection from "@/components/owner/dashboard/OutletsSection";
 import { PageSkeleton } from "@/components/owner/dashboard/Skeletons";
 
-export const dynamic = "force-dynamic";
-export const runtime = "edge";
+
 
 export default function DashboardPage() {
   const { stats, business, outlets, selectedOutlet, isLoading, globalError, refetch } =

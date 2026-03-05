@@ -30,6 +30,7 @@ export type Product = {
 export type OutletDetails = {
     id: string;
     name: string;
+    slug?: string;
     description?: string;
     address: string;
     phone: string;

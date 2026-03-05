@@ -16,7 +16,7 @@ export interface HomeCategory {
 
 export interface HomePopularItem {
     id: string
-    outletId: string;
+    slug: string;
     name: string
     price: number
     image?: string | null
@@ -49,6 +49,7 @@ export interface HomeSummaryResponse {
 export interface HomeOutletSummary {
     id: string
     name: string
+    slug?: string;
     description?: string | null
     address?: string | null
     phone?: string | null

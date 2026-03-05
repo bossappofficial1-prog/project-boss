@@ -297,21 +297,7 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
                 stickyHeader
                 enableExport
                 exportFilename="data-pengeluaran"
-                labelAction="Aksi"
-                rowActions={(row: Expense) => [
-                    {
-                        label: "Edit",
-                        onClick: (r: Expense) => handleEdit(r),
-                        variant: "ghost" as const,
-                        icon: PenLine,
-                    },
-                    {
-                        label: "Hapus",
-                        onClick: (r: Expense) => handleDeleteClick(r),
-                        variant: "destructive" as const,
-                        icon: Trash2,
-                    },
-                ]}
+
                 mobileCardRender={(exp: Expense) => (
                     <div className="p-3 space-y-2">
                         <div className="flex items-start justify-between gap-3">
@@ -331,26 +317,6 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
                             <p className="text-sm font-semibold text-red-600 dark:text-red-400 whitespace-nowrap shrink-0">
                                 -{formatCurrency(exp.amount)}
                             </p>
-                        </div>
-                        <div className="flex items-center justify-end gap-1 pt-1 border-t">
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs"
-                                onClick={() => handleEdit(exp)}
-                            >
-                                <PenLine className="w-3 h-3 mr-1" />
-                                Edit
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                                onClick={() => handleDeleteClick(exp)}
-                            >
-                                <Trash2 className="w-3 h-3 mr-1" />
-                                Hapus
-                            </Button>
                         </div>
                     </div>
                 )}

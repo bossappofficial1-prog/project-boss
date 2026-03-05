@@ -370,7 +370,7 @@ export class PaymentRepository {
         await tr.bookingSlot.update({
           where: { id: selectedSlotId },
           data: {
-            status: "BOOKED",
+            status: "BLOCKED",
             orderItemId: linkedSlotOrderItemId,
           },
         });

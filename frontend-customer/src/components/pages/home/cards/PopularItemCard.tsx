@@ -17,7 +17,7 @@ interface PopularItemCardProps {
 
 function PopularItemCard({ item, rank, numberFormatter, currencyFormatter, t }: PopularItemCardProps) {
     const withLocalizedPath = useLocalizedPath()
-    const href = withLocalizedPath(`/outlet/${item.outletId}/product/${item.id}?from=home`)
+    const href = withLocalizedPath(`/outlet/${item.slug}/product/${item.id}?from=home`)
 
     return (
         <Link href={href} className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/30 active:bg-muted/50">

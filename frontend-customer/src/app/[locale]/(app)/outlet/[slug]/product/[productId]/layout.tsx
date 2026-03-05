@@ -4,7 +4,7 @@ import { ProductType } from "@/types";
 import { Outlet } from "@/services/outlets";
 
 type Props = {
-    params: Promise<{ id: string; productId: string }>;
+    params: Promise<{ slug: string; productId: string }>;
 };
 
 async function getProduct(outletId: string, productId: string): Promise<ProductType | null> {
@@ -18,9 +18,9 @@ async function getProduct(outletId: string, productId: string): Promise<ProductT
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { id, productId } = await params;
-    const product = await getProduct(id, productId);
-    const outlet = await Outlet.getDetail(id)
+    const { slug, productId } = await params;
+    const product = await getProduct(slug, productId);
+    const outlet = await Outlet.getDetail(slug)
 
     if (!product) {
         return {

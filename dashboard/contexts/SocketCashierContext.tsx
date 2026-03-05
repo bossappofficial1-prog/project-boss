@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation"
 import React, { createContext, useContext, useEffect, useRef, useState } from "react"
 import { Socket } from "socket.io-client"
 import { toast } from "sonner"
+import { SOCKET_EVENT, type SocketEvents } from "@/types/socket"
 
 const SocketCashierContext = createContext<Socket | null>(null)
 
@@ -75,10 +76,30 @@ export const SocketCashierProvider = ({
         };
 
         socket.emit("cashier:join", outletId);
+        socket.emit(SOCKET_EVENT.JOIN_OUTLET, { outletId });
         socket.on("orderEvent", joinOutlet);
+
+        const handlePaymentNew = (payload: SocketEvents[typeof SOCKET_EVENT.PAYMENT_NEW]) => {
+            if (!payload) return;
+            qc.invalidateQueries({ queryKey: ['orders-v2'] });
+            qc.invalidateQueries({ queryKey: ['queue-v2'] });
+            toast.info(`Pembayaran baru: ${payload.customerName}`, {
+                description: `${formatCurrency(payload.amount)} via ${payload.paymentMethod?.replace(/_/g, ' ')}`,
+            });
+        };
+
+        const handleOrderStatusChanged = () => {
+            qc.invalidateQueries({ queryKey: ['queue-v2'] });
+            qc.invalidateQueries({ queryKey: ['orders-v2'] });
+        };
+
+        socket.on(SOCKET_EVENT.PAYMENT_NEW, handlePaymentNew);
+        socket.on(SOCKET_EVENT.ORDER_STATUS_CHANGED, handleOrderStatusChanged);
 
         return () => {
             socket.off("orderEvent");
+            socket.off(SOCKET_EVENT.PAYMENT_NEW, handlePaymentNew);
+            socket.off(SOCKET_EVENT.ORDER_STATUS_CHANGED, handleOrderStatusChanged);
         };
     }, [socket, outletId, qc])
 

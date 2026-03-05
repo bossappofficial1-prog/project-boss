@@ -43,19 +43,20 @@ import {
   getProductPrice,
   getProductUnit,
   getServiceDuration,
+  isProductOutOfStock,
   getTicketAvailableQuota,
   isTicketEventPassed,
   isTicketSoldOut,
 } from "@/lib/utils/product";
 
 type Props = {
-  outletId: string;
+  slug: string;
   productId: string;
 };
 
-export function ProductDetails({ outletId, productId }: Props) {
+export function ProductDetails({ slug, productId }: Props) {
   const router = useRouter();
-  const { addItem, getTotalItems } = useCart();
+  const { addItem, getOutletItems } = useCart();
   const snackbar = useSnackbar();
   const { setAppBar, resetAppBar } = useAppBarV2();
   const { isProductSaved, toggleSaveProduct } = useSavedProducts();
@@ -71,9 +72,9 @@ export function ProductDetails({ outletId, productId }: Props) {
 
   // Query product dan outlet
   const productQuery = useQuery<Product>({
-    queryKey: ["product", outletId, productId],
+    queryKey: ["product", slug, productId],
     queryFn: () => ProductService.getDetail(productId),
-    enabled: Boolean(outletId && productId),
+    enabled: Boolean(slug && productId),
     retry: false,
     staleTime: 1000 * 30,
     gcTime: 1000 * 60 * 10,
@@ -84,9 +85,9 @@ export function ProductDetails({ outletId, productId }: Props) {
   });
 
   const outletQuery = useQuery<OutletType>({
-    queryKey: ["outlet", outletId],
-    queryFn: () => OutletService.getDetail(outletId),
-    enabled: Boolean(outletId),
+    queryKey: ["outlet", slug],
+    queryFn: () => OutletService.getDetail(slug),
+    enabled: Boolean(slug),
     retry: false,
     staleTime: 1000 * 30,
     gcTime: 1000 * 60 * 10,
@@ -116,6 +117,31 @@ export function ProductDetails({ outletId, productId }: Props) {
     () => (product ? isTicketEventPassed(product) : false),
     [product],
   );
+  const ticketMaxQuantity = useMemo(() => {
+    if (!product || product.type !== "TICKET" || !product.ticket) return null;
+    const availableQuota = Math.max(product.ticket.totalQuota - product.ticket.soldCount, 0);
+    return Math.min(product.ticket.maxPerOrder, availableQuota);
+  }, [product]);
+
+  const inCartQuantity = useMemo(() => {
+    if (!product || !outlet) return 0;
+    return getOutletItems(outlet.id)
+      .filter((item) => item.productId === product.id)
+      .reduce((total, item) => total + item.quantity, 0);
+  }, [product, outlet, getOutletItems]);
+
+  const ticketReachedMaxOrder = useMemo(
+    () =>
+      product?.type === "TICKET" &&
+      ticketMaxQuantity !== null &&
+      inCartQuantity >= ticketMaxQuantity,
+    [product, ticketMaxQuantity, inCartQuantity],
+  );
+  const productOutOfStock = useMemo(
+    () => (product ? isProductOutOfStock(product) : false),
+    [product],
+  );
+  const isInactive = product?.status === "INACTIVE";
 
   // Setup AppBar
   useEffect(() => {
@@ -131,7 +157,7 @@ export function ProductDetails({ outletId, productId }: Props) {
       onLeftClick:
         from === "saved-products" || from === "home"
           ? () => router.back()
-          : () => router.push(withLocalizedPath(`/outlet/${outletId}?from=product`)),
+          : () => router.push(withLocalizedPath(`/outlet/${slug}?from=product`)),
       rightContent: (
         <button
           onClick={() =>
@@ -152,33 +178,90 @@ export function ProductDetails({ outletId, productId }: Props) {
     });
 
     return () => resetAppBar();
-  }, [product, outletId, from, router, setAppBar, resetAppBar, t, withLocalizedPath]);
+  }, [product, slug, from, router, setAppBar, resetAppBar, t, withLocalizedPath]);
 
   // Action Handlers
   const handleToggleSaveProduct = useCallback(() => {
-    if (product) toggleSaveProduct(product.id);
-  }, [product, toggleSaveProduct]);
+    if (!product) return;
+
+    const wasSaved = isProductSaved(product.id);
+    toggleSaveProduct(product.id);
+    if (wasSaved) {
+      snackbar.success("Produk dihapus dari favorit", 2000);
+    } else {
+      snackbar.success("Produk ditambahkan ke favorit", 2000);
+    }
+  }, [product, isProductSaved, toggleSaveProduct, snackbar]);
 
   const handleAddToCart = useCallback(() => {
     if (!product || !outlet) return;
+
+    if (isInactive) {
+      snackbar.error("Produk tidak tersedia", 3000);
+      return;
+    }
+
+    if (product.type === "GOODS" && productOutOfStock) {
+      snackbar.error("Produk sudah habis", 3000);
+      return;
+    }
+
+    if (product.type === "TICKET" && ticketSoldOut) {
+      snackbar.error("Tiket sudah habis", 3000);
+      return;
+    }
+
+    if (product.type === "TICKET" && ticketEventPassed) {
+      snackbar.error("Event sudah selesai", 3000);
+      return;
+    }
+
+    if (product.type === "TICKET" && ticketReachedMaxOrder) {
+      snackbar.error("Maksimal pembelian tiket per pesanan sudah tercapai", 3000);
+      return;
+    }
+
     try {
-      addItem(outlet.id, outlet.name, product, 1);
+      const success = addItem(outlet.id, outlet.name, slug, product, 1);
+      if (success) {
+        snackbar.success("Berhasil ditambahkan ke keranjang", 2000);
+      } else if (product.type === "TICKET") {
+        snackbar.error("Maksimal pembelian tiket per pesanan sudah tercapai", 3000);
+      } else {
+        snackbar.error(t("toast.addProductError"));
+      }
     } catch {
       snackbar.error(t("toast.addProductError"));
     }
-  }, [product, outlet, addItem, t, snackbar]);
+  }, [
+    product,
+    outlet,
+    addItem,
+    t,
+    snackbar,
+    isInactive,
+    productOutOfStock,
+    ticketSoldOut,
+    ticketEventPassed,
+    ticketReachedMaxOrder,
+  ]);
 
   const handleScheduleSelect = useCallback(
     (schedule: any) => {
       if (!outlet || !product) return;
       try {
-        addItem(outletId, outlet.name, product, 1, schedule);
-        setShowScheduleModal(false);
+        const success = addItem(slug, outlet.name, slug, product, 1, schedule);
+        if (success) {
+          setShowScheduleModal(false);
+          snackbar.success("Layanan berhasil ditambahkan ke keranjang", 2000);
+        } else {
+          snackbar.error("Jadwal bentrok dengan layanan lain di keranjang", 5000);
+        }
       } catch {
         snackbar.error(t("toast.addServiceErrorDesc"));
       }
     },
-    [outletId, outlet, product, addItem, t, snackbar],
+    [slug, outlet, product, addItem, t, snackbar],
   );
 
   // Format Deskripsi
@@ -239,6 +322,56 @@ export function ProductDetails({ outletId, productId }: Props) {
       }>,
     [product, t, ticketAvailableQuota],
   );
+
+  const productData = useMemo(() => {
+    if (product?.type === "GOODS" && product?.goods) {
+      return {
+        price: product.goods.sellingPrice,
+        quantity: product.goods.currentStock,
+        unit: product.goods.unit,
+        serviceDurationMinutes: null,
+        ticketAvailable: null,
+        ticketMaxPerOrder: null,
+      };
+    } else if (product?.type === "SERVICE" && product?.service) {
+      return {
+        price: product?.service.sellingPrice,
+        quantity: null,
+        unit: null,
+        serviceDurationMinutes: product?.service.durationMinutes,
+        ticketAvailable: null,
+        ticketMaxPerOrder: null,
+      };
+    } else if (product?.type === "TICKET" && product?.ticket) {
+      const available = product?.ticket.totalQuota - product?.ticket.soldCount;
+      return {
+        price: product?.ticket.sellingPrice,
+        quantity: available,
+        unit: "tiket",
+        serviceDurationMinutes: null,
+        ticketAvailable: available,
+        ticketMaxPerOrder: product?.ticket.maxPerOrder,
+      };
+    }
+    return {
+      price: 0,
+      quantity: null,
+      unit: null,
+      serviceDurationMinutes: null,
+      ticketAvailable: null,
+      ticketMaxPerOrder: null,
+    };
+  }, [product]);
+
+  const isEventPassed =
+    product?.type === "TICKET" && product?.ticket && new Date(product?.ticket.eventDate) < new Date();
+  const isOutOfStock =
+    (product?.type === "GOODS" && productData.quantity !== null && productData.quantity <= 0) ||
+    (product?.type === "TICKET" &&
+      productData.ticketAvailable !== null &&
+      productData.ticketAvailable <= 0);
+
+  const isDisabled = isOutOfStock || isInactive || !!isEventPassed;
 
   // Loading & Error State
   if (productQuery.isLoading || outletQuery.isLoading) {
@@ -313,19 +446,22 @@ export function ProductDetails({ outletId, productId }: Props) {
         onSave={handleToggleSaveProduct}
         onAddToCart={handleAddToCart}
         onOpenSchedule={() => setShowScheduleModal(true)}
+        isInactive={isDisabled}
+        isOutOfStock={productOutOfStock}
         ticketSoldOut={ticketSoldOut}
         ticketEventPassed={ticketEventPassed}
+        ticketReachedMaxOrder={Boolean(ticketReachedMaxOrder)}
         t={t}
       />
 
       {product.type === "SERVICE" && showScheduleModal && (
         <ScheduleModal
-          key={outletId + productId}
+          key={slug + productId}
           isOpen={showScheduleModal}
           onClose={() => setShowScheduleModal(false)}
           onSelectSchedule={handleScheduleSelect}
           product={product}
-          outletId={outletId}
+          outletId={outlet.id}
         />
       )}
     </div>
@@ -452,7 +588,7 @@ type OutletCardProps = {
 };
 const OutletCard: React.FC<OutletCardProps> = ({ outlet, t, locale }) => {
   const href = locale
-    ? `/${locale}/outlet/${outlet.id}`
+    ? `/${locale}/outlet/${outlet.slug}`
     : `/outlet/${outlet.id}`;
 
   return (
@@ -619,8 +755,11 @@ type BottomActionsProps = {
   onSave: () => void;
   onAddToCart: () => void;
   onOpenSchedule: () => void;
+  isInactive: boolean;
+  isOutOfStock: boolean;
   ticketSoldOut: boolean;
   ticketEventPassed: boolean;
+  ticketReachedMaxOrder: boolean;
   t: (
     key: NestedKeyOf<Messages["productDetails"]>,
     values?: Record<string, string | number>,
@@ -633,8 +772,11 @@ const BottomActions: React.FC<BottomActionsProps> = ({
   onSave,
   onAddToCart,
   onOpenSchedule,
+  isInactive,
+  isOutOfStock,
   ticketSoldOut,
   ticketEventPassed,
+  ticketReachedMaxOrder,
   t,
 }) => (
   <div className="fixed bottom-0 left-0 right-0 z-[101] bg-background/95 backdrop-blur-xl border-t border-border/50">
@@ -657,7 +799,7 @@ const BottomActions: React.FC<BottomActionsProps> = ({
           size="lg"
           className="flex-1 h-11 rounded-full font-semibold text-sm shadow-sm gap-2"
           onClick={onAddToCart}
-          disabled={product.status !== "ACTIVE" || !outlet.isOpen}>
+          disabled={isInactive || isOutOfStock}>
           <ShoppingCart className="w-4 h-4" /> {t("buttons.addToCart")}
         </Button>
       )}
@@ -667,7 +809,7 @@ const BottomActions: React.FC<BottomActionsProps> = ({
           size="lg"
           className="flex-1 h-11 rounded-full font-semibold text-sm shadow-sm gap-2"
           onClick={onOpenSchedule}
-          disabled={product.status !== "ACTIVE" || !outlet.isOpen}>
+          disabled={isInactive}>
           <Clock className="w-4 h-4" /> {t("buttons.bookService")}
         </Button>
       )}
@@ -677,7 +819,7 @@ const BottomActions: React.FC<BottomActionsProps> = ({
           size="lg"
           className="flex-1 h-11 rounded-full font-semibold text-sm shadow-sm gap-2"
           onClick={onAddToCart}
-          disabled={product.status !== "ACTIVE" || !outlet.isOpen || ticketSoldOut || ticketEventPassed}
+          disabled={isInactive || ticketSoldOut || ticketEventPassed || ticketReachedMaxOrder}
         >
           <Ticket className="w-4 h-4" /> {t("buttons.buyTicket")}
         </Button>

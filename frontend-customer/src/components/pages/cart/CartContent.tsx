@@ -132,7 +132,7 @@ export function CartContent() {
 
     // 3. Optimized Grouping Logic
     const cartState = useMemo(() => {
-        const grouped: Record<string, { outletName: string; items: CartItem[] }> = {};
+        const grouped: Record<string, { outletName: string; outletSlug: string; items: CartItem[] }> = {};
 
         let unscheduledExists = false;
         let unavailableExists = false;
@@ -140,7 +140,7 @@ export function CartContent() {
         items.forEach(item => {
             // Grouping
             if (!grouped[item.outletId]) {
-                grouped[item.outletId] = { outletName: item.outletName, items: [] };
+                grouped[item.outletId] = { outletName: item.outletName, outletSlug: item.slug, items: [] };
             }
             grouped[item.outletId].items.push(item);
 
@@ -267,10 +267,10 @@ export function CartContent() {
 
                     {/* Outlet Groups */}
                     <div data-guide-target="cart-outlet-list" className="space-y-2">
-                        {Object.entries(cartState.itemsByOutlet).reverse().map(([outletId, { outletName, items: outletItems }]) => (
+                        {Object.entries(cartState.itemsByOutlet).reverse().map(([outletId, { outletName, outletSlug, items: outletItems }]) => (
                             <CartOutletGroup
                                 key={outletId}
-                                outletId={outletId}
+                                outletSlug={outletSlug}
                                 outletName={outletName}
                                 items={outletItems}
                                 isSelected={isSelectedOutlet === outletId}

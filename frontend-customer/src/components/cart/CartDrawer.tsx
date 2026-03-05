@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -385,15 +385,19 @@ export function FloatingCartButton({ className = '' }: { className?: string }) {
     const router = useRouter();
     const totalItems = getTotalItems();
     const [mounted, setMounted] = useState(false);
-   const withLocalizedPath = useLocalizedPath();
+    const withLocalizedPath = useLocalizedPath();
+    const localizedDisabledRoutes = useMemo(
+        () => ROUTES_CART_DISABLED.map((route) => withLocalizedPath(route)),
+        [withLocalizedPath],
+    );
 
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    const isOutletPage = withLocalizedPath('/outlet/');
+    const isOutletPage = pathname.startsWith(withLocalizedPath('/outlet/'));
 
-    if (!mounted || totalItems === 0 || !isOutletPage || isRouteDisabled(pathname, ROUTES_CART_DISABLED)) return null;
+    if (!mounted || totalItems === 0 || !isOutletPage || isRouteDisabled(pathname, localizedDisabledRoutes)) return null;
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();

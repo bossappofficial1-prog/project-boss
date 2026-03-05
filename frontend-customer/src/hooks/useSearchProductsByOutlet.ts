@@ -13,12 +13,12 @@ export function useSearchProductsByOutlet(params: UseSearchProductsByOutletParam
 
   return useQuery({
     queryKey: ['products', 'search', outletId, search, type],
-    queryFn: () => Product.searchByOutlet({ 
-      outletId, 
-      search, 
+    queryFn: () => Product.searchByOutlet({
+      outletId,
+      search,
       type,
       page: 1,
-      limit: 100 
+      limit: 100
     }),
     enabled: enabled && !!outletId,
     staleTime: 1000 * 60 * 2,

@@ -124,7 +124,7 @@ export default function ProductCard({
       if (product.type === "GOODS" || product.type === "TICKET") {
         if (!isOutOfStock && !isEventPassed) {
           try {
-            addItem(outlet.id, outlet.name, product, quantity);
+            addItem(outlet.id, outlet.name, outlet.slug!, product, quantity);
             setQuantity(1);
             snackbar.success(
               `${quantity} ${productData.unit || "item"} ditambahkan ke keranjang`,
@@ -170,7 +170,7 @@ export default function ProductCard({
   const handleScheduleSelect = useCallback(
     (selectedSchedule: SelectedSchedule) => {
       try {
-        const success = addItem(outlet.id, outlet.name, product, 1, selectedSchedule);
+        const success = addItem(outlet.id, outlet.name, outlet.slug!, product, 1, selectedSchedule);
         if (success) {
           setIsScheduleModalOpen(false);
           snackbar.success("Layanan berhasil ditambahkan ke keranjang", 2000);

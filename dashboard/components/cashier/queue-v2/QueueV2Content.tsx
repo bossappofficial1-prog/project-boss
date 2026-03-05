@@ -14,9 +14,6 @@ import { QueueDetailSheet } from "./QueueDetailSheet";
 import { ProofPreviewDialog } from "./ProofPreviewDialog";
 
 import { useQueueV2Board, useQueueV2Transition, useInvalidateQueueV2 } from "@/hooks/api/use-queue-v2";
-import { useEmitSocket } from "@/hooks/useEmitSocket";
-import { useSocketEvent } from "@/hooks/useSocketEvent";
-import { SOCKET_EVENT, type SocketEvents } from "@/types/socket";
 import type { QueueV2Entry, QueueOrderStatus, QueueV2Board as BoardType } from "@/lib/apis/queue-v2";
 
 interface QueueV2ContentProps {
@@ -49,7 +46,6 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
     const router = useRouter();
     const { data, isLoading, refetch } = useQueueV2Board(outletId);
     const transition = useQueueV2Transition();
-    const invalidateQueue = useInvalidateQueueV2();
 
     const [detailEntry, setDetailEntry] = useState<QueueV2Entry | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
@@ -57,28 +53,6 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [proofEntry, setProofEntry] = useState<QueueV2Entry | null>(null);
     const [proofOpen, setProofOpen] = useState(false);
-
-    // Socket: join outlet room
-    const { emitEvent, isConnected } = useEmitSocket();
-
-    useEffect(() => {
-        if (!outletId || !isConnected) return;
-        emitEvent(SOCKET_EVENT.JOIN_OUTLET, { outletId });
-    }, [emitEvent, isConnected, outletId]);
-
-    // Socket: listen for queue updates
-    const handleQueueUpdate = useCallback(
-        (payload: SocketEvents[typeof SOCKET_EVENT.QUEUE_UPDATED]) => {
-            if (!payload || payload.outletId !== outletId) return;
-            invalidateQueue();
-        },
-        [outletId, invalidateQueue],
-    );
-
-    useSocketEvent(SOCKET_EVENT.QUEUE_UPDATED, handleQueueUpdate, {
-        enabled: Boolean(outletId),
-    });
-
     // Handle primary action (advance status)
     const handlePrimaryAction = useCallback(
         (entry: QueueV2Entry, nextStatus: QueueOrderStatus) => {
