@@ -270,9 +270,9 @@ export class ReportService {
         });
 
         // Next week
-        iterDate.setDate(iterDate.getDate() + 7);
-        // Adjust to start of next week correctly?
-        // e.g if simple +7, fine.
+        iterDate = new Date(wEnd);
+        iterDate.setDate(iterDate.getDate() + 1);
+        iterDate = startOfDay(iterDate);
         weekIdx++;
       }
     } else {
@@ -430,10 +430,11 @@ export class ReportService {
       order.items.forEach((item: any) => {
         if (item.product.service) {
           const s = item.product.service;
-          gaji +=
+          const commissionPerItem =
             s.commissionType === "PERCENTAGE"
               ? item.priceAtTimeOfOrder * (s.commissionValue / 100)
               : s.commissionValue;
+          gaji += commissionPerItem * item.quantity;
         }
       });
     });
@@ -495,17 +496,17 @@ export class ReportService {
     const cashierMap = new Map<string, { name: string; transactions: number; revenue: number }>();
 
     orders.forEach((order) => {
-      if (order.handledByStaff) {
-        const staffId = order.handledByStaff.id;
-        const entry = cashierMap.get(staffId) || {
-          name: order.handledByStaff.name,
-          transactions: 0,
-          revenue: 0,
-        };
-        entry.transactions += 1;
-        entry.revenue += order.totalAmount;
-        cashierMap.set(staffId, entry);
-      }
+      const staffId = order.handledByStaff?.id || "owner";
+      const staffName = order.handledByStaff?.name || "Owner (Pemilik)";
+
+      const entry = cashierMap.get(staffId) || {
+        name: staffName,
+        transactions: 0,
+        revenue: 0,
+      };
+      entry.transactions += 1;
+      entry.revenue += order.totalAmount;
+      cashierMap.set(staffId, entry);
     });
 
     const cashierList = Array.from(cashierMap.values()).map((c) => ({

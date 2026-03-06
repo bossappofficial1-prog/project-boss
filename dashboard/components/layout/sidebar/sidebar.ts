@@ -132,7 +132,7 @@ export const MENU_GROUPS: MenuGroup[] = [
       {
         id: "reports",
         name: "Laporan Keuangan",
-        href: "/owner/dashboard/reports/outlet",
+        href: "/owner/dashboard/reports",
         icon: FileText,
       },
       {

@@ -1,3 +1,4 @@
+import { DatabaseFactory } from './factories';
 import type { Business, Outlet, SubscriptionPlan, ProductType as ProductTypeEnum } from "@prisma/client";
 
 const {
@@ -270,6 +271,7 @@ async function main() {
     console.log("⚡ FORCE RESEED MODE: Clearing all existing data!");
     console.log("🗑️  Cleaning existing data...");
 
+    await prisma.expense.deleteMany({});
     await prisma.transaction.deleteMany({});
     await prisma.orderItem.deleteMany({});
     await prisma.order.deleteMany({});
@@ -427,251 +429,29 @@ async function main() {
   }
   console.log("✅ Operating hours created.");
 
-  // --- 5. Create Products ---
-  console.log("📦 Creating products with guaranteed images...");
-
-  const productTemplates = {
-    coffee: [
-      {
-        name: "Iced Americano",
-        desc: "Espresso shot dengan air dingin dan es batu.",
-        cost: 5000,
-        price: 15000,
-        type: ProductType.GOODS,
-        unit: "cup",
-        images: [
-          "https://picsum.photos/seed/americano1/800",
-          "https://picsum.photos/seed/americano2/800",
-          "https://picsum.photos/seed/americano3/800",
-        ],
-      },
-      {
-        name: "Hot Cappuccino",
-        desc: "Perpaduan espresso, susu panas, dan busa susu tebal.",
-        cost: 7000,
-        price: 20000,
-        type: ProductType.GOODS,
-        unit: "cup",
-        images: [
-          "https://picsum.photos/seed/cappuccino1/800",
-          "https://picsum.photos/seed/cappuccino2/800",
-          "https://picsum.photos/seed/cappuccino3/800",
-        ],
-      },
-      {
-        name: "Barista Training",
-        desc: "Kelas intensif 2 jam untuk mempelajari dasar kopi.",
-        cost: 50000,
-        price: 250000,
-        type: ProductType.SERVICE,
-        duration: 120,
-        images: [
-          "https://picsum.photos/seed/barista1/800",
-          "https://picsum.photos/seed/barista2/800",
-        ],
-      },
-    ],
-    food: [
-      {
-        name: "Nasi Goreng Spesial",
-        desc: "Nasi goreng dengan campuran ayam, udang, dan telur.",
-        cost: 10000,
-        price: 35000,
-        type: ProductType.GOODS,
-        unit: "porsi",
-        images: [
-          "https://picsum.photos/seed/nasgor1/800",
-          "https://picsum.photos/seed/nasgor2/800",
-          "https://picsum.photos/seed/nasgor3/800",
-        ],
-      },
-      {
-        name: "Sate Ayam Madura",
-        desc: "10 tusuk sate ayam dengan bumbu kacang.",
-        cost: 15000,
-        price: 40000,
-        type: ProductType.GOODS,
-        unit: "porsi",
-        images: ["https://picsum.photos/seed/sate1/800", "https://picsum.photos/seed/sate2/800"],
-      },
-      {
-        name: "Event Catering Package",
-        desc: "Paket katering lengkap untuk acara Anda.",
-        cost: 100000,
-        price: 500000,
-        type: ProductType.SERVICE,
-        duration: 300,
-        images: [
-          "https://picsum.photos/seed/catering1/800",
-          "https://picsum.photos/seed/catering2/800",
-        ],
-      },
-    ],
-    beauty: [
-      {
-        name: "Hair Cut & Wash",
-        desc: "Layanan potong rambut, termasuk cuci dan pengeringan.",
-        cost: 20000,
-        price: 75000,
-        type: ProductType.SERVICE,
-        duration: 60,
-        images: [
-          "https://picsum.photos/seed/haircut1/800",
-          "https://picsum.photos/seed/haircut2/800",
-          "https://picsum.photos/seed/haircut3/800",
-        ],
-      },
-      {
-        name: "Manicure & Pedicure Gel",
-        desc: "Perawatan kuku tangan dan kaki dengan kutek gel.",
-        cost: 50000,
-        price: 180000,
-        type: ProductType.SERVICE,
-        duration: 90,
-        images: ["https://picsum.photos/seed/mani1/800", "https://picsum.photos/seed/mani2/800"],
-      },
-      {
-        name: "Hydrating Face Serum",
-        desc: "Serum wajah yang melembabkan kulit.",
-        cost: 40000,
-        price: 150000,
-        type: ProductType.GOODS,
-        unit: "botol",
-        images: ["https://picsum.photos/seed/serum1/800", "https://picsum.photos/seed/serum2/800"],
-      },
-    ],
-    electronics: [
-      {
-        name: "Smartphone Screen Repair",
-        desc: "Layanan penggantian layar retak smartphone.",
-        cost: 150000,
-        price: 500000,
-        type: ProductType.SERVICE,
-        duration: 120,
-        images: [
-          "https://picsum.photos/seed/repair1/800",
-          "https://picsum.photos/seed/repair2/800",
-        ],
-      },
-      {
-        name: "Wireless Headphones",
-        desc: "Headphone nirkabel dengan noise-cancellation.",
-        cost: 250000,
-        price: 600000,
-        type: ProductType.GOODS,
-        unit: "pcs",
-        images: [
-          "https://picsum.photos/seed/headphone1/800",
-          "https://picsum.photos/seed/headphone2/800",
-          "https://picsum.photos/seed/headphone3/800",
-        ],
-      },
-    ],
-    laundry: [
-      {
-        name: "Wash & Fold (per kg)",
-        desc: "Layanan cuci dan lipat pakaian harian.",
-        cost: 4000,
-        price: 10000,
-        type: ProductType.SERVICE,
-        duration: 180,
-        unit: "kg",
-        images: [
-          "https://picsum.photos/seed/laundry1/800",
-          "https://picsum.photos/seed/laundry2/800",
-        ],
-      },
-      {
-        name: "Premium Suit Dry Cleaning",
-        desc: "Layanan cuci kering khusus untuk setelan jas.",
-        cost: 20000,
-        price: 50000,
-        type: ProductType.SERVICE,
-        duration: 240,
-        unit: "pcs",
-        images: [
-          "https://picsum.photos/seed/dryclean1/800",
-          "https://picsum.photos/seed/dryclean2/800",
-        ],
-      },
-      {
-        name: "Gentle Fabric Softener",
-        desc: "Pelembut pakaian premium untuk kulit sensitif.",
-        cost: 15000,
-        price: 45000,
-        type: ProductType.GOODS,
-        unit: "botol",
-        images: [
-          "https://picsum.photos/seed/softener1/800",
-          "https://picsum.photos/seed/softener2/800",
-        ],
-      },
-    ],
-  };
-
-  const outletProductCatalog: OutletProductCatalog = {};
+  // --- 5. Create Products, Transactions, and Expenses using Factory ---
+  console.log("📦 Generating mass dummy data for reports using Laravel-style Factories...");
+  
+  const factory = new DatabaseFactory(prisma);
+  const startDate = new Date();
+  startDate.setMonth(startDate.getMonth() - 6); // Data dummy untuk 6 bulan terakhir
+  const endDate = new Date();
 
   for (let i = 0; i < outlets.length; i++) {
     const outlet = outlets[i];
-    const business = businesses.find((b) => b.id === outlet.businessId);
-    if (!business) continue;
-
-    const businessType = businessTypes[i % businessTypes.length];
-    const templates = productTemplates[businessType as keyof typeof productTemplates];
-
-    for (const template of templates) {
-      const productData: any = {
-        name: template.name,
-        description: template.desc,
-        type: template.type,
-        status: ServiceStatus.ACTIVE,
-        outletId: outlet.id,
-      };
-
-      if (template.type === ProductType.GOODS) {
-        productData.goods = {
-          create: {
-            currentStock: Math.floor(Math.random() * 50) + 10,
-            unit: template.unit || "pcs",
-            sellingPrice: template.price,
-            averageHpp: template.cost || template.price * 0.7,
-            minStock: 5,
-          },
-        };
-      } else if (template.type === ProductType.SERVICE) {
-        productData.service = {
-          create: {
-            durationMinutes: template.duration || 60,
-            sellingPrice: template.price,
-            providerName: "Staff " + outlet.name,
-            commissionType: "PERCENTAGE",
-            commissionValue: 10,
-            maxParallel: 2,
-          },
-        };
-      }
-
-      const createdProduct = await prisma.product.create({
-        data: {
-          ...productData,
-          image: template.images[0] || null,
-        },
-      });
-
-      if (!outletProductCatalog[outlet.id]) {
-        outletProductCatalog[outlet.id] = [];
-      }
-
-      outletProductCatalog[outlet.id].push({
-        productId: createdProduct.id,
-        price: template.price,
-        type: template.type,
-      });
-    }
+    console.log(`Generating data for outlet: ${outlet.name}`);
+    
+    // Generate 30 produk per outlet
+    const products = await factory.createDummyProducts(outlet.id, 30);
+    
+    // Generate 150 transaksi per outlet selama 6 bulan terakhir
+    await factory.createDummyTransactions(outlet.id, products, 150, startDate, endDate);
+    
+    // Generate 50 pengeluaran per outlet selama 6 bulan terakhir
+    await factory.createDummyExpenses(outlet.id, 50, startDate, endDate);
   }
-  console.log("✅ Products with guaranteed images created.");
-
-  await seedOutletTransactions(outlets, outletProductCatalog);
+  
+  console.log("✅ Mass dummy data generation for reports completed.");
 
   // --- 6. Summary ---
   console.log("\n📊 SEEDING SUMMARY:");
