@@ -38,7 +38,7 @@ const SERVICE_QUEUE_STATUSES: OrderStatus[] = [
 ];
 
 const SERVICE_QUEUE_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
-  [OrderStatus.AWAITING_PAYMENT]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+  [OrderStatus.AWAITING_PAYMENT]: [OrderStatus.PROCESSING, OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
   [OrderStatus.PROCESSING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
   [OrderStatus.CONFIRMED]: [OrderStatus.READY, OrderStatus.CANCELLED],
   [OrderStatus.READY]: [OrderStatus.ON_GOING, OrderStatus.COMPLETED, OrderStatus.CANCELLED],
@@ -570,7 +570,7 @@ export async function updateOrderStatusService(
     });
   }
 
-  if (status === OrderStatus.PROCESSING) {
+  if (status === OrderStatus.PROCESSING || status === OrderStatus.CONFIRMED) {
     Console.log("UPDATE TRANSACTION STATUS TO SUCCESS");
 
     if (order.transaction?.id) {
@@ -640,7 +640,7 @@ export async function updateOrderStatusService(
   const updatePayload = {
     orderStatus: status,
     ...(reason && status === OrderStatus.CANCELLED ? { cancellationReason: reason } : {}),
-    ...(status === OrderStatus.PROCESSING ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
+    ...(status === OrderStatus.PROCESSING || status === OrderStatus.CONFIRMED ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
     ...(status === OrderStatus.CANCELLED ? { paymentStatus: PaymentStatus.CANCELLED } : {}),
     ...(status === OrderStatus.COMPLETED ? { paymentStatus: PaymentStatus.SUCCESS } : {}),
   };
@@ -1101,7 +1101,7 @@ export async function updateServiceQueueStatusService(
   // Block confirming manual payment if no proof uploaded
   if (
     orderRecord.orderStatus === OrderStatus.AWAITING_PAYMENT &&
-    nextStatus === OrderStatus.PROCESSING
+    (nextStatus === OrderStatus.PROCESSING || nextStatus === OrderStatus.CONFIRMED)
   ) {
     const tx = (orderRecord as any).transaction;
     if (tx?.isManual && !tx?.paymentProofUrl) {

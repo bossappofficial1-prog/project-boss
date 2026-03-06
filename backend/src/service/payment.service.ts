@@ -856,7 +856,7 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
   await db.order.update({
     where: { id: orderId },
     data: {
-      orderStatus: OrderStatus.PROCESSING,
+      orderStatus: OrderStatus.AWAITING_PAYMENT,
       paymentStatus: PaymentStatus.AWAITING_VERIFICATION,
     },
   });
