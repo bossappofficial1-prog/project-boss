@@ -53,6 +53,10 @@ export default function ReportFinancialContent() {
   const [staffFilterType, setStaffFilterType] = useState<FilterType>("daily");
   const [staffDate, setStaffDate] = useState<Date>(new Date());
 
+  // ── Stock-specific state ──
+  const [stockFilterType, setStockFilterType] = useState<FilterType>("daily");
+  const [stockDate, setStockDate] = useState<Date>(new Date());
+
   React.useEffect(() => {
     if (selectedOutlet?.id) {
       setOutletFilter(selectedOutlet.id);
@@ -75,6 +79,12 @@ export default function ReportFinancialContent() {
     outletFilter,
     staffFilterType,
     format(staffDate, "yyyy-MM-dd"),
+  );
+
+  const { data: timeDataStok, isLoading: isLoadingStok } = useReportOutlet(
+    outletFilter,
+    stockFilterType,
+    stockDate.toISOString(),
   );
 
   const activeData = viewMode === "time" ? timeData : compareData;
@@ -114,6 +124,17 @@ export default function ReportFinancialContent() {
     );
   }, [staffData]);
 
+  // ── Totals for Stock ──
+  const stokTotals = useMemo(() => {
+    return (timeDataStok || []).reduce(
+      (acc, curr) => ({
+        jumlahTransaksi: acc.jumlahTransaksi + curr.jumlahTransaksi,
+        totalPembelian: acc.totalPembelian + curr.totalPembelian,
+      }),
+      { jumlahTransaksi: 0, totalPembelian: 0 },
+    );
+  }, [timeDataStok]);
+
   // ── Date Navigation ──
   const adjustDate = (amount: number): void => {
     const newDate = new Date(currentDate);
@@ -137,6 +158,14 @@ export default function ReportFinancialContent() {
     if (staffFilterType === "weekly") newDate.setDate(newDate.getDate() + amount * 7);
     if (staffFilterType === "monthly") newDate.setMonth(newDate.getMonth() + amount);
     setStaffDate(newDate);
+  };
+
+  const adjustStockDate = (amount: number): void => {
+    const newDate = new Date(stockDate);
+    if (stockFilterType === "daily") newDate.setDate(newDate.getDate() + amount * 10);
+    if (stockFilterType === "weekly") newDate.setMonth(newDate.getMonth() + amount);
+    if (stockFilterType === "monthly") newDate.setFullYear(newDate.getFullYear() + amount);
+    setStockDate(newDate);
   };
 
   // ── Export ──
@@ -476,17 +505,56 @@ export default function ReportFinancialContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <SummaryCard
               title="📦 Total Pembelian Stok (Aset)"
-              value={totals.totalPembelian}
+              value={stokTotals.totalPembelian}
               icon={<Package className="w-4 h-4 text-amber-500" />}
               description="Tidak mempengaruhi perhitungan laba bersih"
             />
             <SummaryCard
               title="Jumlah Transaksi (Periode)"
-              value={totals.jumlahTransaksi}
+              value={stokTotals.jumlahTransaksi}
               isCurrency={false}
               icon={<Receipt className="w-4 h-4 text-slate-500" />}
               description="Jumlah order completed dalam periode ini"
             />
+          </div>
+
+          {/* Stok Date Filter */}
+          <div className="bg-white dark:bg-[#1e293b] p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-sm dark:shadow-md">
+            <div className="flex w-full lg:w-auto bg-slate-100 dark:bg-[#0f172a] p-1 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto hide-scrollbar">
+              <FilterButton
+                active={stockFilterType === "daily"}
+                onClick={() => setStockFilterType("daily")}>
+                Harian
+              </FilterButton>
+              <FilterButton
+                active={stockFilterType === "weekly"}
+                onClick={() => setStockFilterType("weekly")}>
+                Mingguan
+              </FilterButton>
+              <FilterButton
+                active={stockFilterType === "monthly"}
+                onClick={() => setStockFilterType("monthly")}>
+                Bulanan
+              </FilterButton>
+            </div>
+            <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
+              <button
+                onClick={() => adjustStockDate(-1)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <div className="flex items-center justify-center gap-2 lg:gap-3 font-bold text-slate-900 dark:text-white flex-1 lg:flex-none min-w-0">
+                <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
+                <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
+                  {formatPeriodLabel(stockFilterType, stockDate)}
+                </span>
+              </div>
+              <button
+                onClick={() => adjustStockDate(1)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           {/* Info Card */}
@@ -506,9 +574,9 @@ export default function ReportFinancialContent() {
             </div>
           </div>
 
-          {/* Stok Purchase Table — reuse financial data but only show stok column */}
+          {/* Stok Purchase Table */}
           <div className="bg-white dark:bg-[#1e293b] rounded-md border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden relative">
-            {isLoading && (
+            {isLoadingStok && (
               <div className="absolute inset-0 bg-white/60 dark:bg-[#0f172a]/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-2"></div>
                 <span className="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-widest text-center">
@@ -516,7 +584,7 @@ export default function ReportFinancialContent() {
                 </span>
               </div>
             )}
-            <StockAssetTable data={activeData || []} totalPembelian={totals.totalPembelian} />
+            <StockAssetTable data={timeDataStok || []} totalPembelian={stokTotals.totalPembelian} />
           </div>
         </TabsContent>
       </Tabs>
