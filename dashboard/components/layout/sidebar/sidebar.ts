@@ -131,18 +131,9 @@ export const MENU_GROUPS: MenuGroup[] = [
     items: [
       {
         id: "reports",
-        name: "Laporan",
+        name: "Laporan Keuangan",
+        href: "/owner/dashboard/reports",
         icon: FileText,
-        subItems: [
-          {
-            name: "Laporan Outlet",
-            href: "/owner/dashboard/reports/outlet",
-          },
-          {
-            name: "Laporan Staff",
-            href: "/owner/dashboard/reports/staff",
-          },
-        ],
       },
       {
         id: "expenses",

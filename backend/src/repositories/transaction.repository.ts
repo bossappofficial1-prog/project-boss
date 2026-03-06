@@ -85,7 +85,7 @@ export async function findTransactionsByFilter(filter: TransactionsFilter) {
         },
       },
     },
-    orderBy: { createdAt: `desc` }
+    orderBy: { createdAt: `desc` },
   });
 }
 
@@ -213,15 +213,10 @@ export async function computeTotalsByFilter(
     where: orderWhere,
     select: {
       totalAmount: true,
-      appFee: true,
-      midtransFee: true,
     },
   });
   const total_revenue = orders.reduce((acc, order) => {
-    const appFee = order.appFee ?? 0;
-    const transactionFee = order.midtransFee ?? 0;
-    const netRevenue = order.totalAmount - (appFee + transactionFee);
-    return acc + (netRevenue > 0 ? netRevenue : 0);
+    return acc + (order.totalAmount > 0 ? order.totalAmount : 0);
   }, 0);
   const expAgg = await db.expense.aggregate({ where: expenseWhere, _sum: { amount: true } });
 

@@ -270,9 +270,9 @@ export class ReportService {
         });
 
         // Next week
-        iterDate.setDate(iterDate.getDate() + 7);
-        // Adjust to start of next week correctly?
-        // e.g if simple +7, fine.
+        iterDate = new Date(wEnd);
+        iterDate.setDate(iterDate.getDate() + 1);
+        iterDate = startOfDay(iterDate);
         weekIdx++;
       }
     } else {
@@ -296,11 +296,11 @@ export class ReportService {
         const trend =
           dOrders.length > 0
             ? Array.from({ length: 8 }).map((_, h) => {
-              const hourOrders = dOrders.filter(
-                (o) => o.createdAt.getHours() >= h * 3 && o.createdAt.getHours() < (h + 1) * 3,
-              );
-              return hourOrders.reduce((sum, curr) => sum + curr.totalAmount, 0);
-            })
+                const hourOrders = dOrders.filter(
+                  (o) => o.createdAt.getHours() >= h * 3 && o.createdAt.getHours() < (h + 1) * 3,
+                );
+                return hourOrders.reduce((sum, curr) => sum + curr.totalAmount, 0);
+              })
             : [0, 0, 0, 0, 0, 0, 0, 0];
 
         return {
@@ -430,10 +430,11 @@ export class ReportService {
       order.items.forEach((item: any) => {
         if (item.product.service) {
           const s = item.product.service;
-          gaji +=
+          const commissionPerItem =
             s.commissionType === "PERCENTAGE"
               ? item.priceAtTimeOfOrder * (s.commissionValue / 100)
               : s.commissionValue;
+          gaji += commissionPerItem * item.quantity;
         }
       });
     });
@@ -443,7 +444,7 @@ export class ReportService {
       pembelian,
       pengeluaran,
       gaji,
-      labaBersih: revenue - pembelian - pengeluaran - gaji,
+      labaBersih: revenue - pengeluaran - gaji,
       count: filteredOrders.length,
     };
   }
@@ -495,17 +496,17 @@ export class ReportService {
     const cashierMap = new Map<string, { name: string; transactions: number; revenue: number }>();
 
     orders.forEach((order) => {
-      if (order.handledByStaff) {
-        const staffId = order.handledByStaff.id;
-        const entry = cashierMap.get(staffId) || {
-          name: order.handledByStaff.name,
-          transactions: 0,
-          revenue: 0,
-        };
-        entry.transactions += 1;
-        entry.revenue += order.totalAmount;
-        cashierMap.set(staffId, entry);
-      }
+      const staffId = order.handledByStaff?.id || "owner";
+      const staffName = order.handledByStaff?.name || "Owner (Pemilik)";
+
+      const entry = cashierMap.get(staffId) || {
+        name: staffName,
+        transactions: 0,
+        revenue: 0,
+      };
+      entry.transactions += 1;
+      entry.revenue += order.totalAmount;
+      cashierMap.set(staffId, entry);
     });
 
     const cashierList = Array.from(cashierMap.values()).map((c) => ({
@@ -577,14 +578,18 @@ export class ReportService {
     fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } },
     alignment: { vertical: "middle", horizontal: "center", wrapText: true },
     border: {
-      top: { style: "thin" }, left: { style: "thin" },
-      bottom: { style: "thin" }, right: { style: "thin" },
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
     },
   };
 
   private static cellBorder: Partial<ExcelJS.Borders> = {
-    top: { style: "thin" }, left: { style: "thin" },
-    bottom: { style: "thin" }, right: { style: "thin" },
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
   };
 
   private static applyHeaderStyle(sheet: ExcelJS.Worksheet) {
@@ -595,7 +600,9 @@ export class ReportService {
   }
 
   private static applyRowBorder(row: ExcelJS.Row) {
-    row.eachCell((cell) => { cell.border = ReportService.cellBorder; });
+    row.eachCell((cell) => {
+      cell.border = ReportService.cellBorder;
+    });
   }
 
   private static setCurrencyFormat(row: ExcelJS.Row, colNumbers: number[]) {
@@ -623,7 +630,9 @@ export class ReportService {
         try {
           const outlet = await getOutletByIdService(outletId);
           outletName = outlet.name;
-        } catch { /* keep default */ }
+        } catch {
+          /* keep default */
+        }
       }
     }
 
@@ -631,24 +640,30 @@ export class ReportService {
     workbook.creator = "BOSS App";
     workbook.created = new Date();
 
-    const typeLabel = viewMode === "compare" ? "Perbandingan Outlet"
-      : type === "daily" ? "Harian" : type === "weekly" ? "Mingguan" : "Bulanan";
+    const typeLabel =
+      viewMode === "compare"
+        ? "Perbandingan Outlet"
+        : type === "daily"
+          ? "Harian"
+          : type === "weekly"
+            ? "Mingguan"
+            : "Bulanan";
 
     const sheet = workbook.addWorksheet(`Laporan ${typeLabel}`);
     sheet.columns = [
       { header: "No", key: "no", width: 6 },
       { header: viewMode === "compare" ? "Outlet" : "Periode", key: "label", width: 28 },
       { header: "Jml Transaksi", key: "trx", width: 15 },
-      { header: "Pendapatan", key: "pendapatan", width: 20 },
-      { header: "Pembelian Stok", key: "pembelian", width: 18 },
-      { header: "Pengeluaran", key: "pengeluaran", width: 18 },
-      { header: "Gaji/Komisi", key: "gaji", width: 18 },
-      { header: "Laba Bersih", key: "laba", width: 20 },
+      { header: "(+) Pendapatan", key: "pendapatan", width: 20 },
+      { header: "(-) Pengeluaran", key: "pengeluaran", width: 18 },
+      { header: "(-) Gaji/Komisi", key: "gaji", width: 18 },
+      { header: "= Laba Bersih", key: "laba", width: 20 },
+      { header: "Pembelian Stok (Aset)", key: "pembelian", width: 22 },
     ];
     this.applyHeaderStyle(sheet);
 
-    const currCols = [4, 5, 6, 7, 8]; // pendapatan, pembelian, pengeluaran, gaji, laba
-    const totals = { trx: 0, pendapatan: 0, pembelian: 0, pengeluaran: 0, gaji: 0, laba: 0 };
+    const currCols = [4, 5, 6, 7, 8]; // pendapatan, pengeluaran, gaji, laba, pembelian
+    const totals = { trx: 0, pendapatan: 0, pengeluaran: 0, gaji: 0, laba: 0, pembelian: 0 };
 
     data.forEach((item: any, i: number) => {
       const row = sheet.addRow({
@@ -656,27 +671,34 @@ export class ReportService {
         label: item.label,
         trx: item.jumlahTransaksi,
         pendapatan: item.totalPendapatan,
-        pembelian: item.totalPembelian,
         pengeluaran: item.totalPengeluaran,
         gaji: item.gajiStaf,
         laba: item.labaBersih,
+        pembelian: item.totalPembelian,
       });
       this.applyRowBorder(row);
       this.setCurrencyFormat(row, currCols);
 
-      const labaCell = row.getCell(8);
+      const labaCell = row.getCell(7);
       if (typeof labaCell.value === "number") {
-        labaCell.font = labaCell.value >= 0
-          ? { color: { argb: "FF16A34A" }, bold: true }
-          : { color: { argb: "FFDC2626" }, bold: true };
+        labaCell.font =
+          labaCell.value >= 0
+            ? { color: { argb: "FF16A34A" }, bold: true }
+            : { color: { argb: "FFDC2626" }, bold: true };
+      }
+
+      // Style pembelian stok column as amber/info
+      const pembelianCell = row.getCell(8);
+      if (typeof pembelianCell.value === "number") {
+        pembelianCell.font = { color: { argb: "FFD97706" } };
       }
 
       totals.trx += item.jumlahTransaksi;
       totals.pendapatan += item.totalPendapatan;
-      totals.pembelian += item.totalPembelian;
       totals.pengeluaran += item.totalPengeluaran;
       totals.gaji += item.gajiStaf;
       totals.laba += item.labaBersih;
+      totals.pembelian += item.totalPembelian;
     });
 
     const totalRow = sheet.addRow({ no: "", label: "TOTAL", ...totals });
@@ -693,7 +715,10 @@ export class ReportService {
     [
       ["Laporan", `Laporan Outlet - ${typeLabel}`],
       ["Outlet", outletName],
-      ["Tanggal Export", new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })],
+      [
+        "Tanggal Export",
+        new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }),
+      ],
       ["Periode", date || new Date().toISOString().split("T")[0]],
     ].forEach((r) => info.addRow(r));
 
@@ -712,7 +737,9 @@ export class ReportService {
       try {
         const outlet = await getOutletByIdService(outletId);
         outletName = outlet.name;
-      } catch { /* keep default */ }
+      } catch {
+        /* keep default */
+      }
     }
 
     const workbook = new ExcelJS.Workbook();
@@ -733,17 +760,31 @@ export class ReportService {
     ];
     this.applyHeaderStyle(cs);
 
-    let totalCashierTrx = 0, totalCashierRevenue = 0;
+    let totalCashierTrx = 0,
+      totalCashierRevenue = 0;
     cashiers.forEach((c: any, i: number) => {
-      const row = cs.addRow({ no: i + 1, name: c.name, trx: c.transactionCount, revenue: c.revenue });
+      const row = cs.addRow({
+        no: i + 1,
+        name: c.name,
+        trx: c.transactionCount,
+        revenue: c.revenue,
+      });
       this.applyRowBorder(row);
       this.setCurrencyFormat(row, [4]);
       totalCashierTrx += c.transactionCount;
       totalCashierRevenue += c.revenue;
     });
 
-    const cashierTotal = cs.addRow({ no: "", name: "TOTAL", trx: totalCashierTrx, revenue: totalCashierRevenue });
-    cashierTotal.eachCell((cell) => { cell.font = { bold: true }; cell.border = ReportService.cellBorder; });
+    const cashierTotal = cs.addRow({
+      no: "",
+      name: "TOTAL",
+      trx: totalCashierTrx,
+      revenue: totalCashierRevenue,
+    });
+    cashierTotal.eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.border = ReportService.cellBorder;
+    });
     this.setCurrencyFormat(cashierTotal, [4]);
 
     // Sheet: Staff Layanan
@@ -756,17 +797,31 @@ export class ReportService {
     ];
     this.applyHeaderStyle(ss);
 
-    let totalServiceTrx = 0, totalServiceComm = 0;
+    let totalServiceTrx = 0,
+      totalServiceComm = 0;
     services.forEach((s: any, i: number) => {
-      const row = ss.addRow({ no: i + 1, name: s.name, trx: s.transactionCount, commission: s.commission });
+      const row = ss.addRow({
+        no: i + 1,
+        name: s.name,
+        trx: s.transactionCount,
+        commission: s.commission,
+      });
       this.applyRowBorder(row);
       this.setCurrencyFormat(row, [4]);
       totalServiceTrx += s.transactionCount;
       totalServiceComm += s.commission;
     });
 
-    const serviceTotal = ss.addRow({ no: "", name: "TOTAL", trx: totalServiceTrx, commission: totalServiceComm });
-    serviceTotal.eachCell((cell) => { cell.font = { bold: true }; cell.border = ReportService.cellBorder; });
+    const serviceTotal = ss.addRow({
+      no: "",
+      name: "TOTAL",
+      trx: totalServiceTrx,
+      commission: totalServiceComm,
+    });
+    serviceTotal.eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.border = ReportService.cellBorder;
+    });
     this.setCurrencyFormat(serviceTotal, [4]);
 
     // Info sheet
@@ -776,7 +831,10 @@ export class ReportService {
     [
       ["Laporan", `Kinerja Staff - ${typeLabel}`],
       ["Outlet", outletName],
-      ["Tanggal Export", new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })],
+      [
+        "Tanggal Export",
+        new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }),
+      ],
       ["Periode", date || new Date().toISOString().split("T")[0]],
       ["Total Kasir", String(cashiers.length)],
       ["Total Staff Layanan", String(services.length)],
