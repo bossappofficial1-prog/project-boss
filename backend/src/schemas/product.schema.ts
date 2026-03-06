@@ -6,9 +6,9 @@ const mediaItemSchema = z.object({
   url: z.string().min(1, { message: "URL media wajib diisi" }),
   type: z.nativeEnum(MediaType),
   source: z.nativeEnum(MediaSource),
-  alt: z.string().optional(),
+  alt: z.string().nullable().optional(),
   order: z.number().int().min(0).default(0),
-  thumbnailUrl: z.string().optional(),
+  thumbnailUrl: z.string().nullable().optional(),
 });
 
 // ProductGoods

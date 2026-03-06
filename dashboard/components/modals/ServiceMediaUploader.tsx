@@ -215,8 +215,8 @@ export default function ServiceMediaUploader({
                                 onDragOver={(e) => handleDragOver(e, idx)}
                                 onDragEnd={handleDragEnd}
                                 className={`relative aspect-[9/16] rounded-md overflow-hidden border-2 group cursor-grab active:cursor-grabbing transition-all ${dragOverIndex === idx
-                                        ? "border-primary scale-105"
-                                        : "border-border hover:border-primary/40"
+                                    ? "border-primary scale-105"
+                                    : "border-border hover:border-primary/40"
                                     }`}
                             >
                                 {previewUrl ? (

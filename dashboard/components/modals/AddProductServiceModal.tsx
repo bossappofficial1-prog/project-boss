@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { productApi, uploadApi } from "@/lib/api";
 import z from "zod";
 import { useForm } from "react-hook-form";
@@ -135,19 +135,24 @@ export default function AddOrEditProductServiceModal({
   action = "edit",
 }: Props) {
   const isEdit = action === "edit";
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>(() => {
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+
+  useEffect(() => {
     if (isEdit && initialData?.media) {
-      return initialData.media.map((m, i) => ({
-        url: m.url,
-        type: m.type as "IMAGE" | "VIDEO",
-        source: m.source as "UPLOAD" | "EMBED",
-        alt: m.alt,
-        order: m.order ?? i,
-        thumbnailUrl: m.thumbnailUrl,
-      }));
+      setMediaItems(
+        initialData.media.map((m, i) => ({
+          url: m.url,
+          type: m.type as "IMAGE" | "VIDEO",
+          source: m.source as "UPLOAD" | "EMBED",
+          alt: m.alt,
+          order: m.order ?? i,
+          thumbnailUrl: m.thumbnailUrl,
+        })),
+      );
+    } else {
+      setMediaItems([]);
     }
-    return [];
-  });
+  }, [isEdit, initialData]);
 
   const defaultValues = useMemo<ProductFormValues>(() => {
     if (isEdit && initialData) {
@@ -576,7 +581,7 @@ export default function AddOrEditProductServiceModal({
     },
     // Custom renderer for operating hours
     {
-      name: "service.mondayOpen" as any,
+      name: "service.mondayOpen",
       label: "",
       type: "custom",
       colSpan: "full",
