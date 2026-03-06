@@ -328,8 +328,6 @@ function InlineImportantInfo({
   );
 }
 
-// ── Main component ──
-
 export function PaymentDetailClient({
   orderId,
   payment,

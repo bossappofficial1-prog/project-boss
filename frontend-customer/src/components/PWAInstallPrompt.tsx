@@ -105,7 +105,7 @@ export default function PWAInstallPrompt() {
               <h3 className="font-semibold text-gray-900 dark:text-white">
                 Install BOSS App
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-xs text-gray-600 dark:text-gray-300">
                 Install untuk akses yang lebih cepat
               </p>
             </div>

@@ -7,6 +7,7 @@ import { OutletProvider } from '@/components/providers/OutletProvider';
 import { Toaster } from 'sonner';
 import { SidebarInset, SidebarProvider } from '../ui/sidebar';
 import { type UserRole } from '@/lib/auth';
+import Loading from '../ui/loading';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,16 +20,7 @@ export default function DashboardLayout({ children, requiredRole }: LayoutProps)
     onboardingCheck: true,
   });
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300 font-poppins">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <Loading />
 
   return (
     <OutletProvider>

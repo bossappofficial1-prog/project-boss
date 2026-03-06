@@ -44,30 +44,51 @@ export function ManualPaymentDetails({ manual, totalAmount }: ManualPaymentDetai
     };
 
     return (
-        <Card>
+        <Card className="gap-0">
             <CardHeader className="pb-3">
-                <CardTitle className="text-lg">{t('manual.title')}</CardTitle>
+                <CardTitle className="text-base font-semibold">
+                    {t('manual.title')}
+                </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+
+            <CardContent className="space-y-4 text-sm">
+
+                {/* Outlet */}
                 <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">{t('manual.outlet')}</p>
-                    <p className="font-semibold">{instructions.outletName ?? '-'}</p>
+                    <p className="text-xs font-medium text-muted-foreground">
+                        {t('manual.outlet')}
+                    </p>
+
+                    <p className="font-semibold leading-tight">
+                        {instructions.outletName ?? '-'}
+                    </p>
+
                     {instructions.businessName && (
-                        <p className="text-sm text-muted-foreground">{instructions.businessName}</p>
+                        <p className="text-xs text-muted-foreground">
+                            {instructions.businessName}
+                        </p>
                     )}
                 </div>
 
+                {/* Total */}
                 <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2">
-                    <span className="text-sm text-muted-foreground">{t('manual.total')}</span>
-                    <span className="font-semibold text-primary">{formatCurrency(totalAmount)}</span>
+                    <span className="text-xs font-medium text-muted-foreground">
+                        {t('manual.total')}
+                    </span>
+
+                    <span className="text-sm font-semibold text-primary">
+                        {formatCurrency(totalAmount)}
+                    </span>
                 </div>
 
+                {/* QRIS */}
                 {isQris && instructions.qrImageUrl && (
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase">
+                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                             <Smartphone className="h-4 w-4" />
                             {t('manual.qrisTitle')}
                         </div>
+
                         <div className="mx-auto flex max-w-[220px] items-center justify-center rounded-xl border bg-background p-3">
                             <ImageRender
                                 src={instructions.qrImageUrl}
@@ -75,53 +96,90 @@ export function ManualPaymentDetails({ manual, totalAmount }: ManualPaymentDetai
                                 className="h-auto w-full rounded-lg object-contain"
                             />
                         </div>
-                        <p className="text-sm text-muted-foreground">{t('manual.qrisDescription')}</p>
+
+                        <p className="text-xs text-muted-foreground">
+                            {t('manual.qrisDescription')}
+                        </p>
                     </div>
                 )}
 
+                {/* Bank */}
                 {bankAccount && (bankAccount.bankName || bankAccount.accountNumber) && (
                     <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase">
+                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                             <Building2 className="h-4 w-4" />
                             {t('manual.bankTitle')}
                         </div>
+
                         <div className="space-y-2 rounded-lg border bg-muted/20 p-3 text-sm">
+
                             {bankAccount.bankName && (
                                 <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">{t('manual.bank')}</span>
-                                    <span className="font-medium">{bankAccount.bankName}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {t('manual.bank')}
+                                    </span>
+
+                                    <span className="font-semibold">
+                                        {bankAccount.bankName}
+                                    </span>
                                 </div>
                             )}
+
                             {bankAccount.accountNumber && (
                                 <div className="flex items-center justify-between gap-3">
                                     <div>
-                                        <p className="text-muted-foreground">{t('manual.accountNumber')}</p>
-                                        <p className="font-medium">{bankAccount.accountNumber}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {t('manual.accountNumber')}
+                                        </p>
+
+                                        <p className="font-semibold">
+                                            {bankAccount.accountNumber}
+                                        </p>
                                     </div>
-                                    <Button size="sm" variant="outline" onClick={() => handleCopy(bankAccount.accountNumber)}>
-                                        {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+
+                                    <Button
+                                        size="icon"
+                                        variant="outline"
+                                        className="h-8 w-8"
+                                        onClick={() => handleCopy(bankAccount.accountNumber)}
+                                    >
+                                        {copied
+                                            ? <Check className="h-4 w-4 text-green-600" />
+                                            : <Copy className="h-4 w-4" />}
                                     </Button>
                                 </div>
                             )}
+
                             {bankAccount.accountHolder && (
                                 <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">{t('manual.accountName')}</span>
-                                    <span className="font-medium">{bankAccount.accountHolder}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {t('manual.accountName')}
+                                    </span>
+
+                                    <span className="font-semibold">
+                                        {bankAccount.accountHolder}
+                                    </span>
                                 </div>
                             )}
+
                         </div>
                     </div>
                 )}
 
+                {/* Note */}
                 {instructions.note && (
-                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/70 dark:bg-amber-950/20 dark:text-amber-200">
-                        <p className="font-medium mb-1 flex items-center gap-2">
+                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800/70 dark:bg-amber-950/20 dark:text-amber-200">
+                        <p className="mb-1 flex items-center gap-2 font-medium">
                             <Smartphone className="h-4 w-4" />
                             {t('manual.note')}
                         </p>
-                        <p>{instructions.note}</p>
+
+                        <p className="leading-relaxed">
+                            {instructions.note}
+                        </p>
                     </div>
                 )}
+
             </CardContent>
         </Card>
     );

@@ -29,7 +29,7 @@ export default function SearchBar({ value, onChange, placeholder, className }: S
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder || t('search.placeholder')}
-                    className="pl-9 pr-9 h-10 rounded-md"
+                    className="pl-9 pr-9 h-10 text-sm rounded-md"
                 />
                 {value && (
                     <Button

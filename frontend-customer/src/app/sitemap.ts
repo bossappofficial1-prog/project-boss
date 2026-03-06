@@ -3,6 +3,8 @@ import type { MetadataRoute } from "next";
 const SITE_URL = process.env.SITE_URL || "https://bossapp.id";
 const API_URL = process.env.SERVER_API_URL;
 
+export const revalidate = 3600;
+
 const STATIC_ROUTES: Array<{
     path: string;
     changeFrequency?: MetadataRoute.Sitemap[number]["changeFrequency"];
@@ -54,7 +56,7 @@ async function buildOutletEntries(lastModified: string): Promise<MetadataRoute.S
 
     try {
         const res = await fetch(`${API_URL}/outlets/slugs`, {
-            next: { revalidate: 3600 },
+            next: { revalidate },
         });
 
         if (!res.ok) return [];

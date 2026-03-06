@@ -286,14 +286,14 @@ const MemoizedVideo = memo(({ item, isActive, index, registerVideo }: { item: Pr
         >
             <video
                 ref={(el) => registerVideo(index, el)}
-                src={resolveCustomerImageUrl(item.url)}
+                preload="auto"
+                playsInline
                 className="w-full h-full object-contain"
                 controls
-                playsInline
-                loop
-                preload="auto" // KUNCI OPTIMASI: Meminta browser menahan buffer data
-                poster={item.thumbnailUrl ? resolveCustomerImageUrl(item.thumbnailUrl) : undefined}
-            />
+                poster={item.thumbnailUrl ?? undefined}
+            >
+                <source src={item.url} />
+            </video>
         </div>
     );
 });

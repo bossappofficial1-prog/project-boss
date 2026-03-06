@@ -509,7 +509,7 @@ export function OutletContent({ slug }: { slug: string }) {
                 placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10 h-10 rounded-lg border-border/60 focus-visible:ring-primary/20"
+                className="pl-10 pr-10 h-10 rounded-lg text-sm border-border/60 focus-visible:ring-primary/20"
               />
               {searchQuery && (
                 <button

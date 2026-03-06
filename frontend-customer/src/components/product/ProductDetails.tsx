@@ -89,11 +89,11 @@ export function ProductDetails({ slug, productId }: Props) {
     queryFn: () => OutletService.getDetail(slug),
     enabled: Boolean(slug),
     retry: false,
-    staleTime: 1000 * 30,
+    staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 10,
-    refetchOnMount: 'always',
-    refetchOnReconnect: 'always',
-    refetchOnWindowFocus: 'always',
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: false,
     refetchInterval: 1000 * 60,
   });
 
@@ -478,9 +478,9 @@ const HeroImage: React.FC<HeroImageProps> = ({ product }) => {
       <div className="relative -mx-3 p-2 -mt-3 overflow-hidden">
         <ProductMediaSlider
           media={product.media}
-          aspectRatio="16/9"
+          aspectRatio="1/1"
           showControls
-          autoPlay
+          autoPlay={true}
         />
       </div>
     );
