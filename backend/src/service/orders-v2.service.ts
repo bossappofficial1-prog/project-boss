@@ -100,12 +100,13 @@ export class OrdersV2Service {
         outletId: string,
         userIdentifier: string,
         validateAsOwner = true,
+        q?: string
     ): Promise<{ board: OrdersBoard; stats: OrdersStats }> {
         await validateOutletAccess(outletId, userIdentifier, validateAsOwner);
 
         const [activeOrders, completedOrders, todayStats] = await Promise.all([
-            OrdersV2Repository.getActiveOrdersByOutlet(outletId),
-            OrdersV2Repository.getCompletedTodayByOutlet(outletId),
+            OrdersV2Repository.getActiveOrdersByOutlet(outletId, q),
+            OrdersV2Repository.getCompletedTodayByOutlet(outletId, q),
             OrdersV2Repository.getTodayStats(outletId),
         ]);
 

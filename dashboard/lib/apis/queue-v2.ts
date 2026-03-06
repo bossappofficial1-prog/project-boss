@@ -11,6 +11,7 @@ export type QueueOrderStatus =
 
 export interface QueueV2EntryItem {
     id: string;
+    productId: string;
     productName: string;
     productType: "SERVICE" | "GOODS";
     quantity: number;
@@ -69,9 +70,16 @@ export interface QueueV2BoardResponse {
     stats: QueueV2Stats;
 }
 
+export interface ReschedulePayload {
+    newSlotId: string;    // ID slot baru yang dipilih
+    newDate: string;      // ISO 8601
+    newStartTime: string; // ISO 8601
+    newEndTime: string;   // ISO 8601
+}
+
 export const queueV2Api = {
-    async getBoard(outletId: string): Promise<QueueV2BoardResponse> {
-        return apiCall<QueueV2BoardResponse>(`/queue/v2/${outletId}/board`);
+    async getBoard(outletId: string, q?: string): Promise<QueueV2BoardResponse> {
+        return apiCall<QueueV2BoardResponse>(`/queue/v2/${outletId}/board?q=${q}`);
     },
 
     async transitionStatus(
@@ -82,6 +90,13 @@ export const queueV2Api = {
         return apiCall<any>(`/queue/v2/${orderId}/transition`, {
             method: "PATCH",
             body: JSON.stringify({ status, reason }),
+        });
+    },
+
+    async rescheduleOrder(orderId: string, payload: ReschedulePayload): Promise<any> {
+        return apiCall<any>(`/queue/v2/${orderId}/reschedule`, {
+            method: "PATCH",
+            body: JSON.stringify(payload),
         });
     },
 };

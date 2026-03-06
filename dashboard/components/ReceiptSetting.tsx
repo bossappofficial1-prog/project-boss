@@ -105,7 +105,8 @@ export default function ReceiptSetting({ outletId }: { outletId?: string }) {
             name: 'showLogo',
             label: 'Tampilkan Logo di Struk',
             type: 'dual-option-switch',
-            colSpan: 6,
+            className: 'w-[200px]',
+            colSpan: 3,
             switchOptions: {
                 right: { label: 'Aktif', value: 'ACTIVE' },
                 left: { label: 'Nonaktif', value: 'INACTIVE' }

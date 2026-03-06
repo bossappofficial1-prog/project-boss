@@ -8,6 +8,7 @@ import { updateServiceQueueStatusService } from "./order.service";
 
 interface QueueEntryItem {
     id: string;
+    productId: string;
     productName: string;
     productType: "SERVICE" | "GOODS";
     quantity: number;
@@ -93,6 +94,7 @@ function mapOrderToEntry(order: any, position: number): QueueEntry {
 
     const allItems: QueueEntryItem[] = (order.items ?? []).map((item: any) => ({
         id: item.id,
+        productId: item.productId ?? "",
         productName: item.product?.name ?? "Produk",
         productType: item.product?.type ?? "GOODS",
         quantity: item.quantity ?? 1,
@@ -162,19 +164,20 @@ export class QueueV2Service {
         outletId: string,
         userIdentifier: string,
         validateAsOwner = true,
+        q?: string
     ): Promise<{ board: QueueBoard; stats: QueueStats }> {
         await validateOutletAccess(outletId, userIdentifier, validateAsOwner);
 
         const [activeOrders, completedOrders, cancelledCount] = await Promise.all([
-            QueueV2Repository.getActiveQueueByOutlet(outletId),
-            QueueV2Repository.getCompletedTodayByOutlet(outletId),
+            QueueV2Repository.getActiveQueueByOutlet(outletId, q),
+            QueueV2Repository.getCompletedTodayByOutlet(outletId, q),
             QueueV2Repository.getCancelledTodayCount(outletId),
         ]);
 
         // Sort active orders by schedule time
         const enriched = activeOrders.map((order) => {
             const schedule = computeSchedule(order);
-            return { order, sortValue: schedule.start?.getTime() ?? order.createdAt.getTime() };
+            return { order, sortValue: schedule.start?.getTime() ?? new Date(order.createdAt).getTime() };
         });
         enriched.sort((a, b) => a.sortValue - b.sortValue);
 
@@ -243,5 +246,45 @@ export class QueueV2Service {
             validateAsOwner,
             reason,
         );
+    }
+
+    static async rescheduleBooking(
+        orderId: string,
+        userIdentifier: string,
+        validateAsOwner: boolean,
+        newSlotId: string,
+        newDate: Date,
+        newStartTime: Date,
+        newEndTime: Date,
+    ): Promise<QueueEntry> {
+        const order = await QueueV2Repository.getOrderById(orderId);
+        if (!order) {
+            throw new AppError("Antrian tidak ditemukan.", HttpStatus.NOT_FOUND);
+        }
+
+        const terminalStatuses: OrderStatus[] = [OrderStatus.COMPLETED, OrderStatus.CANCELLED];
+        if (terminalStatuses.includes(order.orderStatus as OrderStatus)) {
+            throw new AppError(
+                "Antrian yang sudah selesai atau dibatalkan tidak dapat dijadwalkan ulang.",
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        await validateOutletAccess(order.outlet?.id ?? "", userIdentifier, validateAsOwner);
+
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const targetDate = new Date(newDate);
+        targetDate.setHours(0, 0, 0, 0);
+        if (targetDate < now) {
+            throw new AppError("Tanggal schedulling tidak boleh di masa lalu.", HttpStatus.BAD_REQUEST);
+        }
+
+        const updated = await QueueV2Repository.rescheduleBooking(orderId, newSlotId, newDate, newStartTime, newEndTime);
+        if (!updated) {
+            throw new AppError("Gagal memperbarui jadwal.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        return mapOrderToEntry(updated, 0);
     }
 }

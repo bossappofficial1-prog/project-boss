@@ -800,7 +800,6 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
     ".jpeg": "image/jpeg",
     ".png": "image/png",
     ".webp": "image/webp",
-    ".pdf": "application/pdf",
   };
   const claimedMime = mimeByExt[ext] ?? "application/octet-stream";
   try {
@@ -861,6 +860,21 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
       paymentStatus: PaymentStatus.AWAITING_VERIFICATION,
     },
   });
+
+  // Tandai booking slot SERVICE → BOOKED saat bukti pembayaran dikirim
+  const serviceItems = await db.orderItem.findMany({
+    where: { orderId, product: { type: "SERVICE" } },
+    select: { id: true },
+  });
+  if (serviceItems.length > 0) {
+    await db.bookingSlot.updateMany({
+      where: {
+        orderItemId: { in: serviceItems.map((i) => i.id) },
+        status: { not: "BOOKED" },
+      },
+      data: { status: "BOOKED" },
+    });
+  }
 
   try {
     await orderExpiryJob.remove(transaction.orderId);
@@ -1055,10 +1069,10 @@ export async function getPaymentOrderService(orderId: string) {
       isWithinOperatingHours,
       todaySchedule: todaySchedule
         ? {
-            isOpen: todaySchedule.isOpen,
-            openTime: todaySchedule.openTime,
-            closeTime: todaySchedule.closeTime,
-          }
+          isOpen: todaySchedule.isOpen,
+          openTime: todaySchedule.openTime,
+          closeTime: todaySchedule.closeTime,
+        }
         : null,
       operatingHours: operatingHours.map((oh) => ({
         dayOfWeek: oh.dayOfWeek,
@@ -1073,38 +1087,38 @@ export async function getPaymentOrderService(orderId: string) {
       isManual: transaction.isManual,
       midtrans: convertMidtrans
         ? {
-            transaction_id: convertMidtrans?.transaction_id ?? null,
-            order_id: convertMidtrans?.order_id ?? null,
-            gross_amount: convertMidtrans?.gross_amount ?? null,
-            transaction_status: convertMidtrans?.transaction_status ?? null,
-            payment_type: convertMidtrans?.payment_type,
-            expiry_time: convertMidtrans?.expiry_time,
-            actions: convertMidtrans?.actions ?? null,
-            va_numbers: convertMidtrans?.va_numbers ?? null,
-            currency: "IDR",
-          }
+          transaction_id: convertMidtrans?.transaction_id ?? null,
+          order_id: convertMidtrans?.order_id ?? null,
+          gross_amount: convertMidtrans?.gross_amount ?? null,
+          transaction_status: convertMidtrans?.transaction_status ?? null,
+          payment_type: convertMidtrans?.payment_type,
+          expiry_time: convertMidtrans?.expiry_time,
+          actions: convertMidtrans?.actions ?? null,
+          va_numbers: convertMidtrans?.va_numbers ?? null,
+          currency: "IDR",
+        }
         : null,
       manual: transaction.isManual
         ? {
-            type: transaction.paymentMethod,
-            paymentProofUrl: transaction.paymentProofUrl,
-            intruction: {
-              manualType: transaction.paymentMethod,
-              outletName: outlet.name,
-              businessName: outlet.business.name,
-              note: null,
-              qrImageUrl: outlet.manualQrImageUrl,
-              expiry_time: transaction.expiresAt,
-              bankAccount:
-                transaction.paymentMethod === "manual-transfer"
-                  ? {
-                      bankName: outlet.business.bankName,
-                      accountNumber: outlet.business.bankAccount,
-                      accountHolder: outlet.business.accountHolder,
-                    }
-                  : null,
-            },
-          }
+          type: transaction.paymentMethod,
+          paymentProofUrl: transaction.paymentProofUrl,
+          intruction: {
+            manualType: transaction.paymentMethod,
+            outletName: outlet.name,
+            businessName: outlet.business.name,
+            note: null,
+            qrImageUrl: outlet.manualQrImageUrl,
+            expiry_time: transaction.expiresAt,
+            bankAccount:
+              transaction.paymentMethod === "manual-transfer"
+                ? {
+                  bankName: outlet.business.bankName,
+                  accountNumber: outlet.business.bankAccount,
+                  accountHolder: outlet.business.accountHolder,
+                }
+                : null,
+          },
+        }
         : null,
     },
     customerDetails: {

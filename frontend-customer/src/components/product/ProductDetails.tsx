@@ -402,7 +402,7 @@ export function ProductDetails({ slug, productId }: Props) {
       <HeroImage product={product} />
 
       {/* Content Sheet */}
-      <div className=" z-40 rounded-t-2xl bg-background -mx-3 h-[60vh] p-0 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+      <div className=" z-40 rounded-t-2xl bg-background mb-12 -mx-3 p-0 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
@@ -776,7 +776,7 @@ const BottomActions: React.FC<BottomActionsProps> = ({
   ticketReachedMaxOrder,
   t,
 }) => (
-  <div className="fixed bottom-0 left-0 right-0 z-[101] bg-background/95 backdrop-blur-xl border-t border-border/50">
+  <div className="fixed bottom-0 left-0 right-0 z-[50] bg-background/95 backdrop-blur-xl border-t border-border/50">
     <div className="max-w-md mx-auto flex items-center gap-2.5 px-4 py-3">
       <Button
         variant="outline"

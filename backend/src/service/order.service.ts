@@ -575,10 +575,23 @@ export async function updateOrderStatusService(
 
     if (order.transaction?.id) {
       await db.transaction.update({
-        where: {
-          id: order.transaction.id,
-        },
+        where: { id: order.transaction.id },
         data: { status: PaymentStatus.SUCCESS },
+      });
+    }
+
+    // Tandai booking slot SERVICE → BOOKED saat pembayaran dikonfirmasi
+    const serviceItemIds = order.items
+      .filter((item) => item.product.type === "SERVICE")
+      .map((item) => item.id);
+
+    if (serviceItemIds.length > 0) {
+      await db.bookingSlot.updateMany({
+        where: {
+          orderItemId: { in: serviceItemIds },
+          status: { not: BookingSlotStatus.BOOKED },
+        },
+        data: { status: BookingSlotStatus.BOOKED },
       });
     }
   }

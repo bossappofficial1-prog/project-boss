@@ -12,9 +12,12 @@ import { QueueStatsBar } from "./QueueStatsBar";
 import { KanbanBoard } from "./KanbanBoard";
 import { QueueDetailSheet } from "./QueueDetailSheet";
 import { ProofPreviewDialog } from "./ProofPreviewDialog";
+import { RescheduleDialog } from "./RescheduleDialog";
 
 import { useQueueV2Board, useQueueV2Transition, useInvalidateQueueV2 } from "@/hooks/api/use-queue-v2";
 import type { QueueV2Entry, QueueOrderStatus, QueueV2Board as BoardType } from "@/lib/apis/queue-v2";
+import { Input } from "@/components/ui/input";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface QueueV2ContentProps {
     outletId: string;
@@ -44,8 +47,11 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function QueueV2Content({ outletId }: QueueV2ContentProps) {
     const router = useRouter();
-    const { data, isLoading, refetch } = useQueueV2Board(outletId);
+    const [query, setQuery] = useState('')
     const transition = useQueueV2Transition();
+
+    const queryDebounce = useDebounce(query, 1000)
+    const { data, isLoading, refetch } = useQueueV2Board(outletId, queryDebounce);
 
     const [detailEntry, setDetailEntry] = useState<QueueV2Entry | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
@@ -53,6 +59,8 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [proofEntry, setProofEntry] = useState<QueueV2Entry | null>(null);
     const [proofOpen, setProofOpen] = useState(false);
+    const [rescheduleEntry, setRescheduleEntry] = useState<QueueV2Entry | null>(null);
+    const [rescheduleOpen, setRescheduleOpen] = useState(false);
     // Handle primary action (advance status)
     const handlePrimaryAction = useCallback(
         (entry: QueueV2Entry, nextStatus: QueueOrderStatus) => {
@@ -126,6 +134,12 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
         setProofOpen(true);
     }, []);
 
+    // Reschedule
+    const handleReschedule = useCallback((entry: QueueV2Entry) => {
+        setRescheduleEntry(entry);
+        setRescheduleOpen(true);
+    }, []);
+
     const board = data?.board ?? { waiting: [], ready: [], inProgress: [], completed: [] };
     const stats = data?.stats ?? {
         totalActive: 0,
@@ -137,32 +151,41 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
         avgWaitMinutes: null,
     };
 
-    if (isLoading) {
+    if (isLoading && !query) {
         return <QueueV2Skeleton />;
     }
 
     return (
         <div className="mx-auto max-w-[1600px] p-4 space-y-4">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                        Antrian Layanan
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Kelola antrian layanan jasa secara real-time
-                    </p>
+            <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                            Antrian Layanan
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Kelola antrian layanan jasa secara real-time
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => refetch()}>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            <span className="hidden sm:inline">Refresh</span>
+                        </Button>
+                        <Button size="sm" onClick={() => router.push("/cashier/pos")}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            <span className="hidden sm:inline">Tambah Antrian</span>
+                            <span className="sm:hidden">Tambah</span>
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" size="sm" onClick={() => refetch()}>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Refresh
-                    </Button>
-                    <Button size="sm" onClick={() => router.push("/cashier/pos-v2")}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Tambah Antrian
-                    </Button>
-                </div>
+                <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value.toUpperCase())}
+                    placeholder="Cari antrian berdasarkan orderId..."
+                    className="w-full sm:max-w-sm"
+                />
             </div>
 
             {/* Stats */}
@@ -186,6 +209,7 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
                 onPrimaryAction={handlePrimaryAction}
                 onCancel={handleCancel}
                 onViewProof={handleViewProof}
+                onReschedule={handleReschedule}
                 isPending={transition.isPending}
             />
 
@@ -194,6 +218,14 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
                 entry={proofEntry}
                 open={proofOpen}
                 onOpenChange={setProofOpen}
+            />
+
+            {/* Reschedule Dialog */}
+            <RescheduleDialog
+                entry={rescheduleEntry}
+                open={rescheduleOpen}
+                onOpenChange={setRescheduleOpen}
+                onSuccess={() => setDetailOpen(false)}
             />
 
             {/* Confirm Dialog */}

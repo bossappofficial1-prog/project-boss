@@ -601,7 +601,7 @@
         "messages": {
             "contactRedirect": "Membuka WhatsApp...",
             "contactUnavailable": "Nomor telepon outlet belum tersedia.",
-            "contactMessage": "Halo {outletName}, saya ingin konfirmasi status pesanan dengan ID {orderId}.",
+            "contactMessage": "Halo *{outletName}*, saya ingin menanyakan status pesanan saya:\n\n📋 *No. Pesanan:* {orderId}\n\nMohon bantuannya. Terima kasih 🙏",
             "missingPhone": "Silakan atur nomor telepon Anda di profil sebelum menggunakan aksi ini.",
             "cancelSuccess": "Pesanan berhasil dibatalkan.",
             "cancelError": "Pesanan gagal dibatalkan. Silakan coba lagi.",

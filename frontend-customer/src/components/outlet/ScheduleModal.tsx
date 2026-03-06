@@ -229,7 +229,7 @@ export function ScheduleModal({
                   <LoadingState />
                 </div>
               ) : processedSlots.length > 0 ? (
-                <div className="grid grid-cols-2 max-h-[75dvh] overflow-scroll sm:grid-cols-3 gap-2 sm:gap-2.5">
+                <div className="grid grid-cols-2 max-h-[60vh] overflow-scroll sm:grid-cols-3 gap-2 sm:gap-2.5">
                   {processedSlots.map((slot) => {
                     const isSelected = selectedSlot?.id === slot.id;
                     const isCurrentCartItem = slot.id === selectedSlotIdInCart;
@@ -254,7 +254,7 @@ export function ScheduleModal({
                             "border-primary ring-1 ring-primary bg-primary/5": isCurrentCartItem && !isSelected,
                             // "opacity-50 bg-muted text-muted-foreground border-transparent": isDisabled && !isCurrentCartItem,
                             "bg-green-500 hover:bg-green-600": isSelected,
-                            "disabled:bg-red-500 disabled:opacity-95 text-white disabled:hover:bg-red-600": slot.computedStatus === 'BLOCKED' || slot.computedStatus === 'BOOKED'
+                            "disabled:bg-red-500 disabled:opacity-95 dark:disabled:bg-red-500 dark:disabled:opacity-95 text-white disabled:hover:bg-red-600": slot.computedStatus === 'BLOCKED' || slot.computedStatus === 'BOOKED'
                           }
                         )}
                       >

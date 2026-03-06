@@ -7,11 +7,13 @@ export const ordersV2GetBoard = asyncHandler(async (req: Request, res: Response)
     const outletId = req.params.outletId as string;
     const user = req.storedUser!;
 
+    const q = req.query.q as string
+
     const isCashier = (user as any).userType === "CASHIER";
     const userIdentifier = isCashier ? (user as any).outletId : user.id;
     const validateAsOwner = !isCashier;
 
-    const result = await OrdersV2Service.getBoard(outletId, userIdentifier, validateAsOwner);
+    const result = await OrdersV2Service.getBoard(outletId, userIdentifier, validateAsOwner, q);
     return ResponseUtil.success(res, result);
 });
 

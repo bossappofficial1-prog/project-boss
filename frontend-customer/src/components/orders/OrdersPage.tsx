@@ -22,6 +22,7 @@ import SortMenu from "./parts/SortMenu";
 import { Order } from "@/services/order";
 import { OrderDetail, OrderStatus } from "@/types";
 import { Receipt, RefreshCw, Loader2 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import { useTranslations } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
@@ -390,9 +391,47 @@ export default function OrdersPage() {
                     snackbar.error(t("messages.contactUnavailable"));
                     return;
                 }
-                const msg = t("messages.contactMessage")
-                    .replace("{orderId}", order.id)
-                    .replace("{outletName}", order.outlet.name);
+
+                const itemsList = order.items
+                    .map((i) => `  - ${i.product.name} x${i.quantity}`)
+                    .join("\n");
+
+                const scheduleInfo = (() => {
+                    const raw =
+                        order.bookingSlot?.startTime ??
+                        order.queueMeta?.scheduledStart ??
+                        null;
+                    if (!raw) return "";
+                    const date = new Date(raw);
+                    if (Number.isNaN(date.getTime())) return "";
+                    return `\n📅 *Jadwal:* ${date.toLocaleString("id-ID", {
+                        weekday: "long",
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZone: "Asia/Jakarta",
+                    })}`;
+                })();
+
+                const msg = [
+                    `Halo *${order.outlet.name}*,`,
+                    ``,
+                    `Saya ingin menanyakan status pesanan saya berikut:`,
+                    ``,
+                    `📋 *No. Pesanan:* ${order.id}`,
+                    `👤 *Nama:* ${order.customerDetails.name}`,
+                    `📦 *Item Pesanan:*`,
+                    itemsList,
+                    `💰 *Total:* ${formatCurrency(order.totalAmount)}`,
+                    scheduleInfo ? scheduleInfo.trimStart() : null,
+                    ``,
+                    `Mohon bantuannya. Terima kasih 🙏`,
+                ]
+                    .filter((line) => line !== null)
+                    .join("\n");
+
                 window.open(
                     `https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`,
                     "_blank",

@@ -9,7 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Clock, User, Phone, Timer, Calendar, ChevronRight, X, MapPin, CalendarClock, ImageIcon, CreditCard, ShoppingBag, Package } from "lucide-react";
+import { Clock, User, Phone, Timer, Calendar, ChevronRight, X, MapPin, CalendarClock, ImageIcon, CreditCard, ShoppingBag, Package, CalendarRange } from "lucide-react";
 import type { QueueV2Entry, QueueOrderStatus } from "@/lib/apis/queue-v2";
 
 interface QueueDetailSheetProps {
@@ -19,6 +19,7 @@ interface QueueDetailSheetProps {
     onPrimaryAction: (entry: QueueV2Entry, nextStatus: QueueOrderStatus) => void;
     onCancel: (entry: QueueV2Entry) => void;
     onViewProof: (entry: QueueV2Entry) => void;
+    onReschedule?: (entry: QueueV2Entry) => void;
     isPending: boolean;
 }
 
@@ -124,6 +125,7 @@ export function QueueDetailSheet({
     onPrimaryAction,
     onCancel,
     onViewProof,
+    onReschedule,
     isPending,
 }: QueueDetailSheetProps) {
     if (!entry) return null;
@@ -322,6 +324,17 @@ export function QueueDetailSheet({
                                         Belum bisa dilayani — jadwal belum tiba
                                     </p>
                                 </div>
+                            )}
+                            {entry.scheduledStart && onReschedule && (
+                                <Button
+                                    variant="outline"
+                                    className="w-full"
+                                    disabled={isPending}
+                                    onClick={() => onReschedule(entry)}
+                                >
+                                    <CalendarRange className="w-4 h-4 mr-2" />
+                                    Reschedule Jadwal
+                                </Button>
                             )}
                             <div className="flex gap-3">
                                 {primary && !blockAction && !isAwaitingManualProof && (

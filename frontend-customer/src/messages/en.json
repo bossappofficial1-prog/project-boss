@@ -601,7 +601,7 @@
         "messages": {
             "contactRedirect": "Opening WhatsApp chat...",
             "contactUnavailable": "Outlet phone number is unavailable.",
-            "contactMessage": "Hello {outletName}, I would like to confirm my order with ID {orderId}.",
+            "contactMessage": "Hello *{outletName}*, I would like to check on my order:\n\n📋 *Order ID:* {orderId}\n\nThank you for your help 🙏",
             "missingPhone": "Please set your phone number in your profile before using this action.",
             "cancelSuccess": "Your order has been cancelled.",
             "cancelError": "We could not cancel the order. Please try again.",
