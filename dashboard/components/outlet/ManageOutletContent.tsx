@@ -139,19 +139,29 @@ export default function ManageOutletContent() {
             finalQrImageUrl = (await uploadApi.uploadImage(formData.manualQrImageUrl as any, { scope: 'outlet' })).url
         }
 
-        await outletManagementApi.update(selectedOutlet.id, {
-            name: formData.name,
-            address: formData.address,
-            phone: formData.phone,
-            ...(formData.description && { description: formData.description }),
-            image: finalImageUrl,
-            latitude: formData.latitude,
-            longitude: formData.longitude,
-            isOpen: formData.isOpen,
-            manualQrImageUrl: finalQrImageUrl,
-        })
+        try {
+            await outletManagementApi.update(selectedOutlet.id, {
+                name: formData.name,
+                address: formData.address,
+                phone: formData.phone,
+                ...(formData.description && { description: formData.description }),
+                image: finalImageUrl,
+                latitude: formData.latitude,
+                longitude: formData.longitude,
+                isOpen: formData.isOpen,
+                manualQrImageUrl: finalQrImageUrl,
+            })
 
-        setIsEditing(false)
+            setIsEditing(false)
+        } catch (error) {
+            if (finalImageUrl) {
+                try { await uploadApi.deleteByUrl(finalImageUrl); } catch (e) { console.error('Failed to delete orphaned image', e); }
+            }
+            if (finalQrImageUrl) {
+                try { await uploadApi.deleteByUrl(finalQrImageUrl); } catch (e) { console.error('Failed to delete orphaned QRIS image', e); }
+            }
+            throw error
+        }
     }
 
     const { mutate: submit, isPending: isSaving } = useMutation({

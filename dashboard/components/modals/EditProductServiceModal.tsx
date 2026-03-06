@@ -88,6 +88,7 @@ export default function EditProductServiceModal({ open, onOpenChange, item, onSu
         status,
       }
       // If a new file chosen, enforce 1MB and upload; otherwise, keep existing imageUrl if any
+      let newlyUploadedUrl: string | undefined = undefined;
       if (file) {
         if (file.size > 1024 * 1024) {
           setError('Ukuran gambar melebihi 1MB.')
@@ -98,6 +99,7 @@ export default function EditProductServiceModal({ open, onOpenChange, item, onSu
           setUploading(true)
           const uploaded = await uploadApi.uploadImage(file, { scope: 'product' })
           payload.image = uploaded.url
+          newlyUploadedUrl = uploaded.url
         } finally {
           setUploading(false)
         }
@@ -111,7 +113,18 @@ export default function EditProductServiceModal({ open, onOpenChange, item, onSu
         payload.serviceDurationMinutes = serviceDurationMinutes === '' ? undefined : Number(serviceDurationMinutes)
       }
 
-      await productApi.update(item.id, payload)
+      try {
+        await productApi.update(item.id, payload)
+      } catch (e) {
+        if (newlyUploadedUrl) {
+          try {
+            await uploadApi.deleteByUrl(newlyUploadedUrl)
+          } catch (deleteError) {
+            console.error('Failed to delete orphaned image', deleteError)
+          }
+        }
+        throw e
+      }
       onSuccess?.()
       handleClose(false)
     } catch (err: any) {

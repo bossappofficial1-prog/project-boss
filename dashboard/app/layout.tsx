@@ -156,7 +156,6 @@ export default async function RootLayout({
       <body className={`${poppins.variable} font-poppins antialiased min-h-screen bg-background text-foreground`}>
         <ThemeProvider defaultTheme={theme}>
           <QueryProvider>{children}</QueryProvider>
-          <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>
     </html>

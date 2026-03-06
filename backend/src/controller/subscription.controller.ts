@@ -161,11 +161,13 @@ export const getSubscriptionInvoiceController = asyncHandler(async (req: Request
 /**
  * Get current business subscription status
  * GET /api/v1/subscription/status
+ * Also refreshes JWT cookie if subscription status changed in DB
  */
 export const getSubscriptionStatusController = asyncHandler(async (req: Request, res: Response) => {
     const storedUser = req.storedUser as typeof req.storedUser & {
         businessId?: string;
         business?: { id: string } | null;
+        subscriptionStatus?: string;
     };
     const businessId = storedUser?.businessId ?? storedUser?.business?.id;
 
@@ -174,6 +176,39 @@ export const getSubscriptionStatusController = asyncHandler(async (req: Request,
     }
 
     const status = await SubscriptionService.getSubscriptionStatus(businessId);
+
+    // Refresh JWT if subscription status in DB differs from token
+    const dbStatus = status.business.subscriptionStatus;
+    const tokenStatus = storedUser?.subscriptionStatus;
+
+    if (storedUser && dbStatus && dbStatus !== tokenStatus) {
+        const refreshedToken = JwtUtil.generate({
+            sessionId: storedUser.id,
+            role: storedUser.role,
+            name: storedUser.name,
+            email: storedUser.email,
+            provider: storedUser.provider ?? 'email',
+            isVerified: storedUser.isVerified,
+            businessId,
+            subscriptionStatus: dbStatus,
+        });
+
+        await redis.set(
+            `session:${storedUser.id}`,
+            JSON.stringify({ ...storedUser, subscriptionStatus: dbStatus }),
+            'EX',
+            60 * 60 * 24
+        );
+
+        res.cookie("token", refreshedToken, {
+            httpOnly: true,
+            secure: !!config.COOKIES_DOMAIN,
+            sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+            domain: config.COOKIES_DOMAIN,
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/'
+        });
+    }
 
     return ResponseUtil.success(res, status, HttpStatus.OK);
 });

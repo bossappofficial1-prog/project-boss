@@ -94,11 +94,12 @@ export default function AddOutletModal({
       address: outletDetail.address || '',
       phone: outletDetail.phone || '',
       description: outletDetail.description || '',
-      status: outletDetail.isOpen ? 'ACTIVE' : 'INACTIVE',
+      status: outletDetail.isOpen === true ? 'ACTIVE' : 'INACTIVE',
       latitude: outletDetail.latitude || undefined,
       longitude: outletDetail.longitude || undefined,
     })
 
+    console.log(outletDetail.isOpen)
     const hours = outletDetail.operatingHours?.length
       ? parseOperatingHours(outletDetail.operatingHours)
       : {}
@@ -131,26 +132,45 @@ export default function AddOutletModal({
     mutationFn: async (values: any) => {
       const formData = values as FormData
       const file = formData.get('file') as File
+      const status = formData.get('status') as string
+
+      const latValue = formData.get('latitude') as string
+      const lngValue = formData.get('longitude') as string
 
       const base = {
         name: formData.get('name') as string,
         address: formData.get('address') as string,
         phone: formData.get('phone') as string,
         description: (formData.get('description') as string) || undefined,
-        latitude: Number(formData.get('latitude')),
-        longitude: Number(formData.get('longitude')),
-        isOpen: formData.get('status') === 'ACTIVE',
+        latitude: latValue && latValue !== 'undefined' ? Number(latValue) : undefined,
+        longitude: lngValue && lngValue !== 'undefined' ? Number(lngValue) : undefined,
+        isOpen: status === 'ACTIVE',
         image: undefined as string | undefined,
       }
 
+      let uploadedUrl: string | undefined = undefined;
+
       if (file instanceof File) {
         const uploaded = await uploadApi.uploadImage(file, { scope: 'outlet' })
-        base.image = uploaded.url
+        uploadedUrl = uploaded.url
+        base.image = uploadedUrl
       }
 
-      const result = mode === 'edit'
-        ? await outletManagementApi.update(outletDetail!.id, base)
-        : await outletManagementApi.create({ ...base, businessId })
+      let result;
+      try {
+        result = mode === 'edit'
+          ? await outletManagementApi.update(outletDetail!.id, base)
+          : await outletManagementApi.create({ ...base, businessId })
+      } catch (error) {
+        if (uploadedUrl) {
+          try {
+            await uploadApi.deleteByUrl(uploadedUrl)
+          } catch (deleteError) {
+            console.error('Failed to delete orphaned image:', deleteError)
+          }
+        }
+        throw error
+      }
 
       // Save operating hours
       const changedHours = Object.values(operatingHoursData).filter(d => d.isOpen !== undefined)

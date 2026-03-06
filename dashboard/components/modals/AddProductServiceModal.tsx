@@ -258,10 +258,12 @@ export default function AddOrEditProductServiceModal({
       outletId,
     };
 
+    let uploadedImageUrl = undefined;
     // Upload image and use returned URL
     if (file) {
       const uploaded = await uploadApi.uploadImage(file, { scope: "product" });
       payload.image = uploaded.url;
+      uploadedImageUrl = uploaded.url;
     }
     if (formType === "GOODS") {
       const minStockRaw = otherValues.get("goods[minStock]");
@@ -357,10 +359,22 @@ export default function AddOrEditProductServiceModal({
       payload.service = service;
     }
 
-    if (action === "add") {
-      await productApi.create(payload);
-    } else {
-      await productApi.update(initialData?.id!, payload);
+    try {
+      if (action === "add") {
+        await productApi.create(payload);
+      } else {
+        await productApi.update(initialData?.id!, payload);
+      }
+    } catch (error) {
+      // rollback image if create/update fails
+      if (uploadedImageUrl) {
+        try {
+          await uploadApi.deleteByUrl(uploadedImageUrl);
+        } catch (e) {
+          console.error("Failed to delete orphaned product image:", e);
+        }
+      }
+      throw error;
     }
     onSuccess?.();
     handleClose(false);

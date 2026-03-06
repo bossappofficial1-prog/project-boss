@@ -64,7 +64,13 @@ export default function VerificationPendingPage() {
             try {
                 const { data } = await apiClient.get('/subscription/status')
                 if (data.success && data.data) {
-                    setStatus(data.data as SubscriptionStatusResponse)
+                    const payload = data.data as SubscriptionStatusResponse
+                    setStatus(payload)
+
+                    // Auto-redirect if already active
+                    if (payload.subscription?.status === 'ACTIVE') {
+                        window.location.href = '/owner/dashboard'
+                    }
                 } else if (!data.success) {
                     console.error('Failed to fetch status:', data.message)
                 }
@@ -93,6 +99,31 @@ export default function VerificationPendingPage() {
         return () => clearInterval(interval)
     }, [status])
 
+    // Auto-poll subscription status every 30 seconds
+    useEffect(() => {
+        if (isLoading) return
+        if (status?.subscription?.status === 'ACTIVE') return
+
+        const interval = setInterval(async () => {
+            try {
+                const { data } = await apiClient.get('/subscription/status')
+                if (data.success && data.data) {
+                    const payload = data.data as SubscriptionStatusResponse
+                    setStatus(payload)
+
+                    if (payload.subscription?.status === 'ACTIVE') {
+                        // Cookie already refreshed by backend, use full reload
+                        window.location.href = '/owner/dashboard'
+                    }
+                }
+            } catch (err) {
+                console.error('Error polling status:', err)
+            }
+        }, 30_000)
+
+        return () => clearInterval(interval)
+    }, [isLoading, status?.subscription?.status])
+
     const handleRefreshStatus = async () => {
         try {
             setIsRefreshing(true)
@@ -102,7 +133,8 @@ export default function VerificationPendingPage() {
                 setStatus(payload)
 
                 if (payload.subscription?.status === 'ACTIVE') {
-                    router.push('/owner/dashboard')
+                    // Cookie already refreshed by backend, use full reload
+                    window.location.href = '/owner/dashboard'
                 }
             } else if (!data.success) {
                 console.error('Failed to refresh status:', data.message)
@@ -189,7 +221,7 @@ export default function VerificationPendingPage() {
                         )}
 
                         <Button
-                            onClick={() => router.push('/owner/dashboard')}
+                            onClick={() => window.location.href = '/owner/dashboard'}
                             size="lg"
                             className="w-full"
                         >
@@ -382,7 +414,7 @@ export default function VerificationPendingPage() {
                                     : 'Periksa Status'}
                             </Button>
                             <Button
-                                onClick={() => router.push('/owner/dashboard')}
+                                onClick={() => window.location.href = '/owner/dashboard'}
                                 className="flex-1"
                             >
                                 Ke Dashboard
