@@ -24,8 +24,8 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
     return outlet;
 }
 
-export async function getOutletIdsService() {
-    return await OutletRepository.getOutletIds()
+export async function getOutletSlugsService() {
+    return await OutletRepository.getOutletSlugs()
 }
 
 export async function findNearbyOutletsService(

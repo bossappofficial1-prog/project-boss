@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 const SITE_URL = process.env.SITE_URL || "https://bossapp.id";
+const API_URL = process.env.SERVER_API_URL;
 
 const STATIC_ROUTES: Array<{
     path: string;
@@ -8,83 +9,67 @@ const STATIC_ROUTES: Array<{
     priority?: MetadataRoute.Sitemap[number]["priority"];
 }> = [
         { path: "/", changeFrequency: "daily", priority: 1 },
-        { path: "/offline", changeFrequency: "yearly", priority: 0.2 },
         { path: "/cart", changeFrequency: "weekly", priority: 0.4 },
         { path: "/checkout", changeFrequency: "weekly", priority: 0.4 },
         { path: "/favorites", changeFrequency: "weekly", priority: 0.5 },
         { path: "/nearby", changeFrequency: "weekly", priority: 0.6 },
         { path: "/orders", changeFrequency: "weekly", priority: 0.6 },
         { path: "/profile", changeFrequency: "monthly", priority: 0.3 },
-        { path: "/saved-products", changeFrequency: "weekly", priority: 0.5 },
-        { path: "/search", changeFrequency: "weekly", priority: 0.5 },
     ];
 
-const EXCLUDED_PREFIXES = ["/payment-test", "/payment", "/snackbar-demo"];
+const EXCLUDED_PREFIXES = new Set([
+    "/payment-test",
+    "/payment",
+    "/snackbar-demo",
+]);
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const generatedAt = new Date();
-    const entries: MetadataRoute.Sitemap = [];
+    const lastModified = new Date().toISOString();
 
-    for (const route of STATIC_ROUTES) {
-        if (shouldExclude(route.path)) {
-            continue;
-        }
-
-        entries.push({
-            url: buildAbsoluteUrl(route.path),
-            lastModified: generatedAt,
+    const staticEntries = STATIC_ROUTES
+        .filter((route) => !shouldExclude(route.path))
+        .map((route) => ({
+            url: `${SITE_URL}${route.path}`,
+            lastModified,
             changeFrequency: route.changeFrequency,
             priority: route.priority,
-        });
-    }
+        }));
 
-    const outletEntries = await buildOutletEntries(generatedAt);
-    entries.push(...outletEntries);
+    const outletEntries = await buildOutletEntries(lastModified);
 
-    return entries;
+    return [...staticEntries, ...outletEntries];
 }
 
 function shouldExclude(path: string): boolean {
-    return EXCLUDED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
-}
-
-function buildAbsoluteUrl(path: string): string {
-    return new URL(path, SITE_URL).toString();
-}
-
-async function buildOutletEntries(lastModified: Date): Promise<MetadataRoute.Sitemap> {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-    if (!apiUrl) {
-        console.warn("[sitemap] NEXT_PUBLIC_API_URL tidak ditemukan; lewati outlet dinamis.");
-        return [];
+    for (const prefix of EXCLUDED_PREFIXES) {
+        if (path === prefix || path.startsWith(prefix + "/")) {
+            return true;
+        }
     }
+    return false;
+}
+
+async function buildOutletEntries(lastModified: string): Promise<MetadataRoute.Sitemap> {
+    if (!API_URL) return [];
 
     try {
-        const response = await fetch(`${apiUrl}/api/v1/outlets/ids`, {
-            next: { revalidate: 60 * 60 },
+        const res = await fetch(`${API_URL}/outlets/slugs`, {
+            next: { revalidate: 3600 },
         });
 
-        if (!response.ok) {
-            console.warn(`{sitemap} Gagal fetch outlet IDs (status ${response.status}); lewati outlet dinamis.`);
-            return [];
-        }
+        if (!res.ok) return [];
 
-        const payload = await response.json();
+        const payload = await res.json();
 
-        if (!Array.isArray(payload?.data)) {
-            console.warn("[sitemap] Format respons outlets tidak sesuai; lewati outlet dinamis.");
-            return [];
-        }
+        if (!Array.isArray(payload?.data)) return [];
 
-        return payload.data.map((outlet: { id: string | number }) => ({
-            url: buildAbsoluteUrl(`/outlet/${outlet.id}`),
+        return payload.data.map((outlet: { slug: string }) => ({
+            url: `${SITE_URL}/outlet/${outlet.slug}`,
             lastModified,
             changeFrequency: "weekly",
             priority: 0.7,
         }));
-    } catch (error) {
-        console.warn("[sitemap] Gagal mengambil data outlet dinamis:", error);
+    } catch {
         return [];
     }
 }

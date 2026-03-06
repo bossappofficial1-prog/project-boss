@@ -16,8 +16,8 @@ import {
     getQRISController,
     getOutletAnalyticsController,
     getOutletRevenueTrendController,
-    getOutletIdsController,
-    getOutletBySlugController
+    getOutletBySlugController,
+    getOutletSlugsController
 } from "../controller/outlet.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOutletSchema, updateOutletSchema, updateOutletLocationSchema } from "../schemas/outlet.schema";
@@ -31,7 +31,7 @@ const outletRouter = Router();
 outletRouter.get("/", getAllOutletsController);
 outletRouter.get("/featured", getFeaturedOutletsController);
 outletRouter.get("/nearby", findNearbyOutletsController);
-outletRouter.get("/ids", getOutletIdsController);
+outletRouter.get("/slugs", getOutletSlugsController);
 outletRouter.get("/:id", getOutletByIdController);
 outletRouter.get("/slug/:slug", getOutletBySlugController);
 outletRouter.get("/business/:businessId", getOutletsByBusinessIdController);

@@ -18,8 +18,8 @@ export class OutletRepository {
         });
     }
 
-    static async getOutletIds() {
-        return db.outlet.findMany({ select: { id: true } })
+    static async getOutletSlugs() {
+        return db.outlet.findMany({ select: { slug: true }, take: 50000 })
     }
 
     static async create(data: CreateOutletInput): Promise<Outlet> {
