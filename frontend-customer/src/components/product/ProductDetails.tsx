@@ -37,7 +37,7 @@ import { OutletType } from "@/types";
 import { ScheduleModal } from "../outlet/ScheduleModal";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
 import { Messages, NestedKeyOf, useLocale, useLocalizedPath, useTranslations } from "@/hooks/useI18n";
-import { ProductImagesSlider } from "../shared/ProductImagesSlider";
+import { ProductMediaSlider } from "../shared/ProductMediaSlider";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import {
   getProductPrice,
@@ -398,11 +398,11 @@ export function ProductDetails({ slug, productId }: Props) {
   }
 
   return (
-    <div className="pb-24">
+    <div >
       <HeroImage product={product} />
 
       {/* Content Sheet */}
-      <div className="relative z-40 -mt-8 rounded-t-2xl bg-background shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+      <div className=" z-40 rounded-t-2xl mt-4 bg-background -mx-3 h-[60vh] p-0 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
@@ -473,26 +473,23 @@ type HeroImageProps = {
 };
 
 const HeroImage: React.FC<HeroImageProps> = ({ product }) => {
-  if (product.images && product.images.length > 1) {
+  if (product.media && product.media.length > 0) {
     return (
-      <div className="relative h-72 sm:h-80 bg-muted -mx-4 -mt-4 overflow-hidden">
-        <ProductImagesSlider
+      <div className="relative bg-black -mx-3 p-2 -mt-3 overflow-hidden">
+        <ProductMediaSlider
+          media={product.media}
           aspectRatio="16/9"
           showControls
           autoPlay
-          images={product.images.map((img) => ({
-            url: img.url,
-            alt: img.alt,
-          }))}
         />
       </div>
     );
   }
 
-  const imageUrl = product.images?.[0]?.url || product.image;
+  const imageUrl = product.image;
   if (imageUrl) {
     return (
-      <div className="relative h-72 sm:h-80 bg-muted -mx-4 -mt-4 overflow-hidden">
+      <div className="relative h-72 sm:h-80 bg-muted -mx-3 p-2 -mt-3 overflow-hidden">
         <ImageRender
           src={imageUrl}
           alt={product.name}

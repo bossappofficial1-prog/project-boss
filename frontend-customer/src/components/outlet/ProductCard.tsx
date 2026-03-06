@@ -15,6 +15,7 @@ import {
   Ticket,
   MapPin,
   Calendar,
+  Images,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -108,7 +109,7 @@ export default function ProductCard({
   const outletNotOpen = !outlet.isOpen;
 
   const handleCardClick = useCallback(() => {
-    const href = withLocalizedPath(`/outlet/${outlet.id}/product/${product.id}?from=outlet`);
+    const href = withLocalizedPath(`/outlet/${outlet.slug}/product/${product.id}?from=outlet`);
     router.push(href);
   }, [router, outlet.id, product.id, withLocalizedPath]);
 
@@ -251,6 +252,14 @@ export default function ProductCard({
             <span className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-blue-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
               <Clock className="w-2.5 h-2.5" />
               {productData.serviceDurationMinutes}m
+            </span>
+          )}
+
+          {/* Media count badge for Services with gallery */}
+          {product.type === "SERVICE" && product.media && product.media.length > 1 && !isDisabled && (
+            <span className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/60 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
+              <Images className="w-2.5 h-2.5" />
+              {product.media.length}
             </span>
           )}
 

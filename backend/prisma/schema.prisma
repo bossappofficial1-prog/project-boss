@@ -99,6 +99,16 @@ enum TicketCodeStatus {
   EXPIRED // Tiket sudah expired (event lewat)
 }
 
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum MediaSource {
+  UPLOAD
+  EMBED
+}
+
 // Model untuk pengguna
 model User {
   id                      String    @id @default(uuid())
@@ -340,6 +350,7 @@ model Product {
   service ProductService?
   ticket  ProductTicket?
   image   String?         @default("/defaults/default-product-image.png")
+  media   ProductMedia[]
 
   orderItems OrderItem[]
 
@@ -349,6 +360,24 @@ model Product {
   @@index([outletId])
   @@index([type])
   @@index([status])
+}
+
+// Media gallery untuk produk (khusus SERVICE)
+model ProductMedia {
+  id           String      @id @default(uuid())
+  productId    String
+  product      Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url          String
+  type         MediaType   @default(IMAGE)
+  source       MediaSource @default(UPLOAD)
+  alt          String?
+  order        Int         @default(0)
+  thumbnailUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId, order])
 }
 
 // Subtable untuk produk GOODS

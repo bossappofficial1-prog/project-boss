@@ -1,3 +1,13 @@
+export interface ProductMediaItem {
+  id: string;
+  url: string;
+  type: "IMAGE" | "VIDEO";
+  source: "UPLOAD" | "EMBED";
+  alt?: string;
+  order: number;
+  thumbnailUrl?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -6,7 +16,7 @@ export interface Product {
   image: string;
   type: "GOODS" | "SERVICE" | "TICKET";
   outletId: string;
-  images?: { url: string; alt?: string }[];
+  media?: ProductMediaItem[];
   createdAt: string;
   updatedAt: string;
   goods?: Goods;

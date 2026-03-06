@@ -138,6 +138,9 @@ export class ProductRepository {
           },
         },
         ticket: true,
+        media: {
+          orderBy: { order: "asc" },
+        },
         outlet: {
           select: {
             business: {
@@ -202,6 +205,9 @@ export class ProductRepository {
           goods: true,
           service: true,
           ticket: true,
+          media: {
+            orderBy: { order: "asc" },
+          },
         },
         orderBy: {
           createdAt: "desc",

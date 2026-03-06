@@ -24,7 +24,14 @@ const api: CustomAxiosInstance = axios.create({
 
 api.getData = async function <T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const res = await api.get(url, config);
-    return res.data.data;
+    const result = res.data?.data;
+
+    // Ensure only plain serializable data is returned (strip any Axios internals)
+    if (typeof window === 'undefined' && result != null) {
+        return JSON.parse(JSON.stringify(result));
+    }
+
+    return result;
 };
 
 api.addData = async function <T>(url: string, data: any, config?: AxiosRequestConfig): Promise<T> {

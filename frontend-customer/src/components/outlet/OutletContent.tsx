@@ -458,7 +458,7 @@ export function OutletContent({ slug }: { slug: string }) {
             </Button>
             <ShareOutlet
               outlet={{
-                id: outlet.id,
+                id: outlet.slug!,
                 name: outlet.name,
                 address: outlet.address,
                 image: outlet.image || undefined,

@@ -1,5 +1,14 @@
 import { apiClient } from './base';
 
+export interface UploadMediaResult {
+  url: string;
+  filename: string;
+  originalName: string;
+  size: number;
+  mimetype: string;
+  mediaType: 'IMAGE' | 'VIDEO';
+}
+
 export const uploadApi = {
   uploadImage: async (
     file: File,
@@ -15,6 +24,24 @@ export const uploadApi = {
     if (options?.scope === 'user') endpoint = '/upload/user/avatar';
 
     const response = await apiClient.post(endpoint, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  },
+
+  uploadMedia: async (file: File): Promise<UploadMediaResult> => {
+    const form = new FormData();
+    form.append('media', file);
+    const response = await apiClient.post('/upload/product/media', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  },
+
+  uploadMultipleMedia: async (files: File[]): Promise<{ files: UploadMediaResult[] }> => {
+    const form = new FormData();
+    files.forEach(f => form.append('media', f));
+    const response = await apiClient.post('/upload/product/medias', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data.data;

@@ -17,6 +17,15 @@ const IMAGE_MAGIC_NUMBERS = {
     'image/webp': ['52494646'] // RIFF for WebP
 };
 
+// Magic numbers for video file validation
+const VIDEO_MAGIC_NUMBERS = {
+    'video/mp4': ['00000018', '00000020', '0000001C', '66747970'],
+    'video/webm': ['1A45DFA3'],
+    'video/quicktime': ['00000014', '00000020', '6D6F6F76']
+};
+
+const MEDIA_MAGIC_NUMBERS = { ...IMAGE_MAGIC_NUMBERS, ...VIDEO_MAGIC_NUMBERS };
+
 const MAX_ORIGINAL_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB before optimization
 
 // Function to get file magic number (optimized: read only first 4 bytes)
@@ -192,4 +201,123 @@ export const deleteImageByUrlController = asyncHandler(async (req: Request, res:
         },
         HttpStatus.OK
     );
+});
+
+// --- Media Upload (Image + Video) ---
+
+const isVideoMime = (mime: string) => mime.startsWith('video/');
+
+const validateMediaFile = (file: Express.Multer.File): void => {
+    const isVideo = isVideoMime(file.mimetype);
+    const maxSize = isVideo ? 50 * 1024 * 1024 : MAX_ORIGINAL_IMAGE_SIZE;
+
+    if (file.size > maxSize) {
+        fs.unlinkSync(file.path);
+        throw new AppError(
+            `Ukuran file terlalu besar. Maksimal ${isVideo ? '50MB' : '5MB'}.`,
+            HttpStatus.BAD_REQUEST
+        );
+    }
+
+    const magicNumber = getFileMagicNumber(file.path);
+    const expectedMagicNumbers = MEDIA_MAGIC_NUMBERS[file.mimetype as keyof typeof MEDIA_MAGIC_NUMBERS];
+
+    if (!expectedMagicNumbers) {
+        fs.unlinkSync(file.path);
+        throw new AppError('Format file tidak didukung', HttpStatus.BAD_REQUEST);
+    }
+
+    // For video, skip strict magic number check for MP4/MOV (variable headers)
+    if (!isVideo) {
+        const isValid = expectedMagicNumbers.some(pattern => magicNumber.startsWith(pattern));
+        if (!isValid) {
+            fs.unlinkSync(file.path);
+            throw new AppError('Header file tidak sesuai format. Potensi ancaman keamanan.', HttpStatus.BAD_REQUEST);
+        }
+    }
+};
+
+export const uploadMediaController = asyncHandler(async (req: Request, res: Response) => {
+    const file = req.file;
+    if (!file) {
+        throw new AppError('Tidak ada file yang diupload', HttpStatus.BAD_REQUEST);
+    }
+
+    validateMediaFile(file);
+
+    const isVideo = isVideoMime(file.mimetype);
+    let finalFile = file;
+
+    // Only optimize images, not videos
+    if (!isVideo) {
+        try {
+            finalFile = await optimizeUploadedImage(file);
+        } catch {
+            throw new AppError('Gagal mengoptimalkan gambar.', HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    const baseUrl = config.BASE_URL;
+    const relativePath = path.relative(process.cwd(), finalFile.path);
+    const url = `${baseUrl}/${relativePath.replace(/\\/g, '/')}`;
+
+    return ResponseUtil.success(res, {
+        message: 'Media uploaded successfully',
+        url,
+        filename: finalFile.filename,
+        originalName: finalFile.originalname,
+        size: finalFile.size,
+        mimetype: finalFile.mimetype,
+        mediaType: isVideo ? 'VIDEO' : 'IMAGE',
+    }, HttpStatus.CREATED);
+});
+
+export const uploadMultipleMediaController = asyncHandler(async (req: Request, res: Response) => {
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+        throw new AppError('Tidak ada file yang diupload', HttpStatus.BAD_REQUEST);
+    }
+
+    if (files.length > 5) {
+        files.forEach(f => { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); });
+        throw new AppError('Maksimal 5 file per upload', HttpStatus.BAD_REQUEST);
+    }
+
+    const baseUrl = config.BASE_URL;
+    const uploadedFiles: any[] = [];
+
+    for (const file of files) {
+        try {
+            validateMediaFile(file);
+
+            const isVideo = isVideoMime(file.mimetype);
+            let finalFile = file;
+
+            if (!isVideo) {
+                finalFile = await optimizeUploadedImage(file);
+            }
+
+            const relativePath = path.relative(process.cwd(), finalFile.path);
+            const url = `${baseUrl}/${relativePath.replace(/\\/g, '/')}`;
+
+            uploadedFiles.push({
+                url,
+                filename: finalFile.filename,
+                originalName: finalFile.originalname,
+                size: finalFile.size,
+                mimetype: finalFile.mimetype,
+                mediaType: isVideo ? 'VIDEO' : 'IMAGE',
+            });
+        } catch (error) {
+            // Cleanup all files on failure
+            files.forEach(f => { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); });
+            if (error instanceof AppError) throw error;
+            throw new AppError('Gagal memproses salah satu file media.', HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    return ResponseUtil.success(res, {
+        message: `${uploadedFiles.length} media uploaded successfully`,
+        files: uploadedFiles,
+    }, HttpStatus.CREATED);
 });

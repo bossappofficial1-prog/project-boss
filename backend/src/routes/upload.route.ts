@@ -3,9 +3,11 @@ import {
     uploadImageController,
     uploadMultipleImagesController,
     deleteImageController,
-    deleteImageByUrlController
+    deleteImageByUrlController,
+    uploadMediaController,
+    uploadMultipleMediaController
 } from "../controller/upload.controller";
-import { uploadSingleImage, uploadMultipleImages, handleUploadError } from "../middleware/upload.middleware";
+import { uploadSingleImage, uploadMultipleImages, uploadSingleMedia, uploadMultipleMedia, handleUploadError } from "../middleware/upload.middleware";
 
 const uploadRouter = Router();
 
@@ -25,5 +27,9 @@ uploadRouter.delete("/image", deleteImageByUrlController);
 uploadRouter.post("/product/image", uploadSingleImage('image'), handleUploadError, uploadImageController);
 uploadRouter.post("/outlet/image", uploadSingleImage('image'), handleUploadError, uploadImageController);
 uploadRouter.post("/user/avatar", uploadSingleImage('avatar'), handleUploadError, uploadImageController);
+
+// Media upload (images + video) for product gallery
+uploadRouter.post("/product/media", uploadSingleMedia('media'), handleUploadError, uploadMediaController);
+uploadRouter.post("/product/medias", uploadMultipleMedia('media', 5), handleUploadError, uploadMultipleMediaController);
 
 export default uploadRouter;

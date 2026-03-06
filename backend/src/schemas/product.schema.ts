@@ -1,5 +1,15 @@
 import { z } from "zod";
-import { ProductType, ServiceStatus } from "@prisma/client";
+import { ProductType, ServiceStatus, MediaType, MediaSource } from "@prisma/client";
+
+// Media item schema for product gallery (SERVICE only)
+const mediaItemSchema = z.object({
+  url: z.string().min(1, { message: "URL media wajib diisi" }),
+  type: z.nativeEnum(MediaType),
+  source: z.nativeEnum(MediaSource),
+  alt: z.string().optional(),
+  order: z.number().int().min(0).default(0),
+  thumbnailUrl: z.string().optional(),
+});
 
 // ProductGoods
 const productGoodsSchema = z.object({
@@ -123,6 +133,7 @@ export const createProductSchema = z.discriminatedUnion("type", [
     service: productServiceSchema,
     goods: z.never().optional(),
     ticket: z.never().optional(),
+    media: z.array(mediaItemSchema).max(5, { message: "Maksimal 5 media" }).optional(),
   }),
 
   // TICKET
@@ -171,6 +182,7 @@ export const updateProductSchema = z
       service: productServiceBaseSchema.partial().optional(),
       goods: z.never().optional(),
       ticket: z.never().optional(),
+      media: z.array(mediaItemSchema).max(5, { message: "Maksimal 5 media" }).optional(),
     }),
 
     // TICKET

@@ -22,7 +22,10 @@ export default async function OrderPaymentPage({ params }: OrderPaymentPageProps
     try {
         const payment = await PaymentService.getPaymentDetail(orderId);
 
-        return <PaymentDetailClient orderId={orderId} payment={payment} />;
+        // Ensure only plain serializable data is passed to the Client Component
+        const safePayment = JSON.parse(JSON.stringify(payment));
+
+        return <PaymentDetailClient orderId={orderId} payment={safePayment} />;
     } catch (error) {
         console.error('Failed to load payment detail page:', error);
         if (isAxiosError(error)) {
@@ -33,6 +36,7 @@ export default async function OrderPaymentPage({ params }: OrderPaymentPageProps
             throw new Error(error.response?.data?.message ?? error.message);
         }
 
-        throw error;
+        // Always wrap in a plain Error to avoid leaking non-serializable objects (e.g. AxiosError config)
+        throw new Error(error instanceof Error ? error.message : 'Gagal memuat detail pembayaran');
     }
 }

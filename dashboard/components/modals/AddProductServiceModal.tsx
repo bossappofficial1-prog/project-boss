@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { productApi, uploadApi } from "@/lib/api";
 import z from "zod";
 import { useForm } from "react-hook-form";
@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FormFieldConfig, ReusableForm } from "../ui/reuseable-form";
 import { ProductItem } from "@/hooks/useProductsData";
 import ServiceOperatingHoursSection from "./ServiceOperatingHoursSection";
+import ServiceMediaUploader, { MediaItem } from "./ServiceMediaUploader";
 
 type Props = {
   open: boolean;
@@ -134,6 +135,19 @@ export default function AddOrEditProductServiceModal({
   action = "edit",
 }: Props) {
   const isEdit = action === "edit";
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>(() => {
+    if (isEdit && initialData?.media) {
+      return initialData.media.map((m, i) => ({
+        url: m.url,
+        type: m.type as "IMAGE" | "VIDEO",
+        source: m.source as "UPLOAD" | "EMBED",
+        alt: m.alt,
+        order: m.order ?? i,
+        thumbnailUrl: m.thumbnailUrl,
+      }));
+    }
+    return [];
+  });
 
   const defaultValues = useMemo<ProductFormValues>(() => {
     if (isEdit && initialData) {
@@ -357,6 +371,13 @@ export default function AddOrEditProductServiceModal({
           : null,
       };
       payload.service = service;
+
+      // Attach media gallery for SERVICE type
+      if (mediaItems.length > 0) {
+        payload.media = mediaItems;
+      } else {
+        payload.media = [];
+      }
     }
 
     try {
@@ -595,6 +616,21 @@ export default function AddOrEditProductServiceModal({
             form.setValue("service.sundayOpen", value.sundayOpen);
             form.setValue("service.sundayClose", value.sundayClose);
           }}
+        />
+      ),
+    },
+    // Media gallery uploader for SERVICE
+    {
+      name: "service.mediaGallery" as any,
+      label: "",
+      type: "custom",
+      colSpan: "full",
+      condition: (values) => values.type === "SERVICE",
+      renderCustom: () => (
+        <ServiceMediaUploader
+          value={mediaItems}
+          onChange={setMediaItems}
+          maxItems={5}
         />
       ),
     },

@@ -74,6 +74,7 @@ const imageFileFilter = (req: Request, file: Express.Multer.File, cb: multer.Fil
 };
 
 const MAX_ORIGINAL_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB to allow compression before saving
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB for video files
 
 // Configure multer for images
 const imageUpload = multer({
@@ -82,6 +83,45 @@ const imageUpload = multer({
     limits: {
         fileSize: MAX_ORIGINAL_IMAGE_SIZE,
         files: 1 // Only 1 file at a time
+    }
+});
+
+// File filter for media (images + video)
+const mediaFileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const allowedMimes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+        'video/mp4', 'video/webm', 'video/quicktime'
+    ];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.webm', '.mov'];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+
+    if (!allowedMimes.includes(file.mimetype)) {
+        return cb(new AppError('Tipe file tidak didukung. Hanya gambar dan video yang diperbolehkan!', HttpStatus.BAD_REQUEST));
+    }
+    if (!allowedExtensions.includes(fileExtension)) {
+        return cb(new AppError('Ekstensi file tidak valid. Hanya jpg, jpeg, png, gif, webp, mp4, webm, mov yang diperbolehkan!', HttpStatus.BAD_REQUEST));
+    }
+
+    const filename = file.originalname.toLowerCase();
+    const suspiciousPatterns = [
+        '.php', '.exe', '.bat', '.cmd', '.com', '.pif', '.scr', '.vbs', '.js', '.jar',
+        '.asp', '.aspx', '.jsp', '.py', '.rb', '.pl', '.sh', '.htaccess'
+    ];
+    for (const pattern of suspiciousPatterns) {
+        if (filename.includes(pattern)) {
+            return cb(new AppError('File mencurigakan terdeteksi. Upload ditolak.', HttpStatus.BAD_REQUEST));
+        }
+    }
+    cb(null, true);
+};
+
+// Configure multer for media (images + video)
+const mediaUpload = multer({
+    storage: imageStorage,
+    fileFilter: mediaFileFilter,
+    limits: {
+        fileSize: MAX_VIDEO_SIZE,
+        files: 5
     }
 });
 
@@ -185,6 +225,16 @@ export const uploadMultipleImages = (fieldName: string = 'images', maxCount: num
 
 export const uploadPaymentProof = (fieldName: string = 'proof') => {
     return paymentProofUpload.single(fieldName);
+};
+
+// Middleware for single media upload (image or video)
+export const uploadSingleMedia = (fieldName: string = 'media') => {
+    return mediaUpload.single(fieldName);
+};
+
+// Middleware for multiple media upload (images + videos, max 5)
+export const uploadMultipleMedia = (fieldName: string = 'media', maxCount: number = 5) => {
+    return mediaUpload.array(fieldName, maxCount);
 };
 
 // Error handler for multer errors

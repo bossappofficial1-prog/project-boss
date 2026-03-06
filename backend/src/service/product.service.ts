@@ -19,6 +19,7 @@ import { generateDefaultBookingSlots } from "./booking.service";
 import { Product, ProductType, ServiceStatus, Prisma } from "@prisma/client";
 import { config } from "../config";
 import { ImageService } from "./image.service";
+import { ProductMediaService, MediaItemInput } from "./product-media.service";
 
 /**
  * Creates a single product and associated records.
@@ -33,6 +34,12 @@ export async function createProductService(data: CreateProductInput) {
 
   await PlanLimitService.assertCanCreateProduct(businessId);
   const createdProduct = await ProductRepository.create(data);
+
+  // Sync media if type is SERVICE and media array provided
+  if (data.type === ProductType.SERVICE && (data as any).media?.length > 0) {
+    await ProductMediaService.syncMedia(createdProduct.id, (data as any).media as MediaItemInput[]);
+  }
+
   await PlanLimitService.invalidateUsageCache(businessId);
   return createdProduct;
 }
@@ -48,11 +55,16 @@ export async function getProductByIdService(id: string) {
 
   const { outlet, ...productData } = product as any;
 
-  // Flatten images from productImages relation
-  const images =
-    productData.productImages?.map((img: any) => ({
-      url: img.url,
-      alt: img.alt || undefined,
+  // Map media from ProductMedia relation
+  const media =
+    productData.media?.map((m: any) => ({
+      id: m.id,
+      url: m.url,
+      type: m.type,
+      source: m.source,
+      alt: m.alt || undefined,
+      order: m.order,
+      thumbnailUrl: m.thumbnailUrl || undefined,
     })) || [];
 
   // Extract booking slots if the product is a service
@@ -60,7 +72,7 @@ export async function getProductByIdService(id: string) {
 
   return {
     ...productData,
-    images,
+    media,
     bookingSlots,
   };
 }
@@ -83,6 +95,11 @@ export async function getProductsByOutletIdService(
 export async function updateProductService(id: string, data: UpdateProductInput) {
   const existingProduct = await getProductByIdService(id);
   const product = await ProductRepository.update(id, data);
+
+  // Sync media if type is SERVICE and media array provided
+  if (product.type === "SERVICE" && (data as any).media !== undefined) {
+    await ProductMediaService.syncMedia(id, ((data as any).media || []) as MediaItemInput[]);
+  }
 
   // Check if service parameters that affect scheduling have changed
   if (product.type === "SERVICE" && data.service) {
@@ -151,6 +168,8 @@ export async function deleteProductService(id: string) {
     if (product && product.image) {
       ImageService.deleteImageByUrl(product.image);
     }
+    // Clean up media files (cascade deletes DB records but not files)
+    await ProductMediaService.deleteAllMedia(id).catch(() => { });
     await redis.del(`product:${id}`);
   } catch (error) {
     console.log(`gagal hapus gambar, error:`, error);

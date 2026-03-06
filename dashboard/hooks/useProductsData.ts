@@ -5,6 +5,16 @@ import { productApi } from "@/lib/api";
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+export interface ProductMediaItem {
+  id: string;
+  url: string;
+  type: "IMAGE" | "VIDEO";
+  source: "UPLOAD" | "EMBED";
+  alt?: string;
+  order: number;
+  thumbnailUrl?: string;
+}
+
 export interface ProductItem {
   id: string;
   name: string;
@@ -17,6 +27,7 @@ export interface ProductItem {
   goods?: Goods;
   service?: Service;
   ticket?: Ticket;
+  media?: ProductMediaItem[];
 }
 
 export interface Goods {

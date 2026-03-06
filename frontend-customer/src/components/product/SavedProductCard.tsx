@@ -25,9 +25,9 @@ export function SavedProductCard({ product, onClick }: SavedProductCardProps) {
       <div className="flex h-24 sm:h-28">
         {/* Product Image - Left Side */}
         <div className="relative w-24 sm:w-28 h-full bg-muted flex-shrink-0">
-          {product.images && product.images.length > 0 ? (
+          {product.media && product.media.length > 0 && product.media[0].type === "IMAGE" ? (
             <ImageRender
-              src={product.images[0].url}
+              src={product.media[0].url}
               alt={product.name}
               className="object-cover w-full h-full"
             />
