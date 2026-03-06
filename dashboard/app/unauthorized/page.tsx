@@ -12,7 +12,7 @@ export default function UnauthorizedPage() {
 
     const clearAuthAndRedirect = useCallback(() => {
         queryClient.removeQueries({ queryKey: ['auth-me'] });
-        try { sessionStorage.removeItem('auth-me-cache-v2'); } catch {}
+        try { sessionStorage.removeItem('auth-me-cache-v2'); } catch { }
         router.push('/auth/login');
     }, [queryClient, router]);
 

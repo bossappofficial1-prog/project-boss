@@ -96,15 +96,16 @@ export default function ServiceMediaUploader({
         [value, onChange, remaining, maxItems],
     );
 
-    const handleAddEmbed = useCallback(() => {
+    const handleAddEmbed = useCallback(async () => {
         if (!embedUrl.trim()) return;
 
         const ytMatch = embedUrl.match(
             /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
         );
         const ttMatch = embedUrl.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+        const ttShortMatch = embedUrl.match(/(?:vt|vm)\.tiktok\.com\/[a-zA-Z0-9]+/);
 
-        if (!ytMatch && !ttMatch) {
+        if (!ytMatch && !ttMatch && !ttShortMatch) {
             toast.error("URL tidak valid. Hanya YouTube atau TikTok yang didukung.");
             return;
         }
@@ -119,6 +120,24 @@ export default function ServiceMediaUploader({
         } else if (ttMatch) {
             const videoId = ttMatch[1];
             finalUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
+        } else if (ttShortMatch) {
+            try {
+                const oembedRes = await fetch(
+                    `https://www.tiktok.com/oembed?url=${encodeURIComponent(embedUrl)}`,
+                );
+                if (!oembedRes.ok) throw new Error("oEmbed request failed");
+                const oembedData = await oembedRes.json();
+                thumbnailUrl = oembedData.thumbnail_url;
+                const citeMatch = oembedData.html?.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+                if (citeMatch) {
+                    finalUrl = `https://www.tiktok.com/embed/v2/${citeMatch[1]}`;
+                } else {
+                    finalUrl = embedUrl;
+                }
+            } catch {
+                toast.error("Gagal memproses URL TikTok. Coba gunakan URL lengkap.");
+                return;
+            }
         }
 
         const newItem: MediaItem = {
@@ -300,10 +319,10 @@ export default function ServiceMediaUploader({
                 <div className="flex gap-2 items-end">
                     <div className="flex-1 space-y-1">
                         <Label className="text-xs text-muted-foreground">
-                            URL YouTube atau TikTok
+                            URL YouTube atau TikTok (termasuk vt.tiktok.com)
                         </Label>
                         <Input
-                            placeholder="https://www.youtube.com/watch?v=..."
+                            placeholder="https://youtube.com/watch?v=... atau https://vt.tiktok.com/..."
                             value={embedUrl}
                             onChange={(e) => setEmbedUrl(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddEmbed())}
