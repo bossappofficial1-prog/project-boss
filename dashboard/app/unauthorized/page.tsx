@@ -1,21 +1,25 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function UnauthorizedPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
+
+    const clearAuthAndRedirect = useCallback(() => {
+        queryClient.removeQueries({ queryKey: ['auth-me'] });
+        try { sessionStorage.removeItem('auth-me-cache-v2'); } catch {}
+        router.push('/auth/login');
+    }, [queryClient, router]);
 
     useEffect(() => {
-        // Auto redirect to login after 5 seconds
-        const timer = setTimeout(() => {
-            router.push('/auth/login');
-        }, 5000);
-
+        const timer = setTimeout(clearAuthAndRedirect, 5000);
         return () => clearTimeout(timer);
-    }, [router]);
+    }, [clearAuthAndRedirect]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-100 via-rose-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -36,7 +40,7 @@ export default function UnauthorizedPage() {
                     </p>
                     <div className="space-y-2">
                         <Button
-                            onClick={() => router.push('/auth/login')}
+                            onClick={clearAuthAndRedirect}
                             className="w-full bg-red-600 hover:bg-red-700 text-white font-poppins"
                         >
                             Kembali ke Login

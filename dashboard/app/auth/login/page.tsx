@@ -8,6 +8,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Input } from '@/components/ui/input';
 import { apiClient } from '@/lib/apis/base';
 import { Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams?.get('redirect');
   const reason = searchParams?.get('reason');
@@ -60,7 +62,10 @@ export default function LoginPage() {
 
     try {
       await apiClient.post('/auth/login', formData);
-      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Clear stale auth data from previous session
+      queryClient.removeQueries({ queryKey: ['auth-me'] });
+      try { sessionStorage.removeItem('auth-me-cache-v2'); } catch {}
 
       const meResponse = await apiClient.get('/auth/me');
       const userRole = meResponse.data.data.user.role;
