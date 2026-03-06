@@ -32,6 +32,7 @@ import { useOutletContext } from '../providers/OutletProvider';
 export default function Header() {
   const { selectedOutlet } = useOutletContext();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false)
   const { data: userData, isLoading: isUserLoading } = useUserData();
   const { open, toggleSidebar, state } = useSidebar();
 
@@ -44,11 +45,12 @@ export default function Header() {
 
   const handleLogoutConfirm = async () => {
     try {
+      setLogoutLoading(true)
       const res = await apiClient.post('/auth/logout');
       if (res.status === 200) window.location.href = '/auth/login';
     } catch (error) {
       console.error('Logout error:', error);
-    }
+    } finally { setLogoutLoading(false) }
   };
 
   const getUserInitials = (name: string | undefined) => {
@@ -201,11 +203,11 @@ export default function Header() {
         onOpenChange={setShowLogoutModal}
         title="Konfirmasi Keluar"
         description="Apakah Anda yakin ingin keluar dari akun Anda? Anda akan diarahkan ke halaman login."
-        confirmText="Keluar"
+        confirmText={logoutLoading ? "Loading..." : "Keluar"}
         cancelText="Batal"
         confirmVariant="destructive"
         onConfirm={handleLogoutConfirm}
-
+        confirmDisabled={logoutLoading}
         icon={
           <LogOut className="h-6 w-6 text-red-600 dark:text-red-400" />
         }

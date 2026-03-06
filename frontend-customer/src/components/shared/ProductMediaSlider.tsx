@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { resolveCustomerImageUrl } from '@/lib/url';
 import { ArrowLeft, ArrowRight, Pause, Play, Image as ImageIcon, X, Film } from 'lucide-react';
@@ -55,14 +55,27 @@ export function ProductMediaSlider({
         return clearTimer;
     }, [startTimer, clearTimer]);
 
-    // Pause/play videos when slide changes
+    // Fungsi stabil untuk mendaftarkan referensi video (tidak berubah tiap render)
+    const registerVideo = useCallback((i: number, el: HTMLVideoElement | null) => {
+        if (el) {
+            videoRefs.current.set(i, el);
+        } else {
+            videoRefs.current.delete(i);
+        }
+    }, []);
+
+    // Pause/play videos saat slide berubah
     useEffect(() => {
         videoRefs.current.forEach((video, i) => {
             if (i === index) {
                 video.play().catch(() => { });
             } else {
                 video.pause();
-                video.currentTime = 0;
+                // Hanya reset currentTime jika video sudah dimainkan sedikit
+                // Ini mencegah resetting yang memaksa browser fetch ulang jika buffer dibuang
+                if (video.currentTime > 0) {
+                    video.currentTime = 0;
+                }
             }
         });
     }, [index]);
@@ -113,82 +126,6 @@ export function ProductMediaSlider({
         );
     }
 
-    const renderMediaItem = (item: ProductMediaItem, i: number) => {
-        const isActive = i === index;
-
-        if (item.type === 'VIDEO' && item.source === 'EMBED') {
-            return (
-                <div
-                    key={item.url + i}
-                    className={cn(
-                        "absolute inset-0 transition-opacity duration-500 ease-in-out",
-                        isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-                    )}
-                    aria-hidden={!isActive}
-                >
-                    {isActive && (
-                        <iframe
-                            src={item.url}
-                            className="w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            title={item.alt || `Video ${i + 1}`}
-                        />
-                    )}
-                </div>
-            );
-        }
-
-        if (item.type === 'VIDEO' && item.source === 'UPLOAD') {
-            return (
-                <div
-                    key={item.url + i}
-                    className={cn(
-                        "absolute inset-0 transition-opacity duration-500 ease-in-out bg-black",
-                        isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-                    )}
-                    aria-hidden={!isActive}
-                >
-                    <video
-                        ref={(el) => {
-                            if (el) videoRefs.current.set(i, el);
-                        }}
-                        src={resolveCustomerImageUrl(item.url)}
-                        className="w-full h-full object-contain"
-                        controls
-                        playsInline
-                        muted
-                        loop
-                        poster={item.thumbnailUrl ? resolveCustomerImageUrl(item.thumbnailUrl) : undefined}
-                    />
-                </div>
-            );
-        }
-
-        // IMAGE
-        return (
-            <div
-                key={item.url + i}
-                onClick={() => setLightboxOpen(true)}
-                className={cn(
-                    "absolute inset-0 transition-opacity duration-500 ease-in-out cursor-pointer",
-                    isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                )}
-                aria-hidden={!isActive}
-            >
-                <Image
-                    src={resolveCustomerImageUrl(item.url)}
-                    alt={item.alt || `Product image ${i + 1}`}
-                    fill
-                    priority={i === 0}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-contain w-full h-full"
-                />
-            </div>
-        );
-    };
-
-    // Only image slides for lightbox
     const lightboxSlides = media
         .filter(m => m.type === 'IMAGE')
         .map(m => ({ src: resolveCustomerImageUrl(m.url) }));
@@ -204,7 +141,35 @@ export function ProductMediaSlider({
                 onTouchEnd={onTouchEnd}
             >
                 <div className="relative w-full bg-black/95" style={{ aspectRatio }}>
-                    {media.map((item, i) => renderMediaItem(item, i))}
+                    {media.map((item, i) => {
+                        const isActive = i === index;
+
+                        if (item.type === 'VIDEO' && item.source === 'EMBED') {
+                            return <MemoizedEmbed key={item.url + i} item={item} isActive={isActive} index={i} />;
+                        }
+
+                        if (item.type === 'VIDEO' && item.source === 'UPLOAD') {
+                            return (
+                                <MemoizedVideo
+                                    key={item.url + i}
+                                    item={item}
+                                    isActive={isActive}
+                                    index={i}
+                                    registerVideo={registerVideo}
+                                />
+                            );
+                        }
+
+                        return (
+                            <MemoizedImage
+                                key={item.url + i}
+                                item={item}
+                                isActive={isActive}
+                                index={i}
+                                onClick={() => setLightboxOpen(true)}
+                            />
+                        );
+                    })}
                 </div>
 
                 {/* Navigation Controls */}
@@ -222,7 +187,7 @@ export function ProductMediaSlider({
 
                         {/* Counter + play/pause */}
                         <div className="absolute top-2 md:top-3 right-2 md:right-3 flex items-center gap-1.5 z-30">
-                            <span className="text-[10px] md:text-xs font-medium text-white bg-black/50 backdrop-blur-sm px-2 py-0.5 md:px-2.5 md:py-1 rounded-full">
+                            <span className="text-[10px] md:text-xs font-medium text-white bg-black/50 backdrop-blur-sm px-2 py-0.5 md:px-2.5 md:py-1 rounded-full flex items-center">
                                 {currentItem?.type === 'VIDEO' && <Film className="inline w-3 h-3 mr-1" />}
                                 {index + 1}/{media.length}
                             </span>
@@ -258,27 +223,25 @@ export function ProductMediaSlider({
                             onClick={() => goto(i)}
                             className={cn(
                                 "w-14 h-8 md:w-20 md:h-12 rounded overflow-hidden relative border-2 transition-all flex-shrink-0",
-                                i === index ? 'border-primary ring-1 ring-primary/30' : 'border-transparent opacity-60 hover:opacity-100'
+                                i === index ? 'border-blue-500 ring-1 ring-blue-500/30' : 'border-transparent opacity-60 hover:opacity-100'
                             )}
                         >
                             {item.type === 'VIDEO' ? (
-                                <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                                <div className="w-full h-full bg-slate-900 flex items-center justify-center relative">
                                     {item.thumbnailUrl ? (
                                         <img
                                             src={resolveCustomerImageUrl(item.thumbnailUrl)}
                                             alt={item.alt || `Thumbnail ${i + 1}`}
-                                            sizes="80px"
-                                            className="object-cover"
+                                            className="object-cover w-full h-full opacity-50"
                                         />
                                     ) : null}
-                                    <Film className="absolute w-3 h-3 md:w-4 md:h-4 text-white drop-shadow" />
+                                    <Film className="absolute w-4 h-4 text-white drop-shadow z-10" />
                                 </div>
                             ) : (
                                 <img
                                     src={resolveCustomerImageUrl(item.url)}
                                     alt={item.alt || `Thumbnail ${i + 1}`}
-                                    sizes="80px"
-                                    className="object-cover"
+                                    className="object-cover w-full h-full"
                                 />
                             )}
                         </button>
@@ -293,10 +256,91 @@ export function ProductMediaSlider({
                     close={() => setLightboxOpen(false)}
                     slides={lightboxSlides}
                     index={Math.min(index, lightboxSlides.length - 1)}
-                    on={{ view: ({ index: currentIndex }) => setIndex(currentIndex) }}
+                    on={{ view: ({ index: currentIndex }: any) => setIndex(currentIndex) }}
                     styles={{ container: { backgroundColor: "rgba(0, 0, 0, .9)" } }}
                 />
             )}
+
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @keyframes progress-deplete {
+                    from { transform: scaleX(0); }
+                    to { transform: scaleX(1); }
+                }
+                .scrollbar-hide::-webkit-scrollbar { display: none; }
+                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            `}} />
         </>
     );
 }
+
+
+const MemoizedVideo = memo(({ item, isActive, index, registerVideo }: { item: ProductMediaItem, isActive: boolean, index: number, registerVideo: (i: number, el: HTMLVideoElement | null) => void }) => {
+    return (
+        <div
+            className={cn(
+                "absolute inset-0 transition-opacity duration-500 ease-in-out bg-black",
+                isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+            )}
+            aria-hidden={!isActive}
+        >
+            <video
+                ref={(el) => registerVideo(index, el)}
+                src={resolveCustomerImageUrl(item.url)}
+                className="w-full h-full object-contain"
+                controls
+                playsInline
+                loop
+                preload="auto" // KUNCI OPTIMASI: Meminta browser menahan buffer data
+                poster={item.thumbnailUrl ? resolveCustomerImageUrl(item.thumbnailUrl) : undefined}
+            />
+        </div>
+    );
+});
+MemoizedVideo.displayName = 'MemoizedVideo';
+
+const MemoizedEmbed = memo(({ item, isActive, index }: { item: ProductMediaItem, isActive: boolean, index: number }) => {
+    return (
+        <div
+            className={cn(
+                "absolute inset-0 transition-opacity duration-500 ease-in-out",
+                isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+            )}
+            aria-hidden={!isActive}
+        >
+            {isActive && (
+                <iframe
+                    src={item.url}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={item.alt || `Video ${index + 1}`}
+                />
+            )}
+        </div>
+    );
+});
+MemoizedEmbed.displayName = 'MemoizedEmbed';
+
+const MemoizedImage = memo(({ item, isActive, index, onClick }: { item: ProductMediaItem, isActive: boolean, index: number, onClick: () => void }) => {
+    return (
+        <div
+            onClick={onClick}
+            className={cn(
+                "absolute inset-0 transition-opacity duration-500 ease-in-out cursor-pointer",
+                isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
+            )}
+            aria-hidden={!isActive}
+        >
+            <Image
+                src={resolveCustomerImageUrl(item.url)}
+                alt={item.alt || `Product image ${index + 1}`}
+                fill
+                priority={index === 0}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-contain w-full h-full"
+            />
+        </div>
+    );
+});
+MemoizedImage.displayName = 'MemoizedImage';
