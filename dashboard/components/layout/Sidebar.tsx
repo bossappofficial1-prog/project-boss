@@ -42,18 +42,16 @@ import { ChevronDown, ChevronRight, Zap } from 'lucide-react';
 
 const PREFETCH_FALLBACK_DELAY_MS = 150;
 
-const SIDEBAR_HREFS = (() => {
-  const hrefs = new Set<string>();
-
-  MENU_GROUPS.forEach((group) => {
-    group.items.forEach((item) => {
-      if (item.href) hrefs.add(item.href);
-      item.subItems?.forEach((subItem) => hrefs.add(subItem.href));
-    });
-  });
-
-  return Array.from(hrefs);
-})();
+const SIDEBAR_HREFS = Array.from(
+  new Set(
+    MENU_GROUPS.flatMap((group) =>
+      group.items.flatMap((item) => [
+        ...(item.href ? [item.href] : []),
+        ...(item.subItems?.map((subItem) => subItem.href) ?? []),
+      ])
+    )
+  )
+);
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -140,13 +138,10 @@ export default function AppSidebar() {
     const hasIdleCallback = typeof idleWindow.requestIdleCallback === 'function';
 
     const prefetchAll = () => {
-      SIDEBAR_HREFS.forEach((href) => {
-        try {
-          router.prefetch(href);
-        } catch {
-          // Prefetch failures are non-blocking (e.g., offline); safe to ignore
-        }
-      });
+      const tasks = SIDEBAR_HREFS.map((href) =>
+        Promise.resolve().then(() => router.prefetch(href))
+      );
+      void Promise.allSettled(tasks);
     };
 
     if (hasIdleCallback && idleWindow.requestIdleCallback) {
