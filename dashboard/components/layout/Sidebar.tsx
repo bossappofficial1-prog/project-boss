@@ -40,6 +40,8 @@ import { MENU_GROUPS } from './sidebar/sidebar';
 import { OutletSelector } from './sidebar/OutletSelector';
 import { ChevronDown, ChevronRight, Zap } from 'lucide-react';
 
+const PREFETCH_FALLBACK_DELAY_MS = 150;
+
 const SIDEBAR_HREFS = (() => {
   const hrefs = new Set<string>();
 
@@ -139,7 +141,9 @@ export default function AppSidebar() {
 
     const prefetchAll = () => {
       SIDEBAR_HREFS.forEach((href) => {
-        router.prefetch(href);
+        try {
+          router.prefetch(href);
+        } catch { }
       });
     };
 
@@ -148,7 +152,7 @@ export default function AppSidebar() {
       return () => idleWindow.cancelIdleCallback?.(idleHandle);
     }
 
-    const timeoutHandle = window.setTimeout(prefetchAll, 150);
+    const timeoutHandle = window.setTimeout(prefetchAll, PREFETCH_FALLBACK_DELAY_MS);
     return () => clearTimeout(timeoutHandle);
   }, [router]);
 
