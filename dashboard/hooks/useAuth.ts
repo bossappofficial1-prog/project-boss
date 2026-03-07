@@ -113,10 +113,8 @@ export function useAuth(): UseAuthReturn {
     } catch { }
     try {
       sessionStorage.removeItem(AUTH_SESSION_CACHE_KEY);
-      sessionStorage.removeItem('user-data-cache-v1');
     } catch { }
     queryClient.removeQueries({ queryKey: ['auth-me'] });
-    queryClient.removeQueries({ queryKey: ['user-data'] });
     router.push('/auth/login');
   }, [queryClient, router]);
 

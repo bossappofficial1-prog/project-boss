@@ -2,13 +2,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ordersV2Api, type GoodsOrderStatus } from "@/lib/apis/orders-v2";
 
 const KEYS = {
-    board: (outletId: string, query?: string) => ["orders-v2", "board", outletId, query] as const,
+    board: (outletId: string) => ["orders-v2", "board", outletId] as const,
 };
 
-export function useOrdersV2Board(outletId: string, q?: string) {
+export function useOrdersV2Board(outletId: string) {
     return useQuery({
-        queryKey: KEYS.board(outletId, q),
-        queryFn: () => ordersV2Api.getBoard(outletId, q),
+        queryKey: KEYS.board(outletId),
+        queryFn: () => ordersV2Api.getBoard(outletId),
         enabled: !!outletId,
         staleTime: 10_000,
     });

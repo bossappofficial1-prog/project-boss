@@ -68,11 +68,6 @@ export function ProductMediaSlider({
     useEffect(() => {
         videoRefs.current.forEach((video, i) => {
             if (i === index) {
-                // Jika source baru saja ditambahkan secara dinamis (lazy), panggil load()
-                // sebelum play() agar browser mengenali source tersebut dengan benar.
-                if (video.readyState === 0) {
-                    video.load();
-                }
                 video.play().catch(() => { });
             } else {
                 video.pause();
@@ -281,12 +276,6 @@ export function ProductMediaSlider({
 
 
 const MemoizedVideo = memo(({ item, isActive, index, registerVideo }: { item: ProductMediaItem, isActive: boolean, index: number, registerVideo: (i: number, el: HTMLVideoElement | null) => void }) => {
-    // Track whether the video has ever been active using a ref so that it updates
-    // synchronously during render. This ensures the <source> is in the DOM by the
-    // time the parent's useEffect calls video.play(), avoiding a race condition.
-    const hasBeenActiveRef = useRef(isActive);
-    if (isActive) hasBeenActiveRef.current = true;
-
     return (
         <div
             className={cn(
@@ -297,13 +286,13 @@ const MemoizedVideo = memo(({ item, isActive, index, registerVideo }: { item: Pr
         >
             <video
                 ref={(el) => registerVideo(index, el)}
-                preload={isActive ? "auto" : "none"}
+                preload="auto"
                 playsInline
                 className="w-full h-full object-contain"
                 controls
-                poster={item.thumbnailUrl ? resolveCustomerImageUrl(item.thumbnailUrl) : undefined}
+                poster={item.thumbnailUrl ?? undefined}
             >
-                {hasBeenActiveRef.current && <source src={item.url} />}
+                <source src={item.url} />
             </video>
         </div>
     );

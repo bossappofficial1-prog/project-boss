@@ -47,13 +47,7 @@ export default function Header() {
     try {
       setLogoutLoading(true)
       const res = await apiClient.post('/auth/logout');
-      if (res.status === 200) {
-        try {
-          sessionStorage.removeItem('auth-me-cache-v2');
-          sessionStorage.removeItem('user-data-cache-v1');
-        } catch { }
-        window.location.href = '/auth/login';
-      }
+      if (res.status === 200) window.location.href = '/auth/login';
     } catch (error) {
       console.error('Logout error:', error);
     } finally { setLogoutLoading(false) }
