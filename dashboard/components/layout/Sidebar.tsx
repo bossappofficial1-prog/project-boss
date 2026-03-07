@@ -40,6 +40,19 @@ import { MENU_GROUPS } from './sidebar/sidebar';
 import { OutletSelector } from './sidebar/OutletSelector';
 import { ChevronDown, ChevronRight, Zap } from 'lucide-react';
 
+const SIDEBAR_HREFS = (() => {
+  const hrefs = new Set<string>();
+
+  MENU_GROUPS.forEach((group) => {
+    group.items.forEach((item) => {
+      if (item.href) hrefs.add(item.href);
+      item.subItems?.forEach((subItem) => hrefs.add(subItem.href));
+    });
+  });
+
+  return Array.from(hrefs);
+})();
+
 export default function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -124,17 +137,8 @@ export default function AppSidebar() {
     };
     const hasIdleCallback = typeof idleWindow.requestIdleCallback === 'function';
 
-    const hrefs = new Set<string>();
-
-    MENU_GROUPS.forEach((group) => {
-      group.items.forEach((item) => {
-        if (item.href) hrefs.add(item.href);
-        item.subItems?.forEach((subItem) => hrefs.add(subItem.href));
-      });
-    });
-
     const prefetchAll = () => {
-      hrefs.forEach((href) => {
+      SIDEBAR_HREFS.forEach((href) => {
         router.prefetch(href);
       });
     };
@@ -144,7 +148,7 @@ export default function AppSidebar() {
       return () => idleWindow.cancelIdleCallback?.(idleHandle);
     }
 
-    const timeoutHandle = window.setTimeout(prefetchAll, 0);
+    const timeoutHandle = window.setTimeout(prefetchAll, 150);
     return () => clearTimeout(timeoutHandle);
   }, [router]);
 
