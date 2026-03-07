@@ -153,8 +153,8 @@ export default function AppSidebar() {
     if (hasIdleCallback && idleWindow.requestIdleCallback) {
       const idleHandles: number[] = [];
       const scheduleHandles = sidebarHrefs.map((href, index) =>
-        idleWindow.setTimeout(() => {
-          const handle = idleWindow.requestIdleCallback?.(() => prefetchRoute(href));
+        window.setTimeout(() => {
+          const handle = idleWindow.requestIdleCallback(() => prefetchRoute(href));
           if (typeof handle === 'number') idleHandles.push(handle);
         }, index * PREFETCH_BATCH_DELAY_MS)
       );
