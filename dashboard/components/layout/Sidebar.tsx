@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -41,17 +41,7 @@ import { OutletSelector } from './sidebar/OutletSelector';
 import { ChevronDown, ChevronRight, Zap } from 'lucide-react';
 
 const PREFETCH_FALLBACK_DELAY_MS = 150;
-
-const SIDEBAR_HREFS = Array.from(
-  new Set(
-    MENU_GROUPS.flatMap((group) =>
-      group.items.flatMap((item) => [
-        ...(item.href ? [item.href] : []),
-        ...(item.subItems?.map((subItem) => subItem.href) ?? []),
-      ])
-    )
-  )
-);
+const PREFETCH_BATCH_DELAY_MS = 75;
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -59,6 +49,21 @@ export default function AppSidebar() {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+
+  const sidebarHrefs = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          MENU_GROUPS.flatMap((group) =>
+            group.items.flatMap((item) => [
+              ...(item.href ? [item.href] : []),
+              ...(item.subItems?.map((subItem) => subItem.href) ?? []),
+            ])
+          )
+        )
+      ),
+    []
+  );
 
   const {
     selectedOutlet = null,
@@ -137,20 +142,34 @@ export default function AppSidebar() {
     };
     const hasIdleCallback = typeof idleWindow.requestIdleCallback === 'function';
 
-    const prefetchAll = () => {
-      const tasks = SIDEBAR_HREFS.map((href) => router.prefetch(href));
-      void Promise.allSettled(tasks);
+    const prefetchRoute = (href: string) => {
+      try {
+        router.prefetch(href);
+      } catch {
+        // Prefetch failures are non-blocking (e.g., offline); safe to ignore
+      }
     };
 
     if (hasIdleCallback && idleWindow.requestIdleCallback) {
-      const idleHandle = idleWindow.requestIdleCallback(prefetchAll);
-      return () => idleWindow.cancelIdleCallback?.(idleHandle);
+      const idleHandles = sidebarHrefs.map((href) =>
+        idleWindow.requestIdleCallback(() => prefetchRoute(href))
+      );
+      return () => {
+        idleHandles.forEach((handle) =>
+          idleWindow.cancelIdleCallback?.(handle)
+        );
+      };
     }
 
-    const timeoutHandle = window.setTimeout(prefetchAll, PREFETCH_FALLBACK_DELAY_MS);
-    return () => clearTimeout(timeoutHandle);
-    // router is stable; dependency included to satisfy exhaustive-deps
-  }, [router]);
+    const timeouts = sidebarHrefs.map((href, index) =>
+      window.setTimeout(
+        () => prefetchRoute(href),
+        PREFETCH_FALLBACK_DELAY_MS + index * PREFETCH_BATCH_DELAY_MS
+      )
+    );
+    return () => timeouts.forEach((timeout) => clearTimeout(timeout));
+    // router is stable; dependencies included to satisfy exhaustive-deps
+  }, [router, sidebarHrefs]);
 
   const handleOutletChange = (outletId: string) => {
     const outlet = outlets.find((o) => o.id === outletId);
