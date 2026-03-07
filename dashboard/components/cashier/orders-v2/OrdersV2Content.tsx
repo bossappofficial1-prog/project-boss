@@ -51,8 +51,8 @@ const STATUS_LABELS: Record<string, string> = {
 export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
     const router = useRouter();
     const [query, setQuery] = useState("");
-    const queryDebounce = useDebounce(query, 1000);
-    const { data, isLoading, refetch } = useOrdersV2Board(outletId, queryDebounce);
+    const debouncedQuery = useDebounce(query, 1000);
+    const { data, isLoading, refetch } = useOrdersV2Board(outletId, debouncedQuery);
     const updateStatus = useOrdersV2UpdateStatus();
 
     const [detailEntry, setDetailEntry] = useState<OrderV2Entry | null>(null);
@@ -174,7 +174,7 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
         revenueToday: 0,
     };
 
-    if (isLoading && !query) {
+    if (isLoading) {
         return <OrdersV2Skeleton />;
     }
 
@@ -205,7 +205,7 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
                 <Input
                     value={query}
                     onChange={(e) => setQuery(e.target.value.toUpperCase())}
-                    placeholder="Cari pesanan berdasarkan orderId..."
+                    placeholder="Cari pesanan berdasarkan Order ID..."
                     className="w-full sm:max-w-sm"
                 />
             </div>
