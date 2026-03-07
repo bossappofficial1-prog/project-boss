@@ -30,7 +30,7 @@ export class CartValidationService {
         if (!slug) {
             return {
                 isValid: false,
-                error: 'Outlet slug is missing'
+                error: 'Outlet information is missing'
             };
         }
         try {
