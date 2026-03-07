@@ -116,6 +116,8 @@ export default function AppSidebar() {
 
   // Prefetch all sidebar destinations to avoid latency during navigation
   useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
     const hrefs = new Set<string>();
 
     MENU_GROUPS.forEach((group) => {
@@ -125,9 +127,24 @@ export default function AppSidebar() {
       });
     });
 
-    hrefs.forEach((href) => {
-      router.prefetch(href);
-    });
+    const prefetchAll = () => {
+      hrefs.forEach((href) => {
+        router.prefetch(href);
+      });
+    };
+
+    const hasIdleCallback = typeof (window as any).requestIdleCallback === 'function';
+    const idleHandle = hasIdleCallback
+      ? (window as any).requestIdleCallback(prefetchAll)
+      : window.setTimeout(prefetchAll, 0);
+
+    return () => {
+      if (hasIdleCallback && typeof idleHandle === 'number') {
+        (window as any).cancelIdleCallback(idleHandle);
+        return;
+      }
+      clearTimeout(idleHandle as number);
+    };
   }, [router]);
 
   const handleOutletChange = (outletId: string) => {
