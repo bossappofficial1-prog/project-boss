@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { LogOut, ShoppingBag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
+import Image from "next/image";
 import { CashierNavbar } from "@/components/cashier/CashierNavbar";
 import { CashierOutletProvider } from "@/components/providers/CashierOutletProvider";
 import { authApi } from "@/lib/api";
@@ -99,11 +100,33 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
 
   if ((isLoadingAuth || isFetchingAuth) && !cashierData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Memuat data kasir...</p>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background">
+        <div className="relative flex items-center justify-center">
+          {/* Outer ring */}
+          <span className="absolute h-20 w-20 animate-ping rounded-full bg-primary/20" />
+          {/* Logo */}
+          <div className="relative h-16 w-16 overflow-hidden rounded-xl shadow-md">
+            <Image
+              src="/icon-192x192.png"
+              alt="Boss Logo"
+              width={64}
+              height={64}
+              priority
+            />
+          </div>
         </div>
+
+        {/* App name */}
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-lg font-semibold tracking-tight text-foreground">Sistem Kasir</span>
+          <span className="text-sm text-muted-foreground">Memuat data kasir...</span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-1 w-40 overflow-hidden rounded-full bg-muted">
+          <div className="h-full w-full animate-[loading_1.5s_ease-in-out_infinite] rounded-full bg-primary" />
+        </div>
+
         <Toaster position="top-right" richColors toastOptions={{ duration: 5000 }} />
       </div>
     );
