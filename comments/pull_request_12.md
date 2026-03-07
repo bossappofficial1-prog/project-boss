@@ -1,0 +1,1 @@
+Setelah saya test, navigasi antar halaman di /owner masih membutuhkan latency dan tidak instant pindahnya. Coba audit lebih dalam.
