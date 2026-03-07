@@ -138,9 +138,7 @@ export default function AppSidebar() {
     const hasIdleCallback = typeof idleWindow.requestIdleCallback === 'function';
 
     const prefetchAll = () => {
-      const tasks = SIDEBAR_HREFS.map((href) =>
-        Promise.resolve().then(() => router.prefetch(href))
-      );
+      const tasks = SIDEBAR_HREFS.map((href) => router.prefetch(href));
       void Promise.allSettled(tasks);
     };
 
