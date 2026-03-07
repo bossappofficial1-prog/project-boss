@@ -156,8 +156,8 @@ export default function AppSidebar() {
 
     const timeoutHandle = window.setTimeout(prefetchAll, PREFETCH_FALLBACK_DELAY_MS);
     return () => clearTimeout(timeoutHandle);
-    // router is stable; run once on mount
-  }, []);
+    // router is stable; dependency included to satisfy exhaustive-deps
+  }, [router]);
 
   const handleOutletChange = (outletId: string) => {
     const outlet = outlets.find((o) => o.id === outletId);
