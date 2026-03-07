@@ -1,7 +1,6 @@
 import { db } from "../config/prisma";
 
 export class AdminRepository {
-    // === DASHBOARD OVERVIEW ===
 
     static async getDashboardMetrics() {
         const today = new Date();

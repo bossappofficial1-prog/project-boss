@@ -1,5 +1,11 @@
-import { PaymentStatus, Prisma, SubscriptionStatus } from "@prisma/client";
+import { Prisma, SubscriptionStatus } from "@prisma/client";
 import { db } from "../config/prisma";
+import { parseAndForceIsoUtc } from "./helper";
+
+export type DeepIsoDate<T> = T extends Date ? string :
+    T extends Array<infer U> ? Array<DeepIsoDate<U>> :
+    T extends object ? { [K in keyof T]: DeepIsoDate<T[K]> } :
+    T;
 
 const INTERVAL_SQL: Record<"day" | "week" | "month", Prisma.Sql> = {
     day: Prisma.sql`'day'`,
@@ -7,58 +13,27 @@ const INTERVAL_SQL: Record<"day" | "week" | "month", Prisma.Sql> = {
     month: Prisma.sql`'month'`,
 };
 
-const RISKY_STATUSES: PaymentStatus[] = [
-    PaymentStatus.PROOF_SUBMITTED,
-    PaymentStatus.AWAITING_VERIFICATION,
-    PaymentStatus.PENDING,
-    PaymentStatus.REJECTED_MANUAL,
-    PaymentStatus.FAILED,
-];
-
-const OUTSTANDING_STATUSES: PaymentStatus[] = [
-    PaymentStatus.PROOF_SUBMITTED,
-    PaymentStatus.AWAITING_VERIFICATION,
-    PaymentStatus.PENDING,
-];
-
 export class AdminDashboardRepository {
+
     static async getSnapshotMetrics(params: { start: Date; end: Date }) {
         const { start, end } = params;
 
-        const [revenue, outstanding, newSubscriptions, activeBusinesses, pendingProofs] = await db.$transaction([
-            db.subscriptionInvoice.aggregate({
-                where: {
-                    status: PaymentStatus.SUCCESS,
-                    paidAt: { gte: start, lte: end },
-                },
-                _sum: { amount: true },
-            }),
-            db.subscriptionInvoice.aggregate({
-                where: {
-                    status: { in: OUTSTANDING_STATUSES },
-                    createdAt: { gte: start, lte: end },
-                },
-                _sum: { amount: true },
-            }),
-            db.businessSubscription.count({
-                where: {
-                    createdAt: { gte: start, lte: end },
-                },
-            }),
-            db.business.count({
-                where: { subscriptionStatus: SubscriptionStatus.ACTIVE },
-            }),
-            db.subscriptionInvoice.count({
-                where: { status: { in: [PaymentStatus.PROOF_SUBMITTED, PaymentStatus.AWAITING_VERIFICATION] } },
-            }),
-        ]);
+        // Optimasi: 5 Prisma Query digabung menjadi 1 Raw SQL
+        const result = await db.$queryRaw<any[]>`
+            SELECT
+                (SELECT COALESCE(SUM(amount), 0)::float FROM "SubscriptionInvoice" WHERE status = 'SUCCESS' AND "paidAt" >= ${start} AND "paidAt" <= ${end}) AS "totalRevenue",
+                (SELECT COALESCE(SUM(amount), 0)::float FROM "SubscriptionInvoice" WHERE status IN ('PROOF_SUBMITTED', 'AWAITING_VERIFICATION', 'PENDING') AND "createdAt" >= ${start} AND "createdAt" <= ${end}) AS "outstandingRevenue",
+                (SELECT COUNT(*)::int FROM "BusinessSubscription" WHERE "createdAt" >= ${start} AND "createdAt" <= ${end}) AS "newSubscriptions",
+                (SELECT COUNT(*)::int FROM "Business" WHERE "subscriptionStatus" = 'ACTIVE') AS "activeBusinesses",
+                (SELECT COUNT(*)::int FROM "SubscriptionInvoice" WHERE status IN ('PROOF_SUBMITTED', 'AWAITING_VERIFICATION')) AS "pendingProofs"
+        `;
 
         return {
-            totalRevenue: Number(revenue._sum.amount ?? 0),
-            outstandingRevenue: Number(outstanding._sum.amount ?? 0),
-            newSubscriptions,
-            activeBusinesses,
-            pendingProofs,
+            totalRevenue: result[0]?.totalRevenue ?? 0,
+            outstandingRevenue: result[0]?.outstandingRevenue ?? 0,
+            newSubscriptions: result[0]?.newSubscriptions ?? 0,
+            activeBusinesses: result[0]?.activeBusinesses ?? 0,
+            pendingProofs: result[0]?.pendingProofs ?? 0,
         };
     }
 
@@ -66,211 +41,121 @@ export class AdminDashboardRepository {
         const { start, end, interval } = params;
         const intervalSql = INTERVAL_SQL[interval] ?? INTERVAL_SQL.day;
 
-        type TrendRow = {
-            bucket: Date;
-            billed_amount: Prisma.Decimal | number | null;
-            paid_amount: Prisma.Decimal | number | null;
-        };
-
-        const rows = await db.$queryRaw<TrendRow[]>(Prisma.sql`
+        const rows = await db.$queryRaw<any[]>(Prisma.sql`
             SELECT
                 date_trunc(${intervalSql}, "createdAt") AS bucket,
-                SUM("amount") AS billed_amount,
-                SUM(CASE WHEN "status" = ${PaymentStatus.SUCCESS} THEN "amount" ELSE 0 END) AS paid_amount
+                COALESCE(SUM("amount"), 0)::float AS "billedAmount",
+                COALESCE(SUM(CASE WHEN "status" = 'SUCCESS' THEN "amount" ELSE 0 END), 0)::float AS "paidAmount"
             FROM "SubscriptionInvoice"
             WHERE "createdAt" BETWEEN ${start} AND ${end}
             GROUP BY bucket
             ORDER BY bucket ASC
         `);
 
-        return rows.map((row) => ({
-            bucket: row.bucket instanceof Date ? row.bucket.toISOString() : new Date(row.bucket).toISOString(),
-            billedAmount: Number(row.billed_amount ?? 0),
-            paidAmount: Number(row.paid_amount ?? 0),
-        }));
+        return parseAndForceIsoUtc(rows);
     }
 
     static async getSubscriptionFunnel() {
-        const groups = await db.business.groupBy({
-            by: ["subscriptionStatus"],
-            _count: { _all: true },
-        });
+        const rows = await db.$queryRaw<{ status: string, count: number }[]>`
+            SELECT "subscriptionStatus" AS status, COUNT(*)::int AS count
+            FROM "Business"
+            GROUP BY "subscriptionStatus"
+        `;
 
+        // Siapkan struktur default 0 untuk semua status
         const defaults = Object.values(SubscriptionStatus).reduce<Record<string, number>>((acc, status) => {
             acc[status] = 0;
             return acc;
         }, {});
 
-        groups.forEach((group) => {
-            defaults[group.subscriptionStatus] = group._count._all;
+        // Gabungkan dengan hasil SQL
+        rows.forEach((row) => {
+            defaults[row.status] = row.count;
         });
 
         return defaults;
     }
 
     static async getProofStatusDistribution(params: { start: Date; end: Date }) {
-        const rows = await db.subscriptionInvoice.groupBy({
-            by: ["status"],
-            where: { createdAt: { gte: params.start, lte: params.end } },
-            _count: { _all: true },
-            _sum: { amount: true },
-        });
+        const rows = await db.$queryRaw<any[]>`
+            SELECT 
+                "status",
+                COUNT(*)::int AS count,
+                COALESCE(SUM(amount), 0)::float AS amount
+            FROM "SubscriptionInvoice"
+            WHERE "createdAt" BETWEEN ${params.start} AND ${params.end}
+            GROUP BY "status"
+        `;
 
-        return rows.map((row) => ({
-            status: row.status,
-            count: row._count._all,
-            amount: Number(row._sum.amount ?? 0),
-        }));
+        return rows;
     }
 
     static async getRiskyMerchants(limit: number) {
-        const aggregates = await db.subscriptionInvoice.groupBy({
-            by: ["businessId", "status"],
-            where: { status: { in: RISKY_STATUSES } },
-            _count: { _all: true },
-            _sum: { amount: true },
-        });
+        // Optimasi Masif: Mengganti manipulasi memori Node.js yang berat dengan SQL agregasi penuh
+        const rawMerchants = await db.$queryRaw<any[]>`
+            SELECT 
+                b.id AS "businessId",
+                SUM(CASE WHEN i.status IN ('PROOF_SUBMITTED', 'AWAITING_VERIFICATION', 'PENDING') THEN 1 ELSE 0 END)::int AS "pendingInvoices",
+                SUM(CASE WHEN i.status = 'REJECTED_MANUAL' THEN 1 ELSE 0 END)::int AS "rejectedInvoices",
+                SUM(CASE WHEN i.status = 'FAILED' THEN 1 ELSE 0 END)::int AS "failedInvoices",
+                COALESCE(SUM(CASE WHEN i.status IN ('PROOF_SUBMITTED', 'AWAITING_VERIFICATION', 'PENDING') THEN i.amount ELSE 0 END), 0)::float AS "outstandingAmount",
+                MAX(i."updatedAt") AS "lastActivityAt",
+                json_build_object(
+                    'id', b.id,
+                    'name', b.name,
+                    'subscriptionStatus', b."subscriptionStatus",
+                    'owner', json_build_object(
+                        'id', u.id,
+                        'name', u.name,
+                        'email', u.email,
+                        'phone', u.phone
+                    )
+                ) AS business
+            FROM "SubscriptionInvoice" i
+            JOIN "Business" b ON i."businessId" = b.id
+            JOIN "User" u ON b."ownerId" = u.id
+            WHERE i.status IN ('PROOF_SUBMITTED', 'AWAITING_VERIFICATION', 'PENDING', 'REJECTED_MANUAL', 'FAILED')
+            GROUP BY b.id, b.name, b."subscriptionStatus", u.id, u.name, u.email, u.phone
+            HAVING SUM(CASE WHEN i.status IN ('PROOF_SUBMITTED', 'AWAITING_VERIFICATION', 'PENDING') THEN 1 ELSE 0 END) > 0 
+                OR SUM(CASE WHEN i.status = 'REJECTED_MANUAL' THEN 1 ELSE 0 END) > 0
+            ORDER BY "outstandingAmount" DESC, "pendingInvoices" DESC
+            LIMIT ${limit}
+        `;
 
-        const lastTouch = await db.subscriptionInvoice.groupBy({
-            by: ["businessId"],
-            where: { status: { in: RISKY_STATUSES } },
-            _max: { updatedAt: true },
-        });
-
-        type RiskAggregate = {
-            businessId: string;
-            pendingInvoices: number;
-            rejectedInvoices: number;
-            failedInvoices: number;
-            outstandingAmount: number;
-            lastActivityAt?: Date;
-        };
-
-        const stats = new Map<string, RiskAggregate>();
-
-        aggregates.forEach((row) => {
-            const current = stats.get(row.businessId ?? 'default') ?? {
-                businessId: row.businessId ?? 'default',
-                pendingInvoices: 0,
-                rejectedInvoices: 0,
-                failedInvoices: 0,
-                outstandingAmount: 0,
-            };
-
-            if (OUTSTANDING_STATUSES.includes(row.status)) {
-                current.pendingInvoices += row._count._all;
-                current.outstandingAmount += Number(row._sum.amount ?? 0);
-            }
-
-            if (row.status === PaymentStatus.REJECTED_MANUAL) {
-                current.rejectedInvoices += row._count._all;
-            }
-
-            if (row.status === PaymentStatus.FAILED) {
-                current.failedInvoices += row._count._all;
-            }
-
-            stats.set(row.businessId || 'default', current);
-        });
-
-        lastTouch.forEach((row) => {
-            const current = stats.get(row.businessId || 'default');
-            if (current) {
-                current.lastActivityAt = row._max.updatedAt ?? undefined;
-            }
-        });
-
-        const ranked = Array.from(stats.values())
-            .filter((item) => item.pendingInvoices > 0 || item.rejectedInvoices > 0)
-            .sort((a, b) => {
-                if (b.outstandingAmount !== a.outstandingAmount) {
-                    return b.outstandingAmount - a.outstandingAmount;
-                }
-                return b.pendingInvoices - a.pendingInvoices;
-            })
-            .slice(0, limit);
-
-        if (ranked.length === 0) {
-            return [];
-        }
-
-        const businesses = await db.business.findMany({
-            where: { id: { in: ranked.map((item) => item.businessId) } },
-            include: {
-                owner: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        phone: true,
-                    },
-                },
-            },
-        });
-
-        const businessMap = new Map(businesses.map((business) => [business.id, business]));
-
-        return ranked.map((item) => {
-            const business = businessMap.get(item.businessId);
-            return {
-                ...item,
-                business: business
-                    ? {
-                        id: business.id,
-                        name: business.name,
-                        subscriptionStatus: business.subscriptionStatus,
-                        owner: business.owner
-                            ? {
-                                id: business.owner.id,
-                                name: business.owner.name,
-                                email: business.owner.email,
-                                phone: business.owner.phone,
-                            }
-                            : null,
-                    }
-                    : null,
-            };
-        });
+        return parseAndForceIsoUtc(rawMerchants);
     }
 
     static async getRecentInvoiceActivities(limit: number) {
-        const activities = await db.subscriptionInvoice.findMany({
-            where: {
-                status: {
-                    in: [
-                        PaymentStatus.PROOF_SUBMITTED,
-                        PaymentStatus.AWAITING_VERIFICATION,
-                        PaymentStatus.SUCCESS,
-                        PaymentStatus.REJECTED_MANUAL,
-                    ]
-                }
-            },
-            include: {
-                business: {
-                    select: {
-                        id: true,
-                        name: true,
-                        owner: {
-                            select: {
-                                id: true,
-                                name: true,
-                                email: true,
-                            },
-                        },
-                    },
-                },
-            },
-            orderBy: { updatedAt: "desc" },
-            take: limit,
-        });
+        const rawActivities = await db.$queryRaw<any[]>`
+            SELECT 
+                i.id,
+                i."invoiceNumber",
+                i.amount,
+                i.status,
+                i."updatedAt",
+                (
+                    SELECT json_build_object(
+                        'id', b.id,
+                        'name', b.name,
+                        'owner', (
+                            SELECT json_build_object(
+                                'id', u.id,
+                                'name', u.name,
+                                'email', u.email
+                            ) 
+                            FROM "User" u 
+                            WHERE u.id = b."ownerId"
+                        )
+                    ) 
+                    FROM "Business" b 
+                    WHERE b.id = i."businessId"
+                ) AS business
+            FROM "SubscriptionInvoice" i
+            WHERE i.status IN ('PROOF_SUBMITTED', 'AWAITING_VERIFICATION', 'SUCCESS', 'REJECTED_MANUAL')
+            ORDER BY i."updatedAt" DESC
+            LIMIT ${limit}
+        `;
 
-        return activities.map((activity) => ({
-            id: activity.id,
-            invoiceNumber: activity.invoiceNumber,
-            amount: activity.amount,
-            status: activity.status,
-            updatedAt: activity.updatedAt,
-            business: activity.business,
-        }));
+        return parseAndForceIsoUtc(rawActivities);
     }
 }

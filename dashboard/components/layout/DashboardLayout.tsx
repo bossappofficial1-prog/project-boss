@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -15,12 +16,17 @@ interface LayoutProps {
 }
 
 export default function DashboardLayout({ children, requiredRole }: LayoutProps) {
+  const [mounted, setMounted] = useState(false);
   const { loading: isLoading } = useAuthGuard({
     requiredRole,
     onboardingCheck: true,
   });
 
-  if (isLoading) return <Loading />
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || isLoading) return <Loading />
 
   return (
     <OutletProvider>

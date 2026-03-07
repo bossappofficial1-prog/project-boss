@@ -1,24 +1,11 @@
 import { db } from "../config/prisma";
 import { PaymentStatus, ProductType } from "@prisma/client";
+import { OutletDashboardRepository } from "../routes/outlet-dashboard.routes";
 
 export async function getDashboardSummaryService(outletId: string) {
     // All metrics are scoped to the selected outlet
 
-    const [totalProducts, totalServices, totalOrders, revenueData] = await Promise.all([
-        db.product.count({ where: { outletId, type: ProductType.GOODS } }),
-        db.product.count({ where: { outletId, type: ProductType.SERVICE } }),
-        db.order.count({ where: { outletId } }),
-        db.order.findMany({
-            where: { outletId, paymentStatus: 'SUCCESS' },
-            select: { totalAmount: true, appFee: true, midtransFee: true }
-        })
-    ]);
-
-    // Calculate net revenue (subtract fees if charged to customer)
-    const totalRevenue = revenueData.reduce((sum, order) => {
-        const grossAmount = order.totalAmount;
-        return sum + (grossAmount);
-    }, 0);
+    const { totalProducts, totalServices, totalOrders, totalRevenue } = await OutletDashboardRepository.getDashboardSummary(outletId)
 
     return {
         totalProducts,

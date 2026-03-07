@@ -10,7 +10,6 @@ import { UserRole } from "@prisma/client";
 
 const dashboardRouter = Router();
 
-// ─── Per-outlet (existing) ─────────────────────────────
 dashboardRouter.get(
     "/summary",
     protect,
@@ -25,7 +24,6 @@ dashboardRouter.get(
     getOrderStatsController
 );
 
-// ─── Business-level (new) ──────────────────────────────
 dashboardRouter.get(
     "/business/overview",
     protect,

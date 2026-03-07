@@ -13,34 +13,54 @@ async function verify(token: string) {
 }
 
 export async function middleware(req: NextRequest) {
-  console.log('middleware use for load this page')
   const token = req.cookies.get("token")?.value;
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
 
-  if (pathname === "/") {
-    if (!token) {
-      return NextResponse.redirect(new URL("/auth/login", req.url));
+  if (!token) return NextResponse.next();
+
+  const payload = await verify(token);
+
+  if (!payload) return NextResponse.next();
+
+  const role = payload.role as "ADMIN" | "OWNER";
+  const businessId = payload.businessId;
+
+  /**
+   * USER BELUM MEMBUAT BISNIS
+   * arahkan ke step=2
+   */
+  if (role === "OWNER" && !businessId) {
+    if (!pathname.startsWith("/auth/register") || !searchParams.get("step")) {
+      return NextResponse.redirect(new URL("/auth/register?step=2", req.url));
     }
+  }
 
-    const payload = await verify(token);
-
-    if (payload?.role === "ADMIN") {
+  /**
+   * ROOT REDIRECT
+   */
+  if (pathname === "/") {
+    if (role === "ADMIN") {
       return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     }
 
-    if (payload?.role === "OWNER") {
+    if (role === "OWNER") {
       return NextResponse.redirect(new URL("/owner/dashboard", req.url));
     }
   }
 
+  /**
+   * USER SUDAH LOGIN TAPI MASUK AUTH PAGE
+   */
   if (pathname.startsWith("/auth") && token) {
-    const payload = await verify(token);
+    if (pathname.startsWith("/auth/register") && searchParams.get("step")) {
+      return NextResponse.next();
+    }
 
-    if (payload?.role === "ADMIN") {
+    if (role === "ADMIN") {
       return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     }
 
-    if (payload?.role === "OWNER") {
+    if (role === "OWNER") {
       return NextResponse.redirect(new URL("/owner/dashboard", req.url));
     }
   }
