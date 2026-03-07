@@ -8,10 +8,12 @@ import { RefreshCw, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { OrdersStatsBar } from "./OrdersStatsBar";
 import { OrdersKanbanBoard } from "./OrdersKanbanBoard";
 import { OrderDetailSheet } from "./OrderDetailSheet";
 import { ProofPreviewDialog } from "./ProofPreviewDialog";
+import { useDebounce } from "@/hooks/useDebounce";
 
 import {
     useOrdersV2Board,
@@ -48,7 +50,9 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
     const router = useRouter();
-    const { data, isLoading, refetch } = useOrdersV2Board(outletId);
+    const [query, setQuery] = useState("");
+    const debouncedQuery = useDebounce(query, 1000);
+    const { data, isLoading, refetch } = useOrdersV2Board(outletId, debouncedQuery);
     const updateStatus = useOrdersV2UpdateStatus();
 
     const [detailEntry, setDetailEntry] = useState<OrderV2Entry | null>(null);
@@ -177,25 +181,33 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
     return (
         <div className="mx-auto max-w-[1600px] p-4 space-y-4">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                        Pesanan Barang
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Kelola pesanan barang secara real-time
-                    </p>
+            <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                            Pesanan Barang
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Kelola pesanan barang secara real-time
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => refetch()}>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Refresh
+                        </Button>
+                        <Button size="sm" onClick={() => router.push("/cashier/pos-v2")}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Pesanan Baru
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" size="sm" onClick={() => refetch()}>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Refresh
-                    </Button>
-                    <Button size="sm" onClick={() => router.push("/cashier/pos-v2")}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Pesanan Baru
-                    </Button>
-                </div>
+                <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value.toUpperCase())}
+                    placeholder="Cari pesanan berdasarkan Order ID..."
+                    className="w-full sm:max-w-sm"
+                />
             </div>
 
             {/* Stats */}

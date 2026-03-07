@@ -55,8 +55,9 @@ export interface OrdersV2BoardResponse {
 }
 
 export const ordersV2Api = {
-    async getBoard(outletId: string): Promise<OrdersV2BoardResponse> {
-        return apiCall<OrdersV2BoardResponse>(`/orders/v2/${outletId}/board`);
+    async getBoard(outletId: string, q?: string): Promise<OrdersV2BoardResponse> {
+        const queryParam = q ? `?q=${encodeURIComponent(q)}` : "";
+        return apiCall<OrdersV2BoardResponse>(`/orders/v2/${outletId}/board${queryParam}`);
     },
 
     async updateStatus(
