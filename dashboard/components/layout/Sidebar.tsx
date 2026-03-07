@@ -118,6 +118,12 @@ export default function AppSidebar() {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (cb: IdleRequestCallback) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const hasIdleCallback = typeof idleWindow.requestIdleCallback === 'function';
+
     const hrefs = new Set<string>();
 
     MENU_GROUPS.forEach((group) => {
@@ -133,18 +139,13 @@ export default function AppSidebar() {
       });
     };
 
-    const hasIdleCallback = typeof (window as any).requestIdleCallback === 'function';
-    const idleHandle = hasIdleCallback
-      ? (window as any).requestIdleCallback(prefetchAll)
-      : window.setTimeout(prefetchAll, 0);
+    if (hasIdleCallback && idleWindow.requestIdleCallback) {
+      const idleHandle = idleWindow.requestIdleCallback(prefetchAll);
+      return () => idleWindow.cancelIdleCallback?.(idleHandle);
+    }
 
-    return () => {
-      if (hasIdleCallback && typeof idleHandle === 'number') {
-        (window as any).cancelIdleCallback(idleHandle);
-        return;
-      }
-      clearTimeout(idleHandle as number);
-    };
+    const timeoutHandle = window.setTimeout(prefetchAll, 0);
+    return () => clearTimeout(timeoutHandle);
   }, [router]);
 
   const handleOutletChange = (outletId: string) => {
