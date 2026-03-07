@@ -125,6 +125,7 @@ export class OrderRepository {
           select: {
             id: true,
             name: true,
+            slug: true,
             phone: true,
             address: true,
           },

@@ -27,6 +27,12 @@ export class CartValidationService {
      * Validasi ketersediaan outlet
      */
     static async validateOutlet(slug: string): Promise<ValidationResult> {
+        if (!slug) {
+            return {
+                isValid: false,
+                error: 'Outlet slug is missing'
+            };
+        }
         try {
             const outlet = await OutletService.getDetail(slug);
             return {
