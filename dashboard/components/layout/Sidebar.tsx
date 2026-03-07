@@ -42,6 +42,7 @@ import { ChevronDown, ChevronRight, Zap } from 'lucide-react';
 
 const PREFETCH_FALLBACK_DELAY_MS = 150;
 const PREFETCH_BATCH_DELAY_MS = 75;
+type IdleCallbackHandle = number;
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -154,8 +155,10 @@ export default function AppSidebar() {
       const idleHandles: number[] = [];
       const scheduleHandles = sidebarHrefs.map((href, index) =>
         window.setTimeout(() => {
-          const handle = idleWindow.requestIdleCallback(() => prefetchRoute(href));
-          if (typeof handle === 'number') idleHandles.push(handle);
+          const handle = idleWindow.requestIdleCallback(
+            () => prefetchRoute(href)
+          ) as IdleCallbackHandle;
+          idleHandles.push(handle);
         }, index * PREFETCH_BATCH_DELAY_MS)
       );
       return () => {
@@ -171,7 +174,7 @@ export default function AppSidebar() {
       )
     );
     return () => timeouts.forEach((timeout) => clearTimeout(timeout));
-    // router from next/navigation is stable; dependency kept to satisfy react-hooks/exhaustive-deps
+    // router from next/navigation is stable; dependency kept to satisfy ESLint rule react-hooks/exhaustive-deps
   }, [router, sidebarHrefs]);
 
   const handleOutletChange = (outletId: string) => {
