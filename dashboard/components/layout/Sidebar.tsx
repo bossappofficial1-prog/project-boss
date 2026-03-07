@@ -62,7 +62,7 @@ export default function AppSidebar() {
           )
         )
       ),
-    []
+    [MENU_GROUPS] // static config; dependency kept for clarity
   );
 
   const {
@@ -151,13 +151,16 @@ export default function AppSidebar() {
     };
 
     if (hasIdleCallback && idleWindow.requestIdleCallback) {
-      const idleHandles = sidebarHrefs.map((href) =>
-        idleWindow.requestIdleCallback(() => prefetchRoute(href))
+      const idleHandles: number[] = [];
+      const scheduleHandles = sidebarHrefs.map((href, index) =>
+        window.setTimeout(() => {
+          const handle = idleWindow.requestIdleCallback?.(() => prefetchRoute(href));
+          if (typeof handle === 'number') idleHandles.push(handle);
+        }, index * PREFETCH_BATCH_DELAY_MS)
       );
       return () => {
-        idleHandles.forEach((handle) =>
-          idleWindow.cancelIdleCallback?.(handle)
-        );
+        scheduleHandles.forEach((timeout) => clearTimeout(timeout));
+        idleHandles.forEach((handle) => idleWindow.cancelIdleCallback?.(handle));
       };
     }
 
