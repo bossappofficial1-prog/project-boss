@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUserData } from '@/hooks/useUserData';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,7 @@ import { ChevronDown, ChevronRight, Zap } from 'lucide-react';
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
@@ -112,6 +113,22 @@ export default function AppSidebar() {
 
     setExpandedMenus((prev) => ({ ...prev, ...newExpandedMenus }));
   }, [pathname, isCollapsed]);
+
+  // Prefetch all sidebar destinations to avoid latency during navigation
+  useEffect(() => {
+    const hrefs = new Set<string>();
+
+    MENU_GROUPS.forEach((group) => {
+      group.items.forEach((item) => {
+        if (item.href) hrefs.add(item.href);
+        item.subItems?.forEach((subItem) => hrefs.add(subItem.href));
+      });
+    });
+
+    hrefs.forEach((href) => {
+      router.prefetch(href);
+    });
+  }, [router]);
 
   const handleOutletChange = (outletId: string) => {
     const outlet = outlets.find((o) => o.id === outletId);
