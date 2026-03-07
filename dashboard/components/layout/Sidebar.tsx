@@ -143,7 +143,9 @@ export default function AppSidebar() {
       SIDEBAR_HREFS.forEach((href) => {
         try {
           router.prefetch(href);
-        } catch { }
+        } catch {
+          // Prefetch failures are non-blocking (e.g., offline); safe to ignore
+        }
       });
     };
 
@@ -154,7 +156,8 @@ export default function AppSidebar() {
 
     const timeoutHandle = window.setTimeout(prefetchAll, PREFETCH_FALLBACK_DELAY_MS);
     return () => clearTimeout(timeoutHandle);
-  }, [router]);
+    // router is stable; run once on mount
+  }, []);
 
   const handleOutletChange = (outletId: string) => {
     const outlet = outlets.find((o) => o.id === outletId);
