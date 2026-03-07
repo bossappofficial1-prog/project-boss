@@ -62,7 +62,7 @@ export default function AppSidebar() {
           )
         )
       ),
-    [MENU_GROUPS] // static config; dependency kept for clarity
+    [] // MENU_GROUPS is a static configuration
   );
 
   const {
@@ -171,7 +171,7 @@ export default function AppSidebar() {
       )
     );
     return () => timeouts.forEach((timeout) => clearTimeout(timeout));
-    // router is stable; dependencies included to satisfy exhaustive-deps
+    // router from next/navigation is stable; dependency kept to satisfy exhaustive-deps
   }, [router, sidebarHrefs]);
 
   const handleOutletChange = (outletId: string) => {
