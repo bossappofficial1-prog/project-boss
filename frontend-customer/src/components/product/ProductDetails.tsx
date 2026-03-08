@@ -259,7 +259,7 @@ export function ProductDetails({ slug, productId, initialProductData, initialOut
     (schedule: any) => {
       if (!outlet || !product) return;
       try {
-        const success = addItem(slug, outlet.name, slug, product, 1, schedule);
+        const success = addItem(outlet.id, outlet.name, slug, product, 1, schedule);
         if (success) {
           setShowScheduleModal(false);
           snackbar.success("Layanan berhasil ditambahkan ke keranjang", 2000);

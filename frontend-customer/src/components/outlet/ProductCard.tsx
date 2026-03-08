@@ -43,7 +43,6 @@ export default function ProductCard({
   const [quantity, setQuantity] = useState(1);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
-  // Derived values from new Product structure
   const productData = useMemo(() => {
     if (product.type === "GOODS" && product.goods) {
       return {
@@ -89,13 +88,16 @@ export default function ProductCard({
     (product.type === "TICKET" &&
       productData.ticketAvailable !== null &&
       productData.ticketAvailable <= 0);
+
   const isLowStock =
     product.type === "GOODS" &&
     productData.quantity !== null &&
     productData.quantity <= 5 &&
     productData.quantity > 0;
+
   const isEventPassed =
     product.type === "TICKET" && product.ticket && new Date(product.ticket.eventDate) < new Date();
+
   const isInactive = product.status === "INACTIVE";
 
   const cartItems = getOutletItems(outlet.id);
@@ -107,15 +109,10 @@ export default function ProductCard({
       : product.type === "TICKET" && productData.ticketMaxPerOrder !== null
         ? Math.min(productData.ticketMaxPerOrder, productData.ticketAvailable ?? 99)
         : 99;
-  const outletNotOpen = !outlet.isOpen;
-
-  const handleCardClick = useCallback(() => {
-    const href = withLocalizedPath(`/outlet/${outlet.slug}/product/${product.id}?from=outlet`);
-    router.push(href);
-  }, [router, outlet.id, product.id, withLocalizedPath]);
 
   const handleAddToCart = useCallback(
     (e: React.MouseEvent) => {
+      e.preventDefault();
       e.stopPropagation();
 
       if (isInactive) {
@@ -159,6 +156,7 @@ export default function ProductCard({
   );
 
   const handleQuantityChange = (delta: number, e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setQuantity((prevQuantity) => {
       const newQuantity = prevQuantity + delta;
@@ -195,15 +193,22 @@ export default function ProductCard({
   const isDisabled = isOutOfStock || isInactive || !!isEventPassed;
 
   return (
-    <Link
-      href={withLocalizedPath(`/outlet/${outlet.slug}/product/${product.id}?from=outlet`)}
-    >
+    <>
       <Card
+        id={product.id}
         className={`flex flex-row p-3 transition-all duration-200 w-full overflow-hidden relative gap-0 group border border-border/60 rounded-xl items-stretch ${isDisabled
-          ? "opacity-50 cursor-not-allowed bg-muted/30"
-          : "cursor-pointer hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
-          }`}>
-        {/* Image Section */}
+            ? "opacity-50 cursor-not-allowed bg-muted/30"
+            : "hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
+          }`}
+      >
+        {!isDisabled && (
+          <Link
+            href={withLocalizedPath(`/outlet/${outlet.slug}/product/${product.id}?from=outlet`)}
+            className="absolute inset-0 z-10 rounded-xl"
+            aria-label={`Detail produk ${product.name}`}
+          />
+        )}
+
         <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
           {product.image ? (
             <ImageColorThief
@@ -224,7 +229,6 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Status Overlays */}
           {isOutOfStock && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
               <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
@@ -249,25 +253,22 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Duration Badge for Services */}
           {product.type === "SERVICE" && productData.serviceDurationMinutes && !isDisabled && (
-            <span className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-blue-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
+            <span className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-blue-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm z-20">
               <Clock className="w-2.5 h-2.5" />
               {productData.serviceDurationMinutes}m
             </span>
           )}
 
-          {/* Media count badge for Services with gallery */}
           {product.type === "SERVICE" && product.media && product.media.length > 1 && !isDisabled && (
-            <span className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/60 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
+            <span className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/60 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm z-20">
               <Images className="w-2.5 h-2.5" />
               {product.media.length}
             </span>
           )}
 
-          {/* Event Badge for Tickets */}
           {product.type === "TICKET" && product.ticket && !isDisabled && (
-            <span className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-emerald-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
+            <span className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-emerald-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm z-20">
               <Calendar className="w-2.5 h-2.5" />
               {new Date(product.ticket.eventDate).toLocaleDateString("id-ID", {
                 day: "numeric",
@@ -276,31 +277,29 @@ export default function ProductCard({
             </span>
           )}
 
-          {/* Low Stock Badge */}
           {isLowStock && !isInactive && (
-            <span className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
+            <span className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm z-20">
               Stok: {productData.quantity}
             </span>
           )}
 
-          {/* Ticket Remaining Badge */}
           {product.type === "TICKET" &&
             productData.ticketAvailable !== null &&
             productData.ticketAvailable > 0 &&
             productData.ticketAvailable <= 10 &&
             !isDisabled && (
-              <span className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm">
+              <span className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm z-20">
                 Sisa: {productData.ticketAvailable}
               </span>
             )}
         </div>
 
-        {/* Content Section */}
         <div className="pl-3 sm:pl-4 flex flex-col flex-grow justify-between min-w-0">
           <div className="flex-grow">
             <h3
               className={`font-semibold text-sm leading-snug line-clamp-2 transition-colors ${!isDisabled && "group-hover:text-primary"
-                }`}>
+                }`}
+            >
               {product.name}
             </h3>
             {product.description && (
@@ -310,7 +309,6 @@ export default function ProductCard({
             )}
           </div>
 
-          {/* Cart Indicator */}
           {inCartQuantity > 0 && (
             <div className="flex items-center gap-1 text-[11px] text-primary font-medium mt-1.5 bg-primary/5 rounded-md px-2 py-1 w-fit">
               <ShoppingCart className="w-3 h-3" />
@@ -320,7 +318,6 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Price and Actions */}
           <div className="flex justify-between items-end mt-2 gap-2">
             <div>
               <p className="font-bold text-base text-primary tabular-nums">
@@ -340,7 +337,7 @@ export default function ProductCard({
             </div>
 
             {!isDisabled && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 relative z-20">
                 {product.type === "GOODS" || product.type === "TICKET" ? (
                   <>
                     <div className="flex items-center border border-border/80 rounded-full overflow-hidden h-7 bg-background shadow-sm">
@@ -349,7 +346,8 @@ export default function ProductCard({
                         size="sm"
                         className="h-full w-7 p-0 rounded-none hover:bg-muted"
                         onClick={(e) => handleQuantityChange(-1, e)}
-                        disabled={quantity <= 1}>
+                        disabled={quantity <= 1}
+                      >
                         <Minus className="h-3 w-3" />
                       </Button>
                       <span className="text-xs font-semibold w-7 text-center tabular-nums">
@@ -360,7 +358,8 @@ export default function ProductCard({
                         size="sm"
                         className="h-full w-7 p-0 rounded-none hover:bg-muted"
                         onClick={(e) => handleQuantityChange(1, e)}
-                        disabled={quantity >= maxQuantity - inCartQuantity}>
+                        disabled={quantity >= maxQuantity - inCartQuantity}
+                      >
                         <Plus className="h-3 w-3" />
                       </Button>
                     </div>
@@ -368,7 +367,8 @@ export default function ProductCard({
                       size="icon"
                       className="h-7 w-7 rounded-full flex-shrink-0 shadow-sm"
                       onClick={handleAddToCart}
-                      disabled={inCartQuantity >= maxQuantity}>
+                      disabled={inCartQuantity >= maxQuantity}
+                    >
                       <ShoppingCart className="w-3 h-3" />
                     </Button>
                   </>
@@ -376,7 +376,8 @@ export default function ProductCard({
                   <Button
                     size="sm"
                     className="h-8 px-3 text-xs rounded-full shadow-sm gap-1"
-                    onClick={handleAddToCart}>
+                    onClick={handleAddToCart}
+                  >
                     <Clock className="w-3 h-3" />
                     Jadwal
                   </Button>
@@ -395,6 +396,6 @@ export default function ProductCard({
         outletId={outlet.id}
         isOutletOpen={outlet.isOpen}
       />
-    </Link>
+    </>
   );
 }

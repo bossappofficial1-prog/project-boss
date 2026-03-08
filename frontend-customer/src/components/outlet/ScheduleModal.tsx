@@ -267,7 +267,7 @@ export function ScheduleModal({
                 </div>
               ) : (
                 <div className="py-8 border rounded-md bg-muted/20">
-                  <EmptyState title="Jadwal Penuh" icon={<Timer className="text-muted-foreground w-8 h-8" />} />
+                  <EmptyState title="Jadwal tidak tersedia" icon={<Timer className="text-muted-foreground w-8 h-8" />} />
                 </div>
               )}
             </div>
