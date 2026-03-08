@@ -37,7 +37,7 @@ const OrderSummary: React.FC<CheckoutProps & {
                             <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
                                 <Store className="w-3 h-3 text-primary-foreground" />
                             </div>
-                            <span className="font-medium text-sm">{outlet.outletName}</span>
+                            <span className="text-[13px] font-medium sm:text-sm">{outlet.outletName}</span>
                         </div>
 
                         {/* Items Preview */}
@@ -47,18 +47,18 @@ const OrderSummary: React.FC<CheckoutProps & {
                                     <Gift className="w-6 h-6 text-muted-foreground" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium">{t("orderSummary.productFrom", { outletName: outlet.outletName })}</p>
+                                    <p className="text-[13px] font-medium sm:text-sm">{t("orderSummary.productFrom", { outletName: outlet.outletName })}</p>
                                     <p className="text-xs text-muted-foreground">{t("orderSummary.otherProducts")}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-sm font-medium">{formatCurrency(outlet.subtotal)}</p>
+                                    <p className="text-[13px] font-medium sm:text-sm">{formatCurrency(outlet.subtotal)}</p>
                                 </div>
                             </div>
 
                             {/* Outlet Subtotal */}
                             <div className="flex items-center justify-between pt-2 border-t">
-                                <span className="text-sm font-medium">{t("orderSummary.orderSubtotal")}</span>
-                                <span className="font-semibold text-primary">
+                                <span className="text-[13px] font-medium sm:text-sm">{t("orderSummary.orderSubtotal")}</span>
+                                <span className="text-[13px] font-semibold text-primary sm:text-sm">
                                     {formatCurrency(outlet.subtotal)}
                                 </span>
                             </div>
@@ -72,28 +72,28 @@ const OrderSummary: React.FC<CheckoutProps & {
                 <Card className="py-0">
                     <CardContent className="p-4">
                         <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
+                            <div className="flex justify-between text-xs sm:text-sm">
                                 <span>{t("orderSummary.totalOrder", { count: totalItems })}</span>
                                 <span>{formatCurrency(subtotal)}</span>
                             </div>
 
                             {dynamicTransactionFee > 0 && (
-                                <div className="flex justify-between text-sm">
+                                <div className="flex justify-between text-xs sm:text-sm">
                                     <span className="text-muted-foreground">{t("orderSummary.transactionFee")}</span>
                                     <span>{formatCurrency(dynamicTransactionFee)}</span>
                                 </div>
                             )}
 
                             {dynamicApplicationFee > 0 && (
-                                <div className="flex justify-between text-sm">
+                                <div className="flex justify-between text-xs sm:text-sm">
                                     <span className="text-muted-foreground">{t("orderSummary.applicationFee")}</span>
                                     <span>{formatCurrency(dynamicApplicationFee)}</span>
                                 </div>
                             )}
 
                             <div className="flex justify-between pt-2 border-t border-blue-200">
-                                <span className="font-semibold">{t("orderSummary.totalPayment")}</span>
-                                <span className="font-bold text-lg text-primary">{formatCurrency(dynamicGrandTotal)}</span>
+                                <span className="text-[13px] font-semibold sm:text-sm">{t("orderSummary.totalPayment")}</span>
+                                <span className="text-base font-bold text-primary sm:text-lg">{formatCurrency(dynamicGrandTotal)}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -116,12 +116,12 @@ const CheckoutButton: React.FC<{
             <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <p className="text-sm text-muted-foreground">{t("checkoutButton.totalPayment")}</p>
-                        <p className="text-lg font-bold text-primary">{formatCurrency(totalAmount)}</p>
+                        <p className="text-xs text-muted-foreground sm:text-sm">{t("checkoutButton.totalPayment")}</p>
+                        <p className="text-base font-bold text-primary sm:text-lg">{formatCurrency(totalAmount)}</p>
                     </div>
                     <Button
                         size="lg"
-                        className="px-8 h-12"
+                        className="h-11 px-6 text-[13px] sm:h-12 sm:px-8 sm:text-sm"
                         data-guide-target="checkout-create-order"
                         onClick={onCheckout}
                         disabled={disabled}
@@ -240,10 +240,10 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, grandTotal }
             <Card className="py-0">
                 <CardContent className="p-4">
                     <div className="space-y-2">
-                        <p className="text-sm font-medium">Checkout</p>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
+                        <p className="text-[13px] font-medium sm:text-sm">Checkout</p>
+                        <div className="grid grid-cols-3 gap-2 text-[11px] sm:text-xs">
                             <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">1. Ringkasan</div>
-                            <div className="rounded-md border bg-primary/10 text-primary px-2 py-1.5 text-center font-semibold">2. Checkout</div>
+                            <div className="rounded-md border bg-primary/10 px-2 py-1.5 text-center font-semibold text-primary">2. Checkout</div>
                             <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">3. Pembayaran</div>
                         </div>
                     </div>

@@ -1,34 +1,50 @@
 "use client";
 
 import { LanguageType } from "@/constants";
-import { usePathname } from "next/navigation";
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useSyncExternalStore } from "react";
 import enMessages from "../messages/en.json";
 
 const VALID_LOCALES: LanguageType[] = ["id", "en"];
 
-function getLocaleFromPathname(pathname?: string | null): LanguageType {
-    const firstSegment = pathname?.split("/").filter(Boolean)[0];
+function getLocaleCookie(): LanguageType {
+    if (typeof document === "undefined") return "id";
+    const match = document.cookie.match(/(?:^|;\s*)locale=([^;]*)/);
+    const val = match?.[1];
+    return VALID_LOCALES.includes(val as LanguageType) ? (val as LanguageType) : "id";
+}
 
-    if (VALID_LOCALES.includes(firstSegment as LanguageType)) {
-        return firstSegment as LanguageType;
-    }
+function setLocaleCookie(locale: LanguageType) {
+    document.cookie = `locale=${locale}; path=/; max-age=31536000`;
+}
 
+// Subscribe to cookie changes via a custom event
+const LOCALE_CHANGE_EVENT = "locale-change";
+
+function subscribeLocale(callback: () => void) {
+    window.addEventListener(LOCALE_CHANGE_EVENT, callback);
+    return () => window.removeEventListener(LOCALE_CHANGE_EVENT, callback);
+}
+
+function getLocaleSnapshot(): LanguageType {
+    return getLocaleCookie();
+}
+
+function getLocaleServerSnapshot(): LanguageType {
     return "id";
 }
 
-export function useLocale(): LanguageType {
-    const pathname = usePathname();
-    const locale = useMemo(() => getLocaleFromPathname(pathname), [pathname]);
+export function setLocale(locale: LanguageType) {
+    setLocaleCookie(locale);
+    window.dispatchEvent(new Event(LOCALE_CHANGE_EVENT));
+}
 
-    return locale;
+export function useLocale(): LanguageType {
+    return useSyncExternalStore(subscribeLocale, getLocaleSnapshot, getLocaleServerSnapshot);
 }
 
 export function useLocalizedPath() {
-    const locale = useLocale();
-
     return useCallback((href: string) => {
-        if (!href) return `/${locale}`;
+        if (!href) return "/";
 
         if (/^https?:\/\//i.test(href)) {
             return href;
@@ -36,18 +52,9 @@ export function useLocalizedPath() {
 
         const [pathPart, queryPart] = href.split("?");
         const normalizedPath = pathPart.startsWith("/") ? pathPart : `/${pathPart}`;
-        const segments = normalizedPath.split("/").filter(Boolean);
 
-        let localizedPath = normalizedPath;
-
-        if (segments.length > 0 && VALID_LOCALES.includes(segments[0] as LanguageType)) {
-            localizedPath = `/${locale}${segments.length > 1 ? `/${segments.slice(1).join("/")}` : ""}`;
-        } else {
-            localizedPath = normalizedPath === "/" ? `/${locale}` : `/${locale}${normalizedPath}`;
-        }
-
-        return queryPart ? `${localizedPath}?${queryPart}` : localizedPath;
-    }, [locale]);
+        return queryPart ? `${normalizedPath}?${queryPart}` : normalizedPath;
+    }, []);
 }
 
 export type Messages = typeof enMessages;

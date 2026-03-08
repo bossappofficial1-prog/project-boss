@@ -57,7 +57,7 @@ function OutletCard({ outlet, numberFormatter, t, tCommon }: OutletCardProps) {
             </div>
             <div className="flex flex-col gap-1 px-1 pt-2 pb-1">
                 <p className="text-sm font-semibold leading-snug text-foreground line-clamp-1">{outlet.name}</p>
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="text-primary/80 font-medium">{ordersLabel}</span>
                     {distanceLabel && (
                         <>

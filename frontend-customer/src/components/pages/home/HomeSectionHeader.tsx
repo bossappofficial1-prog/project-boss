@@ -19,13 +19,13 @@ function HomeSectionHeader({ title, subtitle, actionLabel, href }: HomeSectionHe
     return (
         <div className="flex items-center justify-between gap-3">
             <div>
-                <h2 className="text-base font-bold text-foreground">{title}</h2>
-                {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+                <h2 className="text-sm font-bold text-foreground sm:text-base">{title}</h2>
+                {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
             </div>
             {href && actionLabel && (
                 <Link
                     href={targetHref ?? href}
-                    className="flex items-center gap-0.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors flex-shrink-0"
+                    className="flex flex-shrink-0 items-center gap-0.5 text-[11px] font-medium text-primary transition-colors hover:text-primary/80 sm:text-xs"
                 >
                     {actionLabel}
                     <ChevronRight className="h-3.5 w-3.5" />

@@ -23,21 +23,21 @@ function PromoCard({ promo, currencyFormatter, dateFormatter, t }: PromoCardProp
             <div className="flex items-center justify-between relative">
                 <div className="flex items-center gap-1.5 text-primary">
                     <Tag className="h-3.5 w-3.5" />
-                    <span className="text-[11px] font-semibold uppercase tracking-wide">{t("promos.badge")}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide sm:text-[11px]">{t("promos.badge")}</span>
                 </div>
-                <span className="rounded-full bg-primary text-primary-foreground px-2.5 py-0.5 text-xs font-bold">
+                <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-bold text-primary-foreground sm:text-xs">
                     {valueLabel}
                 </span>
             </div>
 
             <div className="space-y-1 relative">
-                <p className="text-base font-bold text-foreground tracking-wide">{promo.code}</p>
+                <p className="text-sm font-bold tracking-wide text-foreground sm:text-base">{promo.code}</p>
                 {promo.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{promo.description}</p>
+                    <p className="line-clamp-2 text-[11px] leading-relaxed text-muted-foreground sm:text-xs">{promo.description}</p>
                 )}
             </div>
 
-            <div className="mt-auto space-y-1 text-[11px] text-muted-foreground relative">
+            <div className="relative mt-auto space-y-1 text-xs text-muted-foreground">
                 {promo.minPurchaseAmount && (
                     <p>{t("promos.minPurchase", { amount: currencyFormatter.format(promo.minPurchaseAmount) })}</p>
                 )}

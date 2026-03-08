@@ -25,6 +25,7 @@ import { useSnackbar } from "@/hooks/useSnackbar";
 import { ImageColorThief } from "../shared/ImageColorThief";
 import { Product } from "@/types/product";
 import { useLocalizedPath } from "@/hooks/useI18n";
+import Link from "next/link";
 
 export default function ProductCard({
   product,
@@ -194,13 +195,14 @@ export default function ProductCard({
   const isDisabled = isOutOfStock || isInactive || !!isEventPassed;
 
   return (
-    <>
+    <Link
+      href={withLocalizedPath(`/outlet/${outlet.slug}/product/${product.id}?from=outlet`)}
+    >
       <Card
         className={`flex flex-row p-3 transition-all duration-200 w-full overflow-hidden relative gap-0 group border border-border/60 rounded-xl items-stretch ${isDisabled
           ? "opacity-50 cursor-not-allowed bg-muted/30"
           : "cursor-pointer hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
-          }`}
-        onClick={isDisabled ? undefined : handleCardClick}>
+          }`}>
         {/* Image Section */}
         <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
           {product.image ? (
@@ -393,6 +395,6 @@ export default function ProductCard({
         outletId={outlet.id}
         isOutletOpen={outlet.isOpen}
       />
-    </>
+    </Link>
   );
 }

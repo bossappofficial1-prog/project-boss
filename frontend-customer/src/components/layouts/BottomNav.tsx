@@ -105,12 +105,7 @@ export default function BottomNav() {
     const pathname = usePathname() ?? "/";
     const withLocalizedPath = useLocalizedPath();
 
-    const pathSegments = pathname.split('/').filter(Boolean);
-    const pathWithoutLocale = ["id", "en"].includes(pathSegments[0] || "")
-        ? `/${pathSegments.slice(1).join('/')}` || "/"
-        : pathname;
-
-    const isMainRoute = MAIN_ROUTES.includes(pathWithoutLocale as (typeof MAIN_ROUTES)[number]);
+    const isMainRoute = MAIN_ROUTES.includes(pathname as (typeof MAIN_ROUTES)[number]);
     const containerRef = React.useRef<HTMLDivElement | null>(null);
 
     useFeatureGuide({
@@ -162,8 +157,8 @@ export default function BottomNav() {
             >
                 {menus.map((menu) => {
                     const isActive =
-                        pathWithoutLocale === menu.href ||
-                        (menu.href !== "/" && pathWithoutLocale.startsWith(menu.href));
+                        pathname === menu.href ||
+                        (menu.href !== "/" && pathname.startsWith(menu.href));
 
                     return (
                         <NavItem

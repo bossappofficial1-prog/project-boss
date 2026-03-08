@@ -208,9 +208,9 @@ export async function getTransactionListService(params: TransactionListParams) {
   return {
     data: paginatedData,
     totals: {
-      total_revenue,
-      total_expense,
-      total_margin_pendapatan,
+      total_revenue: total_revenue ?? 0,
+      total_expense: total_expense ?? 0,
+      total_margin_pendapatan: total_margin_pendapatan ?? 0,
     },
     pagination: {
       page,

@@ -10,6 +10,7 @@ import { FeatureGuideOverlay } from "@/components/guides/FeatureGuideOverlay";
 import { SnackbarProvider } from "@/context/SnackbarContext";
 import { SnackbarContainer } from "@/components/shared/Snackbar";
 import "./globals.css";
+import SplashScreen from "@/components/shared/SplashScreen";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -135,6 +136,8 @@ export default function Layout({
       <body
         className={`${poppins.variable} font-poppins antialiased`}
       >
+        {/* Splash screen */}
+        <SplashScreen />
         <SerwistRegister />
         <ThemeProvider
           attribute="class"

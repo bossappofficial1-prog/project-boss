@@ -26,7 +26,7 @@ function CategoryCard({ category }: CategoryCardProps) {
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />
             </span>
-            <span className="text-[11px] font-medium text-foreground text-center leading-tight line-clamp-1">{category.title}</span>
+            <span className="line-clamp-1 text-center text-xs font-medium leading-tight text-foreground">{category.title}</span>
         </Link>
     )
 }

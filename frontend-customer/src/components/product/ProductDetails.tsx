@@ -52,9 +52,11 @@ import {
 type Props = {
   slug: string;
   productId: string;
+  initialProductData?: Product;
+  initialOutletData?: OutletType;
 };
 
-export function ProductDetails({ slug, productId }: Props) {
+export function ProductDetails({ slug, productId, initialProductData, initialOutletData }: Props) {
   const router = useRouter();
   const { addItem, getOutletItems } = useCart();
   const snackbar = useSnackbar();
@@ -70,10 +72,16 @@ export function ProductDetails({ slug, productId }: Props) {
   const locale = useLocale();
   const withLocalizedPath = useLocalizedPath();
 
+  // Prefetch likely back destination
+  useEffect(() => {
+    router.prefetch(`/outlet/${slug}`);
+  }, [router, slug]);
+
   // Query product dan outlet
   const productQuery = useQuery<Product>({
     queryKey: ["product", slug, productId],
     queryFn: () => ProductService.getDetail(productId),
+    initialData: initialProductData,
     enabled: Boolean(slug && productId),
     retry: false,
     staleTime: 1000 * 30,
@@ -87,6 +95,7 @@ export function ProductDetails({ slug, productId }: Props) {
   const outletQuery = useQuery<OutletType>({
     queryKey: ["outlet", slug],
     queryFn: () => OutletService.getDetail(slug),
+    initialData: initialOutletData,
     enabled: Boolean(slug),
     retry: false,
     staleTime: 1000 * 60 * 10,
@@ -583,10 +592,8 @@ type OutletCardProps = {
   ) => string;
   locale?: string;
 };
-const OutletCard: React.FC<OutletCardProps> = ({ outlet, t, locale }) => {
-  const href = locale
-    ? `/${locale}/outlet/${outlet.slug}`
-    : `/outlet/${outlet.id}`;
+const OutletCard: React.FC<OutletCardProps> = ({ outlet, t }) => {
+  const href = `/outlet/${outlet.slug}`;
 
   return (
     <Link

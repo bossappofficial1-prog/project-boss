@@ -28,10 +28,7 @@ function AppBarV2() {
     "/payment/pending",
   ];
 
-  // Strip locale prefix (e.g. "/id/profile" → "/profile")
-  const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "");
-
-  if (hiddenRoutes.includes(pathWithoutLocale || "/")) return null;
+  if (hiddenRoutes.includes(pathname || "/")) return null;
 
   // Prevent hydration mismatch by not rendering until mounted
   // The appBarConfig is set via useEffect in page components,

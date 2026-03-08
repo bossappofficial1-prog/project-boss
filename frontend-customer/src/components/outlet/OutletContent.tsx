@@ -184,7 +184,13 @@ export function LeftContentAppBarOutlet({
 
 const SESSION_KEY = "prev_page_to_outlet";
 
-export function OutletContent({ slug }: { slug: string }) {
+interface OutletContentProps {
+  slug: string;
+  initialOutletData?: OutletType;
+  initialProductsData?: import("@/types/product").Product[];
+}
+
+export function OutletContent({ slug, initialOutletData, initialProductsData }: OutletContentProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { setAppBar, resetAppBar } = useAppBarV2();
   const [prevPage] = useState(() => {
@@ -208,6 +214,13 @@ export function OutletContent({ slug }: { slug: string }) {
 
   const router = useRouter();
 
+  // Prefetch likely back destinations
+  useEffect(() => {
+    router.prefetch("/");
+    router.prefetch("/search");
+    router.prefetch("/nearby");
+    router.prefetch("/favorites");
+  }, [router]);
   const t = useTranslations("outletDetail");
 
   const results = useQueries({
@@ -216,6 +229,7 @@ export function OutletContent({ slug }: { slug: string }) {
         queryKey: ["outlet", slug],
         queryFn: () => Outlet.getDetail(slug),
         enabled: !!slug,
+        initialData: initialOutletData,
         staleTime: 1000 * 30,
         gcTime: 1000 * 60 * 10,
         refetchOnMount: 'always',
@@ -227,6 +241,7 @@ export function OutletContent({ slug }: { slug: string }) {
         queryKey: ["products", slug],
         queryFn: () => ProductService.getAllByOutlet(slug),
         enabled: !!slug && !debouncedSearchQuery,
+        initialData: initialProductsData,
         staleTime: 1000 * 30,
         gcTime: 1000 * 60 * 10,
         refetchOnMount: 'always',
@@ -376,9 +391,7 @@ export function OutletContent({ slug }: { slug: string }) {
     return <ErrorState />;
   }
 
-  if (!outletQuery.data) {
-    return <EmptyState title={t("outletNotFound")} />;
-  }
+  if (!outletQuery.data) return null
 
   const outlet = outletQuery.data!;
 

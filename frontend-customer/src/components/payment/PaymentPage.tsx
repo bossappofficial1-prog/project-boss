@@ -50,7 +50,7 @@ const CustomerInfoForm: React.FC<{
   return (
     <Card data-guide-target={guideTarget}>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <User className="w-5 h-5 text-primary" />
           {t("customerInfo.title")}
         </CardTitle>
@@ -58,7 +58,7 @@ const CustomerInfoForm: React.FC<{
 
       <CardContent className="space-y-4">
         <div>
-          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+          <label className="mb-2 block text-xs font-medium text-muted-foreground sm:text-sm">
             {t("customerInfo.fullName")}
           </label>
           <Input
@@ -68,7 +68,7 @@ const CustomerInfoForm: React.FC<{
             className={errors.name ? "border-red-500" : ""}
           />
           {errors.name && (
-            <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+            <p className="mt-1 flex items-center gap-1 text-xs text-red-500 sm:text-sm">
               <AlertCircle className="w-3 h-3" />
               {errors.name}
             </p>
@@ -76,7 +76,7 @@ const CustomerInfoForm: React.FC<{
         </div>
 
         <div>
-          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+          <label className="mb-2 block text-xs font-medium text-muted-foreground sm:text-sm">
             {t("customerInfo.phoneNumber")}
           </label>
           <Input
@@ -86,7 +86,7 @@ const CustomerInfoForm: React.FC<{
             className={errors.phone ? "border-red-500" : ""}
           />
           {errors.phone && (
-            <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+            <p className="mt-1 flex items-center gap-1 text-xs text-red-500 sm:text-sm">
               <AlertCircle className="w-3 h-3" />
               {errors.phone}
             </p>
@@ -94,7 +94,7 @@ const CustomerInfoForm: React.FC<{
         </div>
 
         <div className="rounded-lg border border-blue-200/60 bg-blue-50/80 p-3 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/60 dark:text-blue-100/80">
-          <p className="flex items-start text-sm leading-relaxed">
+          <p className="flex items-start text-xs leading-relaxed sm:text-sm">
             <AlertCircle className="mr-2 h-4 w-4 flex-shrink-0 text-blue-500 dark:text-blue-300" />
             <span>{t("customerInfo.infoMessage")}</span>
           </p>
@@ -111,7 +111,7 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData; guideTarget?: 
   return (
     <Card data-guide-target={guideTarget}>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <Receipt className="w-5 h-5 text-primary" />
           {t("orderSummary.title")}
         </CardTitle>
@@ -122,10 +122,10 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData; guideTarget?: 
           <div key={index} className="border rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2">
               <Store className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm">{outlet.outletName}</span>
+              <span className="text-[13px] font-medium sm:text-sm">{outlet.outletName}</span>
             </div>
 
-            <div className="space-y-1 text-sm">
+            <div className="space-y-1 text-xs sm:text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("orderSummary.subtotal")}</span>
                 <span>{formatCurrency(outlet.subtotal)}</span>
@@ -136,12 +136,12 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData; guideTarget?: 
 
         {/* Total Summary */}
         <div className="border-t pt-3 space-y-2">
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-xs sm:text-sm">
             <span>{t("orderSummary.totalOrder")}</span>
             <span>{formatCurrency(checkoutData.subtotal)}</span>
           </div>
 
-          <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+          <div className="flex justify-between border-t pt-2 text-base font-semibold sm:text-lg">
             <span>{t("orderSummary.totalPayment")}</span>
             <span className="text-primary">{formatCurrency(checkoutData.grandTotal)}</span>
           </div>
@@ -158,7 +158,7 @@ const PaymentMethodDisplay: React.FC<{ method: PaymentMethod; guideTarget?: stri
   return (
     <Card data-guide-target={guideTarget}>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <CreditCard className="w-5 h-5 text-primary" />
           {t("paymentMethod.title")}
         </CardTitle>
@@ -170,10 +170,10 @@ const PaymentMethodDisplay: React.FC<{ method: PaymentMethod; guideTarget?: stri
             <ImageRender alt={method.name} src={(method as any).image_url} />
           </div>
           <div className="flex-1">
-            <p className="font-medium">{method.name}</p>
-            <p className="text-sm text-muted-foreground">{method.description}</p>
+            <p className="text-[13px] font-medium sm:text-sm">{method.name}</p>
+            <p className="text-xs text-muted-foreground sm:text-sm">{method.description}</p>
           </div>
-          <Badge variant="secondary" className="h-6">
+          <Badge variant="secondary" className="h-6 text-[11px] sm:text-xs">
             {method.type === "qris"
               ? t("paymentMethod.types.qris")
               : method.type === "va"
@@ -200,12 +200,12 @@ const PaymentButton: React.FC<{
       <CardContent className="p-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <p className="text-sm text-muted-foreground">{t("paymentButton.totalPayment")}</p>
-            <p className="text-xl font-bold text-primary">{formatCurrency(amount)}</p>
+            <p className="text-xs text-muted-foreground sm:text-sm">{t("paymentButton.totalPayment")}</p>
+            <p className="text-lg font-bold text-primary sm:text-xl">{formatCurrency(amount)}</p>
           </div>
           <Button
             size="lg"
-            className="h-12 w-full px-8 sm:w-auto"
+            className="h-11 w-full px-8 text-[13px] sm:h-12 sm:w-auto sm:text-sm"
             onClick={onPay}
             disabled={isLoading}>
             {isLoading ? t("paymentButton.processing") : t("paymentButton.payNow")}
@@ -490,11 +490,11 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
       <Card className="py-0">
         <CardContent className="p-4">
           <div className="space-y-2">
-            <p className="text-sm font-medium">{t("title")}</p>
-            <div className="grid grid-cols-3 gap-2 text-xs">
+            <p className="text-[13px] font-medium sm:text-sm">{t("title")}</p>
+            <div className="grid grid-cols-3 gap-2 text-[11px] sm:text-xs">
               <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">1. Ringkasan</div>
               <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">2. Checkout</div>
-              <div className="rounded-md border bg-primary/10 text-primary px-2 py-1.5 text-center font-semibold">3. Pembayaran</div>
+              <div className="rounded-md border bg-primary/10 px-2 py-1.5 text-center font-semibold text-primary">3. Pembayaran</div>
             </div>
           </div>
         </CardContent>

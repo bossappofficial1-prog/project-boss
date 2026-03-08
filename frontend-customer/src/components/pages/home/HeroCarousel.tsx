@@ -30,10 +30,10 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                     <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white backdrop-blur-sm">
                         {t("hero.badge")}
                     </span>
-                    <h2 className="text-2xl font-bold leading-tight text-white sm:text-3xl">
+                    <h2 className="text-xl font-bold leading-tight text-white sm:text-3xl">
                         {t("hero.fallbackTitle")}
                     </h2>
-                    <p className="text-sm leading-relaxed text-white/80">
+                    <p className="text-xs leading-relaxed text-white/80 sm:text-sm">
                         {t("hero.fallbackSubtitle")}
                     </p>
                 </div>
@@ -87,17 +87,17 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                                         key={active}
                                         className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out max-w-lg"
                                     >
-                                        <h2 className="text-xl font-bold leading-snug text-white line-clamp-2 sm:text-2xl md:text-3xl drop-shadow-md">
+                                        <h2 className="line-clamp-2 text-lg font-bold leading-snug text-white drop-shadow-md sm:text-2xl md:text-3xl">
                                             {banner.title ?? t("hero.defaultTitle")}
                                         </h2>
-                                        <p className="mt-2 text-sm leading-relaxed text-white/80 line-clamp-2 sm:text-base max-w-xs md:max-w-sm">
+                                        <p className="mt-2 line-clamp-2 max-w-xs text-xs leading-relaxed text-white/80 sm:text-sm md:max-w-sm md:text-base">
                                             {banner.subtitle ?? t("hero.defaultSubtitle")}
                                         </p>
                                         {banner.cta && banner.cta.payload && (
                                             <Link
                                                 href={banner.cta.payload || "/promos"}
                                                 target="_blank"
-                                                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-gray-900 shadow-md transition-all duration-200 hover:bg-white/90 hover:shadow-lg hover:gap-2.5 active:scale-95"
+                                                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-semibold text-gray-900 shadow-md transition-all duration-200 hover:gap-2.5 hover:bg-white/90 hover:shadow-lg active:scale-95 sm:text-xs"
                                                 tabIndex={index !== active ? -1 : 0}
                                                 onTouchStart={(e) => e.stopPropagation()}
                                                 onMouseDown={(e) => e.stopPropagation()}

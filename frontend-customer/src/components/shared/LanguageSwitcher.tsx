@@ -1,30 +1,17 @@
 "use client"
 
-import { useRouter, usePathname } from 'next/navigation';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { useLocale } from '@/hooks/useI18n';
+import { useRouter } from 'next/navigation';
+import { useLocale, setLocale } from '@/hooks/useI18n';
 import { SelectOption } from './SelectOption';
 import { LANGUAGES, LanguageType } from '@/constants';
 
 export default function LanguageSwitcher() {
     const router = useRouter();
-    const pathname = usePathname();
     const currentLocale = useLocale() as LanguageType;
 
     const handleLanguageChange = (newLocale: string) => {
-        const segments = (pathname || '/').split('/').filter(Boolean);
-        const hasLocalePrefix = ['id', 'en'].includes(segments[0] || '');
-
-        document.cookie = `locale=${newLocale}; path=/;`
-
-        if (hasLocalePrefix) {
-            segments[0] = newLocale;
-            router.push(`/${segments.join('/')}`);
-            return;
-        }
-
-        const normalizedPath = pathname === '/' ? '' : pathname;
-        router.push(`/${newLocale}${normalizedPath}`);
+        setLocale(newLocale as LanguageType);
+        router.refresh();
     };
 
     return (

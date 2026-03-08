@@ -53,7 +53,7 @@ const PaymentMethodsList: React.FC<{
             <Card className="shadow-sm  ">
                 <CardHeader className="pb-1 px-4">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2 text-base font-bold sm:text-lg">
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                                 <Wallet className="w-4 h-4 text-primary" />
                             </div>
@@ -73,7 +73,7 @@ const PaymentMethodsList: React.FC<{
                                     variant={isActive ? 'default' : 'outline'}
                                     size="sm"
                                     onClick={() => setSelectedCategory(category.id)}
-                                    className={`h-9 px-3 whitespace-nowrap transition-all duration-200 flex-shrink-0 text-xs ${isActive
+                                    className={`h-9 px-3 whitespace-nowrap transition-all duration-200 flex-shrink-0 text-[11px] sm:text-xs ${isActive
                                         ? 'bg-primary text-primary-foreground shadow-sm'
                                         : 'hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/30 dark:hover:border-primary/50'
                                         }`}
@@ -139,11 +139,11 @@ const PaymentMethodsList: React.FC<{
 
                                                 {/* Payment Method Details */}
                                                 <div className="flex-1 text-left min-w-0">
-                                                    <div className={`font-semibold text-sm transition-colors truncate ${isSelected ? 'text-primary' : 'text-gray-900 dark:text-gray-100 group-hover:text-primary'
+                                                    <div className={`text-[13px] font-semibold transition-colors truncate sm:text-sm ${isSelected ? 'text-primary' : 'text-gray-900 dark:text-gray-100 group-hover:text-primary'
                                                         }`}>
                                                         {method.name}
                                                     </div>
-                                                    <div className="text-xs text-muted-foreground dark:text-gray-400 mt-0.5 line-clamp-2">
+                                                    <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground dark:text-gray-400 sm:text-xs">
                                                         {method.description}
                                                     </div>
 
@@ -199,8 +199,8 @@ const PaymentMethodsList: React.FC<{
                                 <Shield className="w-4 h-4 text-green-600" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-green-800 dark:text-green-200 text-xs">{t("security.title")}</div>
-                                <div className="text-xs text-green-600 dark:text-green-300 mt-0.5 leading-tight">
+                                <div className="text-[11px] font-semibold text-green-800 dark:text-green-200 sm:text-xs">{t("security.title")}</div>
+                                <div className="mt-0.5 text-[11px] leading-tight text-green-600 dark:text-green-300 sm:text-xs">
                                     {t("security.description")}
                                 </div>
                             </div>

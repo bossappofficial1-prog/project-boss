@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
-import axios from 'axios';
 import { OutletDetails } from "@/types/outlet";
 import { resolveCustomerImageUrl } from "@/lib/url";
+import { serverFetch } from "@/lib/server-fetch";
 
 type Params = Promise<{ slug: string }>;
 
 async function getOutlet(slug: string): Promise<OutletDetails | null> {
-    console.log(slug)
-    try {
-        const res = await axios.get(`${process.env.SERVER_API_URL}/outlets/slug/${slug}`);
-        return res.data?.data || null;
-    } catch (error) {
-        console.error(`Error fetching outlet ${slug}:`, error);
-        return null;
-    }
+    return serverFetch<OutletDetails>(`/outlets/slug/${slug}`, {
+        revalidate: 60,
+        tags: [`outlet-${slug}`],
+    });
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {

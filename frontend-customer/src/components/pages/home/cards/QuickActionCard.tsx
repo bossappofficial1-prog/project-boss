@@ -25,12 +25,12 @@ function QuickActionCard({ action, labels }: QuickActionCardProps) {
     return (
         <Link
             href={href}
-            className="flex flex-col items-center gap-1.5 rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/70 active:scale-95"
+            className="flex flex-col items-center gap-1 rounded-xl bg-muted/40 p-2.5 transition-colors hover:bg-muted/70 active:scale-95 sm:gap-1.5 sm:p-3"
         >
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Icon className="h-4.5 w-4.5" />
             </span>
-            <span className="text-xs text-center font-medium text-foreground">{labels.title}</span>
+            <span className="text-center text-[11px] font-medium leading-tight text-foreground sm:text-xs">{labels.title}</span>
         </Link>
     )
 }

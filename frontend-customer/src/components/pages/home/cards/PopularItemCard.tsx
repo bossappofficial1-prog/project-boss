@@ -22,7 +22,7 @@ function PopularItemCard({ item, rank, numberFormatter, currencyFormatter, t }: 
     return (
         <Link href={href} className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/30 active:bg-muted/50">
             {/* Rank number */}
-            <span className={`flex-shrink-0 w-6 text-center text-sm font-bold tabular-nums ${rank <= 3 ? 'text-primary' : 'text-muted-foreground/50'}`}>
+            <span className={`flex-shrink-0 w-6 text-center text-xs font-bold tabular-nums sm:text-sm ${rank <= 3 ? 'text-primary' : 'text-muted-foreground/50'}`}>
                 {rank}
             </span>
             {/* Image */}
@@ -37,13 +37,13 @@ function PopularItemCard({ item, rank, numberFormatter, currencyFormatter, t }: 
             </div>
             {/* Info */}
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium leading-snug text-foreground line-clamp-1">{item.name}</p>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="line-clamp-1 text-[13px] font-medium leading-snug text-foreground sm:text-sm">{item.name}</p>
+                <p className="text-xs text-muted-foreground">
                     {t("badges.sold", { count: numberFormatter.format(item.soldCount ?? 0) })}
                 </p>
             </div>
             {/* Price */}
-            <span className="flex-shrink-0 text-sm font-semibold text-primary tabular-nums">
+            <span className="flex-shrink-0 text-[13px] font-semibold text-primary tabular-nums sm:text-sm">
                 {currencyFormatter.format(item.price ?? 0)}
             </span>
         </Link>
