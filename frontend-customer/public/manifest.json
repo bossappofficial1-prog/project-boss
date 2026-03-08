@@ -7,8 +7,8 @@
     "display": "standalone",
     "orientation": "portrait",
     "scope": "/",
-    "start_url": "/id",
-    "id": "/id",
+    "start_url": "/",
+    "id": "/",
     "categories": [
         "shopping",
         "e-commerce",
@@ -34,7 +34,7 @@
             "name": "Home",
             "short_name": "Home",
             "description": "Go to home page",
-            "url": "/id",
+            "url": "/",
             "icons": [
                 {
                     "src": "/icons/home-icon.png",
@@ -47,7 +47,7 @@
             "name": "Cart",
             "short_name": "Cart",
             "description": "View shopping cart",
-            "url": "/id/cart",
+            "url": "/cart",
             "icons": [
                 {
                     "src": "/icons/cart-icon.png",
@@ -60,7 +60,7 @@
             "name": "Orders",
             "short_name": "Orders",
             "description": "View your orders",
-            "url": "/id/orders",
+            "url": "/orders",
             "icons": [
                 {
                     "src": "/icons/orders-icon.png",
