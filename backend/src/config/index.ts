@@ -65,5 +65,14 @@ export const config = {
         clientId: process.env.GOOGLE_CLIENT_ID || '',
         clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
         redirectUrl: process.env.GOOGLE_REDIRECT_URL || 'http://localhost:1234/api/v1/auth/google/callback'
-    }
+    },
+
+    // Supabase
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
+    SUPABASE_BUCKET_PUBLIC_MEDIA: process.env.SUPABASE_BUCKET_PUBLIC_MEDIA || 'public-media',
+    SUPABASE_BUCKET_PRIVATE_PROOF: process.env.SUPABASE_BUCKET_PRIVATE_PROOF || 'private-proofs',
+
+    // Cronjob key
+    CRON_JOB_KEY: process.env.CRON_JOB_KEY || "local",
 } as const
