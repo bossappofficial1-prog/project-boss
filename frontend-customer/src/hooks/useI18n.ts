@@ -41,12 +41,7 @@ export function setLocale(locale: LanguageType) {
 export function useLocale(): LanguageType {
     const hasHydratedRef = useRef(false);
     const [, forceRerender] = useState(false);
-    // Stable getter that reads the current ref value; dependency array intentionally empty
-    // so the subscription isn't recreated when the ref flips after hydration.
-    const getClientSnapshot = useCallback(
-        () => (hasHydratedRef.current ? getLocaleSnapshot() : getLocaleServerSnapshot()),
-        []
-    );
+    const getClientSnapshot = () => (hasHydratedRef.current ? getLocaleSnapshot() : getLocaleServerSnapshot());
 
     useEffect(() => {
         hasHydratedRef.current = true;
