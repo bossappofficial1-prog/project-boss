@@ -1,7 +1,7 @@
 "use client";
 
 import { LanguageType } from "@/constants";
-import { useMemo, useCallback, useSyncExternalStore } from "react";
+import { useMemo, useCallback, useSyncExternalStore, useEffect, useState } from "react";
 import enMessages from "../messages/en.json";
 
 const VALID_LOCALES: LanguageType[] = ["id", "en"];
@@ -39,7 +39,15 @@ export function setLocale(locale: LanguageType) {
 }
 
 export function useLocale(): LanguageType {
-    return useSyncExternalStore(subscribeLocale, getLocaleSnapshot, getLocaleServerSnapshot);
+    const locale = useSyncExternalStore(subscribeLocale, getLocaleSnapshot, getLocaleServerSnapshot);
+    const [isHydrated, setIsHydrated] = useState(false);
+
+    useEffect(() => {
+        setIsHydrated(true);
+    }, []);
+
+    // Avoid hydration mismatches by keeping server and first client render in sync.
+    return isHydrated ? locale : getLocaleServerSnapshot();
 }
 
 export function useLocalizedPath() {
