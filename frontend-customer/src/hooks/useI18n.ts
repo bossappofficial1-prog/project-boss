@@ -40,6 +40,10 @@ export function setLocale(locale: LanguageType) {
 
 export function useLocale(): LanguageType {
     const hasHydratedRef = useRef(false);
+    const getClientSnapshot = useCallback(
+        () => (hasHydratedRef.current ? getLocaleSnapshot() : getLocaleServerSnapshot()),
+        []
+    );
 
     useEffect(() => {
         hasHydratedRef.current = true;
@@ -50,7 +54,7 @@ export function useLocale(): LanguageType {
     // external store to reflect cookie changes.
     return useSyncExternalStore(
         subscribeLocale,
-        () => (hasHydratedRef.current ? getLocaleSnapshot() : getLocaleServerSnapshot()),
+        getClientSnapshot,
         getLocaleServerSnapshot
     );
 }
