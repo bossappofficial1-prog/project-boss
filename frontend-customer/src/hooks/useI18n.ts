@@ -1,7 +1,7 @@
 "use client";
 
 import { LanguageType } from "@/constants";
-import { useMemo, useCallback, useSyncExternalStore } from "react";
+import { useMemo, useCallback, useSyncExternalStore, useEffect, useRef, useState } from "react";
 import enMessages from "../messages/en.json";
 
 const VALID_LOCALES: LanguageType[] = ["id", "en"];
@@ -39,7 +39,23 @@ export function setLocale(locale: LanguageType) {
 }
 
 export function useLocale(): LanguageType {
-    return useSyncExternalStore(subscribeLocale, getLocaleSnapshot, getLocaleServerSnapshot);
+    const hasHydratedRef = useRef(false);
+    const [, forceRerender] = useState(0);
+    const getCurrentSnapshot = () => (hasHydratedRef.current ? getLocaleSnapshot() : getLocaleServerSnapshot());
+
+    useEffect(() => {
+        hasHydratedRef.current = true;
+        forceRerender((count) => count + 1);
+    }, []);
+
+    // Keep the very first client render aligned with the server snapshot to prevent hydration errors
+    // when the locale cookie differs between server and client. Subsequent renders rely on the
+    // external store to reflect cookie changes.
+    return useSyncExternalStore(
+        subscribeLocale,
+        getCurrentSnapshot,
+        getLocaleServerSnapshot
+    );
 }
 
 export function useLocalizedPath() {
