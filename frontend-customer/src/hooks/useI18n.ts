@@ -40,12 +40,12 @@ export function setLocale(locale: LanguageType) {
 
 export function useLocale(): LanguageType {
     const hasHydratedRef = useRef(false);
-    const [, forceRerender] = useState(false);
-    const getClientSnapshot = () => (hasHydratedRef.current ? getLocaleSnapshot() : getLocaleServerSnapshot());
+    const [, forceRerender] = useState(0);
+    const getCurrentSnapshot = () => (hasHydratedRef.current ? getLocaleSnapshot() : getLocaleServerSnapshot());
 
     useEffect(() => {
         hasHydratedRef.current = true;
-        forceRerender(true);
+        forceRerender((count) => count + 1);
     }, []);
 
     // Keep the very first client render aligned with the server snapshot to prevent hydration errors
@@ -53,7 +53,7 @@ export function useLocale(): LanguageType {
     // external store to reflect cookie changes.
     return useSyncExternalStore(
         subscribeLocale,
-        getClientSnapshot,
+        getCurrentSnapshot,
         getLocaleServerSnapshot
     );
 }
