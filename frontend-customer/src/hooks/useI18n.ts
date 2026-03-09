@@ -1,7 +1,7 @@
 "use client";
 
 import { LanguageType } from "@/constants";
-import { useMemo, useCallback, useSyncExternalStore, useEffect, useState } from "react";
+import { useMemo, useCallback, useSyncExternalStore, useEffect, useRef, useState } from "react";
 import enMessages from "../messages/en.json";
 
 const VALID_LOCALES: LanguageType[] = ["id", "en"];
@@ -39,14 +39,16 @@ export function setLocale(locale: LanguageType) {
 }
 
 export function useLocale(): LanguageType {
-    const [hasHydrated, setHasHydrated] = useState(false);
+    const hasHydratedRef = useRef(false);
+    const [, forceRerender] = useState(false);
     const getClientSnapshot = useCallback(
-        () => (hasHydrated ? getLocaleSnapshot() : getLocaleServerSnapshot()),
-        [hasHydrated]
+        () => (hasHydratedRef.current ? getLocaleSnapshot() : getLocaleServerSnapshot()),
+        []
     );
 
     useEffect(() => {
-        setHasHydrated(true);
+        hasHydratedRef.current = true;
+        forceRerender(true);
     }, []);
 
     // Keep the very first client render aligned with the server snapshot to prevent hydration errors
