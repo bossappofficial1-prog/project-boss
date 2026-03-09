@@ -17,7 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import ThemeToggle from '../ThemeToggle';
 import ConfirmationModal from '@/components/ui/confirmation-modal';
 import { useUserData } from '@/hooks/useUserData';
-import ReceiptSetting from '../ReceiptSetting';
+// import ReceiptSetting from '../ReceiptSetting';
 import {
   Menu,
   PanelLeftClose,
@@ -107,9 +107,6 @@ export default function Header() {
       <div className="flex items-center gap-2 lg:gap-3">
         {/* Theme Toggle */}
         <ThemeToggle />
-
-        {/* Receipt Setting */}
-        <ReceiptSetting outletId={selectedOutlet?.id} />
 
         <Separator orientation="vertical" className="h-8 hidden sm:block" />
 

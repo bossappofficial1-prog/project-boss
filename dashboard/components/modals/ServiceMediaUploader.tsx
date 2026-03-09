@@ -31,6 +31,7 @@ type Props = {
     value: MediaItem[];
     onChange: (items: MediaItem[]) => void;
     maxItems?: number;
+    onUploadingChange?: (loading: boolean) => void
 };
 
 const ACCEPTED_IMAGE = ".jpg,.jpeg,.png,.webp,.gif";
@@ -42,6 +43,7 @@ export default function ServiceMediaUploader({
     value,
     onChange,
     maxItems = 5,
+    onUploadingChange
 }: Props) {
     const [uploading, setUploading] = useState(false);
     const [embedUrl, setEmbedUrl] = useState("");
@@ -51,6 +53,11 @@ export default function ServiceMediaUploader({
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const remaining = maxItems - value.length;
+
+    const setUploadingState = (state: boolean) => {
+        setUploading(state);
+        onUploadingChange?.(state);
+    };
 
     const handleFileUpload = useCallback(
         async (files: FileList | null) => {
@@ -72,7 +79,7 @@ export default function ServiceMediaUploader({
                 }
             }
 
-            setUploading(true);
+            setUploadingState(true);
             try {
                 const newItems: MediaItem[] = [];
                 for (const file of fileArray) {
@@ -89,7 +96,7 @@ export default function ServiceMediaUploader({
             } catch (err: any) {
                 toast.error(err?.response?.data?.message || "Gagal upload media");
             } finally {
-                setUploading(false);
+                setUploadingState(false);
                 if (fileInputRef.current) fileInputRef.current.value = "";
             }
         },

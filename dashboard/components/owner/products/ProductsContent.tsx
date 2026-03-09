@@ -228,7 +228,7 @@ export default function ProductsContent() {
                 )}
 
                 {/* Overview Cards */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
                     <OverviewCard
                         icon={<Boxes className="h-5 w-5" />}
                         label="Total Produk"

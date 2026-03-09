@@ -39,6 +39,10 @@ async function startServer(port: number) {
 
         await connectRabbitMQ();
 
+        server.requestTimeout = 30 * 60 * 1000; // 30 menit
+        server.headersTimeout = 30 * 60 * 1000;
+        server.keepAliveTimeout = 30 * 60 * 1000;
+
         server.listen(port, () => {
             console.log(`• Server running on:`);
             console.log(`   Local:   http://localhost:${port}`);

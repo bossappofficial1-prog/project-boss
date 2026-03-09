@@ -34,6 +34,7 @@ export const uploadApi = {
     form.append('media', file);
     const response = await apiClient.post('/upload/product/media', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 30 * 60 * 1000
     });
     return response.data.data;
   },

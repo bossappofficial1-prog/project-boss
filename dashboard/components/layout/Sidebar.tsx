@@ -34,6 +34,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import { cn } from '@/lib/utils';
 import { MENU_GROUPS } from './sidebar/sidebar';
@@ -76,7 +84,6 @@ export default function AppSidebar() {
       return useOutletContext();
     } catch {
       if (typeof window !== 'undefined') {
-        const savedOutletId = localStorage.getItem('selectedOutlet');
         const oldSavedOutlet = localStorage.getItem('selectedOutletId');
 
         if (oldSavedOutlet) {
@@ -174,7 +181,6 @@ export default function AppSidebar() {
       )
     );
     return () => timeouts.forEach((timeout) => clearTimeout(timeout));
-    // router from next/navigation is stable; dependency kept to satisfy ESLint rule react-hooks/exhaustive-deps
   }, [router, sidebarHrefs]);
 
   const handleOutletChange = (outletId: string) => {
@@ -237,7 +243,7 @@ export default function AppSidebar() {
 
       {/* Navigation Content */}
       <SidebarContent className="bg-gradient-to-b from-red-800 to-red-900 dark:from-red-900 dark:to-red-950">
-        {MENU_GROUPS.map((group, groupIndex) => (
+        {MENU_GROUPS.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel className="text-red-200 dark:text-red-200 uppercase text-xs font-semibold tracking-wider">
               {!isCollapsed && group.label}
@@ -251,49 +257,104 @@ export default function AppSidebar() {
                     (subItem) => pathname === subItem.href
                   );
 
-                  // Dropdown menu item
+                  // Dropdown/Collapsible menu item for items with subItems
                   if (item.subItems) {
                     const isExpanded = expandedMenus[item.id];
 
-                    return (
-                      <Collapsible
-                        key={item.id}
-                        open={isExpanded && !isCollapsed}
-                        onOpenChange={() => !isCollapsed && toggleMenu(item.id)}
-                      >
-                        <SidebarMenuItem>
-                          <TooltipProvider delayDuration={300}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <CollapsibleTrigger asChild>
-                                  <SidebarMenuButton
-                                    className={cn(
-                                      'group h-11',
-                                      (hasActiveSubItem || isExpanded) && !isCollapsed
-                                        ? 'bg-white/15 text-white hover:bg-white/20'
-                                        : 'text-red-100 hover:bg-white/10 hover:text-white'
-                                    )}
-                                  >
-                                    <Icon className="w-5 h-5" />
-                                    <span className="flex-1">{item.name}</span>
-                                    {!isCollapsed && (
-                                      <ChevronDown
-                                        className={cn(
-                                          'w-4 h-4 transition-transform',
-                                          isExpanded && 'rotate-180'
-                                        )}
-                                      />
-                                    )}
-                                  </SidebarMenuButton>
-                                </CollapsibleTrigger>
-                              </TooltipTrigger>
-                              {isCollapsed && (
+                    // --- JIKA COLLAPSED: Render DropdownMenu Mengambang ---
+                    if (isCollapsed) {
+                      return (
+                        <SidebarMenuItem key={item.id}>
+                          <DropdownMenu>
+                            <TooltipProvider delayDuration={300}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <DropdownMenuTrigger asChild>
+                                    <SidebarMenuButton
+                                      className={cn(
+                                        'group h-11',
+                                        hasActiveSubItem
+                                          ? 'bg-white/15 text-white hover:bg-white/20'
+                                          : 'text-red-100 hover:bg-white/10 hover:text-white'
+                                      )}
+                                    >
+                                      <Icon className="w-5 h-5" />
+                                      <span className="flex-1">{item.name}</span>
+                                    </SidebarMenuButton>
+                                  </DropdownMenuTrigger>
+                                </TooltipTrigger>
                                 <TooltipContent side="right">
                                   <p>{item.name}</p>
                                 </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <DropdownMenuContent
+                              side="right"
+                              align="start"
+                              sideOffset={16}
+                              className="w-48 bg-gradient-to-b from-red-800 to-red-900 border-red-700/50 text-red-100 shadow-xl rounded-xl p-1 z-[100]"
+                            >
+                              <DropdownMenuLabel className="text-white px-2 py-1.5 text-sm font-semibold">
+                                {item.name}
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator className="bg-red-700/50 mx-1 mb-1" />
+                              {item.subItems.map((subItem) => {
+                                const isSubActive = pathname === subItem.href;
+                                return (
+                                  <DropdownMenuItem key={subItem.href} asChild>
+                                    <Link
+                                      href={subItem.href}
+                                      className={cn(
+                                        "cursor-pointer flex items-center w-full px-2 py-1.5 text-sm rounded-md outline-none transition-colors",
+                                        isSubActive
+                                          ? "bg-white text-red-700 font-medium"
+                                          : "hover:bg-white/10 focus:bg-white/10 hover:text-white focus:text-white"
+                                      )}
+                                    >
+                                      <span>{subItem.name}</span>
+                                      {subItem.badge && (
+                                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0 bg-red-950/40 text-white border-none">
+                                          {subItem.badge}
+                                        </Badge>
+                                      )}
+                                    </Link>
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </SidebarMenuItem>
+                      );
+                    }
+
+                    // --- JIKA TIDAK COLLAPSED: Render standard Collapsible ---
+                    return (
+                      <Collapsible
+                        key={item.id}
+                        open={isExpanded}
+                        onOpenChange={() => toggleMenu(item.id)}
+                      >
+                        <SidebarMenuItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton
+                              className={cn(
+                                'group h-11',
+                                (hasActiveSubItem || isExpanded)
+                                  ? 'bg-white/15 text-white hover:bg-white/20'
+                                  : 'text-red-100 hover:bg-white/10 hover:text-white'
                               )}
-                            </Tooltip>
-                          </TooltipProvider>
+                            >
+                              <Icon className="w-5 h-5" />
+                              <span className="flex-1">{item.name}</span>
+                              <ChevronDown
+                                className={cn(
+                                  'w-4 h-4 transition-transform',
+                                  isExpanded && 'rotate-180'
+                                )}
+                              />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
 
                           <CollapsibleContent>
                             <SidebarMenuSub className="ml-4 border-l-2 border-white/20">
@@ -330,7 +391,7 @@ export default function AppSidebar() {
                     );
                   }
 
-                  // Regular menu item
+                  // Regular menu item (no subitems)
                   return (
                     <SidebarMenuItem key={item.id}>
                       <TooltipProvider delayDuration={300}>
@@ -383,7 +444,7 @@ export default function AppSidebar() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center justify-center w-full h-10 text-red-100 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                  <div className="flex items-center justify-center w-full h-10 text-red-100 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
                     <Zap className="w-4 h-4" />
                   </div>
                 </TooltipTrigger>
@@ -393,7 +454,7 @@ export default function AppSidebar() {
               </Tooltip>
             </TooltipProvider>
           ) : (
-            <div className="flex items-center justify-center gap-2 text-red-100 bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors">
+            <div className="flex items-center justify-center gap-2 text-red-100 bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors cursor-pointer">
               <Zap className="w-4 h-4" />
               <span className="text-xs font-medium">BOSS Dashboard v1.0</span>
             </div>
