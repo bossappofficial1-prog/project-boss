@@ -196,7 +196,7 @@ export function RescheduleDialog({ entry, open, onOpenChange, onSuccess }: Resch
                                         let sublabel = formatSlotTime(slot.endTime);
                                         if (slot.computedStatus === "PAST") { label = "Lewat"; sublabel = ""; }
                                         else if (slot.computedStatus === "BLOCKED") { label = "Blocked"; sublabel = ""; }
-                                        else if (slot.computedStatus === "BOOKED") { label = "Penuh"; sublabel = ""; }
+                                        else if (slot.computedStatus === "BOOKED") { label = "Booked"; sublabel = ""; }
                                         else if (isCurrentBooking) { label = "Saat ini"; sublabel = ""; }
 
                                         return (
@@ -209,7 +209,9 @@ export function RescheduleDialog({ entry, open, onOpenChange, onSuccess }: Resch
                                                     "flex flex-col h-auto py-3 px-2 w-full gap-0.5",
                                                     isCurrentBooking && "border-primary ring-1 ring-primary bg-primary/5",
                                                     isSelected && "bg-green-500 hover:bg-green-600 text-white border-green-500",
-                                                    (slot.computedStatus === "BOOKED" || slot.computedStatus === "BLOCKED") &&
+                                                    slot.computedStatus === "BLOCKED" &&
+                                                    "disabled:bg-orange-500 disabled:opacity-90 text-white disabled:hover:bg-orange-600",
+                                                    slot.computedStatus === "BOOKED" &&
                                                     "disabled:bg-red-500 disabled:opacity-90 text-white disabled:hover:bg-red-600",
                                                 )}
                                             >
