@@ -254,7 +254,8 @@ export function ScheduleModal({
                             "border-primary ring-1 ring-primary bg-primary/5": isCurrentCartItem && !isSelected,
                             // "opacity-50 bg-muted text-muted-foreground border-transparent": isDisabled && !isCurrentCartItem,
                             "bg-green-500 hover:bg-green-600": isSelected,
-                            "disabled:bg-red-500 disabled:opacity-95 dark:disabled:bg-red-500 dark:disabled:opacity-95 text-white disabled:hover:bg-red-600": slot.computedStatus === 'BLOCKED' || slot.computedStatus === 'BOOKED'
+                            "disabled:bg-orange-500 disabled:opacity-95 dark:disabled:bg-orange-500 dark:disabled:opacity-95 text-white disabled:hover:bg-orange-600": slot.computedStatus === 'BLOCKED',
+                            "disabled:bg-red-500 disabled:opacity-95 dark:disabled:bg-red-500 dark:disabled:opacity-95 text-white disabled:hover:bg-red-600": slot.computedStatus === 'BOOKED'
                           }
                         )}
                       >

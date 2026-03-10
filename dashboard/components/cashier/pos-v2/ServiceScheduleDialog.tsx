@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { posV2Api } from "@/lib/apis/pos-v2";
 import type { PosV2Product, BookingSlot } from "@/lib/apis/pos-v2";
+import { cn } from "@/lib/utils";
 
 export interface ScheduleSelection {
     slotId: string;
@@ -182,6 +183,11 @@ export function ServiceScheduleDialog({
                                     const isPast = new Date(slot.startTime).getTime() <= now;
                                     const isDisabled = slot.status !== "AVAILABLE" || isPast;
 
+                                    let slotLabel = "Tersedia";
+                                    if (isPast) slotLabel = "Lewat";
+                                    else if (slot.status === "BLOCKED") slotLabel = "Blocked";
+                                    else if (slot.status !== "AVAILABLE") slotLabel = "Booked";
+
                                     return (
                                         <Button
                                             key={slot.id}
@@ -189,12 +195,17 @@ export function ServiceScheduleDialog({
                                             variant={isSelected ? "default" : "outline"}
                                             onClick={() => { if (!isDisabled) { setSelectedSlotId(slot.id); setStaffId(""); } }}
                                             disabled={isDisabled}
-                                            className={`justify-between ${isSelected ? "bg-blue-600 text-white hover:bg-blue-500" : ""}`}>
+                                            className={cn(
+                                                "justify-between",
+                                                isSelected && "bg-blue-600 text-white hover:bg-blue-500",
+                                                isDisabled && slot.status === "BLOCKED" && "disabled:bg-orange-500 disabled:opacity-90 text-white disabled:hover:bg-orange-600",
+                                                isDisabled && slot.status === "BOOKED" && "disabled:bg-red-500 disabled:opacity-90 text-white disabled:hover:bg-red-600",
+                                            )}>
                                             <span className="text-sm font-semibold">
                                                 {formatTimeRange(slot.startTime, slot.endTime)}
                                             </span>
                                             <Badge variant={isDisabled ? "outline" : "secondary"}>
-                                                {isPast ? "Lewat" : slot.status === "AVAILABLE" ? "Tersedia" : "Penuh"}
+                                                {slotLabel}
                                             </Badge>
                                         </Button>
                                     );
