@@ -79,6 +79,9 @@ export class BookingRepository {
         orderItemId: true,
         productServiceId: true,
       },
+      orderBy: {
+        startTime: "asc",
+      },
     });
 
     return slots;
