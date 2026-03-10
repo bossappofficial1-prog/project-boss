@@ -47,6 +47,13 @@ export async function updateBusinessService(id: string, data: UpdateBusinessInpu
         throw new AppError("Anda tidak berhak mengubah bisnis ini.", HttpStatus.FORBIDDEN);
     }
 
+    if (data.name && data.name.trim() !== business.name) {
+        const nameExists = await BusinessRepository.findByName(data.name.trim(), id);
+        if (nameExists) {
+            throw new AppError(`Nama bisnis "${data.name.trim()}" sudah digunakan oleh bisnis lain.`, HttpStatus.CONFLICT);
+        }
+    }
+
     const { defaultTransactionFeeBearer, ...payload } = data
     const updatedBusiness = await BusinessRepository.update(id, payload);
 

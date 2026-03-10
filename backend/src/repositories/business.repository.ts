@@ -66,6 +66,15 @@ export class BusinessRepository {
         return db.business.findMany();
     }
 
+    static async findByName(name: string, excludeId?: string): Promise<Business | null> {
+        return db.business.findFirst({
+            where: {
+                name,
+                ...(excludeId && { id: { not: excludeId } }),
+            },
+        });
+    }
+
     static async update(id: string, data: Omit<UpdateBusinessInput, 'defaultTransactionFeeBearer'>): Promise<Business> {
         return db.business.update({
             where: { id },
