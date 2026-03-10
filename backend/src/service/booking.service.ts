@@ -97,8 +97,9 @@ export async function getBookingSlotByProductService(
 
   let slots = await BookingRepository.getSlotsByProductServiceId(productServiceId, date);
 
-  // Generate slots if they haven't been created yet for this date
-  if (!slots.length) {
+  // Generate slots if there are no AVAILABLE slots (e.g., they were cleared during a service schedule update)
+  const hasAvailableSlots = slots.some((s) => s.status === "AVAILABLE");
+  if (!hasAvailableSlots) {
     const serviceDurationMinutes = product.service?.durationMinutes ?? 60;
 
     await generateSlotsForDate({
@@ -106,6 +107,7 @@ export async function getBookingSlotByProductService(
       serviceOperatingHours: product.service,
       serviceDurationMinutes,
       date,
+      existingSlots: slots,
     });
 
     slots = await BookingRepository.getSlotsByProductServiceId(productServiceId, date);
@@ -154,6 +156,7 @@ type GenerateSlotsForDateParams = {
   serviceOperatingHours: any; // ProductService with operating hours
   serviceDurationMinutes: number;
   date: Date;
+  existingSlots?: { startTime: Date | string; endTime: Date | string }[];
 };
 
 /**
@@ -164,6 +167,7 @@ export async function generateSlotsForDate({
   serviceOperatingHours,
   serviceDurationMinutes,
   date,
+  existingSlots,
 }: GenerateSlotsForDateParams) {
   const product = await db.product.findUnique({
     where: { id: productId },
@@ -219,13 +223,22 @@ export async function generateSlotsForDate({
   while (add(slotStart, { minutes: serviceDurationMinutes }) <= slotClose) {
     const slotEnd = add(slotStart, { minutes: serviceDurationMinutes });
 
-    slotsToCreate.push({
-      productServiceId: product.service.id,
-      date,
-      startTime: slotStart,
-      endTime: slotEnd,
-      status: "AVAILABLE",
+    // Check if the generated slot overlaps with any existing slots (e.g., BOOKED slots)
+    const isOverlapping = existingSlots?.some((s) => {
+      const sStart = new Date(s.startTime);
+      const sEnd = new Date(s.endTime);
+      return slotStart < sEnd && slotEnd > sStart;
     });
+
+    if (!isOverlapping) {
+      slotsToCreate.push({
+        productServiceId: product.service.id,
+        date,
+        startTime: slotStart,
+        endTime: slotEnd,
+        status: "AVAILABLE",
+      });
+    }
 
     slotStart = slotEnd;
   }
