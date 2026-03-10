@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export type PaymentMethodType = "cash" | "qris";
 
@@ -33,6 +34,14 @@ export function PaymentSection({
     isLoadingQris,
 }: PaymentSectionProps) {
     const change = cashReceived - total;
+    const [showQrisModal, setShowQrisModal] = React.useState(false);
+
+    const handleQrisMethodChange = () => {
+        onMethodChange("qris");
+        if (qrisImageUrl) {
+            setShowQrisModal(true);
+        }
+    };
 
     const handleQuickAmount = (amount: number) => {
         onCashReceivedChange(amount);
@@ -61,7 +70,7 @@ export function PaymentSection({
                 </button>
                 <button
                     type="button"
-                    onClick={() => onMethodChange("qris")}
+                    onClick={handleQrisMethodChange}
                     className={cn(
                         "flex items-center gap-2 rounded-md border p-3 text-sm font-medium transition-all",
                         method === "qris"
@@ -140,9 +149,11 @@ export function PaymentSection({
                         </div>
                     )}
                     {!isLoadingQris && qrisImageUrl && (
-                        <div className="flex flex-col items-center gap-2 rounded-md border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                        <div
+                            className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-slate-200 bg-white p-4 transition-colors hover:border-blue-400 dark:border-slate-700 dark:bg-slate-900"
+                            onClick={() => setShowQrisModal(true)}>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Scan QR berikut untuk pembayaran
+                                Tap untuk perbesar · Scan QR berikut untuk pembayaran
                             </p>
                             <div className="relative h-56 w-56">
                                 <Image
@@ -171,6 +182,54 @@ export function PaymentSection({
                     )}
                 </div>
             )}
+
+            {/* QRIS Popup Modal */}
+            <Dialog open={showQrisModal} onOpenChange={setShowQrisModal}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold">Pembayaran QRIS</DialogTitle>
+                        <DialogDescription>
+                            Scan QR code berikut untuk melakukan pembayaran
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        {qrisImageUrl && (
+                            <>
+                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                                    <div className="relative w-full max-w-[360px] mx-auto aspect-square bg-white rounded-lg shadow-lg p-4">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={qrisImageUrl}
+                                            alt="QRIS"
+                                            className="w-full h-full object-contain"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/30">
+                                    <p className="mb-1 text-sm font-semibold text-blue-900 dark:text-blue-200">
+                                        Total Pembayaran:
+                                    </p>
+                                    <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                                        Rp {fmt.format(total)}
+                                    </p>
+                                </div>
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+                                    <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        Cara Pembayaran:
+                                    </p>
+                                    <ol className="list-decimal list-inside space-y-1 text-sm text-slate-600 dark:text-slate-400">
+                                        <li>Buka aplikasi mobile banking atau e-wallet Anda</li>
+                                        <li>Pilih menu Scan QR atau QRIS</li>
+                                        <li>Scan kode QR di atas</li>
+                                        <li>Masukkan nominal pembayaran</li>
+                                        <li>Konfirmasi pembayaran</li>
+                                    </ol>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
