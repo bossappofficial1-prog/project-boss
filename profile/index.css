@@ -589,10 +589,14 @@ nav {
 
 /* ── Team ───────────────────────────────────────────────── */
 .team-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 24px;
-    margin-top: 56px;
+}
+
+.team-card {
+    width: calc(33.333% - 24px);
 }
 
 .team-card {
