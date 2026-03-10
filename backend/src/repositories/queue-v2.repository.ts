@@ -1,28 +1,43 @@
-import { Prisma, Order, GuestCustomer, OrderItem, Product, Outlet, Transaction, Staff, BookingSlot, ProductService, ProductGoods } from "@prisma/client";
+import {
+  Prisma,
+  Order,
+  GuestCustomer,
+  OrderItem,
+  Product,
+  Outlet,
+  Transaction,
+  Staff,
+  BookingSlot,
+  ProductService,
+  ProductGoods,
+} from "@prisma/client";
 import { db } from "../config/prisma";
 import { parseAndForceIsoUtc } from "./helper";
 
-export type DeepIsoDate<T> = T extends Date ? string :
-    T extends Array<infer U> ? Array<DeepIsoDate<U>> :
-    T extends object ? { [K in keyof T]: DeepIsoDate<T[K]> } :
-    T;
+export type DeepIsoDate<T> = T extends Date
+  ? string
+  : T extends Array<infer U>
+    ? Array<DeepIsoDate<U>>
+    : T extends object
+      ? { [K in keyof T]: DeepIsoDate<T[K]> }
+      : T;
 
 export type ProductWithDetails = Product & {
-    service: ProductService | null;
-    goods: ProductGoods | null;
+  service: ProductService | null;
+  goods: ProductGoods | null;
 };
 
 export type QueueItemWithProduct = OrderItem & {
-    product: ProductWithDetails;
-    bookingSlot: BookingSlot | null;
+  product: ProductWithDetails;
+  bookingSlot: BookingSlot | null;
 };
 
 export type QueueOrderWithIncludesRaw = Order & {
-    guestCustomer: GuestCustomer | null;
-    outlet: Outlet | null;
-    transaction: Transaction | null;
-    handledByStaff: Staff | null;
-    items: QueueItemWithProduct[];
+  guestCustomer: GuestCustomer | null;
+  outlet: Outlet | null;
+  transaction: Transaction | null;
+  handledByStaff: Staff | null;
+  items: QueueItemWithProduct[];
 };
 
 export type QueueOrderWithIncludes = DeepIsoDate<QueueOrderWithIncludesRaw>;
@@ -90,11 +105,40 @@ const sqlQueueBaseSelect = Prisma.sql`
 `;
 
 export class QueueV2Repository {
+  static async getActiveQueueByOutlet(
+    outletId: string,
+    q?: string,
+    dateStr?: string,
+  ): Promise<QueueOrderWithIncludes[]> {
+    let searchFilter = Prisma.empty;
+    if (q) {
+      const searchTerm = `%${q}%`;
+      searchFilter = Prisma.sql` AND (
+                o.id ILIKE ${searchTerm} OR 
+                EXISTS (
+                    SELECT 1 FROM "GuestCustomer" gc 
+                    WHERE gc.id = o."guestCustomerId" 
+                    AND (gc.name ILIKE ${searchTerm} OR gc.phone ILIKE ${searchTerm})
+                )
+            )`;
+    }
 
-    static async getActiveQueueByOutlet(outletId: string, q?: string): Promise<QueueOrderWithIncludes[]> {
-        const searchFilter = q ? Prisma.sql` AND o.id ILIKE ${'%' + q + '%'}` : Prisma.empty;
+    let dateFilter = Prisma.empty;
+    if (dateStr) {
+      const targetDate = new Date(dateStr);
+      const startOfDay = new Date(targetDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
 
-        const rawOrders = await db.$queryRaw<any[]>`
+      // We search bookingDate or createdAt
+      dateFilter = Prisma.sql` AND (
+                (o."bookingDate" IS NOT NULL AND o."bookingDate" >= ${startOfDay} AND o."bookingDate" <= ${endOfDay})
+                OR (o."bookingDate" IS NULL AND o."createdAt" >= ${startOfDay} AND o."createdAt" <= ${endOfDay})
+            )`;
+    }
+
+    const rawOrders = await db.$queryRaw<any[]>`
             ${sqlQueueBaseSelect}
             WHERE o."outletId" = ${outletId}
             AND o."orderStatus" IN ('AWAITING_PAYMENT', 'PROCESSING', 'CONFIRMED', 'READY', 'ON_GOING')
@@ -104,23 +148,43 @@ export class QueueV2Repository {
                 WHERE oi."orderId" = o.id AND p.type = 'SERVICE'
             )
             ${searchFilter}
+            ${dateFilter}
             ORDER BY o."createdAt" ASC
         `;
 
-        return parseAndForceIsoUtc(rawOrders);
+    return parseAndForceIsoUtc(rawOrders);
+  }
+
+  static async getCompletedTodayByOutlet(
+    outletId: string,
+    q?: string,
+    dateStr?: string,
+  ): Promise<QueueOrderWithIncludes[]> {
+    const targetDate = dateStr ? new Date(dateStr) : new Date();
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    let searchFilter = Prisma.empty;
+    if (q) {
+      const searchTerm = `%${q}%`;
+      searchFilter = Prisma.sql` AND (
+                o.id ILIKE ${searchTerm} OR 
+                EXISTS (
+                    SELECT 1 FROM "GuestCustomer" gc 
+                    WHERE gc.id = o."guestCustomerId" 
+                    AND (gc.name ILIKE ${searchTerm} OR gc.phone ILIKE ${searchTerm})
+                )
+            )`;
     }
 
-    static async getCompletedTodayByOutlet(outletId: string, q?: string): Promise<QueueOrderWithIncludes[]> {
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-
-        const searchFilter = q ? Prisma.sql` AND o.id ILIKE ${'%' + q + '%'}` : Prisma.empty;
-
-        const rawOrders = await db.$queryRaw<any[]>`
+    const rawOrders = await db.$queryRaw<any[]>`
             ${sqlQueueBaseSelect}
             WHERE o."outletId" = ${outletId}
             AND o."orderStatus" = 'COMPLETED'
             AND o."updatedAt" >= ${startOfDay}
+            AND o."updatedAt" <= ${endOfDay}
             AND EXISTS (
                 SELECT 1 FROM "OrderItem" oi
                 JOIN "Product" p ON oi."productId" = p.id
@@ -130,19 +194,23 @@ export class QueueV2Repository {
             ORDER BY o."updatedAt" DESC
         `;
 
-        return parseAndForceIsoUtc(rawOrders);
-    }
+    return parseAndForceIsoUtc(rawOrders);
+  }
 
-    static async getCancelledTodayCount(outletId: string): Promise<number> {
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
+  static async getCancelledTodayCount(outletId: string, dateStr?: string): Promise<number> {
+    const targetDate = dateStr ? new Date(dateStr) : new Date();
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
 
-        const result = await db.$queryRaw<{ count: number }[]>`
+    const result = await db.$queryRaw<{ count: number }[]>`
             SELECT COUNT(o.id)::int as count
             FROM "Order" o
             WHERE o."outletId" = ${outletId}
             AND o."orderStatus" = 'CANCELLED'
             AND o."updatedAt" >= ${startOfDay}
+            AND o."updatedAt" <= ${endOfDay}
             AND EXISTS (
                 SELECT 1 FROM "OrderItem" oi
                 JOIN "Product" p ON oi."productId" = p.id
@@ -150,65 +218,65 @@ export class QueueV2Repository {
             )
         `;
 
-        return result[0]?.count || 0;
-    }
+    return result[0]?.count || 0;
+  }
 
-    static async getOrderById(orderId: string): Promise<QueueOrderWithIncludes | null> {
-        const rawOrders = await db.$queryRaw<any[]>`
+  static async getOrderById(orderId: string): Promise<QueueOrderWithIncludes | null> {
+    const rawOrders = await db.$queryRaw<any[]>`
             ${sqlQueueBaseSelect}
             WHERE o.id = ${orderId}
             LIMIT 1
         `;
 
-        const parsed = parseAndForceIsoUtc(rawOrders);
-        return parsed[0] || null;
-    }
+    const parsed = parseAndForceIsoUtc(rawOrders);
+    return parsed[0] || null;
+  }
 
-    static async rescheduleBooking(
-        orderId: string,
-        newSlotId: string,
-        newDate: Date,
-        newStartTime: Date,
-        newEndTime: Date,
-    ): Promise<QueueOrderWithIncludes | null> {
-        await db.$transaction(async (tx) => {
-            // Cari OrderItem SERVICE yang punya BookingSlot (slot lama)
-            const orderItem = await tx.orderItem.findFirst({
-                where: {
-                    orderId,
-                    product: { type: "SERVICE" },
-                    bookingSlot: { isNot: null },
-                },
-                include: { bookingSlot: true },
-            });
+  static async rescheduleBooking(
+    orderId: string,
+    newSlotId: string,
+    newDate: Date,
+    newStartTime: Date,
+    newEndTime: Date,
+  ): Promise<QueueOrderWithIncludes | null> {
+    await db.$transaction(async (tx) => {
+      // Cari OrderItem SERVICE yang punya BookingSlot (slot lama)
+      const orderItem = await tx.orderItem.findFirst({
+        where: {
+          orderId,
+          product: { type: "SERVICE" },
+          bookingSlot: { isNot: null },
+        },
+        include: { bookingSlot: true },
+      });
 
-            // 1. Bebaskan slot lama → AVAILABLE
-            if (orderItem?.bookingSlot) {
-                await tx.bookingSlot.update({
-                    where: { id: orderItem.bookingSlot.id },
-                    data: {
-                        status: "AVAILABLE",
-                        orderItemId: null,
-                    },
-                });
-            }
-
-            // 2. Kunci slot baru → BOOKED dan hubungkan ke orderItem
-            await tx.bookingSlot.update({
-                where: { id: newSlotId },
-                data: {
-                    status: "BOOKED",
-                    orderItemId: orderItem?.id ?? null,
-                },
-            });
-
-            // 3. Update bookingDate pada Order
-            await tx.order.update({
-                where: { id: orderId },
-                data: { bookingDate: newDate },
-            });
+      // 1. Bebaskan slot lama → AVAILABLE
+      if (orderItem?.bookingSlot) {
+        await tx.bookingSlot.update({
+          where: { id: orderItem.bookingSlot.id },
+          data: {
+            status: "AVAILABLE",
+            orderItemId: null,
+          },
         });
+      }
 
-        return this.getOrderById(orderId);
-    }
+      // 2. Kunci slot baru → BOOKED dan hubungkan ke orderItem
+      await tx.bookingSlot.update({
+        where: { id: newSlotId },
+        data: {
+          status: "BOOKED",
+          orderItemId: orderItem?.id ?? null,
+        },
+      });
+
+      // 3. Update bookingDate pada Order
+      await tx.order.update({
+        where: { id: orderId },
+        data: { bookingDate: newDate },
+      });
+    });
+
+    return this.getOrderById(orderId);
+  }
 }
