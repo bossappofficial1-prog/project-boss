@@ -9,11 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     outputs:
-      any_changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' || steps.check-changes.outputs.dashboard == 'true' }}
+      any_changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' || steps.check-changes.outputs.dashboard == 'true' || steps.check-changes.outputs.profile == 'true' }}
       backend_changed: ${{ steps.check-changes.outputs.backend }}
       consumer_changed: ${{ steps.check-changes.outputs.consumer }}
       frontend_customer_changed: ${{ steps.check-changes.outputs.frontend-customer }}
       dashboard_changed: ${{ steps.check-changes.outputs.dashboard }}
+      profile_changed: ${{ steps.check-changes.outputs.profile }}
 
     steps:
       - name: Checkout Repository
@@ -42,6 +43,8 @@ jobs:
               - 'frontend-customer/**'
             dashboard:
               - 'dashboard/**'
+            profile:
+              - 'profile/**'
 
       # Langkah debugging untuk melihat output dari paths-filter
       - name: Debug paths filter output
@@ -50,7 +53,8 @@ jobs:
           echo "Consumer changed: ${{ steps.check-changes.outputs.consumer }}"
           echo "Frontend customer changed: ${{ steps.check-changes.outputs.frontend-customer }}"
           echo "Dashboard changed: ${{ steps.check-changes.outputs.dashboard }}"
-          echo "Any service changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' || steps.check-changes.outputs.dashboard == 'true' }}"
+          echo "Profile changed: ${{ steps.check-changes.outputs.profile }}"
+          echo "Any service changed: ${{ steps.check-changes.outputs.backend == 'true' || steps.check-changes.outputs.consumer == 'true' || steps.check-changes.outputs.frontend-customer == 'true' || steps.check-changes.outputs.dashboard == 'true' || steps.check-changes.outputs.profile == 'true' }}"
 
       # Build dan push Backend hanya jika ada perubahan di direktori 'backend'
       - name: Build and push Backend
@@ -122,6 +126,16 @@ jobs:
             NEXT_PUBLIC_CUSTOMER_URL=${{ vars.NEXT_PUBLIC_CUSTOMER_URL }}
             NEXT_PUBLIC_REMOTE_PATTERNS=${{ vars.NEXT_PUBLIC_REMOTE_PATTERNS }}
 
+      # Build dan push Profile hanya jika ada perubahan di direktori 'profile'
+      - name: Build and push Profile
+        if: steps.check-changes.outputs.profile == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./profile
+          file: ./profile/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/project-profile:production
+
       - name: Send Telegram Notification (Build)
         if: always()
         uses: appleboy/telegram-action@master
@@ -140,6 +154,7 @@ jobs:
             - Consumer: ${{ steps.check-changes.outputs.consumer }}
             - Frontend Customer: ${{ steps.check-changes.outputs.frontend-customer }}
             - Dashboard: ${{ steps.check-changes.outputs.dashboard }}
+            - Profile: ${{ steps.check-changes.outputs.profile }}
 
             [View Commit](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
 
@@ -218,6 +233,18 @@ jobs:
             echo "Pulling dashboard image..."
             docker compose -f docker-compose.prod.yml pull dashboard
 
+      - name: Pull Profile Image
+        if: needs.build_and_push.outputs.profile_changed == 'true'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_SSH_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/projects/boss-project/prod
+            echo "Pulling profile image..."
+            docker compose -f docker-compose.prod.yml pull profile
+
       - name: Start Docker Compose Services
         uses: appleboy/ssh-action@master
         with:
@@ -260,5 +287,6 @@ jobs:
             - Consumer: ${{ needs.build_and_push.outputs.consumer_changed }}
             - Frontend Customer: ${{ needs.build_and_push.outputs.frontend_customer_changed }}
             - Dashboard: ${{ needs.build_and_push.outputs.dashboard_changed }}
+            - Profile: ${{ needs.build_and_push.outputs.profile_changed }}
 
             [View Commit](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})

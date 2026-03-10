@@ -109,6 +109,14 @@ services:
     networks:
       - default
 
+  profile:
+    image: ${DOCKER_USER:-pitok}/project-profile:production
+    pull_policy: always
+    container_name: bossapp-profile
+    restart: always
+    networks:
+      - default
+
   nginx-proxy-manager:
     image: "jc21/nginx-proxy-manager:latest"
     container_name: nginx_proxy_manager
@@ -126,3 +134,4 @@ services:
       - backend
       - frontend-customer
       - dashboard
+      - profile
