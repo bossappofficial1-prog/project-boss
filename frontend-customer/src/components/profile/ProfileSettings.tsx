@@ -10,7 +10,7 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { useTranslations } from '@/hooks/useI18n';
-import { User, Phone, Sun, Moon, Monitor, Globe, Save, Heart, Receipt, Bookmark, ChevronRight, RotateCcw } from "lucide-react";
+import { User, Phone, Sun, Moon, Monitor, Globe, Save, Heart, Receipt, Bookmark, ChevronRight, RotateCcw, LayoutDashboard, ExternalLink } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useSavedProducts } from "@/hooks/useSavedProducts";
 import { STORAGE_PROFILE_KEY } from "@/constants";
@@ -209,6 +209,22 @@ export default function ProfileSettings() {
                     onClick={goToSavedProducts}
                     badge={isMounted && savedProductsCount > 0 ? savedProductsCount : undefined}
                 />
+                <QuickLink
+                    icon={<Globe className="w-4 h-4" />}
+                    iconBg="bg-green-50 text-green-600 dark:bg-green-500/10"
+                    label={t("bossapp.title")}
+                    subtitle={t("bossapp.subtitle")}
+                    onClick={() => window.open("https://bossapp.id", "_blank")}
+                    external
+                />
+                <QuickLink
+                    icon={<LayoutDashboard className="w-4 h-4" />}
+                    iconBg="bg-purple-50 text-purple-600 dark:bg-purple-500/10"
+                    label={t("dashboardBossapp.title")}
+                    subtitle={t("dashboardBossapp.subtitle")}
+                    onClick={() => window.open("https://dashboard.bossapp.id", "_blank")}
+                    external
+                />
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -340,6 +356,7 @@ function QuickLink({
     subtitle,
     onClick,
     badge,
+    external,
 }: {
     icon: React.ReactNode;
     iconBg: string;
@@ -347,6 +364,7 @@ function QuickLink({
     subtitle?: string;
     onClick: () => void;
     badge?: number;
+    external?: boolean;
 }) {
     return (
         <button
@@ -367,7 +385,10 @@ function QuickLink({
                         {badge > 99 ? "99+" : badge}
                     </span>
                 )}
-                <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
+                {external
+                    ? <ExternalLink className="w-4 h-4 text-muted-foreground/40" />
+                    : <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
+                }
             </div>
         </button>
     );
