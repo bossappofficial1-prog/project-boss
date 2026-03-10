@@ -114,6 +114,8 @@ services:
     pull_policy: always
     container_name: bossapp-profile
     restart: always
+    ports:
+      - "3020"
     networks:
       - default
 
