@@ -17,6 +17,16 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
     if (business.id !== data.businessId) {
         throw new AppError("Anda tidak berhak menambahkan outlet ke bisnis ini.", HttpStatus.FORBIDDEN);
     }
+
+    if (data.email) {
+        const existingEmail = await OutletRepository.findByEmail(data.email);
+        if (existingEmail) {
+            throw new AppError("Email outlet ini sudah terdaftar.", HttpStatus.BAD_REQUEST);
+        }
+    } else {
+        data.email = undefined;
+    }
+
     await PlanLimitService.assertCanCreateOutlet(business.id);
     const outlet = await OutletRepository.create(data);
     await EventPublisher.publishOutletCreated(outlet);
@@ -179,6 +189,15 @@ export async function updateOutletService(id: string, data: UpdateOutletInput, o
     const business = await getBusinessByOwnerIdService(ownerId);
     if (business.id !== outlet.businessId) {
         throw new AppError("Anda tidak berhak mengubah outlet ini.", HttpStatus.FORBIDDEN);
+    }
+
+    if (data.email) {
+        const existingEmail = await OutletRepository.findByEmail(data.email);
+        if (existingEmail && existingEmail.id !== id) {
+            throw new AppError("Email outlet ini sudah terdaftar.", HttpStatus.BAD_REQUEST);
+        }
+    } else if (data.email === "") {
+        data.email = null as any; // Allow unsetting email
     }
 
     const updatedOutlet = await OutletRepository.update(id, data);

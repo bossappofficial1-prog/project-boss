@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import { useExpenses } from '@/hooks/useExpenses';
 import { ExpensesHeader } from '@/components/owner/expenses/Header';
@@ -8,8 +8,11 @@ import { ExpensesControls } from '@/components/owner/expenses/Controls';
 import { ExpensesDesktopTable } from '@/components/owner/expenses/DesktopTable';
 import { ExpensesEmptyState } from '@/components/owner/expenses/EmptyState';
 import { ExpensesSkeleton } from '@/components/owner/expenses/Skeleton';
-import ExpenseModal from '@/components/modals/ExpenseModal';
-import { type Expense } from '@/lib/apis/expense';
+import { ExpenseFormDialog } from '@/components/cashier/expenses/ExpenseFormDialog';
+import { type Expense } from '@/hooks/api/use-expenses';
+import { toast } from 'sonner';
+import { uploadApi } from '@/lib/api';
+import { ReceiptPreviewModal } from '@/components/modals/ReceiptPreviewModal';
 
 export default function ExpensesPage() {
 	const { selectedOutletId: outletId } = useOutletContext();
@@ -17,6 +20,8 @@ export default function ExpensesPage() {
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<Expense | null>(null);
 
+	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+	const [previewOpen, setPreviewOpen] = useState(false);
 
 	const handleAdd = () => {
 		setEditing(null);
@@ -34,14 +39,28 @@ export default function ExpensesPage() {
 		await remove(exp.id);
 	};
 
-	const handleSubmitModal = async (
-		payload: { description: string; amount: number; date: string; outletId: string },
-		id?: string
-	) => {
-		if (id) await update(id, payload);
-		else await create(payload);
-		setModalOpen(false);
-	};
+	const handleFormSubmit = useCallback(
+		async (formData: { description: string; amount: number; date: string; receiptUrl?: string | null }, id?: string) => {
+			try {
+				if (id) {
+					await update(id, formData);
+					toast.success("Pengeluaran berhasil diperbarui");
+				} else {
+					await create({
+						...formData,
+						outletId: outletId!
+					});
+					toast.success("Pengeluaran berhasil ditambahkan");
+				}
+				setModalOpen(false);
+			} catch (error: any) {
+				const msg = error?.response?.data?.message ?? error?.message ?? "Gagal menyimpan pengeluaran";
+				toast.error(msg);
+				formData.receiptUrl && await uploadApi.deleteByUrl(formData.receiptUrl)
+			}
+		},
+		[outletId, create, update],
+	);
 
 	return (
 		<>
@@ -60,16 +79,29 @@ export default function ExpensesPage() {
 					<ExpensesEmptyState />
 				) : (
 					<>
-						<ExpensesDesktopTable items={expenses} onEdit={handleEdit} onDelete={handleDelete} />
+						<ExpensesDesktopTable
+							items={expenses as any}
+							onEdit={handleEdit as any}
+							onDelete={handleDelete as any}
+							onPreviewImage={(url) => {
+								setPreviewUrl(url);
+								setPreviewOpen(true);
+							}}
+						/>
 					</>
 				)}
 
-				<ExpenseModal
+				<ExpenseFormDialog
 					open={modalOpen}
 					onOpenChange={setModalOpen}
-					outletId={outletId || ''}
-					initial={editing}
-					onSubmit={handleSubmitModal}
+					initial={editing as any}
+					onSubmit={handleFormSubmit}
+				/>
+
+				<ReceiptPreviewModal
+					open={previewOpen}
+					onOpenChange={setPreviewOpen}
+					imageUrl={previewUrl}
 				/>
 			</div>
 		</>

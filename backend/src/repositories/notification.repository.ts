@@ -59,6 +59,7 @@ export class NotificationRepository {
                 gc.name AS "customerName",
                 gc.phone AS "customerPhone",
                 out.name AS "outletName",
+                out.email AS "outletEmail",
                 u.name AS "ownerName",
                 u.email AS "ownerEmail",
                 
@@ -154,7 +155,7 @@ export class NotificationRepository {
 
         return {
             OwnerName: data.ownerName || 'Owner',
-            OwnerEmail: data.ownerEmail,
+            OwnerEmail: data.outletEmail || data.ownerEmail,
             OutletName: data.outletName || '-',
             BookingDate: formattedDate,
             BookingTime: formattedTime,

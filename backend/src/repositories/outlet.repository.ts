@@ -55,6 +55,12 @@ export class OutletRepository {
         });
     }
 
+    static async findByEmail(email: string) {
+        return db.outlet.findFirst({
+            where: { email },
+        });
+    }
+
     static async findBySlug(slug: string) {
         return db.outlet.findUnique({
             where: { slug },
