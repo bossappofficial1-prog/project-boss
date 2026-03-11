@@ -125,11 +125,9 @@ export class QueueV2Repository {
 
     let dateFilter = Prisma.empty;
     if (dateStr) {
-      const targetDate = new Date(dateStr);
-      const startOfDay = new Date(targetDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(targetDate);
-      endOfDay.setHours(23, 59, 59, 999);
+      const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+      const startOfDay = new Date(`${dateOnly}T00:00:00.000+07:00`);
+      const endOfDay = new Date(`${dateOnly}T23:59:59.999+07:00`);
 
       // We search bookingDate or createdAt
       dateFilter = Prisma.sql` AND (
@@ -160,11 +158,21 @@ export class QueueV2Repository {
     q?: string,
     dateStr?: string,
   ): Promise<QueueOrderWithIncludes[]> {
-    const targetDate = dateStr ? new Date(dateStr) : new Date();
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    let startOfDay: Date;
+    let endOfDay: Date;
+
+    if (dateStr) {
+      const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+      startOfDay = new Date(`${dateOnly}T00:00:00.000+07:00`);
+      endOfDay = new Date(`${dateOnly}T23:59:59.999+07:00`);
+    } else {
+      const now = new Date();
+      const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split("T")[0];
+      startOfDay = new Date(`${localDate}T00:00:00.000+07:00`);
+      endOfDay = new Date(`${localDate}T23:59:59.999+07:00`);
+    }
 
     let searchFilter = Prisma.empty;
     if (q) {
@@ -198,11 +206,21 @@ export class QueueV2Repository {
   }
 
   static async getCancelledTodayCount(outletId: string, dateStr?: string): Promise<number> {
-    const targetDate = dateStr ? new Date(dateStr) : new Date();
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    let startOfDay: Date;
+    let endOfDay: Date;
+
+    if (dateStr) {
+      const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+      startOfDay = new Date(`${dateOnly}T00:00:00.000+07:00`);
+      endOfDay = new Date(`${dateOnly}T23:59:59.999+07:00`);
+    } else {
+      const now = new Date();
+      const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split("T")[0];
+      startOfDay = new Date(`${localDate}T00:00:00.000+07:00`);
+      endOfDay = new Date(`${localDate}T23:59:59.999+07:00`);
+    }
 
     const result = await db.$queryRaw<{ count: number }[]>`
             SELECT COUNT(o.id)::int as count
