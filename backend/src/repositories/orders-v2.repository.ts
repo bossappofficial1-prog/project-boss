@@ -127,11 +127,9 @@ export class OrdersV2Repository {
 
     let dateFilter = Prisma.empty;
     if (dateStr) {
-      const targetDate = new Date(dateStr);
-      const startOfDay = new Date(targetDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(targetDate);
-      endOfDay.setHours(23, 59, 59, 999);
+      const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+      const startOfDay = new Date(`${dateOnly}T00:00:00.000+07:00`);
+      const endOfDay = new Date(`${dateOnly}T23:59:59.999+07:00`);
 
       dateFilter = Prisma.sql` AND o."createdAt" >= ${startOfDay} AND o."createdAt" <= ${endOfDay}`;
     }
@@ -158,11 +156,21 @@ export class OrdersV2Repository {
     q?: string,
     dateStr?: string,
   ): Promise<OrderWithIncludes[]> {
-    const targetDate = dateStr ? new Date(dateStr) : new Date();
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    let startOfDay: Date;
+    let endOfDay: Date;
+
+    if (dateStr) {
+      const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+      startOfDay = new Date(`${dateOnly}T00:00:00.000+07:00`);
+      endOfDay = new Date(`${dateOnly}T23:59:59.999+07:00`);
+    } else {
+      const now = new Date();
+      const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split("T")[0];
+      startOfDay = new Date(`${localDate}T00:00:00.000+07:00`);
+      endOfDay = new Date(`${localDate}T23:59:59.999+07:00`);
+    }
 
     let searchFilter = Prisma.empty;
     if (q) {
@@ -197,11 +205,21 @@ export class OrdersV2Repository {
   }
 
   static async getTodayStats(outletId: string, dateStr?: string): Promise<TodayStatsData> {
-    const targetDate = dateStr ? new Date(dateStr) : new Date();
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    let startOfDay: Date;
+    let endOfDay: Date;
+
+    if (dateStr) {
+      const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+      startOfDay = new Date(`${dateOnly}T00:00:00.000+07:00`);
+      endOfDay = new Date(`${dateOnly}T23:59:59.999+07:00`);
+    } else {
+      const now = new Date();
+      const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split("T")[0];
+      startOfDay = new Date(`${localDate}T00:00:00.000+07:00`);
+      endOfDay = new Date(`${localDate}T23:59:59.999+07:00`);
+    }
 
     // Optimasi: Menjadikan 3 query (count, count, sum) menjadi 1 raw query tunggal
     const result = await db.$queryRaw<any[]>`
