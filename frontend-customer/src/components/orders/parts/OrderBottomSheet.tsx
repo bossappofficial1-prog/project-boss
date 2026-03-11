@@ -60,48 +60,43 @@ const STATUS_MAP = {
         icon: Hourglass,
         dotColor: "bg-yellow-500",
         textColor: "text-yellow-700 dark:text-yellow-400",
-        badgeBg:
-            "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800",
+        badgeBg: "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800",
     },
     [OrderStatus.PROCESSING]: {
         icon: Clock,
         dotColor: "bg-blue-500",
         textColor: "text-blue-700 dark:text-blue-400",
-        badgeBg:
-            "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800",
+        badgeBg: "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800",
     },
     [OrderStatus.CONFIRMED]: {
-        icon: CheckCircle,
+        icon: CheckCircle2,
         dotColor: "bg-cyan-500",
         textColor: "text-cyan-700 dark:text-cyan-400",
-        badgeBg:
-            "bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800",
+        badgeBg: "bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800",
     },
     [OrderStatus.READY]: {
         icon: PackageCheck,
         dotColor: "bg-green-500",
         textColor: "text-green-700 dark:text-green-400",
-        badgeBg:
-            "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800",
+        badgeBg: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800",
     },
     [OrderStatus.ON_GOING]: {
         icon: Play,
         dotColor: "bg-orange-500",
         textColor: "text-orange-700 dark:text-orange-400",
-        badgeBg:
-            "bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800",
+        badgeBg: "bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800",
     },
     [OrderStatus.COMPLETED]: {
-        icon: CheckCircle,
-        dotColor: "bg-primary",
-        textColor: "text-primary",
-        badgeBg: "bg-primary/5 border-primary/20",
+        icon: CheckCircle2,
+        dotColor: "bg-red-500", // Disesuaikan dengan desain Card sebelumnya
+        textColor: "text-red-500",
+        badgeBg: "bg-red-50 border-red-200 dark:bg-red-500/10 dark:border-red-500/20",
     },
     [OrderStatus.CANCELLED]: {
         icon: XCircle,
-        dotColor: "bg-destructive",
-        textColor: "text-destructive",
-        badgeBg: "bg-destructive/5 border-destructive/20",
+        dotColor: "bg-gray-500",
+        textColor: "text-gray-600 dark:text-gray-400",
+        badgeBg: "bg-gray-100 border-gray-200 dark:bg-gray-800 dark:border-gray-700",
     },
 } as const;
 
@@ -192,7 +187,7 @@ export default function OrderBottomSheet({
         [OrderStatus.AWAITING_PAYMENT]: isAwaitingVerification ? t("status.awaiting_verification") : t("status.awaiting_payment"),
         [OrderStatus.PROCESSING]: t("status.processing"),
         [OrderStatus.CONFIRMED]: t("status.confirmed_label"),
-        [OrderStatus.READY]: t("status.ready_label"),
+        [OrderStatus.READY]: hasServiceProduct ? t("status.ready_service_label") : t("status.ready_label"),
         [OrderStatus.ON_GOING]: t("status.on_going_label"),
         [OrderStatus.COMPLETED]: t("status.completed_label"),
         [OrderStatus.CANCELLED]: t("status.cancelled_label"),
@@ -218,14 +213,14 @@ export default function OrderBottomSheet({
         <Sheet open={isOpen} onOpenChange={onClose}>
             <SheetContent
                 side="bottom"
-                className="h-[90vh] p-0 rounded-t-xl pb-16"
+                className="h-[90vh] p-0 rounded-t-xl bg-background"
             >
                 <ScrollArea className="h-full">
                     {/* Header */}
                     <SheetHeader className="px-4 pt-5 pb-3 space-y-2">
                         <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
-                                <SheetTitle className="text-lg leading-tight">
+                                <SheetTitle className="text-lg leading-tight text-foreground">
                                     {t("detail.title")}
                                 </SheetTitle>
                                 <SheetDescription className="flex items-center gap-1.5 mt-1.5">
@@ -242,7 +237,7 @@ export default function OrderBottomSheet({
                             </div>
                             <span
                                 className={cn(
-                                    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border shrink-0",
+                                    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shrink-0",
                                     status.badgeBg,
                                     status.textColor,
                                 )}
@@ -261,14 +256,14 @@ export default function OrderBottomSheet({
                     <div className="px-4 pb-6 space-y-4">
                         {/* Cancellation / Rejection Notes */}
                         {isCancelled && order.cancellationReason && (
-                            <div className="px-3 py-2 rounded-md bg-destructive/5 border border-destructive/10">
+                            <div className="px-3 py-2.5 rounded-md bg-destructive/10 border border-destructive/20">
                                 <div className="flex items-start gap-2">
                                     <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-[11px] font-medium text-destructive mb-0.5">
+                                        <p className="text-[11px] font-semibold text-destructive mb-0.5">
                                             Alasan pembatalan
                                         </p>
-                                        <p className="text-[11px] text-destructive/70 leading-relaxed">
+                                        <p className="text-[11px] text-destructive/80 leading-relaxed font-medium">
                                             {order.cancellationReason}
                                         </p>
                                     </div>
@@ -277,14 +272,14 @@ export default function OrderBottomSheet({
                         )}
 
                         {order.transaction?.status === "REJECTED_MANUAL" && (
-                            <div className="px-3 py-2 rounded-md bg-destructive/5 border border-destructive/10">
+                            <div className="px-3 py-2.5 rounded-md bg-destructive/10 border border-destructive/20">
                                 <div className="flex items-start gap-2">
                                     <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-[11px] font-medium text-destructive mb-0.5">
+                                        <p className="text-[11px] font-semibold text-destructive mb-0.5">
                                             Bukti pembayaran ditolak
                                         </p>
-                                        <p className="text-[11px] text-destructive/70 leading-relaxed">
+                                        <p className="text-[11px] text-destructive/80 leading-relaxed font-medium">
                                             {order.transaction.rejectionNote || "Tidak ada alasan"}
                                         </p>
                                     </div>
@@ -380,7 +375,7 @@ export default function OrderBottomSheet({
                                         <ListOrdered className="w-3.5 h-3.5" />
                                         <span>{t("queue.positionLabel")}</span>
                                     </div>
-                                    <span className="text-sm font-bold">
+                                    <span className="text-sm font-bold text-foreground">
                                         {queueMeta.position
                                             ? `#${queueMeta.position}`
                                             : t("queue.positionPending")}
@@ -407,7 +402,7 @@ export default function OrderBottomSheet({
                         <div className="rounded-md border overflow-hidden">
                             <div className="flex items-center gap-3 px-3 py-2.5 bg-muted/30">
                                 <Store className="w-4 h-4 text-muted-foreground shrink-0" />
-                                <span className="text-sm font-medium truncate">
+                                <span className="text-sm font-medium text-foreground truncate">
                                     {order.outlet.name}
                                 </span>
                             </div>
@@ -415,7 +410,7 @@ export default function OrderBottomSheet({
                             <div className="px-3 py-2.5 space-y-1.5">
                                 <div className="flex items-center gap-2.5 text-xs">
                                     <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                    <span>{order.customerDetails.name}</span>
+                                    <span className="text-foreground">{order.customerDetails.name}</span>
                                 </div>
                                 <div className="flex items-center gap-2.5 text-xs">
                                     <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -431,21 +426,21 @@ export default function OrderBottomSheet({
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                                 {t("detail.itemDetails")}
                             </p>
-                            <div className="rounded-md border divide-y">
+                            <div className="rounded-md border divide-y divide-border">
                                 {order.items.map((item) => (
                                     <div
                                         key={item.id}
                                         className="flex items-center justify-between px-3 py-2.5"
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium truncate">
+                                            <p className="text-sm font-medium text-foreground truncate">
                                                 {item.product.name}
                                             </p>
                                             <p className="text-[11px] text-muted-foreground mt-0.5">
                                                 {item.quantity} × {formatCurrency(item.priceAtTimeOfOrder)}
                                             </p>
                                         </div>
-                                        <span className="text-sm font-semibold ml-3 shrink-0">
+                                        <span className="text-sm font-semibold text-foreground ml-3 shrink-0">
                                             {formatCurrency(item.quantity * item.priceAtTimeOfOrder)}
                                         </span>
                                     </div>
@@ -487,25 +482,25 @@ export default function OrderBottomSheet({
                                     <span className="text-muted-foreground">
                                         {t("detail.subtotal")}
                                     </span>
-                                    <span>{formatCurrency(subtotal)}</span>
+                                    <span className="text-foreground">{formatCurrency(subtotal)}</span>
                                 </div>
                                 <div className="flex justify-between text-xs">
                                     <span className="text-muted-foreground">
                                         {t("detail.serviceFee")}
                                     </span>
-                                    <span>{formatCurrency(order.appFee)}</span>
+                                    <span className="text-foreground">{formatCurrency(order.appFee)}</span>
                                 </div>
                                 {showTransactionFee && (
                                     <div className="flex justify-between text-xs">
                                         <span className="text-muted-foreground">
                                             {t("detail.transactionFee")}
                                         </span>
-                                        <span>{formatCurrency(order.midtransFee)}</span>
+                                        <span className="text-foreground">{formatCurrency(order.midtransFee)}</span>
                                     </div>
                                 )}
                                 <div className="h-px bg-border my-1" />
                                 <div className="flex justify-between items-center pt-0.5">
-                                    <span className="text-sm font-bold">
+                                    <span className="text-sm font-bold text-foreground">
                                         {t("detail.totalPayment")}
                                     </span>
                                     <span className="text-base font-bold text-primary">
@@ -522,7 +517,7 @@ export default function OrderBottomSheet({
                                 <p className="text-[10px] text-muted-foreground leading-tight">
                                     {t("detail.paymentMethod")}
                                 </p>
-                                <p className="text-xs font-medium capitalize truncate">
+                                <p className="text-xs font-medium text-foreground capitalize truncate">
                                     {order.transaction?.paymentMethod.replace(/_/g, " ") ||
                                         "Unknown"}
                                 </p>
@@ -583,8 +578,8 @@ export default function OrderBottomSheet({
                                     </Button>
                                 )}
 
-                            {/* Confirm for READY orders */}
-                            {order.orderStatus === OrderStatus.READY && (
+                            {/* FIX LOGIC: Confirm button HANYA muncul jika bukan layanan (Service) */}
+                            {order.orderStatus === OrderStatus.READY && !hasServiceProduct && (
                                 <Button
                                     variant="default"
                                     className="w-full h-9 text-xs"
@@ -594,7 +589,7 @@ export default function OrderBottomSheet({
                                     {isBusy && pendingAction?.action === "confirm" ? (
                                         <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                                     ) : (
-                                        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                                        <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
                                     )}
                                     {t("actions.confirm")}
                                 </Button>

@@ -42,7 +42,7 @@ export class GenerateServiceOrderNotificationQueue extends BaseQueue<GenerateSer
             };
 
             // 3. Compile HBS ke HTML untuk Body Mail
-            const templatePath = require('path').join(__dirname, '..', '..', 'templates', 'order-service.hbs');
+            const templatePath = require('path').join(process.cwd(), 'templates', 'order-service.hbs');
             const hbsTemplate = require('fs').readFileSync(templatePath, 'utf8');
             const compiledHtml = require('handlebars').compile(hbsTemplate)(reportData);
 

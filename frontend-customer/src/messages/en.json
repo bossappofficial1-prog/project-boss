@@ -572,7 +572,9 @@
             "ready_label": "Ready",
             "on_going_label": "On Going",
             "completed_label": "Completed",
-            "cancelled_label": "Cancelled"
+            "cancelled_label": "Cancelled",
+            "ready_service_label": "Ready to Serve",
+            "and_more_items": "more items"
         },
         "tabs": {
             "all": "All",

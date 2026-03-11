@@ -75,8 +75,19 @@ export const SocketCashierProvider = ({
                 .catch((err) => console.warn('Audio gagal diputar:', err))
         };
 
-        socket.emit("cashier:join", outletId);
-        socket.emit(SOCKET_EVENT.JOIN_OUTLET, { outletId });
+        const handleConnect = () => {
+            console.log(`[SocketCashier] Connected/Reconnected for outlet: ${outletId}`);
+            // Re-join the outlet room upon every successful connection
+            socket.emit("cashier:join", outletId);
+            socket.emit(SOCKET_EVENT.JOIN_OUTLET, { outletId });
+        };
+
+        // If the socket is somehow already connected when this runs, join immediately
+        if (socket.connected) {
+            handleConnect();
+        }
+
+        socket.on("connect", handleConnect);
         socket.on("orderEvent", joinOutlet);
 
         const handlePaymentNew = (payload: SocketEvents[typeof SOCKET_EVENT.PAYMENT_NEW]) => {
@@ -97,7 +108,8 @@ export const SocketCashierProvider = ({
         socket.on(SOCKET_EVENT.ORDER_STATUS_CHANGED, handleOrderStatusChanged);
 
         return () => {
-            socket.off("orderEvent");
+            socket.off("connect", handleConnect);
+            socket.off("orderEvent", joinOutlet);
             socket.off(SOCKET_EVENT.PAYMENT_NEW, handlePaymentNew);
             socket.off(SOCKET_EVENT.ORDER_STATUS_CHANGED, handleOrderStatusChanged);
         };

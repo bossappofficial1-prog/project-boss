@@ -572,7 +572,9 @@
             "ready_label": "Siap Diambil",
             "on_going_label": "Berlangsung",
             "completed_label": "Selesai",
-            "cancelled_label": "Dibatalkan"
+            "cancelled_label": "Dibatalkan",
+            "ready_service_label": "Siap Dilayani",
+            "and_more_items": "item lainnya"
         },
         "tabs": {
             "all": "Semua",
