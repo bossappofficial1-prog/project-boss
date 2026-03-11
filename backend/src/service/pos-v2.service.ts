@@ -4,6 +4,7 @@ import { PosV2Repository } from "../repositories/pos-v2.repository";
 import { CreatePosV2OrderInput } from "../schemas/pos-v2.schema";
 import { generateOrderCode } from "../utils";
 import { SocketEmitter } from "../socket/socket-emiiter";
+import { generateServiceOrderNotificationQueue } from "../queues/generate-service-order-notification";
 
 export interface PosV2OrderResult {
     orderId: string;
@@ -219,6 +220,10 @@ export class PosV2Service {
 
         // Emit real-time event (non-blocking)
         try {
+            if (serviceProducts) {
+                generateServiceOrderNotificationQueue.add({ orderId })
+            }
+
             SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
                 orderId: order.id,
                 amount: subtotal,

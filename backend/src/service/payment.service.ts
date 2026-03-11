@@ -43,6 +43,7 @@ import { PaymentRepository } from "../repositories/payment.repository";
 import { orderExpiryJob } from "../jobs/payment-expiry.job";
 import { OperatingHoursRepository } from "../repositories/operating-hours.repository";
 import { validateFileMagicBytes, deleteFile, fileExists } from "../utils/file.utils";
+import { generateServiceOrderNotificationQueue } from "../queues/generate-service-order-notification";
 
 // Konstanta untuk fee rates
 const TRANSACTION_FEE_RATE = 0.02;
@@ -841,7 +842,7 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
     throw new AppError(Messages.MANUAL_PAYMENT_PROOF_NOT_ALLOWED, HttpStatus.BAD_REQUEST);
   }
 
-  if (transaction.expiresAt && transaction.expiresAt.getTime() < Date.now()) {
+  if (transaction.expiresAt && new Date(transaction.expiresAt).getTime() < Date.now()) {
     throw new AppError(Messages.MANUAL_PAYMENT_EXPIRED, HttpStatus.BAD_REQUEST);
   }
 
@@ -878,6 +879,9 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
 
   try {
     await orderExpiryJob.remove(transaction.orderId);
+    if (transaction.order.items.some((item) => item.product.type === "SERVICE")) {
+      await generateServiceOrderNotificationQueue.add({ orderId });
+    }
 
     SocketEmitter.getInstance().emitNotificationToOutlet(transaction.order.outletId, {
       message: `Pesanan ${orderId}, telah mengirim bukti pembayarannya.`,
@@ -886,9 +890,9 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
     SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
       orderId,
       amount: transaction.amount,
-      customerName: transaction.order.guestCustomer.name,
+      customerName: transaction.order.guestCustomer?.name ?? "-",
       paymentMethod: transaction.paymentMethod as string,
-      timestamp: transaction.createdAt,
+      timestamp: new Date(transaction.createdAt),
     });
   } catch (socketError) {
     console.error("❌ Error emitting manual_payment_proof_uploaded event:", socketError);

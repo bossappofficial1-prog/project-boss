@@ -291,7 +291,9 @@ export interface OrderBookingSlot {
 export interface Transaction {
   id: string;
   paymentMethod: string;
-  status: string;
+  status: TransactionStatus;
   expiryTime?: string; // ISO date string for payment expiry
   rejectionNote?: string | null;
 }
+
+export type TransactionStatus = "PENDING" | "PROOF_SUBMITTED" | "AWAITING_VERIFICATION" | "SUCCESS" | "FAILED" | "REFUNDED" | "EXPIRED" | "CANCELLED" | "REJECTED_MANUAL";

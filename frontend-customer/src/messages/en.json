@@ -563,6 +563,10 @@
             "completed": "Completed",
             "cancelled": "Cancelled",
             "awaiting_payment": "Awaiting Payment",
+            "awaiting_verification": "Awaiting Verification",
+            "payment_failed": "Payment Failed",
+            "payment_expired": "Payment Expired",
+            "payment_rejected": "Payment Rejected",
             "processing": "Processing",
             "confirmed_label": "Confirmed",
             "ready_label": "Ready",
@@ -667,6 +671,7 @@
         },
         "timeline": {
             "awaiting_payment": "Awaiting Payment",
+            "awaiting_verification": "Awaiting Verification",
             "processing": "Processing",
             "confirmed": "Confirmed",
             "confirmed_service": "Booking Confirmed",

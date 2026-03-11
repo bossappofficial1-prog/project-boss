@@ -142,12 +142,23 @@ export default function OrderBottomSheet({
 
     const isCancelled = order.orderStatus === OrderStatus.CANCELLED;
 
+    const isAwaitingVerification =
+        order.orderStatus === OrderStatus.AWAITING_PAYMENT &&
+        (order.transaction?.status === "AWAITING_VERIFICATION" ||
+            order.transaction?.status === "PROOF_SUBMITTED");
+
+    const effectiveOrderStatus = isAwaitingVerification ? "AWAITING_VERIFICATION" : order.orderStatus;
+
     // Context-aware timeline: different steps & labels for GOODS vs SERVICE
     const timelineSteps = hasServiceProduct
         ? [
             {
                 status: OrderStatus.AWAITING_PAYMENT,
                 label: t("timeline.awaiting_payment"),
+            },
+            {
+                status: "AWAITING_VERIFICATION",
+                label: t("timeline.awaiting_verification"),
             },
             { status: OrderStatus.PROCESSING, label: t("timeline.processing") },
             {
@@ -163,6 +174,10 @@ export default function OrderBottomSheet({
                 status: OrderStatus.AWAITING_PAYMENT,
                 label: t("timeline.awaiting_payment"),
             },
+            {
+                status: "AWAITING_VERIFICATION",
+                label: t("timeline.awaiting_verification"),
+            },
             { status: OrderStatus.PROCESSING, label: t("timeline.processing") },
             { status: OrderStatus.CONFIRMED, label: t("timeline.confirmed") },
             { status: OrderStatus.READY, label: t("timeline.ready") },
@@ -170,11 +185,11 @@ export default function OrderBottomSheet({
         ];
 
     const currentIndex = timelineSteps.findIndex(
-        (s) => s.status === order.orderStatus,
+        (s) => s.status === effectiveOrderStatus,
     );
 
     const statusLabels: Record<string, string> = {
-        [OrderStatus.AWAITING_PAYMENT]: t("status.awaiting_payment"),
+        [OrderStatus.AWAITING_PAYMENT]: isAwaitingVerification ? t("status.awaiting_verification") : t("status.awaiting_payment"),
         [OrderStatus.PROCESSING]: t("status.processing"),
         [OrderStatus.CONFIRMED]: t("status.confirmed_label"),
         [OrderStatus.READY]: t("status.ready_label"),
@@ -278,7 +293,7 @@ export default function OrderBottomSheet({
                         )}
 
                         {/* Countdown Timer for AWAITING_PAYMENT */}
-                        {order.orderStatus === OrderStatus.AWAITING_PAYMENT &&
+                        {order.orderStatus === OrderStatus.AWAITING_PAYMENT && !isAwaitingVerification &&
                             order.transaction?.expiryTime && (
                                 <CountdownTimer
                                     expiryTime={order.transaction.expiryTime}
@@ -529,7 +544,7 @@ export default function OrderBottomSheet({
                             )}
 
                             {/* Pay button for awaiting payment */}
-                            {order.orderStatus === OrderStatus.AWAITING_PAYMENT && (
+                            {order.orderStatus === OrderStatus.AWAITING_PAYMENT && !isAwaitingVerification && (
                                 <div className="flex gap-2">
                                     <Button
                                         variant="default"
@@ -556,7 +571,7 @@ export default function OrderBottomSheet({
                             {/* Contact for active orders */}
                             {order.orderStatus !== OrderStatus.CANCELLED &&
                                 order.orderStatus !== OrderStatus.COMPLETED &&
-                                order.orderStatus !== OrderStatus.AWAITING_PAYMENT && (
+                                (order.orderStatus !== OrderStatus.AWAITING_PAYMENT || isAwaitingVerification) && (
                                     <Button
                                         variant="outline"
                                         className="w-full h-9 text-xs"

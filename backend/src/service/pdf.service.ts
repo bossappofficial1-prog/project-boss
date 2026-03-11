@@ -32,3 +32,27 @@ export const generateTransactionReportPDF = async (data: TransactionReportData):
         },
     });
 };
+
+export interface OrderServiceData {
+    OwnerName: string;
+    OutletName: string;
+    BookingDate: string;
+    BookingTime: string;
+    OrderId: string;
+    ServiceName: string;
+    CustomerName: string;
+    CustomerPhone: string;
+    TotalAmount: number | string;
+    PaymentStatus: string;
+    PaymentMethod: string;
+    StaffName: string;
+}
+
+export const generateOrderServicePDF = async (data: OrderServiceData): Promise<Buffer> => {
+    return PdfBaseService.generate({
+        templateName: 'order-service.hbs',
+        data,
+        landscape: false,
+        format: 'A4',
+    });
+};

@@ -110,8 +110,13 @@ function EnhancedOrderCard({
     const status = STATUS_CONFIG[order.orderStatus] ?? STATUS_CONFIG[OrderStatus.PROCESSING];
     const StatusIcon = status.icon;
 
+    const isAwaitingVerification =
+        order.orderStatus === OrderStatus.AWAITING_PAYMENT &&
+        (order.transaction?.status === "AWAITING_VERIFICATION" ||
+            order.transaction?.status === "PROOF_SUBMITTED");
+
     const statusLabels: Record<string, string> = {
-        [OrderStatus.AWAITING_PAYMENT]: t("status.awaiting_payment"),
+        [OrderStatus.AWAITING_PAYMENT]: isAwaitingVerification ? t("status.awaiting_verification") : t("status.awaiting_payment"),
         [OrderStatus.PROCESSING]: t("status.processing"),
         [OrderStatus.CONFIRMED]: t("status.confirmed_label"),
         [OrderStatus.READY]: t("status.ready_label"),
@@ -139,7 +144,7 @@ function EnhancedOrderCard({
             order.orderStatus === OrderStatus.ON_GOING);
 
     const showCountdown =
-        order.orderStatus === OrderStatus.AWAITING_PAYMENT && order.transaction?.expiryTime;
+        order.orderStatus === OrderStatus.AWAITING_PAYMENT && !isAwaitingVerification && order.transaction?.expiryTime;
 
     const hasCancellationNote =
         order.orderStatus === OrderStatus.CANCELLED && order.cancellationReason;
@@ -160,10 +165,16 @@ function EnhancedOrderCard({
 
         switch (order.orderStatus) {
             case OrderStatus.AWAITING_PAYMENT:
-                actions.push(
-                    { label: t("actions.pay"), icon: null, action: "pay", variant: "default" },
-                    { label: t("actions.cancel"), icon: null, action: "cancel", variant: "outline" },
-                );
+                if (!isAwaitingVerification) {
+                    actions.push(
+                        { label: t("actions.pay"), icon: null, action: "pay", variant: "default" },
+                        { label: t("actions.cancel"), icon: null, action: "cancel", variant: "outline" },
+                    );
+                } else {
+                    actions.push(
+                        { label: t("actions.contact"), icon: Phone, action: "contact", variant: "outline" }
+                    );
+                }
                 break;
             case OrderStatus.PROCESSING:
             case OrderStatus.CONFIRMED:
