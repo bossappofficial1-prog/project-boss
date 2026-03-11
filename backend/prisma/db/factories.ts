@@ -57,7 +57,7 @@ export class DatabaseFactory {
 
         createdProducts.push({ ...product, price, type });
       } else {
-        await this.prisma.productService.create({
+        const service = await this.prisma.productService.create({
           data: {
             productId: product.id,
             durationMinutes: faker.helpers.arrayElement([30, 45, 60, 90, 120]),
@@ -67,6 +67,17 @@ export class DatabaseFactory {
             commissionValue: faker.number.int({ min: 5, max: 25 }),
             maxParallel: faker.number.int({ min: 1, max: 4 }),
           },
+        });
+
+        await this.prisma.serviceOperatingHours.createMany({
+          data: Array.from({ length: 7 }, (_, day) => ({
+            productServiceId: service.id,
+            dayOfWeek: day,
+            openTime: new Date("1970-01-01T02:00:00Z"),
+            closeTime: new Date("1970-01-01T14:00:00Z"),
+            isOpen: day !== 0, // Minggu tutup
+            isRestEnabled: false,
+          })),
         });
 
         createdProducts.push({ ...product, price, type });

@@ -278,6 +278,7 @@ async function main() {
     await prisma.guestCustomer.deleteMany({});
     await prisma.stockLog.deleteMany({}); // Added cleanup for StockLog
     await prisma.productGoods.deleteMany({}); // Added cleanup
+    await prisma.serviceOperatingHours.deleteMany({}); // Added cleanup
     await prisma.productService.deleteMany({}); // Added cleanup
     await prisma.product.deleteMany({});
     await prisma.outletOperatingHours.deleteMany({});
@@ -423,6 +424,7 @@ async function main() {
         openTime: new Date("1970-01-01T02:00:00Z"),
         closeTime: new Date("1970-01-01T14:00:00Z"),
         isOpen: day !== 0,
+        isRestEnabled: false,
         outletId: outlet.id,
       })),
     });

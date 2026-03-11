@@ -296,6 +296,10 @@ model OutletOperatingHours {
   closeTime DateTime
   isOpen    Boolean  @default(true)
 
+  isRestEnabled Boolean   @default(false) // Toggle untuk mengaktifkan jam istirahat
+  restStartTime DateTime? // Jam mulai istirahat
+  restEndTime   DateTime? // Jam selesai istirahat
+
   // Relasi ke outlet
   outletId String
   outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
@@ -431,32 +435,41 @@ model ProductService {
   maxParallel Int @default(1) // Berapa banyak service bisa dilakukan bersamaan
 
   // Relations
-  bookingSlots BookingSlot[]
+  bookingSlots   BookingSlot[]
+  operatingHours ServiceOperatingHours[]
 
   // Izinkan booking diluar jam kerja
   bookingInWorkHours Boolean @default(true)
-
-  // Operating hours untuk setiap hari (jika null berarti tutup di hari tersebut)
-  mondayOpen     DateTime?
-  mondayClose    DateTime?
-  tuesdayOpen    DateTime?
-  tuesdayClose   DateTime?
-  wednesdayOpen  DateTime?
-  wednesdayClose DateTime?
-  thursdayOpen   DateTime?
-  thursdayClose  DateTime?
-  fridayOpen     DateTime?
-  fridayClose    DateTime?
-  saturdayOpen   DateTime?
-  saturdayClose  DateTime?
-  sundayOpen     DateTime?
-  sundayClose    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([productId])
   @@index([providerName])
+}
+
+// Model untuk jam operasional service
+model ServiceOperatingHours {
+  id        String   @id @default(uuid())
+  dayOfWeek Int // 0-6 (Minggu-Sabtu)
+  openTime  DateTime
+  closeTime DateTime
+  isOpen    Boolean  @default(true)
+
+  // -- Jam Istirahat --
+  isRestEnabled Boolean   @default(false) // Toggle untuk mengaktifkan jam istirahat
+  restStartTime DateTime? // Jam mulai istirahat
+  restEndTime   DateTime? // Jam selesai istirahat
+
+  // Relasi ke ProductService
+  productServiceId String
+  productService   ProductService @relation(fields: [productServiceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productServiceId, dayOfWeek])
+  @@index([productServiceId])
 }
 
 // Subtable untuk produk TICKET (tiket event)
