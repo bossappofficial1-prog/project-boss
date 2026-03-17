@@ -155,6 +155,7 @@ export default function OrdersPage() {
     const { profileUser } = useProfileInfo();
     const addItem = useCart((s) => s.addItem);
     const clearOutletItems = useCart((s) => s.clearOutletItems);
+    const [isMounted, setIsMounted] = useState(false)
 
     const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -266,6 +267,7 @@ export default function OrdersPage() {
             subtitle: t("history_and_status"),
             showSearch: false,
             showBackButton: false,
+            showPartnerToggle: false,
             rightContent: (
                 <Button size="sm" variant="ghost" onClick={() => refetch()} disabled={isLoading}>
                     {isLoading ? (
@@ -278,6 +280,11 @@ export default function OrdersPage() {
         });
         return () => resetAppBar();
     }, [setAppBar, resetAppBar, t, refetch, isLoading]);
+
+    useEffect(() => {
+        if (isMounted) return;
+        setIsMounted(true)
+    }, [])
 
     // Socket realtime updates
     useEffect(() => {
@@ -568,7 +575,7 @@ export default function OrdersPage() {
         : null;
 
     // Early return for missing phone
-    if (!profileUser?.phone) {
+    if (!profileUser?.phone && isMounted) {
         return (
             <ErrorState
                 title="No Ponsel Belum di Setting"
@@ -677,31 +684,35 @@ export default function OrdersPage() {
             )}
 
             {/* Order Detail Bottom Sheet */}
-            <OrderBottomSheet
-                order={selectedOrder}
-                isOpen={isSheetOpen}
-                onClose={handleCloseSheet}
-                onAction={handleOrderAction}
-                pendingAction={actionInProgress}
-            />
+            {isMounted &&
+                <OrderBottomSheet
+                    order={selectedOrder}
+                    isOpen={isSheetOpen}
+                    onClose={handleCloseSheet}
+                    onAction={handleOrderAction}
+                    pendingAction={actionInProgress}
+                />
+            }
 
             {/* Confirmation Dialog */}
-            <ConfirmationModal
-                isOpen={Boolean(confirmationState)}
-                onClose={() => setConfirmationState(null)}
-                onConfirm={handleConfirmModal}
-                title={confirmationConfig?.title ?? ""}
-                message={confirmationConfig?.message ?? ""}
-                confirmText={confirmationConfig?.confirmText}
-                cancelText={confirmationConfig?.cancelText}
-                variant={confirmationConfig?.variant ?? "default"}
-                isLoading={
-                    confirmationState
-                        ? actionInProgress?.orderId === confirmationState.order.id &&
-                        actionInProgress?.action === confirmationState.action
-                        : false
-                }
-            />
+            {isMounted && (
+                <ConfirmationModal
+                    isOpen={Boolean(confirmationState)}
+                    onClose={() => setConfirmationState(null)}
+                    onConfirm={handleConfirmModal}
+                    title={confirmationConfig?.title ?? ""}
+                    message={confirmationConfig?.message ?? ""}
+                    confirmText={confirmationConfig?.confirmText}
+                    cancelText={confirmationConfig?.cancelText}
+                    variant={confirmationConfig?.variant ?? "default"}
+                    isLoading={
+                        confirmationState
+                            ? actionInProgress?.orderId === confirmationState.order.id &&
+                            actionInProgress?.action === confirmationState.action
+                            : false
+                    }
+                />
+            )}
         </div>
     );
 }

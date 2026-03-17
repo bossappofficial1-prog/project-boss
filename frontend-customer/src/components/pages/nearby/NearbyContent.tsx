@@ -43,7 +43,7 @@ export function NearbyOutletContent() {
 
     // 1. Initial Load & AppBar Setup
     useEffect(() => {
-        setAppBar({ title: t('appBarTitle') });
+        setAppBar({ title: t('appBarTitle'), showPartnerToggle: false });
 
         const raw = localStorage.getItem(LAST_POSITION_KEY);
         if (raw) {

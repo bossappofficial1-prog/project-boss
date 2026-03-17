@@ -1,22 +1,15 @@
 import { HomeRepository } from "../repositories/home.repository";
 import { BannerRepository } from "../repositories/banner.repository";
-import { mapOutletsWithOpenStatus, removeOperatingHoursFromOutlets } from "../utils/outlet.utils";
 
 export async function getHomeSummaryService(searchQuery?: string) {
-    const [umkm, transactions, outletsRaw] = await Promise.all([
+    const [umkm, transactions, outlets, popularItems, rawBanners] = await Promise.all([
         HomeRepository.countVerifiedUmkm(),
         HomeRepository.countSuccessfulTransactions(),
-        HomeRepository.findTopOutlets(searchQuery)
+        HomeRepository.findTopOutlets(searchQuery),
+        HomeRepository.findPopularItems(),
+        BannerRepository.findActiveBanners(100)
     ]);
 
-    const [popularItems] = await Promise.all([
-        HomeRepository.findPopularItems()
-    ]);
-
-    const outletsWithStatus = mapOutletsWithOpenStatus(outletsRaw);
-    const outlets = removeOperatingHoursFromOutlets(outletsWithStatus);
-
-    const rawBanners = await BannerRepository.findActiveBanners(100)
     const banners = rawBanners.map(b => ({
         id: b.id,
         title: b.title,

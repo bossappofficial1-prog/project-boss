@@ -305,7 +305,7 @@ export default function ServiceMediaUploader({
                         ) : (
                             <Upload className="w-4 h-4" />
                         )}
-                        {uploading ? "Uploading..." : "Upload Foto/Video"}
+                        {uploading ? "Uploading..." : "Upload Foto"}
                     </Button>
 
                     <Button

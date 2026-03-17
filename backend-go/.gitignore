@@ -1,0 +1,6 @@
+.env
+*.log
+tmp/
+logs/
+coverage/
+node_modules/

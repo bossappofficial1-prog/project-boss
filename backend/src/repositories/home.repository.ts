@@ -1,4 +1,20 @@
+import { Prisma } from "@prisma/client";
 import { db } from "../config/prisma";
+
+type HomeOutletRow = {
+    id: string;
+    name: string;
+    description: string | null;
+    address: string | null;
+    phone: string | null;
+    image: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    slug: string;
+    isOpen: boolean;
+    business_name: string | null;
+    orders: number;
+};
 
 export class HomeRepository {
     static async countVerifiedUmkm() {
@@ -20,76 +36,99 @@ export class HomeRepository {
     }
 
     static async findTopOutlets(searchQuery?: string) {
-        let rawOutlets: any[];
+        const currentWibDay = Prisma.sql`CAST(EXTRACT(DOW FROM NOW() AT TIME ZONE 'Asia/Jakarta') AS INTEGER)`;
+        const currentWibTime = Prisma.sql`CAST(NOW() AT TIME ZONE 'Asia/Jakarta' AS TIME)`;
+
+        const selectClause = Prisma.sql`
+            SELECT 
+                o.id,
+                o.name,
+                o.description,
+                o.address,
+                o.phone,
+                o.image,
+                o.latitude,
+                o.longitude,
+                o.slug,
+                b.name AS business_name,
+                COALESCE(order_counts.successful_orders, 0) AS orders,
+                (
+                    o."isOpen" = true
+                    AND EXISTS (
+                        SELECT 1
+                        FROM "OutletOperatingHours" oh
+                        WHERE oh."outletId" = o.id
+                          AND oh."isOpen" = true
+                          AND (
+                            (
+                                CAST(oh."openTime" AT TIME ZONE 'Asia/Jakarta' AS TIME) = CAST(oh."closeTime" AT TIME ZONE 'Asia/Jakarta' AS TIME)
+                                AND oh."dayOfWeek" = ${currentWibDay}
+                            )
+                            OR (
+                                CAST(oh."closeTime" AT TIME ZONE 'Asia/Jakarta' AS TIME) > CAST(oh."openTime" AT TIME ZONE 'Asia/Jakarta' AS TIME)
+                                AND oh."dayOfWeek" = ${currentWibDay}
+                                AND ${currentWibTime} >= CAST(oh."openTime" AT TIME ZONE 'Asia/Jakarta' AS TIME)
+                                AND ${currentWibTime} < CAST(oh."closeTime" AT TIME ZONE 'Asia/Jakarta' AS TIME)
+                            )
+                            OR (
+                                CAST(oh."closeTime" AT TIME ZONE 'Asia/Jakarta' AS TIME) < CAST(oh."openTime" AT TIME ZONE 'Asia/Jakarta' AS TIME)
+                                AND (
+                                    (
+                                        oh."dayOfWeek" = ${currentWibDay}
+                                        AND ${currentWibTime} >= CAST(oh."openTime" AT TIME ZONE 'Asia/Jakarta' AS TIME)
+                                    )
+                                    OR (
+                                        oh."dayOfWeek" = MOD(${currentWibDay} + 6, 7)
+                                        AND ${currentWibTime} < CAST(oh."closeTime" AT TIME ZONE 'Asia/Jakarta' AS TIME)
+                                    )
+                                )
+                            )
+                          )
+                    )
+                ) AS "isOpen"
+            FROM "Outlet" o
+            JOIN "Business" b ON o."businessId" = b.id
+            LEFT JOIN (
+                SELECT ord."outletId", COUNT(ord.id)::int as successful_orders
+                FROM "Order" ord
+                JOIN "Transaction" tr ON tr."orderId" = ord.id
+                WHERE tr.status = 'SUCCESS'
+                GROUP BY ord."outletId"
+            ) order_counts ON order_counts."outletId" = o.id
+        `;
+
+        let rawOutlets: HomeOutletRow[];
 
         if (searchQuery) {
             const searchParam = `%${searchQuery}%`;
-            rawOutlets = await db.$queryRaw<any[]>`
-                SELECT 
-                    o.*,
-                    json_build_object('name', b.name) as business,
-                    COALESCE(
-                        (
-                            SELECT json_agg(row_to_json(oh.*))
-                            FROM "OutletOperatingHours" oh
-                            WHERE oh."outletId" = o.id
-                        ), 
-                        '[]'::json
-                    ) as "operatingHours",
-                    json_build_object('orders', COALESCE(order_counts.successful_orders, 0)) as "_count"
-                FROM "Outlet" o
-                JOIN "Business" b ON o."businessId" = b.id
-                LEFT JOIN (
-                    SELECT ord."outletId", COUNT(ord.id)::int as successful_orders
-                    FROM "Order" ord
-                    JOIN "Transaction" tr ON tr."orderId" = ord.id
-                    WHERE tr.status = 'SUCCESS'
-                    GROUP BY ord."outletId"
-                ) order_counts ON order_counts."outletId" = o.id
+            rawOutlets = await db.$queryRaw<HomeOutletRow[]>`
+                ${selectClause}
                 WHERE o.name ILIKE ${searchParam} 
                    OR b.name ILIKE ${searchParam}
+                ORDER BY COALESCE(order_counts.successful_orders, 0) DESC
                 LIMIT 6;
             `;
         } else {
-            rawOutlets = await db.$queryRaw<any[]>`
-                SELECT 
-                    o.*,
-                    json_build_object('name', b.name) as business,
-                    COALESCE(
-                        (
-                            SELECT json_agg(row_to_json(oh.*))
-                            FROM "OutletOperatingHours" oh
-                            WHERE oh."outletId" = o.id
-                        ), 
-                        '[]'::json
-                    ) as "operatingHours",
-                    json_build_object('orders', COALESCE(order_counts.successful_orders, 0)) as "_count"
-                FROM "Outlet" o
-                JOIN "Business" b ON o."businessId" = b.id
-                LEFT JOIN (
-                    SELECT ord."outletId", COUNT(ord.id)::int as successful_orders
-                    FROM "Order" ord
-                    JOIN "Transaction" tr ON tr."orderId" = ord.id
-                    WHERE tr.status = 'SUCCESS'
-                    GROUP BY ord."outletId"
-                ) order_counts ON order_counts."outletId" = o.id
+            rawOutlets = await db.$queryRaw<HomeOutletRow[]>`
+                ${selectClause}
                 ORDER BY COALESCE(order_counts.successful_orders, 0) DESC
                 LIMIT 6;
             `;
         }
 
-        // Karena hasil json_agg dari postgres akan mengembalikan tanggal (Date) sebagai format string ISO,
-        // kita perlu melakukan mapping ulang agar formatnya menjadi objek JavaScript `Date` 
-        // persis seperti *output* default dari Prisma Client.
         return rawOutlets.map(outlet => ({
-            ...outlet,
-            operatingHours: outlet.operatingHours.map((oh: any) => ({
-                ...oh,
-                openTime: new Date(oh.openTime),
-                closeTime: new Date(oh.closeTime),
-                createdAt: new Date(oh.createdAt),
-                updatedAt: new Date(oh.updatedAt)
-            }))
+            id: outlet.id,
+            name: outlet.name,
+            description: outlet.description,
+            address: outlet.address,
+            phone: outlet.phone,
+            image: outlet.image,
+            latitude: outlet.latitude,
+            longitude: outlet.longitude,
+            slug: outlet.slug,
+            isOpen: outlet.isOpen,
+            business: { name: outlet.business_name },
+            _count: { orders: Number(outlet.orders ?? 0) }
         }));
     }
 

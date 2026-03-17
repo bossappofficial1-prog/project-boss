@@ -649,6 +649,9 @@
         "detail": {
             "title": "Detail Pesanan",
             "orderId": "Order ID",
+            "orderInfo": "Informasi Pesanan",
+            "customerName": "Nama Pembeli",
+            "customerPhone": "No Pelanggan",
             "progress": "Progress Pesanan",
             "currentStatus": "Saat ini",
             "outletInfo": "Informasi Outlet",

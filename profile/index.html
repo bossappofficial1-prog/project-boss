@@ -2,615 +2,826 @@
 <html lang="id" prefix="og: https://ogp.me/ns#">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- ── Primary SEO ─────────────────────────────────────────── -->
-    <title>BOSS — Sistem Kasir, Manajemen Bisnis &amp; Antrian UMKM Indonesia</title>
-    <meta name="description"
-        content="BOSS (Business One Stop System) adalah aplikasi web kasir, manajemen stok, antrian, dan laporan bisnis untuk UMKM Indonesia. Multi-outlet, multi-bisnis, pembayaran digital, real-time. " />
-    <meta name="keywords"
-        content="sistem kasir UMKM, manajemen bisnis Indonesia, aplikasi kasir online, manajemen stok, antrian pelanggan, laporan penjualan, point of sale, POS UMKM, business management system, BOSS app" />
-    <meta name="author"
-        content="Kurnia Fajar Viliano, Bima Lovrino Prakasa, Afca Arel Pratama, Pito Desri Pauzi, Baghaztra Van Ril" />
-    <meta name="robots" content="index, follow" />
-    <meta name="theme-color" content="#09090b" />
-    <link rel="canonical" href="https://profile.bossapp.id" />
+  <!-- Primary SEO -->
+  <title>BOSS — Sistem Kasir, Manajemen Bisnis &amp; Antrian UMKM Indonesia</title>
+  <meta name="description"
+    content="BOSS (Business One Stop System) adalah aplikasi web kasir, manajemen stok, antrian, dan laporan bisnis untuk UMKM Indonesia. Multi-outlet, multi-bisnis, pembayaran digital, real-time." />
+  <meta name="keywords"
+    content="sistem kasir UMKM, manajemen bisnis Indonesia, aplikasi kasir online, manajemen stok, antrian pelanggan, laporan penjualan, point of sale, POS UMKM" />
+  <meta name="author"
+    content="Kurnia Fajar Viliano, Bima Lovrino Prakasa, Afca Arel Pratama, Pito Desri Pauzi, Baghaztra Van Ril" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#070709" />
+  <link rel="canonical" href="https://profile.bossapp.id" />
 
-    <!-- ── Open Graph ──────────────────────────────────────────── -->
-    <meta property="og:type" content="website" />
-    <meta property="og:locale" content="id_ID" />
-    <meta property="og:url" content="https://profile.bossapp.id" />
-    <meta property="og:site_name" content="BOSS — Business One Stop System" />
-    <meta property="og:title" content="BOSS — Sistem Kasir, Manajemen Bisnis &amp; Antrian UMKM Indonesia" />
-    <meta property="og:description"
-        content="Aplikasi web all-in-one untuk UMKM: kasir, stok, antrian, laporan penjualan, produk digital, pembayaran digital. Multi-outlet, real-time, siap pakai." />
-    <meta property="og:image" content="/app-icon-192.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="BOSS — Business One Stop System untuk UMKM Indonesia" />
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="id_ID" />
+  <meta property="og:url" content="https://profile.bossapp.id" />
+  <meta property="og:site_name" content="BOSS — Business One Stop System" />
+  <meta property="og:title" content="BOSS — Sistem Kasir, Manajemen Bisnis &amp; Antrian UMKM Indonesia" />
+  <meta property="og:description"
+    content="Aplikasi web all-in-one untuk UMKM: kasir, stok, antrian, laporan penjualan, produk digital, pembayaran digital. Multi-outlet, real-time, siap pakai." />
+  <meta property="og:image" content="/app-icon-192.png" />
 
-    <!-- ── Twitter Card ────────────────────────────────────────── -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="BOSS — Sistem Kasir &amp; Manajemen Bisnis UMKM" />
-    <meta name="twitter:description"
-        content="Aplikasi web all-in-one untuk UMKM: kasir, stok, antrian, laporan penjualan, dan pembayaran digital. Dibangun dengan Next.js &amp; Express.js." />
-    <meta name="twitter:image" content="/app-icon-192.png" />
-    <meta name="twitter:creator" content="@timboss" />
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="BOSS — Sistem Kasir &amp; Manajemen Bisnis UMKM" />
+  <meta name="twitter:description"
+    content="Aplikasi web all-in-one untuk UMKM: kasir, stok, antrian, laporan penjualan, dan pembayaran digital." />
+  <meta name="twitter:image" content="/app-icon-192.png" />
 
-    <!-- ── JSON-LD Structured Data ────────────────────────────── -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "BOSS — Business One Stop System",
-      "alternateName": "BOSS App",
-      "description": "Sistem informasi, kasir, dan semi-ecommerce berbasis web untuk UMKM Indonesia. Fitur: manajemen stok, antrian pelanggan, laporan penjualan, booking layanan, multi-outlet.",
-      "url": "https://profile.bossapp.id",
-      "applicationCategory": "BusinessApplication",
-      "operatingSystem": "Web",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "IDR" },
-      "author": [
-        { "@type": "Person", "name": "Kurnia Fajar Viliano",  "jobTitle": "Co-Founder" },
-        { "@type": "Person", "name": "Bima Lovrino Prakasa",  "jobTitle": "Founder" },
-        { "@type": "Person", "name": "Afca Arel Pratama",     "jobTitle": "CPO" },
-        { "@type": "Person", "name": "Pito Desri Pauzi",      "jobTitle": "CTO", "url": "https://pitok.my.id/" },
-        { "@type": "Person", "name": "Baghaztra Van Ril",     "jobTitle": "CMO", "url": "https://bgztra.my.id/" }
-      ],
-      "programmingLanguage": ["TypeScript", "JavaScript"],
-      "keywords": "kasir UMKM, manajemen bisnis, point of sale, antrian, laporan penjualan, Indonesia"
-    }
-    </script>
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "BOSS — Business One Stop System",
+    "description": "Sistem kasir dan manajemen bisnis berbasis web untuk UMKM Indonesia.",
+    "url": "https://profile.bossapp.id",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "IDR" }
+  }
+  </script>
 
-    <!-- ── Fonts ───────────────────────────────────────────────── -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="icon" type="image/x-icon" href="/app-icon-192.png">
-    <link rel="apple-touch-icon" href="/app-icon-192.png">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet" />
-    <link rel="stylesheet" href="index.css">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="/app-icon-192.png" />
+  <link rel="apple-touch-icon" href="/app-icon-192.png" />
+  <link rel="stylesheet" href="index.css" />
 </head>
 
 <body>
-    <div class="orb orb-1" aria-hidden="true"></div>
-    <div class="orb orb-2" aria-hidden="true"></div>
-    <div class="orb orb-3" aria-hidden="true"></div>
 
-    <!-- ── Nav ─────────────────────────────────────────────────── -->
-    <nav aria-label="Navigasi utama">
-        <div class="nav-inner">
-            <a href="#" class="nav-logo" aria-label="BOSS — Business One Stop System">
-                <img src="boss-icon.png" alt="BOSS icon" width="28" height="28" />
-                BOSS
+  <!-- Background -->
+  <div class="mesh" aria-hidden="true">
+    <div class="mesh-orb"></div>
+    <div class="mesh-orb"></div>
+    <div class="mesh-orb"></div>
+  </div>
+  <div class="grid-bg" aria-hidden="true"></div>
+
+  <!-- ── NAV ─────────────────────────────────────── -->
+  <nav id="nav" aria-label="Navigasi utama">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo" aria-label="BOSS — Business One Stop System">
+        <img src="boss-icon.png" alt="BOSS" style="padding: 4px;" width="34" height="34"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <span class="nav-logo-icon" style="display:none">B</span>
+        BOSS
+      </a>
+
+      <ul class="nav-links" role="list">
+        <li><a href="#fitur">Fitur</a></li>
+        <li><a href="#tech">Tech Stack</a></li>
+        <li><a href="#arsitektur">Arsitektur</a></li>
+        <li><a href="#tim">Tim</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="https://bossapp.id" class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer">Customer
+          View</a>
+        <a href="https://dashboard.bossapp.id" class="btn btn-primary btn-sm" target="_blank"
+          rel="noopener noreferrer">Dashboard Owner</a>
+      </div>
+
+      <button class="hamburger" id="hamburger" aria-label="Buka menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile menu -->
+  <div class="mobile-menu" id="mobileMenu" role="dialog" aria-label="Menu navigasi">
+    <a href="#fitur" class="mobile-link">Fitur</a>
+    <a href="#tech" class="mobile-link">Tech Stack</a>
+    <a href="#arsitektur" class="mobile-link">Arsitektur</a>
+    <a href="#tim" class="mobile-link">Tim</a>
+    <a href="https://bossapp.id" target="_blank" rel="noopener noreferrer">Customer View ↗</a>
+    <a href="https://dashboard.bossapp.id" target="_blank" rel="noopener noreferrer"
+      style="color:var(--accent2)">Dashboard Owner ↗</a>
+  </div>
+
+  <main>
+
+    <!-- ── HERO ────────────────────────────────────── -->
+    <div class="wrapper">
+      <section class="hero" aria-labelledby="hero-heading">
+        <div class="hero-content">
+
+          <div class="badge reveal" aria-hidden="true">
+            <span class="pulse-dot"></span>
+            Business One Stop System
+          </div>
+
+          <h1 id="hero-heading" class="reveal reveal-d1">
+            <span class="line">Kelola UMKM</span>
+            <span class="line grad">Lebih Cerdas</span>
+            <span class="line">di Satu Platform</span>
+          </h1>
+
+          <p class="hero-sub reveal reveal-d2">
+            BOSS adalah sistem kasir, manajemen stok, antrian, dan laporan bisnis berbasis web
+            yang dirancang khusus untuk UMKM Indonesia — multi-outlet, real-time, siap pakai.
+          </p>
+
+          <div class="hero-actions reveal reveal-d3">
+            <a href="#fitur" class="btn btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              Jelajahi Fitur
             </a>
-            <ul class="nav-links" role="list">
-                <li><a href="#fitur">Fitur</a></li>
-                <li><a href="#tech">Tech Stack</a></li>
-                <li><a href="#arsitektur">Arsitektur</a></li>
-                <li><a href="#tim">Tim</a></li>
-            </ul>
-            <div class="nav-cta">
-                <a href="#fitur" class="btn btn-primary">Lihat Fitur</a>
+            <a href="#tim" class="btn btn-ghost">Kenali Tim</a>
+            <a href="https://bossapp.id" class="btn btn-ghost" target="_blank" rel="noopener noreferrer">
+              Customer View
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 3h6v6" />
+                <path d="M10 14 21 3" />
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              </svg>
+            </a>
+            <a href="https://dashboard.bossapp.id" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+              Dashboard Owner
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 3h6v6" />
+                <path d="M10 14 21 3" />
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              </svg>
+            </a>
+          </div>
+
+          <div class="hero-stats reveal reveal-d4" aria-label="Statistik proyek">
+            <div class="stat-item">
+              <div class="stat-num">5</div>
+              <div class="stat-label">Layanan Terintegrasi</div>
             </div>
+            <div class="stat-item">
+              <div class="stat-num">3</div>
+              <div class="stat-label">Peran Pengguna</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">100%</div>
+              <div class="stat-label">Berbasis Web</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">Real&#8209;time</div>
+              <div class="stat-label">Notifikasi &amp; Antrian</div>
+            </div>
+          </div>
+
         </div>
-    </nav>
+      </section>
+    </div>
 
-    <main>
-
-        <!-- ── Hero ────────────────────────────────────────────────── -->
-        <div class="wrapper">
-            <section class="hero" aria-labelledby="hero-heading">
-                <div class="hero-badge reveal" aria-hidden="true">
-                    <span class="dot"></span>
-                    Business One Stop System
-                </div>
-                <h1 id="hero-heading" class="reveal">
-                    Kelola UMKM <span class="grad">Lebih Cerdas</span><br />di Satu Platform
-                </h1>
-                <p class="hero-sub reveal reveal-delay-1">
-                    BOSS adalah sistem kasir, manajemen stok, antrian, dan laporan bisnis berbasis web
-                    yang dirancang khusus untuk UMKM Indonesia — multi-outlet, real-time, siap pakai.
-                </p>
-                <div class="hero-actions reveal reveal-delay-2">
-                    <a href="#fitur" class="btn btn-primary">Jelajahi Fitur</a>
-                    <a href="#tim" class="btn btn-ghost">Kenali Tim</a>
-                    <a href="https://bossapp.id" class="btn btn-ghost" target="_blank" rel="noopener noreferrer" aria-label="Customer View (opens in new tab)">Customer View</a>
-                    <a href="https://dashboard.bossapp.id" class="btn btn-primary" target="_blank" rel="noopener noreferrer" aria-label="Dashboard Owner (opens in new tab)">Dashboard Owner</a>
-                </div>
-
-                <div class="hero-stats reveal reveal-delay-3" aria-label="Statistik proyek">
-                    <div class="stat-item">
-                        <div class="stat-num">5</div>
-                        <div class="stat-label">Layanan Terintegrasi</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-num">3</div>
-                        <div class="stat-label">Peran: Owner, Kasir, Pelanggan</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-num">100%</div>
-                        <div class="stat-label">Berbasis Web, Tanpa Instalasi</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-num">Real-time</div>
-                        <div class="stat-label">Notifikasi &amp; Antrian</div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <hr class="sep" />
-
-        <!-- ── Features ────────────────────────────────────────────── -->
-        <div class="wrapper" id="fitur">
-            <section aria-labelledby="features-heading">
-                <span class="section-tag reveal">Fitur Utama</span>
-                <h2 id="features-heading" class="section-title reveal">Semua yang UMKM Butuhkan,<br />Dalam Satu Sistem
-                </h2>
-                <p class="section-desc reveal reveal-delay-1">Dirancang untuk Pemilik Bisnis dan Pelanggan. Setiap alur
-                    kerja — dari kasir hingga laporan keuangan — ditangani secara efisien.</p>
-
-                <div class="role-tabs reveal reveal-delay-2" style="margin-top:40px;" role="tablist"
-                    aria-label="Fitur per peran">
-                    <button class="role-tab active" role="tab" aria-selected="true" aria-controls="tab-umkm"
-                        onclick="switchTab(this,'umkm')">UMKM / Owner</button>
-                    <button class="role-tab" role="tab" aria-selected="false" aria-controls="tab-pelanggan"
-                        onclick="switchTab(this,'pelanggan')">Pelanggan</button>
-                </div>
-
-                <div id="tab-umkm" class="role-content active" role="tabpanel">
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Dashboard pengelolaan barang &amp; layanan</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Manajemen stok produk real-time</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Manajemen antrian pelanggan</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Laporan penjualan &amp; performa bisnis</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Multi-outlet &amp; multi-bisnis</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Export laporan Excel &amp; kirim via email</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Sistem komisi kasir &amp; staff layanan</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Analisis HPP, pengeluaran, &amp; laba bersih</div>
-                </div>
-
-                <div id="tab-pelanggan" class="role-content" role="tabpanel">
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Halaman minimalis &amp; responsif</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Laman home menampilkan UMKM &amp; layanan</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Pemesanan antrian untuk layanan</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Pembayaran digital (QRIS &amp; online)</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Pesan tanpa registrasi (guest order)</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Sistem booking slot layanan</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Riwayat transaksi &amp; status pesanan</div>
-                    <div class="role-item"><span class="check" aria-hidden="true"><svg width="10" height="10"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg></span>Notifikasi status pesanan otomatis</div>
-                </div>
-
-                <!-- Feature cards -->
-                <div class="features-grid" style="margin-top:40px;">
-                    <article class="card feature-card reveal">
-                        <div class="icon-box" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <rect x="2" y="3" width="20" height="14" rx="2" />
-                                <line x1="8" y1="21" x2="16" y2="21" />
-                                <line x1="12" y1="17" x2="12" y2="21" />
-                            </svg></div>
-                        <h3>Sistem Kasir (POS)</h3>
-                        <p>Proses transaksi penjualan dengan cepat. Dilengkapi manajemen produk (barang &amp; layanan),
-                            pembayaran digital, dan cetak struk — semua dalam satu antarmuka kasir yang intuitif.</p>
-                    </article>
-                    <article class="card feature-card reveal reveal-delay-1">
-                        <div class="icon-box" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                            </svg></div>
-                        <h3>Real-time Processing</h3>
-                        <p>RabbitMQ untuk notifikasi &amp; background jobs. BullMQ dengan Redis untuk job scheduling dan
-                            export transaksi besar — tanpa menghambat response API utama.</p>
-                    </article>
-                    <article class="card feature-card reveal reveal-delay-2">
-                        <div class="icon-box" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <line x1="18" y1="20" x2="18" y2="4" />
-                                <line x1="12" y1="20" x2="12" y2="10" />
-                                <line x1="6" y1="20" x2="6" y2="16" />
-                            </svg></div>
-                        <h3>Laporan Bisnis Lengkap</h3>
-                        <p>Analisis pendapatan, pengeluaran, HPP, komisi, dan laba bersih per outlet maupun per staff.
-                            Export Excel otomatis dan pengiriman laporan via email langsung ke pemilik bisnis.</p>
-                    </article>
-                    <article class="card feature-card reveal">
-                        <div class="icon-box" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path
-                                    d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                                <path d="m3.3 7 8.7 5 8.7-5" />
-                                <path d="M12 22V12" />
-                            </svg></div>
-                        <h3>Manajemen Stok</h3>
-                        <p>Pantau stok masuk dan keluar secara real-time. Kalkulasi Harga Pokok Penjualan (HPP) otomatis
-                            dari setiap log stok masuk untuk akurasi laporan keuangan.</p>
-                    </article>
-                    <article class="card feature-card reveal reveal-delay-1">
-                        <div class="icon-box" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="8" y1="2" x2="8" y2="6" />
-                                <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg></div>
-                        <h3>Booking &amp; Antrian</h3>
-                        <p>Sistem booking slot untuk layanan dengan manajemen antrian. Pelanggan dapat memesan tanpa
-                            registrasi (guest order) untuk kemudahan dan kecepatan transaksi.</p>
-                    </article>
-                    <article class="card feature-card reveal reveal-delay-2">
-                        <div class="icon-box" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                            </svg></div>
-                        <h3>Autentikasi &amp; Akses</h3>
-                        <p>Sistem autentikasi JWT yang aman dengan role-based access control. Setiap peran — Owner,
-                            Kasir, dan Customer — hanya mengakses fitur yang relevan.</p>
-                    </article>
-                </div>
-            </section>
-        </div>
-
-        <hr class="sep" />
-
-        <!-- ── Tech Stack ───────────────────────────────────────────── -->
-        <div class="wrapper" id="tech">
-            <section aria-labelledby="tech-heading">
-                <span class="section-tag reveal">Tech Stack</span>
-                <h2 id="tech-heading" class="section-title reveal">Dibangun dengan<br />Teknologi Modern</h2>
-                <p class="section-desc reveal reveal-delay-1">Setiap komponen dipilih untuk performa, skalabilitas, dan
-                    kemudahan pengembangan jangka panjang.</p>
-
-                <div class="tech-grid">
-                    <div class="card tech-group reveal">
-                        <h3>Backend</h3>
-                        <div class="tech-list">
-                            <span class="tech-badge node">Node.js</span>
-                            <span class="tech-badge ts">TypeScript</span>
-                            <span class="tech-badge node">Express.js</span>
-                            <span class="tech-badge dev">Prisma ORM</span>
-                            <span class="tech-badge dev">Zod</span>
-                            <span class="tech-badge dev">Jest</span>
-                            <span class="tech-badge dev">Winston</span>
-                        </div>
-                    </div>
-
-                    <div class="card tech-group reveal reveal-delay-1">
-                        <h3>Database &amp; Cache</h3>
-                        <div class="tech-list">
-                            <span class="tech-badge db">PostgreSQL</span>
-                            <span class="tech-badge cache">Redis</span>
-                            <span class="tech-badge mq">RabbitMQ</span>
-                            <span class="tech-badge mq">BullMQ</span>
-                        </div>
-                    </div>
-
-                    <div class="card tech-group reveal reveal-delay-2">
-                        <h3>Frontend &amp; Dashboard</h3>
-                        <div class="tech-list">
-                            <span class="tech-badge next">Next.js</span>
-                            <span class="tech-badge ts">TypeScript</span>
-                            <span class="tech-badge next">Tailwind CSS</span>
-                            <span class="tech-badge dev">shadcn/ui</span>
-                            <span class="tech-badge dev">React Query</span>
-                            <span class="tech-badge dev">Axios</span>
-                        </div>
-                    </div>
-
-                    <div class="card tech-group reveal">
-                        <h3>Integrasi &amp; Laporan</h3>
-                        <div class="tech-list">
-                            <span class="tech-badge integ">Nodemailer</span>
-                            <span class="tech-badge integ">ExcelJS</span>
-                            <span class="tech-badge integ">Handlebars</span>
-                            <span class="tech-badge integ">Socket.io</span>
-                        </div>
-                    </div>
-
-                    <div class="card tech-group reveal reveal-delay-1">
-                        <h3>🚀 DevOps & Infrastructure</h3>
-                        <div class="tech-list">
-                            <span class="tech-badge dev">Docker</span>
-                            <span class="tech-badge dev">Docker Compose</span>
-                            <span class="tech-badge next">Nginx</span>
-                            <span class="tech-badge dev">OpenAPI 3.0</span>
-                        </div>
-                    </div>
-
-                    <div class="card tech-group reveal reveal-delay-2">
-                        <h3>Auth &amp; Keamanan</h3>
-                        <div class="tech-list">
-                            <span class="tech-badge ts">JWT</span>
-                            <span class="tech-badge dev">bcrypt</span>
-                            <span class="tech-badge dev">Rate Limiting</span>
-                            <span class="tech-badge dev">CORS</span>
-                            <span class="tech-badge dev">Helmet</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <hr class="sep" />
-
-        <!-- ── Architecture ─────────────────────────────────────────── -->
-        <div class="wrapper" id="arsitektur">
-            <section aria-labelledby="arch-heading">
-                <span class="section-tag reveal">Arsitektur</span>
-                <h2 id="arch-heading" class="section-title reveal">Desain Sistem<br />yang Modular &amp; Skalabel</h2>
-                <p class="section-desc reveal reveal-delay-1">Setiap layanan dipisahkan dengan tanggung jawab yang jelas
-                    — memungkinkan skalabilitas dan maintainability yang optimal.</p>
-
-                <div class="arch-diagram reveal" role="img" aria-label="Diagram arsitektur sistem BOSS">
-                    <div class="arch-layer">
-                        <div class="arch-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                                <line x1="12" y1="18" x2="12.01" y2="18" />
-                            </svg></div>
-                        <h4>Frontend Customer</h4>
-                        <p>Next.js · Halaman publik, pencarian UMKM, pemesanan &amp; transaksi</p>
-                    </div>
-                    <div class="arch-layer">
-                        <div class="arch-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <rect x="3" y="3" width="7" height="7" />
-                                <rect x="14" y="3" width="7" height="7" />
-                                <rect x="14" y="14" width="7" height="7" />
-                                <rect x="3" y="14" width="7" height="7" />
-                            </svg></div>
-                        <h4>Dashboard</h4>
-                        <p>Next.js · Panel Owner &amp; Kasir dengan React Query &amp; shadcn/ui</p>
-                    </div>
-                    <div class="arch-layer">
-                        <div class="arch-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                                <line x1="6" y1="6" x2="6.01" y2="6" />
-                                <line x1="6" y1="18" x2="6.01" y2="18" />
-                            </svg></div>
-                        <h4>Backend API</h4>
-                        <p>Express.js · RESTful API 46+ endpoint, JWT Auth, Winston Logger</p>
-                    </div>
-                    <div class="arch-layer">
-                        <div class="arch-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                                <polyline points="22,6 12,13 2,6" />
-                            </svg></div>
-                        <h4>Consumer Workers</h4>
-                        <p>Worker services · Email, notifikasi, reminder, &amp; service order</p>
-                    </div>
-                    <div class="arch-layer">
-                        <div class="arch-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <ellipse cx="12" cy="5" rx="9" ry="3" />
-                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-                            </svg></div>
-                        <h4>Data Layer</h4>
-                        <p>PostgreSQL + Redis + RabbitMQ · ACID transactions &amp; async queues</p>
-                    </div>
-                </div>
-
-                <div class="features-grid" style="margin-top: 32px;">
-                    <div class="card reveal">
-                        <h3 style="font-size:.95rem;font-weight:700;margin-bottom:8px;">Separation of Concern</h3>
-                        <p style="font-size:.875rem;color:var(--subtle);">Setiap lapisan — Route, Controller, Service,
-                            Repository — dipisahkan dengan tegas. Service tidak pernah langsung mengakses database;
-                            semua melalui repository.</p>
-                    </div>
-                    <div class="card reveal reveal-delay-1">
-                        <h3 style="font-size:.95rem;font-weight:700;margin-bottom:8px;">Validasi Ketat dengan Zod</h3>
-                        <p style="font-size:.875rem;color:var(--subtle);">Semua request body, query, dan params
-                            divalidasi menggunakan Zod di lapisan controller sebelum logika bisnis dijalankan.</p>
-                    </div>
-                    <div class="card reveal reveal-delay-2">
-                        <h3 style="font-size:.95rem;font-weight:700;margin-bottom:8px;">Async Worker Queue</h3>
-                        <p style="font-size:.875rem;color:var(--subtle);">Operasi berat seperti export Excel masif dan
-                            pengiriman email diproses via BullMQ worker queue agar API utama tetap responsif.</p>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <hr class="sep" />
-
-        <!-- ── Team ─────────────────────────────────────────────────── -->
-        <div class="wrapper" id="tim">
-            <section aria-labelledby="team-heading">
-                <span class="section-tag reveal">Tim Kami</span>
-                <h2 id="team-heading" class="section-title reveal">Orang-orang di<br />Balik BOSS</h2>
-                <p class="section-desc reveal reveal-delay-1">Lima profesional berdedikasi yang bersama-sama membangun,
-                    mengembangkan, dan memasarkan BOSS sebagai solusi nyata bagi UMKM Indonesia.</p>
-
-                <div class="team-grid">
-                    <article class="card team-card reveal" itemscope itemtype="https://schema.org/Person">
-                        <div class="avatar" style="background:linear-gradient(135deg,#7f1d1d,#dc2626);"
-                            aria-hidden="true">Bi</div>
-                        <h3 itemprop="name">Bima Lovrino Prakasa</h3>
-                        <div class="role-label" itemprop="jobTitle">Founder &mdash; BOSS</div>
-                        <p itemprop="description">Menginisiasi dan memimpin BOSS sebagai platform terpadu untuk
-                            digitalisasi UMKM Indonesia. Menetapkan visi jangka panjang dan arah strategis perusahaan.
-                        </p>
-                    </article>
-
-                    <article class="card team-card reveal reveal-delay-1" itemscope
-                        itemtype="https://schema.org/Person">
-                        <div class="avatar" style="background:linear-gradient(135deg,#991b1b,#b91c1c);"
-                            aria-hidden="true">K</div>
-                        <h3 itemprop="name">Kurnia Fajar Viliano
-                            <!-- <span   style="font-size:.8rem;font-weight:500;color:var(--subtle);">S.Tr.Kom</span> -->
-                        </h3>
-                        <div class="role-label" itemprop="jobTitle">Co-Founder &mdash; BOSS</div>
-                        <p itemprop="description">Bersama membangun fondasi bisnis BOSS, mengelola operasional, dan
-                            memperluas ekosistem kemitraan UMKM yang terhubung dengan platform.</p>
-                    </article>
-
-                    <article class="card team-card reveal reveal-delay-2" itemscope
-                        itemtype="https://schema.org/Person">
-                        <div class="avatar" style="background:linear-gradient(135deg,#dc2626,#b91c1c);"
-                            aria-hidden="true">A</div>
-                        <h3 itemprop="name">Afca Arel Pratama</h3>
-                        <div class="role-label" itemprop="jobTitle">CPO &mdash; BOSS</div>
-                        <p itemprop="description">Mengelola roadmap produk, mendefinisikan fitur berdasarkan kebutuhan
-                            pasar, dan memastikan BOSS terus relevan sebagai solusi bisnis bagi UMKM.</p>
-                    </article>
-
-                    <article class="card team-card reveal" itemscope itemtype="https://schema.org/Person">
-                        <div class="avatar" style="background:linear-gradient(135deg,#dc2626,#ef4444);"
-                            aria-hidden="true">P</div>
-                        <h3 itemprop="name">Pito Desri Pauzi</h3>
-                        <div class="role-label" itemprop="jobTitle">CTO &mdash; BOSS</div>
-                        <p itemprop="description">Bertanggung jawab atas arsitektur teknis, infrastruktur platform, dan
-                            standar rekayasa perangkat lunak yang menjadi tulang punggung BOSS.</p>
-                        <a href="https://pitok.my.id/" target="_blank" rel="noopener noreferrer" class="team-link"
-                            itemprop="url"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-                                aria-hidden="true">
-                                <path d="M15 3h6v6" />
-                                <path d="M10 14 21 3" />
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                            </svg> pitok.my.id</a>
-                    </article>
-
-                    <article class="card team-card reveal reveal-delay-1" itemscope
-                        itemtype="https://schema.org/Person">
-                        <div class="avatar" style="background:linear-gradient(135deg,#b91c1c,#dc2626);"
-                            aria-hidden="true">Bg</div>
-                        <h3 itemprop="name">Baghaztra Van Ril</h3>
-                        <div class="role-label" itemprop="jobTitle">CMO &mdash; BOSS</div>
-                        <p itemprop="description">Memimpin strategi pemasaran dan branding BOSS — membangun awareness
-                            dan menghubungkan UMKM Indonesia dengan solusi digital yang tepat.</p>
-                        <a href="https://bgztra.my.id/" target="_blank" rel="noopener noreferrer" class="team-link"
-                            itemprop="url"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-                                aria-hidden="true">
-                                <path d="M15 3h6v6" />
-                                <path d="M10 14 21 3" />
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                            </svg> bgztra.my.id</a>
-                    </article>
-                </div>
-            </section>
-        </div>
-    </main>
-
-    <!-- ── Footer ───────────────────────────────────────────────── -->
     <hr class="sep" />
-    <footer>
-        <div class="wrapper">
-            <div class="footer-inner">
-                <div class="footer-copy">
-                    <strong>BOSS</strong> — Business One Stop System<br />
-                    <span>Solusi kasir &amp; manajemen bisnis untuk UMKM Indonesia</span>
-                </div>
-                <nav class="footer-links" aria-label="Footer navigation">
-                    <a href="#fitur">Fitur</a>
-                    <a href="#tech">Tech Stack</a>
-                    <a href="#arsitektur">Arsitektur</a>
-                    <a href="#tim">Tim</a>
-                </nav>
-            </div>
+
+    <!-- ── FEATURES ───────────────────────────────── -->
+    <div class="wrapper" id="fitur">
+      <section aria-labelledby="features-heading">
+
+        <span class="section-tag reveal">Fitur Utama</span>
+        <h2 id="features-heading" class="section-title reveal reveal-d1">
+          Semua yang UMKM Butuhkan,<br />Dalam Satu Sistem
+        </h2>
+        <p class="section-desc reveal reveal-d2">
+          Dirancang untuk Pemilik Bisnis dan Pelanggan. Setiap alur kerja — dari kasir hingga laporan keuangan —
+          ditangani secara efisien.
+        </p>
+
+        <!-- Tab switcher -->
+        <div style="margin-top:44px;" class="reveal reveal-d3">
+          <div class="tab-switcher" role="tablist" aria-label="Fitur per peran">
+            <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="tab-umkm"
+              onclick="switchTab(this,'umkm')">UMKM / Owner</button>
+            <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-pelanggan"
+              onclick="switchTab(this,'pelanggan')">Pelanggan</button>
+          </div>
+
+          <div id="tab-umkm" class="feature-list active" role="tabpanel">
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Dashboard pengelolaan barang &amp; layanan</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Manajemen stok produk real-time</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Manajemen antrian pelanggan</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Laporan penjualan &amp; performa bisnis</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Multi-outlet &amp; multi-bisnis</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Export laporan Excel &amp; kirim via email</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Sistem komisi kasir &amp; staff layanan</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Analisis HPP, pengeluaran, &amp; laba bersih</div>
+          </div>
+
+          <div id="tab-pelanggan" class="feature-list" role="tabpanel">
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Halaman minimalis &amp; responsif</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Laman home menampilkan UMKM &amp; layanan</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Pemesanan antrian untuk layanan</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Pembayaran digital (QRIS &amp; online)</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Pesan tanpa registrasi (guest order)</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Sistem booking slot layanan</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Riwayat transaksi &amp; status pesanan</div>
+            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg></span>Notifikasi status pesanan otomatis</div>
+          </div>
         </div>
-    </footer>
 
-    <script>
-        function switchTab(btn, tab) {
-            document.querySelectorAll('.role-tab').forEach(t => {
-                t.classList.remove('active');
-                t.setAttribute('aria-selected', 'false');
-            });
-            document.querySelectorAll('.role-content').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            btn.setAttribute('aria-selected', 'true');
-            document.getElementById('tab-' + tab).classList.add('active');
+        <!-- Bento grid -->
+        <div class="bento-grid">
+
+          <article class="bento-card span-2 reveal">
+            <div class="bento-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+            </div>
+            <h3>Sistem Kasir (POS)</h3>
+            <p>Proses transaksi penjualan dengan cepat. Dilengkapi manajemen produk (barang &amp; layanan), pembayaran
+              digital, dan cetak struk — semua dalam satu antarmuka kasir yang intuitif dan mudah digunakan oleh staf
+              manapun.</p>
+            <span class="bento-tag">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              Transaksi real-time
+            </span>
+          </article>
+
+          <article class="bento-card reveal reveal-d1">
+            <div class="bento-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </div>
+            <h3>Real-time Processing</h3>
+            <p>RabbitMQ &amp; BullMQ dengan Redis untuk notifikasi, job scheduling, dan export transaksi besar — tanpa
+              menghambat API utama.</p>
+          </article>
+
+          <article class="bento-card reveal reveal-d1">
+            <div class="bento-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="4" />
+                <line x1="12" y1="20" x2="12" y2="10" />
+                <line x1="6" y1="20" x2="6" y2="16" />
+              </svg>
+            </div>
+            <h3>Laporan Bisnis Lengkap</h3>
+            <p>Analisis pendapatan, HPP, komisi, dan laba bersih per outlet. Export Excel otomatis &amp; kirim via email
+              ke pemilik.</p>
+          </article>
+
+          <article class="bento-card reveal reveal-d2">
+            <div class="bento-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path
+                  d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                <path d="m3.3 7 8.7 5 8.7-5" />
+                <path d="M12 22V12" />
+              </svg>
+            </div>
+            <h3>Manajemen Stok</h3>
+            <p>Pantau stok masuk &amp; keluar secara real-time. Kalkulasi HPP otomatis dari setiap log stok untuk
+              akurasi laporan keuangan.</p>
+            <span class="bento-tag">Auto HPP</span>
+          </article>
+
+          <article class="bento-card reveal reveal-d2">
+            <div class="bento-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </div>
+            <h3>Booking &amp; Antrian</h3>
+            <p>Sistem booking slot layanan dengan manajemen antrian. Pelanggan bisa memesan tanpa registrasi (guest
+              order).</p>
+          </article>
+
+          <article class="bento-card reveal reveal-d3">
+            <div class="bento-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </div>
+            <h3>Autentikasi &amp; Role</h3>
+            <p>JWT yang aman dengan role-based access control. Owner, Kasir, dan Customer — setiap peran hanya akses
+              fitur relevan.</p>
+          </article>
+
+        </div>
+      </section>
+    </div>
+
+    <hr class="sep" />
+
+    <!-- ── TECH STACK ──────────────────────────────── -->
+    <div class="wrapper" id="tech">
+      <section aria-labelledby="tech-heading">
+
+        <span class="section-tag reveal">Tech Stack</span>
+        <h2 id="tech-heading" class="section-title reveal reveal-d1">
+          Dibangun dengan<br />Teknologi Modern
+        </h2>
+        <p class="section-desc reveal reveal-d2">
+          Setiap komponen dipilih untuk performa, skalabilitas, dan kemudahan pengembangan jangka panjang.
+        </p>
+
+        <div class="tech-grid">
+
+          <div class="tech-card reveal">
+            <div class="tech-card-header">
+              <div class="tech-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="2" y="2" width="20" height="8" rx="2" />
+                  <rect x="2" y="14" width="20" height="8" rx="2" />
+                  <line x1="6" y1="6" x2="6.01" y2="6" />
+                  <line x1="6" y1="18" x2="6.01" y2="18" />
+                </svg>
+              </div>
+              <h3>Backend</h3>
+            </div>
+            <div class="tech-chips">
+              <span class="chip node">Node.js</span>
+              <span class="chip ts">TypeScript</span>
+              <span class="chip node">Express.js</span>
+              <span class="chip sky">Prisma ORM</span>
+              <span class="chip sky">Zod</span>
+              <span class="chip sky">Jest</span>
+              <span class="chip sky">Winston</span>
+            </div>
+          </div>
+
+          <div class="tech-card reveal reveal-d1">
+            <div class="tech-card-header">
+              <div class="tech-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3" />
+                  <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                  <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                </svg>
+              </div>
+              <h3>Database &amp; Cache</h3>
+            </div>
+            <div class="tech-chips">
+              <span class="chip db">PostgreSQL</span>
+              <span class="chip cache">Redis</span>
+              <span class="chip mq">RabbitMQ</span>
+              <span class="chip mq">BullMQ</span>
+            </div>
+          </div>
+
+          <div class="tech-card reveal reveal-d2">
+            <div class="tech-card-header">
+              <div class="tech-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7" />
+                  <rect x="14" y="3" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" />
+                </svg>
+              </div>
+              <h3>Frontend &amp; Dashboard</h3>
+            </div>
+            <div class="tech-chips">
+              <span class="chip next">Next.js</span>
+              <span class="chip ts">TypeScript</span>
+              <span class="chip next">Tailwind CSS</span>
+              <span class="chip sky">shadcn/ui</span>
+              <span class="chip sky">React Query</span>
+              <span class="chip sky">Axios</span>
+            </div>
+          </div>
+
+          <div class="tech-card reveal reveal-d1">
+            <div class="tech-card-header">
+              <div class="tech-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </div>
+              <h3>Integrasi &amp; Laporan</h3>
+            </div>
+            <div class="tech-chips">
+              <span class="chip green">Nodemailer</span>
+              <span class="chip green">ExcelJS</span>
+              <span class="chip green">Handlebars</span>
+              <span class="chip green">Socket.io</span>
+            </div>
+          </div>
+
+          <div class="tech-card reveal reveal-d2">
+            <div class="tech-card-header">
+              <div class="tech-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+              </div>
+              <h3>DevOps &amp; Infrastructure</h3>
+            </div>
+            <div class="tech-chips">
+              <span class="chip sky">Docker</span>
+              <span class="chip sky">Docker Compose</span>
+              <span class="chip next">Nginx</span>
+              <span class="chip sky">OpenAPI 3.0</span>
+            </div>
+          </div>
+
+          <div class="tech-card reveal reveal-d3">
+            <div class="tech-card-header">
+              <div class="tech-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </div>
+              <h3>Auth &amp; Keamanan</h3>
+            </div>
+            <div class="tech-chips">
+              <span class="chip ts">JWT</span>
+              <span class="chip sky">bcrypt</span>
+              <span class="chip acc">Rate Limiting</span>
+              <span class="chip sky">CORS</span>
+              <span class="chip sky">Helmet</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+    <hr class="sep" />
+
+    <!-- ── ARCHITECTURE ────────────────────────────── -->
+    <div class="wrapper" id="arsitektur">
+      <section aria-labelledby="arch-heading">
+
+        <span class="section-tag reveal">Arsitektur</span>
+        <h2 id="arch-heading" class="section-title reveal reveal-d1">
+          Desain Sistem<br />Modular &amp; Skalabel
+        </h2>
+        <p class="section-desc reveal reveal-d2">
+          Setiap layanan dipisahkan dengan tanggung jawab yang jelas — memungkinkan skalabilitas dan maintainability
+          yang optimal.
+        </p>
+
+        <div class="arch-wrapper reveal" role="img" aria-label="Diagram arsitektur sistem BOSS">
+
+          <div class="arch-row">
+            <div class="arch-label">
+              <span class="arch-row-num">01</span>
+              <span class="arch-row-name">Frontend Customer</span>
+            </div>
+            <div class="arch-body">
+              <span class="arch-chip">Next.js</span>
+              <span class="arch-chip">TypeScript</span>
+              <span class="arch-chip">Tailwind CSS</span>
+              <span class="arch-desc">Halaman publik, pencarian UMKM, pemesanan &amp; transaksi pelanggan</span>
+            </div>
+          </div>
+
+          <div class="arch-row">
+            <div class="arch-label">
+              <span class="arch-row-num">02</span>
+              <span class="arch-row-name">Dashboard</span>
+            </div>
+            <div class="arch-body">
+              <span class="arch-chip">Next.js</span>
+              <span class="arch-chip">shadcn/ui</span>
+              <span class="arch-chip">React Query</span>
+              <span class="arch-desc">Panel Owner &amp; Kasir dengan analytics dan manajemen operasional</span>
+            </div>
+          </div>
+
+          <div class="arch-row">
+            <div class="arch-label">
+              <span class="arch-row-num">03</span>
+              <span class="arch-row-name">Backend API</span>
+            </div>
+            <div class="arch-body">
+              <span class="arch-chip">Express.js</span>
+              <span class="arch-chip">Prisma ORM</span>
+              <span class="arch-chip">JWT Auth</span>
+              <span class="arch-chip">Zod</span>
+              <span class="arch-desc">RESTful API 46+ endpoint, Winston Logger, rate limiting</span>
+            </div>
+          </div>
+
+          <div class="arch-row">
+            <div class="arch-label">
+              <span class="arch-row-num">04</span>
+              <span class="arch-row-name">Worker Services</span>
+            </div>
+            <div class="arch-body">
+              <span class="arch-chip">RabbitMQ</span>
+              <span class="arch-chip">BullMQ</span>
+              <span class="arch-chip">Socket.io</span>
+              <span class="arch-desc">Email, notifikasi push, reminder, &amp; service order queue</span>
+            </div>
+          </div>
+
+          <div class="arch-row">
+            <div class="arch-label">
+              <span class="arch-row-num">05</span>
+              <span class="arch-row-name">Data Layer</span>
+            </div>
+            <div class="arch-body">
+              <span class="arch-chip">PostgreSQL</span>
+              <span class="arch-chip">Redis</span>
+              <span class="arch-chip">Docker</span>
+              <span class="arch-desc">ACID transactions, async queues, caching, containerized services</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="arch-principles">
+          <div class="principle-card reveal">
+            <div class="principle-num">Prinsip 01</div>
+            <h3>Separation of Concern</h3>
+            <p>Setiap lapisan — Route, Controller, Service, Repository — dipisahkan dengan tegas. Service tidak pernah
+              langsung akses database; semua melalui repository.</p>
+          </div>
+          <div class="principle-card reveal reveal-d1">
+            <div class="principle-num">Prinsip 02</div>
+            <h3>Validasi Ketat dengan Zod</h3>
+            <p>Semua request body, query, dan params divalidasi menggunakan Zod di lapisan controller sebelum logika
+              bisnis dijalankan.</p>
+          </div>
+          <div class="principle-card reveal reveal-d2">
+            <div class="principle-num">Prinsip 03</div>
+            <h3>Async Worker Queue</h3>
+            <p>Operasi berat seperti export Excel masif dan pengiriman email diproses via BullMQ worker queue agar API
+              utama tetap responsif.</p>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <hr class="sep" />
+
+    <!-- ── TEAM ────────────────────────────────────── -->
+    <div class="wrapper" id="tim">
+      <section aria-labelledby="team-heading">
+
+        <span class="section-tag reveal">Tim Kami</span>
+        <h2 id="team-heading" class="section-title reveal reveal-d1">
+          Orang-orang di<br />Balik BOSS
+        </h2>
+        <p class="section-desc reveal reveal-d2">
+          Lima profesional berdedikasi yang bersama-sama membangun, mengembangkan, dan memasarkan BOSS sebagai solusi
+          nyata bagi UMKM Indonesia.
+        </p>
+
+        <div class="team-grid">
+
+          <article class="team-card reveal" itemscope itemtype="https://schema.org/Person">
+            <div class="team-avatar" style="background:linear-gradient(135deg,#7f1d1d,#dc2626)" aria-hidden="true">Bi
+            </div>
+            <h3 itemprop="name">Bima Lovrino Prakasa</h3>
+            <div class="team-role" itemprop="jobTitle">Founder — BOSS</div>
+            <p itemprop="description">Menginisiasi dan memimpin BOSS sebagai platform terpadu untuk digitalisasi UMKM
+              Indonesia. Menetapkan visi jangka panjang dan arah strategis perusahaan.</p>
+          </article>
+
+          <article class="team-card reveal reveal-d1" itemscope itemtype="https://schema.org/Person">
+            <div class="team-avatar" style="background:linear-gradient(135deg,#991b1b,#c2410c)" aria-hidden="true">K
+            </div>
+            <h3 itemprop="name">Kurnia Fajar Viliano</h3>
+            <div class="team-role" itemprop="jobTitle">Co-Founder — BOSS</div>
+            <p itemprop="description">Bersama membangun fondasi bisnis BOSS, mengelola operasional, dan memperluas
+              ekosistem kemitraan UMKM yang terhubung dengan platform.</p>
+          </article>
+
+          <article class="team-card reveal reveal-d2" itemscope itemtype="https://schema.org/Person">
+            <div class="team-avatar" style="background:linear-gradient(135deg,#dc2626,#b91c1c)" aria-hidden="true">A
+            </div>
+            <h3 itemprop="name">Afca Arel Pratama</h3>
+            <div class="team-role" itemprop="jobTitle">CPO — BOSS</div>
+            <p itemprop="description">Mengelola roadmap produk, mendefinisikan fitur berdasarkan kebutuhan pasar, dan
+              memastikan BOSS terus relevan sebagai solusi bisnis bagi UMKM.</p>
+          </article>
+
+          <article class="team-card reveal reveal-d1" itemscope itemtype="https://schema.org/Person">
+            <div class="team-avatar" style="background:linear-gradient(135deg,#dc2626,#ef4444)" aria-hidden="true">P
+            </div>
+            <h3 itemprop="name">Pito Desri Pauzi</h3>
+            <div class="team-role" itemprop="jobTitle">CTO — BOSS</div>
+            <p itemprop="description">Bertanggung jawab atas arsitektur teknis, infrastruktur platform, dan standar
+              rekayasa perangkat lunak yang menjadi tulang punggung BOSS.</p>
+            <a href="https://pitok.my.id/" target="_blank" rel="noopener noreferrer" class="team-link" itemprop="url">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 3h6v6" />
+                <path d="M10 14 21 3" />
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              </svg>
+              pitok.my.id
+            </a>
+          </article>
+
+          <article class="team-card reveal reveal-d2" itemscope itemtype="https://schema.org/Person">
+            <div class="team-avatar" style="background:linear-gradient(135deg,#b91c1c,#dc2626)" aria-hidden="true">Bg
+            </div>
+            <h3 itemprop="name">Baghaztra Van Ril</h3>
+            <div class="team-role" itemprop="jobTitle">CMO — BOSS</div>
+            <p itemprop="description">Memimpin strategi pemasaran dan branding BOSS — membangun awareness dan
+              menghubungkan UMKM Indonesia dengan solusi digital yang tepat.</p>
+            <a href="https://bgztra.my.id/" target="_blank" rel="noopener noreferrer" class="team-link" itemprop="url">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 3h6v6" />
+                <path d="M10 14 21 3" />
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              </svg>
+              bgztra.my.id
+            </a>
+          </article>
+
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- ── FOOTER ──────────────────────────────────── -->
+  <hr class="sep" />
+  <footer>
+    <div class="wrapper">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="#" class="footer-logo">
+            <span class="nav-logo-icon"
+              style="width:30px;height:30px;font-size:.75rem;border-radius:8px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e03030,#b91c1c);color:#fff;font-weight:900;font-family:var(--font-display);box-shadow:0 4px 12px rgba(224,48,48,.3)">B</span>
+            BOSS
+          </a>
+          <p class="footer-tagline">Business One Stop System — Solusi kasir &amp; manajemen bisnis all-in-one untuk UMKM
+            Indonesia. Multi-outlet, real-time, tanpa instalasi.</p>
+        </div>
+        <nav class="footer-nav" aria-label="Footer navigation">
+          <div class="footer-nav-group">
+            <h4>Navigasi</h4>
+            <ul>
+              <li><a href="#fitur">Fitur</a></li>
+              <li><a href="#tech">Tech Stack</a></li>
+              <li><a href="#arsitektur">Arsitektur</a></li>
+              <li><a href="#tim">Tim</a></li>
+            </ul>
+          </div>
+          <div class="footer-nav-group">
+            <h4>Produk</h4>
+            <ul>
+              <li><a href="https://bossapp.id" target="_blank" rel="noopener noreferrer">Customer View</a></li>
+              <li><a href="https://dashboard.bossapp.id" target="_blank" rel="noopener noreferrer">Dashboard Owner</a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">
+          &copy; 2025 <strong>BOSS</strong> — Business One Stop System. Dibuat dengan ❤️ untuk UMKM Indonesia.
+        </p>
+
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // ── Tab switcher
+    function switchTab(btn, tab) {
+      document.querySelectorAll('.tab-btn').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.feature-list').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      document.getElementById('tab-' + tab).classList.add('active');
+    }
+
+    // ── Nav scroll effect
+    const navEl = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      navEl.classList.toggle('scrolled', window.scrollY > 20);
+    }, { passive: true });
+
+    // ── Mobile menu
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+
+    hamburger.addEventListener('click', () => {
+      const isOpen = hamburger.classList.toggle('open');
+      mobileMenu.classList.toggle('open', isOpen);
+      hamburger.setAttribute('aria-expanded', isOpen);
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+    });
+
+    document.querySelectorAll('.mobile-link, .mobile-menu a').forEach(a => {
+      a.addEventListener('click', () => {
+        hamburger.classList.remove('open');
+        mobileMenu.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      });
+    });
+
+    // ── Scroll reveal
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
         }
+      }),
+      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
+    );
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-        // Scroll reveal
-        const observer = new IntersectionObserver(
-            entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
-            { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-        );
-        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-    </script>
+    // ── Bento card glow on mouse move
+    document.querySelectorAll('.bento-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+        card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+      });
+    });
+  </script>
+
 </body>
 
 </html>

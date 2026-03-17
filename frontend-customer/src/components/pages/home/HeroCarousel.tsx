@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react"
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useCarousel } from "@/hooks/useCarousel"
 import { useTranslations } from "@/hooks/useI18n"
 import type { HomeBanner } from "@/types/home"
@@ -14,12 +14,18 @@ interface HeroCarouselProps {
 
 export function HeroCarousel({ banners }: HeroCarouselProps) {
     const slides = useMemo(() => banners.filter(Boolean), [banners])
+    const [isMounted, setIsMounted] = useState(false)
     const t = useTranslations("homePage")
 
     const { active, isInteracting, isDragging, goTo, prev, next, handlers } = useCarousel({
         count: slides.length,
         autoplay: true,
     })
+
+    useEffect(() => {
+        if (isMounted) return;
+        setIsMounted(true)
+    }, [])
 
     if (slides.length === 0) {
         return (
