@@ -35,9 +35,9 @@ type Props = {
 };
 
 const ACCEPTED_IMAGE = ".jpg,.jpeg,.png,.webp,.gif";
-const ACCEPTED_VIDEO = ".mp4,.webm,.mov";
+// const ACCEPTED_VIDEO = ".mp4,.webm,.mov";
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
+// const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
 
 export default function ServiceMediaUploader({
     value,
@@ -71,10 +71,10 @@ export default function ServiceMediaUploader({
 
             // Validate sizes
             for (const file of fileArray) {
-                const isVideo = file.type.startsWith("video/");
-                const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+                // const isVideo = file.type.startsWith("video/");
+                const maxSize = MAX_IMAGE_SIZE;
                 if (file.size > maxSize) {
-                    toast.error(`${file.name}: Terlalu besar (maks ${isVideo ? "50MB" : "5MB"})`);
+                    toast.error(`${file.name}: Terlalu besar (maks ${"5MB"})`);
                     return;
                 }
             }
@@ -287,7 +287,7 @@ export default function ServiceMediaUploader({
                         ref={fileInputRef}
                         type="file"
                         multiple
-                        accept={`${ACCEPTED_IMAGE},${ACCEPTED_VIDEO}`}
+                        accept={`${ACCEPTED_IMAGE}`}
                         className="hidden"
                         onChange={(e) => handleFileUpload(e.target.files)}
                     />

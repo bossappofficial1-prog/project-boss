@@ -1,5 +1,7 @@
-import { PaymentStatus, Prisma } from "@prisma/client";
+import { Business, GuestCustomer, Order, OrderItem, Outlet, PaymentStatus, Prisma, Product, Transaction } from "@prisma/client";
 import { db } from "../config/prisma";
+import { parseAndForceIsoUtc } from "./helper";
+import { DeepIsoDate } from "./queue-v2.repository";
 
 type ListManualPaymentOptions = {
     status?: PaymentStatus[];
@@ -9,27 +11,71 @@ type ListManualPaymentOptions = {
     limit?: number;
 };
 
+export type ManualTransactionWithRelationsRaw = Transaction & {
+    order: Order & {
+        outlet: Outlet & {
+            business: Business;
+        };
+        guestCustomer: GuestCustomer | null;
+        items: (OrderItem & {
+            product: Product;
+        })[];
+    };
+};
+
+export type ManualTransactionWithRelations = DeepIsoDate<ManualTransactionWithRelationsRaw>;
+
 export class ManualPaymentRepository {
     static async createManualTransaction(data: Prisma.TransactionCreateInput) {
         return db.transaction.create({ data });
     }
 
-    static async findManualTransactionByOrderId(orderId: string) {
-        return db.transaction.findFirst({
-            where: { orderId, isManual: true },
-            include: {
-                order: {
-                    include: {
-                        outlet: {
-                            include: {
-                                business: true
-                            }
-                        },
-                        guestCustomer: true
-                    }
-                }
-            }
-        });
+    static async findManualTransactionByOrderId(orderId: string): Promise<ManualTransactionWithRelations> {
+        const rawTransaction = await db.$queryRaw<ManualTransactionWithRelationsRaw[]>`
+            SELECT 
+                t.*,
+                (
+                    SELECT to_jsonb(o) || jsonb_build_object(
+                        'outlet', (
+                            SELECT to_jsonb(out) || jsonb_build_object(
+                                'business', (
+                                    SELECT to_jsonb(b) 
+                                    FROM "Business" b 
+                                    WHERE b.id = out."businessId"
+                                )
+                            )
+                            FROM "Outlet" out 
+                            WHERE out.id = o."outletId"
+                        ),
+                        'guestCustomer', (
+                            SELECT to_jsonb(gc) 
+                            FROM "GuestCustomer" gc 
+                            WHERE gc.id = o."guestCustomerId"
+                        ),
+                        'items', (
+                            SELECT COALESCE(jsonb_agg(
+                                to_jsonb(oi) || jsonb_build_object(
+                                    'product', (
+                                        SELECT to_jsonb(p) 
+                                        FROM "Product" p 
+                                        WHERE p.id = oi."productId"
+                                    )
+                                )
+                            ), '[]'::jsonb)
+                            FROM "OrderItem" oi 
+                            WHERE oi."orderId" = o.id
+                        )
+                    )
+                    FROM "Order" o 
+                    WHERE o.id = t."orderId"
+                ) AS order
+            FROM "Transaction" t
+            WHERE t."orderId" = ${orderId} 
+              AND t."isManual" = true
+            LIMIT 1
+        `;
+
+        return parseAndForceIsoUtc(rawTransaction[0]);
     }
 
     static async updateManualTransaction(id: string, data: Prisma.TransactionUncheckedUpdateInput) {

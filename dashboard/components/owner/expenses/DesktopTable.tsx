@@ -6,10 +6,13 @@ import { PenBox, Trash2 } from "lucide-react";
 import ExpensesMobileCards from "./MobileCards";
 import { formatCurrency } from "@/lib/utils";
 
+import Image from "next/image";
+
 interface ExpensesDesktopTableProps {
   items: Expense[];
   onEdit?: (exp: Expense) => void;
   onDelete?: (exp: Expense) => void;
+  onPreviewImage?: (url: string) => void;
 }
 
 const fmtDate = (iso: string) =>
@@ -21,7 +24,7 @@ const fmtDate = (iso: string) =>
     minute: "2-digit",
   });
 
-export function ExpensesDesktopTable({ items, onEdit, onDelete }: ExpensesDesktopTableProps) {
+export function ExpensesDesktopTable({ items, onEdit, onDelete, onPreviewImage }: ExpensesDesktopTableProps) {
   return (
     <DataTable
       data={items}
@@ -39,7 +42,27 @@ export function ExpensesDesktopTable({ items, onEdit, onDelete }: ExpensesDeskto
         {
           accessorKey: "amount",
           header: "Jumlah",
-          cell: (amount) => formatCurrency(amount.getValue() as number),
+          cell: (amount) => (
+            <span className="font-semibold text-red-600 dark:text-red-400">
+              -{formatCurrency(amount.getValue() as number)}
+            </span>
+          ),
+        },
+        {
+          accessorKey: "receiptUrl",
+          header: "Bukti Transaksi",
+          cell: (info: any) => {
+            const url = info.getValue() as string;
+            if (!url) return <span className="text-xs text-muted-foreground">—</span>;
+            return (
+              <button
+                onClick={() => onPreviewImage?.(url)}
+                className="relative block w-12 h-12 rounded overflow-hidden border border-slate-200 dark:border-slate-800 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                <Image src={url} alt="Bukti Transaksi" fill className="object-cover" />
+              </button>
+            );
+          },
         },
       ]}
       rowActions={() => {

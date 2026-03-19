@@ -5,7 +5,7 @@ import { useForm, type Path, type ControllerRenderProps } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building2, Clock, FileText, MapPin, Phone, Store, ToggleLeft } from 'lucide-react'
+import { Building2, Clock, FileText, MapPin, Phone, Store, ToggleLeft, Mail } from 'lucide-react'
 import MapPicker from '@/components/ui/MapPicker'
 import OperatingHoursManager from '@/components/ui/OperatingHoursManager'
 import { toast } from 'sonner'
@@ -28,6 +28,7 @@ const outletSchema = z.object({
       const re = /^(?:\+62|62|0)8[1-9][0-9]{6,10}$/
       return re.test(v.replace(/\s|-/g, ''))
     }, { message: 'Masukkan nomor telepon yang valid (contoh: 081234567890 atau +6281234567890)' }),
+  email: z.string().email('Format email tidak valid').optional().or(z.literal('')),
   description: z.string().optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
   latitude: z.number().optional(),
@@ -63,6 +64,7 @@ export default function AddOutletModal({
       name: '',
       address: '',
       phone: '',
+      email: '',
       description: '',
       status: 'ACTIVE',
       latitude: undefined,
@@ -93,6 +95,7 @@ export default function AddOutletModal({
       name: outletDetail.name || '',
       address: outletDetail.address || '',
       phone: outletDetail.phone || '',
+      email: outletDetail.email || '',
       description: outletDetail.description || '',
       status: outletDetail.isOpen === true ? 'ACTIVE' : 'INACTIVE',
       latitude: outletDetail.latitude || undefined,
@@ -141,6 +144,7 @@ export default function AddOutletModal({
         name: formData.get('name') as string,
         address: formData.get('address') as string,
         phone: formData.get('phone') as string,
+        email: (formData.get('email') as string) || undefined,
         description: (formData.get('description') as string) || undefined,
         latitude: latValue && latValue !== 'undefined' ? Number(latValue) : undefined,
         longitude: lngValue && lngValue !== 'undefined' ? Number(lngValue) : undefined,
@@ -207,6 +211,7 @@ export default function AddOutletModal({
         name: '',
         address: '',
         phone: '',
+        email: '',
         description: '',
         status: 'ACTIVE',
         latitude: undefined,
@@ -239,6 +244,14 @@ export default function AddOutletModal({
         { label: 'Aktif', value: 'ACTIVE' },
         { label: 'Tidak Aktif', value: 'INACTIVE' },
       ],
+    },
+    {
+      name: 'email',
+      label: 'Email (Opsional)',
+      type: 'email' as const,
+      placeholder: 'contoh@outlet.com',
+      icon: Mail,
+      colSpan: 'full' as const,
     },
     {
       name: 'description',
@@ -332,6 +345,7 @@ export default function AddOutletModal({
         name: '',
         address: '',
         phone: '',
+        email: '',
         description: '',
         status: 'ACTIVE',
         latitude: undefined,

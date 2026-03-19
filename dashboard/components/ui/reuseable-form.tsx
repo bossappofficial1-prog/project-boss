@@ -596,16 +596,22 @@ function FieldInputSwitch<T extends FieldValues>({
       );
     case "custom":
       return <>{field.renderCustom?.({ field: formField })}</>;
-    case "date":
+    case "date": {
+      const value =
+        typeof formField.value === "string" && !isNaN(new Date(formField.value).getTime())
+          ? formField.value
+          : "";
+
       return (
         <DatePicker
           id={formField.name}
           onValueChange={formField.onChange}
-          value={formField.value}
+          value={value}
           placeholder={placeholderText}
-          className={field.className + " w-full"}
+          className={(field.className ?? "") + " w-full"}
         />
       );
+    }
     case "currency":
       return (
         <div className="relative">

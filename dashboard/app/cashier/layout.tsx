@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { LogOut, ShoppingBag } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Image from "next/image";
 import { CashierNavbar } from "@/components/cashier/CashierNavbar";
@@ -39,6 +39,7 @@ export function useCashierContext() {
  */
 export default function CashierLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const {
     data: cashierData,
@@ -73,6 +74,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
       if (typeof window !== "undefined") {
         sessionStorage.removeItem(CASHIER_SESSION_CACHE_KEY);
       }
+      queryClient.removeQueries({ queryKey: ["cashier-auth"] });
       toast.success("Logout berhasil");
       router.push("/auth/login/cashier");
     } catch (error) {

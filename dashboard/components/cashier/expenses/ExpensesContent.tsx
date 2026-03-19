@@ -31,7 +31,10 @@ import {
     type Expense,
 } from "@/hooks/api/use-expenses";
 import { ExpenseFormDialog } from "./ExpenseFormDialog";
-
+import { uploadApi } from "@/lib/api";
+import Image from "next/image";
+import { ColumnDef } from "@tanstack/react-table";
+import { ReceiptPreviewModal } from "@/components/modals/ReceiptPreviewModal";
 interface ExpensesContentProps {
     outletId: string;
     cashierName: string;
@@ -73,7 +76,8 @@ function formatTime(iso: string): string {
     return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 }
 
-const expenseColumns = [
+// To pass the handlePreview function to the columns, we define a getter function
+const getExpenseColumns = (handlePreview: (url: string) => void): ColumnDef<Expense>[] => [
     {
         accessorKey: "date" as const,
         header: "Tanggal",
@@ -110,6 +114,22 @@ const expenseColumns = [
             </span>
         ),
     },
+    {
+        accessorKey: "receiptUrl",
+        header: "Bukti Transaksi",
+        cell: (info: any) => {
+            const url = info.getValue() as string;
+            if (!url) return <span className="text-xs text-muted-foreground">—</span>;
+            return (
+                <button
+                    onClick={() => handlePreview(url)}
+                    className="relative block w-12 h-12 rounded overflow-hidden border border-slate-200 dark:border-slate-800 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                    <Image src={url} alt="Bukti Transaksi" fill className="object-cover" />
+                </button>
+            );
+        },
+    },
 ];
 
 export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps) {
@@ -139,9 +159,20 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
     const [formOpen, setFormOpen] = useState(false);
     const [editing, setEditing] = useState<Expense | null>(null);
 
+    // Image preview modal
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewOpen, setPreviewOpen] = useState(false);
+
     // Delete confirm
     const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
+
+    const handlePreviewImage = useCallback((url: string) => {
+        setPreviewUrl(url);
+        setPreviewOpen(true);
+    }, []);
+
+    const columns = useMemo(() => getExpenseColumns(handlePreviewImage), [handlePreviewImage]);
 
     const handleAdd = useCallback(() => {
         setEditing(null);
@@ -159,7 +190,7 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
     }, []);
 
     const handleFormSubmit = useCallback(
-        async (formData: { description: string; amount: number; date: string }, id?: string) => {
+        async (formData: { description: string; amount: number; date: string; receiptUrl?: string | null }, id?: string) => {
             try {
                 if (id) {
                     await updateMutation.mutateAsync({ id, ...formData });
@@ -176,6 +207,7 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
             } catch (error: any) {
                 const msg = error?.response?.data?.message ?? error?.message ?? "Gagal menyimpan pengeluaran";
                 toast.error(msg);
+                formData.receiptUrl && await uploadApi.deleteByUrl(formData.receiptUrl)
             }
         },
         [outletId, cashierName, createMutation, updateMutation],
@@ -291,7 +323,7 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
             {/* Expense Table */}
             <DataTable
                 data={expenses}
-                columns={expenseColumns}
+                columns={columns}
                 isLoading={isLoading}
                 emptyMessage="Belum ada pengeluaran pada periode ini"
                 stickyHeader
@@ -346,6 +378,13 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
                 confirmVariant="destructive"
                 confirmLoading={deleteMutation.isPending}
                 onConfirm={handleDeleteConfirm}
+            />
+
+            {/* Receipt Preview Modal */}
+            <ReceiptPreviewModal
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                imageUrl={previewUrl}
             />
         </div>
     );

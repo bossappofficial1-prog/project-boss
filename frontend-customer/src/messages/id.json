@@ -563,12 +563,18 @@
             "completed": "Selesai",
             "cancelled": "Dibatalkan",
             "awaiting_payment": "Menunggu Pembayaran",
+            "awaiting_verification": "Menunggu Verifikasi",
+            "payment_failed": "Pembayaran Gagal",
+            "payment_expired": "Pembayaran Kadaluarsa",
+            "payment_rejected": "Pembayaran Ditolak",
             "processing": "Diproses",
             "confirmed_label": "Dikonfirmasi",
             "ready_label": "Siap Diambil",
             "on_going_label": "Berlangsung",
             "completed_label": "Selesai",
-            "cancelled_label": "Dibatalkan"
+            "cancelled_label": "Dibatalkan",
+            "ready_service_label": "Siap Dilayani",
+            "and_more_items": "item lainnya"
         },
         "tabs": {
             "all": "Semua",
@@ -667,6 +673,7 @@
         },
         "timeline": {
             "awaiting_payment": "Menunggu Pembayaran",
+            "awaiting_verification": "Menunggu Verifikasi",
             "processing": "Diproses",
             "confirmed": "Dikonfirmasi",
             "confirmed_service": "Booking Dikonfirmasi",

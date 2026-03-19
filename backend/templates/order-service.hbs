@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesanan Layanan Baru</title>
+    <style>
+        /* Reset Styles */
+        body,
+        p,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f5;
+            /* Background luar terang */
+            color: #09090b;
+            /* Teks gelap */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Container */
+        .email-wrapper {
+            width: 100%;
+            background-color: #f4f4f5;
+            padding: 40px 20px;
+        }
+
+        .email-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            /* Background dalam putih */
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 25px rgba(220, 38, 38, 0.08);
+            /* Glow merah tipis */
+            border: 1px solid #e4e4e7;
+        }
+
+        /* Header */
+        .header {
+            background-color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid #e4e4e7;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #ef4444;
+            /* Accent 2 (Merah) */
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #71717a;
+            /* Subtle text */
+        }
+
+        /* Body */
+        .body-content {
+            padding: 30px;
+        }
+
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #09090b;
+        }
+
+        .intro-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #52525b;
+            margin-bottom: 25px;
+        }
+
+        /* Detail Box */
+        .details-box {
+            background-color: #fafafa;
+            border: 1px solid #e4e4e7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .detail-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-label {
+            display: table-cell;
+            width: 40%;
+            font-size: 14px;
+            color: #52525b;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            display: table-cell;
+            width: 60%;
+            font-size: 14px;
+            color: #09090b;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        /* Highlight Schedule */
+        .schedule-highlight {
+            background-color: #fef2f2;
+            /* Latar merah sangat muda */
+            color: #dc2626;
+            /* Accent 1 */
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border: 1px dashed #fca5a5;
+        }
+
+        /* Button */
+        .btn-container {
+            text-align: center;
+            margin: 35px 0 20px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #dc2626;
+            /* Accent 1 */
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.25);
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #b91c1c;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+            color: #a1a1aa;
+            background-color: #fafafa;
+            border-top: 1px solid #e4e4e7;
+        }
+
+        .footer p {
+            margin-bottom: 5px;
+        }
+
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .email-wrapper {
+                padding: 20px 10px;
+            }
+
+            .body-content {
+                padding: 20px;
+            }
+
+            .detail-label,
+            .detail-value {
+                display: block;
+                width: 100%;
+                text-align: left;
+            }
+
+            .detail-value {
+                margin-top: 4px;
+                margin-bottom: 12px;
+            }
+
+            .detail-row:last-child .detail-value {
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-wrapper">
+        <table class="email-card" width="100%" border="0" cellspacing="0" cellpadding="0">
+            <!-- Header -->
+            <tr>
+                <td class="header">
+                    <h1>📅 Pesanan Layanan Baru!</h1>
+                    <p>Segera persiapkan layanan Anda</p>
+                </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+                <td class="body-content">
+                    <p class="greeting">Halo {{OwnerName}},</p>
+                    <p class="intro-text">
+                        Kabar baik! Ada pesanan layanan baru yang masuk untuk outlet <strong>{{OutletName}}</strong>.
+                        Berikut adalah rincian pesanan yang perlu Anda ketahui:
+                    </p>
+
+                    <!-- Highlight Jadwal -->
+                    <div class="schedule-highlight">
+                        Jadwal: {{BookingDate}} | Pukul {{BookingTime}}
+                    </div>
+
+                    <!-- Detail Pesanan -->
+                    <div class="details-box">
+                        <div class="detail-row">
+                            <span class="detail-label">ID Pesanan</span>
+                            <span class="detail-value">#{{OrderId}}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Layanan</span>
+                            <span class="detail-value">{{ServiceName}}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Pelanggan</span>
+                            <span class="detail-value">{{CustomerName}}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Kontak</span>
+                            <span class="detail-value">{{CustomerPhone}}</span>
+                        </div>
+                        <!-- Tambahan Metode Pembayaran -->
+                        <div class="detail-row">
+                            <span class="detail-label">Metode Pembayaran</span>
+                            <span class="detail-value">{{PaymentMethod}}</span>
+                        </div>
+                        <!-- Tambahan Nama Kasir -->
+                        <div class="detail-row">
+                            <span class="detail-label">Diproses Oleh (Kasir)</span>
+                            <span class="detail-value">{{StaffName}}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Total Pembayaran</span>
+                            <!-- Menggunakan warna accent3 (Orange) seperti yang direquest sebelumnya -->
+                            <span class="detail-value" style="color: #ea580c;">Rp {{TotalAmount}}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Status</span>
+                            <span class="detail-value">{{PaymentStatus}}</span>
+                        </div>
+                    </div>
+
+                    <p class="intro-text" style="margin-bottom: 0; font-size: 14px;">
+                        Silakan cek dashboard aplikasi untuk melihat detail lebih lengkap atau mengelola pesanan ini.
+                    </p>
+                </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+                <td class="footer">
+                    <p>Email ini dihasilkan secara otomatis. Mohon tidak membalas email ini.</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+
+</html>

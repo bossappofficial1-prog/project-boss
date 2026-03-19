@@ -14,9 +14,9 @@ export class CleanJob {
             { triggeredAt: new Date().toISOString() },
             {
                 repeat: {
-                    cron: '0 0 * * *'
+                    cron: '0 0 1 */2 *'
                 },
-                jobId: 'daily-cleanup-job',
+                jobId: 'monthly-cleanup-job',
                 removeOnComplete: true
             }
         )

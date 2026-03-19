@@ -249,6 +249,7 @@ model Outlet {
   description String?
   address     String?
   phone       String?
+  email       String?  @unique
   createdAt   DateTime @default(now())
   image       String?  @default("/defaults/default-outlet-image.webp")
   updatedAt   DateTime @updatedAt
@@ -750,6 +751,7 @@ model Expense {
   description String
   amount      Float
   date        DateTime
+  receiptUrl  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

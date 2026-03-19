@@ -25,6 +25,7 @@ export interface Outlet {
   name: string;
   address: string;
   phone?: string;
+  email?: string;
   image?: string;
   latitude?: number;
   longitude?: number;

@@ -7,6 +7,7 @@ export interface Expense {
     amount: number;
     date: string;
     cashier: string;
+    receiptUrl?: string | null;
     outletId: string;
     createdAt: string;
     updatedAt: string;
@@ -27,6 +28,7 @@ export interface CreateExpensePayload {
     amount: number;
     date: string;
     outletId: string;
+    receiptUrl?: string | null;
     cashier?: string;
 }
 
@@ -34,6 +36,7 @@ export interface UpdateExpensePayload {
     description?: string;
     amount?: number;
     date?: string;
+    receiptUrl?: string | null;
     cashier?: string;
 }
 

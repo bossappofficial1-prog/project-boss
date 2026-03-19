@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, ShoppingBag, ShoppingCart, Package, Receipt, LayoutGrid, Ticket, Store } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -22,11 +22,16 @@ interface CashierNavbarProps {
 export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { selectedOutletId } = useOutletContext();
 
   const handleLogout = async () => {
     try {
       await apiClient.post("/auth/logout");
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("cashier-auth-cache-v1");
+      }
+      queryClient.removeQueries({ queryKey: ["cashier-auth"] });
       toast.success("Logout berhasil");
       router.push("/auth/login/cashier");
     } catch (error) {

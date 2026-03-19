@@ -99,7 +99,7 @@ function formatShortTime(iso: string) {
     return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-function EnhancedOrderCard({
+export const EnhancedOrderCard = memo(function EnhancedOrderCard({
     order,
     onOrderClick,
     onQuickAction,
@@ -108,13 +108,19 @@ function EnhancedOrderCard({
     const t = useTranslations("orders");
 
     const status = STATUS_CONFIG[order.orderStatus] ?? STATUS_CONFIG[OrderStatus.PROCESSING];
-    const StatusIcon = status.icon;
+
+    const isAwaitingVerification =
+        order.orderStatus === OrderStatus.AWAITING_PAYMENT &&
+        (order.transaction?.status === "AWAITING_VERIFICATION" ||
+            order.transaction?.status === "PROOF_SUBMITTED");
+
+    const hasServiceProduct = order.items.some((i) => i.product.type === "SERVICE");
 
     const statusLabels: Record<string, string> = {
-        [OrderStatus.AWAITING_PAYMENT]: t("status.awaiting_payment"),
+        [OrderStatus.AWAITING_PAYMENT]: isAwaitingVerification ? t("status.awaiting_verification") : t("status.awaiting_payment"),
         [OrderStatus.PROCESSING]: t("status.processing"),
         [OrderStatus.CONFIRMED]: t("status.confirmed_label"),
-        [OrderStatus.READY]: t("status.ready_label"),
+        [OrderStatus.READY]: hasServiceProduct ? t("status.ready_service_label") : t("status.ready_label"),
         [OrderStatus.ON_GOING]: t("status.on_going_label"),
         [OrderStatus.COMPLETED]: t("status.completed_label"),
         [OrderStatus.CANCELLED]: t("status.cancelled_label"),
@@ -124,14 +130,13 @@ function EnhancedOrderCard({
     const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
     const visibleItems = order.items.slice(0, MAX_VISIBLE_ITEMS);
     const remainingCount = Math.max(0, order.items.length - MAX_VISIBLE_ITEMS);
-
-    const hasServiceProduct = order.items.some((i) => i.product.type === "SERVICE");
     const hasTicketItems = order.items.some(
         (i) => i.product.type === "TICKET" && i.ticketCodes?.length,
     );
     const ticketCodeCount = order.items.reduce(
         (sum, i) => sum + (i.ticketCodes?.length ?? 0), 0,
     );
+
     const isCalendarEligible =
         hasServiceProduct &&
         (order.orderStatus === OrderStatus.CONFIRMED ||
@@ -139,13 +144,12 @@ function EnhancedOrderCard({
             order.orderStatus === OrderStatus.ON_GOING);
 
     const showCountdown =
-        order.orderStatus === OrderStatus.AWAITING_PAYMENT && order.transaction?.expiryTime;
+        order.orderStatus === OrderStatus.AWAITING_PAYMENT && !isAwaitingVerification && order.transaction?.expiryTime;
 
     const hasCancellationNote =
         order.orderStatus === OrderStatus.CANCELLED && order.cancellationReason;
     const hasRejectionNote = order.transaction?.status === "REJECTED_MANUAL";
 
-    // Build quick actions
     const getQuickActions = (): QuickActionConfig[] => {
         const actions: QuickActionConfig[] = [];
 
@@ -160,10 +164,16 @@ function EnhancedOrderCard({
 
         switch (order.orderStatus) {
             case OrderStatus.AWAITING_PAYMENT:
-                actions.push(
-                    { label: t("actions.pay"), icon: null, action: "pay", variant: "default" },
-                    { label: t("actions.cancel"), icon: null, action: "cancel", variant: "outline" },
-                );
+                if (!isAwaitingVerification) {
+                    actions.push(
+                        { label: t("actions.pay"), icon: null, action: "pay", variant: "default" },
+                        { label: t("actions.cancel"), icon: null, action: "cancel", variant: "outline" },
+                    );
+                } else {
+                    actions.push(
+                        { label: t("actions.contact"), icon: Phone, action: "contact", variant: "outline" }
+                    );
+                }
                 break;
             case OrderStatus.PROCESSING:
             case OrderStatus.CONFIRMED:
@@ -176,9 +186,14 @@ function EnhancedOrderCard({
                 break;
             case OrderStatus.READY:
                 actions.push(
-                    { label: t("actions.contact"), icon: Phone, action: "contact", variant: "outline" },
-                    { label: t("actions.confirm"), icon: CheckCircle2, action: "confirm", variant: "default" },
+                    { label: t("actions.contact"), icon: Phone, action: "contact", variant: "outline" }
                 );
+
+                if (!hasServiceProduct) {
+                    actions.push(
+                        { label: t("actions.confirm"), icon: CheckCircle2, action: "confirm", variant: "default" },
+                    );
+                }
                 break;
             case OrderStatus.ON_GOING:
                 actions.push({
@@ -206,105 +221,128 @@ function EnhancedOrderCard({
     const isBusy = pendingAction?.orderId === order.id;
 
     return (
-        <Card className="overflow-hidden rounded-md border shadow-sm p-0 transition-shadow hover:shadow-md">
+        <Card className="overflow-hidden transition-all p-0 hover:shadow-md">
             <CardContent className="p-0">
-                {/* Clickable area */}
                 <div
                     onClick={() => onOrderClick(order)}
-                    className="cursor-pointer active:bg-accent/30 transition-colors"
+                    className="cursor-pointer hover:bg-muted/40 active:bg-accent transition-colors p-4 flex flex-col gap-4"
                 >
-                    {/* Header: outlet + date */}
-                    <div className="flex items-center gap-3 px-3 pt-3 pb-2">
-                        <div className="bg-muted rounded-md p-1.5 shrink-0">
-                            <Store className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm truncate">{order.outlet.name}</p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">{dateStr}</p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                    </div>
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                                <Store className="w-5 h-5 text-muted-foreground" />
+                            </div>
 
-                    {/* Status Badge */}
-                    <div className="px-3 pb-2 flex items-center gap-2 flex-wrap">
-                        <span
-                            className={cn(
-                                "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border",
-                                status.badgeBg,
-                                status.textColor,
-                            )}
-                        >
-                            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", status.dotColor)} />
-                            {statusLabels[order.orderStatus] || order.orderStatus}
-                        </span>
-                        {hasTicketItems && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400">
-                                <Ticket className="w-3 h-3" />
-                                {ticketCodeCount} tiket
+                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                <h3 className="font-semibold text-sm truncate text-foreground leading-tight">
+                                    {order.outlet.name}
+                                </h3>
+
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                    {dateStr}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="shrink-0">
+                            <span
+                                className={cn(
+                                    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border",
+                                    status.badgeBg,
+                                    status.textColor
+                                )}
+                            >
+                                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", status.dotColor)} />
+                                {statusLabels[order.orderStatus] || order.orderStatus}
                             </span>
-                        )}
+                        </div>
                     </div>
 
-                    {/* Items list */}
-                    <div className="px-3 pb-2 space-y-0.5">
-                        {visibleItems.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between text-xs">
-                                <span className="truncate flex-1 text-muted-foreground">
-                                    <span className="font-medium text-foreground">{item.quantity}x</span>{" "}
-                                    {item.product.name}
+                    {/* Item Summary */}
+                    <div className="border border-border/60 bg-background/50 rounded-lg p-3.5 flex flex-col gap-2.5 shadow-sm">
+
+                        {hasTicketItems && (
+                            <div>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                                    <Ticket className="w-3 h-3" />
+                                    {ticketCodeCount} tiket
                                 </span>
-                                <span className="text-muted-foreground ml-2 shrink-0">
+                            </div>
+                        )}
+
+                        {visibleItems.map((item) => (
+                            <div key={item.id} className="flex items-start justify-between text-sm gap-3">
+                                <div className="flex-1 min-w-0 flex gap-2">
+                                    <span className="font-semibold text-foreground shrink-0">
+                                        {item.quantity}x
+                                    </span>
+
+                                    <span className="truncate text-muted-foreground font-medium">
+                                        {item.product.name}
+                                    </span>
+                                </div>
+
+                                <span className="text-[13px] text-foreground font-semibold shrink-0">
                                     {formatCurrency(item.priceAtTimeOfOrder * item.quantity)}
                                 </span>
                             </div>
                         ))}
+
                         {remainingCount > 0 && (
-                            <p className="text-[11px] text-muted-foreground italic">
+                            <p className="text-[11px] text-muted-foreground italic pt-0.5">
                                 +{remainingCount} {t("and_more_items", { count: remainingCount })}
                             </p>
                         )}
                     </div>
 
-                    {/* Cancellation / Rejection note */}
+                    {/* Cancellation / Rejection Note */}
                     {(hasCancellationNote || hasRejectionNote) && (
-                        <div className="mx-3 mb-2 px-2.5 py-1.5 rounded-md bg-destructive/5 border border-destructive/10">
-                            <div className="flex items-start gap-1.5">
-                                <AlertCircle className="w-3 h-3 text-destructive shrink-0 mt-0.5" />
-                                <p className="text-[11px] text-destructive/80 line-clamp-2 leading-relaxed">
-                                    {hasCancellationNote
-                                        ? order.cancellationReason
-                                        : order.transaction?.rejectionNote || "Bukti pembayaran ditolak"}
-                                </p>
-                            </div>
+                        <div className="px-3 py-2.5 rounded-md bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+                            <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+
+                            <p className="text-[11px] text-destructive line-clamp-2 leading-relaxed font-medium">
+                                {hasCancellationNote
+                                    ? order.cancellationReason
+                                    : order.transaction?.rejectionNote || "Bukti pembayaran ditolak"}
+                            </p>
                         </div>
                     )}
 
-                    {/* Countdown timer */}
+                    {/* Countdown */}
                     {showCountdown && (
-                        <div className="px-3 pb-2">
+                        <div className="-mt-2">
                             <CountdownTimer expiryTime={order.transaction!.expiryTime!} compact />
                         </div>
                     )}
 
-                    {/* Footer: ID + Total */}
-                    <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/30">
-                        <span className="text-[11px] text-muted-foreground font-mono">
-                            #{order.id.slice(0, 8)}
-                        </span>
-                        <div className="text-right">
-                            <span className="text-[10px] text-muted-foreground">
-                                {totalItems} item{totalItems > 1 ? "s" : ""}
+                    {/* Footer */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                            <span className="text-[11px] text-muted-foreground mb-1">
+                                Order ID
                             </span>
-                            <p className="font-bold text-sm text-primary leading-tight">
+
+                            <span className="text-sm font-mono font-bold text-foreground">
+                                #{order.id.split('-')[0]}
+                            </span>
+                        </div>
+
+                        <div className="flex flex-col items-end">
+                            <span className="text-[11px] text-muted-foreground mb-1">
+                                Total Belanja ({totalItems} item)
+                            </span>
+
+                            <span className="font-extrabold text-base leading-tight text-foreground tracking-tight">
                                 {formatCurrency(order.totalAmount)}
-                            </p>
+                            </span>
                         </div>
                     </div>
                 </div>
 
                 {/* Quick Actions */}
                 {quickActions.length > 0 && (
-                    <div className="px-3 pb-3 pt-1 flex gap-2">
+                    <div className="px-4 pb-4 flex gap-3">
                         {quickActions.map((action, idx) => {
                             const ActionIcon = action.icon;
                             const isActionLoading = isBusy && pendingAction?.action === action.action;
@@ -314,7 +352,7 @@ function EnhancedOrderCard({
                                     key={idx}
                                     size="sm"
                                     variant={action.variant}
-                                    className="flex-1 h-8 text-xs"
+                                    className="flex-1 text-sm font-semibold"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onQuickAction?.(action.action, order);
@@ -322,10 +360,11 @@ function EnhancedOrderCard({
                                     disabled={isBusy}
                                 >
                                     {isActionLoading ? (
-                                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                     ) : ActionIcon ? (
-                                        <ActionIcon className="w-3.5 h-3.5 mr-1" />
+                                        <ActionIcon className="w-4 h-4 mr-2" />
                                     ) : null}
+
                                     {action.label}
                                 </Button>
                             );
@@ -335,6 +374,4 @@ function EnhancedOrderCard({
             </CardContent>
         </Card>
     );
-}
-
-export default memo(EnhancedOrderCard);
+});

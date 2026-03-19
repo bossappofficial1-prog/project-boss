@@ -32,6 +32,7 @@ import { groupOrdersByDate } from "@/lib/dateGrouping";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { useCart } from "@/hooks/useCart";
 import { Product } from "@/services/product";
+import { EnhancedOrderCard } from "./parts/EnhancedOrderCard";
 
 type OrderStatusType = (typeof OrderStatus)[keyof typeof OrderStatus];
 
@@ -118,15 +119,6 @@ const triggerCalendarDownload = (order: OrderDetail) => {
     URL.revokeObjectURL(url);
     return true;
 };
-
-// Dynamic import only for heavy components
-const EnhancedOrderCard = dynamic<import("./parts/EnhancedOrderCard").EnhancedOrderCardProps>(
-    () => import("./parts/EnhancedOrderCard"),
-    {
-        ssr: false,
-        loading: () => <OrderCardSkeleton />,
-    },
-);
 
 const OrderBottomSheet = dynamic(() => import("./parts/OrderBottomSheet"), {
     ssr: false,

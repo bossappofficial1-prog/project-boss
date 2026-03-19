@@ -1,12 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { expenseApi, type Expense } from "@/lib/apis/expense";
-
-export interface ExpenseSummary {
-  totalTransaksi: number;
-  totalPengeluaran: number;
-}
+import { useCallback, useMemo, useState } from "react";
+import { type Expense, useExpenseList, useCreateExpense, useUpdateExpense, useDeleteExpense, type ExpenseSummary } from "./api/use-expenses";
 
 export interface UseExpensesResult {
   expenses: Expense[];
@@ -16,8 +11,14 @@ export interface UseExpensesResult {
   startISO: string; // ISO start
   endISO: string; // ISO end
   setRange: (startISO: string, endISO: string) => void;
-  refetch: () => Promise<void>;
-  create: (payload: Omit<Expense, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  refetch: () => Promise<any>;
+  create: (payload: {
+    description: string;
+    amount: number;
+    date: string;
+    outletId: string;
+    cashier?: string;
+  }) => Promise<void>;
   update: (id: string, payload: Partial<Expense>) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }
@@ -44,49 +45,16 @@ export function useExpenses(outletId?: string | null): UseExpensesResult {
 
   const [startISO, setStartISO] = useState<string>(toISOStartOfDay(weekAgo));
   const [endISO, setEndISO] = useState<string>(toISOEndOfDay(today));
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const computeSummary = useCallback((items: Expense[]): ExpenseSummary => {
-    return items.reduce(
-      (acc, e) => ({
-        totalTransaksi: acc.totalTransaksi + 1,
-        totalPengeluaran: acc.totalPengeluaran + (e.amount || 0),
-      }),
-      { totalTransaksi: 0, totalPengeluaran: 0 },
-    );
-  }, []);
+  const { data, isLoading, error: queryError, refetch: refetchQuery } = useExpenseList(
+    outletId || undefined,
+    startISO,
+    endISO
+  );
 
-  const fetchData = useCallback(async () => {
-    if (!outletId) {
-      setExpenses([]);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await expenseApi.listByOutlet(outletId, {
-        startDate: startISO,
-        endDate: endISO,
-      });
-      setExpenses(result?.data || []);
-    } catch (err: any) {
-      console.error("Error fetching expenses:", err);
-      setExpenses([]);
-      setError(err.message || "Gagal memuat pengeluaran");
-    } finally {
-      setLoading(false);
-    }
-  }, [outletId, startISO, endISO]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const summary = useMemo(() => computeSummary(expenses), [expenses, computeSummary]);
+  const createMutation = useCreateExpense();
+  const updateMutation = useUpdateExpense();
+  const deleteMutation = useDeleteExpense();
 
   const setRange = useCallback((start: string, end: string) => {
     setStartISO(start);
@@ -94,44 +62,35 @@ export function useExpenses(outletId?: string | null): UseExpensesResult {
   }, []);
 
   const create = useCallback(
-    async (payload: {
-      description: string;
-      amount: number;
-      date: string;
-      outletId: string;
-      cashier?: string;
-    }) => {
-      await expenseApi.create(payload);
-      await fetchData();
+    async (payload: any) => {
+      await createMutation.mutateAsync(payload);
     },
-    [fetchData],
+    [createMutation],
   );
 
   const update = useCallback(
     async (id: string, payload: Partial<Expense>) => {
-      await expenseApi.update(id, payload);
-      await fetchData();
+      await updateMutation.mutateAsync({ id, ...payload });
     },
-    [fetchData],
+    [updateMutation],
   );
 
   const remove = useCallback(
     async (id: string) => {
-      await expenseApi.remove(id);
-      await fetchData();
+      await deleteMutation.mutateAsync(id);
     },
-    [fetchData],
+    [deleteMutation],
   );
 
   return {
-    expenses,
-    summary,
-    loading,
-    error,
+    expenses: data?.data || [],
+    summary: data?.summary || { totalTransaksi: 0, totalPengeluaran: 0 },
+    loading: isLoading,
+    error: queryError ? (queryError as Error).message : null,
     startISO,
     endISO,
     setRange,
-    refetch: fetchData,
+    refetch: refetchQuery as any,
     create,
     update,
     remove,

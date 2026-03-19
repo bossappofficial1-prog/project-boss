@@ -563,12 +563,18 @@
             "completed": "Completed",
             "cancelled": "Cancelled",
             "awaiting_payment": "Awaiting Payment",
+            "awaiting_verification": "Awaiting Verification",
+            "payment_failed": "Payment Failed",
+            "payment_expired": "Payment Expired",
+            "payment_rejected": "Payment Rejected",
             "processing": "Processing",
             "confirmed_label": "Confirmed",
             "ready_label": "Ready",
             "on_going_label": "On Going",
             "completed_label": "Completed",
-            "cancelled_label": "Cancelled"
+            "cancelled_label": "Cancelled",
+            "ready_service_label": "Ready to Serve",
+            "and_more_items": "more items"
         },
         "tabs": {
             "all": "All",
@@ -667,6 +673,7 @@
         },
         "timeline": {
             "awaiting_payment": "Awaiting Payment",
+            "awaiting_verification": "Awaiting Verification",
             "processing": "Processing",
             "confirmed": "Confirmed",
             "confirmed_service": "Booking Confirmed",
