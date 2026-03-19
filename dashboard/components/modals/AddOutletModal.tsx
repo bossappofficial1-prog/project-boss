@@ -181,7 +181,10 @@ export default function AddOutletModal({
             openTime: new Date(`1970-01-01T${schedule.openTime}:00`),
             closeTime: new Date(`1970-01-01T${schedule.closeTime}:00`),
             dayOfWeek: schedule.dayOfWeek,
-            isOpen: schedule.isOpen
+            isOpen: schedule.isOpen,
+            isRestEnabled: schedule.isRestEnabled || false,
+            restStartTime: schedule.restStartTime ? new Date(`1970-01-01T${schedule.restStartTime}:00`).toISOString() : null,
+            restEndTime: schedule.restEndTime ? new Date(`1970-01-01T${schedule.restEndTime}:00`).toISOString() : null,
           }))
         })
       } catch {

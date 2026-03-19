@@ -62,6 +62,9 @@ export interface OperatingHours {
   closeTime: string; // ISO string from backend (e.g., "1970-01-01T10:00:00.000Z")
   isOpen: boolean;
   outletId: string;
+  isRestEnabled: boolean;
+  restStartTime?: string | null;
+  restEndTime?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -73,6 +76,9 @@ export interface OperatingHoursFormData {
   openTime: string; // HH:MM format for form (e.g., "02:00")
   closeTime: string; // HH:MM format for form (e.g., "10:00")
   isOpen: boolean;
+  isRestEnabled: boolean;
+  restStartTime: string;
+  restEndTime: string;
 }
 
 export type OrderStatsMap = Record<string, { totalOrders: number; totalRevenue: number }>;

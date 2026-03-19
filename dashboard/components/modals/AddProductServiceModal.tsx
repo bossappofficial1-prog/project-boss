@@ -63,23 +63,19 @@ const serviceSchema = z.object({
   ),
   commissionType: z.enum(["PERCENTAGE", "FIXED"]),
   commissionValue: z.coerce.number().min(0),
+  maxParallel: z.coerce.number().min(1).default(1),
   bookingInWorkHours: z.boolean().default(true),
 
-  // Operating hours (nullable)
-  mondayOpen: z.coerce.date().nullable().optional(),
-  mondayClose: z.coerce.date().nullable().optional(),
-  tuesdayOpen: z.coerce.date().nullable().optional(),
-  tuesdayClose: z.coerce.date().nullable().optional(),
-  wednesdayOpen: z.coerce.date().nullable().optional(),
-  wednesdayClose: z.coerce.date().nullable().optional(),
-  thursdayOpen: z.coerce.date().nullable().optional(),
-  thursdayClose: z.coerce.date().nullable().optional(),
-  fridayOpen: z.coerce.date().nullable().optional(),
-  fridayClose: z.coerce.date().nullable().optional(),
-  saturdayOpen: z.coerce.date().nullable().optional(),
-  saturdayClose: z.coerce.date().nullable().optional(),
-  sundayOpen: z.coerce.date().nullable().optional(),
-  sundayClose: z.coerce.date().nullable().optional(),
+  // Operating hours array
+  operatingHours: z.array(z.object({
+    dayOfWeek: z.number().min(0).max(6),
+    openTime: z.union([z.coerce.date(), z.string()]),
+    closeTime: z.union([z.coerce.date(), z.string()]),
+    isOpen: z.boolean().default(true),
+    isRestEnabled: z.boolean().default(false),
+    restStartTime: z.union([z.coerce.date(), z.string()]).nullable().optional(),
+    restEndTime: z.union([z.coerce.date(), z.string()]).nullable().optional(),
+  })).optional(),
 });
 
 export type ServiceSchemaType = z.infer<typeof serviceSchema>;
@@ -189,24 +185,12 @@ export default function AddOrEditProductServiceModal({
             providerName: initialData.service?.providerName ?? "",
             commissionType: initialData.service?.commissionType ?? "FIXED",
             commissionValue: initialData.service?.commissionValue ?? 0,
+            maxParallel: initialData.service?.maxParallel ?? 1,
             providerEmail: initialData.service?.providerEmail ?? "",
             providerPhone: initialData.service?.providerPhone ?? "",
             bookingInWorkHours: initialData.service?.bookingInWorkHours ?? true,
             // Operating hours
-            mondayOpen: parseDate(initialData.service?.mondayOpen),
-            mondayClose: parseDate(initialData.service?.mondayClose),
-            tuesdayOpen: parseDate(initialData.service?.tuesdayOpen),
-            tuesdayClose: parseDate(initialData.service?.tuesdayClose),
-            wednesdayOpen: parseDate(initialData.service?.wednesdayOpen),
-            wednesdayClose: parseDate(initialData.service?.wednesdayClose),
-            thursdayOpen: parseDate(initialData.service?.thursdayOpen),
-            thursdayClose: parseDate(initialData.service?.thursdayClose),
-            fridayOpen: parseDate(initialData.service?.fridayOpen),
-            fridayClose: parseDate(initialData.service?.fridayClose),
-            saturdayOpen: parseDate(initialData.service?.saturdayOpen),
-            saturdayClose: parseDate(initialData.service?.saturdayClose),
-            sundayOpen: parseDate(initialData.service?.sundayOpen),
-            sundayClose: parseDate(initialData.service?.sundayClose),
+            operatingHours: initialData.service?.operatingHours || [],
           },
           goods: undefined,
           ticket: undefined,
@@ -263,17 +247,16 @@ export default function AddOrEditProductServiceModal({
     onOpenChange(nextOpen);
   };
 
-  const handleSubmit = async (values: ProductFormValues | FormData) => {
-    const fileEntry = (values as FormData).get("file");
-    const file = fileEntry instanceof File ? fileEntry : null;
-    const otherValues = values as FormData;
-    const formType = otherValues.get("type") as ProductFormValues["type"] | null;
+  const handleSubmit = async () => {
+    const rawValues = form.getValues();
+    const file = rawValues.file instanceof File ? rawValues.file : null;
+    const formType = rawValues.type;
 
     const payload: any = {
-      name: otherValues.get("name"),
-      description: otherValues.get("description") || undefined,
+      name: rawValues.name,
+      description: rawValues.description || undefined,
       type: formType,
-      status: otherValues.get("status"),
+      status: rawValues.status,
       outletId,
     };
 
@@ -284,98 +267,48 @@ export default function AddOrEditProductServiceModal({
       payload.image = uploaded.url;
       uploadedImageUrl = uploaded.url;
     }
+
     if (formType === "GOODS") {
-      const minStockRaw = otherValues.get("goods[minStock]");
-      const maxStockRaw = otherValues.get("goods[maxStock]");
-      const goods = {
-        averageHpp: Number(otherValues.get("goods[averageHpp]")) || 0,
-        currentStock: Number(otherValues.get("goods[currentStock]")),
-        sellingPrice: Number(otherValues.get("goods[sellingPrice]")) || 0,
-        unit: (otherValues.get("goods[unit]") || "pcs") as string,
-        minStock: minStockRaw !== null && minStockRaw !== "" ? Number(minStockRaw) : null,
-        maxStock: maxStockRaw !== null && maxStockRaw !== "" ? Number(maxStockRaw) : null,
-      };
-
-      payload.goods = goods;
+      const g = rawValues.goods;
+      if (g) {
+        payload.goods = {
+          averageHpp: Number(g.averageHpp) || 0,
+          currentStock: Number(g.currentStock) || 0,
+          sellingPrice: Number(g.sellingPrice) || undefined,
+          unit: g.unit || "pcs",
+          minStock: g.minStock !== null && g.minStock !== undefined ? Number(g.minStock) : null,
+          maxStock: g.maxStock !== null && g.maxStock !== undefined ? Number(g.maxStock) : null,
+        };
+      }
     } else if (formType === "TICKET") {
-      const ticket: TicketSchemaType = {
-        sellingPrice: Number(otherValues.get("ticket[sellingPrice]")) || 0,
-        eventDate: new Date(otherValues.get("ticket[eventDate]") as string),
-        eventEndDate: otherValues.get("ticket[eventEndDate]")
-          ? new Date(otherValues.get("ticket[eventEndDate]") as string)
-          : null,
-        venue: (otherValues.get("ticket[venue]") || "") as string,
-        venueAddress: (otherValues.get("ticket[venueAddress]") as string) || null,
-        mapUrl: (otherValues.get("ticket[mapUrl]") as string) || null,
-        totalQuota: Number(otherValues.get("ticket[totalQuota]")) || 100,
-        maxPerOrder: Number(otherValues.get("ticket[maxPerOrder]")) || 5,
-        saleStartDate: otherValues.get("ticket[saleStartDate]")
-          ? new Date(otherValues.get("ticket[saleStartDate]") as string)
-          : null,
-        saleEndDate: otherValues.get("ticket[saleEndDate]")
-          ? new Date(otherValues.get("ticket[saleEndDate]") as string)
-          : null,
-        terms: (otherValues.get("ticket[terms]") as string) || null,
-      };
-      payload.ticket = ticket;
-    } else {
-      const providerEmail = otherValues.get("service[providerEmail]") as string;
-      const providerPhone = otherValues.get("service[providerPhone]") as string;
-
-      const service: ServiceSchemaType = {
-        commissionType: otherValues.get("service[commissionType]") as "PERCENTAGE" | "FIXED",
-        commissionValue: Number(otherValues.get("service[commissionValue]")),
-        durationMinutes: Number(otherValues.get("service[durationMinutes]")),
-        providerName: otherValues.get("service[providerName]") as string,
-        sellingPrice: Number(otherValues.get("service[sellingPrice]")),
-        providerEmail: providerEmail && providerEmail.trim() !== "" ? providerEmail : undefined,
-        providerPhone: providerPhone && providerPhone.trim() !== "" ? providerPhone : undefined,
-        bookingInWorkHours: otherValues.get("service[bookingInWorkHours]") === "true",
-        // Operating hours
-        mondayOpen: otherValues.get("service[mondayOpen]")
-          ? new Date(otherValues.get("service[mondayOpen]") as string)
-          : null,
-        mondayClose: otherValues.get("service[mondayClose]")
-          ? new Date(otherValues.get("service[mondayClose]") as string)
-          : null,
-        tuesdayOpen: otherValues.get("service[tuesdayOpen]")
-          ? new Date(otherValues.get("service[tuesdayOpen]") as string)
-          : null,
-        tuesdayClose: otherValues.get("service[tuesdayClose]")
-          ? new Date(otherValues.get("service[tuesdayClose]") as string)
-          : null,
-        wednesdayOpen: otherValues.get("service[wednesdayOpen]")
-          ? new Date(otherValues.get("service[wednesdayOpen]") as string)
-          : null,
-        wednesdayClose: otherValues.get("service[wednesdayClose]")
-          ? new Date(otherValues.get("service[wednesdayClose]") as string)
-          : null,
-        thursdayOpen: otherValues.get("service[thursdayOpen]")
-          ? new Date(otherValues.get("service[thursdayOpen]") as string)
-          : null,
-        thursdayClose: otherValues.get("service[thursdayClose]")
-          ? new Date(otherValues.get("service[thursdayClose]") as string)
-          : null,
-        fridayOpen: otherValues.get("service[fridayOpen]")
-          ? new Date(otherValues.get("service[fridayOpen]") as string)
-          : null,
-        fridayClose: otherValues.get("service[fridayClose]")
-          ? new Date(otherValues.get("service[fridayClose]") as string)
-          : null,
-        saturdayOpen: otherValues.get("service[saturdayOpen]")
-          ? new Date(otherValues.get("service[saturdayOpen]") as string)
-          : null,
-        saturdayClose: otherValues.get("service[saturdayClose]")
-          ? new Date(otherValues.get("service[saturdayClose]") as string)
-          : null,
-        sundayOpen: otherValues.get("service[sundayOpen]")
-          ? new Date(otherValues.get("service[sundayOpen]") as string)
-          : null,
-        sundayClose: otherValues.get("service[sundayClose]")
-          ? new Date(otherValues.get("service[sundayClose]") as string)
-          : null,
-      };
-      payload.service = service;
+      const t = rawValues.ticket;
+      if (t) {
+        payload.ticket = {
+          sellingPrice: Number(t.sellingPrice) || 0,
+          eventDate: new Date(t.eventDate),
+          eventEndDate: t.eventEndDate ? new Date(t.eventEndDate) : null,
+          venue: t.venue || "",
+          venueAddress: t.venueAddress || null,
+          mapUrl: t.mapUrl || null,
+          totalQuota: Number(t.totalQuota) || 100,
+          maxPerOrder: Number(t.maxPerOrder) || 5,
+          saleStartDate: t.saleStartDate ? new Date(t.saleStartDate) : null,
+          saleEndDate: t.saleEndDate ? new Date(t.saleEndDate) : null,
+          terms: t.terms || null,
+        };
+      }
+    } else if (formType === "SERVICE") {
+      const s = rawValues.service;
+      if (s) {
+        payload.service = {
+          ...s,
+          durationMinutes: Number(s.durationMinutes) || 30,
+          sellingPrice: Number(s.sellingPrice) || undefined,
+          commissionValue: Number(s.commissionValue) || 0,
+          maxParallel: Number(s.maxParallel) || 1,
+          operatingHours: s.operatingHours || [],
+        };
+      }
 
       // Attach media gallery for SERVICE type
       if (mediaItems.length > 0) {
@@ -581,48 +514,24 @@ export default function AddOrEditProductServiceModal({
     },
     // Custom renderer for operating hours
     {
-      name: "service.mondayOpen",
+      name: "service.operatingHours",
       label: "",
       type: "custom",
       colSpan: "full",
       condition: (values) => values.type === "SERVICE",
-      renderCustom: () => (
-        <ServiceOperatingHoursSection
-          outletId={outletId!}
-          value={{
-            mondayOpen: form.watch("service.mondayOpen"),
-            mondayClose: form.watch("service.mondayClose"),
-            tuesdayOpen: form.watch("service.tuesdayOpen"),
-            tuesdayClose: form.watch("service.tuesdayClose"),
-            wednesdayOpen: form.watch("service.wednesdayOpen"),
-            wednesdayClose: form.watch("service.wednesdayClose"),
-            thursdayOpen: form.watch("service.thursdayOpen"),
-            thursdayClose: form.watch("service.thursdayClose"),
-            fridayOpen: form.watch("service.fridayOpen"),
-            fridayClose: form.watch("service.fridayClose"),
-            saturdayOpen: form.watch("service.saturdayOpen"),
-            saturdayClose: form.watch("service.saturdayClose"),
-            sundayOpen: form.watch("service.sundayOpen"),
-            sundayClose: form.watch("service.sundayClose"),
-          }}
-          onChange={(value) => {
-            form.setValue("service.mondayOpen", value.mondayOpen);
-            form.setValue("service.mondayClose", value.mondayClose);
-            form.setValue("service.tuesdayOpen", value.tuesdayOpen);
-            form.setValue("service.tuesdayClose", value.tuesdayClose);
-            form.setValue("service.wednesdayOpen", value.wednesdayOpen);
-            form.setValue("service.wednesdayClose", value.wednesdayClose);
-            form.setValue("service.thursdayOpen", value.thursdayOpen);
-            form.setValue("service.thursdayClose", value.thursdayClose);
-            form.setValue("service.fridayOpen", value.fridayOpen);
-            form.setValue("service.fridayClose", value.fridayClose);
-            form.setValue("service.saturdayOpen", value.saturdayOpen);
-            form.setValue("service.saturdayClose", value.saturdayClose);
-            form.setValue("service.sundayOpen", value.sundayOpen);
-            form.setValue("service.sundayClose", value.sundayClose);
-          }}
-        />
-      ),
+      renderCustom: () => {
+        // Operating hours mapped to array format
+        const currentOperatingHours = (form.watch("service.operatingHours") as any[]) || [];
+        return (
+          <ServiceOperatingHoursSection
+            outletId={outletId!}
+            value={currentOperatingHours}
+            onChange={(val) => {
+              form.setValue("service.operatingHours", val, { shouldValidate: true, shouldDirty: true });
+            }}
+          />
+        );
+      },
     },
     // Media gallery uploader for SERVICE
     {

@@ -43,47 +43,42 @@ const productServiceBaseSchema = z.object({
 
   bookingInWorkHours: z.boolean().default(true).optional(),
 
-  // Operating hours untuk setiap hari
-  mondayOpen: z.coerce.date().nullable().optional(),
-  mondayClose: z.coerce.date().nullable().optional(),
-  tuesdayOpen: z.coerce.date().nullable().optional(),
-  tuesdayClose: z.coerce.date().nullable().optional(),
-  wednesdayOpen: z.coerce.date().nullable().optional(),
-  wednesdayClose: z.coerce.date().nullable().optional(),
-  thursdayOpen: z.coerce.date().nullable().optional(),
-  thursdayClose: z.coerce.date().nullable().optional(),
-  fridayOpen: z.coerce.date().nullable().optional(),
-  fridayClose: z.coerce.date().nullable().optional(),
-  saturdayOpen: z.coerce.date().nullable().optional(),
-  saturdayClose: z.coerce.date().nullable().optional(),
-  sundayOpen: z.coerce.date().nullable().optional(),
-  sundayClose: z.coerce.date().nullable().optional(),
+  // Array jadwal operasional per hari
+  operatingHours: z.array(z.object({
+    dayOfWeek: z.number().min(0).max(6),
+    openTime: z.coerce.date(),
+    closeTime: z.coerce.date(),
+    isOpen: z.boolean().default(true),
+    isRestEnabled: z.boolean().default(false),
+    restStartTime: z.coerce.date().nullable().optional(),
+    restEndTime: z.coerce.date().nullable().optional(),
+  })).optional(),
 });
 
 // ProductService - With refinement validation (for create)
 const productServiceSchema = productServiceBaseSchema.refine(
   (data) => {
-    // Validation: jika ada open time, maka close time juga harus ada (dan sebaliknya)
-    // Validation: close time harus lebih besar dari open time
-    const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-    for (const day of days) {
-      const open = (data as any)[`${day}Open`];
-      const close = (data as any)[`${day}Close`];
+    if (!data.operatingHours || data.operatingHours.length === 0) return true;
 
-      // Jika salah satu ada, keduanya harus ada
-      if ((open && !close) || (!open && close)) {
-        return false;
-      }
+    for (const hours of data.operatingHours) {
+      // Jika toko buka, closeTime harus > openTime
+      if (hours.isOpen) {
+        if (hours.closeTime <= hours.openTime) {
+          return false;
+        }
 
-      // Jika keduanya ada, close harus lebih besar dari open
-      if (open && close && close <= open) {
-        return false;
+        // Jika istirahat diaktifkan, pastikan rentangnya valid dan berada di dalam jam operasional
+        if (hours.isRestEnabled) {
+          if (!hours.restStartTime || !hours.restEndTime) return false;
+          if (hours.restEndTime <= hours.restStartTime) return false;
+          if (hours.restStartTime < hours.openTime || hours.restEndTime > hours.closeTime) return false;
+        }
       }
     }
     return true;
   },
   {
-    message: "Jam tutup harus lebih besar dari jam buka untuk setiap hari yang diset",
+    message: "Jam tutup harus lebih besar dari buka, dan rentang istirahat harus valid dalam jam operasional.",
   },
 );
 

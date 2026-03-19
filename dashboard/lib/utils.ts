@@ -160,6 +160,8 @@ export const parseOperatingHours = (operatingHours: OperatingHours[]) => {
         // Convert ISO time strings to HH:MM format
         let openTime = '09:00'
         let closeTime = '17:00'
+        let restStartTime = '12:00'
+        let restEndTime = '13:00'
 
         if (hour.openTime) {
             const openDate = new Date(hour.openTime)
@@ -170,6 +172,16 @@ export const parseOperatingHours = (operatingHours: OperatingHours[]) => {
             const closeDate = new Date(hour.closeTime)
             closeTime = closeDate.toTimeString().slice(0, 5)
         }
+        
+        if (hour.restStartTime) {
+            const rsDate = new Date(hour.restStartTime)
+            restStartTime = rsDate.toTimeString().slice(0, 5)
+        }
+
+        if (hour.restEndTime) {
+            const reDate = new Date(hour.restEndTime)
+            restEndTime = reDate.toTimeString().slice(0, 5)
+        }
 
         hoursMap[hour.dayOfWeek] = {
             id: hour.id,
@@ -177,7 +189,10 @@ export const parseOperatingHours = (operatingHours: OperatingHours[]) => {
             dayOfWeek: hour.dayOfWeek,
             openTime: openTime,
             closeTime: closeTime,
-            isOpen: hour.isOpen
+            isOpen: hour.isOpen,
+            isRestEnabled: hour.isRestEnabled,
+            restStartTime: restStartTime,
+            restEndTime: restEndTime,
         }
     })
     return hoursMap

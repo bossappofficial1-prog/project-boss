@@ -184,14 +184,7 @@ export default function DesktopTable({
               }
 
               // Check if any operating hours are set
-              const hasHours =
-                product.service?.mondayOpen ||
-                product.service?.tuesdayOpen ||
-                product.service?.wednesdayOpen ||
-                product.service?.thursdayOpen ||
-                product.service?.fridayOpen ||
-                product.service?.saturdayOpen ||
-                product.service?.sundayOpen;
+              const hasHours = product.service?.operatingHours && product.service.operatingHours.length > 0;
 
               return hasHours ? (
                 <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">

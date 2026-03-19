@@ -5,6 +5,9 @@ const hoursSchema = z.object({
     openTime: z.coerce.date(),
     closeTime: z.coerce.date(),
     isOpen: z.boolean().default(true),
+    isRestEnabled: z.boolean().default(false),
+    restStartTime: z.coerce.date().nullable().optional(),
+    restEndTime: z.coerce.date().nullable().optional(),
 })
 
 export const createOperatingHoursSchema = z.object({
@@ -15,6 +18,9 @@ export const updateOperatingHoursSchema = z.object({
     openTime: z.coerce.date().optional(),
     closeTime: z.coerce.date().optional(),
     isOpen: z.boolean().optional(),
+    isRestEnabled: z.boolean().optional(),
+    restStartTime: z.coerce.date().nullable().optional(),
+    restEndTime: z.coerce.date().nullable().optional(),
 });
 
 export type CreateOperatingHoursInput = z.infer<typeof createOperatingHoursSchema>;

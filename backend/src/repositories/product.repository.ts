@@ -65,21 +65,17 @@ export class ProductRepository {
               commissionValue: data.service.commissionValue,
               maxParallel: data.service.maxParallel,
               bookingInWorkHours: data.service.bookingInWorkHours,
-              // Operating hours
-              mondayOpen: data.service.mondayOpen,
-              mondayClose: data.service.mondayClose,
-              tuesdayOpen: data.service.tuesdayOpen,
-              tuesdayClose: data.service.tuesdayClose,
-              wednesdayOpen: data.service.wednesdayOpen,
-              wednesdayClose: data.service.wednesdayClose,
-              thursdayOpen: data.service.thursdayOpen,
-              thursdayClose: data.service.thursdayClose,
-              fridayOpen: data.service.fridayOpen,
-              fridayClose: data.service.fridayClose,
-              saturdayOpen: data.service.saturdayOpen,
-              saturdayClose: data.service.saturdayClose,
-              sundayOpen: data.service.sundayOpen,
-              sundayClose: data.service.sundayClose,
+              operatingHours: data.service.operatingHours ? {
+                create: data.service.operatingHours.map(hours => ({
+                  dayOfWeek: hours.dayOfWeek,
+                  openTime: hours.openTime,
+                  closeTime: hours.closeTime,
+                  isOpen: hours.isOpen,
+                  isRestEnabled: hours.isRestEnabled ?? false,
+                  restStartTime: hours.restStartTime ?? null,
+                  restEndTime: hours.restEndTime ?? null,
+                }))
+              } : undefined,
             },
           },
         },
@@ -135,6 +131,7 @@ export class ProductRepository {
                 status: "AVAILABLE",
               },
             },
+            operatingHours: true,
           },
         },
         ticket: true,
@@ -203,7 +200,11 @@ export class ProductRepository {
         take: limit,
         include: {
           goods: true,
-          service: true,
+          service: {
+            include: {
+              operatingHours: true,
+            }
+          },
           ticket: true,
           media: {
             orderBy: { order: "asc" },
@@ -241,8 +242,30 @@ export class ProductRepository {
     }
 
     if (service) {
+      const { operatingHours, ...serviceRest } = service;
+      
+      const serviceUpdate: any = {
+        ...serviceRest
+      };
+
+      if (operatingHours) {
+        // Hapus jam operasional lama, akan di-create ulang otomatis karena ProductService onDelete Cascade
+        serviceUpdate.operatingHours = {
+          deleteMany: {},
+          create: operatingHours.map(hours => ({
+            dayOfWeek: hours.dayOfWeek,
+            openTime: hours.openTime,
+            closeTime: hours.closeTime,
+            isOpen: hours.isOpen,
+            isRestEnabled: hours.isRestEnabled ?? false,
+            restStartTime: hours.restStartTime ?? null,
+            restEndTime: hours.restEndTime ?? null,
+          }))
+        };
+      }
+
       updateData.service = {
-        update: service,
+        update: serviceUpdate,
       };
     }
 
@@ -257,7 +280,11 @@ export class ProductRepository {
       data: updateData,
       include: {
         goods: true,
-        service: true,
+        service: {
+          include: {
+            operatingHours: true,
+          }
+        },
         ticket: true,
       },
     });

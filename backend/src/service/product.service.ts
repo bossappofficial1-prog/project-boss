@@ -107,20 +107,7 @@ export async function updateProductService(id: string, data: UpdateProductInput)
     const hoursChanged =
       s.durationMinutes !== undefined ||
       s.bookingInWorkHours !== undefined ||
-      s.mondayOpen !== undefined ||
-      s.mondayClose !== undefined ||
-      s.tuesdayOpen !== undefined ||
-      s.tuesdayClose !== undefined ||
-      s.wednesdayOpen !== undefined ||
-      s.wednesdayClose !== undefined ||
-      s.thursdayOpen !== undefined ||
-      s.thursdayClose !== undefined ||
-      s.fridayOpen !== undefined ||
-      s.fridayClose !== undefined ||
-      s.saturdayOpen !== undefined ||
-      s.saturdayClose !== undefined ||
-      s.sundayOpen !== undefined ||
-      s.sundayClose !== undefined;
+      s.operatingHours !== undefined;
 
     if (hoursChanged) {
       // Find the productServiceId to clear related slots
@@ -463,7 +450,7 @@ export async function bulkCreateProductsFromExcelService(
                 ? { goods: { upsert: { update: r.goods!, create: r.goods! } } }
                 : {}),
               ...(r.type === "SERVICE"
-                ? { service: { upsert: { update: r.service!, create: r.service! } } }
+                ? { service: { upsert: { update: r.service as any, create: r.service as any } } }
                 : {}),
             },
           });
@@ -474,7 +461,7 @@ export async function bulkCreateProductsFromExcelService(
               ...productPayload,
               outletId,
               ...(r.type === "GOODS" ? { goods: { create: r.goods! } } : {}),
-              ...(r.type === "SERVICE" ? { service: { create: r.service! } } : {}),
+              ...(r.type === "SERVICE" ? { service: { create: r.service as any } } : {}),
             },
           });
 

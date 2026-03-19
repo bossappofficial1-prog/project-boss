@@ -43,6 +43,18 @@ export interface Goods {
   updatedAt: string;
 }
 
+export interface ServiceOperatingHours {
+  id?: string;
+  productServiceId?: string;
+  dayOfWeek: number;
+  openTime: Date | string;
+  closeTime: Date | string;
+  isOpen: boolean;
+  isRestEnabled: boolean;
+  restStartTime?: Date | string | null;
+  restEndTime?: Date | string | null;
+}
+
 export interface Service {
   id: string;
   productId: string;
@@ -58,21 +70,7 @@ export interface Service {
   createdAt: string;
   updatedAt: string;
 
-  // Operating hours (nullable)
-  mondayOpen?: Date | string | null;
-  mondayClose?: Date | string | null;
-  tuesdayOpen?: Date | string | null;
-  tuesdayClose?: Date | string | null;
-  wednesdayOpen?: Date | string | null;
-  wednesdayClose?: Date | string | null;
-  thursdayOpen?: Date | string | null;
-  thursdayClose?: Date | string | null;
-  fridayOpen?: Date | string | null;
-  fridayClose?: Date | string | null;
-  saturdayOpen?: Date | string | null;
-  saturdayClose?: Date | string | null;
-  sundayOpen?: Date | string | null;
-  sundayClose?: Date | string | null;
+  operatingHours?: ServiceOperatingHours[];
 }
 
 export interface Ticket {

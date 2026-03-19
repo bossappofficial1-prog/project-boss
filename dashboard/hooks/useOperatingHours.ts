@@ -8,6 +8,9 @@ interface OperatingHoursData {
     openTime: Date
     closeTime: Date
     isOpen: boolean
+    isRestEnabled?: boolean
+    restStartTime?: string | null
+    restEndTime?: string | null
 }
 
 interface CreateOperatingHoursInput {
@@ -23,6 +26,9 @@ export interface OperatingHoursInput {
     openTime: Date
     closeTime: Date
     isOpen: boolean
+    isRestEnabled?: boolean
+    restStartTime?: string | null
+    restEndTime?: string | null
 }
 
 interface UpdateOperatingHoursInput {

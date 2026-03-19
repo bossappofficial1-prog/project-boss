@@ -49,14 +49,20 @@ export class OperatingHoursRepository {
                 update: {
                     openTime: schedule.openTime,
                     closeTime: schedule.closeTime,
-                    isOpen: schedule.isOpen
+                    isOpen: schedule.isOpen,
+                    isRestEnabled: schedule.isRestEnabled ?? false,
+                    restStartTime: schedule.restStartTime ?? null,
+                    restEndTime: schedule.restEndTime ?? null,
                 },
                 create: {
                     outletId,
                     closeTime: schedule.closeTime,
                     openTime: schedule.openTime,
                     dayOfWeek: schedule.dayOfWeek,
-                    isOpen: schedule.isOpen
+                    isOpen: schedule.isOpen,
+                    isRestEnabled: schedule.isRestEnabled ?? false,
+                    restStartTime: schedule.restStartTime ?? null,
+                    restEndTime: schedule.restEndTime ?? null,
                 }
             })
         })

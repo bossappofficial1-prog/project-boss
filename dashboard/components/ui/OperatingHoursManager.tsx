@@ -13,13 +13,16 @@ import { toast } from 'sonner'
 import { useOperatingHours, useUpsertOperatingHours } from '@/hooks/useOperatingHours'
 import { isEqual } from 'lodash'
 
-interface OperatingHoursData {
+export interface OperatingHoursData {
   id?: string
   outletId: string
   dayOfWeek: number
   openTime: string
   closeTime: string
   isOpen: boolean
+  isRestEnabled: boolean
+  restStartTime: string
+  restEndTime: string
 }
 
 interface OperatingHoursManagerProps {
@@ -45,6 +48,9 @@ const createDefaultHour = (day: number, outletId: string): OperatingHoursData =>
   isOpen: false,
   openTime: '09:00',
   closeTime: '17:00',
+  isRestEnabled: false,
+  restStartTime: '12:00',
+  restEndTime: '13:00',
 })
 
 export default function OperatingHoursManager({ outletId, operatingHoursData, onOperatingHoursChange }: OperatingHoursManagerProps) {
@@ -64,7 +70,12 @@ export default function OperatingHoursManager({ outletId, operatingHoursData, on
       DAYS_OF_WEEK.forEach(day => {
         const existing = operatingHoursData?.[day.value]
         if (existing) {
-          hoursMap[day.value] = existing
+          hoursMap[day.value] = {
+            ...existing,
+            isRestEnabled: existing.isRestEnabled || false,
+            restStartTime: existing.restStartTime || '12:00',
+            restEndTime: existing.restEndTime || '13:00',
+          }
         } else {
           hoursMap[day.value] = createDefaultHour(day.value, outletId)
         }
@@ -81,6 +92,9 @@ export default function OperatingHoursManager({ outletId, operatingHoursData, on
             ...existing,
             openTime: new Date(existing.openTime).toTimeString().slice(0, 5),
             closeTime: new Date(existing.closeTime).toTimeString().slice(0, 5),
+            isRestEnabled: existing.isRestEnabled || false,
+            restStartTime: existing.restStartTime ? new Date(existing.restStartTime).toTimeString().slice(0, 5) : '12:00',
+            restEndTime: existing.restEndTime ? new Date(existing.restEndTime).toTimeString().slice(0, 5) : '13:00',
           }
         } else {
           hoursMap[day.value] = createDefaultHour(day.value, outletId)
@@ -116,6 +130,9 @@ export default function OperatingHoursManager({ outletId, operatingHoursData, on
         isOpen: sourceData.isOpen,
         openTime: sourceData.openTime,
         closeTime: sourceData.closeTime,
+        isRestEnabled: sourceData.isRestEnabled,
+        restStartTime: sourceData.restStartTime,
+        restEndTime: sourceData.restEndTime,
       }
       return acc
     }, {} as Record<number, OperatingHoursData>)
@@ -192,26 +209,60 @@ export default function OperatingHoursManager({ outletId, operatingHoursData, on
             </div>
           </div>
 
-          <div className={`flex items-center w-full gap-3 transition-all duration-300 ${dayData.isOpen
+          <div className={`flex flex-col items-start w-full gap-3 transition-all duration-300 ${dayData.isOpen
             ? 'opacity-100 translate-x-0'
             : 'opacity-30 pointer-events-none translate-x-2'
             }`}>
-            <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-2 border border-gray-200 dark:border-gray-600 shadow-sm">
-              <Input
-                type="time"
-                className="w-24 sm:w-28 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none"
-                value={dayData.openTime}
-                onChange={(e) => handleFieldChange(day.value, 'openTime', e.target.value)}
-              />
-              <span className="text-gray-400 font-medium">—</span>
-              <Input
-                type="time"
-                className="w-24 sm:w-28 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none"
-                value={dayData.closeTime}
-                onChange={(e) => handleFieldChange(day.value, 'closeTime', e.target.value)}
-              />
+            <div className="flex w-full items-center gap-3">
+              <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-2 border border-gray-200 dark:border-gray-600 shadow-sm">
+                <Input
+                  type="time"
+                  className="w-24 sm:w-28 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none"
+                  value={dayData.openTime}
+                  onChange={(e) => handleFieldChange(day.value, 'openTime', e.target.value)}
+                />
+                <span className="text-gray-400 font-medium">—</span>
+                <Input
+                  type="time"
+                  className="w-24 sm:w-28 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none"
+                  value={dayData.closeTime}
+                  onChange={(e) => handleFieldChange(day.value, 'closeTime', e.target.value)}
+                />
+              </div>
+              <CopyDayPopover sourceDay={day.value} onCopyToDays={handleCopyToDays} />
             </div>
-            <CopyDayPopover sourceDay={day.value} onCopyToDays={handleCopyToDays} />
+
+            {/* Rest Hours Section */}
+            {dayData.isOpen && (
+              <div className="flex w-full flex-col sm:flex-row items-start sm:items-center gap-3 mt-1 pl-1">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={dayData.isRestEnabled}
+                    onCheckedChange={(checked) => handleFieldChange(day.value, 'isRestEnabled', checked)}
+                    className="scale-90 data-[state=checked]:bg-amber-500"
+                  />
+                  <Label className="text-sm text-gray-600 dark:text-gray-400">Jam Istirahat</Label>
+                </div>
+                
+                {dayData.isRestEnabled && (
+                  <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1.5 border border-amber-200 dark:border-amber-900 shadow-sm ml-0 sm:ml-2">
+                    <Input
+                      type="time"
+                      className="w-20 sm:w-24 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none h-7"
+                      value={dayData.restStartTime}
+                      onChange={(e) => handleFieldChange(day.value, 'restStartTime', e.target.value)}
+                    />
+                    <span className="text-amber-400 font-medium text-xs">—</span>
+                    <Input
+                      type="time"
+                      className="w-20 sm:w-24 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none h-7"
+                      value={dayData.restEndTime}
+                      onChange={(e) => handleFieldChange(day.value, 'restEndTime', e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -219,7 +270,7 @@ export default function OperatingHoursManager({ outletId, operatingHoursData, on
   })
 }
 
-function CopyDayPopover({ sourceDay, onCopyToDays }: { sourceDay: number, onCopyToDays: (sourceDay: number, targetDays: number[]) => void }) {
+export function CopyDayPopover({ sourceDay, onCopyToDays }: { sourceDay: number, onCopyToDays: (sourceDay: number, targetDays: number[]) => void }) {
   const [selectedDays, setSelectedDays] = useState<number[]>([])
 
   const handleCopy = () => {
