@@ -168,7 +168,7 @@ export default function Header() {
             {/* Menu Items */}
             <DropdownMenuItem
               onClick={() => {
-                // Navigate to profile page when implemented
+                window.location.href = '/owner/profile';
               }}
               className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-400"
             >
@@ -178,7 +178,7 @@ export default function Header() {
 
             <DropdownMenuItem
               onClick={() => {
-                // Navigate to settings page when implemented
+                window.location.href = '/owner/settings';
               }}
               className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-400"
             >
