@@ -19,8 +19,6 @@ import { useSnackbar } from "@/hooks/useSnackbar";
 import { cn } from "@/lib/utils";
 import NotificationButton from "../ui/notification-button";
 
-const savedProfile = localStorage.getItem("user_preferences");
-
 export default function ProfileSettings() {
     const { setTheme: setAppTheme } = useTheme();
     const router = useRouter();
