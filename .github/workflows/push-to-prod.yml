@@ -108,6 +108,7 @@ jobs:
             NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_DASHBOARD_LOGIN_URL=${{ vars.NEXT_PUBLIC_DASHBOARD_LOGIN_URL }}
             NEXT_PUBLIC_DASHBOARD_REGISTER_URL=${{ vars.NEXT_PUBLIC_DASHBOARD_REGISTER_URL }}
+            NEXT_PUBLIC_VAPID_KEY=${{ vars.NEXT_PUBLIC_VAPID_KEY }}
             SITE_URL=${{ vars.SITE_URL }}
 
       # Build dan push Dashboard hanya jika ada perubahan di direktori 'dashboard'

@@ -89,4 +89,30 @@ const serwist = new Serwist({
     ],
 });
 
+self.addEventListener('push', (event) => {
+    if (!event.data) return;
+
+    try {
+        const data = event.data.json();
+
+        event.waitUntil(
+            self.registration.showNotification(data.title || 'Notifikasi', {
+                body: data.body,
+                icon: '/icons/app-icon-192.png',
+                data: { url: data.url || '/' },
+                requireInteraction: true
+            })
+        )
+    } catch (error) {
+        console.error('Error parsing push data', error);
+    }
+})
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    if (event.notification.data && event.notification.data.url) {
+        event.waitUntil(self.clients.openWindow(event.notification.data.url));
+    }
+});
 serwist.addEventListeners();

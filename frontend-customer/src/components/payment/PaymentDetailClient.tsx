@@ -30,6 +30,7 @@ import {
   type ImportantInformationType,
 } from "@/constants";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 
 const CountdownTimer = dynamic(
   () => import("@/components/orders/parts/CountdownTimer"),
@@ -335,6 +336,7 @@ export function PaymentDetailClient({
   const t = useTranslations("paymentDetail");
   const tComp = useTranslations("paymentComponents");
   const locale = useLocale();
+  const router = useRouter()
 
   const [paymentData, setPaymentData] = useState<PaymentDetailData>(payment);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -406,6 +408,9 @@ export function PaymentDetailClient({
       title: t("title"),
       subtitle: orderId,
       showBackButton: true,
+      onLeftClick() {
+        router.push('/orders')
+      },
     });
     return () => resetAppBar();
   }, [orderId, resetAppBar, setAppBar, t]);

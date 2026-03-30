@@ -17,7 +17,9 @@ import { STORAGE_PROFILE_KEY } from "@/constants";
 import { ResetModal } from "./ResetModal";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { cn } from "@/lib/utils";
+import NotificationButton from "../ui/notification-button";
 
+const savedProfile = localStorage.getItem("user_preferences");
 
 export default function ProfileSettings() {
     const { setTheme: setAppTheme } = useTheme();
@@ -210,6 +212,8 @@ export default function ProfileSettings() {
                     badge={isMounted && savedProductsCount > 0 ? savedProductsCount : undefined}
                 />
             </div>
+
+            <NotificationButton guestPhone={whatsapp} />
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 {/* Contact Info */}

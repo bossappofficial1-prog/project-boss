@@ -44,6 +44,8 @@ import { orderExpiryJob } from "../jobs/payment-expiry.job";
 import { OperatingHoursRepository } from "../repositories/operating-hours.repository";
 import { validateFileMagicBytes, deleteFile, fileExists } from "../utils/file.utils";
 import { generateServiceOrderNotificationQueue } from "../queues/generate-service-order-notification";
+import { Time } from "../constants/time";
+import { orderNotificationJob } from "../jobs/payment-notification.job";
 
 // Konstanta untuk fee rates
 const TRANSACTION_FEE_RATE = 0.02;
@@ -578,7 +580,7 @@ export async function createPaymentService(data: CreatePaymentPayload) {
         inputItems,
         productMap,
       );
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + Time.PAYMENT_EXPIRY_TIME_MS);
       const transaction = await createManualTransactionRecord({
         orderId,
         amount: grossAmount,
@@ -611,7 +613,8 @@ export async function createPaymentService(data: CreatePaymentPayload) {
 
       try {
         // await paymentQueue.add({ orderId }, { delay });
-        await orderExpiryJob.add(orderId);
+        orderExpiryJob.add(orderId);
+        orderNotificationJob.add(orderId)
         SocketEmitter.getInstance().emitToCashier(outletId, {
           orderId,
           amount: grossAmount,
@@ -721,7 +724,8 @@ export async function createPaymentService(data: CreatePaymentPayload) {
   });
 
   // Schedule 10-minute payment expiry
-  await orderExpiryJob.add(orderId);
+  orderExpiryJob.add(orderId);
+  orderNotificationJob.add(orderId)
 
   // Emit notification to business outlet
   try {
@@ -878,7 +882,8 @@ export async function uploadManualPaymentProofService(orderId: string, filePath:
   }
 
   try {
-    await orderExpiryJob.remove(transaction.orderId);
+    orderExpiryJob.remove(transaction.orderId);
+    orderNotificationJob.remove(orderId)
     if (transaction.order.items.some((item) => item.product.type === "SERVICE")) {
       await generateServiceOrderNotificationQueue.add({ orderId });
     }

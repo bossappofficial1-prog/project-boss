@@ -65,5 +65,9 @@ export const config = {
         clientId: process.env.GOOGLE_CLIENT_ID || '',
         clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
         redirectUrl: process.env.GOOGLE_REDIRECT_URL || 'http://localhost:1234/api/v1/auth/google/callback'
+    },
+    vapid: {
+        publicVapidKey: process.env.PUBLIC_VAPID_KEY || "",
+        privateVapidKey: process.env.PRIVATE_VAPID_KEY || ""
     }
 } as const

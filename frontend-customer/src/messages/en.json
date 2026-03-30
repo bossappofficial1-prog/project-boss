@@ -439,6 +439,22 @@
             "whatsapp": "+62 834 567 8900"
         },
         "systemTheme": "System",
+        "notification": {
+            "vapidMissing": "VAPID key not found",
+            "error": "An error occurred while managing notifications",
+            "noSubscription": "No push subscription found",
+            "unsupported": "Browser does not support push notifications",
+            "title": "Notifications",
+            "blocked": "Notifications blocked by browser",
+            "active": "🔔 Notifications active",
+            "inactive": "🔕 Notifications inactive",
+            "processing": "Processing...",
+            "disable": "Disable",
+            "enable": "Enable",
+            "subscribeSuccess": "Notifications enabled",
+            "unsubscribeSuccess": "Notifications disabled",
+            "permissionDenied": "Notification permission denied. Enable in browser settings."
+        },
         "favorites": {
             "title": "My Favorites",
             "savedOutlets": "Saved Outlets",

@@ -439,6 +439,22 @@
             "whatsapp": "+62 812 3456 7890"
         },
         "systemTheme": "Sistem",
+        "notification": {
+            "vapidMissing": "Kunci VAPID tidak ditemukan",
+            "error": "Terjadi kesalahan saat mengelola notifikasi",
+            "noSubscription": "Tidak ada subscription notifikasi",
+            "unsupported": "Browser tidak mendukung push notification",
+            "title": "Notifikasi",
+            "blocked": "Notifikasi diblokir oleh browser",
+            "active": "🔔 Notifikasi aktif",
+            "inactive": "🔕 Notifikasi tidak aktif",
+            "processing": "Memproses...",
+            "disable": "Nonaktifkan",
+            "enable": "Aktifkan",
+            "subscribeSuccess": "Notifikasi berhasil diaktifkan",
+            "unsubscribeSuccess": "Notifikasi berhasil dinonaktifkan",
+            "permissionDenied": "Izin notifikasi ditolak. Aktifkan di pengaturan browser."
+        },
         "favorites": {
             "title": "Favorit Saya",
             "savedOutlets": "Outlet Tersimpan",

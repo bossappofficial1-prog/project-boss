@@ -5,25 +5,25 @@ import Console from "../utils/logger";
 import { PushNotificationService } from "../service/push-notification.service";
 import { PushNotificationRepository } from "../repositories/push-notification.repository";
 
-export type OrderExpiryDTO = {
+export type OrderSentNotificationDTO = {
     orderId: string
 }
 
-export class OrderExpiryQueue extends BaseQueue<OrderExpiryDTO> {
+export class OrderNotificationQueue extends BaseQueue<OrderSentNotificationDTO> {
 
     constructor() {
-        super('payment-expiry-queue')
+        super('payment-notification-queue')
 
         this.queue.on('active', job => {
-            console.log('[PAYMENT_EXPIRY_QUEUE] Active', job.data.orderId)
+            console.log('[PAYMENT_NOTIFICATION_QUEUE] Active', job.data.orderId)
         })
 
         this.queue.on('completed', job => {
-            console.log('[PAYMENT_EXPIRY_QUEUE] Done', job.data.orderId)
+            console.log('[PAYMENT_NOTIFICATION_QUEUE] Done', job.data.orderId)
         })
     }
 
-    protected async handle(job: Job<OrderExpiryDTO>): Promise<void> {
+    protected async handle(job: Job<OrderSentNotificationDTO>): Promise<void> {
         const orderID = job.data.orderId;
         console.log('Memproses job untuk', orderID)
         try {
@@ -31,14 +31,11 @@ export class OrderExpiryQueue extends BaseQueue<OrderExpiryDTO> {
             const pushNotificationService = new PushNotificationService(pushNotificationRepo)
             const order = await pushNotificationRepo.getCustomerOrder(orderID)
 
-            Promise.all([
-                await expirePaymentOrder(orderID),
-                pushNotificationService.sendNotificationToCustomer(orderID, order, {
-                    title: 'Pembayaran Berakhir! ⏳',
-                    body: `Pesanan senilai Rp${order.totalAmount} sudah berakhir.`,
-                    url: `/payment/${order.id}`
-                })
-            ])
+            pushNotificationService.sendNotificationToCustomer(orderID, order, {
+                title: 'Pembayaran Segera Berakhir! ⏳',
+                body: `Pesanan senilai Rp${order.totalAmount} menunggu pembayaran. Selesaikan sebelum dibatalkan otomatis.`,
+                url: `/payment/${order.id}`
+            })
         }
         catch (error) { Console.log(error) }
     }
@@ -50,4 +47,4 @@ export class OrderExpiryQueue extends BaseQueue<OrderExpiryDTO> {
 
 }
 
-export const orderExpiryQueue = new OrderExpiryQueue()
+export const orderNotificationQueue = new OrderNotificationQueue()

@@ -130,10 +130,37 @@ model User {
   business Business?
 
   // Relasi: Admin/owner yang memverifikasi transaksi manual
-  transactionsVerified Transaction[] @relation("TransactionVerifiedBy")
+  transactionsVerified Transaction[]      @relation("TransactionVerifiedBy")
+  pushSubscriptions    PushSubscription[]
 
   @@index([email])
   @@index([role])
+}
+
+model PushSubscription {
+  id       String @id @default(uuid())
+  endpoint String @unique
+  p256dh   String
+  auth     String
+
+  // 1. Relasi untuk Customer
+  guestCustomerId String?
+  guestCustomer   GuestCustomer? @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+
+  // 2. Relasi untuk Owner / Admin
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 3. Relasi untuk Kasir
+  staffId String?
+  staff   Staff?  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([guestCustomerId])
+  @@index([userId])
+  @@index([staffId])
 }
 
 model Business {
@@ -327,8 +354,9 @@ model Staff {
   // Relasi ke tiket yang di-redeem oleh staff
   ticketCodesRedeemed TicketCode[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  pushSubscriptions PushSubscription[]
 
   @@index([outletId])
   @@index([email])
@@ -562,7 +590,8 @@ model GuestCustomer {
   // Relasi: Many-to-many ke Order melalui tabel Membership
   memberships Membership[]
 
-  createdAt DateTime @default(now())
+  createdAt         DateTime           @default(now())
+  pushSubscriptions PushSubscription[]
 
   @@index([email])
   @@index([phone])

@@ -9,15 +9,13 @@ import { OrderRepository } from "../repositories/order.repository";
 import { CreateOrderInput } from "../schemas/order.schema";
 import { createMidtransTransactionService } from "./payment.service";
 import { getOutletByIdService } from "./outlet.service";
-import { getBusinessByIdService } from "./business.service"; // Impor service bisnis
+import { getBusinessByIdService } from "./business.service";
 import { BookingRepository } from "../repositories/booking.repository";
 import { createOrderRecord } from "./helpers/order-create.helper";
-import { PaymentRepository } from "../repositories/payment.repository";
 import { SocketEmitter } from "../socket/socket-emiiter";
-import { MidtransTransactionStatus, PaymentResponse } from "../types/Others";
 import Console from "../utils/logger";
 import { orderExpiryJob } from "../jobs/payment-expiry.job";
-import { CodeGeneratorUtil, formatDateTime, generateTicketCode } from "../utils";
+import { formatDateTime, generateTicketCode } from "../utils";
 
 type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> &
   Record<string, any>;
@@ -1269,4 +1267,5 @@ export async function expirePaymentOrder(orderId: string) {
     message: "Pembayaran kedaluwarsa",
     type: "payment_expired",
   });
+
 }

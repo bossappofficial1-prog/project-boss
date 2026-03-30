@@ -4,6 +4,7 @@ import { DeleteExpireSystemPayment } from "./delete-expire-system-payment";
 import { GenerateServiceOrderNotificationQueue } from "./generate-service-order-notification";
 import { GenerateTransactionReportQueue } from "./generate-transaction-report.queue";
 import { OrderExpiryQueue } from "./order-expiry.queue";
+import { OrderNotificationQueue } from "./order-sent-notification";
 import { TestQueue } from "./test.queue";
 
 export const queues = [
@@ -14,4 +15,5 @@ export const queues = [
     new CheckSubscriptionExpire(),
     new DeleteExpireSystemPayment(),
     new GenerateServiceOrderNotificationQueue(),
+    new OrderNotificationQueue()
 ]

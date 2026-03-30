@@ -35,6 +35,7 @@ import queueV2Router from "./queue-v2.route";
 import ordersV2Router from "./orders-v2.route";
 import ticketRouter from "./ticket.route";
 import memberRouter from "./member.route";
+import pushNotification from "./push-notification.routes";
 
 const apiRouter = Router();
 
@@ -53,6 +54,7 @@ apiRouter.use("/bookings", bookingRouter);
 apiRouter.use("/payments", paymentRouter);
 apiRouter.use("/outlets", outletRouter);
 apiRouter.use("/home", homeRouter);
+apiRouter.use("/push-notification", pushNotification);
 apiRouter.use("/expenses", expenseRouter);
 apiRouter.use("/reports", reportRouter);
 apiRouter.use("/staff", staffRouter);

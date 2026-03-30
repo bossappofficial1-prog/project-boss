@@ -140,7 +140,7 @@ export class HomeRepository {
             p.image,
             p.type,
             out.slug,
-            COALESCE(pg."sellingPrice", ps."sellingPrice", 0) AS price,
+            COALESCE(pg."sellingPrice", ps."sellingPrice", pt."sellingPrice", 0) AS price,
             CAST(SUM(oi.quantity) AS INTEGER) AS sold_count
             FROM "Product" p
             -- Join ke tabel Outlet untuk mengambil slug
@@ -148,6 +148,7 @@ export class HomeRepository {
             -- Join ke sub-tabel untuk mengambil harga
             LEFT JOIN "ProductGoods" pg ON pg."productId" = p.id
             LEFT JOIN "ProductService" ps ON ps."productId" = p.id
+            LEFT JOIN "ProductTicket" pt ON pt."productId" = p.id
             -- Join ke transaksi yang sukses
             INNER JOIN "OrderItem" oi ON oi."productId" = p.id
             INNER JOIN "Order" o ON o.id = oi."orderId"
@@ -160,7 +161,8 @@ export class HomeRepository {
                 p.type, 
                 out.slug,
                 pg."sellingPrice", 
-                ps."sellingPrice"
+                ps."sellingPrice",
+                pt."sellingPrice"
             ORDER BY sold_count DESC
             LIMIT ${limit}
         `;
