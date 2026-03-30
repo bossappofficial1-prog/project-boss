@@ -40,7 +40,7 @@ export function RegisterStep1({
                         {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
                         {isLoading ? 'Memproses...' : 'Lanjut Verifikasi Email'}
                     </button>
-                     <p className="text-xs text-center text-slate-400 mt-3">
+                    <p className="text-xs text-center text-slate-400 mt-3">
                         Kami akan mengirimkan kode OTP ke email Anda.
                     </p>
                 </div>

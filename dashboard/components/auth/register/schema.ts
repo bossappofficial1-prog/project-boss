@@ -12,13 +12,11 @@ export const registerStep1Schema = z.object({
         .string('Wajib diisi')
         .min(1, { message: "Email wajib diisi" })
         .email({ message: "Format email tidak valid" }),
-
     phone: z
         .string('Wajib diisi')
-        .min(10, { message: "Nomor WhatsApp minimal 10 digit" })
-        .max(15, { message: "Nomor WhatsApp maksimal 15 digit" })
-        .regex(/^(\+62|62|0)8[1-9][0-9]{6,9}$/, {
-            message: "Format nomor tidak valid (Gunakan format 08...)"
+        .transform((val) => val.replace(/\s+/g, '')) // hapus spasi
+        .refine((val) => /^(\+62|62|0)8[1-9][0-9]{6,10}$/.test(val), {
+            message: "Format nomor tidak valid"
         }),
 
     password: z
