@@ -6,7 +6,7 @@ import { PushSubscriptionPayload } from "../schemas/push-notification.schema";
 
 export class PushNotificationRepository {
     public async subscribe(data: PushSubscriptionPayload) {
-        const customer = await this.findCustomerbyPhone(data.guestPhone)
+        const customer = await this.findCustomerbyPhone(data.guestPhone!, data.guestName!)
 
         return db.pushSubscription.upsert({
             where: {
@@ -26,9 +26,13 @@ export class PushNotificationRepository {
         })
     }
 
-    public async findCustomerbyPhone(phone?: string) {
-        const result = await db.guestCustomer.findUnique({ where: { phone } })
-        if (!result) throw new AppError(`Customer tidak ditemukan.`, HttpStatus.NOT_FOUND);
+    public async findCustomerbyPhone(phone: string, name: string) {
+        let result = await db.guestCustomer.findUnique({ where: { phone } })
+        if (!result) {
+            result = await db.guestCustomer.create({
+                data: { phone, name: name || 'Customer' }
+            })
+        };
 
         return result
     }

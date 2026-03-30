@@ -17,7 +17,7 @@ function urlBase64ToUint8Array(base64String: string) {
     return outputArray;
 }
 
-export default function NotificationButton({ guestPhone }: { guestPhone?: string }) {
+export default function NotificationButton({ guestPhone, guestName }: { guestPhone?: string, guestName?: string }) {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [isSupported, setIsSupported] = useState(false);
     const [permission, setPermission] = useState<NotificationPermission>('default');
@@ -51,7 +51,7 @@ export default function NotificationButton({ guestPhone }: { guestPhone?: string
             });
 
             // Simpan data subscription ke backend
-            const payload = { subscription: sub.toJSON(), guestPhone };
+            const payload = { subscription: sub.toJSON(), guestPhone, guestName };
             await api.post('/push-notification/subscribe', payload);
 
             return true;

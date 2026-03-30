@@ -264,6 +264,18 @@ export class PaymentRepository {
       //   }
       // }
 
+      const guestCustomer = await db.guestCustomer.upsert({
+        where: { phone: customer.phone },
+        create: {
+          name: customer.name,
+          phone: customer.phone,
+        },
+        update: {
+          name: customer.name,
+          phone: customer.phone,
+        }
+      })
+
       await tr.order.create({
         data: {
           id: orderId,
@@ -271,25 +283,17 @@ export class PaymentRepository {
           appFee,
           midtransFee,
           bookingDate: slotRecord ? slotRecord.startTime : null,
-          ...(staffId
-            ? {
-              handledByStaff: {
-                connect: { id: staffId },
-              },
-            }
-            : {}),
           guestCustomer: {
-            connectOrCreate: {
-              where: {
-                phone: customer.phone,
-              },
-              create: {
-                name: customer.name,
-                phone: customer.phone,
-              },
-            },
+            connect: { id: guestCustomer.id },
           },
-          outlet: { connect: { id: outletId } },
+          outlet: {
+            connect: { id: outletId },
+          },
+          ...(staffId && {
+            handledByStaff: {
+              connect: { id: staffId },
+            },
+          }),
         },
       });
 

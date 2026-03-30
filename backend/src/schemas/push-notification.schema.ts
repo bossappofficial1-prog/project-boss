@@ -13,6 +13,7 @@ export const PushSubscriptionPayloadSchema = z.object({
     subscription: WebPushSubObjectSchema,
 
     guestPhone: z.string().min(10, { message: "Nomor HP minimal 10 digit" }).optional(),
+    guestName: z.string().min(10, { message: "Nomor HP minimal 10 digit" }).optional(),
 
     userId: z.string().uuid({ message: "Format ID User (Owner) tidak valid" }).optional(),
     staffId: z.string().uuid({ message: "Format ID Staff (Kasir) tidak valid" }).optional(),

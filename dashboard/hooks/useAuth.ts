@@ -10,8 +10,16 @@ import {
 import { apiClient } from '@/lib/apis/base';
 
 interface Business {
-  id: string;
-  name: string;
+  id: string
+  name: string
+  description: string
+  bankAccount: string
+  bankName: string
+  accountHolder: string
+  subscriptionEndDate: string
+  subscriptionPlan: string
+  subscriptionStartDate: string
+  subscriptionStatus: string
   [key: string]: unknown;
 }
 
@@ -58,6 +66,8 @@ async function fetchAuthMe(): Promise<AuthMeData> {
     id: userData.id,
     email: userData.email,
     name: userData.name,
+    avatar: userData.avatar,
+    phone: userData.phone,
     role: userData.role as UserRole,
     sessionId: userData.sessionId || userData.id,
     businessId: userData.businessId ?? businessData?.id,
@@ -65,6 +75,7 @@ async function fetchAuthMe(): Promise<AuthMeData> {
     provider: userData.provider,
   };
 
+  console.log(userData, businessData)
   return { user, business: businessData };
 }
 

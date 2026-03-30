@@ -171,7 +171,7 @@ export default function LoginPage() {
                   placeholder="nama@perusahaan.com"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="rounded-xl border-slate-200 h-12 px-4 focus-visible:ring-2 focus-visible:ring-red-500/20 focus-visible:border-red-500 transition-all font-medium placeholder:text-slate-400 bg-white"
+                  className="rounded-xl  border-slate-200 h-12 px-4 focus-visible:ring-2 focus-visible:ring-red-500/20 focus-visible:border-red-500 transition-all font-medium placeholder:text-slate-400 bg-white dark:bg-white dark:shadow-slate-300"
                   required
                 />
               </div>

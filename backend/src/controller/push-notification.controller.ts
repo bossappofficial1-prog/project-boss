@@ -9,7 +9,6 @@ export class PushNotificationController {
 
     public subscribe = asyncHandler(async (req: Request<PushSubscriptionPayload>, res: Response) => {
         const result = await this.service.subscribe(req.body)
-
         return ResponseUtil.success(res, result)
     })
     public unsubscribe = asyncHandler(async (req: Request, res: Response) => {

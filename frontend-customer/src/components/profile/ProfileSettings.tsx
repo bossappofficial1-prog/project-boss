@@ -211,7 +211,7 @@ export default function ProfileSettings() {
                 />
             </div>
 
-            <NotificationButton guestPhone={whatsapp} />
+            <NotificationButton guestPhone={whatsapp} guestName={fullName} />
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 {/* Contact Info */}
