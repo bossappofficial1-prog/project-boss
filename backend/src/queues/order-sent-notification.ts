@@ -34,7 +34,7 @@ export class OrderNotificationQueue extends BaseQueue<OrderSentNotificationDTO> 
 
             pushNotificationService.sendNotificationToCustomer(orderID, order, {
                 title: 'Pembayaran Segera Berakhir! ⏳',
-                body: `Pesanan senilai Rp${StringUtil.formatCurrency(order.totalAmount)} menunggu pembayaran. Selesaikan sebelum dibatalkan otomatis.`,
+                body: `Pesanan senilai ${StringUtil.formatCurrency(order.totalAmount)} menunggu pembayaran. Selesaikan sebelum dibatalkan otomatis.`,
                 url: `/payment/${order.id}`
             })
         }

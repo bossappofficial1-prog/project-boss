@@ -36,7 +36,7 @@ export class OrderExpiryQueue extends BaseQueue<OrderExpiryDTO> {
                 await expirePaymentOrder(orderID),
                 pushNotificationService.sendNotificationToCustomer(orderID, order, {
                     title: 'Pembayaran Berakhir!',
-                    body: `Pesanan senilai Rp${StringUtil.formatCurrency(order.totalAmount)} sudah berakhir.`,
+                    body: `Pesanan senilai ${StringUtil.formatCurrency(order.totalAmount)} sudah berakhir.`,
                     url: `/payment/${order.id}`
                 })
             ])
