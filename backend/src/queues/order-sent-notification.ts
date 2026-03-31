@@ -4,6 +4,7 @@ import { expirePaymentOrder } from "../service/order.service";
 import Console from "../utils/logger";
 import { PushNotificationService } from "../service/push-notification.service";
 import { PushNotificationRepository } from "../repositories/push-notification.repository";
+import { StringUtil } from "../utils";
 
 export type OrderSentNotificationDTO = {
     orderId: string
@@ -33,7 +34,7 @@ export class OrderNotificationQueue extends BaseQueue<OrderSentNotificationDTO> 
 
             pushNotificationService.sendNotificationToCustomer(orderID, order, {
                 title: 'Pembayaran Segera Berakhir! ⏳',
-                body: `Pesanan senilai Rp${order.totalAmount} menunggu pembayaran. Selesaikan sebelum dibatalkan otomatis.`,
+                body: `Pesanan senilai Rp${StringUtil.formatCurrency(order.totalAmount)} menunggu pembayaran. Selesaikan sebelum dibatalkan otomatis.`,
                 url: `/payment/${order.id}`
             })
         }

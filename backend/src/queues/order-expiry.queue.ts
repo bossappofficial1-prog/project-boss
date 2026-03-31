@@ -4,6 +4,7 @@ import { expirePaymentOrder } from "../service/order.service";
 import Console from "../utils/logger";
 import { PushNotificationService } from "../service/push-notification.service";
 import { PushNotificationRepository } from "../repositories/push-notification.repository";
+import { StringUtil } from "../utils";
 
 export type OrderExpiryDTO = {
     orderId: string
@@ -34,8 +35,8 @@ export class OrderExpiryQueue extends BaseQueue<OrderExpiryDTO> {
             Promise.all([
                 await expirePaymentOrder(orderID),
                 pushNotificationService.sendNotificationToCustomer(orderID, order, {
-                    title: 'Pembayaran Berakhir! ⏳',
-                    body: `Pesanan senilai Rp${order.totalAmount} sudah berakhir.`,
+                    title: 'Pembayaran Berakhir!',
+                    body: `Pesanan senilai Rp${StringUtil.formatCurrency(order.totalAmount)} sudah berakhir.`,
                     url: `/payment/${order.id}`
                 })
             ])

@@ -1,32 +1,46 @@
-# --- Stage 1: Build and compile ---
+# --- Stage 1: Builder (Kompilasi TypeScript) ---
 FROM node:20-alpine AS builder
-WORKDIR /app/backend
+WORKDIR /app
 
+# Mencegah download Chromium di tahap build
 ENV PUPPETEER_SKIP_DOWNLOAD=true
-RUN apk add --no-cache openssl
 
 COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install SEMUA dependencies (termasuk dev) untuk proses build
 RUN npm install
 
-COPY . .
-# Generate Prisma Client ke dalam node_modules
+# Generate Prisma Client
 RUN npx prisma generate
-# Build kode TypeScript
+
+COPY . .
+
 RUN npm run build
-RUN npm prune --omit=dev
 
-# --- Stage 2: Production runtime ---
+# --- Stage 2: Prod Dependencies (Install bersih khusus produksi) ---
+FROM node:20-alpine AS prod-deps
+WORKDIR /app
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN npm install --omit=dev
+RUN npx prisma generate
+
+RUN npm cache clean --force && rm -rf /root/.npm
+
+# --- Stage 3: Runner (Image Final) ---
 FROM node:20-alpine AS runner
-WORKDIR /app/backend
+WORKDIR /app
 
-ARG NODE_ENV=production
-ENV NODE_ENV=$NODE_ENV
-
+ENV NODE_ENV=production
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 RUN apk add --no-cache \
-    openssl libstdc++ ca-certificates \
+    openssl \
     chromium \
     nss \
     freetype \
@@ -36,15 +50,13 @@ RUN apk add --no-cache \
 
 COPY package*.json ./
 
-COPY --from=builder /app/backend/node_modules ./node_modules
-COPY --from=builder /app/backend/dist ./dist
-COPY --from=builder /app/backend/public ./public
-COPY --from=builder /app/backend/templates ./templates
-COPY --from=builder /app/backend/prisma ./prisma
+COPY --from=prod-deps /app/node_modules ./node_modules
 
-RUN rm -f .env prisma/.env
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/templates ./templates
+COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 1234
-
 
 CMD ["node", "dist/src/index.js"]
