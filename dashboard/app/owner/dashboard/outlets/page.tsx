@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo, type ReactNode } from 'react';
 import KpiCards from '@/components/outlet/KpiCards';
 import PaymentStatusChart from '@/components/outlet/charts/PaymentStatusChart';
 import OrderStatusChart from '@/components/outlet/charts/OrderStatusChart';
@@ -9,163 +8,20 @@ import PaymentMethodChart from '@/components/outlet/charts/PaymentMethodChart';
 import ProductTypeChart from '@/components/outlet/charts/ProductTypeChart';
 import ExpenseVsRevenueChart from '@/components/outlet/charts/ExpenseVsRevenueChart';
 import RevenueChart from '@/components/outlet/charts/RevenueChartV2';
-import { DollarSign, AlertCircle, ShoppingCart, TrendingUp, CreditCard, MapPin, Phone } from 'lucide-react';
+import { MapPin, Phone } from 'lucide-react';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import { useOutletAnalytics } from '@/hooks/useOutletAnalytics';
-import type { TopProduct, ByType } from '@/types';
+import { useRouter } from 'next/navigation';
+import { EmptyOutletState } from '@/components/ui/empty-outlet';
+import { formatCurrency } from '@/lib/utils';
 
 export default function OutletsDashboard() {
-  const { selectedOutlet, isLoading } = useOutletContext();
-  const { data: dashboardData, isPending } = useOutletAnalytics(selectedOutlet?.id);
+  const { selectedOutlet } = useOutletContext();
+  const { data: dashboardData, kpiCards, isPending, topProductsData, lowStockProducts, productTypeData, topPaymentMethod } = useOutletAnalytics(selectedOutlet?.id);
+  const router = useRouter()
 
-  const formatCurrency = (value?: number | null) => {
-    if (typeof value !== 'number') return '-';
-    return `Rp ${value.toLocaleString('id-ID')}`;
-  };
-
-  const topProductsData = useMemo<TopProduct[]>(() => {
-    if (!dashboardData?.products?.topProducts) return [];
-    return dashboardData.products.topProducts.map((product) => ({
-      id: product.id,
-      name: product.name,
-      sales: product.quantity,
-      quantity: product.quantity,
-      revenue: product.revenue,
-      type: product.type,
-    }));
-  }, [dashboardData?.products?.topProducts]);
-
-  const productTypeData = useMemo<ByType[]>(() => {
-    if (!dashboardData?.products?.byType) return [];
-    return dashboardData.products.byType.map((item) => ({
-      type: item.type,
-      count: item.count,
-      percentage: item.percentage,
-    }));
-  }, [dashboardData?.products?.byType]);
-
-  const lowStockProducts = useMemo(
-    () => (dashboardData?.products?.lowStock ?? []).slice(0, 5),
-    [dashboardData?.products?.lowStock],
-  );
-
-  const topPaymentMethod = useMemo(() => {
-    if (!dashboardData?.payments?.byPaymentMethod?.length) return undefined;
-    return [...dashboardData.payments.byPaymentMethod].sort((a, b) => b.count - a.count)[0];
-  }, [dashboardData?.payments?.byPaymentMethod]);
-
-  const kpiCards = useMemo(() => {
-    if (!dashboardData) return [];
-
-    const cards: Array<{
-      title: string;
-      value: string;
-      icon: ReactNode;
-      accentColor: string;
-      accentBackground?: string;
-      description?: string;
-      comparison?: Array<{ label: string; value: string }>;
-    }> = [];
-
-    const { revenue } = dashboardData;
-    const revenueGrowthRaw = revenue.monthOverMonthGrowth;
-    let revenueDescription = 'Belum ada data perbandingan';
-    if (typeof revenueGrowthRaw === 'number') {
-      const rounded = Math.round(revenueGrowthRaw);
-      revenueDescription = rounded === 0
-        ? 'Stabil dibanding bulan lalu'
-        : `${rounded > 0 ? 'Naik' : 'Turun'} ${Math.abs(rounded)}% dibanding bulan lalu`;
-    }
-
-    cards.push({
-      title: 'Pendapatan Bulan Ini',
-      value: formatCurrency(revenue.monthRevenue),
-      icon: <DollarSign className="h-5 w-5" />,
-      accentColor: 'text-emerald-600 dark:text-emerald-400',
-      accentBackground: 'bg-emerald-100/60 dark:bg-emerald-900/30',
-      description: revenueDescription,
-      comparison: [
-        { label: 'Minggu ini', value: formatCurrency(revenue.weekRevenue) },
-        { label: 'Hari ini', value: formatCurrency(revenue.todayRevenue) },
-      ],
-    });
-
-    if (dashboardData.orders) {
-      const { monthOrders, weekOrders, todayOrders, averageOrderValue } = dashboardData.orders;
-      const expectedWeekly = monthOrders > 0 ? monthOrders / 4 : 0;
-      let ordersDescription = 'Belum ada data perbandingan';
-      if (expectedWeekly > 0) {
-        const diff = Math.round(((weekOrders - expectedWeekly) / expectedWeekly) * 100);
-        ordersDescription = diff === 0
-          ? 'Sesuai rata-rata mingguan'
-          : `${diff > 0 ? 'Di atas' : 'Di bawah'} rata-rata mingguan ${Math.abs(diff)}%`;
-      }
-
-      cards.push({
-        title: 'Pesanan Bulan Ini',
-        value: monthOrders.toLocaleString('id-ID'),
-        icon: <ShoppingCart className="h-5 w-5" />,
-        accentColor: 'text-blue-600 dark:text-blue-400',
-        accentBackground: 'bg-blue-100/60 dark:bg-blue-900/30',
-        description: ordersDescription,
-        comparison: [
-          { label: 'Minggu ini', value: weekOrders.toLocaleString('id-ID') },
-          { label: 'Hari ini', value: todayOrders.toLocaleString('id-ID') },
-        ],
-      });
-
-      const todayAverageOrderValue = todayOrders > 0
-        ? Math.round(revenue.todayRevenue / todayOrders)
-        : null;
-
-      let averageDescription = 'Belum ada pesanan hari ini';
-      if (todayAverageOrderValue !== null) {
-        if (averageOrderValue > 0) {
-          const diff = Math.round(((todayAverageOrderValue - averageOrderValue) / averageOrderValue) * 100);
-          averageDescription = diff === 0
-            ? `Rata-rata hari ini ${formatCurrency(todayAverageOrderValue)}`
-            : `${diff > 0 ? 'Di atas' : 'Di bawah'} rata-rata bulanan ${Math.abs(diff)}%`;
-        } else {
-          averageDescription = `Rata-rata hari ini ${formatCurrency(todayAverageOrderValue)}`;
-        }
-      }
-
-      cards.push({
-        title: 'Nilai Order Rata-rata',
-        value: formatCurrency(averageOrderValue),
-        icon: <TrendingUp className="h-5 w-5" />,
-        accentColor: 'text-purple-600 dark:text-purple-400',
-        accentBackground: 'bg-purple-100/60 dark:bg-purple-900/30',
-        description: averageDescription,
-        comparison: [
-          { label: 'Rata-rata hari ini', value: todayAverageOrderValue !== null ? formatCurrency(todayAverageOrderValue) : '-' },
-          { label: 'Pesanan bulan ini', value: monthOrders.toLocaleString('id-ID') },
-        ],
-      });
-    }
-
-    const manualPayments = dashboardData.payments?.manualPayments;
-    if (manualPayments) {
-      cards.push({
-        title: 'Pembayaran Manual',
-        value: manualPayments.totalManual.toLocaleString('id-ID'),
-        icon: <CreditCard className="h-5 w-5" />,
-        accentColor: 'text-amber-700 dark:text-amber-400',
-        accentBackground: 'bg-amber-100/60 dark:bg-amber-900/30',
-        description: manualPayments.pending
-          ? `${manualPayments.pending} menunggu verifikasi`
-          : 'Tidak ada pembayaran manual yang pending',
-        comparison: [
-          { label: 'Diverifikasi', value: manualPayments.verified.toLocaleString('id-ID') },
-          { label: 'Ditolak', value: manualPayments.rejected.toLocaleString('id-ID') },
-        ],
-      });
-    }
-
-    return cards;
-  }, [dashboardData, productTypeData, lowStockProducts]);
-
-  if (isLoading || isPending) {
+  if (!selectedOutlet?.id) return <EmptyOutletState onAddOutlet={() => router.push('/owner/dashboard#add-outlet')} />
+  if (isPending) {
     return <p className="rounded-lg border border-gray-200 bg-white p-5 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300">Memuat analitik outlet…</p>;
   }
 
@@ -360,7 +216,7 @@ export default function OutletsDashboard() {
               </p>
             </div>
             <div className="rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-              Total: {formatCurrency(dashboardData?.expenses?.todayExpenses)} hari ini
+              Total: {formatCurrency(dashboardData?.expenses?.todayExpenses || 0)} hari ini
             </div>
           </div>
 

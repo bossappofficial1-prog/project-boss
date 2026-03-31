@@ -529,8 +529,9 @@ export default function AddOrEditProductServiceModal({
       label: "Harga Komisi",
       colSpan: 3,
       condition: (values) => values.type === "SERVICE",
-      typeResolver: (values) =>
-        values.service?.commissionType == "FIXED" ? "currency" : "presentage",
+      typeResolver(values) {
+        return values.service?.commissionType == "FIXED" ? "currency" : "percentage";
+      },
     },
     {
       name: "service.commissionType",

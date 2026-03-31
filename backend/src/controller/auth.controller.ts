@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
-import { loginService, getMeService, resendVerificationService, forgotPasswordService, resetPasswordService, changePasswordService, googleOAuthService, cashierLoginService, getCashierMeService, completeOnboardingService } from "../service/auth.service";
+import { loginService, getMeService, resendVerificationService, forgotPasswordService, resetPasswordService, changePasswordService, googleOAuthService, cashierLoginService, getCashierMeService, completeOnboardingService, updatePasswordService, updateProfileService } from "../service/auth.service";
 import { ResponseUtil } from "../utils/response";
 import { createUserService, verifyUserService } from "../service/user.service";
 import { HttpStatus } from "../constants/http-status";
@@ -266,3 +266,18 @@ export const getCashierMeController = asyncHandler(async (req: Request, res: Res
 
     return ResponseUtil.success(res, staff);
 });
+
+export const updateProfileController = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.params.userId as string;
+    const payload = req.body;
+
+    const result = await updateProfileService(userId, payload);
+    return ResponseUtil.success(res, result, HttpStatus.OK);
+})
+export const updatePasswordController = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.params.userId as string;
+    const payload = req.body;
+
+    const result = await updatePasswordService(userId, payload);
+    return ResponseUtil.success(res, result, HttpStatus.OK);
+})

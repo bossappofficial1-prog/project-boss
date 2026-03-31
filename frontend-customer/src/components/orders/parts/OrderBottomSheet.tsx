@@ -34,6 +34,7 @@ import {
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { useTranslations } from "@/hooks/useI18n";
 import dynamic from "next/dynamic";
+import TimelineProgress from "./TimelineProgress";
 
 const CountdownTimer = dynamic(() => import("./CountdownTimer"), { ssr: false });
 const TicketQRCard = dynamic(() => import("./TicketQRCard"), { ssr: false });
@@ -342,69 +343,10 @@ export default function OrderBottomSheet({
                         {!isCancelled && (
                             <div>
                                 <SectionLabel>{t("detail.progress")}</SectionLabel>
-                                <div className="bg-muted/20 border border-border/50 rounded-xl p-4">
-                                    {/* Step dots + connectors */}
-                                    <div className="flex items-start">
-                                        {timelineSteps.map((step, idx) => {
-                                            const isCompleted = idx <= currentIndex;
-                                            const isCurrent = idx === currentIndex;
-                                            const isLast = idx === timelineSteps.length - 1;
-
-                                            return (
-                                                <div key={step.status} className="flex items-start flex-1 min-w-0 last:flex-none">
-                                                    <div className="flex flex-col items-center gap-1.5 w-full">
-                                                        {/* Dot + connector row */}
-                                                        <div className="flex items-center w-full">
-                                                            {/* Dot */}
-                                                            <div className={cn(
-                                                                "w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-300",
-                                                                isCompleted
-                                                                    ? "bg-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.15)]"
-                                                                    : "bg-muted border-2 border-border",
-                                                                isCurrent && "ring-2 ring-offset-1 ring-offset-background ring-primary/40",
-                                                            )}>
-                                                                {isCompleted ? (
-                                                                    <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary-foreground" />
-                                                                ) : (
-                                                                    <span className="text-[8px] font-bold text-muted-foreground">
-                                                                        {idx + 1}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            {/* Connector */}
-                                                            {!isLast && (
-                                                                <div className={cn(
-                                                                    "h-0.5 flex-1 mx-0.5 transition-colors duration-300",
-                                                                    idx < currentIndex ? "bg-primary" : "bg-border",
-                                                                )} />
-                                                            )}
-                                                        </div>
-
-                                                        {/* Step label */}
-                                                        <span className={cn(
-                                                            "text-[9px] sm:text-[10px] text-center leading-tight px-0.5",
-                                                            "max-w-[52px] sm:max-w-[60px]",
-                                                            isCurrent
-                                                                ? "font-bold text-foreground"
-                                                                : isCompleted
-                                                                    ? "font-medium text-muted-foreground"
-                                                                    : "text-muted-foreground/60",
-                                                        )}>
-                                                            {step.label}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* Last updated */}
-                                    {currentIndex >= 0 && (
-                                        <p className="text-[10px] text-muted-foreground text-center mt-3 pt-3 border-t border-border/50">
-                                            Diperbarui {formatDateTime(order.updatedAt)}
-                                        </p>
-                                    )}
-                                </div>
+                                <TimelineProgress
+                                    timelineSteps={timelineSteps}
+                                    currentIndex={currentIndex}
+                                />
                             </div>
                         )}
 

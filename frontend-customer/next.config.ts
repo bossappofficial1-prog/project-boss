@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import withSerwist from "@serwist/next";
+import { withSerwist } from "@serwist/turbopack";
 
 type RemotePattern = {
   protocol?: "http" | "https";
@@ -75,13 +75,6 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: parseRemotePatterns(process.env.NEXT_PUBLIC_REMOTE_PATTERNS || '')
   },
-  // allowedDevOrigins: ["http://192.168.100.248:3000"]
 };
 
-const withSerwistConfig = withSerwist({
-  swSrc: "src/sw.ts",
-  swDest: "public/sw.js",
-  disable: process.env.NODE_ENV === "development",
-});
-
-export default withSerwistConfig(nextConfig);
+export default withSerwist(nextConfig);

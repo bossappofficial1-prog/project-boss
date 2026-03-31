@@ -10,125 +10,13 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, Lock, UserCog, Building2, Mail, ShieldCheck, KeyRound } from "lucide-react";
 import { FormFieldConfig, ReusableForm } from "@/components/ui/reuseable-form";
-
-const profileSchema = z.object({
-  avatar: z.any().optional(),
-  name: z.string().min(2, "Nama minimal 2 karakter"),
-  phone: z
-    .string()
-    .regex(/^[0-9]*$/, "Nomor telepon hanya boleh angka")
-    .optional()
-    .or(z.literal("")),
-});
-
-type ProfileFormValues = z.infer<typeof profileSchema>;
-
-const profileFields: FormFieldConfig<ProfileFormValues>[] = [
-  {
-    name: "avatar",
-    label: "Foto Profil",
-    type: "file",
-    accept: {
-      "image/*": [".png", ".jpg", ".jpeg", ".webp"],
-    },
-    maxSizes: 2 * 1024 * 1024, // 2MB
-    description: "Format yang didukung: JPG, PNG, WEBP. Maksimal ukuran 2MB.",
-    colSpan: "full",
-  },
-  {
-    name: "name",
-    label: "Nama Lengkap",
-    type: "text",
-    placeholder: "Masukkan nama lengkap Anda",
-    colSpan: 1,
-  },
-  {
-    name: "phone",
-    label: "Nomor Telepon",
-    type: "tel",
-    placeholder: "Contoh: 081234567890",
-    colSpan: 1,
-  },
-];
-
-const passwordSchema = z.object({
-  currentPassword: z.string().min(1, "Kata sandi saat ini wajib diisi"),
-  newPassword: z.string().min(8, "Kata sandi baru minimal 8 karakter"),
-  confirmPassword: z.string().min(1, "Konfirmasi kata sandi wajib diisi"),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Konfirmasi kata sandi tidak cocok",
-  path: ["confirmPassword"],
-});
-
-type PasswordFormValues = z.infer<typeof passwordSchema>;
-
-const passwordFields: FormFieldConfig<PasswordFormValues>[] = [
-  {
-    name: "currentPassword",
-    label: "Kata Sandi Saat Ini",
-    type: "password",
-    placeholder: "Masukkan kata sandi saat ini",
-    colSpan: "full",
-  },
-  {
-    name: "newPassword",
-    label: "Kata Sandi Baru",
-    type: "password",
-    placeholder: "Minimal 8 karakter",
-    colSpan: 1,
-  },
-  {
-    name: "confirmPassword",
-    label: "Konfirmasi Kata Sandi",
-    type: "password",
-    placeholder: "Ulangi kata sandi baru",
-    colSpan: 1,
-  },
-];
+import { ProfileForm } from "./ProfileForm";
+import { PasswordForm } from "./PasswordForm";
 
 export function SettingsContent() {
   const { user, business, isLoading } = useAuth();
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  console.log(user, business)
-  // Fungsi untuk menangani submit form profil
-  const handleUpdateProfile = async (values: ProfileFormValues | FormData) => {
-    try {
-      setIsUpdatingProfile(true);
-
-      // TODO: Panggil API Anda di sini untuk update profil
-      // Contoh jika menggunakan FormData (karena ada file Avatar):
-      // await axios.put('/api/users/profile', values, { headers: { 'Content-Type': 'multipart/form-data' } });
-
-      console.log("Data profil yang disubmit:", values);
-
-      // Simulasi delay jaringan
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      alert("Profil berhasil diperbarui!"); // Ganti dengan toast/snackbar yang lebih modern
-    } catch (error) {
-      console.error("Gagal update profil:", error);
-      alert("Terjadi kesalahan saat menyimpan profil.");
-    } finally {
-      setIsUpdatingProfile(false);
-    }
-  };
-
-  // Fungsi untuk menangani submit form password
-  const handleUpdatePassword = async (values: PasswordFormValues | FormData) => {
-    try {
-      setIsUpdatingPassword(true);
-      // TODO: Panggil API Anda di sini untuk update password
-      console.log("Data password yang disubmit:", values);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      alert("Kata sandi berhasil diperbarui!");
-    } catch (error) {
-      console.error("Gagal update password:", error);
-      alert("Terjadi kesalahan saat mengubah kata sandi.");
-    } finally {
-      setIsUpdatingPassword(false);
-    }
-  };
 
   if (isLoading || !user) {
     return <SettingsSkeleton />;
@@ -160,43 +48,22 @@ export function SettingsContent() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ReusableForm<ProfileFormValues>
-                schema={profileSchema}
-                defaultValues={{
-                  name: user.name || "",
-                  phone: user.phone || "",
-                  avatar: user.avatar || "",
-                }}
-                fields={profileFields}
-                onSubmit={handleUpdateProfile}
-                submitText="Simpan Profil"
-                isLoading={isUpdatingProfile}
-                gridCols={2} // Menggunakan 2 kolom grid (nama di kiri, hp di kanan)
-                useFormData={true} // Wajib true karena ada upload file (avatar)
+              <ProfileForm
+                userId={user.id}
+                defaultValues={{ name: user.name, avatar: user.avatar, phone: user.phone ?? "" }}
               />
-
               <Separator className="my-6" />
 
               {/* Form Ubah Kata Sandi */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
-                  <KeyRound className="h-4 w-4 text-muted-foreground" />
-                  Ubah Kata Sandi
-                </h4>
-                <ReusableForm<PasswordFormValues>
-                  schema={passwordSchema}
-                  defaultValues={{
-                    currentPassword: "",
-                    newPassword: "",
-                    confirmPassword: "",
-                  }}
-                  fields={passwordFields}
-                  onSubmit={handleUpdatePassword}
-                  submitText="Perbarui Kata Sandi"
-                  isLoading={isUpdatingPassword}
-                  gridCols={2}
-                />
-              </div>
+              {user.provider == 'local' && (
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
+                    <KeyRound className="h-4 w-4 text-muted-foreground" />
+                    Ubah Kata Sandi
+                  </h4>
+                  <PasswordForm userId={user.id} defaultValues={{ confirmPassword: "", currentPassword: "", newPassword: "" }} />
+                </div>
+              )}
 
               <Separator className="my-6" />
 

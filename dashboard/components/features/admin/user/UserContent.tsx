@@ -27,9 +27,9 @@ export default function UserContent() {
         page: page
     })
 
-    useEffect(()=>{
-         document.title = 'Management User'
-    },[])
+    useEffect(() => {
+        document.title = 'Management User'
+    }, [])
 
     const deleteUser = useDeleteUser()
     const createUser = useCreateUser()
@@ -88,7 +88,22 @@ export default function UserContent() {
                             onSuccess: () => setIsFormOpen(false),
                         })
                 }}
-                defaultValues={selectedUser}
+                defaultValues={
+                    selectedUser && selectedUser.id && selectedUser.name && selectedUser.role && selectedUser.email && selectedUser.provider && selectedUser.createdAt
+                        ? {
+                            id: selectedUser.id,
+                            name: selectedUser.name,
+                            role: selectedUser.role,
+                            email: selectedUser.email,
+                            provider: selectedUser.provider,
+                            createdAt: selectedUser.createdAt,
+                            phone: selectedUser.phone ?? "",
+                            isVerified: selectedUser.isVerified ?? false,
+                            avatar: selectedUser.avatar ?? "",
+                            updatedAt: selectedUser.updatedAt ?? ""
+                        }
+                        : undefined
+                }
             />
 
             {/* {showDetailModal && selectedUserId && (

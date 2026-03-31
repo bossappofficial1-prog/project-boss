@@ -12,6 +12,9 @@ import { messagePublisher } from "./message-publisher.service";
 import { BusinessRepository } from "../repositories/business.repository";
 import { SubscriptionPlanRepository } from "../repositories/subscription-plan.repository";
 import { OnboardingRepository } from "../repositories/onboarding.repository";
+import { UpdatePasswordValues, UpdateProfileValues } from "../schemas/profile-setting.schema";
+import { deleteFile } from "../utils/file.utils";
+import { ImageService } from "./image.service";
 
 export async function loginService(data: LoginInput) {
     const user = await getUserByEmailService(data.email);
@@ -312,4 +315,37 @@ export async function completeOnboardingService(ownerId: string, data: CompleteR
         description: data.description,
         plan,
     });
+}
+
+export async function updateProfileService(userId: string, data: UpdateProfileValues) {
+    const user = await UserRepository.findById(userId)
+
+    if (!user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    const updated = await UserRepository.updateProfile(userId, data);
+
+    if (data.avatar && user.avatar) {
+        try {
+            ImageService.deleteImageByUrl(user.avatar)
+        } catch (error) {
+            console.error(error)
+        }
+    }
+    redis.del(`user:${userId}`)
+    return updated
+}
+
+
+export async function updatePasswordService(userId: string, data: UpdatePasswordValues) {
+    const user = await UserRepository.findById(userId)
+
+    if (!user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    const isPasswordValid = await BcryptUtil.compare(data.currentPassword, user.password);
+    if (!isPasswordValid) throw new AppError(`Kata sandi saat ini salah.`, HttpStatus.BAD_REQUEST);
+
+    const newPassword = await BcryptUtil.hash(data.newPassword)
+    const updated = await UserRepository.updatePassword(userId, newPassword);
+
+    redis.del(`user:${userId}`)
+    return updated
 }

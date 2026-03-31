@@ -69,7 +69,6 @@ function getInitialSelectedOutlet(outlets: Outlet[]): Outlet | null {
 export function OutletProvider({ children }: OutletProviderProps) {
     const { data, isLoading, error, refetch } = useOutletsQuery();
     const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
-    console.log('render')
     const outlets = (data?.outlets || []) as Outlet[];
 
     // Initialize selected outlet when outlets data is available

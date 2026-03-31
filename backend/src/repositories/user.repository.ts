@@ -1,5 +1,6 @@
 import { User } from "@prisma/client";
 import { db } from "../config/prisma";
+import { UpdateProfileValues } from "../schemas/profile-setting.schema";
 
 export interface PaginationParams {
     page?: number;
@@ -33,7 +34,7 @@ export interface SafeUser {
 }
 
 export class UserRepository {
-    static async findById(id: string): Promise<any | null> {
+    static async findById(id: string) {
         return await db.user.findUnique({
             where: { id },
             select: {
@@ -49,6 +50,7 @@ export class UserRepository {
                 phone: true,
                 createdAt: true,
                 updatedAt: true,
+                provider: true,
 
                 business: {
                     select: {
@@ -85,6 +87,20 @@ export class UserRepository {
                 }
             },
         });
+    }
+
+    static async updateProfile(userId: string, data: UpdateProfileValues) {
+        return db.user.update({
+            where: { id: userId },
+            data
+        })
+    }
+
+    static async updatePassword(userId: string, newPassword: string) {
+        return db.user.update({
+            where: { id: userId },
+            data: { password: newPassword }
+        })
     }
 
     static async getById(userId: string) {

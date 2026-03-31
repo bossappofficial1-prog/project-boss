@@ -2,11 +2,10 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone, type DropzoneOptions, type FileRejection } from 'react-dropzone'
-import { Upload, X, FileText, AlertCircle } from 'lucide-react'
+import { Upload, X, FileText, AlertCircle, Paperclip, Camera, User } from 'lucide-react'
 import { Button } from './button'
 
-// Helper untuk format ukuran file
-const formatFileSize = (bytes: number) => {
+const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
@@ -14,19 +13,23 @@ const formatFileSize = (bytes: number) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-type FileUploaderProps = {
-    value?: File | string | null
-    onValueChange: (file: File | null) => void
-    accept?: DropzoneOptions['accept']
-    maxSize?: number
-    label?: string
-    helperText?: string
-    disabled?: boolean
+export type FileUploaderVariant = 'default' | 'compact' | 'avatar' | 'button'
+
+export interface FileUploaderProps {
+    value?: File | string | null;
+    onValueChange: (file: File | null) => void;
+    variant?: FileUploaderVariant;
+    accept?: DropzoneOptions['accept'];
+    maxSize?: number;
+    label?: string;
+    helperText?: string;
+    disabled?: boolean;
 }
 
-export default function FileUploader({
+export function FileUploader({
     value,
     onValueChange,
+    variant = 'default',
     accept = {
         'image/*': ['.jpeg', '.png', '.jpg', '.gif'],
         'application/pdf': ['.pdf']
@@ -48,7 +51,7 @@ export default function FileUploader({
         }
     }, [onValueChange])
 
-    // Handle Drop Gagal (File terlalu besar / tipe salah)
+    // Handle Drop Gagal
     const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
         const rejection = fileRejections[0]
         if (rejection.errors[0].code === 'file-too-large') {
@@ -76,111 +79,223 @@ export default function FileUploader({
             setPreview(null)
             return
         }
-
         if (typeof value === 'string') {
             setPreview(value)
             return
         }
-
-        // Jika file adalah gambar, buat preview URL
-        if (value.type.startsWith('image/')) {
+        if (value.type && value.type.startsWith('image/')) {
             const objectUrl = URL.createObjectURL(value)
             setPreview(objectUrl)
             return () => URL.revokeObjectURL(objectUrl)
         }
-
-        // Jika bukan gambar, kosongkan preview visual
         setPreview(null)
     }, [value])
 
     const removeFile = (e: React.MouseEvent) => {
-        e.stopPropagation()
+        e.stopPropagation() // Mencegah dialog file terbuka saat klik X
         onValueChange(null)
         setPreview(null)
         setError(null)
     }
 
-    return (
-        <div className="space-y-3 w-full">
+    // Nama file helper
+    const fileName = value
+        ? (typeof value === 'string' ? value.split('/').pop() || 'File tersimpan' : value.name)
+        : ''
+
+    const renderDefault = () => (
+        <div
+            {...getRootProps()}
+            className={`
+                relative p-6 border-2 border-dashed rounded-xl text-center transition-all duration-200
+                ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer'}
+                ${isDragActive ? 'border-blue-500 bg-blue-50' : error ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400 bg-white'}
+            `}
+        >
+            <input {...getInputProps()} />
+            <div className="flex flex-col items-center justify-center gap-2">
+                {!value ? (
+                    <div className="flex flex-col items-center">
+                        <Upload className={`h-10 w-10 mb-3 ${error ? 'text-red-400' : 'text-gray-400'}`} />
+                        <p className="text-sm font-semibold text-gray-700">
+                            {isDragActive ? 'Lepaskan file di sini' : label}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1 truncate flex-1">
+                            {helperText || `Maksimal ${formatFileSize(maxSize)}`}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-4 w-full p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        {preview ? (
+                            <img src={preview} alt="Preview" className="h-14 w-14 object-cover rounded-md border border-gray-200 shadow-sm" />
+                        ) : (
+                            <div className="h-14 w-14 bg-blue-100 rounded-md flex items-center justify-center text-blue-600">
+                                <FileText className="h-7 w-7" />
+                            </div>
+                        )}
+                        <div className="flex-1 text-left overflow-hidden">
+                            <p className="text-sm font-medium truncate text-gray-900">{fileName}</p>
+                            {typeof value !== 'string' && <p className="text-xs text-gray-500">{formatFileSize(value.size)}</p>}
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={removeFile}
+                            className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
+                        >
+                            <X className="h-5 w-5" />
+                        </Button>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+
+    const renderCompact = () => (
+        <div
+            {...getRootProps()}
+            className={`
+                relative flex items-center gap-3 p-2 border rounded-lg transition-all duration-200
+                ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer'}
+                ${isDragActive ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-100' : error ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400 bg-white'}
+            `}
+        >
+            <input {...getInputProps()} />
+            {!value ? (
+                <>
+                    <div className="p-2 bg-gray-100 rounded-md text-gray-500 group-hover:bg-gray-200 transition-colors">
+                        <Upload className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 text-sm text-gray-500 truncate">
+                        {isDragActive ? 'Lepaskan...' : label}
+                    </div>
+                </>
+            ) : (
+                <>
+                    {preview ? (
+                        <img src={preview} alt="Preview" className="h-8 w-8 object-cover rounded shadow-sm" />
+                    ) : (
+                        <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
+                            <FileText className="h-4 w-4" />
+                        </div>
+                    )}
+                    <div className="flex-1 text-sm text-gray-900 font-medium truncate">
+                        {fileName}
+                    </div>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={removeFile}
+                        className="h-6 w-6 text-gray-400 hover:text-red-500 hover:bg-red-50 mr-1"
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                </>
+            )}
+        </div>
+    )
+
+    const renderAvatar = () => (
+        <div className="flex flex-col items-center gap-3">
             <div
                 {...getRootProps()}
                 className={`
-                    relative p-6 border-2 border-dashed rounded-lg text-center transition-all duration-200
-                    ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-900' : 'cursor-pointer'}
-                    ${isDragActive
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                        : error
-                            ? 'border-red-500 bg-red-50 dark:bg-red-950/10'
-                            : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500'
-                    }
+                    relative group flex items-center justify-center h-28 w-28 rounded-full border-4 transition-all duration-200 overflow-hidden
+                    ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                    ${isDragActive ? 'border-blue-500' : error ? 'border-red-500' : 'border-gray-100 hover:border-blue-200'}
+                    ${!preview ? 'bg-gray-50' : 'bg-white'}
                 `}
             >
                 <input {...getInputProps()} />
 
-                <div className="flex flex-col items-center justify-center gap-2">
-                    {/* Icon Utama Area Dropzone */}
-                    {!value ? (
-                        <div className="flex flex-col items-center">
-                            <Upload className={`h-8 w-8 mb-2 ${error ? 'text-red-400' : 'text-gray-400'}`} />
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                                {isDragActive ? 'Lepaskan file di sini' : label}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {helperText
-                                    ? helperText
-                                    : `Format yang didukung: 
-                                    ${Object.values(accept)
-                                        .flat()
-                                        .map(ext => ext.replace('.', '').toUpperCase())
-                                        .join(', ')
-                                    } (Maks ${formatFileSize(maxSize)})`}
-                            </p>
-                        </div>
-                    ) : (
-                        // Tampilan Ketika File Sudah Dipilih (di dalam box)
-                        <div className="flex items-center gap-4 w-full p-2 max-w-[500px]">
-                            {/* Preview: Gambar atau Icon File Generic */}
-                            {preview ? (
-                                <img
-                                    src={preview}
-                                    alt="Preview"
-                                    className="h-16 w-16 object-cover rounded-md border border-gray-200"
-                                />
-                            ) : (
-                                <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900/30 rounded-md flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                    <FileText className="h-8 w-8" />
-                                </div>
-                            )}
+                {/* Gambar atau Placeholder */}
+                {preview ? (
+                    <img src={preview} alt="Avatar Preview" className="h-full w-full object-cover" />
+                ) : (
+                    <User className={`h-10 w-10 ${error ? 'text-red-300' : 'text-gray-300'}`} />
+                )}
 
-                            <div className="flex-1 text-left overflow-hidden">
-                                <p className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
-                                    {typeof value === 'string' ? (value.split('/').pop() || 'Gambar tersimpan') : value.name}
-                                </p>
-                                {typeof value !== 'string' && (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {formatFileSize(value.size)}
-                                    </p>
-                                )}
-                            </div>
-
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={removeFile}
-                                className="text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
-                            >
-                                <X className="h-5 w-5" />
-                            </Button>
-                        </div>
-                    )}
-                </div>
+                {/* Overlay saat Hover */}
+                {!disabled && (
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <Camera className="h-6 w-6 text-white mb-1" />
+                        <span className="text-white text-xs font-medium">{preview ? 'Ubah' : 'Upload'}</span>
+                    </div>
+                )}
             </div>
 
-            {/* Error Message */}
-            {error && (
-                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 animate-in slide-in-from-top-1">
+            {/* Tombol Hapus */}
+            {value && !disabled && (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={removeFile}
+                    className="text-xs text-red-500 font-medium hover:text-red-600 hover:bg-red-50 h-auto px-3 py-1.5"
+                >
+                    Hapus Foto
+                </Button>
+            )}
+        </div>
+    )
+
+    const renderButton = () => (
+        <div className="inline-block">
+            <div {...getRootProps()} className="inline-block">
+                <input {...getInputProps()} />
+                {!value ? (
+                    <Button
+                        type="button"
+                        disabled={disabled}
+                        className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                        <Paperclip className="h-4 w-4" />
+                        {label || 'Pilih File'}
+                    </Button>
+                ) : (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg shadow-sm">
+                        <FileText className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-900 max-w-[150px] truncate">
+                            {fileName}
+                        </span>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={removeFile}
+                            className="h-6 w-6 ml-1 text-blue-400 hover:text-red-500 hover:bg-red-50"
+                        >
+                            <X className="h-3 w-3" />
+                        </Button>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+
+    // Render berdasarkan variant
+    return (
+        <div className={`w-full ${variant === 'avatar' || variant === 'button' ? 'w-auto' : ''}`}>
+            {variant === 'default' && renderDefault()}
+            {variant === 'compact' && renderCompact()}
+            {variant === 'avatar' && renderAvatar()}
+            {variant === 'button' && renderButton()}
+
+
+
+            {/* Error Message Universal */}
+            {error && variant !== 'avatar' && (
+                <div className="flex items-center gap-1.5 mt-2 text-sm text-red-600 animate-in slide-in-from-top-1">
                     <AlertCircle className="h-4 w-4" />
+                    <p>{error}</p>
+                </div>
+            )}
+
+            {/* Error khusus Avatar */}
+            {error && variant === 'avatar' && (
+                <div className="flex justify-center items-center gap-1.5 mt-3 text-sm text-red-600 text-center">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
                     <p>{error}</p>
                 </div>
             )}

@@ -75,7 +75,6 @@ async function fetchAuthMe(): Promise<AuthMeData> {
     provider: userData.provider,
   };
 
-  console.log(userData, businessData)
   return { user, business: businessData };
 }
 

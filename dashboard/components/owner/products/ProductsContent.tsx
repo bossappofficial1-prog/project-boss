@@ -29,6 +29,8 @@ import {
     Package, Wrench, AlertCircle, Plus, Upload, Download,
     PenBox, Trash2, Boxes, TrendingUp, Clock, Ticket, Eye,
 } from 'lucide-react'
+import { EmptyOutletState } from '@/components/ui/empty-outlet'
+import { useRouter } from 'next/navigation'
 
 function PageSkeleton() {
     return (
@@ -92,6 +94,7 @@ export default function ProductsContent() {
     const [action, setAction] = useState<'add' | 'edit'>('add')
     const [isExporting, setIsExporting] = useState(false)
     const [activeTab, setActiveTab] = useState('all')
+    const router = useRouter()
 
     const {
         products, outlets, selectedOutlet, currentPage, itemsPerPage,
@@ -145,34 +148,7 @@ export default function ProductsContent() {
     if (isLoading && products.length === 0) return <PageSkeleton />
 
     if (!isLoading && !hasBusinessProfile && !hasOutlet) {
-        return (
-            <div className="flex min-h-[60vh] items-center justify-center">
-                <Card className="max-w-lg">
-                    <CardHeader>
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                <AlertCircle className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <CardTitle>Setup Diperlukan</CardTitle>
-                                <CardDescription>
-                                    Lengkapi profil bisnis dan tambahkan outlet terlebih dahulu
-                                </CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-                            <li>Lengkapi profil bisnis beserta informasi rekening</li>
-                            <li>Tambah minimal satu outlet</li>
-                        </ul>
-                        <Button onClick={() => (window.location.href = '/owner/dashboard')}>
-                            Ke Dashboard
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-        )
+        return <EmptyOutletState onAddOutlet={() => router.push(`/owner/dashboard#add-outlet`)} />
     }
 
     const pageSizeOptions = (() => {

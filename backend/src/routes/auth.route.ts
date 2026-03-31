@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { getMeController, loginController, logoutController, registerController, verifyController, resendVerificationController, forgotPasswordController, resetPasswordController, googleOAuthCallbackController, cashierLoginController, getCashierMeController, completeOnboardingController } from "../controller/auth.controller";
+import { getMeController, loginController, logoutController, registerController, verifyController, resendVerificationController, forgotPasswordController, resetPasswordController, googleOAuthCallbackController, cashierLoginController, getCashierMeController, completeOnboardingController, updateProfileController, updatePasswordController } from "../controller/auth.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { loginSchema, verifySchema, resendVerificationSchema, forgotPasswordSchema, resetPasswordSchema, cashierLoginSchema, completeRegisterSchema } from "../schemas/auth.schema";
 import { createUserSchema } from "../schemas/user.schema";
 import { checkEmailExists } from "../validators/user.validator";
 import { protect } from "../middleware/auth.middleware";
 import passport from "../config/passport";
+import { updatePasswordSchema, updateProfileSchema } from "../schemas/profile-setting.schema";
 
 const authRouter = Router();
 
@@ -78,5 +79,13 @@ authRouter.get("/google/callback",
     passport.authenticate("google", { failureRedirect: "/auth/login" }),
     googleOAuthCallbackController
 );
+
+authRouter.patch("/update-profile/:userId",
+    validateSchema(updateProfileSchema),
+    updateProfileController)
+
+authRouter.patch("/update-password/:userId",
+    validateSchema(updatePasswordSchema),
+    updatePasswordController)
 
 export default authRouter;

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SelectOption } from "@/components/shared/SelectOption";
-import FileUploader from "@/components/ui/ImageUploader";
+import { FileUploader } from "@/components/ui/ImageUploader";
 
 const TRANSACTION_TYPE_OPTIONS = [
     { label: "Pembelian (Stok Masuk)", value: "PURCHASE" },

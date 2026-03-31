@@ -24,9 +24,11 @@ import { toast } from 'sonner'
 import OperatingHoursModal from '@/components/OperatingHoursModal'
 import { useOutletContext } from '@/components/providers/OutletProvider'
 import type { Outlet } from '@/types'
-import ImageUploader from '@/components/ui/ImageUploader'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { outletManagementApi, uploadApi } from '@/lib/api'
+import { EmptyOutletState } from '../ui/empty-outlet'
+import { FileUploader } from '../ui/ImageUploader'
+import { useRouter } from 'next/navigation'
 
 function ManageOutletSkeleton() {
     return (
@@ -55,6 +57,7 @@ function ManageOutletSkeleton() {
 export default function ManageOutletContent() {
     const { selectedOutlet, isLoading: outletLoading } = useOutletContext()
     const queryClient = useQueryClient()
+    const router = useRouter()
 
     const [isEditing, setIsEditing] = useState(false)
     const [isOperatingHoursModalOpen, setIsOperatingHoursModalOpen] = useState(false)
@@ -176,9 +179,8 @@ export default function ManageOutletContent() {
         },
     })
 
-    if (outletLoading || !formData) {
-        return <ManageOutletSkeleton />
-    }
+    if (!selectedOutlet?.id) return <EmptyOutletState onAddOutlet={() => router.push('/owner/dashboard#add-outlet')} />;
+    if (outletLoading || !formData) return <ManageOutletSkeleton />;
 
     return (
         <div className="space-y-6">
@@ -450,7 +452,7 @@ export default function ManageOutletContent() {
                                             />
                                         </div>
                                     )}
-                                    <ImageUploader
+                                    <FileUploader
                                         onValueChange={(file) => handleImageUpload(file!, 'qris')}
                                         label="Upload QRIS baru"
                                         accept={{ 'image/*': ['.jpeg', '.png', '.jpg'] }}

@@ -260,11 +260,10 @@ export const EnhancedOrderCard = memo(function EnhancedOrderCard({
     return (
         <Card
             className={cn(
-                "overflow-hidden transition-all duration-200 p-0",
+                "overflow-hidden gap-0 transition-all duration-200 p-0",
                 "border border-border/60",
                 "hover:border-border hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]",
                 "active:scale-[0.995]",
-                // Subtle left accent bar via box-shadow on larger screens
                 "sm:shadow-[inset_3px_0_0_transparent]",
             )}
         >
@@ -272,7 +271,6 @@ export const EnhancedOrderCard = memo(function EnhancedOrderCard({
             <div className={cn("h-0.5 w-full", status.accentBar)} />
 
             <CardContent className="p-0">
-                {/* ── Main clickable area ─────────────────────────────── */}
                 <div
                     onClick={() => onOrderClick(order)}
                     role="button"

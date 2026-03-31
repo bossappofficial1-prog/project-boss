@@ -8,7 +8,7 @@ import { ReceiptSettingService, ReceiptSettingType } from "@/lib/apis/receipt-se
 import { fileToBase64 } from "@/lib/utils";
 
 export const updateReceiptSettingSchema = z.object({
-    photoString: z.any().optional().nullable(),
+    photoString: z.union([z.string(), z.instanceof(File)]).nullable().optional(),
     showLogo: z.enum(['ACTIVE', 'INACTIVE']),
     printHeight: z.coerce.number({
         message: "Tinggi wajib diisi dan harus berupa angka"
@@ -18,7 +18,12 @@ export const updateReceiptSettingSchema = z.object({
     }).positive("Tidak boleh nol atau negatif"),
 });
 
-export type UpdateReceiptSettingValues = z.infer<typeof updateReceiptSettingSchema>;
+export type UpdateReceiptSettingValues = {
+    printHeight: number;
+    printWidth: number;
+    photoString: string | null;
+    showLogo: string;
+};
 
 export default function ReceiptSetting({ outletId }: { outletId?: string }) {
     // States
@@ -146,7 +151,9 @@ export default function ReceiptSetting({ outletId }: { outletId?: string }) {
                 gridCols={6}
                 dialogTitle="Pengaturan Struk"
                 isDialogOpen={isModalOpen}
-                onDialogOpenChange={!isSubmitting ? setIsModalOpen : undefined}
+                onDialogOpenChange={(open) => {
+                    if (!isSubmitting) setIsModalOpen(open);
+                }}
                 withDialog
                 onSubmit={handleSubmit}
                 fields={fields}

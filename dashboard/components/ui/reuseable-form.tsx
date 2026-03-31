@@ -2,6 +2,7 @@
 
 import {
   useForm,
+  useFieldArray,
   Control,
   FieldValues,
   Path,
@@ -9,10 +10,16 @@ import {
   ControllerRenderProps,
   useWatch,
   UseFormReturn,
+  UseFieldArrayReturn,
+  ArrayPath,
+  FieldArray,
 } from "react-hook-form";
 import { useEffect, ReactNode, useState, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZodType } from "zod";
+import { AxiosError } from "axios";
+import { DropzoneOptions } from "react-dropzone";
+
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -25,9 +32,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { SelectOption } from "../shared/SelectOption";
-import { PasswordInput } from "./password-input";
-import InputCurrency from "./input-currency";
 import {
   Dialog,
   DialogContent,
@@ -36,70 +40,96 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { DatePicker } from "./date-picker";
-import ImageUploader from "./ImageUploader";
-import { DropzoneOptions } from "react-dropzone";
 import { cn } from "@/lib/utils";
-import { InputPercentage } from "./input-presentage";
-import { DualOptionSwitch } from "./dual-option-switch";
-import { SegmentedControl } from "./segmented-control";
+
+import { PasswordInput } from "./password-input";
+import InputCurrency from "./input-currency";
+import { DatePicker } from "./date-picker";
 import { DateTimePicker } from "./datetime-picker";
+import { FileUploader, FileUploaderVariant } from "./ImageUploader";
+import { InputPercentage } from "./input-presentage";
+import { SegmentedControl } from "./segmented-control";
+import { DualOptionSwitch } from "./dual-option-switch";
+import { SelectOption } from "../shared/SelectOption";
+import { ZodTypeDef } from "zod/v3";
 
-function objectToFormData(obj: any, form?: FormData, namespace?: string): FormData {
-  const fd = form || new FormData();
-  let formKey: any;
+const COL_SPAN_CLASS = {
+  1: "md:col-span-1",
+  2: "md:col-span-2",
+  3: "md:col-span-3",
+  4: "md:col-span-4",
+  5: "md:col-span-5",
+  6: "md:col-span-6",
+  12: "md:col-span-12",
+  full: "md:col-span-full",
+} as const;
 
-  for (const property in obj) {
-    if (!obj.hasOwnProperty(property)) continue;
+const GRID_COLS_CLASS = {
+  1: "md:grid-cols-1",
+  2: "md:grid-cols-2",
+  3: "md:grid-cols-3",
+  4: "md:grid-cols-4",
+  5: "md:grid-cols-5",
+  6: "md:grid-cols-6",
+  12: "md:grid-cols-12",
+} as const;
 
-    if (namespace) {
-      formKey = namespace + "[" + property + "]";
-    } else {
-      formKey = property;
-    }
+type ColSpan = keyof typeof COL_SPAN_CLASS;
+type GridCols = keyof typeof GRID_COLS_CLASS;
 
-    const value = obj[property];
+interface ApiErrorItem {
+  path: string;
+  message: string;
+}
 
+interface ApiErrorResponse {
+  errors?: ApiErrorItem[];
+  message?: string;
+}
+
+function objectToFormData(
+  obj: Record<string, unknown>,
+  form: FormData = new FormData(),
+  namespace?: string,
+): FormData {
+  for (const [property, value] of Object.entries(obj)) {
+    const key = namespace ? `${namespace}[${property}]` : property;
+    if (value == null) continue;
     if (value instanceof Date) {
-      fd.append(formKey, value.toISOString());
+      form.append(key, value.toISOString());
     } else if (value instanceof File) {
-      fd.append(formKey, value);
+      form.append(key, value);
     } else if (Array.isArray(value)) {
-      // Handle array uploads
-      value.forEach((element) => {
-        fd.append(`${formKey}[]`, element);
-      });
-    } else if (typeof value === "object" && value !== null && !(value instanceof File)) {
-      objectToFormData(value, fd, formKey);
-    } else {
-      if (value !== null && value !== undefined) {
-        fd.append(formKey, value.toString());
+      for (const item of value) {
+        if (item instanceof File) {
+          form.append(`${key}[]`, item);
+        } else {
+          form.append(`${key}[]`, String(item));
+        }
       }
+    } else if (typeof value === "object") {
+      objectToFormData(value as Record<string, unknown>, form, key);
+    } else {
+      form.append(key, String(value));
     }
   }
-  return fd;
+  return form;
 }
 
-function applyApiErrors<T extends FieldValues>(error: any, form: ReturnType<typeof useForm<T>>) {
-  const apiErrors = error?.response?.data?.errors;
-
+function applyApiErrors<T extends FieldValues>(
+  error: unknown,
+  form: UseFormReturn<T>,
+): boolean {
+  if (!(error instanceof AxiosError)) return false;
+  const apiErrors = error.response?.data?.errors;
   if (!Array.isArray(apiErrors)) return false;
-
-  apiErrors.forEach((err) => {
-    if (!err.path) return;
-
-    form.setError(err.path as Path<T>, {
-      type: "server",
-      message: err.message,
-    });
-  });
-
+  for (const e of apiErrors as Partial<ApiErrorItem>[]) {
+    if (e.path && e.message) {
+      form.setError(e.path as Path<T>, { type: "server", message: e.message });
+    }
+  }
   return true;
 }
-
-type CustomRenderInput<T extends FieldValues> = (props: {
-  field: ControllerRenderProps<T, Path<T>>;
-}) => ReactNode;
 
 export type FieldType =
   | "text"
@@ -113,12 +143,18 @@ export type FieldType =
   | "currency"
   | "custom"
   | "tel"
-  | "presentage"
+  | "toggle"
   | "dual-option-switch"
-  | "toogle"
-  | "datetime-local";
+  | "datetime-local"
+  | "percentage"
+  | "array";
 
-type PlaceholderResolver<T extends FieldValues> = string | ((values: Partial<T>) => string);
+type PlaceholderFn<T extends FieldValues> = (values: Partial<T>) => string;
+type PlaceholderResolver<T extends FieldValues> = string | PlaceholderFn<T>;
+
+type CustomRenderInput<T extends FieldValues> = (props: {
+  field: ControllerRenderProps<T, Path<T>>;
+}) => ReactNode;
 
 interface BaseFieldConfig<T extends FieldValues> {
   name: Path<T>;
@@ -128,31 +164,32 @@ interface BaseFieldConfig<T extends FieldValues> {
   disabled?: boolean;
   className?: string;
   valueToUpperCase?: boolean;
-  colSpan?: 1 | 2 | 3 | 4 | 5 | 6 | 12 | "full";
-  renderCustom?: CustomRenderInput<T>;
+  colSpan?: ColSpan;
+  icon?: React.ComponentType<{ className?: string }>;
   condition?: (values: Partial<T>) => boolean;
   typeResolver?: (values: Partial<T>) => FieldType;
-  type?: FieldType;
-  icon?: React.ComponentType<{ className?: string }>;
+  dependsOn?: {
+    field: Path<T>;
+    condition: (value: any, allValues: Partial<T>) => boolean;
+    then?: (fieldConfig: FormFieldConfig<T>) => Partial<FormFieldConfig<T>>;
+  };
 }
 
-interface ImageFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
-  type: "file";
-  accept?: DropzoneOptions["accept"];
-  maxSizes?: number;
+interface TextFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+  type?: Exclude<FieldType, "select" | "toggle" | "dual-option-switch" | "file" | "custom" | "array">;
 }
 
 interface SelectFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
   type: "select";
-  options?: { label: string; value: string }[];
+  options: { label: string; value: string }[];
 }
 
-interface ToogleFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
-  type: "toogle";
-  options?: { label: string; value: string; disabled?: boolean }[];
+interface ToggleFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+  type: "toggle";
+  options: { label: string; value: string; disabled?: boolean }[];
 }
 
-interface SwitchFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+interface DualSwitchFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
   type: "dual-option-switch";
   switchOptions: {
     left: {
@@ -170,51 +207,112 @@ interface SwitchFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
   };
 }
 
-interface StandardFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
-  type?: Exclude<FieldType, "select" | "dual-option-switch" | "file">;
-  options?: never;
-  switchOptions?: never;
+interface FileFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+  type: "file";
+  accept?: DropzoneOptions["accept"];
+  maxSizes?: number;
+  variant?: FileUploaderVariant;
+}
+
+interface CustomFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+  type: "custom";
+  renderCustom: CustomRenderInput<T>;
+}
+
+interface ArrayFieldConfig<T extends FieldValues>
+  extends Omit<BaseFieldConfig<T>, "name"> {
+  type: "array";
+  name: ArrayPath<T>;
+  arrayFields: FormFieldConfig<T>[];
+
+  renderItem?: (
+    index: number,
+    remove: () => void,
+    fieldsArray: UseFieldArrayReturn<T, ArrayPath<T>>
+  ) => ReactNode;
+
+  addButtonText?: string;
+  removeButtonText?: string;
 }
 
 export type FormFieldConfig<T extends FieldValues> =
-  | ImageFieldConfig<T>
-  | SwitchFieldConfig<T>
   | SelectFieldConfig<T>
-  | ToogleFieldConfig<T>
-  | StandardFieldConfig<T>
-  | ({ type: "custom"; renderCustom: CustomRenderInput<T> } & BaseFieldConfig<T>);
+  | ToggleFieldConfig<T>
+  | DualSwitchFieldConfig<T>
+  | FileFieldConfig<T>
+  | CustomFieldConfig<T>
+  | ArrayFieldConfig<T>
+  | TextFieldConfig<T>;
 
-interface ReusableFormProps<T extends FieldValues> {
-  form?: UseFormReturn<T>;
-  schema: ZodType<T, any, any>;
-  defaultValues?: DefaultValues<T>;
-  onSubmit: (values: T | FormData) => void;
-  fields: FormFieldConfig<T>[];
-  submitText?: string;
-  isLoading?: boolean;
-  submitDisabled?: boolean;
-  gridCols?: number;
-  useFormData?: boolean;
-  children?: ReactNode;
-  renderFooter?: ReactNode;
-  onValuesChange?: (values: Partial<T>) => void;
-  hideSubmitButton?: boolean;
-
-  // Dialog Props
-  withDialog?: boolean;
-  id?: string;
-  isDialogOpen?: boolean;
-  onDialogOpenChange?: (open: boolean) => void;
+interface DialogProps {
+  withDialog: true;
+  isDialogOpen: boolean;
+  onDialogOpenChange: (open: boolean) => void;
   dialogTitle?: ReactNode;
   dialogDescription?: ReactNode;
   showDialogCloseButton?: boolean;
   cancelText?: string;
   resetFormOnClose?: boolean;
-  className?: string;
   preventClose?: boolean;
   confirmClose?: boolean;
   confirmCloseMessage?: string;
 }
+
+interface NoDialogProps {
+  withDialog?: false;
+}
+
+export interface WizardStep<T extends FieldValues> {
+  title: string;
+  fields: Path<T>[];
+  description?: string;
+}
+
+interface AutoSaveConfig<T extends FieldValues> {
+  enabled: boolean;
+  delay?: number; // ms
+  onSave?: (data: Partial<T>) => void;
+  storageKey?: string;
+  // optional: restore strategy
+}
+
+type AnyForm<T extends FieldValues> = UseFormReturn<T>;
+type AnySchema<T extends FieldValues> = ZodType<T, ZodTypeDef, any>;
+
+interface SharedFormProps<T extends FieldValues> {
+  form?: AnyForm<T>;
+  schema: AnySchema<T>;
+  defaultValues?: DefaultValues<T>;
+  fields: FormFieldConfig<T>[];
+  submitText?: string;
+  loadingText?: string;
+  isLoading?: boolean;
+  submitDisabled?: boolean;
+  gridCols?: GridCols;
+  children?: ReactNode;
+  renderFooter?: ReactNode;
+  onValuesChange?: (values: Partial<T>) => void;
+  hideSubmitButton?: boolean;
+  id?: string;
+  className?: string;
+  errorSummary?: boolean;
+  autoSave?: AutoSaveConfig<T>;
+  steps?: WizardStep<T>[];
+}
+
+interface WithFormDataProps<T extends FieldValues> extends SharedFormProps<T> {
+  useFormData: true;
+  onSubmit: (values: FormData) => void | Promise<void>;
+}
+
+interface WithoutFormDataProps<T extends FieldValues> extends SharedFormProps<T> {
+  useFormData?: false;
+  onSubmit: (values: NoInfer<T>) => void | Promise<void>;
+}
+
+type BaseFormProps<T extends FieldValues> = WithFormDataProps<T> | WithoutFormDataProps<T>;
+
+export type ReusableFormProps<T extends FieldValues> = BaseFormProps<T> & (DialogProps | NoDialogProps);
 
 export function ReusableForm<T extends FieldValues>({
   form: externalForm,
@@ -223,178 +321,284 @@ export function ReusableForm<T extends FieldValues>({
   onSubmit,
   fields,
   submitText = "Submit",
+  loadingText = "Submitting...",
   isLoading = false,
   submitDisabled = false,
-  withDialog = false,
-  isDialogOpen,
-  onDialogOpenChange,
-  dialogDescription,
-  dialogTitle,
-  showDialogCloseButton,
-  cancelText = "Batal",
-  resetFormOnClose = true,
-  className,
-  preventClose = false,
-  confirmClose = true,
-  confirmCloseMessage = "Perubahan belum disimpan. Tutup form?",
   gridCols = 1,
-  useFormData = false,
   children,
   renderFooter,
   onValuesChange,
-  hideSubmitButton,
+  hideSubmitButton = false,
   id,
+  className,
+  errorSummary = false,
+  autoSave,
+  steps,
+  ...rest
 }: ReusableFormProps<T>) {
-  const [internalLoading, setInternalLoading] = useState(false);
-  const wasDialogOpen = useRef(false);
+  const isDialog = rest.withDialog === true;
+  const dialogProps = isDialog ? (rest as unknown as DialogProps) : null;
+  const useFormData = "useFormData" in rest && rest.useFormData === true;
+
+  const [submitting, setSubmitting] = useState(false);
+  const wasOpenRef = useRef(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   const internalForm = useForm<T>({
     resolver: zodResolver(schema),
     defaultValues,
   });
 
-  const form = externalForm ?? internalForm;
+  const form: AnyForm<T> = externalForm ?? internalForm;
 
+  // Reset form when dialog re‑opens
   useEffect(() => {
-    if (!withDialog) return;
-
-    // dialog baru saja dibuka
-    if (isDialogOpen && !wasDialogOpen.current) {
-      form.reset(defaultValues as DefaultValues<T> | undefined);
+    if (!dialogProps) return;
+    if (dialogProps.isDialogOpen && !wasOpenRef.current) {
+      form.reset(defaultValues);
     }
+    wasOpenRef.current = dialogProps.isDialogOpen;
+  }, [dialogProps?.isDialogOpen, dialogProps, defaultValues, form]);
 
-    wasDialogOpen.current = !!isDialogOpen;
-  }, [isDialogOpen, withDialog, defaultValues]);
+  // Notify parent of value changes
+  const watchedValues = useWatch({ control: form.control });
+  useEffect(() => {
+    onValuesChange?.(watchedValues);
+  }, [watchedValues, onValuesChange]);
 
-  const canClose = () => {
-    if (preventClose) return false;
-    if (confirmClose && form.formState.isDirty) {
-      if (typeof window === "undefined") return false;
-      return window.confirm(confirmCloseMessage);
+  // Auto‑save effect
+  useEffect(() => {
+    if (!autoSave?.enabled) return;
+    const delay = autoSave.delay ?? 1000;
+    const timeoutId = setTimeout(() => {
+      if (autoSave.onSave) {
+        autoSave.onSave(watchedValues);
+      } else if (autoSave.storageKey) {
+        localStorage.setItem(autoSave.storageKey, JSON.stringify(watchedValues));
+      }
+    }, delay);
+    return () => clearTimeout(timeoutId);
+  }, [watchedValues, autoSave]);
+
+  // Load saved data on mount (if storageKey provided)
+  useEffect(() => {
+    if (autoSave?.storageKey) {
+      const saved = localStorage.getItem(autoSave.storageKey);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          form.reset(parsed);
+        } catch (e) {
+          console.error("Failed to parse saved form data", e);
+        }
+      }
+    }
+  }, [autoSave?.storageKey]);
+
+  // Wizard helpers
+  const isWizard = steps && steps.length > 0;
+  const currentStepFields = isWizard ? steps[currentStep].fields : fields.map(f => f.name);
+  const visibleFields = isWizard
+    ? fields.filter(f => currentStepFields.includes(f.name))
+    : fields;
+
+  const goToNextStep = async () => {
+    // Validate fields in current step
+    const fieldsToValidate = currentStepFields;
+    const isValid = await form.trigger(fieldsToValidate as Path<T>[]);
+    if (isValid && currentStep < steps!.length - 1) {
+      setCurrentStep(prev => prev + 1);
+      // Optionally scroll to top
+    }
+  };
+
+  const goToPrevStep = () => {
+    if (currentStep > 0) setCurrentStep(prev => prev - 1);
+  };
+
+  const canClose = (): boolean => {
+    if (!dialogProps) return true;
+    if (dialogProps.preventClose) return false;
+    if ((dialogProps.confirmClose ?? true) && form.formState.isDirty) {
+      const message = dialogProps.confirmCloseMessage ?? "Perubahan belum disimpan. Tutup form?";
+      return typeof window !== "undefined" && window.confirm(message);
     }
     return true;
   };
 
   const handleClose = () => {
-    if (!canClose()) return;
-    if (onDialogOpenChange) {
-      onDialogOpenChange(false);
-    }
-    if (resetFormOnClose) {
-      form.reset(defaultValues as DefaultValues<T> | undefined);
+    if (!canClose() || !dialogProps) return;
+    dialogProps.onDialogOpenChange(false);
+    if (dialogProps.resetFormOnClose ?? true) {
+      form.reset(defaultValues);
     }
   };
 
   const handleDialogOpenChange = (open: boolean) => {
-    if (open) {
-      onDialogOpenChange?.(true);
-      return;
-    }
-    handleClose();
+    if (open) dialogProps?.onDialogOpenChange(true);
+    else handleClose();
   };
 
   const handleFormSubmit = async (values: T) => {
     form.clearErrors("root");
-    try {
-      setInternalLoading(true);
-      const hasFileField = fields.some((f) => f.type === "file");
-      if (useFormData || hasFileField) {
-        const formData = objectToFormData(values);
-        await onSubmit(formData);
-      } else {
-        await onSubmit(values);
-      }
-    } catch (error: any) {
-      console.log("Error: ", error);
+    setSubmitting(true);
 
+    try {
+      const hasFileField = fields.some((f) => f.type === "file");
+
+      if (useFormData || hasFileField) {
+        const formData = objectToFormData(values as Record<string, unknown>);
+        await (onSubmit as (v: FormData) => void | Promise<void>)(formData);
+      } else {
+        await (onSubmit as (v: T) => void | Promise<void>)(values);
+      }
+    } catch (error) {
       const handled = applyApiErrors(error, form);
 
       if (!handled) {
-        form.setError(`root`, {
+        const axiosError = error as AxiosError<ApiErrorResponse>;
+        form.setError("root", {
           type: "server",
-          message: error?.response?.data?.message || "Terjadi kesalahan pada server",
+          message: axiosError?.response?.data?.message ?? "Terjadi kesalahan pada server",
         });
       }
     } finally {
-      setInternalLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const watchedValues = useWatch({ control: form.control });
+  const busy = isLoading || submitting;
 
-  useEffect(() => {
-    if (onValuesChange) {
-      onValuesChange(watchedValues);
+  const gridClass = GRID_COLS_CLASS[gridCols] ?? "md:grid-cols-1";
+
+  // Error summary click handler
+  const scrollToField = (fieldName: string) => {
+    const element = document.querySelector(`[name="${fieldName}"]`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      (element as HTMLElement).focus();
     }
-  }, [watchedValues, onValuesChange]);
+  };
 
-  const formFieldsContent = children ?? (
-    <div
-      className={`grid grid-cols-1 gap-4 ${GRID_COLS_MAP[gridCols as keyof typeof GRID_COLS_MAP] || "md:grid-cols-1"}`}>
-      {fields.map((field) => {
-        if (field.condition && !field.condition(watchedValues)) {
-          return null;
-        }
+  const fieldGrid = children ?? (
+    <>
+      {errorSummary && Object.keys(form.formState.errors).length > 0 && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          <p className="font-semibold">Terdapat kesalahan:</p>
+          <ul className="list-disc pl-5 mt-1 space-y-1">
+            {Object.entries(form.formState.errors).map(([name, error]) => (
+              <li key={name}>
+                <button
+                  type="button"
+                  onClick={() => scrollToField(name)}
+                  className="hover:underline cursor-pointer text-left"
+                >
+                  {error?.message?.toString()}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-        return (
-          <RenderField
-            key={field.name}
-            field={field}
-            control={form.control}
-            values={watchedValues}
-          />
-        );
-      })}
-    </div>
+      {isWizard && (
+        <div className="mb-4">
+          <h3 className="text-lg font-medium">{steps[currentStep].title}</h3>
+          {steps[currentStep].description && (
+            <p className="text-sm text-muted-foreground">{steps[currentStep].description}</p>
+          )}
+        </div>
+      )}
+
+      <div className={`grid grid-cols-1 gap-4 ${gridClass}`}>
+        {visibleFields.map((fieldConfig) => {
+          if (fieldConfig.condition && !fieldConfig.condition(watchedValues)) return null;
+          return (
+            <RenderField
+              key={fieldConfig.name}
+              field={fieldConfig}
+              control={form.control}
+              values={watchedValues}
+            />
+          );
+        })}
+      </div>
+    </>
   );
 
-  const defaultFooter = hideSubmitButton ? null : withDialog ? (
-    <DialogFooter>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={handleClose}
-        disabled={isLoading || internalLoading}>
-        {cancelText}
+  const footer = (() => {
+    if (hideSubmitButton) return null;
+    if (renderFooter !== undefined) return renderFooter;
+
+    if (isWizard) {
+      return (
+        <div className="flex justify-between gap-2">
+          {currentStep > 0 && (
+            <Button type="button" variant="outline" onClick={goToPrevStep} disabled={busy}>
+              Kembali
+            </Button>
+          )}
+          {currentStep < steps!.length - 1 ? (
+            <Button type="button" onClick={goToNextStep} disabled={busy}>
+              Selanjutnya
+            </Button>
+          ) : (
+            <Button type="submit" disabled={busy || submitDisabled}>
+              {busy ? loadingText : submitText}
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    if (dialogProps) {
+      return (
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={busy}>
+            {dialogProps.cancelText ?? "Batal"}
+          </Button>
+          <Button type="submit" disabled={busy || submitDisabled}>
+            {busy ? loadingText : submitText}
+          </Button>
+        </DialogFooter>
+      );
+    }
+
+    return (
+      <Button type="submit" disabled={busy || submitDisabled} className="w-full">
+        {busy ? loadingText : submitText}
       </Button>
-      <Button
-        type="submit"
-        className={`${isLoading || internalLoading ? "cursor-progress" : "cursor-pointer"}`}
-        disabled={isLoading || submitDisabled}>
-        {isLoading || internalLoading ? "Loading..." : submitText}
-      </Button>
-    </DialogFooter>
-  ) : (
-    <Button type="submit" disabled={isLoading || submitDisabled} className="w-full">
-      {isLoading ? "Loading..." : submitText}
-    </Button>
-  );
+    );
+  })();
 
   const formContent = (
     <form id={id} onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
       {form.formState.errors.root && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+        <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {form.formState.errors.root.message}
-        </div>
+        </p>
       )}
-      {formFieldsContent}
-      {renderFooter ?? defaultFooter}
+      {fieldGrid}
+      {footer}
     </form>
   );
 
-  if (withDialog) {
+  if (dialogProps) {
     return (
-      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+      <Dialog open={dialogProps.isDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent
-          showCloseButton={showDialogCloseButton}
+          showCloseButton={dialogProps.showDialogCloseButton}
           className={cn(
-            "h-[100dvh] min-w-full md:min-w-[600px] md:h-auto rounded-none md:max-h-[99dvh] overflow-x-auto",
+            "h-dvh min-w-full md:min-w-150 md:h-auto rounded-none md:max-h-[99dvh] overflow-x-auto",
             className,
-          )}>
+          )}
+        >
           <DialogHeader>
-            <DialogTitle>{dialogTitle}</DialogTitle>
-            {dialogDescription && (
-              <DialogDescription className="leading-relaxed">{dialogDescription}</DialogDescription>
+            <DialogTitle>{dialogProps.dialogTitle}</DialogTitle>
+            {dialogProps.dialogDescription && (
+              <DialogDescription className="leading-relaxed">
+                {dialogProps.dialogDescription}
+              </DialogDescription>
             )}
           </DialogHeader>
           <Form {...form}>{formContent}</Form>
@@ -406,35 +610,11 @@ export function ReusableForm<T extends FieldValues>({
   return <Form {...form}>{formContent}</Form>;
 }
 
-const COL_SPAN_MAP = {
-  1: "md:col-span-1",
-  2: "md:col-span-2",
-  3: "md:col-span-3",
-  4: "md:col-span-4",
-  5: "md:col-span-5",
-  6: "md:col-span-6",
-  12: "md:col-span-12",
-  full: "md:col-span-full",
-};
-
-const GRID_COLS_MAP = {
-  1: "md:grid-cols-1",
-  2: "md:grid-cols-2",
-  3: "md:grid-cols-3",
-  4: "md:grid-cols-4",
-  5: "md:grid-cols-5",
-  6: "md:grid-cols-6",
-  12: "md:grid-cols-12",
-};
-
 function resolvePlaceholder<T extends FieldValues>(
   placeholder: PlaceholderResolver<T> | undefined,
   values: Partial<T>,
 ): string | undefined {
-  if (typeof placeholder === "function") {
-    return placeholder(values);
-  }
-  return placeholder;
+  return typeof placeholder === "function" ? placeholder(values) : placeholder;
 }
 
 function RenderField<T extends FieldValues>({
@@ -446,30 +626,40 @@ function RenderField<T extends FieldValues>({
   control: Control<T>;
   values: Partial<T>;
 }) {
-  const resolvedType = field.typeResolver?.(values) ?? field.type;
+  // Apply conditional dependencies
+  let finalField = field;
+  if (field.dependsOn) {
+    const depValue = values[field.dependsOn.field];
+    if (field.dependsOn.condition(depValue, values)) {
+      const thenResult = field.dependsOn.then?.(field) ?? {};
+      finalField = {
+        ...field,
+        ...thenResult,
+        type: thenResult.type ?? field.type,
+      } as FormFieldConfig<T>;
+    }
+  }
+
+  const resolvedType = finalField.typeResolver?.(values) ?? finalField.type;
+  const colSpanClass = finalField.colSpan ? COL_SPAN_CLASS[finalField.colSpan] : undefined;
 
   return (
     <FormField
       control={control}
-      name={field.name}
+      name={finalField.name as Path<T>}
       render={({ field: formField }) => (
-        <FormItem
-          className={cn(
-            "col-span-1", // default mobile
-            field.colSpan && COL_SPAN_MAP[field.colSpan as keyof typeof COL_SPAN_MAP],
-            // field.className <--- Removed this because it duplicates styling on the container, causing layout issues (e.g. specific heights applied to container instead of input)
-          )}>
-          <FormLabel htmlFor={field.name}>{field.label}</FormLabel>
-          <FormControl className="col-span-1">
+        <FormItem className={cn("col-span-1", colSpanClass)}>
+          <FormLabel htmlFor={finalField.name}>{finalField.label}</FormLabel>
+          <FormControl>
             <FieldInputSwitch
-              allValues={values}
-              field={{ ...field, type: resolvedType } as FormFieldConfig<T>}
+              field={{ ...finalField, type: resolvedType } as FormFieldConfig<T>}
               formField={formField}
+              values={values}
+              control={control}
             />
           </FormControl>
-
-          {field.description && <FormDescription>{field.description}</FormDescription>}
-          <FormMessage />
+          {finalField.description && <FormDescription>{finalField.description}</FormDescription>}
+          <FormMessage className="text-sm" />
         </FormItem>
       )}
     />
@@ -479,57 +669,141 @@ function RenderField<T extends FieldValues>({
 function FieldInputSwitch<T extends FieldValues>({
   field,
   formField,
-  allValues,
+  values,
+  control,
 }: {
   field: FormFieldConfig<T>;
   formField: ControllerRenderProps<T, Path<T>>;
-  allValues: Partial<T>;
+  values: Partial<T>;
+  control: Control<T>;
 }) {
-  const placeholderText = resolvePlaceholder(field.placeholder, allValues);
+  const placeholder = resolvePlaceholder(field.placeholder, values);
   const Icon = field.icon;
+  const iconClass = Icon ? "pl-9" : "";
+  const baseClass = `text-sm ${field.className ?? ""}`;
+
+  const withIcon = (input: ReactNode) =>
+    Icon ? (
+      <div className="relative">
+        <Icon className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+        {input}
+      </div>
+    ) : (
+      input
+    );
+
+  // Handle array field
+  if (field.type === "array") {
+    const arrayConfig = field as ArrayFieldConfig<T>;
+    const arrayHelpers = useFieldArray({
+      control,
+      name: arrayConfig.name as ArrayPath<T>,
+    });
+    const { fields: arrayFields, append, remove } = arrayHelpers;
+
+    const addButtonText = arrayConfig.addButtonText ?? "Tambah Item";
+    const removeButtonText = arrayConfig.removeButtonText ?? "Hapus";
+
+    // Default item untuk append
+    const getEmptyItem = (): FieldArray<T, ArrayPath<T>> => {
+      return {} as FieldArray<T, ArrayPath<T>>;
+    };
+
+    // Fungsi untuk mengadaptasi field di dalam array
+    // Memastikan name menjadi Path<T> dan menghindari nested array
+    const adaptNestedField = (subField: FormFieldConfig<T>, newName: string): FormFieldConfig<T> => {
+      const cloned = { ...subField, name: newName as Path<T> };
+      // Nested array tidak didukung, ubah menjadi text field
+      if (cloned.type === "array") {
+        console.warn("Nested array fields are not supported, converting to text field");
+        (cloned as any).type = "text";
+      }
+      return cloned as FormFieldConfig<T>;
+    };
+
+    return (
+      <div className="space-y-4">
+        {arrayFields.map((item, index) => (
+          <div key={item.id} className="border p-4 rounded-md relative">
+            {arrayConfig.renderItem ? (
+              arrayConfig.renderItem(index, () => remove(index), arrayHelpers)
+            ) : (
+              <>
+                {arrayConfig.arrayFields.map((subField) => {
+                  const newName = `${arrayConfig.name}.${index}.${subField.name}`;
+                  const adaptedField = adaptNestedField(subField, newName);
+                  return (
+                    <RenderField
+                      key={subField.name}
+                      field={adaptedField}
+                      control={control}
+                      values={values}
+                    />
+                  );
+                })}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => remove(index)}
+                  className="absolute top-2 right-2"
+                >
+                  {removeButtonText}
+                </Button>
+              </>
+            )}
+          </div>
+        ))}
+        <Button type="button" onClick={() => append(getEmptyItem())} variant="outline" size="sm">
+          {addButtonText}
+        </Button>
+      </div>
+    );
+  }
 
   switch (field.type) {
-    case `file`:
+    case "file":
       return (
         <div className="w-[87dvw] md:w-full">
-          <ImageUploader
+          <FileUploader
+            variant={(field as FileFieldConfig<T>).variant}
             onValueChange={formField.onChange}
-            helperText={placeholderText}
+            helperText={placeholder}
             disabled={formField.disabled}
-            maxSize={field.maxSizes}
+            maxSize={(field as FileFieldConfig<T>).maxSizes}
             key={formField.name + (formField.value ? "loaded" : "empty")}
-            accept={field.accept}
+            accept={(field as FileFieldConfig<T>).accept}
             value={formField.value}
           />
         </div>
       );
+
     case "select":
-      return (
-        <div className="relative">
-          {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
-          <SelectOption
-            {...formField}
-            id={formField.name}
-            onValueChange={formField.onChange}
-            disabled={field.disabled}
-            options={field.options || []}
-            value={formField.value!}
-            placeholder={placeholderText}
-            className={`${Icon ? "pl-9" : ""} text-sm ${field.className}`}
-          />
-        </div>
+      return withIcon(
+        <SelectOption
+          {...formField}
+          id={formField.name}
+          onValueChange={formField.onChange}
+          disabled={field.disabled}
+          options={(field as SelectFieldConfig<T>).options}
+          value={formField.value as string}
+          placeholder={placeholder}
+          className={cn(iconClass, baseClass)}
+        />,
       );
-    case "toogle":
+
+    case "toggle":
       return (
         <SegmentedControl
           {...formField}
           size="sm"
           id={formField.name}
           onChange={formField.onChange}
-          options={field.options || []}
-          value={formField.value!}
+          options={(field as ToggleFieldConfig<T>).options}
+          value={formField.value as string}
         />
       );
+
     case "dual-option-switch":
       return (
         <DualOptionSwitch
@@ -538,135 +812,125 @@ function FieldInputSwitch<T extends FieldValues>({
           id={formField.name}
           onValueChange={formField.onChange}
           disabled={field.disabled}
-          options={field.switchOptions!}
-          value={formField.value!}
+          options={(field as DualSwitchFieldConfig<T>).switchOptions}
+          value={formField.value}
         />
       );
+
     case "datetime-local":
       return (
         <DateTimePicker
           {...formField}
-          className={field.className}
           id={formField.name}
           onChange={formField.onChange}
           disabled={field.disabled}
-          value={formField.value!}
+          value={formField.value}
+          className={field.className}
         />
       );
-    case "presentage":
-      return (
-        <div className="relative">
-          {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
-          <InputPercentage
-            {...formField}
-            id={formField.name}
-            onValueChange={formField.onChange}
-            disabled={field.disabled}
-            value={formField.value!}
-            className={`${Icon ? "pl-9" : ""} text-sm ${field.className}`}
-            placeholder={placeholderText}
-          />
-        </div>
+
+    case "percentage":
+      return withIcon(
+        <InputPercentage
+          {...formField}
+          id={formField.name}
+          onValueChange={formField.onChange}
+          disabled={field.disabled}
+          value={formField.value as number}
+          className={cn(iconClass, baseClass)}
+          placeholder={placeholder}
+        />,
       );
+
     case "textarea":
-      return (
-        <div className="relative">
-          {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
-          <Textarea
-            id={formField.name}
-            placeholder={placeholderText}
-            disabled={field.disabled}
-            className={`${Icon ? "pl-9" : ""} text-sm ${field.className}`}
-            {...formField}
-          />
-        </div>
+      return withIcon(
+        <Textarea
+          id={formField.name}
+          placeholder={placeholder}
+          disabled={field.disabled}
+          className={cn(iconClass, baseClass)}
+          {...formField}
+        />,
       );
+
     case "password":
-      return (
-        <div className="relative">
-          {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
-          <PasswordInput
-            id={formField.name}
-            placeholder={placeholderText}
-            disabled={field.disabled}
-            className={`${Icon ? "pl-9" : ""} text-sm ${field.className}`}
-            {...formField}
-          />
-        </div>
+      return withIcon(
+        <PasswordInput
+          id={formField.name}
+          placeholder={placeholder}
+          disabled={field.disabled}
+          className={cn(iconClass, baseClass)}
+          {...formField}
+        />,
       );
-    case "custom":
-      return <>{field.renderCustom?.({ field: formField })}</>;
+
+    case "custom": {
+      const { renderCustom } = field as CustomFieldConfig<T>;
+      return <>{renderCustom?.({ field: formField })}</>;
+    }
+
     case "date": {
+      const rawValue = formField.value;
       const value =
-        typeof formField.value === "string" && !isNaN(new Date(formField.value).getTime())
-          ? formField.value
-          : "";
+        typeof rawValue === "string" && !isNaN(Date.parse(rawValue)) ? rawValue : "";
 
       return (
         <DatePicker
           id={formField.name}
           onValueChange={formField.onChange}
           value={value}
-          placeholder={placeholderText}
-          className={(field.className ?? "") + " w-full"}
+          placeholder={placeholder}
+          className={cn("w-full", field.className)}
         />
       );
     }
+
     case "currency":
-      return (
-        <div className="relative">
-          {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
-          <InputCurrency
-            {...formField}
-            id={formField.name}
-            placeholder={placeholderText}
-            disabled={field.disabled}
-            value={formField.value}
-            onValueChange={(val) => {
-              formField.onChange(val || 0);
-            }}
-            className={`${Icon ? "pl-9" : ""} text-sm ${field.className}`}
-            name={formField.name}
-            onBlur={formField.onBlur}
-          />
-        </div>
+      return withIcon(
+        <InputCurrency
+          {...formField}
+          id={formField.name}
+          placeholder={placeholder}
+          disabled={field.disabled}
+          value={formField.value as number}
+          onValueChange={(val) => formField.onChange(val ?? 0)}
+          className={cn(iconClass, baseClass)}
+          name={formField.name}
+          onBlur={formField.onBlur}
+        />,
       );
+
     case "number":
-      return (
-        <div className="relative">
-          {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
-          <Input
-            id={formField.name}
-            type={"number"}
-            placeholder={placeholderText}
-            disabled={field.disabled}
-            {...formField}
-            className={`${Icon ? "pl-9" : ""} text-sm ${field.className}`}
-            onChange={(e) => {
-              const value = e.target.value;
-              formField.onChange(value === "" ? undefined : Number(value));
-            }}
-          />
-        </div>
+      return withIcon(
+        <Input
+          id={formField.name}
+          type="number"
+          placeholder={placeholder}
+          disabled={field.disabled}
+          className={cn(iconClass, baseClass)}
+          {...formField}
+          onChange={(e) =>
+            formField.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+          }
+        />,
       );
+
     default:
-      return (
-        <div className="relative">
-          {Icon && <Icon className={`absolute left-3 top-3.5 h-4 w-4 text-muted-foreground`} />}
-          <Input
-            id={formField.name}
-            type={field.type || "text"}
-            placeholder={placeholderText}
-            disabled={field.disabled}
-            className={`${Icon ? "pl-9" : ""} text-sm ${field.className}`}
-            {...formField}
-            onChange={(e) => {
-              let value = e.target.value;
-              if (field.valueToUpperCase) value = value.toUpperCase();
-              formField.onChange(value);
-            }}
-          />
-        </div>
+      return withIcon(
+        <Input
+          id={formField.name}
+          type={field.type ?? "text"}
+          placeholder={placeholder}
+          disabled={field.disabled}
+          className={cn(iconClass, baseClass)}
+          {...formField}
+          onChange={(e) => {
+            const value = field.valueToUpperCase
+              ? e.target.value.toUpperCase()
+              : e.target.value;
+            formField.onChange(value);
+          }}
+        />,
       );
   }
 }

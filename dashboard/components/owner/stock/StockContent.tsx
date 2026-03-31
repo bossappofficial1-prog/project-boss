@@ -41,6 +41,8 @@ import {
   Download,
   TrendingDown,
 } from "lucide-react";
+import { EmptyOutletState } from "@/components/ui/empty-outlet";
+import { useRouter } from "next/navigation";
 
 function formatCurrency(amount: number | null | undefined) {
   if (amount === null || amount === undefined) return "-";
@@ -112,6 +114,7 @@ export default function StockContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [isExporting, setIsExporting] = useState(false);
+  const router = useRouter()
 
   const {
     stockItems,
@@ -209,32 +212,7 @@ export default function StockContent() {
 
   if (!hasBusinessProfile && !hasOutlet) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Card className="max-w-lg">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                <AlertCircle className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle>Setup Diperlukan</CardTitle>
-                <CardDescription>
-                  Lengkapi profil bisnis dan tambahkan outlet terlebih dahulu
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-              <li>Lengkapi profil bisnis beserta informasi rekening</li>
-              <li>Tambah minimal satu outlet</li>
-            </ul>
-            <Button onClick={() => (window.location.href = "/owner/dashboard")}>
-              Ke Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <EmptyOutletState onAddOutlet={() => router.push(`/owner/dashboard#add-outlet`)} />
     );
   }
 
@@ -597,11 +575,10 @@ export default function StockContent() {
                           className="group flex items-center justify-between rounded-md border p-3">
                           <div className="flex items-center gap-3">
                             <div
-                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${
-                                isEmpty
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${isEmpty
                                   ? "bg-destructive/10 text-destructive"
                                   : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                              }`}>
+                                }`}>
                               {isEmpty ? (
                                 <XCircle className="h-5 w-5" />
                               ) : (

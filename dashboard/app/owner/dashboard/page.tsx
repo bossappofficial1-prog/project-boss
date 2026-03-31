@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddOutletModal from "@/components/modals/AddOutletModal";
 import DeleteOutletModal from "@/components/modals/DeleteOutletModal";
 import BusinessProfileModal from "@/components/modals/BusinessProfileModal";
@@ -41,6 +41,19 @@ export default function DashboardPage() {
     setOutletModalMode("edit");
     setShowOutletModal(true);
   };
+
+  useEffect(() => {
+    const handleHash = () => {
+      if (window.location.hash === '#add-outlet') {
+        setShowOutletModal(true)
+      }
+    }
+
+    handleHash();
+
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [])
 
   const handleAddOutlet = () => {
     setSelectedOutletForEdit(null);

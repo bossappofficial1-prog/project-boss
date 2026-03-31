@@ -61,7 +61,7 @@ export function AllBusinessForm({
         {
             label: 'Current Plan',
             name: 'subscriptionPlan',
-            type: 'toogle',
+            type: 'toggle',
             options: [
                 { label: 'BASIC', value: 'BASIC' },
                 { label: 'PRO', value: 'PRO' },

@@ -28,16 +28,14 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useOutletContext } from '../providers/OutletProvider';
+import { useAuth } from '@/hooks/useAuth';
+import Link from 'next/link';
 
 export default function Header() {
-  const { selectedOutlet } = useOutletContext();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false)
-  const { data: userData, isLoading: isUserLoading } = useUserData();
-  const { open, toggleSidebar, state } = useSidebar();
-
-  // Extract user from userData
-  const user = userData?.user || null;
+  const { toggleSidebar, state } = useSidebar();
+  const { user, isLoading: isUserLoading } = useAuth()
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -167,23 +165,21 @@ export default function Header() {
 
             {/* Menu Items */}
             <DropdownMenuItem
-              onClick={() => {
-                window.location.href = '/owner/profile';
-              }}
               className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-400"
             >
-              <User className="h-4 w-4 text-red-500" />
-              <span>Profil Saya</span>
+              <Link href={'/owner/profile'} className='flex gap-2 min-w-full'>
+                <User className="h-4 w-4 text-red-500" />
+                <span>Profil Saya</span>
+              </Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={() => {
-                window.location.href = '/owner/settings';
-              }}
               className="cursor-pointer gap-2 py-2.5 focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-400"
             >
-              <Settings className="h-4 w-4 text-red-500" />
-              <span>Pengaturan</span>
+              <Link href={'/owner/settings'} className='flex gap-2 min-w-full'>
+                <Settings className="h-4 w-4 text-red-500" />
+                <span>Pengaturan</span>
+              </Link>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />

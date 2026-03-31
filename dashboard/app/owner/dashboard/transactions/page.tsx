@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Eye, TrendingUp, TrendingDown, DollarSign, FileText, FileDown, Loader2, CalendarIcon } from "lucide-react";
+import { Search, Filter, TrendingUp, TrendingDown, DollarSign, FileText, FileDown, Loader2, CalendarIcon } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format, subMonths } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -43,7 +43,7 @@ export default function TransactionsPage() {
   // Filter states
   const [outletId, setOutletId] = useState<string>("");
   const [status, setStatus] = useState<string>("");
-  const [type, setType] = useState<string>("ALL"); // New: transaction type filter
+  const [type, setType] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -90,20 +90,14 @@ export default function TransactionsPage() {
     q: searchQuery,
   });
 
-  // Status badge color - menggunakan logika yang sama dengan halaman orders
   const getStatusBadge = (transaction: any) => {
-    // Untuk transaksi yang terhubung dengan order, gunakan orderStatus sebagai referensi
     const orderStatus = transaction.order?.orderStatus;
     const transactionStatus = transaction.status;
-
-    // Jika order masih AWAITING_PAYMENT, maka pembayaran belum dikonfirmasi
-    // Meskipun transaction.status adalah SUCCESS (untuk transaksi offline)
     let displayStatus = transactionStatus;
     let displayLabel = "";
     let displayVariant: "default" | "destructive" | "success" | "warning" | "secondary" = "default";
 
     if (orderStatus === "AWAITING_PAYMENT" && transaction.isManual) {
-      // Transaksi offline yang belum dikonfirmasi
       displayStatus = "PENDING";
       displayLabel = "Menunggu Verifikasi";
       displayVariant = "warning";
@@ -353,7 +347,7 @@ export default function TransactionsPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-600 font-poppins">Total Pemasukan</p>
                   <p className="text-2xl font-bold text-green-600 font-poppins mt-2">
-                    {formatCurrency(data?.data.totals.total_revenue || 0)}
+                    {formatCurrency(data?.data.totals?.total_revenue || 0)}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -372,7 +366,7 @@ export default function TransactionsPage() {
                     Total Pengeluaran
                   </p>
                   <p className="text-2xl font-bold text-red-600 font-poppins mt-2">
-                    {formatCurrency(data?.data.totals.total_expense || 0)}
+                    {formatCurrency(data?.data.totals?.total_expense || 0)}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center">
@@ -389,14 +383,14 @@ export default function TransactionsPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-600 font-poppins">Saldo Bersih</p>
                   <p
-                    className={`text-2xl font-bold font-poppins mt-2 ${(data?.data.totals.total_margin_pendapatan || 0) >= 0 ? "text-blue-600" : "text-orange-600"}`}>
-                    {formatCurrency(data?.data.totals.total_margin_pendapatan || 0)}
+                    className={`text-2xl font-bold font-poppins mt-2 ${(data?.data.totals?.total_margin_pendapatan || 0) >= 0 ? "text-blue-600" : "text-orange-600"}`}>
+                    {formatCurrency(data?.data.totals?.total_margin_pendapatan || 0)}
                   </p>
                 </div>
                 <div
-                  className={`h-12 w-12 rounded-full flex items-center justify-center ${data?.data.totals.total_margin_pendapatan || 0 >= 0 ? "bg-blue-100" : "bg-orange-100"}`}>
+                  className={`h-12 w-12 rounded-full flex items-center justify-center ${data?.data.totals?.total_margin_pendapatan || 0 >= 0 ? "bg-blue-100" : "bg-orange-100"}`}>
                   <DollarSign
-                    className={`h-6 w-6 ${data?.data.totals.total_margin_pendapatan || 0 >= 0 ? "text-blue-600" : "text-orange-600"}`}
+                    className={`h-6 w-6 ${data?.data.totals?.total_margin_pendapatan || 0 >= 0 ? "text-blue-600" : "text-orange-600"}`}
                   />
                 </div>
               </div>

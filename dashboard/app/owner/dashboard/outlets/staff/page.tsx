@@ -14,10 +14,13 @@ import { staffApi } from '@/lib/api'
 import type { StaffMember, CreateStaffPayload } from '@/types/staff'
 import { StaffDialog } from '@/components/features/owner/staff/StaffModal'
 import { StaffTable } from '@/components/features/owner/staff/StaffTable'
+import { EmptyOutletState } from '@/components/ui/empty-outlet'
+import { useRouter } from 'next/navigation'
 
 export default function StaffManagementPage() {
     const { selectedOutlet } = useOutletContext()
     const [staff, setStaff] = useState<StaffMember[]>([])
+    const router = useRouter()
     const [, setIsLoading] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
@@ -117,17 +120,7 @@ export default function StaffManagementPage() {
         }
     }
 
-    if (!selectedOutlet) {
-        return (
-            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-center">
-                <Users className="h-10 w-10 text-red-500" />
-                <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Pilih outlet terlebih dahulu</p>
-                <p className="max-w-sm text-sm text-slate-600 dark:text-slate-400">
-                    Kelola staff outlet aktif akan muncul setelah kamu memilih outlet.
-                </p>
-            </div>
-        )
-    }
+    if (!selectedOutlet) return <EmptyOutletState onAddOutlet={() => router.push('/owner/dashboard#add-outlet')} />;
 
     return (
         <div className="space-y-6 pb-12">

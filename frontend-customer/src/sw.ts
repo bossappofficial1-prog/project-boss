@@ -1,5 +1,4 @@
 /// <reference lib="webworker" />
-import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist, CacheFirst, StaleWhileRevalidate, NetworkFirst, ExpirationPlugin, CacheableResponsePlugin } from "serwist";
 
@@ -12,7 +11,6 @@ declare global {
 declare const self: ServiceWorkerGlobalScope & typeof globalThis;
 
 const apiOrigin = (() => {
-    // NEXT_PUBLIC_API_URL is inlined at build time by Next.js
     const url = process.env.NEXT_PUBLIC_API_URL;
     if (!url) return null;
     try {
@@ -84,8 +82,6 @@ const serwist = new Serwist({
                 ],
             }),
         },
-        // Default cache rules from @serwist/next
-        ...defaultCache,
     ],
 });
 

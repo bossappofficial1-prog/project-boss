@@ -1,11 +1,11 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { LucideIcon } from 'lucide-react';
 
 interface KPICard {
     title: string;
     value: string | number;
-    icon: ReactNode;
+    icon: LucideIcon;
     accentColor: string;
     accentBackground?: string;
     description?: string;
@@ -34,7 +34,7 @@ export default function KpiCards({ kpis }: KpiCardsProps) {
                     <div className="flex items-center justify-between gap-3">
                         <div className={`rounded-lg p-2.5 ${kpi.accentBackground ?? 'bg-gray-100 dark:bg-gray-800/60'}`}>
                             <div className={`text-sm ${kpi.accentColor}`}>
-                                {kpi.icon}
+                                <kpi.icon className='w-5 h-5' />
                             </div>
                         </div>
                     </div>

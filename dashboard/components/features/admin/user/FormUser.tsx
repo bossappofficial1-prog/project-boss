@@ -28,8 +28,8 @@ export type UserSchemaValues = z.infer<typeof baseSchema> & { password?: string 
 interface FormUserProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    defaultValues?: Partial<User>; // Data user saat mode Edit
-    onSubmit: (values: UserSchemaValues | FormData) => void;
+    defaultValues?: User; // Data user saat mode Edit
+    onSubmit: (values: UserSchemaValues) => void;
     isLoading?: boolean;
 }
 
@@ -58,13 +58,13 @@ export function FormUser({
         });
     }, [isEditMode, isGoogleProvider]);
 
-    const defaultFormValues: Partial<UserSchemaValues> = useMemo(() => ({
-        name: defaultValues?.name,
-        email: defaultValues?.email,
+    const defaultFormValues: UserSchemaValues = useMemo(() => ({
+        name: defaultValues?.name ?? "",
+        email: defaultValues?.email ?? "",
         role: (defaultValues?.role && RoleEnum.safeParse(defaultValues.role).success)
             ? (defaultValues.role as z.infer<typeof RoleEnum>)
-            : undefined,
-        password: ''
+            : "ADMIN",
+        password: ""
     }), [defaultValues]);
 
     const formFields: FormFieldConfig<UserSchemaValues>[] = useMemo(() => [

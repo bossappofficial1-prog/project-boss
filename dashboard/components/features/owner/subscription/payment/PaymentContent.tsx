@@ -13,7 +13,7 @@ import {
     ArrowLeft,
     Loader2,
 } from 'lucide-react'
-import FileUploader from '@/components/ui/ImageUploader'
+import { FileUploader } from '@/components/ui/ImageUploader'
 import { ACCEPTED_FILE_TYPES } from '@/constants/file-types'
 import { useInvoice, useUploadInvoiceProof } from '@/hooks/use-invoice'
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_STYLES } from '../helper'

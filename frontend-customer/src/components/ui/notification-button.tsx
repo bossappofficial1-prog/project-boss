@@ -57,7 +57,6 @@ export default function NotificationButton({ guestPhone, guestName }: { guestPho
             return true;
         },
         onSuccess: () => {
-            // Berhasil di background (UI sudah duluan update, jadi cukup tampilkan pesan sukses)
             snackbar.success(t('notification.subscribeSuccess') || 'Notifikasi berhasil diaktifkan');
         },
         onError: async (err: any) => {
@@ -101,7 +100,6 @@ export default function NotificationButton({ guestPhone, guestName }: { guestPho
     const isProcessing = subscribeMutation.isPending || subscribeMutation.isPending || unsubscribeMutation.isPending || unsubscribeMutation.isPending;
 
     const handleToggle = async () => {
-        // Mencegah spam klik bertubi-tubi saat proses masih berjalan di background
         if (isProcessing) return;
 
         if (isSubscribed) {
