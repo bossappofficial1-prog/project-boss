@@ -1,4 +1,4 @@
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
 import { ResponseUtil } from "../utils/response";
@@ -124,9 +124,9 @@ export const createOrderController = asyncHandler(async (req: Request, res: Resp
     paymentExpiresAt: order.paymentStatus === "PENDING" ? new Date(Date.now() + 10 * 60 * 1000).toISOString() : null,
     ...(midtransTransaction
       ? {
-          midtransTransactionToken: (midtransTransaction as any).token,
-          midtransRedirectUrl: (midtransTransaction as any).redirect_url,
-        }
+        midtransTransactionToken: (midtransTransaction as any).token,
+        midtransRedirectUrl: (midtransTransaction as any).redirect_url,
+      }
       : {}),
   });
 });

@@ -1,6 +1,6 @@
 import hbs from 'handlebars';
 import path from 'path';
-import puppeteer, { PDFOptions } from 'puppeteer';
+import puppeteer, { PDFOptions } from 'puppeteer-core';
 import fs from 'fs-extra';
 
 hbs.registerHelper('formatRupiah', (value: number) => {

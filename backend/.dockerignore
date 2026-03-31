@@ -1,31 +1,15 @@
-# Dependencies & Build Outputs
 node_modules
-npm-debug.log
 dist
-build
-.npm
-
-# Environment
+uploads
+backend/uploads
+*.log
+.git
+.gitignore
 .env
 .env.*
-
-# Logs & Docs
-logs
-*.log
-docs
-
-# Testing & Git
-tests
+tmp
 coverage
-.git
-.github
-.vscode
-
-# Docker
-Dockerfile
+docs
+test-*.js
+*.md
 .dockerignore
-docker-compose.yml
-
-# OS Files
-.DS_Store
-Thumbs.db

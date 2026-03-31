@@ -2,23 +2,20 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Mencegah download Chromium di tahap build
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install SEMUA dependencies (termasuk dev) untuk proses build
-RUN npm install
+RUN npm ci
 
-# Generate Prisma Client
 RUN npx prisma generate
 
 COPY . .
 
 RUN npm run build
 
-# --- Stage 2: Prod Dependencies (Install bersih khusus produksi) ---
+# --- Stage 2: Prod Dependencies ---
 FROM node:20-alpine AS prod-deps
 WORKDIR /app
 
@@ -26,10 +23,11 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN npm install --omit=dev
-RUN npx prisma generate
 
-RUN npm cache clean --force && rm -rf /root/.npm
+RUN npm ci --omit=dev \
+    && npx prisma generate \
+    && npm cache clean --force \
+    && rm -rf /root/.npm /tmp/*
 
 # --- Stage 3: Runner (Image Final) ---
 FROM node:20-alpine AS runner
@@ -56,6 +54,11 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/prisma ./prisma
+
+# Buat folder uploads dengan permission yang benar
+RUN mkdir -p /app/uploads && chmod 777 /app/uploads
+
+VOLUME ["/app/uploads"]
 
 EXPOSE 1234
 
