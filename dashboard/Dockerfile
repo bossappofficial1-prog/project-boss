@@ -1,12 +1,12 @@
 # Stage 1: Install dependencies only
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app/dashboard
 COPY package.json package-lock.json* ./
 RUN npm install
 
 # Stage 2: Build the app
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app/dashboard
 COPY --from=deps /app/dashboard/node_modules ./node_modules
 COPY . .
@@ -26,24 +26,24 @@ ENV NEXT_PUBLIC_REMOTE_PATTERNS=${NEXT_PUBLIC_REMOTE_PATTERNS}
 RUN npm run build
 
 # Stage 3: Production image
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app/dashboard
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Bikin user non-root untuk keamanan
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Set izin akses
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
+# COPY STANDALONE BUILD DARI BUILDER --- IGNORE ---
 COPY --from=builder --chown=nextjs:nodejs /app/dashboard/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/dashboard/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/dashboard/.next/static ./.next/static
 
+# Gunakan user non-root
 USER nextjs
 
 EXPOSE 3010
