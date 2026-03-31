@@ -56,14 +56,9 @@ export const socketAuthMiddleware = async (socket: TypedSocket, next: (err?: Ext
             return next(new Error('User not found'));
         }
 
-        // Cek apakah user masih aktif
-        if (user.status !== 'ACTIVE') {
-            return next(new Error('User account is not active'));
-        }
-
         // Set socket data
         socket.data.userId = decoded.userId;
-        socket.data.businessId = decoded.businessId || user.businessId;
+        socket.data.businessId = decoded.businessId || user.business?.id;
         socket.data.userRole = decoded.role;
         socket.data.authenticated = true;
         socket.data.joinedRooms = [];
