@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: parseRemotePatterns(process.env.NEXT_PUBLIC_REMOTE_PATTERNS || '')
   },
+  output: 'standalone',
   reactStrictMode: process.env.NODE_ENV === 'production'
 };
 

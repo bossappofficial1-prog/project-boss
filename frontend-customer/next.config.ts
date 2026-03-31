@@ -71,6 +71,7 @@ const dedupePatterns = (patterns: RemotePattern[]): RemotePattern[] => {
 };
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   reactStrictMode: false,
   images: {
     remotePatterns: parseRemotePatterns(process.env.NEXT_PUBLIC_REMOTE_PATTERNS || '')

@@ -19,6 +19,7 @@ logs/
 npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+package-lock.json
 
 # Temporary files & assets (kecuali yang diizinkan)
 tmp/*

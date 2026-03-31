@@ -1,8 +1,9 @@
 # Stage 1: Install dependencies only
 FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app/frontend-customer
 COPY package.json package-lock.json* ./
-RUN npm ci --prefer-offline
+RUN npm install
 
 # Stage 2: Build the app
 FROM node:20-alpine AS builder
@@ -34,22 +35,29 @@ ENV NEXT_PUBLIC_DASHBOARD_REGISTER_URL=$NEXT_PUBLIC_DASHBOARD_REGISTER_URL
 
 RUN npm run build
 
-# Drop devDependencies after build so runtime image stays lean
-RUN npm prune --omit=dev
-
 # Stage 3: Production image
 FROM node:20-alpine AS runner
 WORKDIR /app/frontend-customer
-ENV NODE_ENV=production
 
-# Copy only necessary files
-COPY --from=builder /app/frontend-customer/.next ./.next
-COPY --from=builder /app/frontend-customer/public ./public
-COPY --from=builder /app/frontend-customer/package.json ./
-COPY --from=builder /app/frontend-customer/package-lock.json ./
-COPY --from=builder /app/frontend-customer/node_modules ./node_modules
-# Next.js tetap membaca konfigurasi saat runtime, jadi biarkan file ini tersalin
-COPY --from=builder /app/frontend-customer/next.config.ts ./
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Bikin user non-root untuk alasan keamanan
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Set izin akses folder statis
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-customer/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-customer/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-customer/.next/static ./.next/static
+
+USER nextjs
 
 EXPOSE 3000
-CMD ["npm", "start"]
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "server.js"]

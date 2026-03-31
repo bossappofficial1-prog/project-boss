@@ -1,10 +1,15 @@
-# Use the official Node.js 18 Alpine image as the base
-FROM node:18-alpine AS base
-
+# Stage 1: Install dependencies only
+FROM node:18-alpine AS deps
 RUN apk add --no-cache libc6-compat
-
-# Set the working directory
 WORKDIR /app/dashboard
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# Stage 2: Build the app
+FROM node:18-alpine AS builder
+WORKDIR /app/dashboard
+COPY --from=deps /app/dashboard/node_modules ./node_modules
+COPY . .
 
 ARG NEXT_PUBLIC_REMOTE_PATTERNS
 ARG NEXT_PUBLIC_API_BASE_URL
@@ -18,34 +23,32 @@ ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 ENV NEXT_PUBLIC_CUSTOMER_URL=${NEXT_PUBLIC_CUSTOMER_URL}
 ENV NEXT_PUBLIC_REMOTE_PATTERNS=${NEXT_PUBLIC_REMOTE_PATTERNS}
 
-# Copy package.json dan package-lock.json terlebih dahulu untuk caching instalasi
-COPY package*.json ./
-
-# Jika sering gagal, ganti kembali ke npm i
-RUN npm ci
-
-# Copy the rest of the application code
-COPY . .
-
-# Build the Next.js application
 RUN npm run build
 
-# --- Production stage ---
-FROM node:18-alpine AS production
-
+# Stage 3: Production image
+FROM node:18-alpine AS runner
 WORKDIR /app/dashboard
 
-# Copy package files
-COPY --from=base /app/dashboard/package*.json ./
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy the built application from the base stage
-COPY --from=base /app/dashboard/.next ./.next
-COPY --from=base /app/dashboard/public ./public
-# Copy node_modules is needed unless you use Next.js standalone output feature
-COPY --from=base /app/dashboard/node_modules ./node_modules
+# Bikin user non-root untuk keamanan
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Expose the port the app runs on
+# Set izin akses
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+COPY --from=builder --chown=nextjs:nodejs /app/dashboard/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/dashboard/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/dashboard/.next/static ./.next/static
+
+USER nextjs
+
 EXPOSE 3010
+ENV PORT=3010
+ENV HOSTNAME="0.0.0.0"
 
-# Start the application
-CMD ["npm", "start"]
+# Jalankan server
+CMD ["node", "server.js"]
