@@ -29,6 +29,7 @@ import { outletManagementApi, uploadApi } from '@/lib/api'
 import { EmptyOutletState } from '../ui/empty-outlet'
 import { FileUploader } from '../ui/ImageUploader'
 import { useRouter } from 'next/navigation'
+import { SectionHeader } from '../ui/section-header'
 
 function ManageOutletSkeleton() {
     return (
@@ -185,50 +186,40 @@ export default function ManageOutletContent() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-bold tracking-tight">Manajemen Outlet</h1>
-                        <Badge variant={formData.isOpen ? 'success' : 'destructive'}>
-                            {formData.isOpen ? 'Buka' : 'Tutup'}
-                        </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                        Kelola informasi dan pengaturan outlet yang sedang aktif
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    {isEditing ? (
-                        <>
-                            <Button variant="outline" size="sm" onClick={handleCancel}>
-                                <X className="mr-1.5 h-4 w-4" />
-                                Batal
-                            </Button>
-                            <Button size="sm" onClick={() => submit()} disabled={isSaving}>
-                                <Save className="mr-1.5 h-4 w-4" />
-                                {isSaving ? 'Menyimpan...' : 'Simpan'}
-                            </Button>
-                        </>
-                    ) : (
-                        <>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setIsOperatingHoursModalOpen(true)}
-                            >
-                                <Clock className="mr-1.5 h-4 w-4" />
-                                Jam Operasional
-                            </Button>
-                            <Button size="sm" onClick={() => setIsEditing(true)}>
-                                <Pencil className="mr-1.5 h-4 w-4" />
-                                Edit Outlet
-                            </Button>
-                        </>
-                    )}
-                </div>
-            </div>
-
-            <Separator />
+            <SectionHeader
+                title='Manajemen Outlet'
+                description='Kelola informasi dan pengaturan outlet yang sedang aktif'
+                badge={<Badge variant={formData.isOpen ? 'success' : 'destructive'}>
+                    {formData.isOpen ? 'Buka' : 'Tutup'}
+                </Badge>}
+                actions={isEditing ? (
+                    <>
+                        <Button variant="outline" size="sm" onClick={handleCancel}>
+                            <X className="mr-1.5 h-4 w-4" />
+                            Batal
+                        </Button>
+                        <Button size="sm" onClick={() => submit()} disabled={isSaving}>
+                            <Save className="mr-1.5 h-4 w-4" />
+                            {isSaving ? 'Menyimpan...' : 'Simpan'}
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsOperatingHoursModalOpen(true)}
+                        >
+                            <Clock className="mr-1.5 h-4 w-4" />
+                            Jam Operasional
+                        </Button>
+                        <Button size="sm" onClick={() => setIsEditing(true)}>
+                            <Pencil className="mr-1.5 h-4 w-4" />
+                            Edit Outlet
+                        </Button>
+                    </>
+                )}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                 {/* Left Column */}

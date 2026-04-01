@@ -35,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SectionHeader } from "@/components/ui/section-header";
 
 export default function TransactionsPage() {
   const { outlets } = useOutletContext();
@@ -182,14 +183,10 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground font-poppins">Riwayat Transaksi</h1>
-          <p className="mt-1 text-sm text-gray-500 font-poppins">
-            Lihat dan kelola semua transaksi bisnis Anda
-          </p>
-        </div>
-        <div className="mt-4 sm:mt-0">
+      <SectionHeader
+        title="Riwayat Transaksi"
+        description="Lihat dan kelola semua transaksi bisnis Anda"
+        actions={
           <Button
             onClick={() => setShowExportDialog(true)}
             className="font-poppins"
@@ -197,8 +194,8 @@ export default function TransactionsPage() {
             <FileDown className="w-4 h-4 mr-2" />
             Export Laporan PDF
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filters */}
       <Card>

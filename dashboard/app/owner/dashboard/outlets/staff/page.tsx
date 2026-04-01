@@ -16,6 +16,7 @@ import { StaffDialog } from '@/components/features/owner/staff/StaffModal'
 import { StaffTable } from '@/components/features/owner/staff/StaffTable'
 import { EmptyOutletState } from '@/components/ui/empty-outlet'
 import { useRouter } from 'next/navigation'
+import { SectionHeader } from '@/components/ui/section-header'
 
 export default function StaffManagementPage() {
     const { selectedOutlet } = useOutletContext()
@@ -124,35 +125,25 @@ export default function StaffManagementPage() {
 
     return (
         <div className="space-y-6 pb-12">
-            <section className="space-y-2">
-                <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Kelola Staff</h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Atur daftar staff layanan untuk {outletName}. Tambahkan anggota tim, ubah peran, dan atur status keaktifan mereka.
-                </p>
-            </section>
-
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
-                <Button type="button" onClick={handleOpenCreate} className="inline-flex items-center gap-2">
-                    <UserPlus className="h-4 w-4" /> Tambah Staff
-                </Button>
-            </div>
-
-            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-                <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
-                    <span>Total staff: {staff.length}</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">Outlet: {outletName}</span>
-                </div>
-                <StaffTable
-                    data={staff}
-                    onDelete={(member) => {
-                        setDeletingStaff(member)
-                        setIsDeleteDialogOpen(true)
-                    }}
-                    onEdit={(member) => {
-                        handleOpenEdit(member)
-                    }}
-                />
-            </div>
+            <SectionHeader
+                title='Kelola Staff'
+                description={`Atur daftar staff layanan untuk ${outletName}. Tambahkan anggota tim, ubah peran, dan atur status keaktifan mereka.`}
+                actions={
+                    <Button type="button" onClick={handleOpenCreate} className="inline-flex items-center gap-2">
+                        <UserPlus className="h-4 w-4" /> Tambah Staff
+                    </Button>
+                }
+            />
+            <StaffTable
+                data={staff}
+                onDelete={(member) => {
+                    setDeletingStaff(member)
+                    setIsDeleteDialogOpen(true)
+                }}
+                onEdit={(member) => {
+                    handleOpenEdit(member)
+                }}
+            />
 
             <StaffDialog
                 onSubmit={handleSubmit}

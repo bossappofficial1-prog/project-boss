@@ -12,7 +12,7 @@ export function UsageGrid({ usage }: Props) {
     if (!usage) return null;
 
     return (
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-3 md:grid-cols-3">
             {usageCardsConfig.map((card) => {
                 const data = (usage as any)?.[card.key];
                 const limit = data?.limit;

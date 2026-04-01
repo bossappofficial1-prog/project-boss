@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { SectionHeader } from "@/components/ui/section-header";
 import { cn } from "@/lib/utils";
 import { RefreshCw, CreditCard, Repeat2 } from "lucide-react";
 
@@ -22,16 +23,10 @@ export function OwnerSubscriptionHeader({
     isRenewLoading,
 }: Props) {
     return (
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="flex-1">
-                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Langganan</p>
-                <h1 className="text-2xl sm:text-3xl font-semibold text-foreground dark:text-gray-100 mt-1">Status Langganan Bisnis</h1>
-                <p className="text-sm text-muted-foreground mt-2 max-w-xl">
-                    Pantau masa aktif paket, pemakaian kuota, dan riwayat pembayaran langganan secara real-time.
-                </p>
-            </div>
-            {/* Mengubah layout flex untuk responsivitas mobile */}
-            <div className="flex flex-col sm:flex-row gap-2 mt-2 md:mt-0 w-full md:w-auto shrink-0">
+        <SectionHeader
+            title="Status Langganan Bisnis"
+            description="Pantau masa aktif paket, pemakaian kuota, dan riwayat pembayaran langganan"
+            actions={<>
                 <Button
                     variant="outline"
                     size="sm"
@@ -61,7 +56,7 @@ export function OwnerSubscriptionHeader({
                     {isRenewLoading ? <Repeat2 className="mr-2 h-4 w-4 animate-spin" /> : <Repeat2 className="mr-2 h-4 w-4" />}
                     Perpanjang
                 </Button>
-            </div>
-        </div>
+            </>}
+        />
     );
 }

@@ -11,12 +11,14 @@ import StatsCards from "@/components/owner/dashboard/StatsCards";
 import BusinessProfileCard from "@/components/owner/dashboard/BusinessProfileCard";
 import OutletsSection from "@/components/owner/dashboard/OutletsSection";
 import { PageSkeleton } from "@/components/owner/dashboard/Skeletons";
+import { useAutlet } from "@/hooks/use-outlet";
 
 
 
 export default function DashboardPage() {
   const { stats, business, outlets, selectedOutlet, isLoading, globalError, refetch } =
     useDashboardData();
+  const { updateStatusOutletLoading, updateStatusOutletMutate } = useAutlet()
 
   const [showOutletModal, setShowOutletModal] = useState(false);
   const [outletModalMode, setOutletModalMode] = useState<"add" | "edit">("add");
@@ -109,8 +111,11 @@ export default function DashboardPage() {
 
         {/* Outlets Section */}
         <OutletsSection
+          onToggleOutletActive={async (outlet) => {
+            await updateStatusOutletMutate({ outletId: outlet.id, status: !outlet.isOpen })
+          }}
           outlets={outlets}
-          selectedOutlet={selectedOutlet?.id} // Pass ID instead of object
+          selectedOutlet={selectedOutlet?.id}
           onAddOutlet={handleAddOutlet}
           onEditOutlet={handleEditOutlet}
           onDeleteOutlet={handleDeleteOutlet}

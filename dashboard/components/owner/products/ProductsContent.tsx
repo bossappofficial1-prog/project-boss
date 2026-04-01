@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import { EmptyOutletState } from '@/components/ui/empty-outlet'
 import { useRouter } from 'next/navigation'
+import { SectionHeader } from '@/components/ui/section-header'
 
 function PageSkeleton() {
     return (
@@ -162,32 +163,26 @@ export default function ProductsContent() {
         <>
             <div className="space-y-6">
                 {/* Header */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
-                        <h1 className="text-2xl font-bold tracking-tight">Kelola Produk & Jasa</h1>
-                        {currentOutletName && (
-                            <p className="text-sm text-muted-foreground">
-                                Outlet: <span className="font-medium text-foreground">{currentOutletName}</span>
-                            </p>
-                        )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Button size="sm" onClick={() => { setAction('add'); setShowAddOrEditModal(true) }} disabled={!hasOutlet}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Tambah
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => setShowImportModal(true)} disabled={!hasOutlet}>
-                            <Upload className="mr-2 h-4 w-4" />
-                            Import
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={handleExport} disabled={isExporting || products.length === 0}>
-                            <Download className="mr-2 h-4 w-4" />
-                            {isExporting ? 'Mengexport...' : 'Export'}
-                        </Button>
-                    </div>
-                </div>
-
-                <Separator />
+                <SectionHeader
+                    title='Kelola Produk & Jasa'
+                    description={`Outlet: ${currentOutletName}`}
+                    actions={
+                        <>
+                            <Button size="sm" onClick={() => { setAction('add'); setShowAddOrEditModal(true) }} disabled={!hasOutlet}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Tambah
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setShowImportModal(true)} disabled={!hasOutlet}>
+                                <Upload className="mr-2 h-4 w-4" />
+                                Import
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={handleExport} disabled={isExporting || products.length === 0}>
+                                <Download className="mr-2 h-4 w-4" />
+                                {isExporting ? 'Mengexport...' : 'Export'}
+                            </Button>
+                        </>
+                    }
+                />
 
                 {/* Error */}
                 {error && (

@@ -36,8 +36,8 @@ export default function DashboardLayout({ children, requiredRole }: LayoutProps)
           <Header />
 
           {/* Main Content with Responsive Padding */}
-          <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
-            <div className="w-full mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8 xl:p-10 2xl:p-12">
+          <main className="flex-1 overflow-auto bg-card/60">
+            <div className="w-full mx-auto max-w-400 p-4 md:p-6">
               {children}
             </div>
           </main>

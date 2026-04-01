@@ -106,7 +106,7 @@ export class OutletRepository {
     static async update(id: string, data: UpdateOutletInput): Promise<Outlet> {
         return db.outlet.update({
             where: { id },
-            data: { ...data, slug: StringUtil.slugify(data.name!) },
+            data: { ...data, ...(data.name && { slug: StringUtil.slugify(data.name!) }) },
         });
     }
 

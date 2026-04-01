@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -9,14 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, Lock, UserCog, Building2, Mail, ShieldCheck, KeyRound } from "lucide-react";
-import { FormFieldConfig, ReusableForm } from "@/components/ui/reuseable-form";
 import { ProfileForm } from "./ProfileForm";
 import { PasswordForm } from "./PasswordForm";
+import { SectionHeader } from "@/components/ui/section-header";
 
 export function SettingsContent() {
   const { user, business, isLoading } = useAuth();
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   if (isLoading || !user) {
     return <SettingsSkeleton />;
@@ -24,20 +20,18 @@ export function SettingsContent() {
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Pengaturan</h1>
-        <p className="text-muted-foreground">
-          Kelola informasi akun, preferensi sistem, dan keamanan Anda di satu tempat.
-        </p>
-      </div>
+      <SectionHeader
+        title="Pengaturan"
+        description="Kelola informasi akun, preferensi sistem, dan keamanan Anda di satu tempat."
+      />
 
-      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-12">
+      <div className="grid grid-cols-1 items-start mt-4 gap-3 md:grid-cols-12">
 
         {/* KOLOM KIRI: Form Edit Profil & Info Bisnis */}
-        <div className="space-y-6 md:col-span-7 lg:col-span-8">
+        <div className="space-y-3 md:col-span-7 lg:col-span-8">
 
           {/* Card Form Profil Pribadi */}
-          <Card className="rounded-xl shadow-sm border-border/60">
+          <Card className="shadow-sm border-border/60">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <UserCog className="h-5 w-5 text-primary" />
@@ -93,7 +87,7 @@ export function SettingsContent() {
           </Card>
 
           {/* Card Info Bisnis (Read-only) */}
-          <Card className="rounded-xl shadow-sm border-border/60">
+          <Card className="shadow-sm border-border/60">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Building2 className="h-5 w-5 text-primary" />
@@ -104,7 +98,7 @@ export function SettingsContent() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border bg-card p-4">
+              <div className="border bg-card p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="font-medium text-lg">{business?.name || "Belum ada bisnis"}</p>
@@ -136,10 +130,10 @@ export function SettingsContent() {
         </div>
 
         {/* KOLOM KANAN: Preferensi & Keamanan */}
-        <div className="space-y-6 md:col-span-5 lg:col-span-4">
+        <div className="space-y-3 md:col-span-5 lg:col-span-4">
 
           {/* Preferensi Tampilan */}
-          <Card className="rounded-xl shadow-sm border-border/60">
+          <Card className="shadow-sm border-border/60">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Bell className="h-4 w-4 text-primary" />
@@ -162,7 +156,7 @@ export function SettingsContent() {
           </Card>
 
           {/* Keamanan */}
-          <Card className="rounded-xl shadow-sm border-border/60">
+          <Card className="shadow-sm border-border/60">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Lock className="h-4 w-4 text-primary" />
@@ -186,9 +180,6 @@ export function SettingsContent() {
   );
 }
 
-// ==========================================
-// KOMPONEN SKELETON (LOADING STATE)
-// ==========================================
 function SettingsSkeleton() {
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-10">

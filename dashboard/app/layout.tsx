@@ -153,7 +153,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className={`${poppins.variable} font-poppins antialiased min-h-screen bg-background text-foreground`}>
+      <body className={`${poppins.variable} font-poppins antialiased min-h-screen text-foreground`}>
         <ThemeProvider defaultTheme={theme}>
           <QueryProvider>{children}</QueryProvider>
         </ThemeProvider>

@@ -26,7 +26,7 @@ export function SubscriptionDetailSection({
     const endsAt = overview?.business?.subscriptionEndDate ?? usage?.subscription?.endsAt ?? null;
     const daysLeft = getDaysRemaining(endsAt);
     return (
-        <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <section className="grid gap-3 lg:grid-cols-[2fr_1fr]">
             <Card>
                 <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                     <div>

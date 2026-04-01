@@ -1,4 +1,4 @@
-# --- Stage 1: Builder (Kompilasi TypeScript) ---
+# --- Stage 1: Builder (Build + prune production deps) ---
 FROM node:20-alpine AS builder
 WORKDIR /app
 
@@ -9,27 +9,15 @@ COPY prisma ./prisma/
 
 RUN npm ci
 
-RUN npx prisma generate
-
 COPY . .
 
-RUN npm run build
-
-# --- Stage 2: Prod Dependencies ---
-FROM node:20-alpine AS prod-deps
-WORKDIR /app
-
-ENV PUPPETEER_SKIP_DOWNLOAD=true
-
-COPY package*.json ./
-COPY prisma ./prisma/
-
-RUN npm ci --omit=dev \
-    && npx prisma generate \
+RUN npx prisma generate \
+    && npm run build \
+    && npm prune --omit=dev \
     && npm cache clean --force \
     && rm -rf /root/.npm /tmp/*
 
-# --- Stage 3: Runner (Image Final) ---
+# --- Stage 2: Runner (Image Final) ---
 FROM node:20-alpine AS runner
 WORKDIR /app
 
@@ -37,18 +25,20 @@ ENV NODE_ENV=production
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-RUN apk add --no-cache \
-    openssl \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ttf-freefont \
-    font-noto-emoji
+ARG INSTALL_CHROMIUM=true
+RUN if [ "$INSTALL_CHROMIUM" = "true" ]; then \
+      apk add --no-cache \
+        chromium \
+        nss \
+        freetype \
+        harfbuzz \
+        ttf-freefont \
+        font-noto-emoji; \
+    fi
 
 COPY package*.json ./
 
-COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules ./node_modules
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public

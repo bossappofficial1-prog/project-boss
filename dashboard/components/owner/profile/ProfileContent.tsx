@@ -19,6 +19,7 @@ import {
   Phone,
   Shield,
 } from "lucide-react";
+import { SectionHeader } from "@/components/ui/section-header";
 
 export const ProfileContent = () => {
   const { user, isLoading } = useAuth();
@@ -39,18 +40,14 @@ export const ProfileContent = () => {
   return (
     <>
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-xl md:text-3xl font-bold tracking-tight text-foreground">
-          Profil Saya
-        </h1>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Lihat detail informasi dan identitas akun Anda.
-        </p>
-      </div>
+      <SectionHeader
+        title="Profil Saya"
+        description="Lihat detail informasi dan identitas akun Anda."
+      />
 
-      <Card className="overflow-hidden border-border/60 rounded-xl py-0 shadow-sm">
+      <Card className="overflow-hidden mt-4 border-border/60 py-0 shadow-sm">
         {/* Banner */}
-        <div className="h-24 md:h-32 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b" />
+        <div className="h-24 md:h-32 bg-linear-to-r from-primary/10 via-primary/5 to-transparent border-b" />
 
         <CardContent className="relative px-4 md:px-10 pb-6 md:pb-8 pt-0">
           {/* Avatar Section */}
@@ -146,7 +143,7 @@ const InfoItem = ({
 
       <div className="overflow-hidden">
         <p
-          className={`text-sm md:text-base font-semibold text-foreground ${truncate ? "truncate max-w-[180px] md:max-w-full" : ""
+          className={`text-sm md:text-base font-semibold text-foreground ${truncate ? "truncate max-w-45 md:max-w-full" : ""
             }`}
           title={value}
         >

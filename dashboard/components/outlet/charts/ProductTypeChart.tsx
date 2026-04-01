@@ -5,14 +5,16 @@ import { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { EmptyChart } from './EmptyChart';
 import { PieChartIcon } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 interface ProductTypeChartProps {
   data: ByType[];
 }
 
 const COLORS = {
-  GOODS: '#ef4444',
-  SERVICE: '#3b82f6',
+  GOODS: '#EF4444',
+  SERVICE: '#0EA5E9',
+  TICKET: '#10B981',
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
@@ -44,89 +46,88 @@ export default function ProductTypeChart({ data }: ProductTypeChartProps) {
   const totalProducts = data.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <div className="h-full rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-      {/* Header */}
-      <div className="mb-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+    <Card className="h-full rounded-md py-5">
+      <CardHeader>
+        <CardTitle className="text-lg">
           Tipe Produk
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        </CardTitle>
+        <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
           Total: {totalProducts} produk
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
 
-      {/* Chart */}
-      <div className="h-72 w-full">
-        {
-          data.length > 0
+      <CardContent className="mt-2">
+        <div className="h-72 w-full">
+          {
+            data.length > 0
 
-            ? <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ percentage }) => `${percentage}%`}
-                  outerRadius={100}
-                  innerRadius={60}
-                  fill="#8884d8"
-                  dataKey="count"
-                  onMouseEnter={(_, index) => setHoveredIndex(index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                >
-                  {data.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[entry.type]}
-                      opacity={
-                        hoveredIndex === null || hoveredIndex === index ? 1 : 0.5
-                      }
-                      style={{
-                        filter:
-                          hoveredIndex === index ? 'brightness(1.2)' : 'brightness(1)',
-                        transition: 'all 0.3s ease',
-                      }}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-            : <EmptyChart icon={PieChartIcon} />
-        }
-      </div>
+              ? <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ percentage }) => `${percentage}%`}
+                    outerRadius={100}
+                    innerRadius={60}
+                    fill="#8884d8"
+                    dataKey="count"
+                    onMouseEnter={(_, index) => setHoveredIndex(index)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                  >
+                    {data.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[entry.type]}
+                        opacity={
+                          hoveredIndex === null || hoveredIndex === index ? 1 : 0.5
+                        }
+                        style={{
+                          filter:
+                            hoveredIndex === index ? 'brightness(1.2)' : 'brightness(1)',
+                          transition: 'all 0.3s ease',
+                        }}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              : <EmptyChart icon={PieChartIcon} />
+          }
+        </div>
 
-      {/* Details */}
-      <div className="mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-sm dark:border-gray-700/50">
-        {data.map((item, index) => (
-          <div
-            key={index}
-            className={`p-3 rounded-lg transition-all duration-200 cursor-pointer ${hoveredIndex === index
-              ? 'bg-white/20 dark:bg-gray-700/50 scale-105'
-              : 'bg-white/5 dark:bg-gray-700/20'
-              }`}
-            onMouseEnter={() => setHoveredIndex(index)}
-            onMouseLeave={() => setHoveredIndex(null)}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: COLORS[item.type] }}
-              />
-              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                {item.type}
+        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-sm dark:border-gray-700/50">
+          {data.map((item, index) => (
+            <div
+              key={index}
+              className={`p-3 rounded-lg transition-all duration-200 cursor-pointer ${hoveredIndex === index
+                ? 'bg-white/20 dark:bg-gray-700/50 scale-105'
+                : 'bg-white/5 dark:bg-gray-700/20'
+                }`}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: COLORS[item.type] }}
+                />
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  {item.type}
+                </p>
+              </div>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">
+                {item.count}
+              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {item.percentage}% dari total
               </p>
             </div>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">
-              {item.count}
-            </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
-              {item.percentage}% dari total
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -11,10 +11,11 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell,
 } from 'recharts';
 import { EmptyChart } from './EmptyChart';
 import { LineChartIcon } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 interface ExpenseVsRevenueData {
   revenue: number;
@@ -79,173 +80,168 @@ export default function ExpenseVsRevenueChart({
   data,
   summary,
 }: ExpenseVsRevenueChartProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [, setHoveredIndex] = useState<number | null>(null);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-      {/* Header */}
-      <div className="mb-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+    <Card className="rounded-md py-5">
+      <CardHeader>
+        <CardTitle className="text-lg mb-1">
           Pengeluaran vs Pendapatan
-        </h3>
+        </CardTitle>
 
-        {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {/* Revenue */}
-          <div className="p-4 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30">
+          <Badge variant="outline" className="h-auto p-4 w-full rounded-md flex flex-col bg-linear-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 items-start justify-start">
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
               Pendapatan Bulan Ini
             </p>
             <p className="text-xl font-bold text-green-600 dark:text-green-400">
               Rp {summary.revenue.toLocaleString('id-ID')}
             </p>
-          </div>
+          </Badge>
 
-          {/* Expenses */}
-          <div className="p-4 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30">
+          <Badge variant="outline" className="h-auto p-4 w-full rounded-md flex flex-col bg-linear-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 items-start justify-start">
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
               Pengeluaran Bulan Ini
             </p>
             <p className="text-xl font-bold text-red-600 dark:text-red-400">
               Rp {summary.expenses.toLocaleString('id-ID')}
             </p>
-          </div>
+          </Badge>
 
-          {/* Net Profit */}
-          <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30">
+          <Badge variant="outline" className="h-auto p-4 w-full rounded-md flex flex-col bg-linear-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 items-start justify-start">
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
               Laba Bersih
             </p>
             <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
               Rp {summary.netProfit.toLocaleString('id-ID')}
             </p>
-          </div>
+          </Badge>
 
-          {/* Profit Margin */}
-          <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30">
+          <Badge variant="outline" className="h-auto p-4 w-full rounded-md flex flex-col bg-linear-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 items-start justify-start">
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
               Margin Keuntungan
             </p>
             <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
               {summary.profitMargin}%
             </p>
-          </div>
+          </Badge>
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Chart */}
-      <div className="h-[30em] w-full">
-        {
-          data.length > 0
-            ? <ResponsiveContainer width="100%" height={480}>
-              <ComposedChart
-                data={data}
-                margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
-              >
-                <defs>
-                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="#059669" stopOpacity={0.7} />
-                  </linearGradient>
-                  <linearGradient id="expensesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="#dc2626" stopOpacity={0.7} />
-                  </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                    <feMerge>
-                      <feMergeNode in="coloredBlur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
+      <CardContent className="mt-2">
+        <div className="h-[30em] w-full">
+          {
+            data.length > 0
+              ? <ResponsiveContainer width="100%" height={480}>
+                <ComposedChart
+                  data={data}
+                  margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+                >
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#059669" stopOpacity={0.7} />
+                    </linearGradient>
+                    <linearGradient id="expensesGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#dc2626" stopOpacity={0.7} />
+                    </linearGradient>
+                    <filter id="glow">
+                      <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                      <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
 
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#374151"
-                  vertical={false}
-                  opacity={0.3}
-                />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#374151"
+                    vertical={false}
+                    opacity={0.3}
+                  />
 
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: '#9ca3af', fontSize: 13, fontWeight: 500 }}
-                  tickLine={false}
-                  axisLine={{ stroke: '#4b5563' }}
-                  dy={10}
-                />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: '#9ca3af', fontSize: 13, fontWeight: 500 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#4b5563' }}
+                    dy={10}
+                  />
 
-                <YAxis
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={{ stroke: '#4b5563' }}
-                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                />
+                  <YAxis
+                    tick={{ fill: '#9ca3af', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#4b5563' }}
+                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                  />
 
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={{ stroke: '#4b5563' }}
-                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tick={{ fill: '#9ca3af', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#4b5563' }}
+                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                  />
 
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
 
-                <Legend
-                  wrapperStyle={{ paddingTop: '20px' }}
-                  iconType="circle"
-                  formatter={(value) => <span className="text-gray-300 text-sm">{value}</span>}
-                />
+                  <Legend
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    iconType="circle"
+                    formatter={(value) => <span className="text-gray-300 text-sm">{value}</span>}
+                  />
 
-                <Bar
-                  dataKey="revenue"
-                  fill="url(#revenueGradient)"
-                  name="Pendapatan"
-                  radius={[8, 8, 0, 0]}
-                  maxBarSize={50}
-                  onMouseEnter={(_, index) => setHoveredIndex(index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                />
+                  <Bar
+                    dataKey="revenue"
+                    fill="url(#revenueGradient)"
+                    name="Pendapatan"
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={50}
+                    onMouseEnter={(_, index) => setHoveredIndex(index)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                  />
 
-                <Bar
-                  dataKey="expenses"
-                  fill="url(#expensesGradient)"
-                  name="Pengeluaran"
-                  radius={[8, 8, 0, 0]}
-                  maxBarSize={50}
-                  onMouseEnter={(_, index) => setHoveredIndex(index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                />
+                  <Bar
+                    dataKey="expenses"
+                    fill="url(#expensesGradient)"
+                    name="Pengeluaran"
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={50}
+                    onMouseEnter={(_, index) => setHoveredIndex(index)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                  />
 
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey={(entry) => entry.revenue - entry.expenses}
-                  stroke="#3b82f6"
-                  strokeWidth={3}
-                  dot={{
-                    fill: '#3b82f6',
-                    r: 5,
-                    strokeWidth: 2,
-                    stroke: '#1e40af'
-                  }}
-                  activeDot={{
-                    r: 8,
-                    fill: '#2563eb',
-                    strokeWidth: 3,
-                    stroke: '#fff',
-                    filter: 'url(#glow)'
-                  }}
-                  name="Laba Bersih"
-                  isAnimationActive={true}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-            : <EmptyChart icon={LineChartIcon} />
-        }
-      </div>
-    </div>
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey={(entry) => entry.revenue - entry.expenses}
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    dot={{
+                      fill: '#3b82f6',
+                      r: 5,
+                      strokeWidth: 2,
+                      stroke: '#1e40af'
+                    }}
+                    activeDot={{
+                      r: 8,
+                      fill: '#2563eb',
+                      strokeWidth: 3,
+                      stroke: '#fff',
+                      filter: 'url(#glow)'
+                    }}
+                    name="Laba Bersih"
+                    isAnimationActive={true}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+              : <EmptyChart icon={LineChartIcon} />
+          }
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -68,7 +68,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-red-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-300 dark:border-gray-600 bg-background/60 backdrop-blur-lg px-4 lg:px-6">
       {/* Left Section - Sidebar Toggle */}
       <div className="flex items-center gap-2">
         {/* Mobile Toggle */}
@@ -115,7 +115,7 @@ export default function Header() {
               variant="ghost"
               className="relative h-10 gap-2 rounded-xl px-2 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              <Avatar className="h-8 w-8 bg-gradient-to-br from-red-500 to-red-700 shadow-md">
+              <Avatar className="h-8 w-8 bg-linear-to-br from-red-500 to-red-700 shadow-md">
                 <AvatarImage src={user?.avatar ?? '/defaults/default-avatar.jpg'} />
                 <AvatarFallback className="bg-transparent text-white text-sm font-bold">
                   {isUserLoading ? (

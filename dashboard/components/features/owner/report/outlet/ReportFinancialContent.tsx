@@ -17,6 +17,16 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useReportOutlet, useCompareOutletsReport, useReportStaff } from "@/hooks/useReport";
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { DataTable } from "@/components/ui/data-table";
@@ -225,22 +235,24 @@ export default function ReportFinancialContent() {
       {/* ══════════ Page Header ══════════ */}
       <div className="flex flex-col xl:flex-row xl:items-start justify-between mb-6 lg:mb-8 gap-5">
         <div className="w-full xl:w-auto">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-foreground flex items-center gap-2 text-2xl font-bold">
             <Receipt className="text-emerald-500 w-7 h-7 shrink-0" />
             Laporan Keuangan
           </h1>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
-            <select
-              value={outletFilter}
-              onChange={(e) => setOutletFilter(e.target.value)}
-              className="w-full sm:w-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="all">Semua Outlet</option>
-              {outlets.map((outlet) => (
-                <option key={outlet.id} value={outlet.id}>
-                  {outlet.name}
-                </option>
-              ))}
-            </select>
+            <Select value={outletFilter} onValueChange={setOutletFilter}>
+              <SelectTrigger className="w-full sm:w-55">
+                <SelectValue placeholder="Pilih outlet" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Outlet</SelectItem>
+                {outlets.map((outlet) => (
+                  <SelectItem key={outlet.id} value={outlet.id}>
+                    {outlet.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -291,112 +303,116 @@ export default function ReportFinancialContent() {
 
           {/* View Mode Toggle + Export */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-            <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex items-center w-full md:w-auto shrink-0">
-              <button
-                onClick={() => setViewMode("time")}
-                className={`flex-1 md:flex-none justify-center px-3 py-2 text-sm font-medium rounded-md transition-all ${viewMode === "time" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300"}`}>
-                Laporan Waktu
-              </button>
-              <button
-                onClick={() => setViewMode("compare")}
-                className={`flex-1 md:flex-none justify-center px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${viewMode === "compare" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300"}`}>
-                <BarChart3 className="w-4 h-4 shrink-0" />
-                Bandingkan Outlet
-              </button>
-            </div>
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
+              <TabsList className="h-auto w-full md:w-auto">
+                <TabsTrigger value="time" className="px-3 py-2 text-sm">
+                  Laporan Waktu
+                </TabsTrigger>
+                <TabsTrigger value="compare" className="px-3 py-2 text-sm">
+                  <BarChart3 className="w-4 h-4 shrink-0" />
+                  Bandingkan Outlet
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
             <div className="flex items-center gap-2 w-full md:w-auto ml-auto">
-              <button
+              <Button
                 onClick={handleExport}
                 disabled={isExporting}
-                className="flex-1 md:flex-none justify-center bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2.5 px-5 rounded-md flex items-center gap-2 text-sm transition-all shadow-lg shadow-emerald-900/20">
+                className="h-10 w-full md:w-auto">
                 {isExporting ? (
                   <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                 ) : (
                   <FileSpreadsheet className="w-4 h-4 shrink-0" />
                 )}
                 {isExporting ? "Mengexport..." : "Export Excel"}
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Filter & Date Navigation */}
-          <div className="bg-white dark:bg-[#1e293b] p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-sm dark:shadow-md">
-            {/* Filter Buttons */}
-            <div className="flex w-full lg:w-auto bg-slate-100 dark:bg-[#0f172a] p-1 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto hide-scrollbar">
-              {viewMode === "time" ? (
-                <>
-                  <FilterButton
-                    active={filterType === "daily"}
-                    onClick={() => setFilterType("daily")}>
-                    Harian
-                  </FilterButton>
-                  <FilterButton
-                    active={filterType === "weekly"}
-                    onClick={() => setFilterType("weekly")}>
-                    Mingguan
-                  </FilterButton>
-                  <FilterButton
-                    active={filterType === "monthly"}
-                    onClick={() => setFilterType("monthly")}>
-                    Bulanan
-                  </FilterButton>
-                </>
-              ) : (
-                <>
-                  <FilterButton
-                    active={compareFilterType === "daily"}
-                    onClick={() => setCompareFilterType("daily")}>
-                    Harian
-                  </FilterButton>
-                  <FilterButton
-                    active={compareFilterType === "monthly"}
-                    onClick={() => setCompareFilterType("monthly")}>
-                    Bulanan
-                  </FilterButton>
-                  <FilterButton
-                    active={compareFilterType === "yearly"}
-                    onClick={() => setCompareFilterType("yearly")}>
-                    Tahunan
-                  </FilterButton>
-                </>
-              )}
-            </div>
-
-            {/* Date Selector */}
-            <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
-              <button
-                onClick={() => adjustDate(-1)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <div className="flex items-center justify-center gap-2 lg:gap-3 font-bold text-slate-900 dark:text-white flex-1 lg:flex-none min-w-0">
-                <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
-                <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
-                  {viewMode === "time"
-                    ? formatPeriodLabel(filterType, currentDate)
-                    : formatComparePeriodLabel(compareFilterType, currentDate)}
-                </span>
+          <Card className="rounded-md py-3">
+            <CardContent className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+              {/* Filter Buttons */}
+              <div className="flex w-full lg:w-auto bg-muted p-1 rounded-md border border-border overflow-x-auto hide-scrollbar">
+                {viewMode === "time" ? (
+                  <>
+                    <FilterButton
+                      active={filterType === "daily"}
+                      onClick={() => setFilterType("daily")}>
+                      Harian
+                    </FilterButton>
+                    <FilterButton
+                      active={filterType === "weekly"}
+                      onClick={() => setFilterType("weekly")}>
+                      Mingguan
+                    </FilterButton>
+                    <FilterButton
+                      active={filterType === "monthly"}
+                      onClick={() => setFilterType("monthly")}>
+                      Bulanan
+                    </FilterButton>
+                  </>
+                ) : (
+                  <>
+                    <FilterButton
+                      active={compareFilterType === "daily"}
+                      onClick={() => setCompareFilterType("daily")}>
+                      Harian
+                    </FilterButton>
+                    <FilterButton
+                      active={compareFilterType === "monthly"}
+                      onClick={() => setCompareFilterType("monthly")}>
+                      Bulanan
+                    </FilterButton>
+                    <FilterButton
+                      active={compareFilterType === "yearly"}
+                      onClick={() => setCompareFilterType("yearly")}>
+                      Tahunan
+                    </FilterButton>
+                  </>
+                )}
               </div>
-              <button
-                onClick={() => adjustDate(1)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </div>
 
-            <div className="hidden lg:flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 pr-4 uppercase tracking-widest font-bold">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              Data Terverifikasi
-            </div>
-          </div>
+              {/* Date Selector */}
+              <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
+                <Button
+                  onClick={() => adjustDate(-1)}
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full shrink-0">
+                  <ChevronLeft className="w-6 h-6" />
+                </Button>
+                <div className="text-foreground flex flex-1 items-center justify-center gap-2 lg:gap-3 font-bold lg:flex-none min-w-0">
+                  <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
+                  <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
+                    {viewMode === "time"
+                      ? formatPeriodLabel(filterType, currentDate)
+                      : formatComparePeriodLabel(compareFilterType, currentDate)}
+                  </span>
+                </div>
+                <Button
+                  onClick={() => adjustDate(1)}
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full shrink-0">
+                  <ChevronRight className="w-6 h-6" />
+                </Button>
+              </div>
+
+              <Badge variant="outline" className="hidden lg:flex items-center gap-2 text-[10px] text-muted-foreground pr-4 uppercase tracking-widest font-bold">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                Data Terverifikasi
+              </Badge>
+            </CardContent>
+          </Card>
 
           {/* Financial Table */}
-          <div className="bg-white dark:bg-[#1e293b] rounded-md border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden relative">
+          <Card className="rounded-md py-0 overflow-hidden relative">
             {isLoading && (
-              <div className="absolute inset-0 bg-white/60 dark:bg-[#0f172a]/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+              <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-2"></div>
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-widest text-center">
+                <span className="text-xs font-bold text-primary uppercase tracking-widest text-center">
                   Menghitung Laporan...
                 </span>
               </div>
@@ -407,7 +423,7 @@ export default function ReportFinancialContent() {
               hideTrend={viewMode === "compare"}
               labelHeader={viewMode === "compare" ? "Nama Outlet" : "Tanggal"}
             />
-          </div>
+          </Card>
         </TabsContent>
 
         {/* ═══════ TAB 2: Laporan Staff ═══════ */}
@@ -433,70 +449,76 @@ export default function ReportFinancialContent() {
           </div>
 
           {/* Staff Date Filter */}
-          <div className="bg-white dark:bg-[#1e293b] p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-sm dark:shadow-md">
-            <div className="flex w-full lg:w-auto bg-slate-100 dark:bg-[#0f172a] p-1 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto hide-scrollbar">
-              <FilterButton
-                active={staffFilterType === "daily"}
-                onClick={() => setStaffFilterType("daily")}>
-                Harian
-              </FilterButton>
-              <FilterButton
-                active={staffFilterType === "weekly"}
-                onClick={() => setStaffFilterType("weekly")}>
-                Mingguan
-              </FilterButton>
-              <FilterButton
-                active={staffFilterType === "monthly"}
-                onClick={() => setStaffFilterType("monthly")}>
-                Bulanan
-              </FilterButton>
-            </div>
-            <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
-              <button
-                onClick={() => adjustStaffDate(-1)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <div className="flex items-center justify-center gap-2 lg:gap-3 font-bold text-slate-900 dark:text-white flex-1 lg:flex-none min-w-0">
-                <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
-                <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
-                  {formatStaffPeriodLabel(staffFilterType, staffDate)}
-                </span>
+          <Card className="rounded-md py-3">
+            <CardContent className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+              <div className="flex w-full lg:w-auto bg-muted p-1 rounded-md border border-border overflow-x-auto hide-scrollbar">
+                <FilterButton
+                  active={staffFilterType === "daily"}
+                  onClick={() => setStaffFilterType("daily")}>
+                  Harian
+                </FilterButton>
+                <FilterButton
+                  active={staffFilterType === "weekly"}
+                  onClick={() => setStaffFilterType("weekly")}>
+                  Mingguan
+                </FilterButton>
+                <FilterButton
+                  active={staffFilterType === "monthly"}
+                  onClick={() => setStaffFilterType("monthly")}>
+                  Bulanan
+                </FilterButton>
               </div>
-              <button
-                onClick={() => adjustStaffDate(1)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </div>
+              <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
+                <Button
+                  onClick={() => adjustStaffDate(-1)}
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full shrink-0">
+                  <ChevronLeft className="w-6 h-6" />
+                </Button>
+                <div className="text-foreground flex items-center justify-center gap-2 lg:gap-3 font-bold flex-1 lg:flex-none min-w-0">
+                  <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
+                  <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
+                    {formatStaffPeriodLabel(staffFilterType, staffDate)}
+                  </span>
+                </div>
+                <Button
+                  onClick={() => adjustStaffDate(1)}
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full shrink-0">
+                  <ChevronRight className="w-6 h-6" />
+                </Button>
+              </div>
 
-            <div className="flex items-center gap-2 ml-auto">
-              <button
-                onClick={handleExportStaff}
-                disabled={isExporting}
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2.5 px-5 rounded-md flex items-center gap-2 text-sm transition-all shadow-lg shadow-emerald-900/20">
-                {isExporting ? (
-                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                ) : (
-                  <FileSpreadsheet className="w-4 h-4 shrink-0" />
-                )}
-                {isExporting ? "Mengexport..." : "Export Excel"}
-              </button>
-            </div>
-          </div>
+              <div className="flex items-center gap-2 ml-auto">
+                <Button
+                  onClick={handleExportStaff}
+                  disabled={isExporting}
+                  className="h-10">
+                  {isExporting ? (
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  ) : (
+                    <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                  )}
+                  {isExporting ? "Mengexport..." : "Export Excel"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Staff Table */}
-          <div className="bg-white dark:bg-[#1e293b] rounded-md border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden relative">
+          <Card className="rounded-md py-0 overflow-hidden relative">
             {isLoadingStaff && (
-              <div className="absolute inset-0 bg-white/60 dark:bg-[#0f172a]/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+              <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-2"></div>
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-widest text-center">
+                <span className="text-xs font-bold text-primary uppercase tracking-widest text-center">
                   Memuat Data Staff...
                 </span>
               </div>
             )}
             <ReportStaffTable data={staffData || []} totals={staffTotals} />
-          </div>
+          </Card>
         </TabsContent>
 
         {/* ═══════ TAB 3: Stok & Aset ═══════ */}
@@ -519,43 +541,49 @@ export default function ReportFinancialContent() {
           </div>
 
           {/* Stok Date Filter */}
-          <div className="bg-white dark:bg-[#1e293b] p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-sm dark:shadow-md">
-            <div className="flex w-full lg:w-auto bg-slate-100 dark:bg-[#0f172a] p-1 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto hide-scrollbar">
-              <FilterButton
-                active={stockFilterType === "daily"}
-                onClick={() => setStockFilterType("daily")}>
-                Harian
-              </FilterButton>
-              <FilterButton
-                active={stockFilterType === "weekly"}
-                onClick={() => setStockFilterType("weekly")}>
-                Mingguan
-              </FilterButton>
-              <FilterButton
-                active={stockFilterType === "monthly"}
-                onClick={() => setStockFilterType("monthly")}>
-                Bulanan
-              </FilterButton>
-            </div>
-            <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
-              <button
-                onClick={() => adjustStockDate(-1)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <div className="flex items-center justify-center gap-2 lg:gap-3 font-bold text-slate-900 dark:text-white flex-1 lg:flex-none min-w-0">
-                <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
-                <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
-                  {formatPeriodLabel(stockFilterType, stockDate)}
-                </span>
+          <Card className="rounded-md py-3">
+            <CardContent className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+              <div className="flex w-full lg:w-auto bg-muted p-1 rounded-md border border-border overflow-x-auto hide-scrollbar">
+                <FilterButton
+                  active={stockFilterType === "daily"}
+                  onClick={() => setStockFilterType("daily")}>
+                  Harian
+                </FilterButton>
+                <FilterButton
+                  active={stockFilterType === "weekly"}
+                  onClick={() => setStockFilterType("weekly")}>
+                  Mingguan
+                </FilterButton>
+                <FilterButton
+                  active={stockFilterType === "monthly"}
+                  onClick={() => setStockFilterType("monthly")}>
+                  Bulanan
+                </FilterButton>
               </div>
-              <button
-                onClick={() => adjustStockDate(1)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
+              <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
+                <Button
+                  onClick={() => adjustStockDate(-1)}
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full shrink-0">
+                  <ChevronLeft className="w-6 h-6" />
+                </Button>
+                <div className="text-foreground flex items-center justify-center gap-2 lg:gap-3 font-bold flex-1 lg:flex-none min-w-0">
+                  <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
+                  <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
+                    {formatPeriodLabel(stockFilterType, stockDate)}
+                  </span>
+                </div>
+                <Button
+                  onClick={() => adjustStockDate(1)}
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full shrink-0">
+                  <ChevronRight className="w-6 h-6" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Info Card */}
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5">
@@ -575,17 +603,17 @@ export default function ReportFinancialContent() {
           </div>
 
           {/* Stok Purchase Table */}
-          <div className="bg-white dark:bg-[#1e293b] rounded-md border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden relative">
+          <Card className="rounded-md py-0 overflow-hidden relative">
             {isLoadingStok && (
-              <div className="absolute inset-0 bg-white/60 dark:bg-[#0f172a]/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+              <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-2"></div>
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-widest text-center">
+                <span className="text-xs font-bold text-primary uppercase tracking-widest text-center">
                   Memuat Data Stok...
                 </span>
               </div>
             )}
             <StockAssetTable data={timeDataStok || []} totalPembelian={stokTotals.totalPembelian} />
-          </div>
+          </Card>
         </TabsContent>
       </Tabs>
     </>
@@ -633,7 +661,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({ children, active, onClick }
   return (
     <button
       onClick={onClick}
-      className={`flex-1 lg:flex-none px-3 sm:px-5 py-2 text-xs sm:text-sm font-bold transition-all rounded-md whitespace-nowrap ${active ? "bg-emerald-600 text-white shadow-md" : "text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"}`}>
+      className={`flex-1 lg:flex-none px-3 sm:px-5 py-2 text-xs sm:text-sm font-semibold transition-all rounded-md whitespace-nowrap ${active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
       {children}
     </button>
   );

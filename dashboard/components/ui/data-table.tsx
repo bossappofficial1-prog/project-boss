@@ -828,7 +828,7 @@ export function DataTable<TData, TValue>({
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div
-        className="space-y-4 bg-background shadow-md p-6 rounded-md"
+        className="space-y-4 bg-card border shadow-md p-6 rounded-md"
         role="region"
         aria-label={ariaLabel}
         aria-description={ariaDescription}>

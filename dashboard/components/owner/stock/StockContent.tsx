@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { EmptyOutletState } from "@/components/ui/empty-outlet";
 import { useRouter } from "next/navigation";
+import { SectionHeader } from "@/components/ui/section-header";
 
 function formatCurrency(amount: number | null | undefined) {
   if (amount === null || amount === undefined) return "-";
@@ -221,26 +222,20 @@ export default function StockContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Manajemen Stok</h1>
-          {currentOutletName && (
-            <p className="text-sm text-muted-foreground">
-              Outlet: <span className="font-medium text-foreground">{currentOutletName}</span>
-            </p>
-          )}
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={isExporting || stockItems.length === 0}>
-          <Download className="mr-2 h-4 w-4" />
-          {isExporting ? "Mengexport..." : "Export Excel"}
-        </Button>
-      </div>
-
-      <Separator />
+      <SectionHeader
+        title="Manajemen Stok"
+        description={`Outlet: ${currentOutletName}`}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting || stockItems.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            {isExporting ? "Mengexport..." : "Export Excel"}
+          </Button>
+        }
+      />
 
       {/* Error Banner */}
       {errorMessage && (
@@ -576,8 +571,8 @@ export default function StockContent() {
                           <div className="flex items-center gap-3">
                             <div
                               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${isEmpty
-                                  ? "bg-destructive/10 text-destructive"
-                                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                ? "bg-destructive/10 text-destructive"
+                                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                                 }`}>
                               {isEmpty ? (
                                 <XCircle className="h-5 w-5" />

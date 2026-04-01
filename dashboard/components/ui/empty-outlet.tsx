@@ -17,7 +17,7 @@ export const EmptyOutletState = ({
     description = "Anda belum menambahkan outlet untuk bisnis Anda. Buat outlet pertama Anda sekarang untuk mulai mengelola produk, layanan, dan menerima pesanan.",
 }: EmptyOutletStateProps) => {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 md:p-8">
+        <div className="flex flex-col items-center min-h-[60vh]">
             <Card className="max-w-lg w-full text-center border-dashed border-2 bg-card shadow-sm hover:shadow-md transition-shadow duration-300">
                 <CardContent className="pt-10 pb-10 px-6 sm:px-10 flex flex-col items-center">
                     {/* Ikon Ilustrasi */}
