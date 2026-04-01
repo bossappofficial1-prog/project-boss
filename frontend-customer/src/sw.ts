@@ -11,17 +11,17 @@ declare global {
 declare const self: ServiceWorkerGlobalScope & typeof globalThis;
 
 const apiOrigin = (() => {
-    // At build time, Esbuild replaces process.env.NEXT_PUBLIC_API_URL
-    // For production: ensure env var is set when building
-    const url = typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL 
-        ? process.env.NEXT_PUBLIC_API_URL 
-        : "";
-    if (!url) return null;
-    try {
-        return new URL(url).origin;
-    } catch {
-        return null;
+    const hostname = self.location.hostname;
+
+    if (hostname === "bossapp.id" || hostname === "www.bossapp.id") {
+        return "https://api.bossapp.id";
     }
+
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+        return "http://localhost:1234";
+    }
+
+    return null;
 })();
 
 const serwist = new Serwist({
