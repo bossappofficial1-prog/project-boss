@@ -94,7 +94,8 @@ self.addEventListener('push', (event) => {
         event.waitUntil(
             self.registration.showNotification(data.title || 'Notifikasi', {
                 body: data.body,
-                icon: '/icons/app-icon-192.png',
+                icon: data.icon ?? '/icons/app-icon-192.png',
+                badge: data.badge ?? '/icons/app-icon-192-monochrome.png',
                 data: { url: data.url || '/' },
                 requireInteraction: true
             })
