@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Bell, BellOff } from 'lucide-react';
 import { useSnackbar } from '@/hooks/useSnackbar';
 
+const SW_SCOPE = '/serwist/';
+const SW_SCRIPT_URL = `/serwist/sw.js?v=${process.env.NEXT_PUBLIC_SW_VERSION ?? '20260412'}`;
+
 function urlBase64ToUint8Array(base64String: string) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
@@ -22,11 +25,10 @@ async function getPushRegistration() {
         throw new Error("Service Worker tidak didukung browser ini");
     }
 
-    const swUrl = "/serwist/sw.js";
-    let registration = await navigator.serviceWorker.getRegistration(swUrl);
+    let registration = await navigator.serviceWorker.getRegistration(SW_SCOPE);
 
     if (!registration) {
-        registration = await navigator.serviceWorker.register(swUrl);
+        registration = await navigator.serviceWorker.register(SW_SCRIPT_URL, { scope: SW_SCOPE });
     }
 
     if (registration.active) {
