@@ -1,4 +1,4 @@
-const PAYMENT_EXPIRY_TIME_MS = 1 * 20 * 1000;
+const PAYMENT_EXPIRY_TIME_MS = 10 * 60 * 1000;
 
 export const Time = {
     ONE_MINUTE_MS: 60 * 1000,

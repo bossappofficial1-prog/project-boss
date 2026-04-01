@@ -11,7 +11,11 @@ declare global {
 declare const self: ServiceWorkerGlobalScope & typeof globalThis;
 
 const apiOrigin = (() => {
-    const url = process.env.NEXT_PUBLIC_API_URL;
+    // At build time, Esbuild replaces process.env.NEXT_PUBLIC_API_URL
+    // For production: ensure env var is set when building
+    const url = typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL 
+        ? process.env.NEXT_PUBLIC_API_URL 
+        : "";
     if (!url) return null;
     try {
         return new URL(url).origin;
@@ -101,7 +105,7 @@ self.addEventListener('push', (event) => {
             })
         )
     } catch (error) {
-        console.error('Error parsing push data', error);
+        console.error('[SW Push] Error parsing push data:', error);
     }
 })
 

@@ -171,8 +171,8 @@ export default function NotificationButton({ guestPhone, guestName }: { guestPho
                         {permission === 'denied'
                             ? (t('notification.blocked') || 'Notifikasi diblokir oleh browser')
                             : (isSubscribed
-                                ? (t('notification.active') || '🔔 Notifikasi aktif')
-                                : (t('notification.inactive') || '🔕 Notifikasi tidak aktif'))}
+                                ? (t('notification.active') || 'Notifikasi aktif')
+                                : (t('notification.inactive') || 'Notifikasi tidak aktif'))}
                     </p>
                 </div>
             </div>
