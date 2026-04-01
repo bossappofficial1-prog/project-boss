@@ -17,6 +17,32 @@ function urlBase64ToUint8Array(base64String: string) {
     return outputArray;
 }
 
+async function getPushRegistration() {
+    if (!("serviceWorker" in navigator)) {
+        throw new Error("Service Worker tidak didukung browser ini");
+    }
+
+    const swUrl = "/serwist/sw.js";
+    let registration = await navigator.serviceWorker.getRegistration(swUrl);
+
+    if (!registration) {
+        registration = await navigator.serviceWorker.register(swUrl);
+    }
+
+    if (registration.active) {
+        return registration;
+    }
+
+    const readyWithTimeout = Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error("Service Worker belum aktif. Coba refresh halaman.")), 10000);
+        }),
+    ]);
+
+    return await readyWithTimeout;
+}
+
 export default function NotificationButton({ guestPhone, guestName }: { guestPhone?: string, guestName?: string }) {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [isSupported, setIsSupported] = useState(false);
@@ -29,17 +55,19 @@ export default function NotificationButton({ guestPhone, guestName }: { guestPho
         if ('serviceWorker' in navigator && 'PushManager' in window) {
             setIsSupported(true);
             setPermission(Notification.permission);
-            navigator.serviceWorker.ready.then((reg) => {
+            getPushRegistration().then((reg) => {
                 reg.pushManager.getSubscription().then((sub) => {
                     if (sub) setIsSubscribed(true);
                 });
+            }).catch(() => {
+                setIsSupported(false);
             });
         }
     }, []);
 
     const subscribeMutation = useMutation({
         mutationFn: async () => {
-            const registration = await navigator.serviceWorker.ready;
+            const registration = await getPushRegistration();
             const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
 
             if (!vapidKey) throw new Error(t('notification.vapidMissing') || 'VAPID key tidak ditemukan');
@@ -65,7 +93,7 @@ export default function NotificationButton({ guestPhone, guestName }: { guestPho
 
             // Bersihkan sisa subscription di browser jika backend gagal simpan
             try {
-                const registration = await navigator.serviceWorker.ready;
+                const registration = await getPushRegistration();
                 const sub = await registration.pushManager.getSubscription();
                 if (sub) await sub.unsubscribe();
             } catch (e) { /* Abaikan */ }
@@ -76,7 +104,7 @@ export default function NotificationButton({ guestPhone, guestName }: { guestPho
 
     const unsubscribeMutation = useMutation({
         mutationFn: async () => {
-            const registration = await navigator.serviceWorker.ready;
+            const registration = await getPushRegistration();
             const sub = await registration.pushManager.getSubscription();
 
             if (sub) {
@@ -97,7 +125,7 @@ export default function NotificationButton({ guestPhone, guestName }: { guestPho
         }
     });
 
-    const isProcessing = subscribeMutation.isPending || subscribeMutation.isPending || unsubscribeMutation.isPending || unsubscribeMutation.isPending;
+    const isProcessing = subscribeMutation.isPending || unsubscribeMutation.isPending;
 
     const handleToggle = async () => {
         if (isProcessing) return;

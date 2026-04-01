@@ -5,7 +5,17 @@ import { cleanupScheduler } from "./cleanup.job";
 import { checkSubscriptionExpireJob } from "./check-subscription-expire.job";
 import { deletePaymentExpiryScheduler } from "./payment-expire-delete.job";
 
+declare global {
+    var __jobsInitialized: boolean | undefined;
+}
+
 export const setUpJobs = () => {
+    if (globalThis.__jobsInitialized) {
+        Console.log(`Jobs already initialized, skip duplicate setup`);
+        return;
+    }
+
+    globalThis.__jobsInitialized = true;
     Console.log(`Init jobs`);
 
     paymentProofCleanupQueue.process('daily-cleanup', processPaymentProofCleanup);
