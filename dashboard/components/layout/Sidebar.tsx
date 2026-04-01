@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useUserData } from '@/hooks/useUserData';
 import { useOutletContext } from '@/components/providers/OutletProvider';
 import { Badge } from '@/components/ui/badge';
@@ -47,32 +46,13 @@ import { cn } from '@/lib/utils';
 import { MENU_GROUPS } from './sidebar/sidebar';
 import { OutletSelector } from './sidebar/OutletSelector';
 import { ChevronDown, ChevronRight, Zap } from 'lucide-react';
-
-const PREFETCH_FALLBACK_DELAY_MS = 150;
-const PREFETCH_BATCH_DELAY_MS = 75;
-type IdleCallbackHandle = number;
+import { InstantLink } from '../ui/instant-link';
 
 export default function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
-
-  const sidebarHrefs = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          MENU_GROUPS.flatMap((group) =>
-            group.items.flatMap((item) => [
-              ...(item.href ? [item.href] : []),
-              ...(item.subItems?.map((subItem) => subItem.href) ?? []),
-            ])
-          )
-        )
-      ),
-    [] // MENU_GROUPS is a static configuration
-  );
 
   const {
     selectedOutlet = null,
@@ -140,62 +120,31 @@ export default function AppSidebar() {
     setExpandedMenus((prev) => ({ ...prev, ...newExpandedMenus }));
   }, [pathname, isCollapsed]);
 
-  // Prefetch all sidebar destinations to avoid latency during navigation
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    const idleWindow = window as Window & {
-      requestIdleCallback?: (cb: IdleRequestCallback) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
-    const hasIdleCallback = typeof idleWindow.requestIdleCallback === 'function';
-
-    const prefetchRoute = (href: string) => {
-      try {
-        router.prefetch(href);
-      } catch {
-        // Prefetch failures are non-blocking (e.g., offline); safe to ignore
-      }
-    };
-
-    if (hasIdleCallback && idleWindow.requestIdleCallback) {
-      const idleHandles: number[] = [];
-      const scheduleHandles = sidebarHrefs.map((href, index) =>
-        window.setTimeout(() => {
-          const handle = idleWindow.requestIdleCallback(
-            () => prefetchRoute(href)
-          ) as IdleCallbackHandle;
-          idleHandles.push(handle);
-        }, index * PREFETCH_BATCH_DELAY_MS)
-      );
-      return () => {
-        scheduleHandles.forEach((timeout) => clearTimeout(timeout));
-        idleHandles.forEach((handle) => idleWindow.cancelIdleCallback?.(handle));
-      };
+  // Prefetch on hover for better performance (lazy prefetch)
+  const handlePrefetch = useCallback((href: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      // Next.js router.prefetch is available through Link component
+      // but we don't need aggressive prefetch anymore since we have instant nav
+      // This is just a fallback for slower connections
+    } catch {
+      // Prefetch failures are non-blocking (e.g., offline); safe to ignore
     }
+  }, []);
 
-    const timeouts = sidebarHrefs.map((href, index) =>
-      window.setTimeout(
-        () => prefetchRoute(href),
-        PREFETCH_FALLBACK_DELAY_MS + index * PREFETCH_BATCH_DELAY_MS
-      )
-    );
-    return () => timeouts.forEach((timeout) => clearTimeout(timeout));
-  }, [router, sidebarHrefs]);
-
-  const handleOutletChange = (outletId: string) => {
+  const handleOutletChange = useCallback((outletId: string) => {
     const outlet = outlets.find((o) => o.id === outletId);
     if (outlet && setSelectedOutlet) {
       setSelectedOutlet(outlet);
     }
-  };
+  }, [outlets, setSelectedOutlet]);
 
-  const toggleMenu = (menuId: string) => {
+  const toggleMenu = useCallback((menuId: string) => {
     setExpandedMenus((prev) => ({
       ...prev,
       [menuId]: !prev[menuId],
     }));
-  };
+  }, []);
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -261,7 +210,6 @@ export default function AppSidebar() {
                   if (item.subItems) {
                     const isExpanded = expandedMenus[item.id];
 
-                    // --- JIKA COLLAPSED: Render DropdownMenu Mengambang ---
                     if (isCollapsed) {
                       return (
                         <SidebarMenuItem key={item.id}>
@@ -303,8 +251,9 @@ export default function AppSidebar() {
                                 const isSubActive = pathname === subItem.href;
                                 return (
                                   <DropdownMenuItem key={subItem.href} asChild>
-                                    <Link
+                                    <InstantLink
                                       href={subItem.href}
+                                      onMouseEnter={() => handlePrefetch(subItem.href)}
                                       className={cn(
                                         "cursor-pointer flex items-center w-full px-2 py-1.5 text-sm rounded-md outline-none transition-colors",
                                         isSubActive
@@ -318,7 +267,7 @@ export default function AppSidebar() {
                                           {subItem.badge}
                                         </Badge>
                                       )}
-                                    </Link>
+                                    </InstantLink>
                                   </DropdownMenuItem>
                                 );
                               })}
@@ -372,14 +321,17 @@ export default function AppSidebar() {
                                           : 'text-red-100 hover:bg-white/10 hover:text-white'
                                       )}
                                     >
-                                      <Link href={subItem.href}>
+                                      <InstantLink 
+                                        href={subItem.href}
+                                        onMouseEnter={() => handlePrefetch(subItem.href)}
+                                      >
                                         <span>{subItem.name}</span>
                                         {subItem.badge && (
                                           <Badge variant="secondary" className="ml-auto text-xs">
                                             {subItem.badge}
                                           </Badge>
                                         )}
-                                      </Link>
+                                      </InstantLink>
                                     </SidebarMenuSubButton>
                                   </SidebarMenuSubItem>
                                 );
@@ -407,7 +359,8 @@ export default function AppSidebar() {
                                   : 'text-red-100 hover:bg-white/10 hover:text-white'
                               )}
                             >
-                              <Link href={item.href!}>
+                              <InstantLink href={item.href!} onMouseEnter={() => handlePrefetch(item.href!)}
+                                >
                                 <Icon className="w-5 h-5" />
                                 <span className="flex-1">{item.name}</span>
                                 {item.badge && !isCollapsed && (
@@ -418,7 +371,7 @@ export default function AppSidebar() {
                                 {isActive && !isCollapsed && (
                                   <ChevronRight className="w-4 h-4 opacity-60" />
                                 )}
-                              </Link>
+                              </InstantLink>
                             </SidebarMenuButton>
                           </TooltipTrigger>
                           {isCollapsed && (

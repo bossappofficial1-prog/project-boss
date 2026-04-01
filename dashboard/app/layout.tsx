@@ -3,6 +3,8 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { LoadingProvider } from "@/contexts/LoadingContext";
+import { NavigationProvider } from "@/components/providers/NavigationProvider";
 import { Toaster } from "sonner";
 import { cookies } from "next/headers";
 
@@ -154,9 +156,13 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${poppins.variable} font-poppins antialiased min-h-screen text-foreground`}>
-        <ThemeProvider defaultTheme={theme}>
-          <QueryProvider>{children}</QueryProvider>
-        </ThemeProvider>
+        <LoadingProvider>
+          <NavigationProvider>
+            <ThemeProvider defaultTheme={theme}>
+              <QueryProvider>{children}</QueryProvider>
+            </ThemeProvider>
+          </NavigationProvider>
+        </LoadingProvider>
       </body>
     </html>
   );
