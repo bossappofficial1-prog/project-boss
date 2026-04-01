@@ -7,7 +7,7 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci
+RUN npm install
 
 COPY . .
 

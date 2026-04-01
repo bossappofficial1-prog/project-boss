@@ -368,7 +368,7 @@ export default function AddOutletModal({
           ? 'Perbarui informasi outlet dan jam operasional Anda.'
           : 'Lengkapi informasi outlet dan jam operasional Anda.'
       }
-      className="max-h-[95dvh] w-[95vw] max-w-[1000px]"
+      className="max-h-[95dvh] w-[95vw] max-w-250"
       confirmClose
       confirmCloseMessage="Perubahan belum disimpan. Tutup form?"
       resetFormOnClose
