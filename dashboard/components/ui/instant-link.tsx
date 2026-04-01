@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { useInstantNavigation } from '@/hooks/useInstantNavigation'
 
 interface InstantLinkProps
-  extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
-  href: string
-  children: React.ReactNode
-  useTransition?: boolean
+    extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+    href: string
+    children: React.ReactNode
+    useTransition?: boolean
 }
 
 /**
@@ -16,32 +16,32 @@ interface InstantLinkProps
  * Use this instead of Next.js Link when you want instant loading indication
  */
 export function InstantLink({
-  href,
-  children,
-  onClick,
-  useTransition: useTransitionMode = true,
-  ...props
+    href,
+    children,
+    onClick,
+    useTransition: useTransitionMode = true,
+    ...props
 }: InstantLinkProps) {
-  const { push } = useInstantNavigation()
+    const { push } = useInstantNavigation()
 
-  if (!useTransitionMode) {
-    // Fallback to regular Link
+    if (!useTransitionMode) {
+        // Fallback to regular Link
+        return (
+            <Link href={href} {...props}>
+                {children}
+            </Link>
+        )
+    }
+
+    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault()
+        onClick?.(e)
+        push(href)
+    }
+
     return (
-      <Link href={href} {...props}>
-        {children}
-      </Link>
+        <a href={href} onClick={handleClick} {...props}>
+            {children}
+        </a>
     )
-  }
-
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault()
-    onClick?.(e)
-    push(href)
-  }
-
-  return (
-    <a href={href} onClick={handleClick} {...props}>
-      {children}
-    </a>
-  )
 }

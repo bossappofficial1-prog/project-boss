@@ -321,7 +321,7 @@ export default function AppSidebar() {
                                           : 'text-red-100 hover:bg-white/10 hover:text-white'
                                       )}
                                     >
-                                      <InstantLink 
+                                      <InstantLink
                                         href={subItem.href}
                                         onMouseEnter={() => handlePrefetch(subItem.href)}
                                       >
@@ -360,7 +360,7 @@ export default function AppSidebar() {
                               )}
                             >
                               <InstantLink href={item.href!} onMouseEnter={() => handlePrefetch(item.href!)}
-                                >
+                              >
                                 <Icon className="w-5 h-5" />
                                 <span className="flex-1">{item.name}</span>
                                 {item.badge && !isCollapsed && (

@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import { NavigationProvider } from "@/components/providers/NavigationProvider";
 import { Toaster } from "sonner";
-import { cookies } from "next/headers";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -124,17 +124,11 @@ const structuredData = {
   }
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const theme = (cookieStore.get('theme')?.value ?? 'system') as
-    | 'light'
-    | 'dark'
-    | 'system';
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -157,11 +151,13 @@ export default async function RootLayout({
       </head>
       <body className={`${poppins.variable} font-poppins antialiased min-h-screen text-foreground`}>
         <LoadingProvider>
-          <NavigationProvider>
-            <ThemeProvider defaultTheme={theme}>
-              <QueryProvider>{children}</QueryProvider>
-            </ThemeProvider>
-          </NavigationProvider>
+          <Suspense fallback={null}>
+            <NavigationProvider>
+              <ThemeProvider defaultTheme="system">
+                <QueryProvider>{children}</QueryProvider>
+              </ThemeProvider>
+            </NavigationProvider>
+          </Suspense>
         </LoadingProvider>
       </body>
     </html>
