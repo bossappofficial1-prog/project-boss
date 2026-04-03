@@ -1,8 +1,8 @@
 import { db } from "../config/prisma";
 import { Prisma } from "@prisma/client";
+import { getIsOutletOpen } from "../utils/outlet.utils";
 
 export class HomeRepository {
-    // 1. Optimasi: Gunakan count(1) lebih ringan dari count(*)
     static async countVerifiedUmkm() {
         const result = await db.$queryRaw<{ count: number }[]>`
             SELECT COUNT(1)::int as count
@@ -24,30 +24,18 @@ export class HomeRepository {
     static async findTopOutlets(searchQuery?: string) {
         const searchParam = searchQuery ? `%${searchQuery}%` : null;
 
-        // 2. Optimasi: Pindahkan pengecekan jam operasional FULL ke SQL (PostgreSQL Engine)
-        // Ini menghindari parsing ratusan string Date di Javascript Node.js
         const rawOutlets = await db.$queryRaw<any[]>`
             SELECT 
                 o.*,
-                CASE 
-                    WHEN o."isOpen" = false THEN false
-                    ELSE COALESCE(
-                        (
-                            SELECT true
-                            FROM "OutletOperatingHours" oh
-                            WHERE oh."outletId" = o.id
-                                AND oh."isOpen" = true
-                                AND oh."dayOfWeek" = EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::int
-                                -- PERBAIKAN: Gunakan waktu 'Asia/Jakarta' saat ini untuk dibandingkan dengan jam operasional
-                                AND (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::time 
-                                    BETWEEN (oh."openTime" AT TIME ZONE 'UTC')::time 
-                                    AND (oh."closeTime" AT TIME ZONE 'UTC')::time
-                            LIMIT 1
-                        ), 
-                        false
-                    )
-                END AS "isCurrentlyOpen",
                 json_build_object('name', b.name) as business,
+                COALESCE(
+                    (
+                        SELECT json_agg(row_to_json(oh.*))
+                        FROM "OutletOperatingHours" oh
+                        WHERE oh."outletId" = o.id
+                    ), 
+                    '[]'::json
+                ) as "operatingHours",
                 json_build_object('orders', COALESCE(order_counts.successful_orders, 0)) as "_count"
             FROM "Outlet" o
             JOIN "Business" b ON o."businessId" = b.id
@@ -67,20 +55,31 @@ export class HomeRepository {
             LIMIT 6;
         `;
 
-        // Proses Node.js menjadi sangat tipis dan cepat
         return rawOutlets.map(outlet => {
-            const { isCurrentlyOpen, ...rest } = outlet;
+            const mappedOperatingHours = outlet.operatingHours.map((oh: any) => ({
+                ...oh,
+                openTime: new Date(typeof oh.openTime === 'string' && !oh.openTime.endsWith('Z') ? oh.openTime + 'Z' : oh.openTime),
+                closeTime: new Date(typeof oh.closeTime === 'string' && !oh.closeTime.endsWith('Z') ? oh.closeTime + 'Z' : oh.closeTime),
+                createdAt: new Date(typeof oh.createdAt === 'string' && !oh.createdAt.endsWith('Z') ? oh.createdAt + 'Z' : oh.createdAt),
+                updatedAt: new Date(typeof oh.updatedAt === 'string' && !oh.updatedAt.endsWith('Z') ? oh.updatedAt + 'Z' : oh.updatedAt)
+            }));
+
+            const isOpenOutlet = outlet.isOpen && (
+                mappedOperatingHours.length > 0
+                    ? getIsOutletOpen(mappedOperatingHours, new Date())
+                    : false
+            );
+
             return {
-                ...rest,
-                isOpen: isCurrentlyOpen,
-                status: isCurrentlyOpen,
+                ...outlet,
+                isOpen: isOpenOutlet,
+                status: isOpenOutlet,
+                operatingHours: mappedOperatingHours
             };
         });
     }
 
     static async findPopularItems(limit = 8) {
-        // Query ini tetap berat karena aggregasi join 30 hari, 
-        // tapi aman karena akan dilindungi oleh Cache di Service layer
         const rawItems = await db.$queryRaw<any[]>`
             SELECT
                 p.id,
