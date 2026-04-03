@@ -14,9 +14,6 @@
       "./src/types"
     ],
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
     "rootDir": "./",
     "outDir": "./dist",
     "resolveJsonModule": true,

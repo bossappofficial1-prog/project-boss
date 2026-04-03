@@ -1,10 +1,8 @@
-import { snap, coreApi } from "@/config/midtrans";
-import { db } from "@/config/prisma";
-import { PaymentStatus } from "@prisma/client";
-import { schedulePaymentExpiration } from "@/queues/payment.queue";
-import { buildMidtransCorePayload } from "@/utils/midtrans-core.utils";
-import { mappingTransactionStatusForMidtrans } from "@/utils/mapping";
-import { MidtransWebhookPayloadType } from "@/types/Others";
+import { snap, coreApi } from "../../config/midtrans";
+import { db } from "../../config/prisma";
+import { schedulePaymentExpiration } from "../../queues/payment.queue";
+import { buildMidtransCorePayload } from "../../utils/midtrans-core.utils";
+import { mappingTransactionStatusForMidtrans } from "../../utils/mapping";
 import {
   IPaymentProvider,
   ChargeParams,
@@ -12,6 +10,8 @@ import {
   SnapChargeParams,
   SnapChargeResult,
 } from "./payment-provider.interface";
+import { MidtransWebhookPayloadType } from "src/types/Others";
+import { PaymentStatus } from "@prisma/client";
 
 /** Mapping dari channel generik ke format Midtrans Core API */
 function resolveMidtransPaymentType(channel: string): string {
