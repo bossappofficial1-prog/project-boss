@@ -39,41 +39,43 @@ import pushNotification from "./push-notification.routes";
 
 const apiRouter = Router();
 
-apiRouter.use("/users", userRouter);
-apiRouter.use("/subscription-plans", subscriptionPlanRouter);
-apiRouter.use("/subscription", subscriptionRouter);
-apiRouter.use("/auth", authRouter);
 apiRouter.use("/admin", adminRouter);
+apiRouter.use("/auth", authRouter);
 apiRouter.use("/banners", bannerRouter);
-apiRouter.use("/products", productRouter);
-apiRouter.use("/orders", orderRouter);
-apiRouter.use("/server", serverRouter);
-apiRouter.use("/dashboard", dashboardRouter);
-apiRouter.use("/business", businessRouter);
 apiRouter.use("/bookings", bookingRouter);
-apiRouter.use("/payments", paymentRouter);
-apiRouter.use("/outlets", outletRouter);
-apiRouter.use("/home", homeRouter);
-apiRouter.use("/push-notification", pushNotification);
+apiRouter.use("/business", businessRouter);
+apiRouter.use("/dashboard", dashboardRouter);
 apiRouter.use("/expenses", expenseRouter);
-apiRouter.use("/reports", reportRouter);
-apiRouter.use("/staff", staffRouter);
-apiRouter.use("/operating-hours", operatingHoursRouter);
-apiRouter.use("/upload", uploadRouter);
-apiRouter.use("/security", securityRouter);
-apiRouter.use("/queue-monitoring", queueMonitoringRouter);
-apiRouter.use("/notifications", notificationRouter);
-apiRouter.use("/transactions", transactionRouter);
-apiRouter.use("/stock", stockRouter);
-apiRouter.use("/receipt-setting", receiptRouter);
-apiRouter.use("/pos/v2", posV2Router);
-apiRouter.use("/queue/v2", queueV2Router);
-apiRouter.use("/orders/v2", ordersV2Router);
-apiRouter.use("/tickets", ticketRouter);
+apiRouter.use("/home", homeRouter);
 apiRouter.use("/members", memberRouter);
+apiRouter.use("/notifications", notificationRouter);
+apiRouter.use("/operating-hours", operatingHoursRouter);
+apiRouter.use("/orders", orderRouter);
+apiRouter.use("/orders/v2", ordersV2Router);
+apiRouter.use("/outlets", outletRouter);
+apiRouter.use("/payments", paymentRouter);
+apiRouter.use("/pos/v2", posV2Router);
+apiRouter.use("/products", productRouter);
+apiRouter.use("/push-notification", pushNotification);
+apiRouter.use("/queue-monitoring", queueMonitoringRouter);
+apiRouter.use("/queue/v2", queueV2Router);
+apiRouter.use("/receipt-setting", receiptRouter);
+apiRouter.use("/reports", reportRouter);
+apiRouter.use("/security", securityRouter);
+apiRouter.use("/server", serverRouter);
+apiRouter.use("/staff", staffRouter);
+apiRouter.use("/stock", stockRouter);
+apiRouter.use("/subscription", subscriptionRouter);
+apiRouter.use("/subscription-plans", subscriptionPlanRouter);
+apiRouter.use("/tickets", ticketRouter);
+apiRouter.use("/transactions", transactionRouter);
+apiRouter.use("/upload", uploadRouter);
+apiRouter.use("/users", userRouter);
+
 apiRouter.get("/payment-methods", async (req, res) => {
   ResponseUtil.success(res, paymentMethod);
 });
+
 apiRouter.get("/test-event/:outletId", (req, res) => {
   const outletId = req.params.outletId;
   SocketEmitter.getInstance().emitNotificationToOutlet(outletId, {

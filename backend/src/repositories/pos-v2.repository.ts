@@ -1,51 +1,64 @@
 import { db } from "../config/prisma";
-import { PaymentStatus, ManualPaymentType, OrderStatus } from "@prisma/client";
+import { PaymentStatus, ManualPaymentType, OrderStatus, ServiceStatus } from "@prisma/client";
 import { generateTicketCode } from "../utils";
 
 export class PosV2Repository {
-    static async getProductsByOutlet(outletId: string, search?: string, type?: "GOODS" | "SERVICE" | "TICKET") {
-        return db.product.findMany({
-            where: {
-                outletId,
-                status: "ACTIVE",
-                ...(type ? { type } : {}),
-                ...(search
-                    ? { name: { contains: search, mode: "insensitive" as const } }
-                    : {}),
-            },
-            include: {
-                goods: {
-                    select: {
-                        id: true,
-                        sellingPrice: true,
-                        currentStock: true,
-                        unit: true,
-                        averageHpp: true,
+    static async getProductsByOutlet(
+        outletId: string,
+        search?: string,
+        type?: "GOODS" | "SERVICE" | "TICKET",
+        page: number = 1,
+        limit: number = 50
+    ) {
+        const whereClause = {
+            outletId,
+            status: ServiceStatus.ACTIVE,
+            ...(type ? { type } : {}),
+            ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
+        };
+
+        const [total, data] = await db.$transaction([
+            db.product.count({ where: whereClause }),
+            db.product.findMany({
+                where: whereClause,
+                skip: (page - 1) * limit,
+                take: limit,
+                include: {
+                    goods: {
+                        select: {
+                            id: true,
+                            sellingPrice: true,
+                            currentStock: true,
+                            unit: true,
+                            averageHpp: true,
+                        },
+                    },
+                    service: {
+                        select: {
+                            id: true,
+                            sellingPrice: true,
+                            durationMinutes: true,
+                            providerName: true,
+                            maxParallel: true,
+                        },
+                    },
+                    ticket: {
+                        select: {
+                            id: true,
+                            sellingPrice: true,
+                            totalQuota: true,
+                            soldCount: true,
+                            eventDate: true,
+                            eventEndDate: true,
+                            venue: true,
+                        },
                     },
                 },
-                service: {
-                    select: {
-                        id: true,
-                        sellingPrice: true,
-                        durationMinutes: true,
-                        providerName: true,
-                        maxParallel: true,
-                    },
-                },
-                ticket: {
-                    select: {
-                        id: true,
-                        sellingPrice: true,
-                        totalQuota: true,
-                        soldCount: true,
-                        eventDate: true,
-                        eventEndDate: true,
-                        venue: true,
-                    },
-                },
-            },
-            orderBy: { name: "asc" },
-        });
+                orderBy: { name: "asc" },
+            }),
+        ]);
+
+        return { data, total };
     }
 
     static async getProductsByIds(productIds: string[], outletId: string) {

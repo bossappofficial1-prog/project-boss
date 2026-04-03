@@ -16,13 +16,15 @@ export const posV2GetProducts = asyncHandler(async (req: Request, res: Response)
     const outletId = req.query.outletId as string;
     const search = req.query.search as string | undefined;
     const type = req.query.type as "GOODS" | "SERVICE" | undefined;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50; // default 50 for POS screen
 
     if (!outletId) {
         return ResponseUtil.badRequest(res, "Parameter outletId wajib diisi");
     }
 
-    const products = await PosV2Service.getProducts(outletId, search, type);
-    return ResponseUtil.success(res, products);
+    const { data: products, meta } = await PosV2Service.getProducts(outletId, search, type, page, limit);
+    return ResponseUtil.success(res, { products, meta });
 });
 
 export const posV2CreateOrder = asyncHandler(async (req: Request, res: Response) => {

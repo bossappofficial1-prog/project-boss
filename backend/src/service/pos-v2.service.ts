@@ -5,6 +5,7 @@ import { CreatePosV2OrderInput } from "../schemas/pos-v2.schema";
 import { generateOrderCode } from "../utils";
 import { SocketEmitter } from "../socket/socket-emiiter";
 import { generateServiceOrderNotificationQueue } from "../queues/generate-service-order-notification";
+import { RedisUtils } from "../utils/redis.utils";
 
 export interface PosV2OrderResult {
     orderId: string;
@@ -17,10 +18,21 @@ export interface PosV2OrderResult {
 }
 
 export class PosV2Service {
-    static async getProducts(outletId: string, search?: string, type?: "GOODS" | "SERVICE" | "TICKET") {
-        const products = await PosV2Repository.getProductsByOutlet(outletId, search, type);
+    static async getProducts(
+        outletId: string, 
+        search?: string, 
+        type?: "GOODS" | "SERVICE" | "TICKET",
+        page: number = 1,
+        limit: number = 50
+    ) {
+        const cacheKey = `pos:products:${outletId}:t=${type || 'all'}:s=${search || ''}:p=${page}:l=${limit}`;
+        
+        const cached = await RedisUtils.get<any>(cacheKey);
+        if (cached) return cached;
 
-        return products.map((p) => {
+        const { data: products, total } = await PosV2Repository.getProductsByOutlet(outletId, search, type, page, limit);
+
+        const mappedProducts = products.map((p) => {
             let price = 0;
             if (p.type === "GOODS") price = p.goods?.sellingPrice ?? 0;
             else if (p.type === "SERVICE") price = p.service?.sellingPrice ?? 0;
@@ -48,6 +60,20 @@ export class PosV2Service {
                 venue: p.ticket?.venue ?? null,
             };
         });
+
+        const result = {
+            data: mappedProducts,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            }
+        };
+
+        // Cache for 1 hour
+        await RedisUtils.set(cacheKey, result, 3600);
+        return result;
     }
 
     static async createOrder(
@@ -234,6 +260,9 @@ export class PosV2Service {
         } catch {
             // Silent fail - socket is non-critical
         }
+
+        // Invalidate cache for products in this outlet so updated stock is fetched
+        await RedisUtils.deleteByPattern(`pos:products:${outletId}:*`);
 
         return {
             orderId: order.id,
