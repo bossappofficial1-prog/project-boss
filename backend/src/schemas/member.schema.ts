@@ -23,7 +23,12 @@ export const getMembersByOutletQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+export const getMemberByIdQuerySchema = z.object({
+  outletId: z.string().optional(),
+});
+
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
 export type IncreasePointInput = z.infer<typeof increasePointSchema>;
 export type GetMembersByOutletQuery = z.infer<typeof getMembersByOutletQuerySchema>;
+export type GetMemberByIdQuery = z.infer<typeof getMemberByIdQuerySchema>;

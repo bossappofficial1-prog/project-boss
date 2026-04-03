@@ -20,17 +20,22 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/apis/base';
 
-interface SystemHealth {
-    database: string;
-    status: string;
+interface SystemHealthResponse {
+    health: {
+        status: string;
+        uptime: number;
+        memory: { used: number; total: number; percentage: number };
+        cpu: { usage: number };
+        database: { status: string; responseTime: number };
+        timestamp: string;
+    };
     metrics: {
         totalUsers: number;
         totalBusinesses: number;
         totalOrders: number;
-        pendingOrders: number;
-        systemUptime: number;
+        todayOrders: number;
+        activeConnections: number;
     };
-    timestamp: string;
 }
 
 interface SystemLog {
@@ -64,7 +69,9 @@ export default function AdminSystem() {
         },
     });
 
-    const health = healthData?.data as SystemHealth;
+    const sysData = healthData?.data as SystemHealthResponse;
+    const health = sysData?.health;
+    const metrics = sysData?.metrics;
     const logs = logsData?.data?.logs || [];
 
     const getStatusIcon = (status: string) => {
@@ -106,9 +113,9 @@ export default function AdminSystem() {
         }
     };
 
-    const formatUptime = (uptime: number) => {
-        const hours = Math.floor(uptime / 3600000);
-        const minutes = Math.floor((uptime % 3600000) / 60000);
+    const formatUptime = (uptimeSeconds: number) => {
+        const hours = Math.floor(uptimeSeconds / 3600);
+        const minutes = Math.floor((uptimeSeconds % 3600) / 60);
         return `${hours}h ${minutes}m`;
     };
 
@@ -126,7 +133,7 @@ export default function AdminSystem() {
     const systemComponents = [
         {
             name: 'Database',
-            status: health?.database === 'healthy' ? 'healthy' : 'unhealthy',
+            status: health?.database?.status === 'connected' ? 'healthy' : 'unhealthy',
             icon: <Database className="w-5 h-5" />,
             description: 'PostgreSQL connection status'
         },
@@ -138,15 +145,15 @@ export default function AdminSystem() {
         },
         {
             name: 'CPU Usage',
-            status: 'healthy', // This would come from actual monitoring
+            status: (health?.cpu?.usage || 0) < 80 ? 'healthy' : 'warning',
             icon: <Cpu className="w-5 h-5" />,
-            description: 'Current CPU utilization'
+            description: `${health?.cpu?.usage || 0}% current utilization`
         },
         {
             name: 'Memory',
-            status: 'healthy', // This would come from actual monitoring
+            status: (health?.memory?.percentage || 0) < 85 ? 'healthy' : 'warning',
             icon: <HardDrive className="w-5 h-5" />,
-            description: 'Memory usage status'
+            description: `${health?.memory?.percentage || 0}% used (${health?.memory?.used || 0}MB/${health?.memory?.total || 0}MB)`
         },
         {
             name: 'Network',
@@ -208,7 +215,7 @@ export default function AdminSystem() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {healthLoading ? '...' : formatUptime(health?.metrics?.systemUptime || 0)}
+                            {healthLoading ? '...' : formatUptime(health?.uptime || 0)}
                         </div>
                         <p className="text-xs text-muted-foreground">
                             Since last restart
@@ -223,7 +230,7 @@ export default function AdminSystem() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {healthLoading ? '...' : health?.metrics?.totalUsers || 0}
+                            {healthLoading ? '...' : metrics?.totalUsers || 0}
                         </div>
                         <p className="text-xs text-muted-foreground">
                             Registered users
@@ -233,15 +240,15 @@ export default function AdminSystem() {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+                        <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
                         <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {healthLoading ? '...' : health?.metrics?.pendingOrders || 0}
+                            {healthLoading ? '...' : metrics?.todayOrders || 0}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Require attention
+                            Orders placed today
                         </p>
                     </CardContent>
                 </Card>

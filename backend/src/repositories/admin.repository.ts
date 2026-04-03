@@ -1210,7 +1210,8 @@ export class AdminRepository {
             totalBusinesses,
             totalOrders,
             todayOrders,
-            activeConnections
+            activeConnections,
+            dbHealthCheck
         ] = await Promise.all([
             // Total users
             db.user.count(),
@@ -1229,28 +1230,59 @@ export class AdminRepository {
             }),
 
             // Active connections (mock data for now)
-            Promise.resolve(0)
+            Promise.resolve(0),
+
+            // Checking actual db connection latency
+            (async () => {
+                const start = Date.now();
+                try {
+                    await db.$queryRaw`SELECT 1`;
+                    return { status: 'connected', responseTime: Date.now() - start };
+                } catch (e) {
+                    return { status: 'disconnected', responseTime: 0 };
+                }
+            })()
         ]);
 
-        // Calculate system uptime (mock data - in production you'd get this from process.uptime())
-        const uptime = process.uptime ? Math.floor(process.uptime()) : 86400; // Default to 1 day
+        const os = require('os');
 
-        // Mock system metrics (in production you'd use system monitoring libraries)
+        // Calculate system uptime
+        const uptime = process.uptime ? Math.floor(process.uptime()) : 86400;
+
+        // Calculate real memory
+        const totalMem = os.totalmem();
+        const freeMem = os.freemem();
+        const usedMem = totalMem - freeMem;
+
+        // Calculate CPU usage (simple snapshot)
+        const cpus = os.cpus();
+        let user = 0, nice = 0, sys = 0, idle = 0, irq = 0;
+        for (const cpu of cpus) {
+            user += cpu.times.user;
+            nice += cpu.times.nice;
+            sys += cpu.times.sys;
+            idle += cpu.times.idle;
+            irq += cpu.times.irq;
+        }
+        const totalCpuTime = user + nice + sys + idle + irq;
+        const cpuUsage = totalCpuTime > 0 ? ((totalCpuTime - idle) / totalCpuTime) * 100 : 0;
+
         const systemMetrics = {
-            status: 'healthy' as 'healthy' | 'warning' | 'unhealthy' | 'unknown',
+            status: dbHealthCheck.status === 'connected' ? 'healthy' : 'unhealthy' as 'healthy' | 'warning' | 'unhealthy' | 'unknown',
             uptime,
             memory: {
-                used: Math.floor(Math.random() * 1024) + 512, // Mock: 512-1536 MB
-                total: 2048, // Mock: 2GB total
-                percentage: Math.floor(Math.random() * 30) + 40 // Mock: 40-70%
+                used: Math.floor(usedMem / (1024 * 1024)),
+                total: Math.floor(totalMem / (1024 * 1024)),
+                percentage: Math.floor((usedMem / totalMem) * 100)
             },
             cpu: {
-                usage: Math.floor(Math.random() * 20) + 10 // Mock: 10-30%
+                usage: Math.floor(cpuUsage)
             },
             database: {
-                status: 'connected' as 'connected' | 'disconnected',
-                responseTime: Math.floor(Math.random() * 50) + 10 // Mock: 10-60ms
-            }
+                status: dbHealthCheck.status as 'connected' | 'disconnected',
+                responseTime: dbHealthCheck.responseTime
+            },
+            timestamp: new Date().toISOString()
         };
 
         return {

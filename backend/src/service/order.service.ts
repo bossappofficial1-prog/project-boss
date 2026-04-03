@@ -1269,3 +1269,54 @@ export async function expirePaymentOrder(orderId: string) {
   });
 
 }
+
+export async function getOrdersListService(
+  outletId: string | undefined,
+  filters: { status?: string; paymentStatus?: string; search?: string; page?: number; limit?: number }
+) {
+  const { status, paymentStatus, search, page = 1, limit = 10 } = filters;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (outletId) where.outletId = outletId;
+  if (status && status !== 'all') where.orderStatus = status;
+  if (paymentStatus && paymentStatus !== 'all') where.paymentStatus = paymentStatus;
+
+  if (search) {
+    where.OR = [
+      { receiptNumber: { contains: search, mode: "insensitive" } },
+      { guestCustomer: { name: { contains: search, mode: "insensitive" } } },
+      { guestCustomer: { phone: { contains: search, mode: "insensitive" } } },
+    ];
+  }
+
+  const [total, orders] = await Promise.all([
+    db.order.count({ where }),
+    db.order.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        guestCustomer: { select: { name: true, phone: true } },
+      },
+    }),
+  ]);
+
+  const mappedOrders = orders.map((order) => ({
+    id: order.id,
+    customerName: order.guestCustomer?.name || "-",
+    customerPhone: order.guestCustomer?.phone || "-",
+    orderStatus: order.orderStatus,
+    paymentStatus: order.paymentStatus,
+    totalAmount: order.totalAmount,
+    createdAt: order.createdAt,
+  }));
+
+  return {
+    data: mappedOrders,
+    page,
+    limit,
+    total,
+  };
+}

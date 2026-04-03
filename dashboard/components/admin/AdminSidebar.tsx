@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { LayoutDashboard, Building2, Wallet, BarChart3, Users, FileBarChart, ShieldCheck, Settings2, LifeBuoy, ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Building2, BarChart3, Users, FileBarChart, ShieldCheck, Settings2, LifeBuoy, ChevronLeft, ChevronRight, ChevronDown, type LucideIcon, PieChart, Activity, Image, CreditCard, Banknote, Receipt, Server } from 'lucide-react';
 
 import { useUserData } from '@/hooks/useUserData';
 import { useResponsiveBreakpoints } from '@/hooks/useResponsiveBreakpoints';
@@ -18,9 +18,14 @@ interface AdminSidebarProps {
     onToggleCollapse?: () => void;
 }
 
-interface SidebarItem {
+interface SidebarSubItem {
     label: string;
     href: string;
+}
+
+interface SidebarItem {
+    label: string;
+    href?: string; // Optional if it only has subItems
     icon: LucideIcon;
     description?: string;
     badge?: {
@@ -28,6 +33,7 @@ interface SidebarItem {
         variant?: 'default' | 'secondary' | 'destructive' | 'outline';
     };
     disabled?: boolean;
+    subItems?: SidebarSubItem[];
 }
 
 interface SidebarSection {
@@ -52,6 +58,8 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCol
         setInternalCollapsed((prev) => !prev);
     }, [onToggleCollapse]);
 
+    const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+
     // Auto-collapse on wide screens when internal state is used
     useEffect(() => {
         if (isControlled) {
@@ -70,88 +78,133 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCol
             heading: 'Overview',
             items: [
                 {
-                    label: 'Dashboard Overview',
+                    label: 'Dashboard',
                     href: '/admin/dashboard',
                     icon: LayoutDashboard,
-                    description: 'Realtime KPIs & alerts',
+                },
+                {
+                    label: 'Platform Analytics',
+                    icon: BarChart3,
+                    subItems: [
+                        { label: 'User Growth', href: '/admin/analytics/users' },
+                        { label: 'Revenue (MRR)', href: '/admin/analytics/revenue' },
+                    ],
                 },
             ],
         },
         {
-            heading: 'Operations',
+            heading: 'Manajemen Tenant (SaaS)',
             items: [
                 {
-                    label: 'Business Management',
-                    href: '/admin/businesses',
+                    label: 'Bisnis Terdaftar',
                     icon: Building2,
-                    description: 'Audit and oversee UMKM data',
+                    subItems: [
+                        { label: 'Semua Merchant', href: '/admin/businesses/all' },
+                    ],
                 },
                 {
-                    label: 'User Management',
+                    label: 'Database User',
                     href: '/admin/users',
                     icon: Users,
-                    description: 'Control admin & owner access',
-                },
-                {
-                    label: 'Withdrawal Management',
-                    href: '/admin/withdrawals',
-                    icon: Wallet,
-                    description: 'Approve manual payouts',
-                    badge: { label: 'Live', variant: 'secondary' },
                 },
             ],
         },
         {
-            heading: 'Insights',
+            heading: 'Langganan & Billing',
             items: [
                 {
-                    label: 'Analytics & Reports',
-                    href: '/admin/analytics',
-                    icon: BarChart3,
-                    description: 'Trends, cohorts, performance',
-                    badge: { label: 'New' },
+                    label: 'Paket Langganan',
+                    icon: CreditCard,
+                    subItems: [
+                        { label: 'Paket Harga', href: '/admin/subscriptions/plans' },
+                    ],
                 },
+                {
+                    label: 'Pendapatan Platform',
+                    icon: Banknote,
+                    subItems: [
+                        { label: 'Subscription Revenue', href: '/admin/platform-income/subs' },
+                    ],
+                },
+            ],
+        },
+        {
+            heading: 'Reports',
+            items: [
                 {
                     label: 'Financial Reports',
                     href: '/admin/reports',
                     icon: FileBarChart,
-                    description: 'Export-ready statements',
                 },
             ],
         },
         {
-            heading: 'Platform',
+            heading: 'Validasi Pembayaran',
             items: [
                 {
-                    label: 'System Management',
-                    href: '/admin/system',
-                    icon: ShieldCheck,
-                    description: 'Logs, uptime & security',
+                    label: 'Bukti Langganan',
+                    href: '/admin/payments/manual',
+                    icon: Receipt,
+                },
+            ],
+        },
+        {
+            heading: 'Operasional Platform',
+            items: [
+                {
+                    label: 'Global Banner',
+                    href: '/admin/banners',
+                    icon: Image,
                 },
                 {
-                    label: 'Platform Settings',
+                    label: 'Server Status',
+                    href: '/admin/server',
+                    icon: Server,
+                    badge: { label: 'Beta', variant: 'outline' },
+                },
+            ],
+        },
+        {
+            heading: 'System & Settings',
+            items: [
+                {
+                    label: 'System Monitor',
+                    href: '/admin/system',
+                    icon: Activity,
+                    badge: { label: 'Beta', variant: 'outline' },
+                },
+                {
+                    label: 'Platform Config',
                     href: '/admin/settings',
                     icon: Settings2,
-                    description: 'Policies, configurations, billing',
-                },
-                {
-                    label: 'Support Tickets',
-                    href: '/admin/support',
-                    icon: LifeBuoy,
-                    description: 'Resolve customer issues',
-                    badge: { label: 'Soon', variant: 'outline' },
-                    disabled: true,
+                    badge: { label: 'Beta', variant: 'outline' },
                 },
             ],
         },
     ], []);
 
     const isActivePath = useCallback((href: string) => {
+        if (!href) return false;
         if (pathname === href) {
             return true;
         }
         return pathname.startsWith(`${href}/`);
     }, [pathname]);
+
+    useEffect(() => {
+        if (!collapsed) {
+            navSections.forEach(section => {
+                section.items.forEach(item => {
+                    if (item.subItems) {
+                        const isChildActive = item.subItems.some(sub => pathname === sub.href || pathname.startsWith(`${sub.href}/`));
+                        if (isChildActive) {
+                            setExpandedMenus(prev => ({ ...prev, [item.label]: true }));
+                        }
+                    }
+                });
+            });
+        }
+    }, [pathname, navSections, collapsed]);
 
     const handleItemClick = useCallback(() => {
         if (isMobile) {
@@ -204,12 +257,15 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCol
                                     <div className="space-y-1">
                                         {section.items.map((item) => {
                                             const Icon = item.icon;
-                                            const active = !item.disabled && isActivePath(item.href);
+                                            const hasSubItems = item.subItems && item.subItems.length > 0;
+                                            const isChildActive = hasSubItems && item.subItems!.some(sub => pathname === sub.href || pathname.startsWith(`${sub.href}/`));
+                                            const active = !item.disabled && (item.href ? isActivePath(item.href) : isChildActive);
+                                            const isExpanded = expandedMenus[item.label] || false;
 
                                             const content = (
                                                 <div
                                                     className={cn(
-                                                        'group flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500/60 focus:ring-offset-1 dark:focus:ring-offset-gray-900',
+                                                        'group flex items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500/60 focus:ring-offset-1 dark:focus:ring-offset-gray-900',
                                                         itemAnimationClass,
                                                         collapsed && 'justify-center px-2',
                                                         item.disabled
@@ -219,36 +275,47 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCol
                                                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60'
                                                     )}
                                                 >
-                                                    <span
-                                                        className={cn(
-                                                            'flex items-center justify-center rounded-lg border border-transparent bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 group-hover:text-red-600 group-hover:bg-red-100 dark:group-hover:bg-red-900/30 dark:group-hover:text-red-300',
-                                                            itemAnimationClass,
-                                                            collapsed ? 'h-10 w-10' : 'h-11 w-11',
-                                                            active && 'bg-red-600 text-white dark:bg-red-500',
-                                                            item.disabled && 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600'
-                                                        )}
-                                                    >
-                                                        <Icon className="h-5 w-5" strokeWidth={1.8} />
-                                                    </span>
+                                                    <div className="flex items-center gap-3 w-full min-w-0">
+                                                        <span
+                                                            className={cn(
+                                                                'flex items-center justify-center rounded-lg border border-transparent bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 group-hover:text-red-600 group-hover:bg-red-100 dark:group-hover:bg-red-900/30 dark:group-hover:text-red-300 transition-colors',
+                                                                collapsed ? 'h-10 w-10' : 'h-11 w-11',
+                                                                active && 'bg-red-600 text-white dark:bg-red-500',
+                                                                item.disabled && 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600'
+                                                            )}
+                                                        >
+                                                            <Icon className="h-5 w-5 shrink-0" strokeWidth={1.8} />
+                                                        </span>
 
-                                                    {!collapsed && (
-                                                        <div className="flex flex-1 items-center gap-3 min-w-0">
-                                                            <div className="flex min-w-0 flex-col">
-                                                                <span className="truncate" aria-hidden={item.disabled}>
-                                                                    {item.label}
-                                                                </span>
-                                                                {item.description && (
-                                                                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate">
-                                                                        {item.description}
+                                                        {!collapsed && (
+                                                            <div className="flex flex-1 items-center justify-between min-w-0 pr-1">
+                                                                <div className="flex flex-col min-w-0">
+                                                                    <span className="truncate" aria-hidden={item.disabled}>
+                                                                        {item.label}
                                                                     </span>
+                                                                    {item.description && (
+                                                                        <span className="text-xs font-normal text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                                                            {item.description}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {item.badge && (
+                                                                    <Badge variant={item.badge.variant ?? 'default'} className="ml-2">
+                                                                        {item.badge.label}
+                                                                    </Badge>
                                                                 )}
                                                             </div>
-                                                            {item.badge && (
-                                                                <Badge variant={item.badge.variant ?? 'default'}>
-                                                                    {item.badge.label}
-                                                                </Badge>
+                                                        )}
+                                                    </div>
+
+                                                    {!collapsed && hasSubItems && (
+                                                        <ChevronDown
+                                                            className={cn(
+                                                                'w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ml-1 group-hover:text-gray-600 dark:group-hover:text-gray-300',
+                                                                isExpanded && 'transform rotate-180',
+                                                                active && 'text-red-500'
                                                             )}
-                                                        </div>
+                                                        />
                                                     )}
 
                                                     {collapsed && !item.disabled && (
@@ -259,24 +326,62 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCol
                                                 </div>
                                             );
 
-                                            if (item.disabled) {
-                                                return (
-                                                    <div key={item.href} aria-disabled="true" tabIndex={-1} className="cursor-not-allowed">
-                                                        {content}
-                                                    </div>
-                                                );
-                                            }
-
                                             return (
-                                                <Link
-                                                    key={item.href}
-                                                    href={item.href}
-                                                    aria-current={active ? 'page' : undefined}
-                                                    onClick={handleItemClick}
-                                                    className="block"
-                                                >
-                                                    {content}
-                                                </Link>
+                                                <div key={item.label} className="w-full">
+                                                    {item.disabled ? (
+                                                        <div aria-disabled="true" tabIndex={-1} className="cursor-not-allowed w-full">
+                                                            {content}
+                                                        </div>
+                                                    ) : hasSubItems ? (
+                                                        <button
+                                                            type="button"
+                                                            className="w-full"
+                                                            onClick={(e) => {
+                                                                if (collapsed) {
+                                                                    if (onToggleCollapse) onToggleCollapse();
+                                                                    else setInternalCollapsed(false);
+                                                                    setExpandedMenus(prev => ({ ...prev, [item.label]: true }));
+                                                                } else {
+                                                                    setExpandedMenus(prev => ({ ...prev, [item.label]: !prev[item.label] }));
+                                                                }
+                                                            }}
+                                                        >
+                                                            {content}
+                                                        </button>
+                                                    ) : (
+                                                        <Link
+                                                            href={item.href || '#'}
+                                                            aria-current={active ? 'page' : undefined}
+                                                            onClick={handleItemClick}
+                                                            className="block w-full"
+                                                        >
+                                                            {content}
+                                                        </Link>
+                                                    )}
+
+                                                    {hasSubItems && !collapsed && isExpanded && (
+                                                        <div className="mt-1 ml-4 pl-8 border-l border-gray-100 dark:border-gray-700/50 space-y-1">
+                                                            {item.subItems!.map(sub => {
+                                                                const subActive = pathname === sub.href || pathname.startsWith(`${sub.href}/`);
+                                                                return (
+                                                                    <Link
+                                                                        key={sub.href}
+                                                                        href={sub.href}
+                                                                        onClick={handleItemClick}
+                                                                        className={cn(
+                                                                            'block px-3 py-2 text-sm rounded-lg transition-colors',
+                                                                            subActive
+                                                                                ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 font-medium'
+                                                                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                                                        )}
+                                                                    >
+                                                                        {sub.label}
+                                                                    </Link>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             );
                                         })}
                                     </div>

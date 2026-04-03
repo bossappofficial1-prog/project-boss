@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, updateServiceOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController, cancelOrderByCustomerController, confirmOrderByCustomerController } from "../controller/order.controller";
+import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, updateServiceOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController, cancelOrderByCustomerController, confirmOrderByCustomerController, getOrdersListController } from "../controller/order.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOrderSchema, updateOrderStatusSchema, updateServiceQueueStatusSchema, customerCancelOrderSchema, customerConfirmOrderSchema } from "../schemas/order.schema";
 import { authorize, protect, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
@@ -41,6 +41,9 @@ orderRouter.post("/customer/:id/confirm", validateSchema(customerConfirmOrderSch
 
 // SECURITY FIX: Add rate limiting for owner order management
 // orderRouter.use(orderManagementLimiter);
+
+// Rute yang dilindungi untuk melihat semua pesanan
+orderRouter.get("/", protect, authorizeOwnerOrCashier, getOrdersListController);
 
 // Rute yang dilindungi untuk melihat detail pesanan
 orderRouter.get("/:id", getOrderByIdController);

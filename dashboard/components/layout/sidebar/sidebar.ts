@@ -11,6 +11,7 @@ import {
   LayoutDashboardIcon,
   StoreIcon,
   UsersIcon,
+  UserCheck,
 } from "lucide-react";
 
 interface MenuItem {
@@ -97,35 +98,28 @@ export const MENU_GROUPS: MenuGroup[] = [
       },
     ],
   },
-  // {
-  //   label: "Transaksi",
-  //   items: [
-  //     {
-  //       id: "pos",
-  //       name: "Point of Sale",
-  //       href: "/owner/dashboard/pos",
-  //       icon: ShoppingBag,
-  //     },
-  //     {
-  //       id: "pob",
-  //       name: "Point of Buy",
-  //       href: "/owner/dashboard/pob",
-  //       icon: ShoppingBag,
-  //     },
-  //     {
-  //       id: "orders",
-  //       name: "Lihat Pesanan",
-  //       href: "/owner/dashboard/orders",
-  //       icon: ShoppingBag,
-  //     },
-  //     {
-  //       id: "queue",
-  //       name: "Antrian",
-  //       href: "/owner/dashboard/queue",
-  //       icon: Clock,
-  //     },
-  //   ],
-  // },
+  {
+    label: "Manajemen Pelanggan",
+    items: [
+      {
+        id: "customers",
+        name: "Data Pelanggan",
+        href: "/owner/dashboard/customers",
+        icon: UserCheck,
+      },
+    ],
+  },
+  {
+    label: "Transaksi",
+    items: [
+      {
+        id: "orders",
+        name: "Daftar Pesanan",
+        href: "/owner/dashboard/orders",
+        icon: ShoppingBag,
+      },
+    ],
+  },
   {
     label: "Keuangan",
     items: [

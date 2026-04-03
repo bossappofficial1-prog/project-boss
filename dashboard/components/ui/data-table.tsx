@@ -442,7 +442,7 @@ export function DataTable<TData, TValue>({
               checked={table.getIsAllPageRowsSelected()}
               onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
               aria-label="Select all"
-              className="translate-y-[2px]"
+              className="translate-y-0.5"
             />
           ),
           cell: ({ row }) => (
@@ -450,7 +450,7 @@ export function DataTable<TData, TValue>({
               checked={row.getIsSelected()}
               onCheckedChange={(value) => row.toggleSelected(!!value)}
               aria-label="Select row"
-              className="translate-y-[2px]"
+              className="translate-y-0.5"
             />
           ),
           enableSorting: false,
@@ -857,7 +857,7 @@ export function DataTable<TData, TValue>({
                       const nextValue = event.target.value;
                       setGlobalFilterValue(nextValue);
                     }}
-                    className="pl-8 w-full h-9 sm:w-[250px]"
+                    className="pl-8 w-full h-9 sm:w-62.5"
                   />
                 </div>
               )}
@@ -876,7 +876,7 @@ export function DataTable<TData, TValue>({
                         setGlobalFilterValue(value);
                       }
                     }}
-                    className="pl-8 w-full sm:w-[200px]"
+                    className="pl-8 w-full sm:w-50"
                   />
                 </div>
               )}
@@ -1212,7 +1212,7 @@ export function DataTable<TData, TValue>({
                     const newSize = Number(value);
                     table.setPageSize(newSize);
                   }}>
-                  <SelectTrigger className="h-8 w-[70px]">
+                  <SelectTrigger className="h-8 w-17.5">
                     <SelectValue placeholder={table.getState().pagination.pageSize} />
                   </SelectTrigger>
                   <SelectContent side="top">

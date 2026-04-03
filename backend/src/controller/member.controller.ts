@@ -8,6 +8,7 @@ import {
   CreateMemberInput,
   IncreasePointInput,
   UpdateMemberInput,
+  getMemberByIdQuerySchema,
   getMembersByOutletQuerySchema,
 } from "../schemas/member.schema";
 import { MemberRepository } from "../repositories/member.repository";
@@ -36,7 +37,9 @@ export const getMembersByOutletController = asyncHandler(async (req: Request, re
 
 export const getMemberByIdController = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const member = await MemberService.getMemberById(id);
+  const query = getMemberByIdQuerySchema.parse(req.query);
+
+  const member = await MemberService.getMemberById(id, query.outletId);
 
   if (!member) {
     throw new AppError("Member tidak ditemukan", HttpStatus.NOT_FOUND);

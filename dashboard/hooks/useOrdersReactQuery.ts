@@ -2,12 +2,23 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apis/base';
 import { orderApi } from '@/lib/apis/order';
 
+export interface Order {
+    id: string;
+    customerName: string | null;
+    customerPhone: string | null;
+    orderStatus: 'AWAITING_PAYMENT' | 'PROCESSING' | 'CONFIRMED' | 'READY' | 'ON_GOING' | 'COMPLETED' | 'CANCELLED';
+    paymentStatus: 'PENDING' | 'PROOF_SUBMITTED' | 'AWAITING_VERIFICATION' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'EXPIRED' | 'CANCELLED' | 'REJECTED_MANUAL';
+    totalAmount: number;
+    createdAt: string;
+}
+
 export interface OrderFilters {
     page?: number;
     limit?: number;
     status?: string;
     search?: string;
     outletId?: string;
+    paymentStatus?: string;
 }
 
 export interface CreateOrderData {
@@ -35,6 +46,7 @@ export const useOrders = (filters?: OrderFilters) => {
             if (filters?.page) params.append('page', filters.page.toString());
             if (filters?.limit) params.append('limit', filters.limit.toString());
             if (filters?.status) params.append('status', filters.status);
+            if (filters?.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
             if (filters?.search) params.append('search', filters.search);
             if (filters?.outletId) params.append('outletId', filters.outletId);
 

@@ -19,6 +19,7 @@ export type SidebarItem = {
     id: string
     icon?: LucideIcon
     badge?: string
+    status?: "beta"
     isActive?: boolean // Untuk default open state pada submenu
     items?: SidebarItem[] // Recursive structure for submenus
 }
@@ -87,17 +88,6 @@ export const sidebarData: {
                             id: "businesses-all",
                             url: `/admin/businesses/all`
                         },
-                        {
-                            title: "Merchant Baru",
-                            id: "businesses-new",
-                            badge: "New",
-                            url: `/admin/businesses/new`
-                        },
-                        {
-                            title: "Status Suspend",
-                            id: "businesses-suspend",
-                            url: `/admin/businesses/suspend`
-                        },
                     ],
                 },
                 {
@@ -117,13 +107,7 @@ export const sidebarData: {
                     icon: CreditCard,
                     url: ``,
                     items: [
-                        {
-                            title: "Monitoring Paket",
-                            id: "subs-monitor",
-                            url: `/admin/subscriptions/monitor`
-                        },
-                        { title: "Akan Expire", id: "subs-expiring", badge: "8", url: `/admin/subscriptions/expiring` },
-                        { title: "Paket Harga", id: "subs-plans", badge: "8", url: `/admin/subscriptions/plans` },
+                        { title: "Paket Harga", id: "subs-plans", url: `/admin/subscriptions/plans` },
                     ],
                 },
                 {
@@ -133,8 +117,18 @@ export const sidebarData: {
                     icon: Wallet,
                     items: [
                         { title: "Subscription Revenue", id: "income-subs", url: `/admin/platform-income/subs` },
-                        { title: "App Fees (2%)", id: "income-fees", url: `/admin/platform-income/fees` }, // Dari Order.appFee
                     ]
+                },
+            ],
+        },
+        {
+            label: "Reports",
+            items: [
+                {
+                    title: "Financial Reports",
+                    id: "reports",
+                    icon: BarChart3,
+                    url: `/admin/reports`
                 },
             ],
         },
@@ -163,7 +157,20 @@ export const sidebarData: {
                     title: "Server Status",
                     id: "server",
                     icon: Server,
+                    status: "beta",
                     url: `/admin/server`,
+                }
+            ],
+        },
+        {
+            label: "System Health",
+            items: [
+                {
+                    title: "System Monitor",
+                    id: "system",
+                    icon: ShieldCheck,
+                    status: "beta",
+                    url: `/admin/system`,
                 }
             ],
         },
@@ -174,6 +181,7 @@ export const sidebarData: {
                     title: "Platform Config",
                     id: "settings",
                     icon: Settings,
+                    status: "beta",
                     url: `/admin/settings`,
                 },
             ],

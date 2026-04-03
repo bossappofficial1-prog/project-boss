@@ -31,11 +31,11 @@ export class MemberService {
     };
   }
 
-  static async getMemberById(id: string) {
-    const member = await MemberRepository.findById(id);
+  static async getMemberById(id: string, outletId?: string) {
+    const member = await MemberRepository.findById(id, outletId);
     if (!member) return null;
 
-    const totalPoint = await MemberRepository.getTotalPoint(id);
+    const totalPoint = await MemberRepository.getTotalPoint(id, outletId);
     return { ...member, totalPoint };
   }
 

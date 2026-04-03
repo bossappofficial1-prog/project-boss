@@ -14,9 +14,10 @@ import {
   getGoodsOrdersByOutletService,
   getServiceQueueByOutletService,
   getOrderByCustomerPhoneService,
-  cancelOrderByCustomerService,
   confirmOrderByCustomerService,
   getOrderReceiptService,
+  getOrdersListService,
+  cancelOrderByCustomerService,
 } from "../service/order.service";
 import { generateReceiptHtml } from "../service/helpers/receipt-template";
 
@@ -249,34 +250,6 @@ export const getOrderNotificationDataController = asyncHandler(
       return ResponseUtil.notFound(res, "Order not found");
     }
 
-    // Format data untuk notifikasi WhatsApp
-    // const notificationData = {
-    //     id: order.id,
-    //     totalAmount: order.totalAmount,
-    //     paymentMethod: 'Online', // Default for now
-    //     updatedAt: order.updatedAt.toISOString(),
-    //     guestCustomer: {
-    //         name: order.guestCustomer.name,
-    //         phone: order.guestCustomer.phone
-    //     },
-    //     outlet: {
-    //         name: order.outlet.name,
-    //         address: order.outlet.address,
-    //         phone: order.outlet.phone,
-    //         whatsapp: order.outlet.phone
-    //     },
-    //     items: order.items.map(item => ({
-    //         quantity: item.quantity,
-    //         product: {
-    //             name: item.product.name,
-    //             type: item.product.type
-    //         }
-    //     })),
-    //     bookingSlot: order.bookingSlot ? {
-    //         dateTime: order.bookingSlot.startTime.toISOString()
-    //     } : undefined
-    // };
-
     return ResponseUtil.success(res, {});
   },
 );
@@ -300,3 +273,24 @@ export const confirmOrderByCustomerController = asyncHandler(
     return ResponseUtil.success(res, order);
   },
 );
+
+export const getOrdersListController = asyncHandler(async (req: Request, res: Response) => {
+  const { outletId, status, paymentStatus, search, page, limit } = req.query as any;
+
+  const result = await getOrdersListService(outletId, {
+    status,
+    paymentStatus,
+    search,
+    page: page ? parseInt(page) : 1,
+    limit: limit ? parseInt(limit) : 10,
+  });
+
+  return ResponseUtil.paginated(
+    res,
+    result.data,
+    result.page,
+    result.limit,
+    result.total,
+    HttpStatus.OK
+  );
+});

@@ -9,6 +9,21 @@ export class ServerMonitorService {
     private lastDbCheck = 0;
     private cachedDbStatus = { status: 'operational', latency: '0ms' };
 
+    private rps = 0;
+
+    constructor() {
+        // Calculate RPS globally every 1 second
+        setInterval(() => {
+            const now = Date.now();
+            const deltaSeconds = (now - this.lastThroughputCheck) / 1000;
+            if (deltaSeconds > 0) {
+                this.rps = Number((this.requestCount / deltaSeconds).toFixed(1));
+            }
+            this.requestCount = 0;
+            this.lastThroughputCheck = now;
+        }, 1000);
+    }
+
     private getCpuTick() {
         const cpus = os.cpus()
         let user = 0, nice = 0, sys = 0, idle = 0, irq = 0
@@ -53,14 +68,7 @@ export class ServerMonitorService {
 
 
     public getThroughput() {
-        const now = Date.now();
-        const deltaSeconds = (now - this.lastThroughputCheck) / 1000;
-        const rps = (this.requestCount / deltaSeconds).toFixed(1);
-
-        this.requestCount = 0;
-        this.lastThroughputCheck = now;
-
-        return rps;
+        return this.rps.toFixed(1);
     }
 
     public incrementRequest() {
@@ -137,12 +145,6 @@ export class ServerMonitorService {
 
         this.lastDbCheck = Date.now();
         return this.cachedDbStatus;
-    }
-
-    public getThroughputAndReset() {
-        const currentRps = (this.requestCount / 2).toFixed(1);
-        this.requestCount = 0;
-        return currentRps;
     }
 }
 

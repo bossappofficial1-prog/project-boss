@@ -28,10 +28,17 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
     }
 
     await PlanLimitService.assertCanCreateOutlet(business.id);
-    const outlet = await OutletRepository.create(data);
-    await EventPublisher.publishOutletCreated(outlet);
-    await PlanLimitService.invalidateUsageCache(business.id);
-    return outlet;
+    try {
+        const outlet = await OutletRepository.create(data);
+        await EventPublisher.publishOutletCreated(outlet);
+        await PlanLimitService.invalidateUsageCache(business.id);
+        return outlet;
+    } catch (error: any) {
+        if (error.code == 'P2002') {
+            throw new AppError("Slug outlet sudah terdaftar. Silahkan gunakan nama outlet yang berbeda.", HttpStatus.BAD_REQUEST);
+        }
+        throw error;
+    }
 }
 
 export async function getOutletSlugsService() {

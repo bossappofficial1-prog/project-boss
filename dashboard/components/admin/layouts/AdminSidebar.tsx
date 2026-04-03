@@ -44,7 +44,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const [logoutLoading, setLogoutLoading] = React.useState(false)
 
     // Helper function untuk cek apakah URL aktif
-    const isActive = (url: string) => {
+    const isPathActive = (url: string) => {
         return pathname === url || pathname.startsWith(`${url}/`)
     }
 
@@ -89,9 +89,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                         // Cek apakah item memiliki submenu
                                         const hasChildren = item.items && item.items.length > 0
                                         // Cek apakah parent aktif (jika salah satu child aktif)
-                                        const isChildActive = hasChildren && item.items?.some((child) => isActive(child.url))
+                                        const isChildActive = hasChildren && item.items?.some((child) => isPathActive(child.url))
                                         // State aktif untuk item biasa
-                                        const isItemActive = !hasChildren && isActive(item.url)
+                                        const isItemActive = !hasChildren && isPathActive(item.url)
 
                                         return hasChildren ? (
                                             <Collapsible
@@ -109,6 +109,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                                         >
                                                             {item.icon && <item.icon />}
                                                             <span>{item.title}</span>
+                                                            {item.status === "beta" && (
+                                                                <SidebarMenuBadge className="bg-amber-100 text-amber-700 border border-amber-200">
+                                                                    Beta
+                                                                </SidebarMenuBadge>
+                                                            )}
                                                             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                                                         </SidebarMenuButton>
                                                     </CollapsibleTrigger>
@@ -118,11 +123,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                                                 <SidebarMenuSubItem key={subItem.title}>
                                                                     <SidebarMenuSubButton
                                                                         asChild
-                                                                        isActive={isActive(subItem.url)}
+                                                                        isActive={isPathActive(subItem.url)}
                                                                         className="hover:bg-sidebar-accent/50 active:bg-sidebar-accent transition-colors"
                                                                     >
                                                                         <Link href={subItem.url}>
                                                                             <span>{subItem.title}</span>
+                                                                            {subItem.status === "beta" && (
+                                                                                <SidebarMenuBadge className="bg-amber-100 text-amber-700 border border-amber-200 ml-auto">
+                                                                                    Beta
+                                                                                </SidebarMenuBadge>
+                                                                            )}
                                                                         </Link>
                                                                     </SidebarMenuSubButton>
                                                                 </SidebarMenuSubItem>
@@ -142,6 +152,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                                     <Link href={item.url}>
                                                         {item.icon && <item.icon />}
                                                         <span>{item.title}</span>
+                                                        {item.status === "beta" && (
+                                                            <SidebarMenuBadge className="bg-amber-100 text-amber-700 border border-amber-200">
+                                                                Beta
+                                                            </SidebarMenuBadge>
+                                                        )}
                                                         {item.badge && (
                                                             <SidebarMenuBadge className="bg-primary/10 text-primary font-medium border border-primary/20">
                                                                 {item.badge}
