@@ -14,7 +14,8 @@ COPY . .
 RUN bunx prisma generate \
     && bun run build \
     && rm -rf node_modules \
-    && bun install --production --frozen-lockfile
+    && bun install --production --frozen-lockfile \
+    && bunx prisma generate
 
 # --- Stage 2: Runner (Image Final) ---
 FROM oven/bun:1-alpine AS runner
