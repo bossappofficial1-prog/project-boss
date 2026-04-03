@@ -205,12 +205,9 @@ jobs:
           script: |
             cd ~/projects/boss-project/prod
             
-            # Deteksi dan init Docker Swarm otomatis jika VPS belum berada di mode Swarm
             docker info | grep -q "Swarm: active" || docker swarm init
             
             echo "Deploying to Docker Swarm with Zero-Downtime Rolling Updates..."
-            # Perintah dewa ini akan otomatis mengecek digest/SHA image terbaru di registry
-            # dan HANYA melakukan update rolling secara zero-downtime terhadap service yang imagenya berubah!
             docker stack deploy -c docker-compose.prod.yml --with-registry-auth --resolve-image always bossapp
             
             echo "Docker Swarm Stack deployed successfully. Rolling updates happen seamlessly in the background."
