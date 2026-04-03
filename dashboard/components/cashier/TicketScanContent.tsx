@@ -23,6 +23,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useOutletContext } from "../providers/CashierOutletProvider";
+import { useCashierContext } from "@/app/cashier/layout";
 
 const STATUS_CONFIG = {
   VALID: {
@@ -179,6 +181,7 @@ function TicketResult({
 export default function TicketScanContent() {
   const [inputCode, setInputCode] = useState("");
   const [searchCode, setSearchCode] = useState("");
+  const { outletData } = useCashierContext()
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -212,7 +215,7 @@ export default function TicketScanContent() {
   const handleRedeem = useCallback(async () => {
     if (!searchCode) return;
     try {
-      const result = await redeemMutation.mutateAsync(searchCode);
+      const result = await redeemMutation.mutateAsync({ code: searchCode, outletId: outletData?.id });
       toast.success(`Tiket berhasil di-redeem untuk ${result.customerName || "pelanggan"}`);
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || "Gagal redeem tiket";

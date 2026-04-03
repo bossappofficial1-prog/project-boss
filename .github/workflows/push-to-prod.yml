@@ -65,6 +65,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-backend:production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             SMTP_HOST=${{ vars.SMPT_HOST }}
             SMTP_PORT=${{ vars.SMTP_PORT }}
@@ -85,6 +87,8 @@ jobs:
           file: ./consumer/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-consumer:production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             SMTP_HOST=${{ vars.SMPT_HOST }}
             SMTP_PORT=${{ vars.SMTP_PORT }}
@@ -101,6 +105,8 @@ jobs:
           file: ./frontend-customer/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-frontend-customer:production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             NEXT_PUBLIC_REMOTE_PATTERNS=${{ vars.NEXT_PUBLIC_REMOTE_PATTERNS }}
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
@@ -120,6 +126,8 @@ jobs:
           file: ./dashboard/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-dashboard:production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             NEXT_PUBLIC_APP_URL=https://dashboard.bossapp.id
             NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_URL }}/api/v1
@@ -136,6 +144,8 @@ jobs:
           file: ./profile/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USER }}/project-profile:production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Send Telegram Notification (Build)
         if: always()
@@ -186,8 +196,7 @@ jobs:
           source: "./docker-compose.prod.yml"
           target: "~/projects/boss-project/prod"
 
-      - name: Pull Backend Image
-        if: needs.build_and_push.outputs.backend_changed == 'true'
+      - name: Setup and Deploy Services via Docker Swarm
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.PROD_VPS_HOST }}
@@ -195,77 +204,17 @@ jobs:
           key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/prod
-            echo "Pulling backend image..."
-            docker compose -f docker-compose.prod.yml pull backend
-
-      - name: Pull Consumer Image
-        if: needs.build_and_push.outputs.consumer_changed == 'true'
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PROD_VPS_HOST }}
-          username: ${{ secrets.PROD_VPS_SSH_USER }}
-          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/projects/boss-project/prod
-            echo "Pulling consumer image..."
-            docker compose -f docker-compose.prod.yml pull consumer
-
-      - name: Pull Frontend Customer Image
-        if: needs.build_and_push.outputs.frontend_customer_changed == 'true'
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PROD_VPS_HOST }}
-          username: ${{ secrets.PROD_VPS_SSH_USER }}
-          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/projects/boss-project/prod
-            echo "Pulling frontend-customer image..."
-            docker compose -f docker-compose.prod.yml pull frontend-customer
-
-      - name: Pull Dashboard Image
-        if: needs.build_and_push.outputs.dashboard_changed == 'true'
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PROD_VPS_HOST }}
-          username: ${{ secrets.PROD_VPS_SSH_USER }}
-          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/projects/boss-project/prod
-            echo "Pulling dashboard image..."
-            docker compose -f docker-compose.prod.yml pull dashboard
-
-      - name: Pull Profile Image
-        if: needs.build_and_push.outputs.profile_changed == 'true'
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PROD_VPS_HOST }}
-          username: ${{ secrets.PROD_VPS_SSH_USER }}
-          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/projects/boss-project/prod
-            echo "Pulling profile image..."
-            docker compose -f docker-compose.prod.yml pull profile
-
-      - name: Start Docker Compose Services
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PROD_VPS_HOST }}
-          username: ${{ secrets.PROD_VPS_SSH_USER }}
-          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/projects/boss-project/prod
-            echo "Starting Docker Compose services..."
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            echo "Docker Compose started successfully"
-
-      - name: Cleanup Unused Docker Images
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PROD_VPS_HOST }}
-          username: ${{ secrets.PROD_VPS_SSH_USER }}
-          key: ${{ secrets.PROD_VPS_SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/projects/boss-project/prod
+            
+            # Deteksi dan init Docker Swarm otomatis jika VPS belum berada di mode Swarm
+            docker info | grep -q "Swarm: active" || docker swarm init
+            
+            echo "Deploying to Docker Swarm with Zero-Downtime Rolling Updates..."
+            # Perintah dewa ini akan otomatis mengecek digest/SHA image terbaru di registry
+            # dan HANYA melakukan update rolling secara zero-downtime terhadap service yang imagenya berubah!
+            docker stack deploy -c docker-compose.prod.yml --with-registry-auth --resolve-image always bossapp
+            
+            echo "Docker Swarm Stack deployed successfully. Rolling updates happen seamlessly in the background."
+            
             echo "Cleaning up unused Docker images..."
             docker image prune -af
             echo "Docker image cleanup completed"

@@ -1,39 +1,39 @@
 services:
   redis:
     image: redis:7-alpine
-    container_name: project-boss-redis-dev
-    restart: always
+    deploy:
+      restart_policy:
+        condition: any
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
     ports:
-      - "6379"
+      - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: project-boss-rabbitmq-dev
-    restart: always
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672"
-      - "15672"
+      - "5672:5672"
+      - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
       start_period: 30s
+    deploy:
+      restart_policy:
+        condition: any
     networks:
       - default
 
   backend:
     image: ${DOCKER_USER:-pitok}/project-backend:production
-    pull_policy: always
-    container_name: bossapp-backend
     env_file:
       - .env.backend
     environment:
@@ -45,7 +45,7 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       PORT: 1234
     ports:
-      - "1234"
+      - "1234:1234"
     volumes:
       - ./uploads:/app/uploads
     healthcheck:
@@ -54,86 +54,131 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
     networks:
       - default
 
   consumer:
     image: ${DOCKER_USER:-pitok}/project-consumer:production
-    pull_policy: always
-    container_name: consumer-dev
     env_file:
       - .env.consumer
     environment:
       - BACKEND_API_URL=http://backend:1234/api/v1
       - RABBITMQ_URL=amqp://rabbitmq
       - NODE_ENV=production
-
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 5s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    networks:
+      - default
 
   frontend-customer:
     image: ${DOCKER_USER:-pitok}/project-frontend-customer:production
-    pull_policy: always
-    container_name: frontend-customer-dev
-    restart: always
     environment:
       NODE_ENV: production
       SERVER_API_URL: https://api.bossapp.id/api/v1
-
-    depends_on:
-      backend:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     ports:
-      - "3000"
+      - "3000:3000"
     env_file:
       - .env.frontend-customer
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    networks:
+      - default
 
   dashboard:
     image: ${DOCKER_USER:-pitok}/project-dashboard:production
-    pull_policy: always
-    container_name: project-boss-dashboard-dev
     ports:
-      - "3010"
+      - "3010:3010"
     environment:
       NODE_ENV: production
-    depends_on:
-      backend:
-        condition: service_healthy
     env_file:
       - .env.dashboard
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
     networks:
       - default
 
   profile:
     image: ${DOCKER_USER:-pitok}/project-profile:production
-    pull_policy: always
-    container_name: bossapp-profile
-    restart: always
     ports:
       - "3020:80"
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
     networks:
       - default
 
   nginx-proxy-manager:
     image: "jc21/nginx-proxy-manager:latest"
-    container_name: nginx_proxy_manager
-    restart: unless-stopped
     ports:
-      - "80:80" # Port HTTP publik
-      - "81:81" # Port Dasbor Web Admin NPM
-      - "443:443" # Port HTTPS publik
+      - "80:80"
+      - "81:81"
+      - "443:443"
     volumes:
       - ./npm/data:/data
       - ./npm/letsencrypt:/etc/letsencrypt
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
     networks:
       - default
-    depends_on:
-      - backend
-      - frontend-customer
-      - dashboard
-      - profile
+
+networks:
+  default:
+    driver: overlay
