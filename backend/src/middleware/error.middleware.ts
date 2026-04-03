@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ResponseUtil } from "../utils/response";
-import logger from "../utils/winston.logger";
+import { logger } from "../utils/pino.logger";
 import { AppError } from "../errors/app-error";
 // import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
@@ -81,7 +81,7 @@ export const errorHandler = (
     }
 
     // ─── Log Error ──────────────────────────────────────────────────
-    logger.error('Unhandled Error', {
+    logger.error({
         message: err.message,
         stack: err.stack,
         method: req.method,
@@ -89,7 +89,7 @@ export const errorHandler = (
         ip: req.ip,
         userAgent: req.get('User-Agent'),
         statusCode,
-    });
+    }, 'Unhandled Error');
 
     if (message.includes("Email sudah terdaftar dengan akun lain.") && statusCode === HttpStatus.CONFLICT) {
         const clientUrl = config.CLIENT_URL[0]?.trim() || 'http://localhost:3010';

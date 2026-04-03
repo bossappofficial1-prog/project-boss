@@ -9,7 +9,7 @@ import compression from "compression";
 import { errorHandler, notFound } from "./middleware/error.middleware";
 import { App } from "./constants/app";
 import apiRouter from "./routes/index.routes";
-import morgan from "morgan";
+import { requestLogger } from "./middleware/logging.middleware";
 import path from "path";
 import passport from "./config/passport";
 import internalApiRouter from './routes/internal-api.route';
@@ -84,10 +84,8 @@ app.use(passport.session());
 app.use(traffictMiddleware)
 app.use(compression());
 
-// Middleware logging permintaan (Morgan)
-if (config.NODE_ENV === "development") {
-  app.use(morgan("dev"));
-}
+// HTTP request logger (pino-http) — non-blocking, logs after response is sent
+app.use(requestLogger);
 
 // Serve static files (uploaded images) with CORP header explicitly set
 app.use(

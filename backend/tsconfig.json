@@ -6,10 +6,17 @@
     ],
     "module": "nodenext",
     "moduleResolution": "nodenext",
+    "types": [
+      "bun"
+    ],
     "typeRoots": [
       "./node_modules/@types",
       "./src/types"
     ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "rootDir": "./",
     "outDir": "./dist",
     "resolveJsonModule": true,

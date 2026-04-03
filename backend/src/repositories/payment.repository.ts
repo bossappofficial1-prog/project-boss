@@ -439,6 +439,24 @@ export class PaymentRepository {
     });
   }
 
+  static async createTransaction(data: {
+    orderId: string;
+    amount: number;
+    status: PaymentStatus;
+    externalId: string;
+    paymentUrl?: string | null;
+    expiresAt: Date;
+  }) {
+    return db.transaction.create({ data });
+  }
+
+  static async findTransactionWithOrder(orderId: string) {
+    return db.transaction.findFirst({
+      where: { orderId },
+      include: { order: { include: { items: { include: { product: true } } } } },
+    });
+  }
+
   private static resolveProductPrice(product: ProductWithDetails): number {
     if (product.type === "GOODS") {
       return product.goods?.sellingPrice ?? 0;

@@ -24,6 +24,7 @@ import {
     ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCashierContext } from "@/app/cashier/layout";
 
 const STATUS_CONFIG: Record<
     string,
@@ -79,6 +80,9 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
 }
 
 export default function TicketScanContent() {
+    const { outletData } = useCashierContext();
+    const outletId = outletData?.id;
+
     const [searchCode, setSearchCode] = useState("");
     const [activeCode, setActiveCode] = useState("");
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -103,7 +107,7 @@ export default function TicketScanContent() {
     const handleRedeem = useCallback(async () => {
         if (!activeCode) return;
         try {
-            const result = await redeemMutation.mutateAsync(activeCode);
+            const result = await redeemMutation.mutateAsync({ code: activeCode, outletId });
             toast.success(`Tiket ${result.code} berhasil di-redeem!`);
             setConfirmOpen(false);
         } catch (err: any) {

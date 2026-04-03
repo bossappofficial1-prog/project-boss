@@ -1,20 +1,4 @@
-import { Prisma } from "@prisma/client";
 import { db } from "../config/prisma";
-
-type HomeOutletRow = {
-    id: string;
-    name: string;
-    description: string | null;
-    address: string | null;
-    phone: string | null;
-    image: string | null;
-    latitude: number | null;
-    longitude: number | null;
-    slug: string;
-    isOpen: boolean;
-    business_name: string | null;
-    orders: number;
-};
 
 export class HomeRepository {
     static async countVerifiedUmkm() {
@@ -55,9 +39,9 @@ export class HomeRepository {
                                   -- DOW mengembalikan 0-6 (Minggu-Sabtu), disesuaikan dengan timezone WIB
                                   AND oh."dayOfWeek" = EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::int
                                   -- Bandingkan jam sekarang (UTC) dengan jam buka/tutup di database (UTC)
-                                  AND (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::time 
-                                      BETWEEN (oh."openTime" AT TIME ZONE 'UTC')::time 
-                                      AND (oh."closeTime" AT TIME ZONE 'UTC')::time
+                                  AND (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::time 
+                                      BETWEEN (oh."openTime" AT TIME ZONE 'Asia/Jakarta')::time 
+                                      AND (oh."closeTime" AT TIME ZONE 'Asia/Jakarta')::time
                                 LIMIT 1
                             ), 
                             false
@@ -100,9 +84,9 @@ export class HomeRepository {
                                 WHERE oh."outletId" = o.id
                                   AND oh."isOpen" = true
                                   AND oh."dayOfWeek" = EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::int
-                                  AND (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::time 
-                                      BETWEEN (oh."openTime" AT TIME ZONE 'UTC')::time 
-                                      AND (oh."closeTime" AT TIME ZONE 'UTC')::time
+                                  AND (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::time 
+                                      BETWEEN (oh."openTime" AT TIME ZONE 'Asia/Jakarta')::time 
+                                      AND (oh."closeTime" AT TIME ZONE 'Asia/Jakarta')::time
                                 LIMIT 1
                             ), 
                             false

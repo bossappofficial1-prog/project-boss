@@ -1,16 +1,20 @@
-import { Request, Response, Router } from "express";
+import { Router } from "express";
 import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, updateServiceOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController, cancelOrderByCustomerController, confirmOrderByCustomerController } from "../controller/order.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOrderSchema, updateOrderStatusSchema, updateServiceQueueStatusSchema, customerCancelOrderSchema, customerConfirmOrderSchema } from "../schemas/order.schema";
 import { authorize, protect, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
-import { orderCreationLimiter, orderManagementLimiter } from "../middleware/order-rate-limit.middleware";
+import { orderCreationLimiter } from "../middleware/order-rate-limit.middleware";
 import { validateGuestCustomer, validateBusinessHours, validateOrderFrequency } from "../middleware/guest-validation.middleware";
-import { createPaymentController } from "../controller/payment.controller";
+import { PaymentService } from "../service/payment.service";
+import { PaymentController } from "../controller/payment.controller";
 import { CreatePaymentSchema } from "../schemas/payment-v2.schema";
 import { orderExpiryJob } from "../jobs/payment-expiry.job";
 
 const orderRouter = Router();
+
+const paymentService = new PaymentService();
+const paymentController = new PaymentController(paymentService);
 
 // SECURITY FIX: Add comprehensive validation for public guest order creation
 orderRouter.post("/",
@@ -63,7 +67,7 @@ orderRouter.get("/:outletId/queue", protect, authorizeOwnerOrCashier, listServic
 // Endpoint internal untuk consumer mendapatkan data order untuk notifikasi
 orderRouter.get("/:id/notification-data", getOrderNotificationDataController);
 
-orderRouter.post("/create-payment", validateBusinessHours, validateSchema(CreatePaymentSchema), createPaymentController)
-orderRouter.get("/:orderId/payment", createPaymentController)
+orderRouter.post("/create-payment", validateBusinessHours, validateSchema(CreatePaymentSchema), paymentController.createPayment)
+orderRouter.get("/:orderId/payment", paymentController.getPaymentOrder)
 
 export default orderRouter;

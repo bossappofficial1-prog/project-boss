@@ -82,13 +82,13 @@ export class TicketRepository {
     return { codes, total, page, limit };
   }
 
-  static async redeem(code: string, staffId: string) {
+  static async redeem(code: string, staffId?: string) {
     return db.ticketCode.update({
       where: { code },
       data: {
         status: TicketCodeStatus.REDEEMED,
         redeemedAt: new Date(),
-        redeemedById: staffId,
+        ...(staffId ? { redeemedById: staffId } : {}),
       },
     });
   }

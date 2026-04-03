@@ -25,7 +25,7 @@ export const Messages = {
     // Business & Outlet
     BUSINESS_NOT_FOUND: 'Bisnis tidak ditemukan',
     OUTLET_NOT_FOUND: 'Outlet tidak ditemukan',
-    OUTLET_CLOSED: 'Outlet sedang tutup',
+    OUTLET_CLOSED: 'Mohon maaf, saat ini outlet sedang ditutup.',
     OPERATING_HOURS_NOT_FOUND: 'Jam operasional outlet tidak ditemukan',
 
     // Produk & Layanan

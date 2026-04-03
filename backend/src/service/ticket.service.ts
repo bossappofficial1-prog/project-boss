@@ -31,7 +31,7 @@ export class TicketService {
     };
   }
 
-  static async redeemTicket(code: string, staffId: string, staffOutletId: string) {
+  static async redeemTicket(code: string, staffId: string | undefined, staffOutletId: string) {
     const ticket = await TicketRepository.findByCode(code);
 
     if (!ticket) {

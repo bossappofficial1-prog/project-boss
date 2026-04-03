@@ -1,4 +1,4 @@
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, PaymentStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 
 export class OrderRepository {
@@ -176,6 +176,42 @@ export class OrderRepository {
     return db.order.update({
       where: { id },
       data: { orderStatus: status },
+    });
+  }
+
+  static async findWithDetails(id: string) {
+    return db.order.findUnique({
+      where: { id },
+      include: {
+        items: { include: { product: true } },
+        guestCustomer: true,
+      },
+    });
+  }
+
+  static async updatePaymentStatus(
+    id: string,
+    orderStatus: OrderStatus,
+    paymentStatus: PaymentStatus
+  ) {
+    return db.order.update({
+      where: { id },
+      data: { orderStatus, paymentStatus },
+    });
+  }
+
+  static async confirmBookingSlotsForOrder(orderId: string) {
+    const serviceItems = await db.orderItem.findMany({
+      where: { orderId, product: { type: "SERVICE" } },
+      select: { id: true },
+    });
+    if (serviceItems.length === 0) return;
+    await db.bookingSlot.updateMany({
+      where: {
+        orderItemId: { in: serviceItems.map((i) => i.id) },
+        status: { not: "BOOKED" },
+      },
+      data: { status: "BOOKED" },
     });
   }
 }

@@ -4,8 +4,6 @@ import { AppError } from "../errors/app-error";
 import { BookingRepository } from "../repositories/booking.repository";
 import { CreateBookingSlotInput, UpdateBookingSlotInput } from "../schemas/booking.schema";
 import { getProductByIdService } from "./product.service";
-import { createMidtransTransactionService } from "./payment.service";
-import { getOrderByIdService } from "./order.service";
 import { db } from "../config/prisma";
 import { Prisma, BookingSlot } from "@prisma/client";
 import { add, set } from "date-fns";

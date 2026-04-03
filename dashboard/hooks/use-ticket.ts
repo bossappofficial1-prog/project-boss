@@ -34,8 +34,8 @@ const verifyTicket = async (code: string): Promise<TicketCodeInfo> => {
   return data.data;
 };
 
-const redeemTicket = async (code: string): Promise<RedeemResult> => {
-  const { data } = await apiClient.post<ApiResponse<RedeemResult>>(`/tickets/redeem/${code}`);
+const redeemTicket = async (code: string, outletId: string): Promise<RedeemResult> => {
+  const { data } = await apiClient.post<ApiResponse<RedeemResult>>(`/tickets/redeem/${code}`, { outletId });
   return data.data;
 };
 
@@ -50,9 +50,9 @@ export const useVerifyTicket = (code: string) => {
 
 export const useRedeemTicket = () => {
   const qc = useQueryClient();
-  return useMutation<RedeemResult, unknown, string>({
-    mutationFn: redeemTicket,
-    onSuccess: (_data, code) => {
+  return useMutation<RedeemResult, unknown, { code: string; outletId: string }>({
+    mutationFn: ({ code, outletId }) => redeemTicket(code, outletId),
+    onSuccess: (_data, { code }) => {
       qc.invalidateQueries({ queryKey: ["ticket-verify", code] });
     },
   });

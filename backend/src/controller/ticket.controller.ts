@@ -13,8 +13,8 @@ export const redeemTicketController = asyncHandler(async (req: Request, res: Res
   const code = req.params.code as string;
 
   const user = req.storedUser as any;
-  const staffId = user.userType === "CASHIER" ? user.id : user.id;
-  const staffOutletId = user.userType === "CASHIER" ? user.outletId : req.body.outletId;
+  const staffId = user.userType === "CASHIER" ? user.id : undefined;
+  const staffOutletId = user.userType === "CASHIER" ? user.outletId : req.body?.outletId;
 
   if (!staffOutletId) {
     return ResponseUtil.badRequest(res, "outletId diperlukan");

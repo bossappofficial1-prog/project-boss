@@ -1,22 +1,35 @@
-import { NextFunction, Request, Response } from "express";
-import logger from "../utils/winston.logger";
+import pinoHttp from "pino-http";
+import { logger } from "../utils/pino.logger";
 
-export function requestLogger(req: Request, res: Response, next: NextFunction) {
-    const start = process.hrtime();
-
-    res.on("finish", () => {
-        const [seconds, nanoseconds] = process.hrtime(start)
-        const responseTime = (seconds * 1000 + nanoseconds / 1e6).toFixed(2)
-
-        logger.info("Incoming request", {
-            methhod: req.method,
-            url: req.originalUrl,
-            ip: req.ip,
-            userAgent: req.get("User-Agent"),
-            statusCode: res.statusCode,
-            responseTime: `${responseTime} ms`
-        })
-    })
-
-    next()
-}
+/**
+ * HTTP request logger middleware menggunakan pino-http.
+ * Log ditulis SETELAH response selesai (non-blocking by design).
+ */
+export const requestLogger = pinoHttp({
+    logger,
+    // Jangan log health check endpoint agar log tidak dipenuhi cek kesehatan
+    autoLogging: {
+        ignore: (req) => req.url === "/health" || req.url === "/",
+    },
+    // Kustom field yang dicatat
+    customLogLevel: (_req, res, err) => {
+        if (err || res.statusCode >= 500) return "error";
+        if (res.statusCode >= 400) return "warn";
+        return "info";
+    },
+    serializers: {
+        req(req) {
+            return {
+                method: req.method,
+                url: req.url,
+                ip: req.remoteAddress,
+                userAgent: req.headers["user-agent"],
+            };
+        },
+        res(res) {
+            return {
+                statusCode: res.statusCode,
+            };
+        },
+    },
+});

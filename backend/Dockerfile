@@ -1,24 +1,23 @@
 # --- Stage 1: Builder (Build + prune production deps) ---
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
-COPY package*.json ./
+COPY package.json bun.lockb* ./
 COPY prisma ./prisma/
 
-RUN npm install
+RUN bun install --frozen-lockfile
 
 COPY . .
 
-RUN npx prisma generate \
-    && npm run build \
-    && npm prune --omit=dev \
-    && npm cache clean --force \
-    && rm -rf /root/.npm /tmp/*
+RUN bunx prisma generate \
+    && bun run build \
+    && rm -rf node_modules \
+    && bun install --production --frozen-lockfile
 
 # --- Stage 2: Runner (Image Final) ---
-FROM node:20-alpine AS runner
+FROM oven/bun:1-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -36,7 +35,7 @@ RUN if [ "$INSTALL_CHROMIUM" = "true" ]; then \
         font-noto-emoji; \
     fi
 
-COPY package*.json ./
+COPY package.json bun.lockb* ./
 
 COPY --from=builder /app/node_modules ./node_modules
 
@@ -52,4 +51,4 @@ VOLUME ["/app/uploads"]
 
 EXPOSE 1234
 
-CMD ["node", "dist/src/index.js"]
+CMD ["bun", "dist/src/index.js"]
