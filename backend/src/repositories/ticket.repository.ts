@@ -45,7 +45,24 @@ export class TicketRepository {
       include: {
         orderItem: {
           include: {
-            product: { select: { name: true, image: true } },
+            product: { 
+              include: { 
+                ticket: {
+                  select: {
+                    eventDate: true,
+                    eventEndDate: true,
+                    venue: true,
+                    venueAddress: true
+                  }
+                }
+              } 
+            },
+            order: {
+              include: {
+                guestCustomer: { select: { name: true } },
+                outlet: { select: { name: true } }
+              }
+            }
           },
         },
         redeemedBy: { select: { id: true, name: true } },

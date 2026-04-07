@@ -81,9 +81,12 @@ export class PosV2Repository {
         customerId: string;
         outletId: string;
         totalAmount: number;
+        discountAmount: number;
+        pointsRedeemed: number;
         cashierId: string | null;
         bookingDate: Date | null;
         hasService: boolean;
+        paymentMethod: string;
         items: Array<{
             productId: string;
             quantity: number;
@@ -101,7 +104,7 @@ export class PosV2Repository {
         }>;
         bookingSlotId?: string;
     }) {
-        const { orderId, customerId, outletId, totalAmount, cashierId, bookingDate, hasService, items, stockUpdates, ticketUpdates, bookingSlotId } = params;
+        const { orderId, customerId, outletId, totalAmount, discountAmount, pointsRedeemed, cashierId, bookingDate, hasService, paymentMethod, items, stockUpdates, ticketUpdates, bookingSlotId } = params;
 
         return db.$transaction(async (tx) => {
             const order = await tx.order.create({
@@ -110,6 +113,8 @@ export class PosV2Repository {
                     guestCustomerId: customerId,
                     outletId,
                     totalAmount,
+                    discountAmount,
+                    pointsRedeemed,
                     midtransFee: 0,
                     appFee: 0,
                     paymentStatus: PaymentStatus.SUCCESS,
@@ -118,6 +123,23 @@ export class PosV2Repository {
                     bookingDate,
                 },
             });
+
+            // Point Redemption: deduct points if any
+            if (pointsRedeemed > 0) {
+                await tx.outletMembership.update({
+                    where: {
+                        guestCustomerId_outletId: {
+                            guestCustomerId: customerId,
+                            outletId,
+                        },
+                    },
+                    data: {
+                        totalPoints: {
+                            decrement: pointsRedeemed,
+                        },
+                    },
+                });
+            }
 
             const createdItems = await Promise.all(
                 items.map((item) =>
@@ -192,10 +214,10 @@ export class PosV2Repository {
             const transaction = await tx.transaction.create({
                 data: {
                     amount: totalAmount,
-                    paymentMethod: "cash",
+                    paymentMethod: paymentMethod === "qris" ? "qris" : "cash",
                     status: PaymentStatus.SUCCESS,
                     isManual: true,
-                    manualMethod: ManualPaymentType.CASH,
+                    manualMethod: paymentMethod === "qris" ? ManualPaymentType.QRIS_OFFLINE : ManualPaymentType.CASH,
                     orderId: order.id,
                 },
             });

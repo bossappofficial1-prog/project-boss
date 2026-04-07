@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            /* Mengatur ukuran kertas ke A4 Landscape */
+            size: A4 landscape;
+            margin: 10mm;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: white;
+            color: #1e293b;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px 2%;
+            /* Gap vertikal 15px, horizontal 2% */
+            justify-content: flex-start;
+        }
+
+        /* --- WRAPPER GARIS BANTU POTONG --- */
+        .ticket-wrapper {
+            width: 49%;
+            /* Tetap muat 2 kolom */
+            padding: 10px;
+            /* Jarak aman dari garis potong ke tiket asli */
+            border: 1px dashed #94a3b8;
+            /* Garis bantu potong */
+            box-sizing: border-box;
+            page-break-inside: avoid;
+            position: relative;
+            background-color: #ffffff;
+        }
+
+        /* Ikon Gunting di Garis Bantu */
+        .ticket-wrapper::before {
+            content: '✂';
+            position: absolute;
+            top: -9px;
+            left: 15px;
+            font-size: 12px;
+            color: #94a3b8;
+            background: white;
+            padding: 0 4px;
+        }
+
+        /* --- TIKET UTAMA --- */
+        .ticket {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* Bagian Utama Tiket (Kiri) */
+        .ticket-main {
+            flex: 1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Bagian Sobekan/QR Code Tiket (Kanan) */
+        .ticket-stub {
+            width: 100px;
+            padding: 15px;
+            background-color: #f8fafc;
+            border-left: 2px dashed #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        /* Efek Lubang Sobekan Tiket */
+        .ticket-stub::before,
+        .ticket-stub::after {
+            content: '';
+            position: absolute;
+            left: -8px;
+            width: 14px;
+            height: 14px;
+            background-color: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+        .ticket-stub::before {
+            top: -8px;
+            border-bottom-color: transparent;
+            border-left-color: transparent;
+            transform: rotate(-45deg);
+        }
+
+        .ticket-stub::after {
+            bottom: -8px;
+            border-top-color: transparent;
+            border-left-color: transparent;
+            transform: rotate(45deg);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .ticket-pass {
+            font-size: 16px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -0.025em;
+            margin: 0;
+            color: #0f172a;
+        }
+
+        .outlet-name {
+            font-size: 9px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin: 2px 0 0 0;
+            text-align: right;
+        }
+
+        .label {
+            font-size: 8px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #94a3b8;
+            margin-bottom: 2px;
+            display: block;
+        }
+
+        .value {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        .qr-code {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 8px;
+        }
+
+        .ticket-code {
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: 900;
+            color: #0f172a;
+            margin: 0;
+            word-break: break-word;
+        }
+
+        .info-footer {
+            font-size: 7px;
+            color: #94a3b8;
+            margin-top: 10px;
+            line-height: 1.2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        {{#each tickets}}
+        <!-- WRAPPER GARIS BANTU POTONG -->
+        <div class="ticket-wrapper">
+            <div class="ticket">
+                <!-- Bagian Kiri (Informasi Lengkap) -->
+                <div class="ticket-main">
+                    <div class="header">
+                        <h1 class="ticket-pass">TICKET PASS</h1>
+                        <p class="outlet-name">{{outletName}}</p>
+                    </div>
+
+                    <div style="margin-bottom: 10px;">
+                        <span class="label">Event / Produk</span>
+                        <p class="value" style="font-size: 14px;">{{productName}}</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col" style="flex: 1.5;">
+                            <span class="label">Tanggal & Waktu</span>
+                            <p class="value">{{eventDate}} &bull; {{eventTime}}</p>
+                        </div>
+                        <div class="col">
+                            <span class="label">Nama Pemegang Tiket</span>
+                            <p class="value" style="font-size: 13px;">{{customerName}}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="label">Venue / Lokasi</span>
+                        <p class="value">{{venue}}</p>
+                    </div>
+                </div>
+
+                <!-- Bagian Kanan (QR Code & ID) -->
+                <div class="ticket-stub">
+                    <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{code}}"
+                        alt="QR">
+                    <span class="label" style="margin-bottom: 0;">ID TIKET</span>
+                    <p class="ticket-code">{{code}}</p>
+                    <p class="info-footer">Tunjukkan bagian ini saat masuk</p>
+                </div>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+</body>
+
+</html>

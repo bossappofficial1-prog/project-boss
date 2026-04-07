@@ -12,8 +12,11 @@ interface OrderCardProps {
     onCancel?: (entry: OrderV2Entry) => void;
     onDetail?: (entry: OrderV2Entry) => void;
     onPrint?: (entry: OrderV2Entry) => void;
+    onPrintTickets?: (entry: OrderV2Entry) => void;
     onViewProof?: (entry: OrderV2Entry) => void;
     isPending?: boolean;
+    isPrinting?: boolean;
+    printingType?: "receipt" | "ticket" | null;
 }
 
 const STATUS_CONFIG: Record<
@@ -83,7 +86,7 @@ function getPaymentLabel(method: string | null): string {
     return PAYMENT_LABELS[normalized] ?? method.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint, onViewProof, isPending }: OrderCardProps) {
+export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint, onPrintTickets, onViewProof, isPending, isPrinting, printingType }: OrderCardProps) {
     const config = STATUS_CONFIG[entry.orderStatus] ?? STATUS_CONFIG.PROCESSING;
     const primary = PRIMARY_ACTIONS[entry.orderStatus];
     const isTerminal = entry.orderStatus === "COMPLETED" || entry.orderStatus === "CANCELLED";
@@ -172,12 +175,24 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                             size="sm"
                             variant="ghost"
                             className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700"
-                            disabled={isPending}
+                            disabled={isPending || isPrinting}
                             onClick={() => onPrint?.(entry)}
                             title="Cetak struk"
                         >
-                            <Printer className="w-3.5 h-3.5" />
+                            <Printer className={`w-3.5 h-3.5 ${isPrinting && printingType === "receipt" ? "animate-pulse" : ""}`} />
                         </Button>
+                        {entry.items.some(item => item.productType === "TICKET") && (
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                                disabled={isPending || isPrinting}
+                                onClick={() => onPrintTickets?.(entry)}
+                                title="Cetak tiket"
+                            >
+                                <Printer className={`w-3.5 h-3.5 ${isPrinting && printingType === "ticket" ? "animate-pulse" : ""}`} />
+                            </Button>
+                        )}
                         <Button
                             size="sm"
                             variant="ghost"
@@ -198,11 +213,24 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                             size="sm"
                             variant="outline"
                             className="h-8 text-xs"
+                            disabled={isPrinting}
                             onClick={() => onPrint?.(entry)}
                         >
-                            <Printer className="w-3 h-3 mr-1" />
-                            Cetak Struk
+                            <Printer className={`w-3 h-3 mr-1 ${isPrinting && printingType === "receipt" ? "animate-pulse" : ""}`} />
+                            {isPrinting && printingType === "receipt" ? "Sedang Memproses..." : "Cetak Struk"}
                         </Button>
+                        {entry.items.some(item => item.productType === "TICKET") && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900/50 dark:text-amber-400"
+                                disabled={isPrinting}
+                                onClick={() => onPrintTickets?.(entry)}
+                            >
+                                <Printer className={`w-3 h-3 mr-1 ${isPrinting && printingType === "ticket" ? "animate-pulse" : ""}`} />
+                                {isPrinting && printingType === "ticket" ? "Sedang Memproses..." : "Cetak Tiket"}
+                            </Button>
+                        )}
                     </div>
                 )}
             </div>

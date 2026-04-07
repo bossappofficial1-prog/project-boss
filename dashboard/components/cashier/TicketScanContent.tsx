@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOutletContext } from "../providers/CashierOutletProvider";
-import { useCashierContext } from "@/app/cashier/layout";
+import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
 
 const STATUS_CONFIG = {
   VALID: {

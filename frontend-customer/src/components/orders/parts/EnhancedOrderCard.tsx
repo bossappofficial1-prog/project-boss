@@ -20,13 +20,14 @@ import {
     AlertCircle,
     Ticket,
     ShoppingBag,
+    Download,
 } from "lucide-react";
 import { useTranslations } from "@/hooks/useI18n";
 import dynamic from "next/dynamic";
 
 const CountdownTimer = dynamic(() => import("./CountdownTimer"), { ssr: false });
 
-export type QuickActionType = "contact" | "cancel" | "reorder" | "confirm" | "pay" | "calendar";
+export type QuickActionType = "contact" | "cancel" | "reorder" | "confirm" | "pay" | "calendar" | "download_ticket";
 
 export interface EnhancedOrderCardProps {
     order: OrderDetail;
@@ -241,6 +242,21 @@ export const EnhancedOrderCard = memo(function EnhancedOrderCard({
                 });
                 break;
             case OrderStatus.COMPLETED:
+                if (hasTicketItems) {
+                    actions.push({
+                        label: t("actions.downloadTicket"),
+                        icon: Download,
+                        action: "download_ticket",
+                        variant: "default",
+                    });
+                }
+                actions.push({
+                    label: t("actions.reorder"),
+                    icon: RefreshCw,
+                    action: "reorder",
+                    variant: "outline",
+                });
+                break;
             case OrderStatus.CANCELLED:
                 actions.push({
                     label: t("actions.reorder"),

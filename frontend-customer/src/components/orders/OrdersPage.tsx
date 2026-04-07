@@ -120,12 +120,23 @@ const triggerCalendarDownload = (order: OrderDetail) => {
     return true;
 };
 
+const triggerBlobDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
+
 const OrderBottomSheet = dynamic(() => import("./parts/OrderBottomSheet"), {
     ssr: false,
 });
 
 export type SortOption = "newest" | "oldest" | "price-high" | "price-low";
-type OrderAction = "contact" | "cancel" | "reorder" | "confirm" | "pay" | "calendar";
+type OrderAction = "contact" | "cancel" | "reorder" | "confirm" | "pay" | "calendar" | "download_ticket";
 
 type CustomerNotificationPayload = {
     orderId?: string;
@@ -502,6 +513,13 @@ export default function OrdersPage() {
                         snackbar.success(t("messages.reorderSuccess"));
                         handleCloseSheet();
                         router.push("/cart");
+                        break;
+                    }
+
+                    case "download_ticket": {
+                        const blob = await Order.downloadTickets(order.id);
+                        triggerBlobDownload(blob, `tiket-${order.id}.pdf`);
+                        snackbar.success(t("messages.downloadTicketSuccess"));
                         break;
                     }
                 }

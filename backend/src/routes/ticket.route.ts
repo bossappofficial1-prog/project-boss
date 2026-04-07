@@ -5,6 +5,7 @@ import {
   redeemTicketController,
   getTicketsByOrderController,
   getTicketCodesByProductController,
+  printOrderTicketsController,
 } from "../controller/ticket.controller";
 
 const ticketRouter = Router();
@@ -14,6 +15,9 @@ ticketRouter.get("/verify/:code", verifyTicketController);
 
 // Public: get ticket codes for an order (customer view)
 ticketRouter.get("/order/:orderId", getTicketsByOrderController);
+
+// Public/Protected: print tickets for an order
+ticketRouter.get("/order/:orderId/print", printOrderTicketsController);
 
 // Protected: get ticket codes by product (owner/cashier view)
 ticketRouter.get("/product/:productId/codes", protect, authorizeOwnerOrCashier, getTicketCodesByProductController);

@@ -12,6 +12,7 @@ import {
   StoreIcon,
   UsersIcon,
   UserCheck,
+  Gift,
 } from "lucide-react";
 
 interface MenuItem {
@@ -106,6 +107,12 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Data Pelanggan",
         href: "/owner/dashboard/customers",
         icon: UserCheck,
+      },
+      {
+        id: "loyalty",
+        name: "Loyalty & Poin",
+        href: "/owner/dashboard/loyalty",
+        icon: Gift,
       },
     ],
   },

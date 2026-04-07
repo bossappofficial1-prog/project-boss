@@ -22,8 +22,11 @@ interface OrderDetailSheetProps {
     onPrimaryAction: (entry: OrderV2Entry, nextStatus: GoodsOrderStatus) => void;
     onCancel: (entry: OrderV2Entry) => void;
     onPrint: (entry: OrderV2Entry) => void;
+    onPrintTickets: (entry: OrderV2Entry) => void;
     onViewProof: (entry: OrderV2Entry) => void;
     isPending: boolean;
+    printingId: string | null;
+    printingType: "receipt" | "ticket" | null;
 }
 
 const STATUS_CONFIG: Record<
@@ -102,8 +105,11 @@ export function OrderDetailSheet({
     onPrimaryAction,
     onCancel,
     onPrint,
+    onPrintTickets,
     onViewProof,
     isPending,
+    printingId,
+    printingType,
 }: OrderDetailSheetProps) {
     if (!entry) return null;
 
@@ -235,11 +241,23 @@ export function OrderDetailSheet({
                         )}
                         <Button
                             variant="outline"
+                            disabled={printingId === entry.id}
                             onClick={() => onPrint(entry)}
                         >
-                            <Printer className="w-4 h-4 mr-2" />
-                            Cetak Struk
+                            <Printer className={`w-4 h-4 mr-2 ${printingId === entry.id && printingType === "receipt" ? "animate-pulse" : ""}`} />
+                            {printingId === entry.id && printingType === "receipt" ? "Sedang Memproses..." : "Cetak Struk"}
                         </Button>
+                        {entry.items.some(item => item.productType === "TICKET") && (
+                            <Button
+                                variant="outline"
+                                className="border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900/50 dark:text-amber-400"
+                                disabled={printingId === entry.id}
+                                onClick={() => onPrintTickets(entry)}
+                            >
+                                <Printer className={`w-4 h-4 mr-2 ${printingId === entry.id && printingType === "ticket" ? "animate-pulse" : ""}`} />
+                                {printingId === entry.id && printingType === "ticket" ? "Sedang Memproses..." : "Cetak Tiket"}
+                            </Button>
+                        )}
                     </div>
                 </div>
             </SheetContent>

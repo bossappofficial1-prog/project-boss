@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateMemberInput, UpdateMemberInput } from "../schemas/member.schema";
 
@@ -7,31 +8,75 @@ export class MemberRepository {
   }
 
   static async findById(id: string, outletId?: string) {
-    return db.guestCustomer.findFirst({
-      where: {
-        id,
-        ...(outletId ? { orders: { some: { outletId } } } : {}),
-      },
-      include: {
-        orders: {
-          ...(outletId ? { where: { outletId } } : {}),
-          orderBy: { createdAt: "desc" },
-          select: {
-            id: true,
-            totalAmount: true,
-            orderStatus: true,
-            paymentStatus: true,
-            createdAt: true,
-            outletId: true,
-          },
-        },
-        memberships: {
-          ...(outletId ? { where: { order: { outletId } } } : {}),
-          include: { order: true },
-          orderBy: { joinedAt: "desc" },
-        },
-      },
-    });
+
+    const outletFilter = outletId
+      ? Prisma.sql`AND o."outletId" = ${outletId}`
+      : Prisma.empty;
+
+    const membershipOutletFilter = outletId
+      ? Prisma.sql`AND mo."outletId" = ${outletId}`
+      : Prisma.empty;
+
+    const guestOutletExistsFilter = outletId
+      ? Prisma.sql`AND EXISTS (
+            SELECT 1 FROM "Order" ex_o 
+            WHERE ex_o."guestCustomerId" = gc.id 
+              AND ex_o."outletId" = ${outletId}
+          )`
+      : Prisma.empty;
+
+    const rawCustomer = await db.$queryRaw<any[]>`
+        SELECT 
+            gc.*,
+            (
+                SELECT COALESCE(json_agg(
+                    json_build_object(
+                        'id', o.id,
+                        'totalAmount', o."totalAmount",
+                        'orderStatus', o."orderStatus",
+                        'paymentStatus', o."paymentStatus",
+                        'createdAt', o."createdAt",
+                        'outletId', o."outletId"
+                    ) ORDER BY o."createdAt" DESC
+                ), '[]'::json)
+                FROM "Order" o
+                WHERE o."guestCustomerId" = gc.id
+                  AND o."paymentStatus" = 'SUCCESS'
+                  ${outletFilter}
+            ) AS orders,
+            
+            -- Sub-query untuk merelasikan Memberships
+            (
+                SELECT COALESCE(json_agg(
+                    json_build_object(
+                        'id', m.id,
+                        'joinedAt', m."joinedAt",
+                        'order', (
+                            SELECT row_to_json(ord.*) 
+                            FROM "Order" ord 
+                            WHERE ord.id = m."orderId"
+                        )
+                    ) ORDER BY m."joinedAt" DESC
+                ), '[]'::json)
+                FROM "Membership" m
+                JOIN "Order" mo ON mo.id = m."orderId"
+                WHERE m."guestCustomerId" = gc.id
+                  ${membershipOutletFilter}
+            ) AS memberships
+            
+        FROM "GuestCustomer" gc
+        WHERE gc.id = ${id}
+          -- KONDISI UTAMA: Jangan ambil / hitung guest yang nomor teleponnya 0000000000
+          AND gc.phone != '0000000000'
+          ${guestOutletExistsFilter}
+        LIMIT 1;
+    `;
+
+    if (!rawCustomer || rawCustomer.length === 0) {
+      return null;
+    }
+
+    return rawCustomer[0];
   }
 
   static async findByPhone(phone: string) {
@@ -39,104 +84,87 @@ export class MemberRepository {
   }
 
   static async findByOutletId(outletId: string, search?: string, skip = 0, take = 20) {
-    const guestFilter = search
-      ? {
-        OR: [
-          { guestCustomer: { name: { contains: search, mode: "insensitive" as const } } },
-          { guestCustomer: { phone: { contains: search, mode: "insensitive" as const } } },
-        ],
-      }
-      : {};
+    const searchParam = search
+      ? Prisma.sql`AND (gc.name ILIKE ${'%' + search + '%'} OR gc.phone ILIKE ${'%' + search + '%'})`
+      : Prisma.empty;
 
-    const [latestOrders, total] = await Promise.all([
-      db.order.findMany({
-        where: {
-          outletId,
-          ...guestFilter,
-        },
-        orderBy: { createdAt: "desc" },
-        distinct: ["guestCustomerId"],
-        skip,
-        take,
-        select: {
-          guestCustomerId: true,
-        },
-      }),
-      db.guestCustomer.count({
-        where: {
-          orders: {
-            some: {
-              outletId,
-            },
-          },
-          ...(search
-            ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" as const } },
-                { phone: { contains: search, mode: "insensitive" as const } },
-              ],
-            }
-            : {}),
-        },
-      }),
-    ]);
+    // 1. Dapatkan Total Data
+    const countResult = await db.$queryRaw<{ count: number }[]>`
+      SELECT COUNT(DISTINCT gc.id)::int as count
+      FROM "GuestCustomer" gc
+      JOIN "Order" o ON o."guestCustomerId" = gc.id
+      WHERE o."outletId" = ${outletId}
+        AND gc.phone != '0000000000' -- Abaikan pelanggan walk-in
+        AND o."paymentStatus" = 'SUCCESS' -- Hanya hitung pesanan sukses
+        ${searchParam}
+    `;
+    const total = countResult[0]?.count || 0;
 
-    const customerIds = latestOrders.map((order) => order.guestCustomerId);
-
-    if (customerIds.length === 0) {
-      return { members: [], total };
+    if (total === 0) {
+      return { members: [], total: 0 };
     }
 
-    const [members, orderCounts] = await Promise.all([
-      db.guestCustomer.findMany({
-        where: {
-          id: { in: customerIds },
-        },
-        include: {
-          orders: {
-            where: { outletId },
-            orderBy: { createdAt: "desc" },
-            take: 1,
-            select: {
-              id: true,
-              createdAt: true,
-            },
-          },
-          memberships: {
-            where: { order: { outletId } },
-            orderBy: { joinedAt: "desc" },
-            take: 1,
-          },
-          _count: { select: { orders: true } },
-        },
-      }),
-      db.order.groupBy({
-        by: ["guestCustomerId"],
-        where: {
-          outletId,
-          guestCustomerId: { in: customerIds },
-        },
-        _count: {
-          _all: true,
-        },
-      }),
-    ]);
+    // 2. Dapatkan Data dengan Raw SQL + CTE
+    const rawMembers = await db.$queryRaw<any[]>`
+      -- CTE: Menghitung statistik awal (Tanggal order terakhir & Total Order) per pelanggan
+      WITH CustomerStats AS (
+          SELECT 
+              gc.id as "guestCustomerId",
+              MAX(o."createdAt") as "latestOrderDate",
+              COUNT(o.id)::int as "orderCount"
+          FROM "GuestCustomer" gc
+          JOIN "Order" o ON o."guestCustomerId" = gc.id
+          WHERE o."outletId" = ${outletId}
+            AND gc.phone != '0000000000' -- Abaikan pelanggan walk-in
+            AND o."paymentStatus" = 'SUCCESS' -- Hanya hitung pesanan sukses
+            ${searchParam}
+          GROUP BY gc.id
+      )
+      SELECT 
+          gc.*,
+          
+          -- Ambil 1 Order Terakhir (yang sukses) sebagai Array JSON persis seperti Prisma "take: 1"
+          (
+              SELECT COALESCE(json_agg(
+                  json_build_object('id', o_latest.id, 'createdAt', o_latest."createdAt")
+              ), '[]'::json)
+              FROM (
+                  SELECT o.id, o."createdAt"
+                  FROM "Order" o
+                  WHERE o."guestCustomerId" = gc.id
+                    AND o."outletId" = ${outletId}
+                    AND o."paymentStatus" = 'SUCCESS'
+                  ORDER BY o."createdAt" DESC
+                  LIMIT 1
+              ) o_latest
+          ) AS orders,
+          
+          -- Ambil 1 Membership Terakhir sebagai Array JSON persis seperti Prisma "take: 1"
+          (
+              SELECT COALESCE(json_agg(
+                  json_build_object('id', m_latest.id, 'joinedAt', m_latest."joinedAt")
+              ), '[]'::json)
+              FROM (
+                  SELECT m.id, m."joinedAt"
+                  FROM "Membership" m
+                  JOIN "Order" mo ON mo.id = m."orderId"
+                  WHERE m."guestCustomerId" = gc.id
+                    AND mo."outletId" = ${outletId}
+                  ORDER BY m."joinedAt" DESC
+                  LIMIT 1
+              ) m_latest
+          ) AS memberships,
 
-    const countMap = new Map(orderCounts.map((entry) => [entry.guestCustomerId, entry._count._all]));
-    const memberMap = new Map(members.map((member) => [member.id, member]));
+          -- Hitung total order (di-passing persis dengan struktur _count: { orders: X } bawaan Prisma)
+          json_build_object('orders', cs."orderCount") AS "_count"
+          
+      FROM CustomerStats cs
+      JOIN "GuestCustomer" gc ON gc.id = cs."guestCustomerId"
+      ORDER BY cs."latestOrderDate" DESC
+      LIMIT ${take} OFFSET ${skip}
+    `;
 
-    const orderedMembers = customerIds
-      .map((id) => memberMap.get(id))
-      .filter(Boolean)
-      .map((member: any) => ({
-        ...member,
-        _count: {
-          ...member._count,
-          orders: countMap.get(member.id) ?? 0,
-        },
-      }));
-
-    return { members: orderedMembers, total };
+    return { members: rawMembers, total };
   }
 
   static async update(id: string, data: UpdateMemberInput) {

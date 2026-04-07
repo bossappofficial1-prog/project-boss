@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/error.middleware";
 import { TicketService } from "../service/ticket.service";
 import { ResponseUtil } from "../utils";
+import { generateTicketsPDF } from "../service/pdf.service";
 
 export const verifyTicketController = asyncHandler(async (req: Request, res: Response) => {
   const code = req.params.code as string;
@@ -36,4 +37,18 @@ export const getTicketCodesByProductController = asyncHandler(async (req: Reques
   const limit = parseInt(req.query.limit as string) || 50;
   const data = await TicketService.getTicketCodesByProduct(productId, page, limit);
   return ResponseUtil.success(res, data);
+});
+
+export const printOrderTicketsController = asyncHandler(async (req: Request, res: Response) => {
+  const orderId = req.params.orderId as string;
+  const ticketsData = await TicketService.getOrderTicketsPrintData(orderId);
+
+  if (!ticketsData || ticketsData.length === 0) {
+    throw new Error("No tickets found for this order");
+  }
+
+  const pdfBuffer = await generateTicketsPDF(ticketsData);
+
+  res.contentType("application/pdf");
+  res.send(pdfBuffer);
 });

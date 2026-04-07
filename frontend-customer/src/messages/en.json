@@ -618,7 +618,8 @@
             "addToCalendar": "Add to calendar",
             "viewDetails": "View Details",
             "close": "Close",
-            "contactOutlet": "Contact Outlet"
+            "contactOutlet": "Contact Outlet",
+            "downloadTicket": "Download Ticket"
         },
         "messages": {
             "contactRedirect": "Opening WhatsApp chat...",
@@ -635,9 +636,11 @@
             "reorderError": "We could not add the items to your cart. Please try again.",
             "genericError": "We could not load your orders. Please try again.",
             "orderIdCopied": "Order ID copied!",
-            "calendarSuccess": "Calendar event downloaded.",
-            "calendarError": "We could not create the calendar event. Please try again.",
-            "calendarMissingSchedule": "Schedule is not available yet. Please check again later.",
+            "calendarSuccess": "Calendar event downloaded successfully.",
+            "calendarError": "Failed to create calendar event. Please try again.",
+            "calendarMissingSchedule": "Schedule not available yet. Please check again later.",
+            "downloadTicketSuccess": "Ticket downloaded successfully.",
+            "downloadTicketError": "Failed to download ticket. Please try again.",
             "errors": {
                 "orderNotFound": "We couldn't find this order.",
                 "ownershipMismatch": "This order does not belong to your phone number.",

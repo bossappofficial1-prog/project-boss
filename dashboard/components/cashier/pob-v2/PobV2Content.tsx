@@ -6,7 +6,7 @@ import { Package, ArrowDownToLine, Undo2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useCashierContext } from "@/app/cashier/layout";
+import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
 import {
     usePOBProducts,
     usePOBStockIn,

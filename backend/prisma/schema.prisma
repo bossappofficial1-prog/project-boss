@@ -308,6 +308,8 @@ model Outlet {
   operatingHours  OutletOperatingHours[]
   staff           Staff[]
   receiptSettings receiptSetting?
+  loyaltyConfig   LoyaltyConfig?
+  memberships     OutletMembership[]
 
   @@index([businessId])
   @@index([slug])
@@ -590,6 +592,9 @@ model GuestCustomer {
   // Relasi: Many-to-many ke Order melalui tabel Membership
   memberships Membership[]
 
+  // Relasi: Menampung status membership di berbagai outlet
+  outletMemberships OutletMembership[]
+
   createdAt         DateTime           @default(now())
   pushSubscriptions PushSubscription[]
 
@@ -597,10 +602,48 @@ model GuestCustomer {
   @@index([phone])
 }
 
+// Model untuk menyimpan konfigurasi loyalty poin per outlet
+model LoyaltyConfig {
+  id       String @id @default(uuid())
+  outletId String @unique
+  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  pointsEarned     Int   @default(1) // Jumlah poin yang didapat
+  multiplierAmount Float @default(10000) // Kelipatan belanja (misal: per Rp 10.000)
+  minSpending      Float @default(0) // Minimum belanja untuk dapat poin
+  pointValue       Float @default(0) // Nilai tukar 1 poin ke rupiah (misal: 1 poin = Rp 100)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Model untuk menyimpan status membership customer di outlet tertentu
+model OutletMembership {
+  id              String        @id @default(uuid())
+  guestCustomerId String
+  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+  outletId        String
+  outlet          Outlet        @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  totalPoints Int      @default(0)
+  totalSpending Float    @default(0)
+  status      String   @default("ACTIVE") // ACTIVE, SUSPENDED
+  joinedAt    DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([guestCustomerId, outletId])
+  @@index([guestCustomerId])
+  @@index([outletId])
+}
+
 // Model untuk pesanan/booking yang dibuat oleh customer
 model Order {
   id          String    @id @default(uuid())
   totalAmount Float // Menggunakan Float untuk nilai uang
+  discountAmount Float @default(0) // Potongan dari poin loyalty/promo
+  pointsRedeemed Int  @default(0) // Jumlah poin yang ditukarkan
   bookingDate DateTime? // Digunakan khusus untuk booking jasa
 
   // Tipe customer (hanya GUEST sesuai MoM)

@@ -45,4 +45,11 @@ export class Order {
     static async confirmOrder(orderId: string, payload: ConfirmOrderPayload) {
         return api.addData(`/orders/${orderId}/customer/confirm`, payload);
     }
+
+    static async downloadTickets(orderId: string): Promise<Blob> {
+        const response = await api.get(`/tickets/order/${orderId}/print`, {
+            responseType: 'blob'
+        });
+        return response.data;
+    }
 }

@@ -33,6 +33,26 @@ export const generateTransactionReportPDF = async (data: TransactionReportData):
     });
 };
 
+export interface TicketPrintData {
+    id: string;
+    code: string;
+    productName: string;
+    eventDate: string;
+    eventTime: string;
+    venue: string;
+    customerName: string;
+    outletName: string;
+}
+
+export const generateTicketsPDF = async (tickets: TicketPrintData[]): Promise<Buffer> => {
+    return PdfBaseService.generate({
+        templateName: 'ticket.hbs',
+        data: { tickets },
+        landscape: false,
+        format: 'A4',
+    });
+};
+
 export interface OrderServiceData {
     OwnerName: string;
     OutletName: string;

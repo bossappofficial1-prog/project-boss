@@ -2,25 +2,19 @@ import { db } from "../config/prisma";
 import { DeleteExpireSystemPayment } from "../queues/delete-expire-system-payment";
 
 export async function deletePaymentExpiry() {
-    await db.$transaction([
-        db.transaction.deleteMany({
-            where: {
-                OR: [
-                    { rejectionNote: { contains: '[SYSTEM] Payment expire', mode: 'insensitive' } },
-                    { status: { in: ['CANCELLED', 'EXPIRED', 'FAILED'] } }
-                ]
-            }
-        }),
-
+    const [orderCount] = await db.$transaction([
         db.order.deleteMany({
             where: {
                 OR: [
-                    { cancellationReason: { contains: '[SYSTEM] Payment expire', mode: 'insensitive' } },
-                    { orderStatus: 'CANCELLED' }
+                    { paymentStatus: 'EXPIRED' },
+                    { transaction: { status: 'EXPIRED' } },
+                    { cancellationReason: { contains: '[SYSTEM] Payment expire', mode: 'insensitive' } }
                 ]
             }
         })
-    ])
+    ]);
+
+    console.log(`[Job] DeletePaymentExpiry: Deleted ${orderCount.count} expired orders and their related transactions.`);
 }
 
 export class DeletePaymentExpiryJob {

@@ -5,7 +5,10 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useCashierContext } from "@/app/cashier/layout";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
+import { useQueryClient } from "@tanstack/react-query";
 import {
     usePosV2Products,
     usePosV2CashSummary,
@@ -13,6 +16,7 @@ import {
     usePosV2CreateOrder,
     usePosV2OutletQris,
 } from "@/hooks/api/use-pos-v2";
+import { useLoyaltyConfig } from "@/hooks/api/use-loyalty";
 import type { PosV2Product, PosV2OrderResult } from "@/lib/apis/pos-v2";
 import { ProductCatalog } from "./ProductCatalog";
 import { CartPanel, type CartLine } from "./CartPanel";
@@ -31,6 +35,7 @@ interface ScheduleDialogState {
 export function PosV2Content() {
     const { outletData } = useCashierContext();
     const outletId = outletData?.id as string;
+    const queryClient = useQueryClient();
 
     // State
     const [searchQuery, setSearchQuery] = React.useState("");
@@ -43,6 +48,8 @@ export function PosV2Content() {
     const [cashReceived, setCashReceived] = React.useState(0);
     const [orderResult, setOrderResult] = React.useState<PosV2OrderResult | null>(null);
     const [scheduleDialog, setScheduleDialog] = React.useState<ScheduleDialogState | null>(null);
+    const [member, setMember] = React.useState<any>(null);
+    const [pointsRedeemed, setPointsRedeemed] = React.useState(0);
 
     // Debounce search
     React.useEffect(() => {
@@ -51,13 +58,15 @@ export function PosV2Content() {
     }, [searchQuery]);
 
     // Queries
-    const { data: products = [], isLoading: productsLoading } = usePosV2Products(
+    const { data: productsData, isLoading: productsLoading } = usePosV2Products(
         outletId,
         debouncedSearch || undefined,
     );
+    const products = productsData?.products || [];
     const { data: cashSummary, isLoading: summaryLoading } = usePosV2CashSummary(outletId);
     const { data: recentOrders, isLoading: recentLoading } = usePosV2RecentOrders(outletId);
     const { data: outletQris, isLoading: qrisLoading } = usePosV2OutletQris(outletId);
+    const { data: loyaltyConfig } = useLoyaltyConfig(outletId);
     const createOrder = usePosV2CreateOrder();
 
     // Derived state
@@ -66,6 +75,14 @@ export function PosV2Content() {
         () => cartItems.reduce((sum, line) => sum + line.product.price * line.quantity, 0),
         [cartItems],
     );
+
+    const loyaltyDiscount = React.useMemo(() => {
+        const config = loyaltyConfig as any;
+        if (!config?.isActive || !config?.pointValue) return 0;
+        return pointsRedeemed * config.pointValue;
+    }, [pointsRedeemed, loyaltyConfig]);
+
+    const grandTotal = React.useMemo(() => Math.max(0, subtotal - loyaltyDiscount), [subtotal, loyaltyDiscount]);
     const cartQuantities = React.useMemo(() => {
         const map: Record<string, number> = {};
         for (const [id, line] of Object.entries(cart)) {
@@ -82,11 +99,11 @@ export function PosV2Content() {
     const canSubmit = React.useMemo(() => {
         if (!cartItems.length) return false;
         if (!isWalkIn && (!customerName.trim() || !customerPhone.trim())) return false;
-        if (paymentMethod === "cash" && cashReceived < subtotal) return false;
+        if (paymentMethod === "cash" && cashReceived < grandTotal) return false;
         if (paymentMethod === "qris" && !outletQris?.qrisImageUrl) return false;
         if (hasUnscheduledService) return false;
         return true;
-    }, [cartItems.length, isWalkIn, customerName, customerPhone, paymentMethod, cashReceived, subtotal, hasUnscheduledService, outletQris]);
+    }, [cartItems.length, isWalkIn, customerName, customerPhone, paymentMethod, cashReceived, grandTotal, hasUnscheduledService, outletQris]);
 
     // Cart handlers
     const handleAddToCart = (product: PosV2Product) => {
@@ -211,7 +228,14 @@ export function PosV2Content() {
         setCustomerPhone("");
         setCashReceived(0);
         setIsWalkIn(false);
+        setPointsRedeemed(0);
+        setMember(null);
     };
+
+    // Reset points when member changes or walk-in toggled
+    React.useEffect(() => {
+        setPointsRedeemed(0);
+    }, [member, isWalkIn]);
 
     // Submit order
     const handleSubmitOrder = () => {
@@ -234,6 +258,7 @@ export function PosV2Content() {
                 })),
                 paymentMethod,
                 cashReceived,
+                pointsRedeemed,
                 ...(serviceItem?.bookingSlotId && {
                     bookingSlotId: serviceItem.bookingSlotId,
                     bookingDate: serviceItem.bookingStart,
@@ -244,6 +269,10 @@ export function PosV2Content() {
                 onSuccess: (result) => {
                     setOrderResult(result);
                     resetForm();
+                    // Invalidate loyalty queries to show updated points
+                    queryClient.invalidateQueries({
+                        queryKey: ["loyalty", "members", outletId],
+                    });
                     toast.success("Pesanan berhasil dibuat!");
                 },
                 onError: (error: any) => {
@@ -306,20 +335,63 @@ export function PosV2Content() {
                     <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
                         <CardContent className="space-y-3 pt-4">
                             <CustomerInfo
+                                outletId={outletId}
                                 isWalkIn={isWalkIn}
                                 onWalkInChange={setIsWalkIn}
                                 name={customerName}
                                 onNameChange={setCustomerName}
                                 phone={customerPhone}
                                 onPhoneChange={setCustomerPhone}
+                                onMemberChange={setMember}
                             />
+
+                            {member && loyaltyConfig?.isActive && (loyaltyConfig as any).pointValue > 0 && (
+                                <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3 dark:border-blue-900/30 dark:bg-blue-900/10">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <Label className="text-xs font-semibold text-blue-800 dark:text-blue-300">Tukar Poin</Label>
+                                        <span className="text-[10px] text-blue-600 dark:text-blue-400">1 Poin = Rp {(loyaltyConfig as any).pointValue.toLocaleString("id-ID")}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            max={member.points}
+                                            value={pointsRedeemed || ""}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value) || 0;
+                                                // Don't redeem more than subtotal
+                                                const maxPointsBySubtotal = Math.ceil(subtotal / (loyaltyConfig as any).pointValue);
+                                                setPointsRedeemed(Math.min(val, member.points, maxPointsBySubtotal));
+                                            }}
+                                            className="h-8 text-sm"
+                                            placeholder="Jumlah poin..."
+                                        />
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            className="h-8 text-xs"
+                                            onClick={() => {
+                                                const maxPointsBySubtotal = Math.ceil(subtotal / (loyaltyConfig as any).pointValue);
+                                                setPointsRedeemed(Math.min(member.points, maxPointsBySubtotal));
+                                            }}
+                                        >
+                                            Max
+                                        </Button>
+                                    </div>
+                                    {loyaltyDiscount > 0 && (
+                                        <p className="mt-1 text-[10px] text-blue-600 dark:text-blue-400 italic">
+                                            Potongan: -Rp {loyaltyDiscount.toLocaleString("id-ID")}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             <Separator />
 
-                            <PaymentSection
+                             <PaymentSection
                                 method={paymentMethod}
                                 onMethodChange={setPaymentMethod}
-                                total={subtotal}
+                                total={grandTotal}
                                 cashReceived={cashReceived}
                                 onCashReceivedChange={setCashReceived}
                                 qrisImageUrl={outletQris?.qrisImageUrl}

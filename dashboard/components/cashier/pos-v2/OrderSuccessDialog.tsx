@@ -49,8 +49,23 @@ export function OrderSuccessDialog({ open, result, onClose }: OrderSuccessDialog
 
             setTimeout(() => URL.revokeObjectURL(url), 60_000);
         } catch (error) {
-            console.error("Print receipt error:", error);
+            console.error("Failed to print receipt:", error);
             toast.error("Gagal mencetak struk");
+        } finally {
+            setIsPrinting(false);
+        }
+    };
+
+    const handlePrintTickets = async () => {
+        if (!result) return;
+        try {
+            setIsPrinting(true);
+            const blob = await posV2Api.printOrderTickets(result.orderId);
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, "_blank");
+        } catch (error) {
+            console.error("Failed to print tickets:", error);
+            toast.error("Gagal mencetak tiket");
         } finally {
             setIsPrinting(false);
         }
@@ -111,10 +126,23 @@ export function OrderSuccessDialog({ open, result, onClose }: OrderSuccessDialog
                         </div>
                     </div>
 
+                    {result.hasTickets ? (
+                        <div className="grid grid-cols-1 gap-2">
+                            <Button
+                                onClick={handlePrintTickets}
+                                disabled={isPrinting}
+                                className="gap-2 bg-amber-600 hover:bg-amber-500 w-full">
+                                <Printer className={`h-4 w-4 ${isPrinting ? "animate-pulse" : ""}`} />
+                                {isPrinting ? "Mencetak..." : "Cetak Tiket"}
+                            </Button>
+                        </div>
+                    ) : null}
+
                     <div className="grid grid-cols-2 gap-2">
                         <Button
                             variant="outline"
                             onClick={handleCloseAndReset}
+                            disabled={isPrinting}
                             className="gap-2">
                             <X className="h-4 w-4" />
                             Tutup
@@ -123,7 +151,7 @@ export function OrderSuccessDialog({ open, result, onClose }: OrderSuccessDialog
                             onClick={handlePrintReceipt}
                             disabled={isPrinting}
                             className="gap-2 bg-blue-600 hover:bg-blue-500">
-                            <Printer className="h-4 w-4" />
+                            <Printer className={`h-4 w-4 ${isPrinting ? "animate-pulse" : ""}`} />
                             {isPrinting ? "Mencetak..." : "Cetak Struk"}
                         </Button>
                     </div>

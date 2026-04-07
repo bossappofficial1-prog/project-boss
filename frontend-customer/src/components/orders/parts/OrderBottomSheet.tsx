@@ -30,6 +30,7 @@ import {
     AlertCircle,
     Wallet,
     Receipt,
+    Download,
 } from "lucide-react";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { useTranslations } from "@/hooks/useI18n";
@@ -39,7 +40,7 @@ import TimelineProgress from "./TimelineProgress";
 const CountdownTimer = dynamic(() => import("./CountdownTimer"), { ssr: false });
 const TicketQRCard = dynamic(() => import("./TicketQRCard"), { ssr: false });
 
-type ActionType = "contact" | "cancel" | "reorder" | "confirm" | "pay" | "calendar";
+type ActionType = "contact" | "cancel" | "reorder" | "confirm" | "pay" | "calendar" | "download_ticket";
 
 interface OrderBottomSheetProps {
     order: OrderDetail | null;
@@ -504,6 +505,22 @@ export default function OrderBottomSheet({
                         </div>
 
                         <div className="space-y-2.5 pt-1">
+                            {/* Download Ticket */}
+                            {hasTicketProduct && order.orderStatus === OrderStatus.COMPLETED && (
+                                <Button
+                                    variant="default"
+                                    className="w-full h-11 sm:h-10 text-sm font-semibold gap-2 shadow-[0_2px_12px_rgba(0,0,0,0.15)]"
+                                    onClick={() => onAction?.("download_ticket", order)}
+                                    disabled={isBusy}
+                                >
+                                    {isBusy && pendingAction?.action === "download_ticket" ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Download className="w-4 h-4" />
+                                    )}
+                                    {t("actions.downloadTicket")}
+                                </Button>
+                            )}
 
                             {/* Calendar */}
                             {isCalendarEligible && (

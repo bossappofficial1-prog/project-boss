@@ -17,6 +17,7 @@ import { OtpInputVerification } from '@/components/auth/register/OtpInputVerific
 import { RegisterStep1 } from '@/components/auth/register/RegisterStep1';
 import { RegisterStep2 } from '@/components/auth/register/RegisterStep2';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlan';
+import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
 
 import Image from 'next/image';
 import { toast } from 'sonner';
@@ -43,23 +44,23 @@ type PlanFeatures = {
 const transformFeaturesToDisplay = (features: PlanFeatures) => {
     return [
         {
-            label: features.maxOutlets === -1 ? 'Unlimited Outlet' : `Max ${features.maxOutlets} Outlet`,
+            label: features.maxOutlets === -1 ? 'Outlet Tanpa Batas' : `Maks ${features.maxOutlets} Outlet`,
             allowed: true
         },
         {
-            label: features.maxProducts === -1 ? 'Unlimited Produk' : `Max ${features.maxProducts} Produk`,
+            label: features.maxProducts === -1 ? 'Produk Tanpa Batas' : `Maks ${features.maxProducts} Produk`,
             allowed: true
         },
         {
-            label: features.maxStaff === -1 ? 'Unlimited Staff' : `Max ${features.maxStaff} Staff`,
+            label: features.maxStaff === -1 ? 'Staff Tanpa Batas' : `Maks ${features.maxStaff} Staff`,
             allowed: true
         },
         {
-            label: 'Export Laporan',
+            label: 'Ekspor Laporan',
             allowed: features.canExportReport
         },
         {
-            label: features.supportLevel === 'PRIORITY' ? 'Priority Support' : features.supportLevel === 'WHATSAPP' ? 'WhatsApp Support' : 'Email Support',
+            label: features.supportLevel === 'PRIORITY' ? 'Dukungan Prioritas' : features.supportLevel === 'WHATSAPP' ? 'Dukungan WhatsApp' : 'Dukungan Email',
             allowed: true
         },
     ];
@@ -70,23 +71,15 @@ export default function RegistrationContent() {
     const router = useRouter()
     const { data: subscriptionPlans, isLoading } = useSubscriptionPlans()
 
-    const steps = searchParams.get('step');
-    const providers = searchParams.get('provider');
-    const names = searchParams.get('name');
-    const isVerified = searchParams.get('isVerified');
-    const email = searchParams.get('email');
+    // Derive all params from URL on every render — no local state needed
+    const stepParam = Number(searchParams.get('step'));
+    const providerParam = searchParams.get('provider') as 'email' | 'google' | null;
+    const nameParam = searchParams.get('name') ?? '';
+    const isVerifiedParam = searchParams.get('isVerified');
+    const emailParam = searchParams.get('email') ?? '';
 
-    const [provider] = useState(() => {
-        if (!providers) return null;
-        return providers as 'email' | 'google'
-    });
-
-    const [logoutLoading, setLogoutLoading] = useState(false)
-
-    const [step, setStep] = useState(() => {
-        const s = Number(steps);
-        return !isNaN(s) && s > 0 ? s : provider ? 2 : 1;
-    });
+    // Bug 1 & 2 fix: derive step reactively from URL params
+    const step = !isNaN(stepParam) && stepParam > 0 ? stepParam : providerParam ? 2 : 1;
 
     const [formData, setFormData] = useState({
         businessName: '',
@@ -96,10 +89,17 @@ export default function RegistrationContent() {
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [logoutLoading, setLogoutLoading] = useState(false);
+
+    // Bug 3 fix: Google users are pre-verified — never show OTP modal for them
     const [showOtpInput, setShowOtpInput] = useState(() => {
-        if (isVerified) return isVerified === 'false'
-        return false
+        if (providerParam === 'google') return false;
+        if (isVerifiedParam) return isVerifiedParam === 'false';
+        return false;
     });
+
+    // Bug 4 fix: surface business name error back to Step 2 form
+    const [businessNameError, setBusinessNameError] = useState<string | null>(null);
 
     const [timer, setTimer] = useState(0);
 
@@ -128,18 +128,16 @@ export default function RegistrationContent() {
     };
 
     useEffect(() => {
-        document.documentElement.classList.remove("dark")
-        return () => {
-            const currentTheme = localStorage.getItem('theme') ?? 'system'
-            document.documentElement.classList.add(currentTheme)
+        const businessName = searchParams.get("businessName");
+        if (businessName) {
+            setFormData(prev => ({ ...prev, businessName }));
         }
-    }, [])
+    }, [searchParams]);
 
     const handleLogout = async () => {
         try {
             setLogoutLoading(true)
             await apiClient.post('/auth/logout');
-            setStep(1)
             setShowOtpInput(false)
             setFormData({ description: '', businessName: '', provider: '', selectedPlan: '' })
             router.replace('/auth/register?step=1')
@@ -159,30 +157,20 @@ export default function RegistrationContent() {
         return () => clearInterval(interval);
     }, [timer]);
 
-    const handleNext = () => {
-        const nextStep = step + 1;
-        setStep(nextStep);
-
+    const navigateToStep = (targetStep: number) => {
         const params = new URLSearchParams(searchParams.toString());
-        params.set("step", String(nextStep));
-
+        params.set("step", String(targetStep));
         router.push(`/auth/register?${params.toString()}`);
     };
 
-    const handleBack = () => {
-        const prevStep = step - 1;
-        setStep(prevStep);
-
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("step", String(prevStep));
-
-        router.push(`/auth/register?${params.toString()}`);
-    };
+    const handleNext = () => navigateToStep(step + 1);
+    const handleBack = () => navigateToStep(step - 1);
 
     // 4. Final Submit (Create Business & Plan)
     const handleSubmit = async () => {
         try {
             setIsSubmitting(true);
+            setBusinessNameError(null);
 
             const { data } = await apiClient.post('/auth/onboarding/complete', {
                 businessName: formData.businessName,
@@ -204,66 +192,42 @@ export default function RegistrationContent() {
                 toast.error('Invoice tidak ditemukan. Silakan hubungi support.');
             }
         } catch (error: any) {
-            console.error('Onboarding error:', error);
-            const errorMessage = error?.response?.data?.message || 'Gagal menyelesaikan registrasi. Silakan coba lagi.';
-            toast.error(errorMessage);
+            const msg: string = error?.response?.data?.message || error?.message || '';
+
+            // Bug 6 fix: jika bisnis sudah ada (misal double submit), langsung redirect ke dashboard
+            if (msg.includes('Bisnis sudah terdaftar')) {
+                router.push('/owner/dashboard');
+                return;
+            }
+
+            // Bug 4 fix: nama bisnis sudah dipakai → kembali ke step 2 dengan error inline
+            if (msg.includes('sudah tersedia') || msg.toLowerCase().includes('businessname')) {
+                setBusinessNameError(msg);
+                navigateToStep(2);
+                return;
+            }
+
+            toast.error(msg || 'Gagal menyelesaikan registrasi. Silakan coba lagi.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <div className="min-h-screen w-full flex bg-white font-sans text-slate-900">
+        <AuthSplitLayout>
+            <div className="w-full max-w-[440px] space-y-6">
 
-            {/* Left Side: Professional/Brand Area */}
-            <div className="hidden lg:flex w-1/2 relative bg-[#0B1120] overflow-hidden flex-col justify-between p-16 text-white text-sans">
-                {/* Abstract 3D Geometric Shapes Background */}
-                <div className="absolute inset-0 z-0 pointer-events-none">
-                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-blue-600/30 to-purple-600/10 blur-[80px]" />
-                    <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-indigo-600/20 to-blue-500/10 blur-[60px]" />
-                    <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] rounded-full bg-blue-500/10 blur-[100px]" />
-
-                    {/* Geometric Accents */}
-                    <div className="absolute top-20 right-20 w-24 h-24 border border-white/10 rounded-2xl transform rotate-12 backdrop-blur-sm opacity-50" />
-                    <div className="absolute bottom-32 left-10 w-32 h-32 border border-white/5 rounded-full backdrop-blur-md opacity-40" />
+                {/* Logo View */}
+                <div className="flex justify-center mb-6">
+                    <Image
+                        src="/Logo Boss.png"
+                        alt="Logo BOSS"
+                        width={140}
+                        height={50}
+                        className="h-16 w-auto object-contain"
+                        priority
+                    />
                 </div>
-
-                {/* Spacer to maintain vertical balance with justify-between */}
-                <div className="relative z-10"></div>
-
-                {/* Main Text Content */}
-                <div className="relative z-10 max-w-lg mb-12">
-                    <h1 className="text-5xl font-bold leading-[1.15] mb-6 tracking-tight">
-                        Kelola Bisnis Anda <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-white">
-                            Lebih Profesional
-                        </span>
-                    </h1>
-                    <p className="text-lg text-slate-400 font-light leading-relaxed">
-                        Platform terintegrasi untuk memaksimalkan efisiensi operasional dan pertumbuhan bisnis Anda dalam satu dashboard yang elegan.
-                    </p>
-                </div>
-
-                {/* Footer/Copyright */}
-                <div className="relative z-10 text-sm text-slate-500">
-                    &copy; {new Date().getFullYear()} BOSS Business Management. All rights reserved.
-                </div>
-            </div>
-
-            <div className="w-full lg:w-1/2 flex flex-col items-center p-8 lg:p-12 relative bg-white overflow-y-auto">
-                <div className="w-full max-w-[440px] space-y-6">
-
-                    {/* Logo View */}
-                    <div className="flex justify-center mb-6">
-                        <Image
-                            src="/Logo Boss.png"
-                            alt="Logo BOSS"
-                            width={140}
-                            height={50}
-                            className="h-16 w-auto object-contain"
-                            priority
-                        />
-                    </div>
 
                     {!showOtpInput && (
                         <div className="flex items-center justify-between mb-8 px-2">
@@ -293,8 +257,8 @@ export default function RegistrationContent() {
 
                         {step === 1 && showOtpInput && (
                             <OtpInputVerification
-                                setStep={(step) => { setStep(step); setShowOtpInput(false) }}
-                                email={email ?? ''}
+                                setStep={(s) => { setShowOtpInput(false); navigateToStep(s); }}
+                                email={emailParam}
                             />
                         )}
 
@@ -311,6 +275,7 @@ export default function RegistrationContent() {
                                 defaultValues={{ ...formData }}
                                 handleLogout={handleLogout}
                                 handleNext={(values) => {
+                                    setBusinessNameError(null);
                                     setFormData(prev => ({
                                         ...prev,
                                         description: values.description!,
@@ -319,7 +284,9 @@ export default function RegistrationContent() {
                                     handleNext()
                                 }}
                                 logoutLoading={logoutLoading}
-                                name={names ?? ''}
+                                isSubmitting={isSubmitting}
+                                name={nameParam}
+                                businessNameError={businessNameError}
                             />
                         )}
 
@@ -333,7 +300,7 @@ export default function RegistrationContent() {
 
                                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent">
                                     {isLoading ? (
-                                        <p className="text-sm text-muted-foreground">Loading data...</p>
+                                        <p className="text-sm text-muted-foreground">Memuat data...</p>
                                     ) : (
                                         subscriptionPlans?.map((plan) => {
                                             const visualFeatures = transformFeaturesToDisplay(plan.features as any)
@@ -369,7 +336,7 @@ export default function RegistrationContent() {
                                                                     : "bg-amber-500 text-white"
                                                             )}
                                                         >
-                                                            POPULAR
+                                                            POPULER
                                                         </span>
                                                     )}
 
@@ -460,29 +427,30 @@ export default function RegistrationContent() {
                                         type="button"
                                         onClick={handleBack}
                                         disabled={isSubmitting}
-                                        className="px-6 h-12 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition-all duration-200"
+                                        className="px-6 h-12 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition-all duration-200 disabled:opacity-50"
                                     >
                                         Kembali
                                     </button>
                                     <button
                                         type="button"
-                                        className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none"
+                                        className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-2"
                                         onClick={handleSubmit}
                                         disabled={isSubmitting}
                                     >
-                                        {formData.selectedPlan === 'TRIAL' ? 'Mulai Gratis Sekarang' : 'Lanjut ke Pembayaran'}
+                                        {isSubmitting && (
+                                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                            </svg>
+                                        )}
+                                        {isSubmitting ? 'Memproses...' : formData.selectedPlan === 'TRIAL' ? 'Mulai Gratis Sekarang' : 'Lanjut ke Pembayaran'}
                                     </button>
                                 </div>
                             </div>
                         )}
 
                     </div>
-
-                    <p className="text-center text-xs text-slate-400 mt-8 pb-4">
-                        &copy; 2024 BossApp SaaS. All rights reserved.
-                    </p>
                 </div>
-            </div>
-        </div>
+        </AuthSplitLayout>
     );
 }

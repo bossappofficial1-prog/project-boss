@@ -74,4 +74,11 @@ export const ordersV2Api = {
     });
     return response.data;
   },
+
+  async printOrderTickets(orderId: string): Promise<Blob> {
+    const response = await apiClient.get(`/tickets/order/${orderId}/print`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
 };

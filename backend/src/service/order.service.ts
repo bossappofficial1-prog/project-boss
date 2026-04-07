@@ -16,6 +16,7 @@ import { SocketEmitter } from "../socket/socket-emiiter";
 import Console from "../utils/logger";
 import { orderExpiryJob } from "../jobs/payment-expiry.job";
 import { formatDateTime, generateTicketCode } from "../utils";
+import { LoyaltyService } from "./loyalty.service";
 
 type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> &
   Record<string, any>;
@@ -442,17 +443,30 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
     });
   }
 
-  // Jika payment method adalah 'cash', buat order offline tanpa Midtrans
-  if (paymentMethod === "cash") {
+  // Jika payment method adalah 'cash' atau 'qris' (statis di POS), buat order tanpa Midtrans
+  if (paymentMethod === "cash" || paymentMethod === "qris") {
     const { order } = await createOrderRecord(data);
+
+    // Determine status: If no booking, cash/qris payment means COMPLETED
+    const isInstantPayment = data.paymentMethod === "cash" || data.paymentMethod === "qris";
+    const finalStatus = !data.bookingSlotId && isInstantPayment ? OrderStatus.COMPLETED : OrderStatus.READY;
 
     const updatedOrder = await db.order.update({
       where: { id: order.id },
       data: {
         paymentStatus: PaymentStatus.SUCCESS,
-        orderStatus: OrderStatus.READY,
+        orderStatus: finalStatus,
       },
     });
+
+    // Trigger Loyalty if COMPLETED
+    if (finalStatus === OrderStatus.COMPLETED) {
+      try {
+        await LoyaltyService.processOrderLoyalty(updatedOrder.id);
+      } catch (err) {
+        console.error("[LOYALTY] Error processing points on create:", err);
+      }
+    }
 
     return { order: updatedOrder, midtransTransaction: undefined as any };
   }
@@ -635,6 +649,7 @@ export async function updateOrderStatusService(
     })
   }
 
+
   const updatePayload = {
     orderStatus: status,
     ...(reason && status === OrderStatus.CANCELLED ? { cancellationReason: reason } : {}),
@@ -664,6 +679,16 @@ export async function updateOrderStatusService(
       transaction: true,
     },
   });
+
+  // Loyalty Point Processing (After DB update)
+  if (status === OrderStatus.COMPLETED) {
+    try {
+      await LoyaltyService.processOrderLoyalty(orderId);
+      Console.log(`[LOYALTY] Point processed for order ${orderId}`);
+    } catch (loyaltyError) {
+      console.error(`[LOYALTY] Error processing points:`, loyaltyError);
+    }
+  }
 
   // // Kirim notifikasi status update melalui message publisher
   // await messagePublisher.publishOrderNotification(updatedOrder.id, updatedOrder.orderStatus);
@@ -824,6 +849,14 @@ export async function completeServiceOrderService(orderId: string) {
         );
       }
     }
+  }
+
+  // Loyalty Point Processing
+  try {
+    await LoyaltyService.processOrderLoyalty(orderId);
+    Console.log(`[LOYALTY] Point processed in completeServiceOrderService for order ${orderId}`);
+  } catch (loyaltyError) {
+    console.error(`[LOYALTY] Error processing points:`, loyaltyError);
   }
 
   return completedOrder;

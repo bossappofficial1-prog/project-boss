@@ -6,6 +6,7 @@ import { generateOrderCode } from "../utils";
 import { SocketEmitter } from "../socket/socket-emiiter";
 import { generateServiceOrderNotificationQueue } from "../queues/generate-service-order-notification";
 import { RedisUtils } from "../utils/redis.utils";
+import { LoyaltyService } from "./loyalty.service";
 
 export interface PosV2OrderResult {
     orderId: string;
@@ -15,6 +16,7 @@ export interface PosV2OrderResult {
     change: number;
     customerName: string;
     createdAt: string;
+    hasTickets: boolean;
 }
 
 export class PosV2Service {
@@ -80,7 +82,7 @@ export class PosV2Service {
         input: CreatePosV2OrderInput,
         cashierId: string | null,
     ): Promise<PosV2OrderResult> {
-        const { customer, outletId, items, cashReceived = 0, bookingSlotId, bookingDate, paymentMethod } = input;
+        const { customer, outletId, items, cashReceived = 0, bookingSlotId, bookingDate, paymentMethod, pointsRedeemed = 0 } = input;
 
         // Validate products exist and belong to outlet
         const productIds = items.map((i) => i.productId);
@@ -104,6 +106,7 @@ export class PosV2Service {
         // Validate stock and calculate total
         let subtotal = 0;
         let hasService = false;
+        let hasTickets = false;
         const orderItems: Array<{
             productId: string;
             quantity: number;
@@ -170,6 +173,7 @@ export class PosV2Service {
                     priceAtTimeOfOrder: price,
                 });
             } else if (product.type === "TICKET") {
+                hasTickets = true;
                 if (!product.ticket) {
                     throw new AppError(
                         `Data tiket "${product.name}" tidak lengkap`,
@@ -206,19 +210,40 @@ export class PosV2Service {
             throw new AppError("Maksimum order Rp 50.000.000", HttpStatus.BAD_REQUEST);
         }
 
-        // Validate cash
-        if (cashReceived < subtotal && paymentMethod === 'cash') {
-            throw new AppError(
-                `Cash kurang. Total: Rp ${subtotal.toLocaleString("id-ID")}, Diterima: Rp ${cashReceived.toLocaleString("id-ID")}`,
-                HttpStatus.BAD_REQUEST,
-            );
-        }
-
-        // Create or find customer
+        // Create or find customer (MUST be before loyalty check)
         const guestCustomer = await PosV2Repository.findOrCreateCustomer(
             customer.name,
             customer.phone,
         );
+
+        // Calculate Loyalty Discount
+        let discountAmount = 0;
+        if (pointsRedeemed > 0) {
+            const loyaltyConfig = await LoyaltyService.getConfig(outletId);
+            // @ts-ignore
+            if (loyaltyConfig && loyaltyConfig.isActive && loyaltyConfig.pointValue > 0) {
+                // @ts-ignore
+                discountAmount = pointsRedeemed * loyaltyConfig.pointValue;
+                
+                // Validate if customer has enough points
+                const membership = await LoyaltyService.getMembership(guestCustomer.id, outletId);
+                if (!membership || membership.totalPoints < pointsRedeemed) {
+                    throw new AppError("Poin member tidak mencukupi untuk penukaran ini.", HttpStatus.BAD_REQUEST);
+                }
+            } else if (pointsRedeemed > 0) {
+                throw new AppError("Program loyalty tidak aktif atau nilai poin belum diatur.", HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        const grandTotal = Math.max(0, subtotal - discountAmount);
+
+        // Validate cash
+        if (cashReceived < grandTotal && paymentMethod === 'cash') {
+            throw new AppError(
+                `Cash kurang. Total: Rp ${grandTotal.toLocaleString("id-ID")}, Diterima: Rp ${cashReceived.toLocaleString("id-ID")}`,
+                HttpStatus.BAD_REQUEST,
+            );
+        }
 
         // Generate order ID
         const orderId = generateOrderCode(
@@ -234,27 +259,35 @@ export class PosV2Service {
             orderId,
             customerId: guestCustomer.id,
             outletId,
-            totalAmount: subtotal,
+            totalAmount: grandTotal,
+            discountAmount,
+            pointsRedeemed,
             cashierId,
             items: orderItems,
             stockUpdates,
             ticketUpdates,
             hasService,
+            paymentMethod,
             bookingSlotId,
             bookingDate: bookingDate ? new Date(bookingDate) : null,
         });
 
+        // Trigger Loyalty (Non-blocking)
+        LoyaltyService.processOrderLoyalty(order.id).catch((err) => {
+            console.error("[LOYALTY] Error processing points in POS v2:", err);
+        });
+
         // Emit real-time event (non-blocking)
         try {
-            if (serviceProducts) {
-                generateServiceOrderNotificationQueue.add({ orderId })
+            if (serviceProducts.length > 0) {
+                generateServiceOrderNotificationQueue.add({ orderId: order.id })
             }
 
             SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
                 orderId: order.id,
-                amount: subtotal,
+                amount: grandTotal,
                 customerName: guestCustomer.name,
-                paymentMethod: "cash",
+                paymentMethod: paymentMethod === "cash" ? "cash" : "qris",
                 timestamp: new Date(),
             });
         } catch {
@@ -266,12 +299,13 @@ export class PosV2Service {
 
         return {
             orderId: order.id,
-            totalAmount: subtotal,
+            totalAmount: grandTotal,
             itemCount: items.reduce((sum, i) => sum + i.quantity, 0),
-            cashReceived: paymentMethod === 'qris' ? subtotal : cashReceived,
-            change: cashReceived - subtotal,
+            cashReceived: paymentMethod === 'qris' ? grandTotal : cashReceived,
+            change: paymentMethod === 'qris' ? 0 : (cashReceived - grandTotal),
             customerName: guestCustomer.name,
             createdAt: order.createdAt.toISOString(),
+            hasTickets,
         };
     }
 

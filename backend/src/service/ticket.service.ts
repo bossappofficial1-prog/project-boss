@@ -81,4 +81,31 @@ export class TicketService {
   static async getTicketCodesByProduct(productId: string, page = 1, limit = 50) {
     return TicketRepository.findByProductId(productId, page, limit);
   }
+
+  static async getOrderTicketsPrintData(orderId: string) {
+    const tickets = await TicketRepository.findByOrderId(orderId);
+    
+    return tickets.map((t) => {
+      const eventDate = t.orderItem.product.ticket?.eventDate;
+      
+      const dateStr = eventDate 
+        ? eventDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }) 
+        : "-";
+        
+      const timeStr = eventDate 
+        ? eventDate.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }) 
+        : "-";
+
+      return {
+        id: t.id,
+        code: t.code,
+        productName: t.orderItem.product.name,
+        eventDate: dateStr,
+        eventTime: timeStr,
+        venue: t.orderItem.product.ticket?.venue || "-",
+        customerName: t.orderItem.order.guestCustomer?.name || "Customer",
+        outletName: t.orderItem.order.outlet.name,
+      };
+    });
+  }
 }

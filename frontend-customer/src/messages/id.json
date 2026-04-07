@@ -618,7 +618,8 @@
             "addToCalendar": "Tambah ke kalender",
             "viewDetails": "Lihat Detail",
             "close": "Tutup",
-            "contactOutlet": "Hubungi Outlet"
+            "contactOutlet": "Hubungi Outlet",
+            "downloadTicket": "Download Tiket"
         },
         "messages": {
             "contactRedirect": "Membuka WhatsApp...",
@@ -638,6 +639,8 @@
             "calendarSuccess": "Event kalender berhasil diunduh.",
             "calendarError": "Event kalender gagal dibuat. Silakan coba lagi.",
             "calendarMissingSchedule": "Jadwal belum tersedia. Silakan cek kembali nanti.",
+            "downloadTicketSuccess": "Tiket berhasil diunduh.",
+            "downloadTicketError": "Gagal mengunduh tiket. Silakan coba lagi.",
             "errors": {
                 "orderNotFound": "Pesanan tidak ditemukan.",
                 "ownershipMismatch": "Pesanan ini tidak terkait dengan nomor telepon Anda.",

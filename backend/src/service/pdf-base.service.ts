@@ -124,9 +124,9 @@ export class PdfBaseService {
 
             const page = await browser.newPage();
 
-            // 3. Set content (tidak perlu nunggu network karena semua inline)
+            // 3. Set content (perlu nunggu network karena ada external QR code)
             await page.setContent(htmlContent, {
-                waitUntil: 'domcontentloaded',
+                waitUntil: 'networkidle0',
             });
 
             // 4. Build margin

@@ -45,6 +45,7 @@ export interface PosV2OrderRequest {
     bookingSlotId?: string;
     bookingDate?: string;
     staffId?: string;
+    pointsRedeemed?: number;
 }
 
 export interface PosV2OrderResult {
@@ -55,6 +56,7 @@ export interface PosV2OrderResult {
     change: number;
     customerName: string;
     createdAt: string;
+    hasTickets: boolean;
 }
 
 export interface PosV2CashSummary {
@@ -91,11 +93,11 @@ export interface AvailableStaff {
 }
 
 export const posV2Api = {
-    async getProducts(outletId: string, search?: string, type?: "GOODS" | "SERVICE" | "TICKET"): Promise<PosV2Product[]> {
+    async getProducts(outletId: string, search?: string, type?: "GOODS" | "SERVICE" | "TICKET"): Promise<{ products: PosV2Product[]; meta: any }> {
         const params = new URLSearchParams({ outletId });
         if (search?.trim()) params.append("search", search.trim());
         if (type) params.append("type", type);
-        return apiCall<PosV2Product[]>(`/pos/v2/products?${params}`);
+        return apiCall<{ products: PosV2Product[]; meta: any }>(`/pos/v2/products?${params}`);
     },
 
     async createOrder(data: PosV2OrderRequest): Promise<PosV2OrderResult> {
@@ -129,6 +131,16 @@ export const posV2Api = {
 
     async getReceipt(orderId: string): Promise<Blob> {
         const response = await apiClient.get(`/orders/${orderId}/receipt`, {
+            responseType: "blob",
+        });
+        return response.data;
+    },
+    async getOrderTickets(orderId: string): Promise<any[]> {
+        return apiCall<any[]>(`/tickets/order/${orderId}`);
+    },
+
+    async printOrderTickets(orderId: string): Promise<Blob> {
+        const response = await apiClient.get(`/tickets/order/${orderId}/print`, {
             responseType: "blob",
         });
         return response.data;

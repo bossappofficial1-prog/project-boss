@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010'),
   title: {
     default: "BOSS Dashboard",
-    template: "%s | BOSS Dashboard"
+    template: "%s"
   },
   description: "Pantau outlet, transaksi, dan insight bisnis secara real-time lewat dashboard BOSS yang praktis.",
   keywords: ["dashboard bisnis", "manajemen operasional", "monitor outlet", "pantau transaksi", "analytics bisnis", "sistem kasir", "manajemen stok"],
@@ -150,15 +150,15 @@ export default function RootLayout({
         />
       </head>
       <body className={`${poppins.variable} font-poppins antialiased min-h-screen text-foreground`}>
-        <LoadingProvider>
-          <Suspense fallback={null}>
-            <NavigationProvider>
-              <ThemeProvider defaultTheme="system">
+        <ThemeProvider defaultTheme="system">
+          <LoadingProvider>
+            <Suspense fallback={null}>
+              <NavigationProvider>
                 <QueryProvider>{children}</QueryProvider>
-              </ThemeProvider>
-            </NavigationProvider>
-          </Suspense>
-        </LoadingProvider>
+              </NavigationProvider>
+            </Suspense>
+          </LoadingProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

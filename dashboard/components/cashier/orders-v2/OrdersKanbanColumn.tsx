@@ -14,8 +14,11 @@ interface OrdersKanbanColumnProps {
     onCancel: (entry: OrderV2Entry) => void;
     onDetail: (entry: OrderV2Entry) => void;
     onPrint: (entry: OrderV2Entry) => void;
+    onPrintTickets: (entry: OrderV2Entry) => void;
     onViewProof: (entry: OrderV2Entry) => void;
     pendingId: string | null;
+    printingId: string | null;
+    printingType: "receipt" | "ticket" | null;
 }
 
 export function OrdersKanbanColumn({
@@ -28,8 +31,11 @@ export function OrdersKanbanColumn({
     onCancel,
     onDetail,
     onPrint,
+    onPrintTickets,
     onViewProof,
     pendingId,
+    printingId,
+    printingType,
 }: OrdersKanbanColumnProps) {
     return (
         <div className="flex flex-col min-w-[280px] w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
@@ -62,8 +68,11 @@ export function OrdersKanbanColumn({
                                 onCancel={onCancel}
                                 onDetail={onDetail}
                                 onPrint={onPrint}
+                                onPrintTickets={onPrintTickets}
                                 onViewProof={onViewProof}
                                 isPending={pendingId === entry.id}
+                                isPrinting={printingId === entry.id}
+                                printingType={printingType}
                             />
                         ))
                     )}

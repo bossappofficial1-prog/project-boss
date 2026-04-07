@@ -38,6 +38,7 @@ export const createPosV2OrderSchema = z.object({
     bookingSlotId: z.string().uuid().optional(),
     bookingDate: z.string().datetime().optional(),
     staffId: z.string().uuid().optional(),
+    pointsRedeemed: z.number().int().min(0).optional(),
 });
 
 export type CreatePosV2OrderInput = z.infer<typeof createPosV2OrderSchema>;

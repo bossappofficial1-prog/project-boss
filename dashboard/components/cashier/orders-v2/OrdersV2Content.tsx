@@ -58,12 +58,16 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [proofEntry, setProofEntry] = useState<OrderV2Entry | null>(null);
   const [proofOpen, setProofOpen] = useState(false);
+  const [proofEntry, setProofEntry] = useState<OrderV2Entry | null>(null);
+  const [printingId, setPrintingId] = useState<string | null>(null);
+  const [printingType, setPrintingType] = useState<"receipt" | "ticket" | null>(null);
 
   // Receipt printing via hidden iframe
   const handlePrint = useCallback(async (entry: OrderV2Entry) => {
     try {
+      setPrintingId(entry.id);
+      setPrintingType("receipt");
       const blob = await ordersV2Api.getReceipt(entry.id);
       const url = URL.createObjectURL(blob);
 
@@ -82,10 +86,29 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
         setTimeout(() => {
           iframe.contentWindow?.focus();
           iframe.contentWindow?.print();
+          setPrintingId(null);
+          setPrintingType(null);
         }, 500);
       };
     } catch {
       toast.error("Gagal mencetak struk");
+      setPrintingId(null);
+      setPrintingType(null);
+    }
+  }, []);
+
+  const handlePrintTickets = useCallback(async (entry: OrderV2Entry) => {
+    try {
+      setPrintingId(entry.id);
+      setPrintingType("ticket");
+      const blob = await ordersV2Api.printOrderTickets(entry.id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch {
+      toast.error("Gagal mencetak tiket");
+    } finally {
+      setPrintingId(null);
+      setPrintingType(null);
     }
   }, []);
 
@@ -227,8 +250,11 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
         onCancel={handleCancel}
         onDetail={handleDetail}
         onPrint={handlePrint}
+        onPrintTickets={handlePrintTickets}
         onViewProof={handleViewProof}
         pendingId={updateStatus.isPending ? (confirmState?.entry.id ?? null) : null}
+        printingId={printingId}
+        printingType={printingType}
       />
 
       {/* Detail Sheet */}
@@ -239,8 +265,11 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
         onPrimaryAction={handlePrimaryAction}
         onCancel={handleCancel}
         onPrint={handlePrint}
+        onPrintTickets={handlePrintTickets}
         onViewProof={handleViewProof}
         isPending={updateStatus.isPending}
+        printingId={printingId}
+        printingType={printingType}
       />
 
       {/* Proof Preview Dialog */}

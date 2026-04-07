@@ -10,8 +10,11 @@ interface OrdersKanbanBoardProps {
     onCancel: (entry: OrderV2Entry) => void;
     onDetail: (entry: OrderV2Entry) => void;
     onPrint: (entry: OrderV2Entry) => void;
+    onPrintTickets: (entry: OrderV2Entry) => void;
     onViewProof: (entry: OrderV2Entry) => void;
     pendingId: string | null;
+    printingId: string | null;
+    printingType: "receipt" | "ticket" | null;
 }
 
 const COLUMNS = [
@@ -47,8 +50,11 @@ export function OrdersKanbanBoard({
     onCancel,
     onDetail,
     onPrint,
+    onPrintTickets,
     onViewProof,
     pendingId,
+    printingId,
+    printingType,
 }: OrdersKanbanBoardProps) {
     return (
         <>
@@ -66,8 +72,11 @@ export function OrdersKanbanBoard({
                         onCancel={onCancel}
                         onDetail={onDetail}
                         onPrint={onPrint}
+                        onPrintTickets={onPrintTickets}
                         onViewProof={onViewProof}
                         pendingId={pendingId}
+                        printingId={printingId}
+                        printingType={printingType}
                     />
                 ))}
             </div>
@@ -90,8 +99,11 @@ export function OrdersKanbanBoard({
                             onCancel={onCancel}
                             onDetail={onDetail}
                             onPrint={onPrint}
+                            onPrintTickets={onPrintTickets}
                             onViewProof={onViewProof}
                             pendingId={pendingId}
+                            printingId={printingId}
+                            printingType={printingType}
                         />
                     );
                 })}
