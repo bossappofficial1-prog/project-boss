@@ -2,7 +2,9 @@
 FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
+ARG DATABASE_URL
 ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV DATABASE_URL=$DATABASE_URL
 
 COPY package.json bun.lockb* ./
 COPY prisma ./prisma/
