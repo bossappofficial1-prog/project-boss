@@ -1,13 +1,9 @@
-# Robots.txt for BOSS Dashboard
-# This is a private dashboard application - disallow all crawlers
-
 User-agent: *
-Disallow: /
+Allow: /
 
 # Allow access to static assets if needed
 Allow: /favicon.ico
 Allow: /icon.svg
 Allow: /manifest.json
 
-# Sitemap (if we add one later)
-# Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://dashboard.bossapp.id/sitemap.xml

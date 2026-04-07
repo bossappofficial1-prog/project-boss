@@ -5,15 +5,15 @@ export const metadata: Metadata = {
   title: "Admin Dashboard | BOSS",
   description: "Panel kontrol utama untuk manajemen seluruh ekosistem BOSS.",
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
 };
 
 export default function Layout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return <AdminLayout>{children}</AdminLayout>;
+  return <AdminLayout>{children}</AdminLayout>;
 }

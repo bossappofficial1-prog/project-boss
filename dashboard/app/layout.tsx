@@ -33,15 +33,13 @@ export const metadata: Metadata = {
     telephone: false,
   },
   robots: {
-    index: false, // Dashboard should not be indexed by search engines
-    follow: false,
-    nocache: true,
+    index: true,
+    follow: true,
     googleBot: {
-      index: false,
-      follow: false,
-      noimageindex: true,
+      index: true,
+      follow: true,
       'max-video-preview': -1,
-      'max-image-preview': 'none',
+      'max-image-preview': 'large',
       'max-snippet': -1,
     },
   },

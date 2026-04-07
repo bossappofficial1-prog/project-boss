@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   title: "Sistem Kasir | BOSS",
   description: "Terminal penjualan (POS) yang efisien dan terintegrasi untuk operasional bisnis Anda.",
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
   openGraph: {
     title: "Sistem Kasir BOSS",

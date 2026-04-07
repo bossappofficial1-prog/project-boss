@@ -28,8 +28,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'BOSS Customer',
-    template: '%s | BOSS'
+    default: 'Boss',
+    template: '%s | Boss'
   },
   description: "Urus operasional usaha, atur jadwal, dan jaga pelanggan kamu lebih gampang bareng BOSS.",
   icons: {
@@ -45,13 +45,13 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "BOSS Customer",
+    title: "Boss",
     startupImage: [
       `${process.env.SITE_URL}/assets/logo/og-image.png`,
     ],
   },
   openGraph: {
-    title: "BOSS - Platform Manajemen Bisnis",
+    title: "Boss",
     description: "BOSS bantu kamu merapikan operasional bisnis, jadwal layanan, sampai urusan pelanggan dalam satu tempat.",
     url: "https://bossapp.id",
     siteName: "BOSS",
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "BOSS - Platform Manajemen Bisnis",
+    title: "Boss",
     description: "Optimalkan operasional, jadwal, dan pengalaman pelanggan bisnis kamu cukup lewat BOSS.",
     images: [`${process.env.SITE_URL}/assets/logo/og-image.png`],
   },
@@ -93,7 +93,7 @@ export const metadata: Metadata = {
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "BOSS Customer",
+  "name": "Boss",
   "description": "BOSS customer",
   "url": process.env.SITE_URL || 'http://localhost:3000',
   "applicationCategory": "BusinessApplication",
@@ -124,7 +124,7 @@ export default function Layout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="BOSS Customer" />
+        <meta name="apple-mobile-web-app-title" content="Boss" />
         <link rel="apple-touch-icon" sizes="180x180" href="/assets/logo/icon-192x192.png" />
         <link rel="icon" type="image/x-icon" href="/assets/logo/favicon.ico" />
         <link rel="shortcut icon" href="/assets/logo/favicon.ico" />
