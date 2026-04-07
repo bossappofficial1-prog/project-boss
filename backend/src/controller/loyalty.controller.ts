@@ -4,7 +4,8 @@ import {
   upsertLoyaltyConfigSchema,
   registerMembershipSchema,
   getMembersByOutletQuerySchema,
-  adjustPointsSchema
+  adjustPointsSchema,
+  getPointHistoryQuerySchema,
 } from "../schemas/loyalty.schema";
 import { HttpStatus } from "../constants/http-status";
 
@@ -52,6 +53,21 @@ export class LoyaltyController {
     const { points } = adjustPointsSchema.parse(req.body);
 
     const result = await LoyaltyService.adjustPoints(guestCustomerId, outletId, points);
+    return res.status(HttpStatus.OK).json(result);
+  }
+
+  static async getPointHistory(req: Request, res: Response) {
+    const outletId = req.params.outletId as string;
+    const guestCustomerId = req.params.guestCustomerId as string;
+    const query = getPointHistoryQuerySchema.parse(req.query);
+
+    const result = await LoyaltyService.getMemberPointHistory(
+      outletId,
+      guestCustomerId,
+      query.page,
+      query.limit,
+    );
+
     return res.status(HttpStatus.OK).json(result);
   }
 }

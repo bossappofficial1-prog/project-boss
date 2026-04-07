@@ -51,6 +51,8 @@ export interface PosV2OrderRequest {
 export interface PosV2OrderResult {
     orderId: string;
     totalAmount: number;
+    subtotal?: number;
+    discountAmount?: number;
     itemCount: number;
     cashReceived: number;
     change: number;

@@ -20,6 +20,7 @@ export interface OrderV2Entry {
   id: string;
   orderStatus: GoodsOrderStatus;
   totalAmount: number;
+  discountAmount: number;
   customerName: string;
   customerPhone: string | null;
   items: OrderItemEntry[];

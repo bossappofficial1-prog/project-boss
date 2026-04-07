@@ -109,6 +109,13 @@ enum MediaSource {
   EMBED
 }
 
+enum LoyaltyPointHistoryType {
+  EARN
+  REDEEM
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+}
+
 // Model untuk pengguna
 model User {
   id                      String    @id @default(uuid())
@@ -310,6 +317,7 @@ model Outlet {
   receiptSettings receiptSetting?
   loyaltyConfig   LoyaltyConfig?
   memberships     OutletMembership[]
+  pointHistories  LoyaltyPointHistory[]
 
   @@index([businessId])
   @@index([slug])
@@ -594,6 +602,7 @@ model GuestCustomer {
 
   // Relasi: Menampung status membership di berbagai outlet
   outletMemberships OutletMembership[]
+  pointHistories    LoyaltyPointHistory[]
 
   createdAt         DateTime           @default(now())
   pushSubscriptions PushSubscription[]
@@ -627,24 +636,46 @@ model OutletMembership {
   outletId        String
   outlet          Outlet        @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
-  totalPoints Int      @default(0)
+  totalPoints   Int      @default(0)
   totalSpending Float    @default(0)
-  status      String   @default("ACTIVE") // ACTIVE, SUSPENDED
-  joinedAt    DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status        String   @default("ACTIVE") // ACTIVE, SUSPENDED
+  joinedAt      DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([guestCustomerId, outletId])
   @@index([guestCustomerId])
   @@index([outletId])
 }
 
+model LoyaltyPointHistory {
+  id String @id @default(uuid())
+
+  outletId String
+  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  guestCustomerId String
+  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  type   LoyaltyPointHistoryType
+  points Int
+  note   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([outletId, guestCustomerId, createdAt])
+  @@index([orderId])
+}
+
 // Model untuk pesanan/booking yang dibuat oleh customer
 model Order {
-  id          String    @id @default(uuid())
-  totalAmount Float // Menggunakan Float untuk nilai uang
-  discountAmount Float @default(0) // Potongan dari poin loyalty/promo
-  pointsRedeemed Int  @default(0) // Jumlah poin yang ditukarkan
-  bookingDate DateTime? // Digunakan khusus untuk booking jasa
+  id             String    @id @default(uuid())
+  totalAmount    Float // Menggunakan Float untuk nilai uang
+  discountAmount Float     @default(0) // Potongan dari poin loyalty/promo
+  pointsRedeemed Int       @default(0) // Jumlah poin yang ditukarkan
+  bookingDate    DateTime? // Digunakan khusus untuk booking jasa
 
   // Tipe customer (hanya GUEST sesuai MoM)
   customerType CustomerType @default(GUEST)
@@ -685,7 +716,8 @@ model Order {
   transaction Transaction?
 
   // Relasi: Many-to-many ke GuestCustomer melalui tabel Membership
-  memberships Membership[]
+  memberships    Membership[]
+  pointHistories LoyaltyPointHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,4 +1,4 @@
-import { OrderStatus } from "@prisma/client";
+import { LoyaltyPointHistoryType, OrderStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { LoyaltyRepository } from "../repositories/loyalty.repository";
 import { OrderRepository } from "../repositories/order.repository";
@@ -26,7 +26,7 @@ export class LoyaltyService {
    */
   static async getConfig(outletId: string) {
     let config = await LoyaltyRepository.getLoyaltyConfig(outletId);
-    
+
     // Jika belum ada, kembalikan default
     if (!config) {
       return {
@@ -37,7 +37,7 @@ export class LoyaltyService {
         isActive: true
       };
     }
-    
+
     return config;
   }
 
@@ -56,15 +56,15 @@ export class LoyaltyService {
 
     // Jika tidak ada ID, cari atau buat berdasarkan phone
     if (!guestCustomerId) {
-        if (!phone || !name) {
-            throw new AppError("ID Customer atau Nama & No. Telepon harus diisi.", HttpStatus.BAD_REQUEST);
-        }
+      if (!phone || !name) {
+        throw new AppError("ID Customer atau Nama & No. Telepon harus diisi.", HttpStatus.BAD_REQUEST);
+      }
 
-        let customer = await GuestCustomerRepository.findByPhone(phone);
-        if (!customer) {
-            customer = await GuestCustomerRepository.create({ name, phone });
-        }
-        guestCustomerId = customer.id;
+      let customer = await GuestCustomerRepository.findByPhone(phone);
+      if (!customer) {
+        customer = await GuestCustomerRepository.create({ name, phone });
+      }
+      guestCustomerId = customer.id;
     }
 
     const existing = await LoyaltyRepository.getMembership(guestCustomerId, outletId);
@@ -84,18 +84,18 @@ export class LoyaltyService {
     });
 
     return {
-        id: membership.id,
-        guestCustomerId: membership.guestCustomerId,
-        outletId: membership.outletId,
-        points: membership.totalPoints,
-        tier: "Bronze", // Default for new member
-        totalSpending: 0,
-        lastTransactionAt: membership.updatedAt,
-        joinedAt: membership.joinedAt,
-        customer: {
-          name: membership.guestCustomer.name,
-          phone: membership.guestCustomer.phone
-        }
+      id: membership.id,
+      guestCustomerId: membership.guestCustomerId,
+      outletId: membership.outletId,
+      points: membership.totalPoints,
+      tier: "Bronze", // Default for new member
+      totalSpending: 0,
+      lastTransactionAt: membership.updatedAt,
+      joinedAt: membership.joinedAt,
+      customer: {
+        name: membership.guestCustomer.name,
+        phone: membership.guestCustomer.phone
+      }
     };
   }
 
@@ -105,46 +105,55 @@ export class LoyaltyService {
   static async processOrderLoyalty(orderId: string) {
     console.log(`[LOYALTY] Processing points for order: ${orderId}`);
     const order = await OrderRepository.findById(orderId);
-    
+
     if (!order) {
-        console.log(`[LOYALTY] Order not found: ${orderId}`);
-        return;
+      console.log(`[LOYALTY] Order not found: ${orderId}`);
+      return;
     }
 
     console.log(`[LOYALTY] Order status: ${order.orderStatus}, Phone: ${order.guestCustomer?.phone}`);
 
     if (order.orderStatus !== OrderStatus.COMPLETED) {
-        console.log(`[LOYALTY] Order not completed. Skipping.`);
-        return;
+      console.log(`[LOYALTY] Order not completed. Skipping.`);
+      return;
+    }
+
+    const alreadyAwarded = await LoyaltyRepository.hasPointHistoryForOrder(
+      order.id,
+      LoyaltyPointHistoryType.EARN,
+    );
+    if (alreadyAwarded) {
+      console.log(`[LOYALTY] Points already awarded for order: ${order.id}. Skipping.`);
+      return;
     }
 
     // Abaikan walk-in customer (phone: 0000000000)
     if (order.guestCustomer.phone === "0000000000") {
-        console.log(`[LOYALTY] Walk-in customer. Skipping.`);
-        return;
+      console.log(`[LOYALTY] Walk-in customer. Skipping.`);
+      return;
     }
 
     const config = await this.getConfig(order.outletId);
     console.log(`[LOYALTY] Config: ${JSON.stringify(config)}`);
 
     if (!config.isActive) {
-        console.log(`[LOYALTY] Config is inactive. Skipping.`);
-        return;
+      console.log(`[LOYALTY] Config is inactive. Skipping.`);
+      return;
     }
 
     // Cek min spending
     if (order.totalAmount < config.minSpending) {
-        console.log(`[LOYALTY] Total amount (${order.totalAmount}) < min spending (${config.minSpending}). Skipping.`);
-        return;
+      console.log(`[LOYALTY] Total amount (${order.totalAmount}) < min spending (${config.minSpending}). Skipping.`);
+      return;
     }
 
     // Hitung poin (Floor calculation: pembulatan ke bawah)
     const points = Math.floor(order.totalAmount / config.multiplierAmount) * config.pointsEarned;
     console.log(`[LOYALTY] Calculated points: ${points} (Amount: ${order.totalAmount}, Multiplier: ${config.multiplierAmount}, Earned: ${config.pointsEarned})`);
-    
+
     if (points <= 0) {
-        console.log(`[LOYALTY] Zero points. Skipping.`);
-        return;
+      console.log(`[LOYALTY] Zero points. Skipping.`);
+      return;
     }
 
     // Cek/Buat Membership
@@ -156,7 +165,16 @@ export class LoyaltyService {
 
     // Tambah poin dan total belanja
     console.log(`[LOYALTY] Adding ${points} points and Rp ${order.totalAmount} spending to member.`);
-    return LoyaltyRepository.addPointsAndSpending(order.guestCustomerId, order.outletId, points, order.totalAmount);
+    return LoyaltyRepository.addPointsAndSpendingWithHistory(
+      order.guestCustomerId,
+      order.outletId,
+      points,
+      order.totalAmount,
+      {
+        orderId: order.id,
+        note: "Poin didapat dari transaksi selesai",
+      },
+    );
   }
 
   /**
@@ -209,11 +227,16 @@ export class LoyaltyService {
     // Pastikan membership ada
     const membership = await LoyaltyRepository.getMembership(guestCustomerId, outletId);
     if (!membership) {
-        // Jika belum ada, buat dulu
-        await LoyaltyRepository.createMembership(guestCustomerId, outletId);
+      // Jika belum ada, buat dulu
+      await LoyaltyRepository.createMembership(guestCustomerId, outletId);
     }
 
-    return LoyaltyRepository.addPoints(guestCustomerId, outletId, points);
+    return LoyaltyRepository.adjustPointsWithHistory(
+      guestCustomerId,
+      outletId,
+      points,
+      "Penyesuaian poin oleh owner",
+    );
   }
 
   /**
@@ -222,13 +245,57 @@ export class LoyaltyService {
   static async redeemPoints(guestCustomerId: string, outletId: string, points: number) {
     const membership = await LoyaltyRepository.getMembership(guestCustomerId, outletId);
     if (!membership) {
-        throw new AppError("Member tidak ditemukan.", HttpStatus.NOT_FOUND);
+      throw new AppError("Member tidak ditemukan.", HttpStatus.NOT_FOUND);
     }
 
     if (membership.totalPoints < points) {
-        throw new AppError("Poin tidak mencukupi.", HttpStatus.BAD_REQUEST);
+      throw new AppError("Poin tidak mencukupi.", HttpStatus.BAD_REQUEST);
     }
 
-    return LoyaltyRepository.deductPoints(guestCustomerId, outletId, points);
+    return LoyaltyRepository.deductPointsWithHistory(
+      guestCustomerId,
+      outletId,
+      points,
+      { note: "Penukaran poin" },
+    );
+  }
+
+  static async getMemberPointHistory(
+    outletId: string,
+    guestCustomerId: string,
+    page = 1,
+    limit = 20,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const [rows, total] = await Promise.all([
+      LoyaltyRepository.findPointHistoryByMember(outletId, guestCustomerId, skip, limit),
+      LoyaltyRepository.countPointHistoryByMember(outletId, guestCustomerId),
+    ]);
+
+    return {
+      history: rows.map((row) => ({
+        id: row.id,
+        type: row.type,
+        points: row.points,
+        note: row.note,
+        createdAt: row.createdAt,
+        order: row.order
+          ? {
+            id: row.order.id,
+            totalAmount: row.order.totalAmount,
+            discountAmount: row.order.discountAmount,
+            pointsRedeemed: row.order.pointsRedeemed,
+            createdAt: row.order.createdAt,
+          }
+          : null,
+      })),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

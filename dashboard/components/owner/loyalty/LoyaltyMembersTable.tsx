@@ -2,9 +2,9 @@ import React from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { type ColumnDef } from "@tanstack/react-table";
 import { type OutletMembership } from "@/lib/apis/loyalty";
-import { useLoyaltyMembers, useAdjustPoints } from "@/hooks/api/use-loyalty";
+import { useLoyaltyMembers, useAdjustPoints, useLoyaltyPointHistory } from "@/hooks/api/use-loyalty";
 import { Badge } from "@/components/ui/badge";
-import { User, Trophy, Calendar, PlusCircle, MinusCircle } from "lucide-react";
+import { User, Trophy, Calendar, PlusCircle, MinusCircle, History } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,8 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
     // State for Adjust Points Dialog
     const [editingMember, setEditingMember] = React.useState<OutletMembership | null>(null);
     const [pointsToAdjust, setPointsToAdjust] = React.useState<string>("0");
+    const [historyMember, setHistoryMember] = React.useState<OutletMembership | null>(null);
+    const [historyPage, setHistoryPage] = React.useState(1);
     const adjustPoints = useAdjustPoints();
 
     const { data, isLoading, isFetching } = useLoyaltyMembers(outletId, {
@@ -35,6 +37,19 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
         page,
         limit,
     });
+
+    const {
+        data: pointHistoryData,
+        isLoading: pointHistoryLoading,
+        isFetching: pointHistoryFetching,
+    } = useLoyaltyPointHistory(outletId, historyMember?.guestCustomerId || "", {
+        page: historyPage,
+        limit: 10,
+    });
+
+    React.useEffect(() => {
+        setHistoryPage(1);
+    }, [historyMember?.guestCustomerId]);
 
     const handleAdjustPoints = async () => {
         if (!editingMember) return;
@@ -124,7 +139,7 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
             id: "actions",
             header: () => <div className="">Aksi</div>,
             cell: ({ row }) => (
-                <div className="flex">
+                <div className="flex gap-1">
                     <Button
                         variant="ghost"
                         size="sm"
@@ -133,6 +148,15 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
                     >
                         <PlusCircle className="h-4 w-4" />
                         Atur Poin
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1.5 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+                        onClick={() => setHistoryMember(row.original)}
+                    >
+                        <History className="h-4 w-4" />
+                        Riwayat
                     </Button>
                 </div>
             )
@@ -167,7 +191,7 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
             />
 
             <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>Atur Poin Member</DialogTitle>
                         <DialogDescription>
@@ -211,6 +235,99 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
                         >
                             {adjustPoints.isPending ? "Memproses..." : "Simpan Perubahan"}
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!historyMember} onOpenChange={(open) => !open && setHistoryMember(null)}>
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Riwayat Poin Member</DialogTitle>
+                        <DialogDescription>
+                            Riwayat penggunaan dan perubahan poin untuk {historyMember?.customer.name}.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="max-h-96 space-y-2 overflow-y-auto pr-1">
+                        {pointHistoryLoading ? (
+                            <p className="text-sm text-slate-500">Memuat riwayat poin...</p>
+                        ) : (pointHistoryData?.history?.length || 0) === 0 ? (
+                            <p className="text-sm text-slate-500">Belum ada riwayat poin untuk member ini.</p>
+                        ) : (
+                            pointHistoryData?.history.map((item) => {
+                                const isMinus = item.type === "REDEEM" || item.type === "ADJUSTMENT_OUT";
+                                const typeLabel =
+                                    item.type === "EARN"
+                                        ? "Dapat Poin"
+                                        : item.type === "REDEEM"
+                                            ? "Pakai Poin"
+                                            : item.type === "ADJUSTMENT_IN"
+                                                ? "Penyesuaian +"
+                                                : "Penyesuaian -";
+
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="flex items-start justify-between rounded-md border border-slate-200 p-3 dark:border-slate-800"
+                                    >
+                                        <div className="space-y-1">
+                                            <Badge variant="secondary" className="rounded-md">
+                                                {typeLabel}
+                                            </Badge>
+                                            <p className="text-xs text-slate-500">
+                                                {format(new Date(item.createdAt), "d MMM yyyy HH:mm", {
+                                                    locale: localeId,
+                                                })}
+                                            </p>
+                                            {item.note && (
+                                                <p className="text-xs text-slate-600 dark:text-slate-400">
+                                                    {item.note}
+                                                </p>
+                                            )}
+                                            {item.order?.id && (
+                                                <p className="text-xs text-slate-500">Order: {item.order.id}</p>
+                                            )}
+                                        </div>
+                                        <div
+                                            className={`text-sm font-semibold ${isMinus
+                                                    ? "text-red-600 dark:text-red-400"
+                                                    : "text-emerald-600 dark:text-emerald-400"
+                                                }`}
+                                        >
+                                            {isMinus ? "-" : "+"}
+                                            {item.points.toLocaleString("id-ID")} poin
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+
+                    <DialogFooter className="flex items-center justify-between gap-2 sm:justify-between">
+                        <p className="text-xs text-slate-500">
+                            {pointHistoryFetching ? "Memperbarui..." : `Total riwayat: ${pointHistoryData?.meta.total || 0}`}
+                        </p>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setHistoryPage((prev) => Math.max(1, prev - 1))}
+                                disabled={historyPage <= 1 || pointHistoryLoading}
+                            >
+                                Sebelumnya
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setHistoryPage((prev) => prev + 1)}
+                                disabled={
+                                    pointHistoryLoading ||
+                                    historyPage >= (pointHistoryData?.meta.totalPages || 1)
+                                }
+                            >
+                                Selanjutnya
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -149,9 +149,21 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
 
                 {/* Amount + item count */}
                 <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        {formatCurrency(entry.totalAmount)}
-                    </span>
+                    <div className="flex flex-col">
+                        {entry.discountAmount > 0 && (
+                            <span className="text-[11px] text-slate-400 line-through">
+                                {formatCurrency(entry.totalAmount + entry.discountAmount)}
+                            </span>
+                        )}
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {formatCurrency(entry.totalAmount)}
+                        </span>
+                        {entry.discountAmount > 0 && (
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                                Diskon Poin
+                            </span>
+                        )}
+                    </div>
                     <span className="text-[10px] text-slate-400">
                         {itemCount} item
                     </span>

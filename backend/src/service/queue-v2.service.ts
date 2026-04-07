@@ -20,6 +20,7 @@ interface QueueEntry {
   id: string;
   orderStatus: OrderStatus;
   totalAmount: number;
+  discountAmount: number;
   customerName: string;
   customerPhone: string | null;
   productName: string;
@@ -109,6 +110,7 @@ function mapOrderToEntry(order: any, position: number): QueueEntry {
     id: order.id,
     orderStatus: order.orderStatus,
     totalAmount: Number(order.totalAmount),
+    discountAmount: Number(order.discountAmount ?? 0),
     customerName: order.guestCustomer?.name ?? "Customer",
     customerPhone: order.guestCustomer?.phone ?? null,
     productName: serviceItem?.product?.name ?? "Layanan",
@@ -123,11 +125,11 @@ function mapOrderToEntry(order: any, position: number): QueueEntry {
     updatedAt: order.updatedAt?.toISOString?.() ?? order.updatedAt,
     bookingSlot: bookingSlot
       ? {
-          id: bookingSlot.id,
-          startTime: bookingSlot.startTime?.toISOString?.() ?? bookingSlot.startTime,
-          endTime: bookingSlot.endTime?.toISOString?.() ?? bookingSlot.endTime,
-          status: bookingSlot.status,
-        }
+        id: bookingSlot.id,
+        startTime: bookingSlot.startTime?.toISOString?.() ?? bookingSlot.startTime,
+        endTime: bookingSlot.endTime?.toISOString?.() ?? bookingSlot.endTime,
+        status: bookingSlot.status,
+      }
       : null,
     paymentMethod: order.transaction?.paymentMethod ?? null,
     isManualPayment: Boolean(order.transaction?.isManual),

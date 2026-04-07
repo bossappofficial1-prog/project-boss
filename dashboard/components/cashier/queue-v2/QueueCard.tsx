@@ -183,8 +183,20 @@ export function QueueCard({ entry, onPrimaryAction, onCancel, onDetail, onViewPr
                 </div>
 
                 {/* Amount */}
-                <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {formatCurrency(entry.totalAmount)}
+                <div className="flex flex-col">
+                    {entry.discountAmount > 0 && (
+                        <span className="text-[11px] text-slate-400 line-through">
+                            {formatCurrency(entry.totalAmount + entry.discountAmount)}
+                        </span>
+                    )}
+                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        {formatCurrency(entry.totalAmount)}
+                    </span>
+                    {entry.discountAmount > 0 && (
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                            Diskon Poin
+                        </span>
+                    )}
                 </div>
 
                 {/* Actions */}

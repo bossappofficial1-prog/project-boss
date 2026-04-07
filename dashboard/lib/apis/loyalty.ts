@@ -49,6 +49,33 @@ export interface RegisterMemberRequest {
     phone?: string;
 }
 
+export type LoyaltyPointHistoryType = "EARN" | "REDEEM" | "ADJUSTMENT_IN" | "ADJUSTMENT_OUT";
+
+export interface LoyaltyPointHistoryEntry {
+    id: string;
+    type: LoyaltyPointHistoryType;
+    points: number;
+    note: string | null;
+    createdAt: string;
+    order: {
+        id: string;
+        totalAmount: number;
+        discountAmount: number;
+        pointsRedeemed: number;
+        createdAt: string;
+    } | null;
+}
+
+export interface PaginatedPointHistory {
+    history: LoyaltyPointHistoryEntry[];
+    meta: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    };
+}
+
 export const loyaltyApi = {
     async getConfig(outletId: string): Promise<LoyaltyConfig | null> {
         const response = await apiClient.get<LoyaltyConfig | null>(`/loyalty/config/${outletId}`);
@@ -79,6 +106,21 @@ export const loyaltyApi = {
         const response = await apiClient.post<OutletMembership>(
             `/loyalty/members/${outletId}/${guestCustomerId}/adjust-points`,
             { points }
+        );
+        return response.data;
+    },
+
+    async getMemberPointHistory(
+        outletId: string,
+        guestCustomerId: string,
+        query: { page?: number; limit?: number } = {},
+    ): Promise<PaginatedPointHistory> {
+        const params = new URLSearchParams();
+        if (query.page) params.append("page", query.page.toString());
+        if (query.limit) params.append("limit", query.limit.toString());
+
+        const response = await apiClient.get<PaginatedPointHistory>(
+            `/loyalty/members/${outletId}/${guestCustomerId}/history?${params}`,
         );
         return response.data;
     },

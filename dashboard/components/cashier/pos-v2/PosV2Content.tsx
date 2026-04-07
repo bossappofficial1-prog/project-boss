@@ -284,7 +284,7 @@ export function PosV2Content() {
     };
 
     return (
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-3 p-4">
+        <div className="mx-auto flex w-full max-w-350 flex-col gap-3 p-4">
             {/* Header */}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -366,9 +366,9 @@ export function PosV2Content() {
                                             className="h-8 text-sm"
                                             placeholder="Jumlah poin..."
                                         />
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm" 
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
                                             className="h-8 text-xs"
                                             onClick={() => {
                                                 const maxPointsBySubtotal = Math.ceil(subtotal / (loyaltyConfig as any).pointValue);
@@ -388,7 +388,7 @@ export function PosV2Content() {
 
                             <Separator />
 
-                             <PaymentSection
+                            <PaymentSection
                                 method={paymentMethod}
                                 onMethodChange={setPaymentMethod}
                                 total={grandTotal}
@@ -402,7 +402,7 @@ export function PosV2Content() {
                                 onClick={handleSubmitOrder}
                                 disabled={!canSubmit || createOrder.isPending}
                                 className="w-full bg-blue-600 py-5 text-base font-semibold hover:bg-blue-500 disabled:opacity-50">
-                                {createOrder.isPending ? "Memproses..." : `Bayar Rp ${subtotal.toLocaleString("id-ID")}`}
+                                {createOrder.isPending ? "Memproses..." : `Bayar Rp ${grandTotal.toLocaleString("id-ID")}`}
                             </Button>
 
                             {!canSubmit && cartItems.length > 0 && (

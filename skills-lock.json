@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "419c5617fecea84e43850e918344b365b784d4d40f5b2ad8d8b47655de2963fd"
     },
+    "docker-swarm": {
+      "source": "pluginagentmarketplace/custom-plugin-docker",
+      "sourceType": "github",
+      "computedHash": "03125d60b286b1a2569f600ac8987ac11755185ed3b2504046df90c3a3da09d9"
+    },
     "express-typescript": {
       "source": "mindrally/skills",
       "sourceType": "github",

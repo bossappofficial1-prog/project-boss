@@ -16,5 +16,6 @@ router.put("/config/:outletId", authorize(UserRole.OWNER), LoyaltyController.ups
 router.get("/members/:outletId", LoyaltyController.getMembers);
 router.post("/register", LoyaltyController.registerMember);
 router.post("/members/:outletId/:guestCustomerId/adjust-points", authorize(UserRole.OWNER), LoyaltyController.adjustPoints);
+router.get("/members/:outletId/:guestCustomerId/history", authorize(UserRole.OWNER), LoyaltyController.getPointHistory);
 
 export default router;

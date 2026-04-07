@@ -10,6 +10,8 @@ import { LoyaltyService } from "./loyalty.service";
 
 export interface PosV2OrderResult {
     orderId: string;
+    subtotal: number;
+    discountAmount: number;
     totalAmount: number;
     itemCount: number;
     cashReceived: number;
@@ -21,14 +23,14 @@ export interface PosV2OrderResult {
 
 export class PosV2Service {
     static async getProducts(
-        outletId: string, 
-        search?: string, 
+        outletId: string,
+        search?: string,
         type?: "GOODS" | "SERVICE" | "TICKET",
         page: number = 1,
         limit: number = 50
     ) {
         const cacheKey = `pos:products:${outletId}:t=${type || 'all'}:s=${search || ''}:p=${page}:l=${limit}`;
-        
+
         const cached = await RedisUtils.get<any>(cacheKey);
         if (cached) return cached;
 
@@ -224,7 +226,7 @@ export class PosV2Service {
             if (loyaltyConfig && loyaltyConfig.isActive && loyaltyConfig.pointValue > 0) {
                 // @ts-ignore
                 discountAmount = pointsRedeemed * loyaltyConfig.pointValue;
-                
+
                 // Validate if customer has enough points
                 const membership = await LoyaltyService.getMembership(guestCustomer.id, outletId);
                 if (!membership || membership.totalPoints < pointsRedeemed) {
@@ -300,6 +302,8 @@ export class PosV2Service {
         return {
             orderId: order.id,
             totalAmount: grandTotal,
+            subtotal: subtotal,
+            discountAmount: discountAmount,
             itemCount: items.reduce((sum, i) => sum + i.quantity, 0),
             cashReceived: paymentMethod === 'qris' ? grandTotal : cashReceived,
             change: paymentMethod === 'qris' ? 0 : (cashReceived - grandTotal),

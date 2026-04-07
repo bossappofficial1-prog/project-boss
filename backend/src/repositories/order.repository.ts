@@ -9,6 +9,8 @@ export class OrderRepository {
         id: true,
         createdAt: true,
         totalAmount: true,
+        discountAmount: true,
+        pointsRedeemed: true,
         guestCustomer: {
           select: {
             name: true,

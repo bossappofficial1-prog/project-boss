@@ -1,5 +1,5 @@
 import { db } from "../config/prisma";
-import { PaymentStatus, ManualPaymentType, OrderStatus, ServiceStatus } from "@prisma/client";
+import { LoyaltyPointHistoryType, PaymentStatus, ManualPaymentType, OrderStatus, ServiceStatus } from "@prisma/client";
 import { generateTicketCode } from "../utils";
 
 export class PosV2Repository {
@@ -137,6 +137,17 @@ export class PosV2Repository {
                         totalPoints: {
                             decrement: pointsRedeemed,
                         },
+                    },
+                });
+
+                await tx.loyaltyPointHistory.create({
+                    data: {
+                        outletId,
+                        guestCustomerId: customerId,
+                        orderId: order.id,
+                        type: LoyaltyPointHistoryType.REDEEM,
+                        points: pointsRedeemed,
+                        note: "Penukaran poin pada transaksi POS",
                     },
                 });
             }

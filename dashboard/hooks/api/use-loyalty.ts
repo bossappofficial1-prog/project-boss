@@ -4,6 +4,8 @@ import { loyaltyApi, type GetMembersQuery, type RegisterMemberRequest, type Loya
 const KEYS = {
     config: (outletId: string) => ["loyalty", "config", outletId] as const,
     members: (outletId: string, query: GetMembersQuery) => ["loyalty", "members", outletId, query] as const,
+    pointHistory: (outletId: string, guestCustomerId: string, page: number, limit: number) =>
+        ["loyalty", "point-history", outletId, guestCustomerId, page, limit] as const,
 };
 
 export function useLoyaltyConfig(outletId: string) {
@@ -65,6 +67,25 @@ export function useAdjustPoints() {
             queryClient.invalidateQueries({
                 queryKey: ["loyalty", "members", variables.outletId],
             });
+            queryClient.invalidateQueries({
+                queryKey: ["loyalty", "point-history", variables.outletId, variables.guestCustomerId],
+            });
         },
+    });
+}
+
+export function useLoyaltyPointHistory(
+    outletId: string,
+    guestCustomerId: string,
+    query: { page?: number; limit?: number } = {},
+) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    return useQuery({
+        queryKey: KEYS.pointHistory(outletId, guestCustomerId, page, limit),
+        queryFn: () => loyaltyApi.getMemberPointHistory(outletId, guestCustomerId, { page, limit }),
+        enabled: !!outletId && !!guestCustomerId,
+        staleTime: 1000 * 30,
     });
 }

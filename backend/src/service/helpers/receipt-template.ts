@@ -82,6 +82,10 @@ export const generateReceiptHtml = (data: any) => `
             <span>Sub Total</span>
             <span>Rp ${data.subTotal.toLocaleString('id-ID')}</span>
         </div>
+        ${data.discountAmount ? `<div class="total-row" style="color: #666;">
+            <span>Potongan Poin</span>
+            <span>-Rp ${data.discountAmount.toLocaleString('id-ID')}</span>
+        </div>` : ''}
         <div class="total-row" style="font-weight: bold; font-size: 14px;">
             <span>Total</span>
             <span>Rp ${data.total.toLocaleString('id-ID')}</span>

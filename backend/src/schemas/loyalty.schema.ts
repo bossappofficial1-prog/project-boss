@@ -21,9 +21,15 @@ export const getMembersByOutletQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+export const getPointHistoryQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 export type UpsertLoyaltyConfigInput = z.infer<typeof upsertLoyaltyConfigSchema>;
 export type RegisterMembershipInput = z.infer<typeof registerMembershipSchema>;
 export type GetMembersByOutletQuery = z.infer<typeof getMembersByOutletQuerySchema>;
+export type GetPointHistoryQuery = z.infer<typeof getPointHistoryQuerySchema>;
 
 export const adjustPointsSchema = z.object({
   points: z.number().int(),

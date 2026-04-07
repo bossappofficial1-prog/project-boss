@@ -105,6 +105,23 @@ export function OrderSuccessDialog({ open, result, onClose }: OrderSuccessDialog
                                 <span className="text-slate-900 dark:text-slate-100">{result.itemCount}</span>
                             </div>
                             <Separator />
+                            {result.discountAmount ? (
+                                <>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
+                                        <span className="text-slate-900 dark:text-slate-100">
+                                            Rp {fmt.format(result.subtotal || result.totalAmount + result.discountAmount)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between text-blue-600 dark:text-blue-400">
+                                        <span>Potongan Poin</span>
+                                        <span>
+                                            -Rp {fmt.format(result.discountAmount)}
+                                        </span>
+                                    </div>
+                                    <Separator />
+                                </>
+                            ) : null}
                             <div className="flex justify-between font-semibold">
                                 <span className="text-slate-700 dark:text-slate-300">Total</span>
                                 <span className="text-slate-900 dark:text-slate-100">

@@ -23,6 +23,7 @@ export interface QueueV2Entry {
   id: string;
   orderStatus: QueueOrderStatus;
   totalAmount: number;
+  discountAmount: number;
   customerName: string;
   customerPhone: string | null;
   productName: string;
