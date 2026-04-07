@@ -76,6 +76,9 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: parseRemotePatterns(process.env.NEXT_PUBLIC_REMOTE_PATTERNS || '')
   },
+  generateBuildId: async () => {
+    return 'boss-customer-' + (process.env.NEXT_PUBLIC_BUILD_ID || Date.now());
+  },
 };
 
 export default withSerwist(nextConfig);

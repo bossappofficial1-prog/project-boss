@@ -50,6 +50,7 @@ RUN adduser --system --uid 1001 nextjs
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
+# Salin standalone build dan static files
 COPY --from=builder --chown=nextjs:nodejs /app/frontend-customer/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/frontend-customer/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/frontend-customer/.next/static ./.next/static

@@ -16,12 +16,14 @@ ARG NEXT_PUBLIC_API_BASE_URL
 ARG NEXT_PUBLIC_SOCKET_URL
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_CUSTOMER_URL
+ARG NODE_ENV=production
 
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 ENV NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 ENV NEXT_PUBLIC_CUSTOMER_URL=${NEXT_PUBLIC_CUSTOMER_URL}
 ENV NEXT_PUBLIC_REMOTE_PATTERNS=${NEXT_PUBLIC_REMOTE_PATTERNS}
+ENV NODE_ENV=${NODE_ENV}
 
 RUN npm run build
 
@@ -38,7 +40,7 @@ RUN adduser --system --uid 1001 nextjs
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
-# COPY STANDALONE BUILD DARI BUILDER --- IGNORE ---
+# Salin standalone build dan static files
 COPY --from=builder --chown=nextjs:nodejs /app/dashboard/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/dashboard/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/dashboard/.next/static ./.next/static

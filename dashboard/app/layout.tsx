@@ -148,6 +148,34 @@ export default function RootLayout({
             __html: JSON.stringify(structuredData),
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('unhandledrejection', function(event) {
+                if (event.reason && (event.reason.name === 'ChunkLoadError' || event.reason.message?.includes('ChunkLoadError'))) {
+                  const key = 'last-chunk-load-error-reload';
+                  const lastReload = sessionStorage.getItem(key);
+                  const now = Date.now();
+                  if (!lastReload || now - parseInt(lastReload) > 10000) {
+                    sessionStorage.setItem(key, now.toString());
+                    window.location.reload();
+                  }
+                }
+              });
+              window.addEventListener('error', function(event) {
+                if (event.message && event.message.includes('ChunkLoadError')) {
+                  const key = 'last-chunk-load-error-reload';
+                  const lastReload = sessionStorage.getItem(key);
+                  const now = Date.now();
+                  if (!lastReload || now - parseInt(lastReload) > 10000) {
+                    sessionStorage.setItem(key, now.toString());
+                    window.location.reload();
+                  }
+                }
+              }, true);
+            `,
+          }}
+        />
       </head>
       <body className={`${poppins.variable} font-poppins antialiased min-h-screen text-foreground`}>
         <ThemeProvider defaultTheme="system">
