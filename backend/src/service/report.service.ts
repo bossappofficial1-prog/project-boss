@@ -211,8 +211,10 @@ export class ReportService {
           totalPembelian: stats.pembelian,
           totalPengeluaran: stats.pengeluaran,
           gajiStaf: stats.gaji,
+          totalHpp: stats.totalHpp,
+          totalFees: stats.totalFees,
           labaBersih: stats.labaBersih,
-          trend, // Placeholder or detail
+          trend: [0, 0, 0, 0], // Placeholder
         });
       }
     } else if (type === "weekly") {
@@ -259,21 +261,21 @@ export class ReportService {
         });
 
         finalReport.push({
-          label: `Minggu ${weekIdx} (${format(wStart, "dd")} - ${format(wEnd, "dd MMM")})`,
+          label: `Minggu ${weekIdx++} (${format(wStart, "dd/MM")})`,
           jumlahTransaksi: stats.count,
           totalPendapatan: stats.revenue,
           totalPembelian: stats.pembelian,
           totalPengeluaran: stats.pengeluaran,
           gajiStaf: stats.gaji,
+          totalHpp: stats.totalHpp,
+          totalFees: stats.totalFees,
           labaBersih: stats.labaBersih,
-          trend,
+          trend: [0, 0, 0, 0], // Placeholder
         });
 
-        // Next week
         iterDate = new Date(wEnd);
         iterDate.setDate(iterDate.getDate() + 1);
         iterDate = startOfDay(iterDate);
-        weekIdx++;
       }
     } else {
       // Harian: List tanggal dalam 30 hari terakhir.
@@ -310,6 +312,8 @@ export class ReportService {
           totalPembelian: stats.pembelian,
           totalPengeluaran: stats.pengeluaran,
           gajiStaf: stats.gaji,
+          totalHpp: stats.totalHpp,
+          totalFees: stats.totalFees,
           labaBersih: stats.labaBersih,
           trend,
         };
@@ -398,13 +402,16 @@ export class ReportService {
 
       return {
         label: outlet.name,
+        outletId: outlet.id,
         jumlahTransaksi: stats.count,
         totalPendapatan: stats.revenue,
         totalPembelian: stats.pembelian,
         totalPengeluaran: stats.pengeluaran,
         gajiStaf: stats.gaji,
+        totalHpp: stats.totalHpp,
+        totalFees: stats.totalFees,
         labaBersih: stats.labaBersih,
-        trend: [],
+        trend: [0, 0, 0, 0], // Placeholder
       };
     });
 
@@ -418,7 +425,10 @@ export class ReportService {
   ) {
     let revenue = 0;
     let gaji = 0;
-    // Pembelian dihitung dari log stok masuk (IN)
+    let totalHpp = 0;
+    let totalFees = 0;
+
+    // Pembelian dihitung dari log stok masuk (IN) untuk laporan Stok & Aset
     let pembelian = filteredLogs.reduce(
       (acc, log) => acc + (log.hppPerUnit || 0) * log.quantity,
       0,
@@ -427,15 +437,14 @@ export class ReportService {
 
     filteredOrders.forEach((order) => {
       revenue += order.totalAmount;
+      totalFees += (order.midtransFee || 0) + (order.appFee || 0);
+
       order.items.forEach((item: any) => {
-        if (item.product.service) {
-          const s = item.product.service;
-          const commissionPerItem =
-            s.commissionType === "PERCENTAGE"
-              ? item.priceAtTimeOfOrder * (s.commissionValue / 100)
-              : s.commissionValue;
-          gaji += commissionPerItem * item.quantity;
-        }
+        // Use historical HPP recorded in the order item
+        totalHpp += (item.hppAtTimeOfOrder || 0) * item.quantity;
+
+        // Use historical Commission recorded in the order item
+        gaji += (item.commissionAtTimeOfOrder || 0) * item.quantity;
       });
     });
 
@@ -444,7 +453,10 @@ export class ReportService {
       pembelian,
       pengeluaran,
       gaji,
-      labaBersih: revenue - pengeluaran - gaji,
+      totalHpp,
+      totalFees,
+      // Real Net Profit formula
+      labaBersih: revenue - totalHpp - pengeluaran - gaji - totalFees,
       count: filteredOrders.length,
     };
   }

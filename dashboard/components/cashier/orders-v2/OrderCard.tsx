@@ -25,33 +25,33 @@ const STATUS_CONFIG: Record<
 > = {
     AWAITING_PAYMENT: {
         label: "Menunggu Bayar",
-        color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+        color: "bg-amber-500/10 text-amber-500",
         borderColor: "border-l-amber-500",
     },
     PROCESSING: {
         label: "Diproses",
-        color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-        borderColor: "border-l-blue-500",
+        color: "bg-primary/10 text-primary",
+        borderColor: "border-l-primary",
     },
     CONFIRMED: {
         label: "Dikonfirmasi",
-        color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-        borderColor: "border-l-blue-500",
+        color: "bg-primary/10 text-primary",
+        borderColor: "border-l-primary",
     },
     READY: {
         label: "Siap Diambil",
-        color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+        color: "bg-emerald-500/10 text-emerald-500",
         borderColor: "border-l-emerald-500",
     },
     COMPLETED: {
         label: "Selesai",
-        color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-        borderColor: "border-l-green-500",
+        color: "bg-emerald-500/10 text-emerald-500",
+        borderColor: "border-l-emerald-500",
     },
     CANCELLED: {
         label: "Dibatalkan",
-        color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-        borderColor: "border-l-red-500",
+        color: "bg-destructive/10 text-destructive",
+        borderColor: "border-l-destructive",
     },
 };
 
@@ -94,13 +94,13 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
 
     return (
         <div
-            className={`group relative rounded-md border-l-4 ${config.borderColor} bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+            className={`group relative rounded-md border-l-4 ${config.borderColor} bg-card border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
             onClick={() => onDetail?.(entry)}
         >
             <div className="p-3 space-y-2">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[160px]">
+                    <span className="text-sm font-semibold text-foreground truncate max-w-[160px]">
                         {entry.customerName}
                     </span>
                     <Badge variant="outline" className={`text-[10px] ${config.color} border-0`}>
@@ -109,7 +109,7 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                 </div>
 
                 {/* Items summary */}
-                <div className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
                     <ShoppingBag className="w-3 h-3 mt-0.5 shrink-0" />
                     <div className="min-w-0">
                         {entry.items.slice(0, 2).map((item, i) => (
@@ -118,13 +118,13 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                             </p>
                         ))}
                         {entry.items.length > 2 && (
-                            <p className="text-slate-400">+{entry.items.length - 2} item lainnya</p>
+                            <p className="text-muted-foreground/60">+{entry.items.length - 2} item lainnya</p>
                         )}
                     </div>
                 </div>
 
                 {/* Info row */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {formatTime(entry.createdAt)}
@@ -135,7 +135,7 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                     </span>
                     {entry.isManualPayment && entry.paymentProofUrl && (
                         <button
-                            className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+                            className="flex items-center gap-1 text-primary hover:underline"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onViewProof?.(entry);
@@ -148,23 +148,23 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                 </div>
 
                 {/* Amount + item count */}
-                <div className="flex items-center justify-between">
+                 <div className="flex items-center justify-between">
                     <div className="flex flex-col">
                         {entry.discountAmount > 0 && (
-                            <span className="text-[11px] text-slate-400 line-through">
+                            <span className="text-[11px] text-muted-foreground line-through">
                                 {formatCurrency(entry.totalAmount + entry.discountAmount)}
                             </span>
                         )}
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        <span className="text-sm font-semibold text-foreground">
                             {formatCurrency(entry.totalAmount)}
                         </span>
                         {entry.discountAmount > 0 && (
-                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                            <span className="text-[10px] text-emerald-500">
                                 Diskon Poin
                             </span>
                         )}
                     </div>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-muted-foreground">
                         {itemCount} item
                     </span>
                 </div>
@@ -186,7 +186,7 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                         <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                             disabled={isPending || isPrinting}
                             onClick={() => onPrint?.(entry)}
                             title="Cetak struk"
@@ -197,7 +197,7 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                             <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-8 w-8 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                                className="h-8 w-8 p-0 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
                                 disabled={isPending || isPrinting}
                                 onClick={() => onPrintTickets?.(entry)}
                                 title="Cetak tiket"
@@ -208,7 +208,7 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                         <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                             disabled={isPending}
                             onClick={() => onCancel?.(entry)}
                             title="Batalkan"
@@ -235,7 +235,7 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                             <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900/50 dark:text-amber-400"
+                                className="h-8 text-xs border-amber-500/20 text-amber-500 hover:bg-amber-500/10"
                                 disabled={isPrinting}
                                 onClick={() => onPrintTickets?.(entry)}
                             >

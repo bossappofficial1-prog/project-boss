@@ -68,8 +68,8 @@ export function PaymentSection({
           className={cn(
             "flex items-center gap-2 rounded-md border p-3 text-sm font-medium transition-all",
             method === "cash"
-              ? "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300"
-              : "border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-400",
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border text-muted-foreground",
           )}>
           <Banknote className="h-4 w-4" />
           Cash
@@ -80,8 +80,8 @@ export function PaymentSection({
           className={cn(
             "flex items-center gap-2 rounded-md border p-3 text-sm font-medium transition-all",
             method === "qris"
-              ? "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300"
-              : "border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-400",
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border text-muted-foreground",
           )}>
           <QrCode className="h-4 w-4" />
           QRIS
@@ -91,7 +91,7 @@ export function PaymentSection({
         <button
           type="button"
           disabled
-          className="flex items-center gap-2 rounded-md border border-dashed border-slate-200 p-3 text-sm text-slate-400 dark:border-slate-700 dark:text-slate-500">
+          className="flex items-center gap-2 rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground/50">
           <CreditCard className="h-4 w-4" />
           Lainnya (segera)
         </button>
@@ -100,7 +100,7 @@ export function PaymentSection({
       {method === "cash" && (
         <div className="space-y-3">
           <div>
-            <Label htmlFor="cashReceived" className="text-xs text-slate-600 dark:text-slate-400">
+            <Label htmlFor="cashReceived" className="text-xs text-muted-foreground">
               Nominal Diterima
             </Label>
             <Input
@@ -118,7 +118,7 @@ export function PaymentSection({
             <button
               type="button"
               onClick={handleExactAmount}
-              className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
+              className="rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20">
               Uang Pas
             </button>
             {QUICK_AMOUNTS.map((amount) => (
@@ -126,7 +126,7 @@ export function PaymentSection({
                 key={amount}
                 type="button"
                 onClick={() => handleQuickAmount(amount)}
-                className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+                className="rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted">
                 {fmt.format(amount)}
               </button>
             ))}
@@ -137,8 +137,8 @@ export function PaymentSection({
               className={cn(
                 "flex items-center justify-between rounded-md p-3 text-sm font-semibold",
                 change >= 0
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-                  : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400",
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "bg-destructive/10 text-destructive",
               )}>
               <span>{change >= 0 ? "Kembalian" : "Kurang"}</span>
               <span>Rp {fmt.format(Math.abs(change))}</span>
@@ -150,15 +150,15 @@ export function PaymentSection({
       {method === "qris" && (
         <div className="space-y-3">
           {isLoadingQris && (
-            <div className="flex h-48 items-center justify-center rounded-md border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40">
-              <p className="text-sm text-slate-400">Memuat QRIS...</p>
+            <div className="flex h-48 items-center justify-center rounded-md border border-border bg-muted/20">
+              <p className="text-sm text-muted-foreground">Memuat QRIS...</p>
             </div>
           )}
           {!isLoadingQris && qrisImageUrl && (
             <div
-              className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-slate-200 bg-white p-4 transition-colors hover:border-blue-400 dark:border-slate-700 dark:bg-slate-900"
+              className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-border bg-card p-4 transition-colors hover:border-primary/50"
               onClick={() => setShowQrisModal(true)}>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 Tap untuk perbesar · Scan QR berikut untuk pembayaran
               </p>
               <div className="relative h-56 w-56">
@@ -170,7 +170,7 @@ export function PaymentSection({
                   unoptimized
                 />
               </div>
-              <p className="text-center text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <p className="text-center text-sm font-semibold text-foreground">
                 Total: Rp {fmt.format(total)}
               </p>
             </div>

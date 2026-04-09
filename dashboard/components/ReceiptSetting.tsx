@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { PrinterCheck, Loader2 } from "lucide-react";
 import z from "zod";
-import { useOutletContext } from "./providers/OutletProvider";
 import { Button } from "./ui/button";
 import { FormFieldConfig, ReusableForm } from "./ui/reuseable-form";
 import { ReceiptSettingService, ReceiptSettingType } from "@/lib/apis/receipt-setting";
@@ -10,16 +9,17 @@ import { fileToBase64 } from "@/lib/utils";
 export const updateReceiptSettingSchema = z.object({
     photoString: z.union([z.string(), z.instanceof(File)]).nullable().optional(),
     showLogo: z.enum(['ACTIVE', 'INACTIVE']),
-    printHeight: z.coerce.number({
-        message: "Tinggi wajib diisi dan harus berupa angka"
-    }).positive("Tidak boleh nol atau negatif"),
+    printHeight: z.union([
+        z.literal('auto'),
+        z.coerce.number("Tinggi wajib diisi dengan angka atau 'auto'").positive("Tidak boleh nol atau negatif")
+    ]),
     printWidth: z.coerce.number({
         message: "Lebar wajib diisi dan harus berupa angka"
     }).positive("Tidak boleh nol atau negatif"),
 });
 
 export type UpdateReceiptSettingValues = {
-    printHeight: number;
+    printHeight: any;
     printWidth: number;
     photoString: string | null;
     showLogo: string;
@@ -95,9 +95,10 @@ export default function ReceiptSetting({ outletId }: { outletId?: string }) {
         {
             name: 'printHeight',
             label: 'Tinggi Kertas (mm)',
-            type: 'number',
+            type: 'text',
             placeholder: 'Contoh: 110',
-            colSpan: 3
+            colSpan: 3,
+            description: 'Gunakan auto untuk tinggi print yang disesuaikan.'
         },
         {
             name: 'printWidth',

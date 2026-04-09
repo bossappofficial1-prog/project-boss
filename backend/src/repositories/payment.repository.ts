@@ -102,15 +102,6 @@ export class PaymentRepository {
     }
 
     for (const item of order.items) {
-      if (item.product.type === "GOODS" && item.product.goods) {
-        await db.productGoods.update({
-          where: { productId: item.productId },
-          data: {
-            currentStock: { increment: item.quantity },
-          },
-        });
-      }
-
       if (item.product.type === "TICKET" && item.product.ticket) {
         await db.productTicket.update({
           where: { id: item.product.ticket.id },
@@ -338,21 +329,26 @@ export class PaymentRepository {
           }
         }
 
+        const price = PaymentRepository.resolveProductPrice(product);
+        const hpp = product?.goods?.averageHpp || 0;
+        let commission = 0;
+        if (product?.service) {
+          const s = product.service;
+          commission = s.commissionType === "PERCENTAGE"
+            ? price * (s.commissionValue / 100)
+            : s.commissionValue;
+        }
+
         const orderItem = await tr.orderItem.create({
           data: {
             orderId,
             productId: item.productId,
             quantity: item.quantity,
-            priceAtTimeOfOrder: PaymentRepository.resolveProductPrice(product),
+            priceAtTimeOfOrder: price,
+            hppAtTimeOfOrder: hpp,
+            commissionAtTimeOfOrder: commission,
           },
         });
-
-        if (product.type === "GOODS") {
-          await tr.productGoods.update({
-            where: { productId: product.id },
-            data: { currentStock: { decrement: item.quantity } },
-          });
-        }
 
         if (product.type === "TICKET" && product.ticket) {
           await tr.productTicket.update({
@@ -403,13 +399,6 @@ export class PaymentRepository {
       }
 
       for (const item of order.items) {
-        if (item.product.type === "GOODS" && item.product.goods) {
-          await tr.productGoods.update({
-            where: { productId: item.productId },
-            data: { currentStock: { increment: item.quantity } },
-          });
-        }
-
         if (item.product.type === "TICKET" && item.product.ticket) {
           await tr.productTicket.update({
             where: { id: item.product.ticket.id },

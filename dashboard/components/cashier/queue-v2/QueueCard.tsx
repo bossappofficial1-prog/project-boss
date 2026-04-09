@@ -20,38 +20,38 @@ const STATUS_CONFIG: Record<
 > = {
     AWAITING_PAYMENT: {
         label: "Menunggu Bayar",
-        color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+        color: "bg-amber-500/10 text-amber-500",
         borderColor: "border-l-amber-500",
     },
     CONFIRMED: {
         label: "Dikonfirmasi",
-        color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-        borderColor: "border-l-blue-500",
+        color: "bg-primary/10 text-primary",
+        borderColor: "border-l-primary",
     },
     PROCESSING: {
         label: "Diproses",
-        color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-        borderColor: "border-l-blue-500",
+        color: "bg-primary/10 text-primary",
+        borderColor: "border-l-primary",
     },
     READY: {
         label: "Siap Dilayani",
-        color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+        color: "bg-emerald-500/10 text-emerald-500",
         borderColor: "border-l-emerald-500",
     },
     ON_GOING: {
         label: "Sedang Dilayani",
-        color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-        borderColor: "border-l-purple-500",
+        color: "bg-primary/10 text-primary",
+        borderColor: "border-l-primary",
     },
     COMPLETED: {
         label: "Selesai",
-        color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-        borderColor: "border-l-green-500",
+        color: "bg-emerald-500/10 text-emerald-500",
+        borderColor: "border-l-emerald-500",
     },
     CANCELLED: {
         label: "Dibatalkan",
-        color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-        borderColor: "border-l-red-500",
+        color: "bg-destructive/10 text-destructive",
+        borderColor: "border-l-destructive",
     },
 };
 
@@ -117,17 +117,17 @@ export function QueueCard({ entry, onPrimaryAction, onCancel, onDetail, onViewPr
 
     return (
         <div
-            className={`group relative rounded-md border-l-4 ${config.borderColor} bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+            className={`group relative rounded-md border-l-4 ${config.borderColor} bg-card border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
             onClick={() => onDetail?.(entry)}
         >
             <div className="p-3 space-y-2">
                 {/* Header: position + status */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <span className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-700 dark:text-slate-300">
+                        <span className="flex items-center justify-center w-7 h-7 rounded-full bg-muted text-sm font-bold text-foreground">
                             {entry.position}
                         </span>
-                        <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[140px]">
+                        <span className="text-sm font-semibold text-foreground truncate max-w-[140px]">
                             {entry.customerName}
                         </span>
                     </div>
@@ -138,7 +138,7 @@ export function QueueCard({ entry, onPrimaryAction, onCancel, onDetail, onViewPr
 
                 {/* Service name + goods badge */}
                 <div className="flex items-center gap-2">
-                    <p className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate">
+                    <p className="text-sm text-foreground font-medium truncate">
                         {entry.productName}
                     </p>
                     {entry.goodsCount > 0 && (
@@ -151,16 +151,16 @@ export function QueueCard({ entry, onPrimaryAction, onCancel, onDetail, onViewPr
 
                 {/* Future booking badge */}
                 {isFuture && entry.scheduledStart && (
-                    <div className="flex items-center gap-1 rounded bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 px-2 py-0.5">
-                        <CalendarClock className="w-3 h-3 text-orange-600 dark:text-orange-400" />
-                        <span className="text-[10px] font-medium text-orange-700 dark:text-orange-300">
+                    <div className="flex items-center gap-1 rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5">
+                        <CalendarClock className="w-3 h-3 text-amber-500" />
+                        <span className="text-[10px] font-medium text-amber-500">
                             Dijadwalkan {formatShortDate(entry.scheduledStart)}
                         </span>
                     </div>
                 )}
 
                 {/* Info row */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     {entry.scheduledStart && (
                         <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
@@ -185,15 +185,15 @@ export function QueueCard({ entry, onPrimaryAction, onCancel, onDetail, onViewPr
                 {/* Amount */}
                 <div className="flex flex-col">
                     {entry.discountAmount > 0 && (
-                        <span className="text-[11px] text-slate-400 line-through">
+                        <span className="text-[11px] text-muted-foreground line-through">
                             {formatCurrency(entry.totalAmount + entry.discountAmount)}
                         </span>
                     )}
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="text-sm font-semibold text-foreground">
                         {formatCurrency(entry.totalAmount)}
                     </span>
                     {entry.discountAmount > 0 && (
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                        <span className="text-[10px] text-emerald-500">
                             Diskon Poin
                         </span>
                     )}
@@ -227,19 +227,19 @@ export function QueueCard({ entry, onPrimaryAction, onCancel, onDetail, onViewPr
                             </Button>
                         )}
                         {isAwaitingManualProof && (
-                            <span className="flex-1 text-[10px] text-amber-600 dark:text-amber-400 text-center">
+                            <span className="flex-1 text-[10px] text-amber-500 text-center">
                                 Menunggu bukti pembayaran
                             </span>
                         )}
                         {blockAction && !isAwaitingManualProof && (
-                            <span className="flex-1 text-[10px] text-orange-600 dark:text-orange-400 text-center">
+                            <span className="flex-1 text-[10px] text-amber-500 text-center">
                                 Belum bisa dilayani (jadwal belum tiba)
                             </span>
                         )}
                         <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                            className="h-8 text-xs text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                             disabled={isPending}
                             onClick={() => onCancel?.(entry)}
                         >

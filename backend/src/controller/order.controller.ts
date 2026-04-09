@@ -41,11 +41,16 @@ export const getOrderReceiptController = asyncHandler(async (req: Request, res: 
   });
 
   const page = await browser.newPage();
-  await page.setContent(generateReceiptHtml(receiptData), { waitUntil: "networkidle0" });
+  await page.setContent(await generateReceiptHtml(receiptData), { waitUntil: "networkidle0" });
+
+  const bodyHandle = await page.$('body');
+  const boundingBox = await bodyHandle?.boundingBox();
+  const contentHeight = Math.ceil(boundingBox?.height || 120);
+  console.log(contentHeight)
 
   const pdfBuffer = await page.pdf({
     width: `${receiptData.printWidth}mm`,
-    height: `${receiptData.printHeight}mm`,
+    height: `${receiptData.printHeight == 'auto' ? contentHeight + "px" : receiptData.printHeight + "mm"}`,
     printBackground: true,
     pageRanges: "1",
     margin: { top: 0, right: 0, bottom: 0, left: 0 },

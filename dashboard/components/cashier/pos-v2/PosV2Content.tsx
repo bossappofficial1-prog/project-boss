@@ -33,7 +33,7 @@ interface ScheduleDialogState {
 }
 
 export function PosV2Content() {
-    const { outletData } = useCashierContext();
+    const { cashierData, outletData } = useCashierContext();
     const outletId = outletData?.id as string;
     const queryClient = useQueryClient();
 
@@ -51,7 +51,6 @@ export function PosV2Content() {
     const [member, setMember] = React.useState<any>(null);
     const [pointsRedeemed, setPointsRedeemed] = React.useState(0);
 
-    // Debounce search
     React.useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
         return () => clearTimeout(timer);
@@ -259,10 +258,10 @@ export function PosV2Content() {
                 paymentMethod,
                 cashReceived,
                 pointsRedeemed,
+                staffId: serviceItem?.staffId || (cashierData as any)?.id,
                 ...(serviceItem?.bookingSlotId && {
                     bookingSlotId: serviceItem.bookingSlotId,
                     bookingDate: serviceItem.bookingStart,
-                    staffId: serviceItem.staffId,
                 }),
             },
             {
@@ -288,7 +287,7 @@ export function PosV2Content() {
             {/* Header */}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                    <p className="text-sm text-muted-foreground">
                         {outletData.name} · {outletData.address || "-"}
                     </p>
                 </div>
@@ -298,7 +297,7 @@ export function PosV2Content() {
             {/* Main layout */}
             <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
                 {/* Left: Product catalog */}
-                <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                <Card className="gap-0 pt-4">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">Produk, Layanan & Tiket</CardTitle>
                     </CardHeader>
@@ -316,7 +315,7 @@ export function PosV2Content() {
 
                 {/* Right: Cart + Payment */}
                 <div className="flex flex-col gap-3">
-                    <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                    <Card className="gap-0 pt-4">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">Keranjang</CardTitle>
                         </CardHeader>
@@ -332,7 +331,7 @@ export function PosV2Content() {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                    <Card className="gap-0 pt-4">
                         <CardContent className="space-y-3 pt-4">
                             <CustomerInfo
                                 outletId={outletId}
@@ -343,48 +342,12 @@ export function PosV2Content() {
                                 phone={customerPhone}
                                 onPhoneChange={setCustomerPhone}
                                 onMemberChange={setMember}
+                                loyaltyConfig={loyaltyConfig}
+                                loyaltyDiscount={loyaltyDiscount}
+                                onPointsRedeemedChange={setPointsRedeemed}
+                                pointsRedeemed={pointsRedeemed}
+                                subtotal={subtotal}
                             />
-
-                            {member && loyaltyConfig?.isActive && (loyaltyConfig as any).pointValue > 0 && (
-                                <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3 dark:border-blue-900/30 dark:bg-blue-900/10">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <Label className="text-xs font-semibold text-blue-800 dark:text-blue-300">Tukar Poin</Label>
-                                        <span className="text-[10px] text-blue-600 dark:text-blue-400">1 Poin = Rp {(loyaltyConfig as any).pointValue.toLocaleString("id-ID")}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            max={member.points}
-                                            value={pointsRedeemed || ""}
-                                            onChange={(e) => {
-                                                const val = parseInt(e.target.value) || 0;
-                                                // Don't redeem more than subtotal
-                                                const maxPointsBySubtotal = Math.ceil(subtotal / (loyaltyConfig as any).pointValue);
-                                                setPointsRedeemed(Math.min(val, member.points, maxPointsBySubtotal));
-                                            }}
-                                            className="h-8 text-sm"
-                                            placeholder="Jumlah poin..."
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8 text-xs"
-                                            onClick={() => {
-                                                const maxPointsBySubtotal = Math.ceil(subtotal / (loyaltyConfig as any).pointValue);
-                                                setPointsRedeemed(Math.min(member.points, maxPointsBySubtotal));
-                                            }}
-                                        >
-                                            Max
-                                        </Button>
-                                    </div>
-                                    {loyaltyDiscount > 0 && (
-                                        <p className="mt-1 text-[10px] text-blue-600 dark:text-blue-400 italic">
-                                            Potongan: -Rp {loyaltyDiscount.toLocaleString("id-ID")}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
 
                             <Separator />
 
@@ -401,12 +364,12 @@ export function PosV2Content() {
                             <Button
                                 onClick={handleSubmitOrder}
                                 disabled={!canSubmit || createOrder.isPending}
-                                className="w-full bg-blue-600 py-5 text-base font-semibold hover:bg-blue-500 disabled:opacity-50">
+                                className="w-full py-6 text-base font-semibold">
                                 {createOrder.isPending ? "Memproses..." : `Bayar Rp ${grandTotal.toLocaleString("id-ID")}`}
                             </Button>
 
                             {!canSubmit && cartItems.length > 0 && (
-                                <p className="text-center text-xs text-red-500 dark:text-red-400">
+                                <p className="text-center text-xs text-destructive">
                                     {hasUnscheduledService
                                         ? "Pilih jadwal layanan terlebih dahulu"
                                         : "Lengkapi data pelanggan dan nominal pembayaran"}
@@ -416,7 +379,7 @@ export function PosV2Content() {
                     </Card>
 
                     {/* Recent orders */}
-                    <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                    <Card className="gap-0 pt-4">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">Transaksi Terakhir</CardTitle>
                         </CardHeader>

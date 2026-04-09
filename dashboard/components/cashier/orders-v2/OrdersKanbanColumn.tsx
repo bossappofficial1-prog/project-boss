@@ -38,12 +38,12 @@ export function OrdersKanbanColumn({
     printingType,
 }: OrdersKanbanColumnProps) {
     return (
-        <div className="flex flex-col min-w-[280px] w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+        <div className="flex flex-col min-w-[280px] w-full rounded-md border border-border bg-muted/30">
             {/* Column header */}
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
                 <div className="flex items-center gap-2">
                     {icon}
-                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{title}</h3>
+                    <h3 className="text-sm font-semibold text-foreground">{title}</h3>
                 </div>
                 <span
                     className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white ${accentColor}`}
@@ -56,7 +56,7 @@ export function OrdersKanbanColumn({
             <ScrollArea className="flex-1 max-h-[calc(100vh-280px)]">
                 <div className="p-2 space-y-2">
                     {entries.length === 0 ? (
-                        <div className="flex items-center justify-center py-8 text-xs text-slate-400 dark:text-slate-500">
+                        <div className="flex items-center justify-center py-8 text-xs text-muted-foreground">
                             Tidak ada pesanan
                         </div>
                     ) : (

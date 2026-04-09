@@ -270,10 +270,11 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
         },
       });
 
-      // Create OrderItems individually to get their IDs
+      // Create OrderItems individually to get their IDs and record historical costs
       const createdItems = await Promise.all(
         items.map(async (item) => {
           const prod = productDetails.find((p) => p.id === item.productId);
+          
           const price =
             prod?.type === "GOODS"
               ? prod.goods.sellingPrice
@@ -281,38 +282,36 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
                 ? prod.ticket.sellingPrice
                 : prod.service.sellingPrice;
 
+          // Calculate historical HPP (for GOODS)
+          const hpp = prod?.type === "GOODS" ? (prod.goods.averageHpp || 0) : 0;
+
+          // Calculate historical Commission (for SERVICE)
+          let commission = 0;
+          if (prod?.type === "SERVICE" && prod.service) {
+            const s = prod.service;
+            commission = s.commissionType === "PERCENTAGE"
+              ? price * (s.commissionValue / 100)
+              : s.commissionValue;
+          }
+
           return await tx.orderItem.create({
             data: {
               orderId: order.id,
               productId: item.productId,
               quantity: item.quantity,
               priceAtTimeOfOrder: price,
+              hppAtTimeOfOrder: hpp,
+              commissionAtTimeOfOrder: commission,
             },
           });
         }),
       );
 
-      // 8. Stock & Slot Updates
+      // 8. Quota Updates (Tickets only)
       for (const item of items) {
         const prod = productDetails.find((p) => p.id === item.productId);
-        if (prod?.type === "GOODS" && prod.goods) {
-          await tx.stockLog.create({
-            data: {
-              productGoodsId: prod.goods.id,
-              type: "OUT",
-              quantity: item.quantity,
-              referenceType: "ORDER",
-              referenceId: order.id,
-              notes: `Auto-stock out for order ${order.id}`,
-            },
-          });
-          await tx.productGoods.update({
-            where: { id: prod.goods.id },
-            data: { currentStock: { decrement: item.quantity } },
-          });
-        }
-
-        // Increment soldCount for TICKET products
+        
+        // Increment soldCount for TICKET products (this is quota, not physical stock)
         if (prod?.type === "TICKET" && prod.ticket) {
           await tx.productTicket.update({
             where: { id: prod.ticket.id },

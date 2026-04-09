@@ -14,6 +14,8 @@ import {
   Loader2,
   Package,
   TrendingDown,
+  ArrowDownRight,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -33,7 +35,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { ReportFinancialTable, Totals } from "./ReportFinancialTable";
 import { ReportStaffTable } from "../staff/ReportStaffTable";
 import { SummaryCard } from "../SummaryCard";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import reportApi from "@/lib/apis/report";
 import { format } from "date-fns";
 
@@ -104,12 +106,14 @@ export default function ReportFinancialContent() {
   const totals = useMemo<Totals>(() => {
     return (activeData || []).reduce(
       (acc, curr) => ({
-        jumlahTransaksi: acc.jumlahTransaksi + curr.jumlahTransaksi,
-        totalPendapatan: acc.totalPendapatan + curr.totalPendapatan,
-        totalPembelian: acc.totalPembelian + curr.totalPembelian,
-        totalPengeluaran: acc.totalPengeluaran + curr.totalPengeluaran,
-        gajiStaf: acc.gajiStaf + curr.gajiStaf,
-        labaBersih: acc.labaBersih + curr.labaBersih,
+        jumlahTransaksi: acc.jumlahTransaksi + (curr.jumlahTransaksi || 0),
+        totalPendapatan: acc.totalPendapatan + (curr.totalPendapatan || 0),
+        totalPembelian: acc.totalPembelian + (curr.totalPembelian || 0),
+        totalPengeluaran: acc.totalPengeluaran + (curr.totalPengeluaran || 0),
+        gajiStaf: acc.gajiStaf + (curr.gajiStaf || 0),
+        totalHpp: acc.totalHpp + (curr.totalHpp || 0),
+        totalFees: acc.totalFees + (curr.totalFees || 0),
+        labaBersih: acc.labaBersih + (curr.labaBersih || 0),
       }),
       {
         jumlahTransaksi: 0,
@@ -117,6 +121,8 @@ export default function ReportFinancialContent() {
         totalPembelian: 0,
         totalPengeluaran: 0,
         gajiStaf: 0,
+        totalHpp: 0,
+        totalFees: 0,
         labaBersih: 0,
       },
     );
@@ -227,8 +233,8 @@ export default function ReportFinancialContent() {
     }
   }, [outletFilter, staffFilterType, staffDate]);
 
-  // ── Beban Operasional (sum of Pengeluaran + Gaji) ──
-  const totalBeban = totals.totalPengeluaran + totals.gajiStaf;
+  // ── Beban Total (HPP + Ops + Gaji + Fees) ──
+  const totalBeban = totals.totalHpp + totals.totalPengeluaran + totals.gajiStaf + totals.totalFees;
 
   return (
     <>
@@ -287,16 +293,53 @@ export default function ReportFinancialContent() {
                 description="dari order completed"
               />
               <SummaryCard
-                title="(-) Beban Operasional"
-                value={totalBeban}
-                icon={<TrendingDown className="w-4 h-4 text-rose-500" />}
-                description={`Pengeluaran ${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(totals.totalPengeluaran)} + Komisi ${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(totals.gajiStaf)}`}
-              />
+              title="(-) Beban & HPP"
+              value={totalBeban}
+              icon={<ArrowDownRight className="h-4 w-4" />}
+              highlight={true}
+              description={`HPP ${formatCurrency(totals.totalHpp)} + Ops ${formatCurrency(totals.totalPengeluaran)} + Gaji ${formatCurrency(totals.gajiStaf)} + Biaya ${formatCurrency(totals.totalFees)}`}
+              tooltip={
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-bold text-foreground mb-1">Daftar Beban & Modal:</p>
+                    <p>Total biaya yang mengurangi pendapatan kotor Anda untuk menghasilkan laba bersih.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="font-semibold block text-orange-500">1. Modal (HPP)</span>
+                      <p>Harga Pokok Penjualan dari barang yang terjual. Dihitung berdasarkan nilai rata-rata stok saat barang masuk (Stock In).</p>
+                    </div>
+                    <div>
+                      <span className="font-semibold block text-rose-500">2. Beban Ops</span>
+                      <p>Biaya operasional lainnya yang dicatat secara manual di menu Pengeluaran.</p>
+                    </div>
+                    <div>
+                      <span className="font-semibold block text-blue-500">3. Komisi/Gaji</span>
+                      <p>Komisi staf dari penjualan jasa atau bonus per transaksi yang diatur di data produk jasa.</p>
+                    </div>
+                    <div>
+                      <span className="font-semibold block text-slate-400">4. Biaya Layanan</span>
+                      <p>Potongan biaya transaksi dari pihak ketiga (misal: Midtrans atau App Fee).</p>
+                    </div>
+                  </div>
+                  <p className="border-t border-border pt-2 italic">Laba Bersih = Penjualan - (HPP + Beban + Komisi + Biaya)</p>
+                </div>
+              }
+            />
               <SummaryCard
                 title="= Laba Bersih"
                 value={totals.labaBersih}
-                icon={<Wallet className="w-4 h-4 text-emerald-500" />}
-                highlight
+                highlight={true}
+                icon={<TrendingDown className={cn("w-4 h-4", totals.labaBersih >= 0 ? "text-emerald-500" : "text-rose-500")} />}
+                tooltip={
+                  <div className="space-y-2">
+                    <p className="font-bold text-foreground">Laba Bersih (Net Profit):</p>
+                    <p>Keuntungan bersih Anda setelah dikurangi semua modal barang (HPP), biaya operasional, gaji staf, dan biaya layanan.</p>
+                    <div className="bg-muted p-2 rounded text-[10px] font-mono mt-2">
+                      Laba = Pendapatan - (HPP + Ops + Gaji + Biaya)
+                    </div>
+                  </div>
+                }
               />
             </div>
           </div>
@@ -530,6 +573,19 @@ export default function ReportFinancialContent() {
               value={stokTotals.totalPembelian}
               icon={<Package className="w-4 h-4 text-amber-500" />}
               description="Tidak mempengaruhi perhitungan laba bersih"
+              tooltip={
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-bold text-foreground mb-1">Total Pembelian Stok:</p>
+                    <p>Akumulasi biaya yang Anda keluarkan untuk membeli persediaan barang (Stock In) dalam periode ini.</p>
+                  </div>
+                  <div className="space-y-2 text-rose-500 bg-rose-500/5 p-2 rounded border border-rose-500/20">
+                    <p className="font-semibold text-xs uppercase">Penting:</p>
+                    <p>Pembelian stok **bukanlah pengurang laba bersih** (bukan HPP). Ini adalah aset dalam bentuk barang.</p>
+                    <p className="mt-1">Laba Anda hanya berkurang saat barang tersebut **terjual** (dicatat sebagai HPP di tab Keuangan).</p>
+                  </div>
+                </div>
+              }
             />
             <SummaryCard
               title="Jumlah Transaksi (Periode)"

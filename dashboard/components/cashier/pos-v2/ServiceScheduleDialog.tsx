@@ -143,7 +143,7 @@ export function ServiceScheduleDialog({
                 <div className="space-y-5">
                     {/* Date picker */}
                     <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                        <label className="flex items-center gap-2 text-sm font-medium text-foreground">
                             <Calendar className="h-4 w-4" /> Pilih tanggal
                         </label>
                         <div className="flex items-center gap-3">
@@ -162,7 +162,7 @@ export function ServiceScheduleDialog({
 
                     {/* Slots */}
                     <div className="space-y-3 max-h-[60dvh] overflow-y-scroll">
-                        <p className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                        <p className="flex items-center gap-2 text-sm font-medium text-foreground">
                             <Clock className="h-4 w-4" /> Slot tersedia
                         </p>
 
@@ -173,7 +173,7 @@ export function ServiceScheduleDialog({
                         )}
 
                         {loading ? (
-                            <div className="flex items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40">
+                            <div className="flex items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
                                 Memuat slot jadwal...
                             </div>
                         ) : slots.length > 0 ? (
@@ -197,7 +197,7 @@ export function ServiceScheduleDialog({
                                             disabled={isDisabled}
                                             className={cn(
                                                 "justify-between",
-                                                isSelected && "bg-blue-600 text-white hover:bg-blue-500",
+                                                isSelected && "bg-primary text-primary-foreground hover:bg-primary/90",
                                                 isDisabled && slot.status === "BLOCKED" && "disabled:bg-orange-500 disabled:opacity-90 text-white disabled:hover:bg-orange-600",
                                                 isDisabled && slot.status === "BOOKED" && "disabled:bg-red-500 disabled:opacity-90 text-white disabled:hover:bg-red-600",
                                             )}>
@@ -212,7 +212,7 @@ export function ServiceScheduleDialog({
                                 })}
                             </div>
                         ) : (
-                            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40">
+                            <div className="rounded-lg border border-dashed border-border bg-muted/10 p-6 text-center text-sm text-muted-foreground">
                                 Belum ada slot untuk tanggal ini. Pilih tanggal lain.
                             </div>
                         )}
@@ -220,7 +220,7 @@ export function ServiceScheduleDialog({
 
                     {/* Staff loading / error */}
                     {selectedSlotId && staffLoading && (
-                        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Loader2 className="h-4 w-4 animate-spin" /> Memeriksa ketersediaan...
                         </div>
                     )}
@@ -232,10 +232,10 @@ export function ServiceScheduleDialog({
 
                     {/* Summary */}
                     {selectedSlot && staffId && !staffLoading && (
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
-                            <p className="font-medium text-slate-700 dark:text-slate-200">Jadwal terpilih</p>
+                        <div className="rounded-lg border border-border bg-muted/20 p-3 text-sm text-muted-foreground">
+                            <p className="font-medium text-foreground">Jadwal terpilih</p>
                             <p>{formatDate(selectedSlot.startTime)}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                            <p className="text-xs text-muted-foreground/80">
                                 {formatTimeRange(selectedSlot.startTime, selectedSlot.endTime)}
                             </p>
                         </div>
@@ -259,7 +259,7 @@ export function ServiceScheduleDialog({
                                 });
                             }
                         }}
-                        className="flex-1 bg-blue-600 hover:bg-blue-500 sm:flex-initial">
+                        className="flex-1">
                         {staffLoading ? "Memuat..." : "Simpan Jadwal"}
                     </Button>
                 </DialogFooter>

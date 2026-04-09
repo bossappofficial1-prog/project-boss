@@ -1,4 +1,4 @@
-import { LoyaltyPointHistoryType, OrderStatus } from "@prisma/client";
+import { LoyaltyPointHistoryType, OrderStatus, PaymentStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { LoyaltyRepository } from "../repositories/loyalty.repository";
 import { OrderRepository } from "../repositories/order.repository";
@@ -113,8 +113,14 @@ export class LoyaltyService {
 
     console.log(`[LOYALTY] Order status: ${order.orderStatus}, Phone: ${order.guestCustomer?.phone}`);
 
-    if (order.orderStatus !== OrderStatus.COMPLETED) {
-      console.log(`[LOYALTY] Order not completed. Skipping.`);
+    // Syarat penambahan poin:
+    // 1. Order status COMPLETED (umum)
+    // 2. ATAU Order status PROCESSING + handledByStaff (POS) + payment SUCCESS (QRIS POS/Paid)
+    const isPaidOrder = (order.orderStatus === OrderStatus.PROCESSING || order.orderStatus === OrderStatus.COMPLETED) &&
+      order.paymentStatus === PaymentStatus.SUCCESS;
+
+    if (order.orderStatus !== OrderStatus.COMPLETED && !isPaidOrder) {
+      console.log(`[LOYALTY] Order not eligible for points yet (Status: ${order.orderStatus}, Payment: ${order.paymentStatus}). Skipping.`);
       return;
     }
 

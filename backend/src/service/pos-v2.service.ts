@@ -84,7 +84,20 @@ export class PosV2Service {
         input: CreatePosV2OrderInput,
         cashierId: string | null,
     ): Promise<PosV2OrderResult> {
-        const { customer, outletId, items, cashReceived = 0, bookingSlotId, bookingDate, paymentMethod, pointsRedeemed = 0 } = input;
+        const {
+            customer,
+            outletId,
+            items,
+            cashReceived = 0,
+            bookingSlotId,
+            bookingDate,
+            paymentMethod,
+            pointsRedeemed = 0,
+            staffId: payloadStaffId,
+        } = input;
+
+        // Prioritize staffId from payload (selected in UI) over cashierId from session
+        const finalCashierId = payloadStaffId || cashierId;
 
         // Validate products exist and belong to outlet
         const productIds = items.map((i) => i.productId);
@@ -264,7 +277,7 @@ export class PosV2Service {
             totalAmount: grandTotal,
             discountAmount,
             pointsRedeemed,
-            cashierId,
+            cashierId: finalCashierId,
             items: orderItems,
             stockUpdates,
             ticketUpdates,

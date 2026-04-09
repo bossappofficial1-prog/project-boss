@@ -20,50 +20,50 @@ const STAT_ITEMS = [
         key: "totalActive",
         label: "Aktif",
         icon: Activity,
-        color: "text-blue-600 dark:text-blue-400",
-        bg: "bg-blue-50 dark:bg-blue-950",
+        color: "text-primary",
+        bg: "bg-primary/10",
     },
     {
         key: "pendingCount",
         label: "Menunggu",
         icon: Clock,
-        color: "text-amber-600 dark:text-amber-400",
-        bg: "bg-amber-50 dark:bg-amber-950",
+        color: "text-amber-500",
+        bg: "bg-amber-500/10",
     },
     {
         key: "processingCount",
         label: "Diproses",
         icon: Package,
-        color: "text-indigo-600 dark:text-indigo-400",
-        bg: "bg-indigo-50 dark:bg-indigo-950",
+        color: "text-blue-500",
+        bg: "bg-blue-500/10",
     },
     {
         key: "readyCount",
         label: "Siap Ambil",
         icon: ShoppingBag,
-        color: "text-emerald-600 dark:text-emerald-400",
-        bg: "bg-emerald-50 dark:bg-emerald-950",
+        color: "text-emerald-500",
+        bg: "bg-emerald-500/10",
     },
     {
         key: "completedToday",
         label: "Selesai",
         icon: CheckCircle,
-        color: "text-green-600 dark:text-green-400",
-        bg: "bg-green-50 dark:bg-green-950",
+        color: "text-emerald-500",
+        bg: "bg-emerald-500/10",
     },
     {
         key: "cancelledToday",
         label: "Batal",
         icon: XCircle,
-        color: "text-red-600 dark:text-red-400",
-        bg: "bg-red-50 dark:bg-red-950",
+        color: "text-destructive",
+        bg: "bg-destructive/10",
     },
     {
         key: "revenueToday",
         label: "Pendapatan",
         icon: Wallet,
-        color: "text-teal-600 dark:text-teal-400",
-        bg: "bg-teal-50 dark:bg-teal-950",
+        color: "text-primary",
+        bg: "bg-primary/10",
         isCurrency: true,
     },
 ] as const;
@@ -81,14 +81,14 @@ export function OrdersStatsBar({ stats }: OrdersStatsBarProps) {
                 return (
                     <div
                         key={item.key}
-                        className={`flex items-center gap-3 rounded-md border border-slate-200 dark:border-slate-700 px-3 py-2.5 ${item.bg}`}
+                        className={`flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 ${item.bg}`}
                     >
                         <Icon className={`w-4 h-4 ${item.color} shrink-0`} />
                         <div className="min-w-0">
-                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">
+                            <p className="text-sm font-bold text-foreground leading-tight truncate">
                                 {display}
                             </p>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                            <p className="text-[10px] text-muted-foreground leading-tight">
                                 {item.label}
                             </p>
                         </div>

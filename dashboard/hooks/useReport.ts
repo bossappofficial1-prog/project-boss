@@ -8,6 +8,8 @@ export interface OutletReport {
   totalPembelian: number;
   totalPengeluaran: number;
   gajiStaf: number;
+  totalHpp: number;
+  totalFees: number;
   labaBersih: number;
   trend: number[];
 }

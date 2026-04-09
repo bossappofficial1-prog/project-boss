@@ -109,7 +109,7 @@ const getExpenseColumns = (handlePreview: (url: string) => void): ColumnDef<Expe
         accessorKey: "amount" as const,
         header: "Jumlah",
         cell: (info: any) => (
-            <span className="font-semibold text-red-600 dark:text-red-400">
+            <span className="font-semibold text-destructive">
                 -{formatCurrency(info.getValue() as number)}
             </span>
         ),
@@ -123,7 +123,7 @@ const getExpenseColumns = (handlePreview: (url: string) => void): ColumnDef<Expe
             return (
                 <button
                     onClick={() => handlePreview(url)}
-                    className="relative block w-12 h-12 rounded overflow-hidden border border-slate-200 dark:border-slate-800 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="relative block w-12 h-12 rounded-lg overflow-hidden border border-border hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                     <Image src={url} alt="Bukti Transaksi" fill className="object-cover" />
                 </button>
@@ -245,10 +245,10 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                    <h1 className="text-xl font-bold text-foreground">
                         Pengeluaran
                     </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                    <p className="text-sm text-muted-foreground">
                         Catat dan kelola pengeluaran outlet
                     </p>
                 </div>
@@ -266,27 +266,27 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+                <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-md bg-red-100 dark:bg-red-900/30">
-                            <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-destructive/10">
+                            <TrendingDown className="w-5 h-5 text-destructive" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Total Pengeluaran</p>
-                            <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Pengeluaran</p>
+                            <p className="text-lg font-bold text-foreground">
                                 {formatCurrency(summary.totalPengeluaran)}
                             </p>
                         </div>
                     </div>
                 </div>
-                <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+                <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-md bg-blue-100 dark:bg-blue-900/30">
-                            <Receipt className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                            <Receipt className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Total Transaksi</p>
-                            <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Transaksi</p>
+                            <p className="text-lg font-bold text-foreground">
                                 {summary.totalTransaksi}
                             </p>
                         </div>
@@ -295,11 +295,11 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
             </div>
 
             {/* Date Range Picker */}
-            <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
+            <div className="rounded-xl border border-border bg-card p-2 shadow-sm">
                 <Popover open={calOpen} onOpenChange={setCalOpen}>
                     <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left h-auto py-2">
-                            <CalendarIcon className="w-4 h-4 mr-3 text-slate-400 shrink-0" />
+                        <Button variant="ghost" className="w-full justify-start text-left h-auto py-2 hover:bg-muted/50 rounded-lg">
+                            <CalendarIcon className="w-4 h-4 mr-3 text-muted-foreground shrink-0" />
                             <span className="text-sm font-medium">
                                 {format(startDate, "d MMM yyyy", { locale: localeID })}
                                 {" — "}
@@ -346,7 +346,7 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
                                     </Badge>
                                 </div>
                             </div>
-                            <p className="text-sm font-semibold text-red-600 dark:text-red-400 whitespace-nowrap shrink-0">
+                            <p className="text-sm font-semibold text-destructive whitespace-nowrap shrink-0">
                                 -{formatCurrency(exp.amount)}
                             </p>
                         </div>

@@ -35,8 +35,8 @@ export function SuccessDialog({
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
             <DialogContent className="sm:max-w-sm text-center">
                 <DialogHeader className="items-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 mb-2">
-                        <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 mb-2">
+                        <CheckCircle2 className="h-8 w-8 text-emerald-500" />
                     </div>
                     <DialogTitle>
                         {isPurchase ? "Stok Berhasil Ditambahkan" : "Pengembalian Berhasil Dicatat"}

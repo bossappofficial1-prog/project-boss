@@ -208,11 +208,11 @@ export function RescheduleDialog({ entry, open, onOpenChange, onSuccess }: Resch
                                                 className={cn(
                                                     "flex flex-col h-auto py-3 px-2 w-full gap-0.5",
                                                     isCurrentBooking && "border-primary ring-1 ring-primary bg-primary/5",
-                                                    isSelected && "bg-green-500 hover:bg-green-600 text-white border-green-500",
+                                                    isSelected && "bg-primary hover:bg-primary/90 text-primary-foreground border-primary",
                                                     slot.computedStatus === "BLOCKED" &&
-                                                    "disabled:bg-orange-500 disabled:opacity-90 text-white disabled:hover:bg-orange-600",
+                                                    "disabled:bg-muted disabled:opacity-50 text-muted-foreground",
                                                     slot.computedStatus === "BOOKED" &&
-                                                    "disabled:bg-red-500 disabled:opacity-90 text-white disabled:hover:bg-red-600",
+                                                    "disabled:bg-destructive/10 disabled:opacity-90 text-destructive",
                                                 )}
                                             >
                                                 <span className="font-semibold text-xs">{label}</span>

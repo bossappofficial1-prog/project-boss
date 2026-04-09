@@ -355,13 +355,13 @@ export async function getOrderReceiptService(id: string) {
     storeName: orderData?.outlet.name,
     address: orderData?.outlet.address,
     phone: orderData?.outlet.phone,
-    transactionId: orderData?.id,
+    transactionId: orderData?.transaction?.id,
     date,
     time,
-    orderNo: "-",
+    orderNo: orderData?.id,
     cashier: orderData?.handledByStaff?.name ?? "-",
     customerName: orderData?.guestCustomer.name ?? "-",
-    shippingAddress: "-",
+    shippingAddress: null,
     items,
     totalQty,
     subTotal: (orderData?.totalAmount ?? 0) + (orderData?.discountAmount ?? 0),
@@ -555,17 +555,8 @@ export async function updateOrderStatusService(
         });
       }
 
-      // Return stock for GOODS & TICKET items
+      // Return quota for TICKET items (Stock for GOODS is no longer managed here)
       for (const item of order.items) {
-        if (item.product.type === "GOODS" && item.product.goods) {
-          await tx.productGoods.update({
-            where: { productId: item.productId },
-            data: {
-              currentStock: { increment: item.quantity },
-            },
-          });
-        }
-
         if (item.product.type === "TICKET" && item.product.ticket) {
           await tx.productTicket.update({
             where: { id: item.product.ticket.id },
@@ -685,7 +676,7 @@ export async function updateOrderStatusService(
   if (status === OrderStatus.COMPLETED) {
     try {
       await LoyaltyService.processOrderLoyalty(orderId);
-      Console.log(`[LOYALTY] Point processed for order ${orderId}`);
+      console.log(`[LOYALTY] Point processed for order ${orderId}`);
     } catch (loyaltyError) {
       console.error(`[LOYALTY] Error processing points:`, loyaltyError);
     }

@@ -109,10 +109,10 @@ const NEEDS_TODAY: QueueOrderStatus[] = ["READY", "ON_GOING", "COMPLETED"];
 function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
     return (
         <div className="flex items-start gap-3">
-            <Icon className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+            <Icon className="w-4 h-4 text-muted-foreground/60 mt-0.5 shrink-0" />
             <div className="min-w-0">
-                <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{value}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-sm font-medium text-foreground">{value}</p>
             </div>
         </div>
     );
@@ -151,7 +151,7 @@ export function QueueDetailSheet({
                 <div className="mt-6 p-6 space-y-6">
                     {/* Customer info */}
                     <section className="space-y-3">
-                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pelanggan</h4>
+                        <h4 className="text-sm font-semibold text-foreground">Pelanggan</h4>
                         <div className="space-y-2">
                             <InfoRow icon={User} label="Nama" value={entry.customerName} />
                             {entry.customerPhone && (
@@ -164,19 +164,19 @@ export function QueueDetailSheet({
 
                     {/* Service info */}
                     <section className="space-y-3">
-                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Layanan</h4>
+                        <h4 className="text-sm font-semibold text-foreground">Layanan</h4>
                         <div className="space-y-2">
                             {entry.items.filter((i) => i.productType === "SERVICE").length > 0 ? (
                                 entry.items
                                     .filter((i) => i.productType === "SERVICE")
                                     .map((item) => (
                                         <div key={item.id} className="flex items-start gap-3">
-                                            <MapPin className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                                            <MapPin className="w-4 h-4 text-muted-foreground/60 mt-0.5 shrink-0" />
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                                                <p className="text-sm font-medium text-foreground">
                                                     {item.productName}
                                                 </p>
-                                                <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                                     {item.duration && (
                                                         <span className="flex items-center gap-1">
                                                             <Timer className="w-3 h-3" />
@@ -202,7 +202,7 @@ export function QueueDetailSheet({
                         <>
                             <Separator />
                             <section className="space-y-3">
-                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <h4 className="text-sm font-semibold text-foreground">
                                     Produk Tambahan
                                 </h4>
                                 <div className="space-y-2">
@@ -210,16 +210,16 @@ export function QueueDetailSheet({
                                         .filter((i) => i.productType === "GOODS")
                                         .map((item) => (
                                             <div key={item.id} className="flex items-start gap-3">
-                                                <Package className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                                                <Package className="w-4 h-4 text-muted-foreground/60 mt-0.5 shrink-0" />
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                                                    <p className="text-sm font-medium text-foreground">
                                                         {item.productName}
                                                     </p>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                    <p className="text-xs text-muted-foreground">
                                                         {item.quantity}x {formatCurrency(item.price)}
                                                     </p>
                                                 </div>
-                                                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 shrink-0">
+                                                <p className="text-sm font-medium text-foreground shrink-0">
                                                     {formatCurrency(item.price * item.quantity)}
                                                 </p>
                                             </div>
@@ -233,7 +233,7 @@ export function QueueDetailSheet({
 
                     {/* Schedule */}
                     <section className="space-y-3">
-                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Jadwal</h4>
+                        <h4 className="text-sm font-semibold text-foreground">Jadwal</h4>
                         <div className="space-y-2">
                             <InfoRow icon={Calendar} label="Dibuat" value={formatDateTime(entry.createdAt)} />
                             {entry.scheduledStart && (
@@ -252,8 +252,8 @@ export function QueueDetailSheet({
                             )}
                         </div>
                         {isFuture && (
-                            <div className="rounded-md bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 px-3 py-2">
-                                <p className="text-xs text-orange-700 dark:text-orange-300">
+                            <div className="rounded-md bg-amber-500/10 border border-amber-500/20 px-3 py-2">
+                                <p className="text-xs text-amber-500">
                                     Booking untuk tanggal mendatang — tidak bisa dilayani sebelum tanggal jadwal.
                                 </p>
                             </div>
@@ -264,12 +264,12 @@ export function QueueDetailSheet({
 
                     {/* Payment */}
                     <section className="space-y-3">
-                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pembayaran</h4>
+                        <h4 className="text-sm font-semibold text-foreground">Pembayaran</h4>
                         <div className="space-y-2">
                             <InfoRow icon={CreditCard} label="Metode" value={getPaymentLabel(entry.paymentMethod)} />
                         </div>
-                        <div className="rounded-md border border-slate-200 dark:border-slate-700 p-3">
-                            <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                        <div className="rounded-md border border-border p-3">
+                            <p className="text-xl font-bold text-foreground">
                                 {formatCurrency(entry.totalAmount)}
                             </p>
                         </div>
@@ -285,8 +285,8 @@ export function QueueDetailSheet({
                             </Button>
                         )}
                         {isAwaitingManualProof && (
-                            <div className="rounded-md bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 px-3 py-2">
-                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                            <div className="rounded-md bg-amber-500/10 border border-amber-500/20 px-3 py-2">
+                                <p className="text-xs text-amber-500">
                                     Menunggu customer mengirim bukti pembayaran. Konfirmasi belum dapat dilakukan.
                                 </p>
                             </div>
@@ -298,10 +298,10 @@ export function QueueDetailSheet({
                         <>
                             <Separator />
                             <section className="space-y-2">
-                                <h4 className="text-sm font-semibold text-red-600 dark:text-red-400">
+                                <h4 className="text-sm font-semibold text-destructive">
                                     Alasan Pembatalan
                                 </h4>
-                                <p className="text-sm text-slate-700 dark:text-slate-300 bg-red-50 dark:bg-red-950 rounded-md p-3">
+                                <p className="text-sm text-foreground bg-destructive/10 rounded-md p-3">
                                     {entry.cancellationReason}
                                 </p>
                             </section>
@@ -312,15 +312,15 @@ export function QueueDetailSheet({
                     {!isTerminal && (
                         <div className="space-y-3 pt-3">
                             {isAwaitingManualProof && (
-                                <div className="rounded-md bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 px-3 py-2 text-center">
-                                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                                <div className="rounded-md bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-center">
+                                    <p className="text-xs text-amber-500">
                                         Bukti pembayaran belum dikirim — konfirmasi dinonaktifkan
                                     </p>
                                 </div>
                             )}
                             {blockAction && !isAwaitingManualProof && (
-                                <div className="rounded-md bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 px-3 py-2 text-center">
-                                    <p className="text-xs text-orange-700 dark:text-orange-300">
+                                <div className="rounded-md bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-center">
+                                    <p className="text-xs text-amber-500">
                                         Belum bisa dilayani — jadwal belum tiba
                                     </p>
                                 </div>

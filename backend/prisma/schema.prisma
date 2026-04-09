@@ -756,6 +756,8 @@ model OrderItem {
   id                 String @id @default(uuid())
   quantity           Int
   priceAtTimeOfOrder Float // Menyimpan harga saat itu untuk arsip
+  hppAtTimeOfOrder   Float @default(0) // Menyimpan HPP saat itu untuk arsip laba bersih
+  commissionAtTimeOfOrder Float @default(0) // Menyimpan komisi staff saat itu untuk arsip gaji
 
   // Relasi: Item ini bagian dari pesanan mana
   orderId String
@@ -882,7 +884,7 @@ model receiptSetting {
   outletId    String  @unique
   photoString String?
   showLogo    Boolean @default(false)
-  printHeight String  @default("105")
+  printHeight String  @default("120")
   printWidth  String  @default("80")
   outlet      Outlet  @relation(fields: [outletId], references: [id], onDelete: Cascade)
 }

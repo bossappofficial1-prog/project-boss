@@ -89,10 +89,10 @@ function getPaymentLabel(method: string | null): string {
 function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
     return (
         <div className="flex items-start gap-3">
-            <Icon className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+            <Icon className="w-4 h-4 text-muted-foreground/60 mt-0.5 shrink-0" />
             <div className="min-w-0">
-                <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{value}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-sm font-medium text-foreground">{value}</p>
             </div>
         </div>
     );
@@ -132,7 +132,7 @@ export function OrderDetailSheet({
                 <div className="mt-6 p-6 space-y-6">
                     {/* Customer info */}
                     <section className="space-y-3">
-                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pelanggan</h4>
+                        <h4 className="text-sm font-semibold text-foreground">Pelanggan</h4>
                         <div className="space-y-2">
                             <InfoRow icon={User} label="Nama" value={entry.customerName} />
                             {entry.customerPhone && (
@@ -145,26 +145,26 @@ export function OrderDetailSheet({
 
                     {/* Items */}
                     <section className="space-y-3">
-                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        <h4 className="text-sm font-semibold text-foreground">
                             Item Pesanan ({entry.items.length})
                         </h4>
                         <div className="space-y-2">
                             {entry.items.map((item, i) => (
                                 <div
                                     key={i}
-                                    className="rounded-md border border-slate-200 dark:border-slate-700 px-3 py-2"
+                                    className="rounded-md border border-border px-3 py-2"
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2 min-w-0">
-                                            <ShoppingBag className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                            <ShoppingBag className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
                                             <div className="min-w-0">
-                                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                                                <p className="text-sm font-medium text-foreground truncate">
                                                     {item.productName}
                                                 </p>
-                                                <p className="text-xs text-slate-500">{item.quantity}x @ {formatCurrency(item.price)}</p>
+                                                <p className="text-xs text-muted-foreground">{item.quantity}x @ {formatCurrency(item.price)}</p>
                                             </div>
                                         </div>
-                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap ml-3">
+                                        <p className="text-sm font-semibold text-foreground whitespace-nowrap ml-3">
                                             {formatCurrency(item.quantity * item.price)}
                                         </p>
                                     </div>
@@ -177,13 +177,13 @@ export function OrderDetailSheet({
 
                     {/* Payment */}
                     <section className="space-y-3">
-                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pembayaran</h4>
+                        <h4 className="text-sm font-semibold text-foreground">Pembayaran</h4>
                         <div className="space-y-2">
                             <InfoRow icon={CreditCard} label="Metode" value={getPaymentLabel(entry.paymentMethod)} />
                             <InfoRow icon={Calendar} label="Waktu Pesan" value={formatDateTime(entry.createdAt)} />
                         </div>
-                        <div className="rounded-md border border-slate-200 dark:border-slate-700 p-3">
-                            <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                        <div className="rounded-md border border-border p-3">
+                            <p className="text-xl font-bold text-foreground">
                                 {formatCurrency(entry.totalAmount)}
                             </p>
                         </div>
@@ -205,10 +205,10 @@ export function OrderDetailSheet({
                         <>
                             <Separator />
                             <section className="space-y-2">
-                                <h4 className="text-sm font-semibold text-red-600 dark:text-red-400">
+                                <h4 className="text-sm font-semibold text-destructive">
                                     Alasan Pembatalan
                                 </h4>
-                                <p className="text-sm text-slate-700 dark:text-slate-300 bg-red-50 dark:bg-red-950 rounded-md p-3">
+                                <p className="text-sm text-foreground bg-destructive/10 rounded-md p-3">
                                     {entry.cancellationReason}
                                 </p>
                             </section>
@@ -250,7 +250,7 @@ export function OrderDetailSheet({
                         {entry.items.some(item => item.productType === "TICKET") && (
                             <Button
                                 variant="outline"
-                                className="border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900/50 dark:text-amber-400"
+                                className="border-amber-500/20 text-amber-500 hover:bg-amber-500/10"
                                 disabled={printingId === entry.id}
                                 onClick={() => onPrintTickets(entry)}
                             >

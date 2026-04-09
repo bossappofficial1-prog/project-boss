@@ -168,10 +168,10 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+            <h1 className="text-xl font-bold text-foreground">
               Antrian Layanan
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted-foreground">
               Kelola antrian layanan jasa secara real-time
             </p>
           </div>

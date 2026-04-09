@@ -9,7 +9,7 @@ const router = Router();
 router.use(protect);
 
 // Endpoint untuk konfigurasi loyalty (Hanya Owner)
-router.get("/config/:outletId", authorize(UserRole.OWNER), LoyaltyController.getConfig);
+router.get("/config/:outletId", LoyaltyController.getConfig);
 router.put("/config/:outletId", authorize(UserRole.OWNER), LoyaltyController.upsertConfig);
 
 // Endpoint untuk manajemen membership (Owner & Staff/Kasir)

@@ -11,6 +11,7 @@ export class OrderRepository {
         totalAmount: true,
         discountAmount: true,
         pointsRedeemed: true,
+        transaction: { select: { id: true } },
         guestCustomer: {
           select: {
             name: true,

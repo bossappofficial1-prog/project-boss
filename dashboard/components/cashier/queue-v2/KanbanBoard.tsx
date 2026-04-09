@@ -17,26 +17,26 @@ const COLUMNS = [
     {
         key: "waiting" as const,
         title: "Menunggu",
-        icon: <Hourglass className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
+        icon: <Hourglass className="w-4 h-4 text-amber-500" />,
         accent: "bg-amber-500",
     },
     {
         key: "ready" as const,
         title: "Siap Dilayani",
-        icon: <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
+        icon: <Clock className="w-4 h-4 text-emerald-500" />,
         accent: "bg-emerald-500",
     },
     {
         key: "inProgress" as const,
         title: "Sedang Dilayani",
-        icon: <Play className="w-4 h-4 text-purple-600 dark:text-purple-400" />,
-        accent: "bg-purple-500",
+        icon: <Play className="w-4 h-4 text-primary" />,
+        accent: "bg-primary",
     },
     {
         key: "completed" as const,
         title: "Selesai Hari Ini",
-        icon: <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />,
-        accent: "bg-green-500",
+        icon: <CheckCircle className="w-4 h-4 text-emerald-500" />,
+        accent: "bg-emerald-500",
     },
 ];
 

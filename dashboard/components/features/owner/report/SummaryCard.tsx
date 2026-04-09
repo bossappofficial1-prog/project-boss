@@ -1,5 +1,17 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { HelpCircle } from "lucide-react";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SummaryCardProps {
     title: string;
@@ -8,6 +20,7 @@ interface SummaryCardProps {
     highlight?: boolean;
     description?: string;
     isCurrency?: boolean;
+    tooltip?: React.ReactNode;
 }
 
 export function SummaryCard({
@@ -16,7 +29,8 @@ export function SummaryCard({
     icon,
     isCurrency = true,
     highlight = false,
-    description
+    description,
+    tooltip
 }: SummaryCardProps) {
 
     const displayValue = typeof value === "number" && isCurrency
@@ -35,9 +49,23 @@ export function SummaryCard({
         >
             <CardContent className="p-5">
                 <div className="flex items-center justify-between space-y-0 pb-2">
-                    <p className="text-sm font-medium text-muted-foreground truncate">
-                        {title}
-                    </p>
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                        <p className="text-sm font-medium text-muted-foreground truncate">
+                            {title}
+                        </p>
+                        {tooltip && (
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <button className="text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+                                        <HelpCircle className="h-3.5 w-3.5" />
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 text-xs text-muted-foreground border-border bg-card shadow-xl p-4">
+                                   {tooltip}
+                                </PopoverContent>
+                            </Popover>
+                        )}
+                    </div>
                     {/* Icon Container */}
                     {icon && (
                         <div className={cn(

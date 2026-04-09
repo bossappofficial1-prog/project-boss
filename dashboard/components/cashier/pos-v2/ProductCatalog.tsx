@@ -36,7 +36,7 @@ export function ProductCatalog({
         <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         placeholder="Cari produk atau layanan..."
                         value={searchQuery}
@@ -51,7 +51,7 @@ export function ProductCatalog({
                             size="sm"
                             variant={filter === f ? "default" : "outline"}
                             onClick={() => setFilter(f)}
-                            className={filter === f ? "bg-blue-600 hover:bg-blue-500" : ""}>
+                            className={filter === f ? "bg-primary hover:bg-primary/90" : ""}>
                             {f === "ALL" ? "Semua" : f === "GOODS" ? "Barang" : f === "SERVICE" ? "Layanan" : "Tiket"}
                         </Button>
                     ))}
@@ -65,7 +65,7 @@ export function ProductCatalog({
                     ))}
                 </div>
             ) : filtered.length === 0 ? (
-                <div className="flex h-40 items-center justify-center rounded-md border border-dashed border-slate-300 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                <div className="flex h-40 items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
                     {searchQuery ? "Tidak ada produk yang cocok" : "Belum ada produk aktif"}
                 </div>
             ) : (
@@ -86,12 +86,12 @@ export function ProductCatalog({
                                 disabled={disabled}
                                 onClick={() => onAddToCart(product)}
                                 className={`relative flex flex-col overflow-hidden rounded-md border text-left transition-all
-                  ${disabled
-                                        ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60 dark:border-slate-800 dark:bg-slate-900/40"
-                                        : "border-slate-200 bg-white hover:border-blue-400 hover:shadow-md active:scale-[0.98] dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-blue-500"
+                                    ${disabled
+                                        ? "cursor-not-allowed border-border bg-muted/30 opacity-60"
+                                        : "border-border bg-card hover:border-primary/50 hover:shadow-md active:scale-[0.98]"
                                     }`}>
                                 {/* Image */}
-                                <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/20">
                                     {imageUrl ? (
                                         <img
                                             src={imageUrl}
@@ -104,24 +104,25 @@ export function ProductCatalog({
                                             }}
                                         />
                                     ) : null}
-                                    <div className={`flex h-full w-full items-center justify-center text-slate-400 dark:text-slate-600 ${imageUrl ? "hidden" : ""}`}>
+                                    <div className={`flex h-full w-full items-center justify-center text-muted-foreground ${imageUrl ? "hidden" : ""}`}>
                                         <ShoppingBag className="h-8 w-8" />
                                     </div>
 
                                     {/* Type badge */}
                                     <Badge
+                                        variant="secondary"
                                         className={`absolute right-1.5 top-1.5 text-[10px] ${isGoods
-                                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300"
+                                            ? "bg-primary/10 text-primary"
                                             : isTicket
-                                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300"
-                                                : "bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300"
+                                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                                : "bg-purple-500/10 text-purple-600 dark:text-purple-400"
                                             }`}>
                                         {isGoods ? "Barang" : isTicket ? "Tiket" : "Jasa"}
                                     </Badge>
 
                                     {/* Cart badge */}
                                     {qty > 0 && (
-                                        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-bold text-white shadow-sm">
+                                        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground shadow-sm">
                                             {qty}
                                         </span>
                                     )}
@@ -129,23 +130,23 @@ export function ProductCatalog({
 
                                 {/* Info */}
                                 <div className="flex flex-1 flex-col gap-1 p-2.5">
-                                    <p className="line-clamp-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+                                    <p className="line-clamp-2 text-sm font-medium text-foreground">
                                         {product.name}
                                     </p>
-                                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                    <p className="text-xs font-semibold text-primary">
                                         Rp {product.price.toLocaleString("id-ID")}
                                     </p>
                                     {isGoods ? (
-                                        <p className={`text-[11px] ${outOfStock ? "text-red-500" : "text-slate-500 dark:text-slate-400"}`}>
+                                        <p className={`text-[11px] ${outOfStock ? "text-destructive" : "text-muted-foreground"}`}>
                                             {outOfStock ? "Habis" : `Stok: ${product.stock} ${product.unit ?? ""}`}
                                         </p>
                                     ) : isTicket ? (
-                                        <p className={`flex items-center gap-1 text-[11px] ${ticketSoldOut ? "text-red-500" : "text-slate-500 dark:text-slate-400"}`}>
+                                        <p className={`flex items-center gap-1 text-[11px] ${ticketSoldOut ? "text-destructive" : "text-muted-foreground"}`}>
                                             <Ticket className="h-3 w-3" />
                                             {ticketSoldOut ? "Sold Out" : `${(product.totalQuota ?? 0) - (product.soldCount ?? 0)} tersisa`}
                                         </p>
                                     ) : (
-                                        <p className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                        <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                             <Clock className="h-3 w-3" />
                                             {product.durationMinutes ?? 0} menit
                                         </p>

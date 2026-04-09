@@ -153,34 +153,34 @@ export class PosV2Repository {
             }
 
             const createdItems = await Promise.all(
-                items.map((item) =>
-                    tx.orderItem.create({
+                items.map(async (item) => {
+                    const product = await tx.product.findUnique({
+                        where: { id: item.productId },
+                        include: { goods: true, service: true },
+                    });
+
+                    const hpp = product?.goods?.averageHpp || 0;
+                    let commission = 0;
+                    if (product?.service) {
+                        const s = product.service;
+                        commission = s.commissionType === "PERCENTAGE"
+                            ? item.priceAtTimeOfOrder * (s.commissionValue / 100)
+                            : s.commissionValue;
+                    }
+
+                    return tx.orderItem.create({
                         data: {
                             orderId: order.id,
                             productId: item.productId,
                             quantity: item.quantity,
                             priceAtTimeOfOrder: item.priceAtTimeOfOrder,
+                            hppAtTimeOfOrder: hpp,
+                            commissionAtTimeOfOrder: commission,
                         },
-                    }),
-                ),
+                    });
+                }),
             );
 
-            for (const stock of stockUpdates) {
-                await tx.stockLog.create({
-                    data: {
-                        productGoodsId: stock.productGoodsId,
-                        type: "OUT",
-                        quantity: stock.quantity,
-                        referenceType: "ORDER",
-                        referenceId: stock.orderId,
-                        notes: `POS v2 cash order ${stock.orderId}`,
-                    },
-                });
-                await tx.productGoods.update({
-                    where: { id: stock.productGoodsId },
-                    data: { currentStock: { decrement: stock.quantity } },
-                });
-            }
 
             // Ticket: increment soldCount + generate TicketCode
             for (const ticket of ticketUpdates) {

@@ -13,6 +13,8 @@ export interface Totals {
   totalPembelian: number;
   totalPengeluaran: number;
   gajiStaf: number;
+  totalHpp: number;
+  totalFees: number;
   labaBersih: number;
 }
 
@@ -60,35 +62,49 @@ export function ReportFinancialTable({
         },
         ...(!hideTrend
           ? [
-              {
-                accessorKey: "trend",
-                header: "Tren",
-                cell({ row: rows }: { row: Row<OutletReport> }) {
-                  const row = rows.original;
-                  return (
-                    <div className="inline-flex items-center justify-center p-1 bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-100 dark:border-slate-800">
-                      <Sparkline
-                        data={row.trend}
-                        color={row.labaBersih > 0 ? "#10b981" : "#f43f5e"}
-                      />
-                    </div>
-                  );
-                },
-                footer: () => <Activity className="w-5 h-5 mx-auto text-emerald-500 opacity-50" />,
-              } as any,
-            ]
+            {
+              accessorKey: "trend",
+              header: "Tren",
+              cell({ row: rows }: { row: Row<OutletReport> }) {
+                const row = rows.original;
+                return (
+                  <div className="inline-flex items-center justify-center p-1 bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-100 dark:border-slate-800">
+                    <Sparkline
+                      data={row.trend}
+                      color={row.labaBersih > 0 ? "#10b981" : "#f43f5e"}
+                    />
+                  </div>
+                );
+              },
+              footer: () => <Activity className="w-5 h-5 mx-auto text-emerald-500 opacity-50" />,
+            } as any,
+          ]
           : []),
         {
-          accessorKey: "totalPengeluaran",
-          header: "(-) Pengeluaran",
+          accessorKey: "totalHpp",
+          header: "(-) Modal (HPP)",
           cell: (props: any) => (
-            <span className="text-red-600 dark:text-red-400/80">
-              {formatCurrency(props.row.original.totalPengeluaran)}
+            <span className="text-orange-600 dark:text-orange-400/80">
+              {formatCurrency(props.row.original.totalHpp || 0)}
             </span>
           ),
           footer: () => (
-            <span className="text-red-600 dark:text-red-400/80">
-              {formatCurrency(totals.totalPengeluaran)}
+            <span className="text-orange-600 dark:text-orange-400/80">
+              {formatCurrency(totals.totalHpp || 0)}
+            </span>
+          ),
+        },
+        {
+          accessorKey: "totalPengeluaran",
+          header: "(-) Beban Ops",
+          cell: (props: any) => (
+            <span className="text-rose-600 dark:text-rose-400/80">
+              {formatCurrency(props.row.original.totalPengeluaran || 0)}
+            </span>
+          ),
+          footer: () => (
+            <span className="text-rose-600 dark:text-rose-400/80">
+              {formatCurrency(totals.totalPengeluaran || 0)}
             </span>
           ),
         },
@@ -97,36 +113,50 @@ export function ReportFinancialTable({
           header: "(-) Komisi",
           cell: (props: any) => (
             <span className="text-blue-600 dark:text-blue-400/80">
-              {formatCurrency(props.row.original.gajiStaf)}
+              {formatCurrency(props.row.original.gajiStaf || 0)}
             </span>
           ),
           footer: () => (
             <span className="text-blue-600 dark:text-blue-400/80">
-              {formatCurrency(totals.gajiStaf)}
+              {formatCurrency(totals.gajiStaf || 0)}
             </span>
           ),
         },
+        // {
+        //   accessorKey: "totalFees",
+        //   header: "(-) Layanan",
+        //   cell: (props: any) => (
+        //     <span className="text-slate-500 dark:text-slate-400">
+        //       {formatCurrency(props.row.original.totalFees || 0)}
+        //     </span>
+        //   ),
+        //   footer: () => (
+        //     <span className="text-slate-500 dark:text-slate-400">
+        //       {formatCurrency(totals.totalFees || 0)}
+        //     </span>
+        //   ),
+        // },
         {
           accessorKey: "labaBersih",
           header: "= Laba Bersih",
           cell: (props: any) => (
             <span
               className={
-                props.row.original.labaBersih >= 0
-                  ? "text-green-600 dark:text-green-400/80 font-semibold"
-                  : "text-red-600 dark:text-red-400/80 font-semibold"
+                (props.row.original.labaBersih || 0) >= 0
+                  ? "text-green-600 dark:text-green-400/80 font-bold"
+                  : "text-red-600 dark:text-red-400/80 font-bold"
               }>
-              {formatCurrency(props.row.original.labaBersih)}
+              {formatCurrency(props.row.original.labaBersih || 0)}
             </span>
           ),
           footer: () => (
             <span
               className={
-                totals.labaBersih >= 0
-                  ? "text-green-600 dark:text-green-400/80 font-bold"
-                  : "text-red-600 dark:text-red-400/80 font-bold"
+                (totals.labaBersih || 0) >= 0
+                  ? "text-emerald-600 dark:text-emerald-400 font-bold"
+                  : "text-rose-600 dark:text-rose-400 font-bold"
               }>
-              {formatCurrency(totals.labaBersih)}
+              {formatCurrency(totals.labaBersih || 0)}
             </span>
           ),
         },

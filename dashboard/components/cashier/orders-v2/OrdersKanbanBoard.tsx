@@ -21,26 +21,26 @@ const COLUMNS = [
     {
         key: "pending" as const,
         title: "Menunggu Bayar",
-        icon: <Hourglass className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
+        icon: <Hourglass className="w-4 h-4 text-amber-500" />,
         accent: "bg-amber-500",
     },
     {
         key: "processing" as const,
         title: "Diproses",
-        icon: <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
-        accent: "bg-blue-500",
+        icon: <Package className="w-4 h-4 text-primary" />,
+        accent: "bg-primary",
     },
     {
         key: "ready" as const,
         title: "Siap Diambil",
-        icon: <ShoppingBag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
+        icon: <ShoppingBag className="w-4 h-4 text-emerald-500" />,
         accent: "bg-emerald-500",
     },
     {
         key: "completed" as const,
         title: "Selesai Hari Ini",
-        icon: <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />,
-        accent: "bg-green-500",
+        icon: <CheckCircle className="w-4 h-4 text-emerald-500" />,
+        accent: "bg-emerald-500",
     },
 ];
 

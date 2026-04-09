@@ -208,8 +208,8 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
       <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Pesanan Barang</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <h1 className="text-xl font-bold text-foreground">Pesanan Barang</h1>
+            <p className="text-sm text-muted-foreground">
               Kelola pesanan barang secara real-time
             </p>
           </div>

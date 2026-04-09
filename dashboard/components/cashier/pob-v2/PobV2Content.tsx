@@ -15,6 +15,7 @@ import {
     type POBProduct,
     type POBCartItem,
 } from "@/hooks/api/use-pob-v2";
+import { cn } from "@/lib/utils";
 import { ProductCatalog } from "./ProductCatalog";
 import { CartPanel } from "./CartPanel";
 import { TransactionInfoForm } from "./TransactionInfoForm";
@@ -233,11 +234,11 @@ export function PobV2Content() {
             {/* Header */}
             <header className="flex flex-col gap-1">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
-                        <Package className="h-5 w-5 text-primary" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <Package className="h-5 w-5" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold">Pembelian Stok</h1>
+                        <h1 className="text-xl font-bold text-foreground">Pembelian Stok</h1>
                         <p className="text-sm text-muted-foreground">
                             Input barang masuk / keluar untuk {outletData?.name}
                         </p>
@@ -249,7 +250,10 @@ export function PobV2Content() {
             <div className="flex items-center gap-2">
                 <Badge
                     variant={isPurchase ? "default" : "secondary"}
-                    className={`gap-1.5 px-3 py-1 ${isPurchase ? "bg-green-600 hover:bg-green-500" : "bg-orange-600 hover:bg-orange-500 text-white"}`}
+                    className={cn(
+                        "gap-1.5 px-3 py-1 font-semibold transition-colors",
+                        isPurchase ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20"
+                    )}
                 >
                     {isPurchase ? (
                         <ArrowDownToLine className="h-3.5 w-3.5" />
@@ -336,7 +340,10 @@ export function PobV2Content() {
                                     <Button
                                         onClick={handleSubmit}
                                         disabled={isSubmitting}
-                                        className={isPurchase ? "bg-green-600 hover:bg-green-500" : "bg-orange-600 hover:bg-orange-500"}
+                                        className={cn(
+                                            "font-bold shadow-sm",
+                                            isPurchase ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-orange-600 hover:bg-orange-500 text-white"
+                                        )}
                                     >
                                         {isSubmitting
                                             ? "Menyimpan..."

@@ -20,6 +20,11 @@ interface CustomerInfoProps {
     phone: string;
     onPhoneChange: (value: string) => void;
     onMemberChange?: (member: any) => void;
+    pointsRedeemed: number;
+    onPointsRedeemedChange: (value: number) => void;
+    loyaltyDiscount: number;
+    loyaltyConfig: any;
+    subtotal: number;
 }
 
 export function CustomerInfo({
@@ -31,6 +36,11 @@ export function CustomerInfo({
     phone,
     onPhoneChange,
     onMemberChange,
+    pointsRedeemed,
+    onPointsRedeemedChange,
+    loyaltyDiscount,
+    loyaltyConfig,
+    subtotal,
 }: CustomerInfoProps) {
     const registerMember = useRegisterLoyaltyMember();
 
@@ -41,7 +51,7 @@ export function CustomerInfo({
         limit: 1,
     });
 
-    const member = data?.members?.[0] && data.members[0].customer.phone === phone ? data.members[0] : null;
+    const member = data?.members?.[0] || null;
 
     React.useEffect(() => {
         onMemberChange?.(member);
@@ -70,7 +80,7 @@ export function CustomerInfo({
             <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Pelanggan</Label>
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 dark:text-slate-400">Walk-in</span>
+                    <span className="text-xs text-muted-foreground">Walk-in</span>
                     <Switch checked={isWalkIn} onCheckedChange={onWalkInChange} />
                 </div>
             </div>
@@ -79,7 +89,7 @@ export function CustomerInfo({
                 <div className="space-y-3">
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <Label htmlFor="customerName" className="text-xs text-slate-600 dark:text-slate-400">
+                            <Label htmlFor="customerName" className="text-xs text-muted-foreground">
                                 Nama
                             </Label>
                             <Input
@@ -91,7 +101,7 @@ export function CustomerInfo({
                             />
                         </div>
                         <div>
-                            <Label htmlFor="customerPhone" className="text-xs text-slate-600 dark:text-slate-400">
+                            <Label htmlFor="customerPhone" className="text-xs text-muted-foreground">
                                 No. Telepon
                             </Label>
                             <Input
@@ -105,39 +115,79 @@ export function CustomerInfo({
                     </div>
 
                     {isPhoneValid && (
-                        <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-900/30">
+                        <div className="rounded-lg border border-border bg-muted/20 p-2">
                             {isLoading ? (
-                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <Loader2 className="h-3 w-3 animate-spin" />
                                     Memeriksa keanggotaan...
                                 </div>
                             ) : member ? (
                                 <div className="flex items-center justify-between">
                                     <div className="flex flex-col">
-                                        <span className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                                        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                                             Member Outlet
                                         </span>
-                                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                        <span className="text-sm font-bold text-primary">
                                             {member.points.toLocaleString("id-ID")} Poin
                                         </span>
                                     </div>
-                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                    <Badge variant="outline" className="bg-primary/5 text-primary">
                                         {member.tier}
                                     </Badge>
                                 </div>
                             ) : (
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs text-slate-500">Belum menjadi member outlet ini</span>
+                                    <span className="text-xs text-muted-foreground">Belum menjadi member outlet ini</span>
                                     <Button
                                         size="sm"
                                         variant="ghost"
                                         onClick={handleRegister}
                                         disabled={registerMember.isPending}
-                                        className="h-7 gap-1 px-2 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/30">
+                                        className="h-7 gap-1 px-2 text-primary hover:bg-primary/10">
                                         <UserPlus className="h-3 w-3" />
                                         <span className="text-xs">Jadikan Member</span>
                                     </Button>
                                 </div>
+                            )}
+                        </div>
+                    )}
+
+                    {isPhoneValid && member && subtotal > loyaltyConfig.pointValue && (
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                            <div className="flex items-center justify-between mb-2">
+                                <Label className="text-xs font-semibold text-primary">Tukar Poin</Label>
+                                <span className="text-[10px] text-primary/80">1 Poin = Rp {loyaltyConfig?.pointValue.toLocaleString("id-ID")}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    max={member.points}
+                                    value={pointsRedeemed || ""}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value) || 0;
+                                        const maxPointsBySubtotal = Math.ceil(subtotal / loyaltyConfig?.pointValue);
+                                        onPointsRedeemedChange(Math.min(val, member.points, maxPointsBySubtotal));
+                                    }}
+                                    className="h-8 text-sm"
+                                    placeholder="Jumlah poin..."
+                                />
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 text-xs"
+                                    onClick={() => {
+                                        const maxPointsBySubtotal = Math.ceil(subtotal / (loyaltyConfig as any).pointValue);
+                                        onPointsRedeemedChange(Math.min(member.points, maxPointsBySubtotal));
+                                    }}
+                                >
+                                    Max
+                                </Button>
+                            </div>
+                            {loyaltyDiscount > 0 && (
+                                <p className="mt-1 text-[10px] text-primary italic">
+                                    Potongan: -Rp {loyaltyDiscount.toLocaleString("id-ID")}
+                                </p>
                             )}
                         </div>
                     )}

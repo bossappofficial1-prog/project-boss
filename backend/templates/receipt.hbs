@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Struk Pembelian</title>
+    <style>
+        @page {
+            size: 80mm auto;
+            margin: 0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 80mm;
+            /* Lebar standar printer thermal */
+            margin: 0 auto;
+            padding: 5mm;
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            font-size: 12px;
+            color: #000;
+            background-color: #fff;
+            line-height: 1.4;
+        }
+
+        /* --- Text Alignments --- */
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .text-bold {
+            font-weight: bold;
+        }
+
+        /* --- Header Section --- */
+        .header {
+            margin-bottom: 12px;
+        }
+
+        .header img {
+            width: 50px;
+            margin-bottom: 5px;
+        }
+
+        .store-name {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 2px 0;
+        }
+
+        .store-address,
+        .store-phone {
+            font-size: 11px;
+            color: #222;
+        }
+
+        .transaction-id {
+            font-size: 10px;
+            margin-top: 5px;
+            padding-top: 5px;
+            border-top: 1px solid #000;
+            display: inline-block;
+        }
+
+        /* --- Dividers --- */
+        .divider-dashed {
+            border-top: 1px dashed #000;
+            margin: 8px 0;
+        }
+
+        .divider-solid {
+            border-top: 1.5px solid #000;
+            margin: 8px 0;
+        }
+
+        /* --- Meta Info Grid --- */
+        .meta-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
+        .meta-col {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .highlight-box {
+            display: inline-block;
+            padding: 2px 4px;
+            background-color: #000;
+            color: #fff;
+            font-size: 10px;
+            border-radius: 2px;
+            margin-top: 2px;
+        }
+
+        /* --- Items Section --- */
+        .item-list {
+            margin: 10px 0;
+        }
+
+        .item-row {
+            margin-bottom: 8px;
+            page-break-inside: avoid;
+        }
+
+        .item-name {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        .item-calc {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11.5px;
+            color: #111;
+            padding-left: 12px;
+            /* Indentasi agar rapi di bawah nama item */
+        }
+
+        /* --- Totals Section --- */
+        .total-section {
+            margin-top: 10px;
+            page-break-inside: avoid;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+            font-size: 12px;
+        }
+
+        .total-row.discount {
+            color: #444;
+        }
+
+        .total-row.grand-total {
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid #000;
+        }
+
+        /* --- Footer Section --- */
+        .footer {
+            margin-top: 20px;
+            font-size: 11px;
+        }
+
+        .footer-thanks {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .footer-brand {
+            font-size: 9px;
+            color: #555;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header Toko -->
+    <div class="header text-center">
+        {{#if showLogo}}
+        <img src="{{photoString}}" alt="Logo Toko" />
+        {{/if}}
+        <div class="store-name">{{storeName}}</div>
+        <div class="store-address">{{address}}</div>
+        <div class="store-phone">Telp: {{phone}}</div>
+        <div class="transaction-id">TRX: {{transactionId}}</div>
+    </div>
+
+    <div class="divider-dashed"></div>
+
+    <!-- Informasi Transaksi -->
+    <div class="meta-info">
+        <div class="meta-col text-left">
+            <span>{{date}} {{time}}</span>
+            <span class="text-bold">Order: #{{orderNo}}</span>
+        </div>
+        <div class="meta-col text-right">
+            <span>Kasir: {{cashier}}</span>
+            <span>Plg: {{customerName}}</span>
+            {{#if shippingAddress}}
+            <div><span class="highlight-box">{{shippingAddress}}</span></div>
+            {{/if}}
+        </div>
+    </div>
+
+    <div class="divider-solid"></div>
+
+    <!-- Daftar Item Belanja -->
+    <div class="item-list">
+        {{#each items}}
+        <div class="item-row">
+            <div class="item-name">{{rowNumber @index}}. {{name}}</div>
+            <div class="item-calc">
+                <span>{{qty}} {{unit}} x {{formatRupiah price}}</span>
+                <span>{{formatRupiah subtotal}}</span>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+
+    <div class="divider-solid"></div>
+
+    <!-- Ringkasan Total -->
+    <div class="total-section">
+        <div class="total-row">
+            <span>Total Item</span>
+            <span>{{totalQty}}</span>
+        </div>
+        <div class="total-row">
+            <span>Subtotal</span>
+            <span>Rp {{formatRupiah subTotal}}</span>
+        </div>
+
+        {{#if discountAmount}}
+        <div class="total-row discount">
+            <span>Potongan Poin</span>
+            <span>-Rp {{formatRupiah discountAmount}}</span>
+        </div>
+        {{/if}}
+
+        <div class="total-row grand-total">
+            <span>TOTAL</span>
+            <span>Rp {{formatRupiah total}}</span>
+        </div>
+    </div>
+
+    <div class="divider-dashed" style="margin-top: 15px;"></div>
+
+    <!-- Footer -->
+    <div class="footer text-center">
+        <div class="footer-thanks">Terima Kasih Telah Berbelanja!</div>
+        <div class="footer-brand">Powered by bossapp.id</div>
+    </div>
+
+</body>
+
+</html>
