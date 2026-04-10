@@ -229,6 +229,9 @@ export const googleOAuthCallbackController = asyncHandler(async (req: any, res: 
         });
 
         if (checkBusinessUser) {
+            if (req.query.state) {
+                return res.redirect(`${clientUrl}${req.query.state}`)
+            }
             return res.redirect(`${clientUrl}/owner/dashboard`)
         }
         res.redirect(`${clientUrl}/auth/register?step=2&provider=google&name=${user.user.name}`);

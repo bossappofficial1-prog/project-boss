@@ -68,15 +68,17 @@ authRouter.post(
 
 authRouter.get("/google",
     (req, res, next) => {
-        const state = req.query.redirect || '/owner/dashboard';
-        (req.session as any).redirectUrl = state;
-        next();
-    },
-    passport.authenticate("google", { scope: ["profile", "email"] })
+        const redirectPath = req.query.redirect || '/owner/dashboard';
+
+        passport.authenticate("google", {
+            scope: ["profile", "email"],
+            state: redirectPath as string
+        })(req, res, next);
+    }
 );
 
 authRouter.get("/google/callback",
-    passport.authenticate("google", { failureRedirect: "/auth/login" }),
+    passport.authenticate("google", { failureRedirect: "/auth/login?error=oauth_failed" }),
     googleOAuthCallbackController
 );
 

@@ -27,6 +27,22 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.log(error.response)
+    return Promise.reject(error);
+  }
+);
+
+apiClient.interceptors.response.use(
+  (config) => {
+    return config;
+  },
+  (error) => {
+    const isInvalidLogin = error.response.data.message == "Anda belum login, silakan login terlebih dahulu";
+    const redirectPath = typeof window !== 'undefined' ? window.location.pathname : '';
+
+    if (isInvalidLogin) {
+      window.location.href = `/auth/login?redirect=${redirectPath}`;
+    }
     return Promise.reject(error);
   }
 );

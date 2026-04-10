@@ -63,12 +63,19 @@ export default function LoginContent() {
       const meResponse = await apiClient.get('/auth/me');
       const userRole = meResponse.data.data.user.role;
 
-      if (redirectUrl && redirectUrl !== '/' && !redirectUrl.startsWith('/auth/')) {
-        const isValidRedirect =
-          (userRole === 'ADMIN' && redirectUrl.startsWith('/admin/')) ||
-          (userRole === 'OWNER' && redirectUrl.startsWith('/owner/'));
+      if (
+        redirectUrl &&
+        redirectUrl.startsWith('/') &&
+        !redirectUrl.startsWith('/auth/')
+      ) {
+        const isTryingToAccessOwner = redirectUrl.startsWith('/owner/');
+        const isTryingToAccessAdmin = redirectUrl.startsWith('/admin/');
 
-        if (isValidRedirect) {
+        const isRoleMismatch =
+          (isTryingToAccessOwner && userRole !== 'OWNER') ||
+          (isTryingToAccessAdmin && userRole !== 'ADMIN');
+
+        if (!isRoleMismatch) {
           router.push(redirectUrl);
           return;
         }

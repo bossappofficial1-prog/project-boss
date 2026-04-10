@@ -28,12 +28,14 @@ export const getFinancialSummaryController = asyncHandler(async (req: Request, r
 
 export const getOutletReportController = asyncHandler(async (req: Request, res: Response) => {
   const outletId = req.params.outletId as string;
+  const ownerId = req.storedUser?.id;
   const { type, date } = req.query;
 
   const report = await ReportService.getOutletReport(
     outletId,
     date as string,
     type as "daily" | "weekly" | "monthly",
+    ownerId!,
   );
 
   return ResponseUtil.success(res, report);
@@ -61,11 +63,13 @@ export const getCompareOutletsReportController = asyncHandler(
 export const getStaffReportController = asyncHandler(async (req: Request, res: Response) => {
   const outletId = req.params.outletId as string;
   const { type, date } = req.query;
+  const ownerId = req.storedUser?.id;
 
   const report = await ReportService.getStaffReport(
     outletId,
     date as string,
     type as "daily" | "weekly" | "monthly",
+    ownerId!,
   );
 
   return ResponseUtil.success(res, report);
@@ -120,7 +124,7 @@ export const exportOutletReportExcelController = asyncHandler(async (req: Reques
     query.date || new Date().toISOString(),
     query.type,
     query.viewMode,
-    ownerId,
+    ownerId!,
   );
 
   const filename = `Laporan_Outlet_${new Date().toISOString().split("T")[0]}.xlsx`;
@@ -138,11 +142,13 @@ const exportStaffQuerySchema = z.object({
 export const exportStaffReportExcelController = asyncHandler(async (req: Request, res: Response) => {
   const outletId = req.params.outletId as string;
   const query = exportStaffQuerySchema.parse(req.query);
+  const ownerId = req.storedUser?.id;
 
   const workbook = await ReportService.exportStaffReportToExcel(
     outletId,
     query.date || new Date().toISOString(),
     query.type,
+    ownerId!,
   );
 
   const filename = `Laporan_Staff_${new Date().toISOString().split("T")[0]}.xlsx`;
