@@ -1,6 +1,6 @@
 import { HomeRepository } from "../repositories/home.repository";
 import { BannerRepository } from "../repositories/banner.repository";
-import { RedisUtils } from "src/utils/redis.utils";
+import { RedisUtils } from "../utils/redis.utils";
 
 let homeSummaryCache: any = null;
 let lastCacheUpdate = 0;

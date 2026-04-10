@@ -19,7 +19,7 @@ import {
   startOfYear,
   endOfYear,
 } from "date-fns";
-import { RedisUtils } from "src/utils/redis.utils";
+import { RedisUtils } from "../utils/redis.utils";
 
 interface OutletReport {
   label: string;
