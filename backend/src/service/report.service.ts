@@ -1,7 +1,6 @@
 import * as ExcelJS from "exceljs";
 import {
   getOutletByIdService,
-  getAllOutletService,
   getOutletsByBusinessIdService,
 } from "./outlet.service";
 import { getBusinessByOwnerIdService } from "./business.service";
@@ -22,12 +21,37 @@ import {
 } from "date-fns";
 import { RedisUtils } from "src/utils/redis.utils";
 
+interface OutletReport {
+  label: string;
+  jumlahTransaksi: number;
+  totalPendapatan: number;
+  totalPembelian: any;
+  totalPengeluaran: any;
+  gajiStaf: number;
+  totalHpp: number;
+  totalFees: number;
+  labaBersih: number;
+  trend: number[];
+}
+
+interface StaffReport {
+  staffId: string;
+  name: string;
+  role: string;
+  transactionCount: number;
+  revenue: number;
+  commission: number;
+  type: string;
+}
+
 export class ReportService {
   static async getFinancialSummary(outletId: string, startDate: Date, endDate: Date) {
     const outlet = await getOutletByIdService(outletId);
-    const cachedkey = `report:summary:${outletId}:${startDate}:${endDate}`
 
-    const cached = RedisUtils.get(cachedkey)
+    // Pastikan rentang waktu disertakan dalam cache key untuk keunikan
+    const cachedkey = `report:summary:${outletId}:${startDate.toISOString()}:${endDate.toISOString()}`;
+
+    const cached = await RedisUtils.get(cachedkey);
     if (cached) return cached;
 
     // Pastikan range mencakup awal hari pertama hingga akhir detik di hari terakhir
@@ -84,7 +108,9 @@ export class ReportService {
         topSellingProducts,
       },
     };
-    RedisUtils.set(cachedkey, data, 60 * 60 * 24 * 7);
+
+    // TTL 15 menit = 15 * 60 detik
+    await RedisUtils.set(cachedkey, data, 15 * 60);
     return data;
   }
 
@@ -102,7 +128,11 @@ export class ReportService {
     date: string,
     type: "daily" | "weekly" | "monthly",
     ownerId: string
-  ) {
+  ): Promise<OutletReport[]> {
+    const cachedkey = `report:outlet:${outletId}:${date}:${type}:${ownerId}`;
+    const cached = await RedisUtils.get(cachedkey);
+    if (cached) return cached as OutletReport[];
+
     const refDate = date ? new Date(date as string) : new Date();
     let start: Date, end: Date;
 
@@ -232,6 +262,8 @@ export class ReportService {
       finalReport.reverse();
     }
 
+    // Set TTL 15 menit (15 * 60 detik)
+    await RedisUtils.set(cachedkey, finalReport, 15 * 60);
     return finalReport;
   }
 
@@ -239,8 +271,11 @@ export class ReportService {
     date: string,
     type: "daily" | "monthly" | "yearly",
     ownerId: string,
-  ) {
-    const cachedkey = `report:compare:${ownerId}:${date}:${type}`
+  ): Promise<OutletReport[]> {
+    const cachedkey = `report:compare:${ownerId}:${date}:${type}`;
+    const cached = await RedisUtils.get(cachedkey);
+    if (cached) return cached as OutletReport[];
+
     const refDate = date ? new Date(date as string) : new Date();
     let start: Date, end: Date;
 
@@ -286,7 +321,8 @@ export class ReportService {
       };
     });
 
-    RedisUtils.set(cachedkey, finalReport, 60 * 60 * 24);
+    // Sesuaikan TTL ke 15 Menit (15 * 60 detik)
+    await RedisUtils.set(cachedkey, finalReport, 15 * 60);
     return finalReport;
   }
 
@@ -333,7 +369,11 @@ export class ReportService {
     date: string,
     type: "daily" | "weekly" | "monthly",
     ownerId: string
-  ) {
+  ): Promise<StaffReport[]> {
+    const cachedkey = `report:staff:${outletId}:${date}:${type}:${ownerId}`;
+    const cached = await RedisUtils.get(cachedkey);
+    if (cached) return cached as StaffReport[];
+
     const refDate = date ? new Date(date as string) : new Date();
     let start: Date, end: Date;
 
@@ -424,7 +464,11 @@ export class ReportService {
       type: "SERVICE",
     }));
 
-    return [...cashierList, ...serviceList];
+    const finalData = [...cashierList, ...serviceList];
+
+    // Set TTL 15 menit (15 * 60 detik)
+    await RedisUtils.set(cachedkey, finalData, 15 * 60);
+    return finalData;
   }
 
   // ─── Excel Export ───
