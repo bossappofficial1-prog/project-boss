@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createOrderController, getOrderByIdController, getOrderReceiptController, refundOrderController, updateOrderStatusController, updateServiceOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController, cancelOrderByCustomerController, confirmOrderByCustomerController, getOrdersListController } from "../controller/order.controller";
+import { createOrderController, getOrderByIdController, getOrderReceiptController, getOrderReceiptPrintController, refundOrderController, updateOrderStatusController, updateServiceOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController, cancelOrderByCustomerController, confirmOrderByCustomerController, getOrdersListController } from "../controller/order.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOrderSchema, updateOrderStatusSchema, updateServiceQueueStatusSchema, customerCancelOrderSchema, customerConfirmOrderSchema } from "../schemas/order.schema";
 import { authorize, protect, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
@@ -53,6 +53,7 @@ orderRouter.post("/:id/refund", protect, authorize(UserRole.OWNER), refundOrderC
 
 // Rute yang dilindungi untuk mencetak struk (Owner atau Kasir)
 orderRouter.get("/:id/receipt", protect, authorizeOwnerOrCashier, getOrderReceiptController);
+orderRouter.get("/:id/receipt/print", protect, authorizeOwnerOrCashier, getOrderReceiptPrintController);
 
 // Rute yang dilindungi untuk memperbarui status pesanan (Owner atau Kasir)
 orderRouter.patch("/:id/status", protect, authorizeOwnerOrCashier, validateSchema(updateOrderStatusSchema), updateOrderStatusController);

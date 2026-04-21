@@ -47,6 +47,7 @@ export function PosV2Content() {
     const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethodType>("cash");
     const [cashReceived, setCashReceived] = React.useState(0);
     const [orderResult, setOrderResult] = React.useState<PosV2OrderResult | null>(null);
+    const [orderPrintContext, setOrderPrintContext] = React.useState<{ items: any[], cashierName: string, outletName: string } | null>(null);
     const [scheduleDialog, setScheduleDialog] = React.useState<ScheduleDialogState | null>(null);
     const [member, setMember] = React.useState<any>(null);
     const [pointsRedeemed, setPointsRedeemed] = React.useState(0);
@@ -266,6 +267,11 @@ export function PosV2Content() {
             },
             {
                 onSuccess: (result) => {
+                    setOrderPrintContext({
+                        items: cartItems.map(l => ({ name: l.product.name, price: l.product.price, qty: l.quantity })),
+                        cashierName: cashierData?.name || "Kasir",
+                        outletName: outletData?.name || "Outlet"
+                    });
                     setOrderResult(result);
                     resetForm();
                     // Invalidate loyalty queries to show updated points
@@ -394,7 +400,11 @@ export function PosV2Content() {
             <OrderSuccessDialog
                 open={!!orderResult}
                 result={orderResult}
-                onClose={() => setOrderResult(null)}
+                printContext={orderPrintContext}
+                onClose={() => {
+                    setOrderResult(null);
+                    setOrderPrintContext(null);
+                }}
             />
 
             {/* Service Schedule Dialog */}

@@ -19,6 +19,8 @@ import {
   getOrdersListService,
   cancelOrderByCustomerService,
 } from "../service/order.service";
+import sharp from "sharp";
+import { EscPosEncoder } from "../utils/escpos-encoder";
 import { generateReceiptHtml } from "../service/helpers/receipt-template";
 
 export const getOrderReceiptController = asyncHandler(async (req: Request, res: Response) => {
@@ -60,6 +62,83 @@ export const getOrderReceiptController = asyncHandler(async (req: Request, res: 
 
   res.contentType("application/pdf");
   res.send(pdfBuffer);
+});
+
+export const getOrderReceiptPrintController = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const receiptData = await getOrderReceiptService(id as string);
+
+  if (!receiptData) {
+    throw new AppError("Pesanan tidak ditemukan atau data struk tidak lengkap", HttpStatus.NOT_FOUND);
+  }
+
+  // 1. Render HTML via Puppeteer
+  const browser = await puppeteer.launch({
+    headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  });
+
+  const page = await browser.newPage();
+
+  // Set printer width in pixels for rendering
+  // 80mm printer is usually 576px wide, 58mm is 384px.
+  const printWidthMm = receiptData.printWidth || 58;
+  const pixelWidth = printWidthMm as number === 80 ? 576 : 384;
+
+  await page.setViewport({ width: pixelWidth, height: 800 });
+  await page.setContent(await generateReceiptHtml(receiptData), { waitUntil: "networkidle0" });
+
+  // Get full page height
+  const bodyHandle = await page.$('body');
+  const boundingBox = await bodyHandle?.boundingBox();
+  const contentHeight = Math.ceil(boundingBox?.height || 400);
+
+  // Take screenshot
+  const screenshot = await page.screenshot({
+    fullPage: true,
+    type: 'png',
+    omitBackground: true
+  });
+  await browser.close();
+
+  // 2. Process Image with Sharp for Thermal Printer
+  // Convert to grayscale, resize back to exact pixelWidth (to be safe), and use threshold for B&W
+  const { data, info } = await sharp(screenshot)
+    .resize(pixelWidth)
+    .grayscale()
+    .threshold(180) // Brighter threshold for sharper 1-bit result
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  // 3. Bit packing logic for ESC/POS (GS v 0)
+  // info.width is pixels, data is 1 byte per pixel grayscale (0 or 255)
+  const widthBytes = pixelWidth / 8;
+  const packedData = Buffer.alloc(widthBytes * info.height);
+
+  for (let y = 0; y < info.height; y++) {
+    for (let x = 0; x < pixelWidth; x++) {
+      const idx = y * pixelWidth + x;
+      const isBlack = data[idx] < 128; // Raw byte value from sharp threshold
+
+      if (isBlack) {
+        const byteIdx = y * widthBytes + Math.floor(x / 8);
+        const bitIdx = 7 - (x % 8);
+        packedData[byteIdx] |= (1 << bitIdx);
+      }
+    }
+  }
+
+  // 4. Encode to ESC/POS
+  const encoder = new EscPosEncoder();
+  encoder.initialize()
+    .alignLeft() // Always left align image payload to ensure correct bit positioning
+    .image(packedData, pixelWidth, info.height)
+    .feed(3)
+    .cut();
+
+  res.contentType("application/octet-stream");
+  res.send(encoder.encode());
 });
 
 export const updateOrderStatusController = asyncHandler(async (req: Request, res: Response) => {

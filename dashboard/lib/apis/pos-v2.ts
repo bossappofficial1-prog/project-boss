@@ -137,6 +137,12 @@ export const posV2Api = {
         });
         return response.data;
     },
+    async getReceiptPrint(orderId: string): Promise<ArrayBuffer> {
+        const response = await apiClient.get(`/orders/${orderId}/receipt/print`, {
+            responseType: "arraybuffer",
+        });
+        return response.data;
+    },
     async getOrderTickets(orderId: string): Promise<any[]> {
         return apiCall<any[]>(`/tickets/order/${orderId}`);
     },

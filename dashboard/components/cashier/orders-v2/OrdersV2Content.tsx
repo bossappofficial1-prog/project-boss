@@ -20,6 +20,7 @@ import { useOrdersV2Board, useOrdersV2UpdateStatus } from "@/hooks/api/use-order
 import { ordersV2Api } from "@/lib/apis/orders-v2";
 import type { OrderV2Entry, GoodsOrderStatus, OrdersV2Board } from "@/lib/apis/orders-v2";
 import { formatCurrency } from "@/components/owner/orders/utils";
+import { usePrint } from "@/hooks/use-print";
 
 interface OrdersV2ContentProps {
   outletId: string;
@@ -63,33 +64,14 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
   const [printingId, setPrintingId] = useState<string | null>(null);
   const [printingType, setPrintingType] = useState<"receipt" | "ticket" | null>(null);
 
+  const { handlePrintReceipt, handlePrintTickets: handlePrintTicket } = usePrint()
+
   // Receipt printing via hidden iframe
   const handlePrint = useCallback(async (entry: OrderV2Entry) => {
     try {
       setPrintingId(entry.id);
       setPrintingType("receipt");
-      const blob = await ordersV2Api.getReceipt(entry.id);
-      const url = URL.createObjectURL(blob);
-
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "fixed";
-      iframe.style.right = "0";
-      iframe.style.bottom = "0";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "0";
-      iframe.src = url;
-
-      document.body.appendChild(iframe);
-
-      iframe.onload = () => {
-        setTimeout(() => {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-          setPrintingId(null);
-          setPrintingType(null);
-        }, 500);
-      };
+      await handlePrintReceipt(entry.id)
     } catch {
       toast.error("Gagal mencetak struk");
       setPrintingId(null);
@@ -101,9 +83,7 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
     try {
       setPrintingId(entry.id);
       setPrintingType("ticket");
-      const blob = await ordersV2Api.printOrderTickets(entry.id);
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
+      await handlePrintTicket(entry.id)
     } catch {
       toast.error("Gagal mencetak tiket");
     } finally {

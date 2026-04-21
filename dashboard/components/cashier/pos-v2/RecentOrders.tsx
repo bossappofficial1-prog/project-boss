@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { posV2Api } from "@/lib/apis/pos-v2";
 import type { PosV2RecentOrder } from "@/lib/apis/pos-v2";
+import { usePrint } from "@/hooks/use-print";
 
 interface RecentOrdersProps {
     orders: PosV2RecentOrder[] | undefined;
@@ -21,31 +22,12 @@ const timeFmt = new Intl.DateTimeFormat("id-ID", {
 
 export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
     const [printingId, setPrintingId] = React.useState<string | null>(null);
+    const { handlePrintReceipt } = usePrint()
 
     const handlePrint = async (orderId: string) => {
         setPrintingId(orderId);
-        try {
-            const blob = await posV2Api.getReceipt(orderId);
-            const url = URL.createObjectURL(blob);
-
-            const printWindow = window.open(url, "_blank", "width=400,height=600");
-            if (printWindow) {
-                printWindow.addEventListener("load", () => {
-                    printWindow.print();
-                });
-            } else {
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `receipt-${orderId}.pdf`;
-                a.click();
-            }
-
-            setTimeout(() => URL.revokeObjectURL(url), 60_000);
-        } catch {
-            toast.error("Gagal mencetak struk");
-        } finally {
-            setPrintingId(null);
-        }
+        await handlePrintReceipt(orderId)
+        setPrintingId(null);
     };
 
     if (isLoading) {

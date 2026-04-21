@@ -15,6 +15,7 @@ import { apiClient } from "@/lib/apis/base";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { SocketCashierProvider } from "@/contexts/SocketCashierContext";
+import { PrinterProvider } from "@/contexts/PrinterContext";
 
 const CASHIER_SESSION_CACHE_KEY = "cashier-auth-cache-v1";
 
@@ -168,11 +169,13 @@ export default function CashierLayoutClient({ children }: { children: React.Reac
     <SocketCashierProvider outletId={outletData.id}>
       <CashierOutletProvider outlet={outletData}>
         <CashierContext.Provider value={{ cashierData, outletData }}>
-          <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-            <CashierNavbar cashierName={cashierData.name} outletName={outletData.name} />
-            <main>{children}</main>
-          </div>
-          <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
+          <PrinterProvider>
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+              <CashierNavbar cashierName={cashierData.name} outletName={outletData.name} />
+              <main>{children}</main>
+            </div>
+            <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
+          </PrinterProvider>
         </CashierContext.Provider>
       </CashierOutletProvider>
     </SocketCashierProvider>

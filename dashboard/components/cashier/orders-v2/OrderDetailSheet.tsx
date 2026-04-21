@@ -14,6 +14,7 @@ import {
     Printer, ImageIcon, ShoppingBag,
 } from "lucide-react";
 import type { OrderV2Entry, GoodsOrderStatus } from "@/lib/apis/orders-v2";
+import { formatCurrency } from "@/lib/utils";
 
 interface OrderDetailSheetProps {
     entry: OrderV2Entry | null;
@@ -61,14 +62,6 @@ function formatDateTime(dateStr: string | null): string {
         hour: "2-digit",
         minute: "2-digit",
     });
-}
-
-function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-    }).format(amount);
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -238,25 +231,6 @@ export function OrderDetailSheet({
                                     Batal
                                 </Button>
                             </div>
-                        )}
-                        <Button
-                            variant="outline"
-                            disabled={printingId === entry.id}
-                            onClick={() => onPrint(entry)}
-                        >
-                            <Printer className={`w-4 h-4 mr-2 ${printingId === entry.id && printingType === "receipt" ? "animate-pulse" : ""}`} />
-                            {printingId === entry.id && printingType === "receipt" ? "Sedang Memproses..." : "Cetak Struk"}
-                        </Button>
-                        {entry.items.some(item => item.productType === "TICKET") && (
-                            <Button
-                                variant="outline"
-                                className="border-amber-500/20 text-amber-500 hover:bg-amber-500/10"
-                                disabled={printingId === entry.id}
-                                onClick={() => onPrintTickets(entry)}
-                            >
-                                <Printer className={`w-4 h-4 mr-2 ${printingId === entry.id && printingType === "ticket" ? "animate-pulse" : ""}`} />
-                                {printingId === entry.id && printingType === "ticket" ? "Sedang Memproses..." : "Cetak Tiket"}
-                            </Button>
                         )}
                     </div>
                 </div>

@@ -13,6 +13,7 @@ import { apiClient } from "@/lib/apis/base";
 import { cn } from "@/lib/utils";
 import ReceiptSetting from "../ReceiptSetting";
 import { useOutletContext } from "../providers/CashierOutletProvider";
+import { PrinterSettingDialog } from "./PrinterSettingDialog";
 
 interface CashierNavbarProps {
   cashierName: string;
@@ -127,6 +128,7 @@ export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          <PrinterSettingDialog />
           <ReceiptSetting outletId={selectedOutletId!} />
           <ThemeToggle />
           <Button onClick={handleLogout} variant="outline" size="sm" className="hidden sm:flex rounded-full px-4">
