@@ -737,10 +737,12 @@ export function DataTable<TData, TValue>({
           });
 
           const blob = new Blob([response.data], {
-            type: response.headers["content-type"],
+            type: typeof response.headers["content-type"] === "string" ? response.headers["content-type"] : undefined,
           });
 
-          const contentDisposition = response.headers["content-disposition"];
+          const contentDisposition = typeof response.headers["content-disposition"] === "string" 
+            ? response.headers["content-disposition"] 
+            : undefined;
           let filename = option.filename || `export-${option.id}-${new Date().getTime()}`;
 
           if (contentDisposition && contentDisposition.includes("filename=")) {
