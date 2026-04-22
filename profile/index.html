@@ -1,631 +1,716 @@
 <!DOCTYPE html>
-<html lang="id" prefix="og: https://ogp.me/ns#">
+<html lang="id" prefix="og: https://ogp.me/ns#" class="dark" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-  <!-- Primary SEO -->
-  <title>BOSS — Sistem Kasir, Manajemen Bisnis &amp; Antrian UMKM Indonesia</title>
+  <!-- ═══ PRIMARY SEO ═══ -->
+  <title>BOSS — Aplikasi Kasir & Manajemen Bisnis untuk UMKM Indonesia</title>
   <meta name="description"
-    content="BOSS (Business One Stop System) adalah aplikasi web kasir, manajemen stok, antrian, dan laporan bisnis untuk UMKM Indonesia. Multi-outlet, multi-bisnis, pembayaran digital, real-time." />
+    content="BOSS (Business One Stop System) adalah aplikasi kasir, manajemen stok, antrian pelanggan, dan laporan bisnis berbasis web untuk UMKM Indonesia. Multi-outlet, pembayaran QRIS, real-time. Coba gratis sekarang." />
   <meta name="keywords"
-    content="sistem kasir UMKM, manajemen bisnis Indonesia, aplikasi kasir online, manajemen stok, antrian pelanggan, laporan penjualan, point of sale, POS UMKM" />
-  <meta name="author"
-    content="Kurnia Fajar Viliano, Bima Lovrino Prakasa, Afca Arel Pratama, Pito Desri Pauzi, Baghaztra Van Ril" />
+    content="aplikasi kasir, pos umkm, software kasir, aplikasi antrian, manajemen stok, qris umkm, bossapp, business one stop system, kasir online" />
+  <meta name="author" content="BOSS" />
   <meta name="robots" content="index, follow" />
-  <meta name="theme-color" content="#070709" />
-  <link rel="canonical" href="https://profile.bossapp.id" />
+  <meta name="theme-color" content="#06060a" />
+  <link rel="canonical" href="https://bossapp.id/" />
 
-  <!-- Open Graph -->
+  <!-- ═══ FAVICON ═══ -->
+  <link rel="icon" type="image/png" href="https://profile.bossapp.id/boss-icon.png" />
+  <link rel="apple-touch-icon" href="https://profile.bossapp.id/boss-icon.png" />
+
+  <!-- ═══ OPEN GRAPH / FACEBOOK / WHATSAPP ═══ -->
   <meta property="og:type" content="website" />
-  <meta property="og:locale" content="id_ID" />
-  <meta property="og:url" content="https://profile.bossapp.id" />
-  <meta property="og:site_name" content="BOSS — Business One Stop System" />
-  <meta property="og:title" content="BOSS — Sistem Kasir, Manajemen Bisnis &amp; Antrian UMKM Indonesia" />
+  <meta property="og:url" content="https://bossapp.id/" />
+  <meta property="og:title" content="BOSS — Aplikasi Kasir & Manajemen Bisnis untuk UMKM Indonesia" />
   <meta property="og:description"
-    content="Aplikasi web all-in-one untuk UMKM: kasir, stok, antrian, laporan penjualan, produk digital, pembayaran digital. Multi-outlet, real-time, siap pakai." />
-  <meta property="og:image" content="/app-icon-192.png" />
+    content="Satu platform untuk semua operasional bisnis Anda. Kasir, stok, antrian, dan laporan — tanpa instalasi, langsung jalan dari browser." />
+  <meta property="og:image" content="https://profile.bossapp.id/boss-icon.png" />
+  <meta property="og:site_name" content="BOSS" />
 
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="BOSS — Sistem Kasir &amp; Manajemen Bisnis UMKM" />
+  <!-- ═══ TWITTER ═══ -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:url" content="https://bossapp.id/" />
+  <meta name="twitter:title" content="BOSS — Aplikasi Kasir untuk UMKM" />
   <meta name="twitter:description"
-    content="Aplikasi web all-in-one untuk UMKM: kasir, stok, antrian, laporan penjualan, dan pembayaran digital." />
-  <meta name="twitter:image" content="/app-icon-192.png" />
+    content="Satu platform untuk semua operasional bisnis Anda. Kasir, stok, antrian, dan laporan." />
+  <meta name="twitter:image" content="https://profile.bossapp.id/boss-icon.png" />
 
-  <!-- JSON-LD -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "BOSS — Business One Stop System",
-    "description": "Sistem kasir dan manajemen bisnis berbasis web untuk UMKM Indonesia.",
-    "url": "https://profile.bossapp.id",
+    "name": "BOSS (Business One Stop System)",
+    "operatingSystem": "Web Browser, iOS, Android",
     "applicationCategory": "BusinessApplication",
-    "operatingSystem": "Web",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "IDR" }
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "IDR"
+    },
+    "description": "Aplikasi kasir (POS), manajemen stok, antrian pelanggan, dan laporan bisnis berbasis web terintegrasi untuk UMKM Indonesia.",
+    "creator": {
+      "@type": "Organization",
+      "name": "BOSS",
+      "url": "https://bossapp.id/"
+    }
   }
   </script>
 
-  <!-- Fonts -->
+  <!-- Prevent Flash of Incorrect Theme -->
+  <script>
+    const savedTheme = localStorage.getItem('boss-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+  </script>
+
+  <!-- ═══ FONTS ═══ -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet" />
-  <link rel="icon" type="image/x-icon" href="/app-icon-192.png" />
-  <link rel="apple-touch-icon" href="/app-icon-192.png" />
+
+  <!-- ═══ TAILWIND CSS v4 CDN ═══ -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <!-- Konfigurasi Tema Tailwind v4 -->
+  <style type="text/tailwindcss">
+    @theme {
+      --color-bg: var(--theme-bg);
+      --color-bg2: var(--theme-bg2);
+      --color-surface: var(--theme-surface);
+      --color-surface2: var(--theme-surface2);
+      --color-border-main: var(--theme-border-main);
+      --color-border-med: var(--theme-border-med);
+      
+      --color-accent: #e03030;
+      --color-accent-hover: #ee3636;
+      --color-accent2: #ff7070;
+      --color-accent3: #ffaa60;
+      
+      --color-text-main: var(--theme-text-main);
+      --color-text2: var(--theme-text2);
+      --color-text3: var(--theme-text3);
+      
+      --font-display: 'Poppins', sans-serif;
+      --font-body: 'Poppins', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    @layer base {
+      html { scroll-behavior: smooth; }
+      body {
+        @apply bg-bg text-text-main font-body leading-relaxed overflow-x-hidden antialiased;
+      }
+      
+      /* Optimasi Performa: Matikan transisi hanya pada elemen yang sering memicu repaint */
+      html.theme-switching, 
+      html.theme-switching body {
+        transition: none !important;
+      }
+      
+      /* Noise Effect Overlay */
+      body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 9998;
+      }
+    }
+
+    @layer components {
+      .wrapper { @apply max-w-[1240px] mx-auto px-4 md:px-6 relative z-10; }
+      
+      /* Typography */
+      .eyebrow { @apply inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[2.5px] text-accent mb-4; }
+      .eyebrow::before { content: ''; @apply block w-[18px] h-[1.5px] bg-accent; }
+      .section-h { @apply font-display text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1] mb-4; }
+      .section-p { @apply text-base text-text2 max-w-[520px] leading-[1.85]; }
+      
+      /* Buttons */
+      .btn { @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md font-semibold font-body cursor-pointer transition-all duration-200 whitespace-nowrap relative overflow-hidden; }
+      .btn-primary { @apply bg-accent text-white shadow-[0_4px_20px_rgba(224,48,48,0.35)] hover:-translate-y-0.5 hover:bg-accent-hover hover:shadow-[0_8px_30px_rgba(224,48,48,0.5)]; }
+      .btn-ghost { @apply bg-black/5 dark:bg-white/5 text-text2 border border-border-main hover:bg-black/10 dark:hover:bg-white/10 hover:text-text-main hover:border-accent/35; }
+      .btn-lg { @apply px-6 md:px-8 py-3.5 md:py-4 text-[0.95rem] rounded-lg md:rounded-xl; }
+      .btn-sm { @apply px-4 py-2 text-xs; }
+
+      /* Separator */
+      .sep { @apply border-t border-border-main my-0 opacity-50 transition-colors duration-300; }
+      .gradient-sep { @apply h-px border-none bg-gradient-to-r from-transparent via-accent to-transparent opacity-50; }
+
+      /* Nav Scrolled State */
+      nav.scrolled { @apply bg-bg/90 backdrop-blur-xl border-b border-border-main saturate-150; }
+      
+      /* FAQ Toggle States */
+      .faq-item.open { border-color: rgba(224, 48, 48, 0.4) !important; }
+      .faq-item.open .faq-arrow { background-color: var(--color-accent) !important; border-color: var(--color-accent) !important; transform: rotate(45deg); color: white; }
+      .faq-item.open .faq-a { max-height: 400px !important; margin-top: 0.875rem !important; opacity: 1 !important; }
+    }
+  </style>
+
+  <!-- Custom CSS untuk animasi kompleks & scrollbar -->
+
   <link rel="stylesheet" href="index.css" />
 </head>
 
 <body>
 
-  <!-- Background -->
-  <div class="mesh" aria-hidden="true">
-    <div class="mesh-orb"></div>
-    <div class="mesh-orb"></div>
-    <div class="mesh-orb"></div>
+  <!-- ══════════════ AMBIENT BG ══════════════ -->
+  <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
+    <div
+      class="absolute rounded-full blur-[120px] w-[800px] h-[800px] bg-[radial-gradient(circle,rgba(192,28,28,0.12),transparent_65%)] -top-[350px] -left-[250px] animate-[slow-drift_22s_ease-in-out_infinite_alternate]">
+    </div>
+    <div
+      class="absolute rounded-full blur-[120px] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(120,15,15,0.1),transparent_65%)] -bottom-[100px] -right-[150px] animate-[slow-drift_28s_ease-in-out_infinite_alternate-reverse]">
+    </div>
+    <div
+      class="absolute rounded-full blur-[120px] w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(194,65,12,0.08),transparent_65%)] top-[45%] left-[55%] animate-[slow-drift_18s_ease-in-out_infinite_alternate]">
+    </div>
   </div>
-  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="fixed inset-0 z-0 pointer-events-none"
+    style="background-image: linear-gradient(rgba(224, 48, 48, .03) 1px, transparent 1px), linear-gradient(90deg, rgba(224, 48, 48, .03) 1px, transparent 1px); background-size: 72px 72px; mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, black 20%, transparent 100%);"
+    aria-hidden="true"></div>
 
-  <!-- ── NAV ─────────────────────────────────────── -->
-  <nav id="nav" aria-label="Navigasi utama">
-    <div class="nav-inner">
-      <a href="#" class="nav-logo" aria-label="BOSS — Business One Stop System">
-        <img src="boss-icon.png" alt="BOSS" style="padding: 4px;" width="34" height="34"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-        <span class="nav-logo-icon" style="display:none">B</span>
+  <!-- ══════════════ NAV ══════════════ -->
+  <nav id="nav" class="sticky top-0 z-50 transition-all duration-300 border-b border-transparent"
+    aria-label="Navigasi utama">
+    <div class="flex items-center justify-between h-[68px] max-w-[1160px] mx-auto px-4 md:px-6">
+      <a href="#"
+        class="flex items-center gap-2.5 font-display text-xl md:text-2xl font-extrabold text-text-main tracking-wide">
+        <img src="https://profile.bossapp.id/boss-icon.png" alt="BOSS Logo"
+          class="w-8 h-8 md:w-9 md:h-9 object-contain drop-shadow-[0_2px_10px_rgba(224,48,48,0.3)]" />
         BOSS
       </a>
-
-      <ul class="nav-links" role="list">
-        <li><a href="#fitur">Fitur</a></li>
-        <li><a href="#tech">Tech Stack</a></li>
-        <li><a href="#arsitektur">Arsitektur</a></li>
-        <li><a href="#tim">Tim</a></li>
+      <ul class="hidden md:flex gap-1" role="list">
+        <li><a href="#cara-kerja"
+            class="text-text2 hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5 px-3.5 py-2 rounded-md text-sm font-medium transition-all relative group">Cara
+            Kerja<span
+              class="absolute bottom-[-4px] left-1/2 w-0 h-[2px] bg-accent transition-all duration-300 group-hover:w-full group-hover:left-0"></span></a>
+        </li>
+        <li><a href="#fitur"
+            class="text-text2 hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5 px-3.5 py-2 rounded-md text-sm font-medium transition-all relative group">Fitur<span
+              class="absolute bottom-[-4px] left-1/2 w-0 h-[2px] bg-accent transition-all duration-300 group-hover:w-full group-hover:left-0"></span></a>
+        </li>
+        <li><a href="#harga"
+            class="text-text2 hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5 px-3.5 py-2 rounded-md text-sm font-medium transition-all relative group">Harga<span
+              class="absolute bottom-[-4px] left-1/2 w-0 h-[2px] bg-accent transition-all duration-300 group-hover:w-full group-hover:left-0"></span></a>
+        </li>
+        <li><a href="#tim"
+            class="text-text2 hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5 px-3.5 py-2 rounded-md text-sm font-medium transition-all relative group">Tim<span
+              class="absolute bottom-[-4px] left-1/2 w-0 h-[2px] bg-accent transition-all duration-300 group-hover:w-full group-hover:left-0"></span></a>
+        </li>
       </ul>
+      <div class="hidden md:flex gap-2.5 items-center">
+        <!-- THEME TOGGLE DESKTOP -->
+        <button id="theme-toggle"
+          class="p-2 text-text2 hover:text-text-main hover:bg-border-main rounded-md transition-colors cursor-pointer"
+          aria-label="Toggle Theme">
+          <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24"></svg>
+        </button>
 
-      <div class="nav-actions">
-        <a href="https://bossapp.id" class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer">Customer
-          View</a>
-        <a href="https://dashboard.bossapp.id" class="btn btn-primary btn-sm" target="_blank"
-          rel="noopener noreferrer">Dashboard Owner</a>
+        <a href="#" class="btn btn-ghost btn-sm">Coba Gratis</a>
+        <a href="#" class="btn btn-primary btn-sm">Dashboard Owner</a>
       </div>
 
-      <button class="hamburger" id="hamburger" aria-label="Buka menu" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
+      <!-- Mobile Right Controls -->
+      <div class="md:hidden flex items-center gap-1.5">
+        <!-- THEME TOGGLE MOBILE -->
+        <button id="theme-toggle-mobile" class="p-2 text-text2 hover:text-text-main transition-colors cursor-pointer"
+          aria-label="Toggle Theme">
+          <svg id="theme-icon-mobile" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24"></svg>
+        </button>
+        <!-- Hamburger -->
+        <button
+          class="flex flex-col justify-center gap-1.5 w-10 h-10 bg-transparent border border-border-main rounded-md p-2.5 cursor-pointer transition-all"
+          id="hamburger" aria-label="Buka menu" aria-expanded="false">
+          <span class="block h-[1.5px] bg-text2 rounded transition-all duration-250 origin-center"></span>
+          <span class="block h-[1.5px] bg-text2 rounded transition-all duration-250"></span>
+          <span class="block h-[1.5px] bg-text2 rounded transition-all duration-250 origin-center"></span>
+        </button>
+      </div>
     </div>
   </nav>
 
-  <!-- Mobile menu -->
-  <div class="mobile-menu" id="mobileMenu" role="dialog" aria-label="Menu navigasi">
-    <a href="#fitur" class="mobile-link">Fitur</a>
-    <a href="#tech" class="mobile-link">Tech Stack</a>
-    <a href="#arsitektur" class="mobile-link">Arsitektur</a>
-    <a href="#tim" class="mobile-link">Tim</a>
-    <a href="https://bossapp.id" target="_blank" rel="noopener noreferrer">Customer View ↗</a>
-    <a href="https://dashboard.bossapp.id" target="_blank" rel="noopener noreferrer"
-      style="color:var(--accent2)">Dashboard Owner ↗</a>
+  <!-- Mobile Menu -->
+  <div
+    class="hidden flex-col gap-1 fixed inset-x-0 top-[68px] bottom-0 bg-bg/95 backdrop-blur-2xl z-40 p-6 md:p-8 border-t border-border-main"
+    id="mobileMenu" role="dialog" aria-label="Menu navigasi">
+    <a href="#cara-kerja"
+      class="text-text2 hover:text-text-main text-lg font-medium py-3 border-b border-border-main transition-colors mobile-link">Cara
+      Kerja</a>
+    <a href="#fitur"
+      class="text-text2 hover:text-text-main text-lg font-medium py-3 border-b border-border-main transition-colors mobile-link">Fitur</a>
+    <a href="#harga"
+      class="text-text2 hover:text-text-main text-lg font-medium py-3 border-b border-border-main transition-colors mobile-link">Harga</a>
+    <a href="#tim"
+      class="text-text2 hover:text-text-main text-lg font-medium py-3 border-b border-border-main transition-colors mobile-link">Tim</a>
+    <a href="https://dashboard.bossapp.id/auth/register"
+      class="text-text2 hover:text-text-main text-lg font-medium py-3 border-b border-border-main transition-colors">Coba
+      Gratis ↗</a>
+    <a href="https://dashboard.bossapp.id/auth/login"
+      class="text-accent text-lg font-medium py-3 transition-colors">Dashboard Owner ↗</a>
   </div>
 
   <main>
-
-    <!-- ── HERO ────────────────────────────────────── -->
     <div class="wrapper">
-      <section class="hero" aria-labelledby="hero-heading">
-        <div class="hero-content">
+      <!-- ══════════════ HERO ══════════════ -->
+      <section
+        class="min-h-[100svh] pt-24 pb-16 md:pt-32 md:pb-20 lg:py-32 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-center relative"
+        aria-labelledby="hero-heading">
 
-          <div class="badge reveal" aria-hidden="true">
-            <span class="pulse-dot"></span>
-            Business One Stop System
+        <!-- KOLOM KIRI (TEKS) -->
+        <div class="flex flex-col items-start text-left relative z-10">
+          <div
+            class="inline-flex items-center gap-2 pr-3.5 pl-1.5 py-1.5 bg-accent/10 border border-accent/20 rounded-full text-xs font-semibold text-accent mb-7 w-fit overflow-hidden relative reveal">
+            <div
+              class="absolute inset-0 bg-gradient-to-r from-transparent via-accent/10 to-transparent animate-[shimmerSweep_3s_infinite]">
+            </div>
+            <div class="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <span class="block w-1.5 h-1.5 rounded-full bg-accent animate-[pulse-dot_2s_ease-in-out_infinite]"></span>
+            </div>
+            Khusus untuk UMKM Indonesia
           </div>
 
-          <h1 id="hero-heading" class="reveal reveal-d1">
-            <span class="line">Kelola UMKM</span>
-            <span class="line grad">Lebih Cerdas</span>
-            <span class="line">di Satu Platform</span>
+          <h1 id="hero-heading"
+            class="font-display text-[clamp(2.5rem,4vw,4.2rem)] font-extrabold leading-[1.08] tracking-tight md:tracking-[-1px] mb-4 md:mb-6 max-w-[820px] reveal reveal-d1">
+            Satu Platform untuk<br />
+            <em
+              class="not-italic bg-clip-text text-transparent bg-gradient-to-r from-[#ff7070] via-[#e03030] to-[#ffaa60] drop-shadow-[0_4px_12px_rgba(224,48,48,0.3)]">Semua
+              Operasional</em><br />
+            Bisnis Anda
           </h1>
 
-          <p class="hero-sub reveal reveal-d2">
-            BOSS adalah sistem kasir, manajemen stok, antrian, dan laporan bisnis berbasis web
-            yang dirancang khusus untuk UMKM Indonesia — multi-outlet, real-time, siap pakai.
+          <p
+            class="text-[clamp(0.95rem,1.5vw,1.1rem)] text-text2 max-w-[540px] leading-[1.7] md:leading-[1.85] mb-8 md:mb-10 reveal reveal-d2">
+            Kasir, stok, antrian, laporan — semua di satu tempat. Tanpa instalasi, langsung jalan dari browser. Cocok
+            untuk warung, toko, salon, barbershop, dan ratusan jenis UMKM lainnya.
           </p>
 
-          <div class="hero-actions reveal reveal-d3">
-            <a href="#fitur" class="btn btn-primary">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <div
+            class="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-center mb-12 md:mb-16 reveal reveal-d3 w-full sm:w-auto">
+            <a href="https://dashboard.bossapp.id/auth/register" class="btn btn-primary btn-lg w-full sm:w-auto">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
-              Jelajahi Fitur
+              Mulai Gratis Sekarang
             </a>
-            <a href="#tim" class="btn btn-ghost">Kenali Tim</a>
-            <a href="https://bossapp.id" class="btn btn-ghost" target="_blank" rel="noopener noreferrer">
-              Customer View
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M15 3h6v6" />
-                <path d="M10 14 21 3" />
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <a href="#mockup" class="btn btn-ghost btn-lg w-full sm:w-auto justify-center">Lihat Demo Produk</a>
+            <span class="text-xs text-text3 flex items-center gap-1.5 mt-2 sm:mt-0 font-medium">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" class="stroke-accent">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
-            </a>
-            <a href="https://dashboard.bossapp.id" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
-              Dashboard Owner
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M15 3h6v6" />
-                <path d="M10 14 21 3" />
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              </svg>
-            </a>
+              Tanpa kartu kredit
+            </span>
           </div>
 
-          <div class="hero-stats reveal reveal-d4" aria-label="Statistik proyek">
-            <div class="stat-item">
-              <div class="stat-num">5</div>
-              <div class="stat-label">Layanan Terintegrasi</div>
+          <!-- Hero Stats -->
+          <div
+            class="flex flex-col sm:flex-row border border-border-main rounded-xl md:rounded-2xl overflow-hidden bg-border-main w-full sm:w-fit reveal reveal-d4 gap-[1px]"
+            aria-label="Statistik">
+            <div class="bg-surface p-4 md:p-5 lg:px-6 hover:bg-surface2 transition-colors cursor-default">
+              <div class="font-display text-2xl md:text-3xl font-extrabold leading-none text-accent mb-1">5+</div>
+              <div class="text-xs text-text3 font-bold uppercase tracking-wide">Modul Interaktif</div>
             </div>
-            <div class="stat-item">
-              <div class="stat-num">3</div>
-              <div class="stat-label">Peran Pengguna</div>
+            <div class="bg-surface p-4 md:p-5 lg:px-6 hover:bg-surface2 transition-colors cursor-default">
+              <div class="font-display text-2xl md:text-3xl font-extrabold leading-none text-accent mb-1">3</div>
+              <div class="text-xs text-text3 font-bold uppercase tracking-wide">Akses Pengguna</div>
             </div>
-            <div class="stat-item">
-              <div class="stat-num">100%</div>
-              <div class="stat-label">Berbasis Web</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-num">Real&#8209;time</div>
-              <div class="stat-label">Notifikasi &amp; Antrian</div>
+            <div class="bg-surface p-4 md:p-5 lg:px-6 hover:bg-surface2 transition-colors cursor-default">
+              <div class="font-display text-2xl md:text-3xl font-extrabold leading-none text-accent mb-1">QRIS</div>
+              <div class="text-xs text-text3 font-bold uppercase tracking-wide">Bayar Digital</div>
             </div>
           </div>
+        </div>
 
+        <!-- KOLOM KANAN (PLACEHOLDER GAMBAR/MOCKUP) -->
+        <div class="hidden lg:block relative w-full h-full min-h-[450px] reveal reveal-d3">
+          <!-- Dekorasi Glow di Belakang Placeholder -->
+          <div
+            class="absolute inset-0 bg-gradient-to-tr from-accent/20 to-transparent rounded-3xl blur-2xl transform rotate-6 scale-105">
+          </div>
+
+          <!-- Kartu Placeholder -->
+          <div
+            class="browser-mockup block rounded-xl md:rounded-2xl border border-border-med shadow-[0_12px_40px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03),0_0_40px_rgba(224,48,48,0.04)] dark:shadow-[0_15px_50px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.03),0_0_40px_rgba(224,48,48,0.04)] bg-surface max-w-[960px] mx-auto overflow-hidden reveal reveal-d4 transition-shadow"
+            id="mock-dashboard">
+            <div class="bg-surface2 px-4 md:px-5 py-3 flex items-center gap-3 md:gap-3.5 border-b border-border-main">
+              <div class="flex gap-1.5">
+                <span class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ff5f57]"></span><span
+                  class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ffbd2e]"></span><span
+                  class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#28c840]"></span>
+              </div>
+              <div
+                class="flex-1 bg-surface border border-border-main rounded-md px-3 py-1 font-mono text-[0.7rem] md:text-xs text-text3">
+                dashboard.bossapp.id</div>
+            </div>
+            <div class="bg-bg flex items-center justify-center">
+              <img src="images/dashboard-laporan-keuangan-light.png" class="w-full h-full object-contain dark:hidden"
+                alt="Dashboard Owner (light)" />
+              <img src="images/dashboard-laporan-keuangan-dark.png"
+                class="w-full h-full object-contain hidden dark:block" alt="Dashboard Owner (dark)" />
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <hr class="sep gradient-sep" />
+
+    <!-- ══════════════ PROBLEM ══════════════ -->
+    <div class="wrapper">
+      <section class="py-16 md:py-20 lg:py-32" aria-labelledby="problem-heading">
+        <span class="eyebrow reveal">Kenapa BOSS?</span>
+        <h2 id="problem-heading" class="section-h reveal reveal-d1">Masalah UMKM yang<br />Kami Selesaikan</h2>
+        <p class="section-p reveal reveal-d2">Banyak UMKM masih kelola bisnis secara manual — rentan salah, tidak
+          efisien, dan susah berkembang. BOSS hadir sebagai solusinya.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-10 md:mt-14 reveal reveal-d3">
+          <div
+            class="bg-surface border border-border-main rounded-xl md:rounded-2xl p-6 md:p-8 hover:border-accent/30 transition-colors">
+            <div class="w-12 h-12 mb-5 text-accent bg-accent/10 rounded-xl flex items-center justify-center">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                </path>
+              </svg>
+            </div>
+            <h3 class="font-display text-[0.95rem] md:text-base font-bold mb-2">Catatan Manual Rentan Salah</h3>
+            <p class="text-sm text-text2 leading-relaxed">Buku kas, stok di kertas, dan nota manual membuat data sering
+              tidak sinkron. Sudah waktunya beralih ke sistem digital yang akurat.</p>
+          </div>
+          <div
+            class="bg-surface border border-border-main rounded-xl md:rounded-2xl p-6 md:p-8 hover:border-accent/30 transition-colors">
+            <div class="w-12 h-12 mb-5 text-accent bg-accent/10 rounded-xl flex items-center justify-center">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <h3 class="font-display text-[0.95rem] md:text-base font-bold mb-2">Banyak Aplikasi, Tidak Terintegrasi</h3>
+            <p class="text-sm text-text2 leading-relaxed">Kasir di satu app, stok di app lain, laporan manual di
+              spreadsheet. BOSS menyatukan semuanya dalam satu platform.</p>
+          </div>
+          <div
+            class="bg-surface border border-border-main rounded-xl md:rounded-2xl p-6 md:p-8 md:col-span-2 lg:col-span-1 hover:border-accent/30 transition-colors">
+            <div class="w-12 h-12 mb-5 text-accent bg-accent/10 rounded-xl flex items-center justify-center">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                </path>
+              </svg>
+            </div>
+            <h3 class="font-display text-[0.95rem] md:text-base font-bold mb-2">Buta Kondisi Keuangan Bisnis</h3>
+            <p class="text-sm text-text2 leading-relaxed">Tidak tahu laba bersih, HPP, atau performa per outlet? BOSS
+              memberikan laporan otomatis yang mudah dipahami.</p>
+          </div>
         </div>
       </section>
     </div>
 
     <hr class="sep" />
 
-    <!-- ── FEATURES ───────────────────────────────── -->
-    <div class="wrapper" id="fitur">
-      <section aria-labelledby="features-heading">
+    <!-- ══════════════ HOW IT WORKS ══════════════ -->
+    <div class="wrapper" id="cara-kerja">
+      <section class="py-16 md:py-20 lg:py-32" aria-labelledby="hiw-heading">
+        <span class="eyebrow reveal">Cara Kerja</span>
+        <h2 id="hiw-heading" class="section-h reveal reveal-d1">Mulai dalam<br />3 Langkah Mudah</h2>
+        <p class="section-p reveal reveal-d2">Tidak perlu teknisi, tidak perlu instalasi. Semua berjalan langsung dari
+          browser.</p>
 
-        <span class="section-tag reveal">Fitur Utama</span>
-        <h2 id="features-heading" class="section-title reveal reveal-d1">
-          Semua yang UMKM Butuhkan,<br />Dalam Satu Sistem
-        </h2>
-        <p class="section-desc reveal reveal-d2">
-          Dirancang untuk Pemilik Bisnis dan Pelanggan. Setiap alur kerja — dari kasir hingga laporan keuangan —
-          ditangani secara efisien.
-        </p>
-
-        <!-- Tab switcher -->
-        <div style="margin-top:44px;" class="reveal reveal-d3">
-          <div class="tab-switcher" role="tablist" aria-label="Fitur per peran">
-            <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="tab-umkm"
-              onclick="switchTab(this,'umkm')">UMKM / Owner</button>
-            <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-pelanggan"
-              onclick="switchTab(this,'pelanggan')">Pelanggan</button>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 lg:gap-6 mt-10 md:mt-14 relative">
+          <!-- Line Connector (Tablet/Desktop only) -->
+          <div
+            class="hidden md:block absolute top-8 left-[16%] right-[16%] h-px bg-gradient-to-r from-accent/10 via-accent to-accent/10">
           </div>
 
-          <div id="tab-umkm" class="feature-list active" role="tabpanel">
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Dashboard pengelolaan barang &amp; layanan</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Manajemen stok produk real-time</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Manajemen antrian pelanggan</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Laporan penjualan &amp; performa bisnis</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Multi-outlet &amp; multi-bisnis</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Export laporan Excel &amp; kirim via email</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Sistem komisi kasir &amp; staff layanan</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Analisis HPP, pengeluaran, &amp; laba bersih</div>
+          <div class="text-center px-4 md:px-2 reveal">
+            <div
+              class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-surface2 border border-border-med flex items-center justify-center font-display text-xl md:text-2xl font-extrabold text-accent mx-auto mb-4 md:mb-5 relative z-10 shadow-[0_0_0_6px_var(--theme-bg),0_0_30px_rgba(224,48,48,0.15)]">
+              1</div>
+            <h3 class="font-display text-base md:text-[1.05rem] font-bold mb-2">Daftar & Setup Bisnis</h3>
+            <p class="text-sm text-text2 leading-relaxed">Buat akun gratis, masukkan nama bisnis, tambahkan produk atau
+              layanan Anda dalam hitungan menit.</p>
           </div>
+          <div class="text-center px-4 md:px-2 reveal reveal-d2">
+            <div
+              class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-surface2 border border-border-med flex items-center justify-center font-display text-xl md:text-2xl font-extrabold text-accent mx-auto mb-4 md:mb-5 relative z-10 shadow-[0_0_0_6px_var(--theme-bg),0_0_30px_rgba(224,48,48,0.15)]">
+              2</div>
+            <h3 class="font-display text-base md:text-[1.05rem] font-bold mb-2">Jalankan Kasir & Antrian</h3>
+            <p class="text-sm text-text2 leading-relaxed">Kasir mulai transaksi dari dashboard, pelanggan scan QR untuk
+              antrian atau pesan secara online.</p>
+          </div>
+          <div class="text-center px-4 md:px-2 reveal reveal-d4">
+            <div
+              class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-surface2 border border-border-med flex items-center justify-center font-display text-xl md:text-2xl font-extrabold text-accent mx-auto mb-4 md:mb-5 relative z-10 shadow-[0_0_0_6px_var(--theme-bg),0_0_30px_rgba(224,48,48,0.15)]">
+              3</div>
+            <h3 class="font-display text-base md:text-[1.05rem] font-bold mb-2">Pantau Laporan Real-time</h3>
+            <p class="text-sm text-text2 leading-relaxed">Lihat omzet, stok, dan laba bersih kapan saja. Export ke Excel
+              atau terima laporan via email.</p>
+          </div>
+        </div>
+      </section>
+    </div>
 
-          <div id="tab-pelanggan" class="feature-list" role="tabpanel">
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Halaman minimalis &amp; responsif</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Laman home menampilkan UMKM &amp; layanan</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Pemesanan antrian untuk layanan</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Pembayaran digital (QRIS &amp; online)</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Pesan tanpa registrasi (guest order)</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Sistem booking slot layanan</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Riwayat transaksi &amp; status pesanan</div>
-            <div class="feature-item"><span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg></span>Notifikasi status pesanan otomatis</div>
+    <hr class="sep" />
+
+    <!-- ══════════════ PRODUCT MOCKUP (PLACEHOLDERS) ══════════════ -->
+    <div class="wrapper" id="mockup">
+      <section class="py-16 md:py-20 lg:py-[100px]" aria-labelledby="mockup-heading">
+        <span class="eyebrow reveal">Demo Produk</span>
+        <h2 id="mockup-heading" class="section-h reveal reveal-d1">Lihat BOSS<br />dalam Aksi</h2>
+        <p class="section-p reveal reveal-d2">Antarmuka yang bersih dan intuitif — dirancang agar kasir dan owner bisa
+          langsung pakai tanpa pelatihan panjang.</p>
+
+        <!-- Tabs -->
+        <div class="flex gap-2 md:gap-4 justify-center mt-10 md:mt-14 mb-8 md:mb-10 flex-wrap reveal reveal-d3">
+          <button
+            class="mock-tab px-4 md:px-5 py-2 rounded-full text-[0.83rem] font-semibold border transition-all duration-200 bg-accent border-accent text-white shadow-[0_4px_20px_rgba(224,48,48,0.3)] scale-[1.03]"
+            onclick="showMock('dashboard', this)">Dashboard Owner</button>
+          <button
+            class="mock-tab px-4 md:px-5 py-2 rounded-full text-[0.83rem] font-semibold border border-border-med bg-transparent text-text2 hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200"
+            onclick="showMock('pos', this)">Kasir (POS)</button>
+          <button
+            class="mock-tab px-4 md:px-5 py-2 rounded-full text-[0.83rem] font-semibold border border-border-med bg-transparent text-text2 hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200"
+            onclick="showMock('customer', this)">Aplikasi Pelanggan</button>
+        </div>
+
+        <!-- Dashboard Placeholder -->
+        <div
+          class="browser-mockup block rounded-xl md:rounded-2xl border border-border-med shadow-[0_12px_40px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03),0_0_40px_rgba(224,48,48,0.04)] dark:shadow-[0_15px_50px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.03),0_0_40px_rgba(224,48,48,0.04)] bg-surface max-w-[960px] mx-auto overflow-hidden reveal reveal-d4 transition-shadow"
+          id="mock-dashboard">
+          <div class="bg-surface2 px-4 md:px-5 py-3 flex items-center gap-3 md:gap-3.5 border-b border-border-main">
+            <div class="flex gap-1.5">
+              <span class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ff5f57]"></span><span
+                class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ffbd2e]"></span><span
+                class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#28c840]"></span>
+            </div>
+            <div
+              class="flex-1 bg-surface border border-border-main rounded-md px-3 py-1 font-mono text-[0.7rem] md:text-xs text-text3">
+              dashboard.bossapp.id</div>
+          </div>
+          <div class="bg-bg flex items-center justify-center">
+            <img src="images/dashboard-owner-light.png" class="w-full h-full object-contain dark:hidden"
+              alt="Dashboard Owner (light)" />
+            <img src="images/dashboard-owner-dark.png" class="w-full h-full object-contain hidden dark:block"
+              alt="Dashboard Owner (dark)" />
           </div>
         </div>
 
-        <!-- Bento grid -->
-        <div class="bento-grid">
+        <!-- POS Placeholder -->
+        <div
+          class="browser-mockup hidden rounded-xl md:rounded-2xl border border-border-med shadow-[0_12px_40px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03),0_0_40px_rgba(224,48,48,0.04)] dark:shadow-[0_15px_50px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.03),0_0_40px_rgba(224,48,48,0.04)] bg-surface max-w-[960px] mx-auto overflow-hidden reveal reveal-d4 transition-shadow"
+          id="mock-pos">
+          <div class="bg-surface2 px-4 md:px-5 py-3 flex items-center gap-3 md:gap-3.5 border-b border-border-main">
+            <div class="flex gap-1.5">
+              <span class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ff5f57]"></span><span
+                class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ffbd2e]"></span><span
+                class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#28c840]"></span>
+            </div>
+            <div
+              class="flex-1 bg-surface border border-border-main rounded-md px-3 py-1 font-mono text-[0.7rem] md:text-xs text-text3">
+              dashboard.bossapp.id/kasir</div>
+          </div>
+          <div class="bg-bg flex items-center justify-center">
+            <img src="images/pos-kasir-light.png" class="w-full h-full object-contain dark:hidden" alt="POS (light)" />
+            <img src="images/pos-kasir-dark.png" class="w-full h-full object-contain hidden dark:block"
+              alt="POS (dark)" />
+          </div>
+        </div>
 
-          <article class="bento-card span-2 reveal">
-            <div class="bento-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                stroke-linejoin="round">
+        <!-- Customer App Mockup (iPhone 14 Pro Max - Refined) -->
+        <div class="browser-mockup hidden w-full max-w-[400px] mx-auto reveal reveal-d4 relative pt-4 pb-12"
+          id="mock-customer">
+
+          <!-- Tombol Samping (Attached to Frame) -->
+          <div class="absolute left-[7px] top-44 w-[4px] h-10 bg-zinc-700 dark:bg-zinc-600 rounded-l-md z-0 shadow-sm">
+          </div> <!-- Mute Switch -->
+          <div class="absolute left-[7px] top-64 w-[4px] h-16 bg-zinc-700 dark:bg-zinc-600 rounded-l-md z-0 shadow-sm">
+          </div> <!-- Vol Up -->
+          <div class="absolute left-[7px] top-84 w-[4px] h-16 bg-zinc-700 dark:bg-zinc-600 rounded-l-md z-0 shadow-sm">
+          </div> <!-- Vol Down -->
+          <div class="absolute right-[7px] top-72 w-[4px] h-24 bg-zinc-700 dark:bg-zinc-600 rounded-r-md z-0 shadow-sm">
+          </div> <!-- Side Button -->
+
+          <!-- Main Device Frame -->
+          <div
+            class="relative mx-auto bg-zinc-900 dark:bg-zinc-800 p-[3px] rounded-[3.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.05)] ring-1 ring-zinc-700/50">
+
+            <!-- Black Screen Border (Bezel) -->
+            <div class="relative border-black border-[11px] rounded-[3.35rem] h-[780px] w-full overflow-hidden bg-bg">
+
+              <!-- Dynamic Island -->
+              <div
+                class="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-8 bg-black rounded-full z-[100] flex items-center justify-end px-4">
+                <div class="w-2 h-2 rounded-full bg-zinc-900/80 ring-1 ring-white/5"></div> <!-- Camera -->
+              </div>
+
+              <!-- Screen Content Area -->
+              <div class="h-full w-full flex flex-col relative bg-bg">
+
+                <!-- Status Bar -->
+                <div class="pt-4 pb-2 px-8 flex items-center justify-between z-10">
+                  <span class="text-[0.85rem] font-bold text-text-main">9:41</span>
+                  <div class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-text-main" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- App UI Content -->
+                <div class="bg-bg flex items-center justify-center">
+                  <img src="images/app-boss-light.png" class="w-full h-full object-contain dark:hidden"
+                    alt="POS (light)" />
+                  <img src="images/app-boss-dark.png" class="w-full h-full object-contain hidden dark:block"
+                    alt="POS (dark)" />
+                </div>
+
+                <!-- iOS Home Indicator -->
+                <div class="absolute bottom-2.5 left-1/2 -translate-x-1/2 w-[35%] h-[5px] bg-text3/20 rounded-full">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <hr class="sep" />
+
+    <!-- ══════════════ FEATURES ══════════════ -->
+    <div class="wrapper" id="fitur">
+      <section class="py-16 md:py-20 lg:py-32" aria-labelledby="features-heading">
+        <span class="eyebrow reveal">Fitur Lengkap</span>
+        <h2 id="features-heading" class="section-h reveal reveal-d1">Semua yang Bisnis<br />Anda Butuhkan</h2>
+        <p class="section-p reveal reveal-d2">Dari transaksi pertama hingga laporan bulanan — BOSS menangani semuanya.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-4 mt-10 md:mt-14 reveal reveal-d3">
+          <!-- Feat 1 -->
+          <div
+            class="bg-surface p-6 md:p-8 rounded-xl md:rounded-2xl border border-border-main transition-all duration-250 hover:bg-surface2 hover:border-accent/40 relative group">
+            <div
+              class="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-gradient-to-r from-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+            <div
+              class="w-11 h-11 rounded-lg md:rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <rect x="2" y="3" width="20" height="14" rx="2" />
-                <line x1="8" y1="21" x2="16" y2="21" />
-                <line x1="12" y1="17" x2="12" y2="21" />
               </svg>
             </div>
-            <h3>Sistem Kasir (POS)</h3>
-            <p>Proses transaksi penjualan dengan cepat. Dilengkapi manajemen produk (barang &amp; layanan), pembayaran
-              digital, dan cetak struk — semua dalam satu antarmuka kasir yang intuitif dan mudah digunakan oleh staf
-              manapun.</p>
-            <span class="bento-tag">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              Transaksi real-time
-            </span>
-          </article>
-
-          <article class="bento-card reveal reveal-d1">
-            <div class="bento-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                stroke-linejoin="round">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            <h3 class="font-display text-base font-bold mb-2">Kasir Digital (POS)</h3>
+            <p class="text-sm text-text2 leading-relaxed">Proses transaksi dengan cepat. Kelola produk, hitung
+              kembalian, cetak struk — semua dari satu layar.</p>
+            <span
+              class="inline-flex items-center gap-1 text-[0.7rem] font-bold px-2.5 py-1 rounded border border-accent/25 text-accent2 bg-accent/10 mt-3.5">Transaksi
+              real-time</span>
+          </div>
+          <!-- Feat 2 -->
+          <div
+            class="bg-surface p-6 md:p-8 rounded-xl md:rounded-2xl border border-border-main transition-all duration-250 hover:bg-surface2 hover:border-accent/40 relative group">
+            <div
+              class="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-gradient-to-r from-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+            <div
+              class="w-11 h-11 rounded-lg md:rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path
+                  d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
               </svg>
             </div>
-            <h3>Real-time Processing</h3>
-            <p>RabbitMQ &amp; BullMQ dengan Redis untuk notifikasi, job scheduling, dan export transaksi besar — tanpa
-              menghambat API utama.</p>
-          </article>
-
-          <article class="bento-card reveal reveal-d1">
-            <div class="bento-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                stroke-linejoin="round">
+            <h3 class="font-display text-base font-bold mb-2">Manajemen Stok</h3>
+            <p class="text-sm text-text2 leading-relaxed">Pantau stok masuk & keluar real-time. HPP dihitung otomatis
+              dari setiap log stok untuk akurasi laporan.</p>
+            <span
+              class="inline-flex items-center gap-1 text-[0.7rem] font-bold px-2.5 py-1 rounded border border-accent/25 text-accent2 bg-accent/10 mt-3.5">Auto
+              HPP</span>
+          </div>
+          <!-- Feat 3 -->
+          <div
+            class="bg-surface p-6 md:p-8 rounded-xl md:rounded-2xl border border-border-main transition-all duration-250 hover:bg-surface2 hover:border-accent/40 relative group">
+            <div
+              class="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-gradient-to-r from-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+            <div
+              class="w-11 h-11 rounded-lg md:rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+              </svg>
+            </div>
+            <h3 class="font-display text-base font-bold mb-2">Booking & Antrian</h3>
+            <p class="text-sm text-text2 leading-relaxed">Pelanggan booking slot layanan secara online. Manajemen
+              antrian real-time tanpa antre fisik.</p>
+          </div>
+          <!-- Feat 4 -->
+          <div
+            class="bg-surface p-6 md:p-8 rounded-xl md:rounded-2xl border border-border-main transition-all duration-250 hover:bg-surface2 hover:border-accent/40 relative group">
+            <div
+              class="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-gradient-to-r from-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+            <div
+              class="w-11 h-11 rounded-lg md:rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <line x1="18" y1="20" x2="18" y2="4" />
                 <line x1="12" y1="20" x2="12" y2="10" />
                 <line x1="6" y1="20" x2="6" y2="16" />
               </svg>
             </div>
-            <h3>Laporan Bisnis Lengkap</h3>
-            <p>Analisis pendapatan, HPP, komisi, dan laba bersih per outlet. Export Excel otomatis &amp; kirim via email
-              ke pemilik.</p>
-          </article>
-
-          <article class="bento-card reveal reveal-d2">
-            <div class="bento-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                stroke-linejoin="round">
-                <path
-                  d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                <path d="m3.3 7 8.7 5 8.7-5" />
-                <path d="M12 22V12" />
+            <h3 class="font-display text-base font-bold mb-2">Laporan Lengkap</h3>
+            <p class="text-sm text-text2 leading-relaxed">Omzet, HPP, komisi staff, dan laba bersih per outlet. Export
+              Excel otomatis & kirim via email.</p>
+            <span
+              class="inline-flex items-center gap-1 text-[0.7rem] font-bold px-2.5 py-1 rounded border border-accent/25 text-accent2 bg-accent/10 mt-3.5">Export
+              Excel</span>
+          </div>
+          <!-- Feat 5 -->
+          <div
+            class="bg-surface p-6 md:p-8 rounded-xl md:rounded-2xl border border-border-main transition-all duration-250 hover:bg-surface2 hover:border-accent/40 relative group">
+            <div
+              class="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-gradient-to-r from-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+            <div
+              class="w-11 h-11 rounded-lg md:rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="1" y="4" width="22" height="16" rx="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
               </svg>
             </div>
-            <h3>Manajemen Stok</h3>
-            <p>Pantau stok masuk &amp; keluar secara real-time. Kalkulasi HPP otomatis dari setiap log stok untuk
-              akurasi laporan keuangan.</p>
-            <span class="bento-tag">Auto HPP</span>
-          </article>
-
-          <article class="bento-card reveal reveal-d2">
-            <div class="bento-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
+            <h3 class="font-display text-base font-bold mb-2">Pembayaran Digital</h3>
+            <p class="text-sm text-text2 leading-relaxed">Terima pembayaran QRIS, transfer, dan metode digital lainnya.
+              Langsung tercatat otomatis.</p>
+            <span
+              class="inline-flex items-center gap-1 text-[0.7rem] font-bold px-2.5 py-1 rounded border border-accent/25 text-accent2 bg-accent/10 mt-3.5">QRIS
+              Ready</span>
+          </div>
+          <!-- Feat 6 -->
+          <div
+            class="bg-surface p-6 md:p-8 rounded-xl md:rounded-2xl border border-border-main transition-all duration-250 hover:bg-surface2 hover:border-accent/40 relative group">
+            <div
+              class="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-gradient-to-r from-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+            <div
+              class="w-11 h-11 rounded-lg md:rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </div>
-            <h3>Booking &amp; Antrian</h3>
-            <p>Sistem booking slot layanan dengan manajemen antrian. Pelanggan bisa memesan tanpa registrasi (guest
-              order).</p>
-          </article>
-
-          <article class="bento-card reveal reveal-d3">
-            <div class="bento-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-            </div>
-            <h3>Autentikasi &amp; Role</h3>
-            <p>JWT yang aman dengan role-based access control. Owner, Kasir, dan Customer — setiap peran hanya akses
-              fitur relevan.</p>
-          </article>
-
-        </div>
-      </section>
-    </div>
-
-    <hr class="sep" />
-
-    <!-- ── TECH STACK ──────────────────────────────── -->
-    <div class="wrapper" id="tech">
-      <section aria-labelledby="tech-heading">
-
-        <span class="section-tag reveal">Tech Stack</span>
-        <h2 id="tech-heading" class="section-title reveal reveal-d1">
-          Dibangun dengan<br />Teknologi Modern
-        </h2>
-        <p class="section-desc reveal reveal-d2">
-          Setiap komponen dipilih untuk performa, skalabilitas, dan kemudahan pengembangan jangka panjang.
-        </p>
-
-        <div class="tech-grid">
-
-          <div class="tech-card reveal">
-            <div class="tech-card-header">
-              <div class="tech-card-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <rect x="2" y="2" width="20" height="8" rx="2" />
-                  <rect x="2" y="14" width="20" height="8" rx="2" />
-                  <line x1="6" y1="6" x2="6.01" y2="6" />
-                  <line x1="6" y1="18" x2="6.01" y2="18" />
-                </svg>
-              </div>
-              <h3>Backend</h3>
-            </div>
-            <div class="tech-chips">
-              <span class="chip node">Node.js</span>
-              <span class="chip ts">TypeScript</span>
-              <span class="chip node">Express.js</span>
-              <span class="chip sky">Prisma ORM</span>
-              <span class="chip sky">Zod</span>
-              <span class="chip sky">Jest</span>
-              <span class="chip sky">Winston</span>
-            </div>
-          </div>
-
-          <div class="tech-card reveal reveal-d1">
-            <div class="tech-card-header">
-              <div class="tech-card-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <ellipse cx="12" cy="5" rx="9" ry="3" />
-                  <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-                  <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-                </svg>
-              </div>
-              <h3>Database &amp; Cache</h3>
-            </div>
-            <div class="tech-chips">
-              <span class="chip db">PostgreSQL</span>
-              <span class="chip cache">Redis</span>
-              <span class="chip mq">RabbitMQ</span>
-              <span class="chip mq">BullMQ</span>
-            </div>
-          </div>
-
-          <div class="tech-card reveal reveal-d2">
-            <div class="tech-card-header">
-              <div class="tech-card-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <rect x="3" y="3" width="7" height="7" />
-                  <rect x="14" y="3" width="7" height="7" />
-                  <rect x="14" y="14" width="7" height="7" />
-                  <rect x="3" y="14" width="7" height="7" />
-                </svg>
-              </div>
-              <h3>Frontend &amp; Dashboard</h3>
-            </div>
-            <div class="tech-chips">
-              <span class="chip next">Next.js</span>
-              <span class="chip ts">TypeScript</span>
-              <span class="chip next">Tailwind CSS</span>
-              <span class="chip sky">shadcn/ui</span>
-              <span class="chip sky">React Query</span>
-              <span class="chip sky">Axios</span>
-            </div>
-          </div>
-
-          <div class="tech-card reveal reveal-d1">
-            <div class="tech-card-header">
-              <div class="tech-card-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-              </div>
-              <h3>Integrasi &amp; Laporan</h3>
-            </div>
-            <div class="tech-chips">
-              <span class="chip green">Nodemailer</span>
-              <span class="chip green">ExcelJS</span>
-              <span class="chip green">Handlebars</span>
-              <span class="chip green">Socket.io</span>
-            </div>
-          </div>
-
-          <div class="tech-card reveal reveal-d2">
-            <div class="tech-card-header">
-              <div class="tech-card-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <rect x="2" y="3" width="20" height="14" rx="2" />
-                  <line x1="8" y1="21" x2="16" y2="21" />
-                  <line x1="12" y1="17" x2="12" y2="21" />
-                </svg>
-              </div>
-              <h3>DevOps &amp; Infrastructure</h3>
-            </div>
-            <div class="tech-chips">
-              <span class="chip sky">Docker</span>
-              <span class="chip sky">Docker Compose</span>
-              <span class="chip next">Nginx</span>
-              <span class="chip sky">OpenAPI 3.0</span>
-            </div>
-          </div>
-
-          <div class="tech-card reveal reveal-d3">
-            <div class="tech-card-header">
-              <div class="tech-card-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </div>
-              <h3>Auth &amp; Keamanan</h3>
-            </div>
-            <div class="tech-chips">
-              <span class="chip ts">JWT</span>
-              <span class="chip sky">bcrypt</span>
-              <span class="chip acc">Rate Limiting</span>
-              <span class="chip sky">CORS</span>
-              <span class="chip sky">Helmet</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-    </div>
-
-    <hr class="sep" />
-
-    <!-- ── ARCHITECTURE ────────────────────────────── -->
-    <div class="wrapper" id="arsitektur">
-      <section aria-labelledby="arch-heading">
-
-        <span class="section-tag reveal">Arsitektur</span>
-        <h2 id="arch-heading" class="section-title reveal reveal-d1">
-          Desain Sistem<br />Modular &amp; Skalabel
-        </h2>
-        <p class="section-desc reveal reveal-d2">
-          Setiap layanan dipisahkan dengan tanggung jawab yang jelas — memungkinkan skalabilitas dan maintainability
-          yang optimal.
-        </p>
-
-        <div class="arch-wrapper reveal" role="img" aria-label="Diagram arsitektur sistem BOSS">
-
-          <div class="arch-row">
-            <div class="arch-label">
-              <span class="arch-row-num">01</span>
-              <span class="arch-row-name">Frontend Customer</span>
-            </div>
-            <div class="arch-body">
-              <span class="arch-chip">Next.js</span>
-              <span class="arch-chip">TypeScript</span>
-              <span class="arch-chip">Tailwind CSS</span>
-              <span class="arch-desc">Halaman publik, pencarian UMKM, pemesanan &amp; transaksi pelanggan</span>
-            </div>
-          </div>
-
-          <div class="arch-row">
-            <div class="arch-label">
-              <span class="arch-row-num">02</span>
-              <span class="arch-row-name">Dashboard</span>
-            </div>
-            <div class="arch-body">
-              <span class="arch-chip">Next.js</span>
-              <span class="arch-chip">shadcn/ui</span>
-              <span class="arch-chip">React Query</span>
-              <span class="arch-desc">Panel Owner &amp; Kasir dengan analytics dan manajemen operasional</span>
-            </div>
-          </div>
-
-          <div class="arch-row">
-            <div class="arch-label">
-              <span class="arch-row-num">03</span>
-              <span class="arch-row-name">Backend API</span>
-            </div>
-            <div class="arch-body">
-              <span class="arch-chip">Express.js</span>
-              <span class="arch-chip">Prisma ORM</span>
-              <span class="arch-chip">JWT Auth</span>
-              <span class="arch-chip">Zod</span>
-              <span class="arch-desc">RESTful API 46+ endpoint, Winston Logger, rate limiting</span>
-            </div>
-          </div>
-
-          <div class="arch-row">
-            <div class="arch-label">
-              <span class="arch-row-num">04</span>
-              <span class="arch-row-name">Worker Services</span>
-            </div>
-            <div class="arch-body">
-              <span class="arch-chip">RabbitMQ</span>
-              <span class="arch-chip">BullMQ</span>
-              <span class="arch-chip">Socket.io</span>
-              <span class="arch-desc">Email, notifikasi push, reminder, &amp; service order queue</span>
-            </div>
-          </div>
-
-          <div class="arch-row">
-            <div class="arch-label">
-              <span class="arch-row-num">05</span>
-              <span class="arch-row-name">Data Layer</span>
-            </div>
-            <div class="arch-body">
-              <span class="arch-chip">PostgreSQL</span>
-              <span class="arch-chip">Redis</span>
-              <span class="arch-chip">Docker</span>
-              <span class="arch-desc">ACID transactions, async queues, caching, containerized services</span>
-            </div>
-          </div>
-
-        </div>
-
-        <div class="arch-principles">
-          <div class="principle-card reveal">
-            <div class="principle-num">Prinsip 01</div>
-            <h3>Separation of Concern</h3>
-            <p>Setiap lapisan — Route, Controller, Service, Repository — dipisahkan dengan tegas. Service tidak pernah
-              langsung akses database; semua melalui repository.</p>
-          </div>
-          <div class="principle-card reveal reveal-d1">
-            <div class="principle-num">Prinsip 02</div>
-            <h3>Validasi Ketat dengan Zod</h3>
-            <p>Semua request body, query, dan params divalidasi menggunakan Zod di lapisan controller sebelum logika
-              bisnis dijalankan.</p>
-          </div>
-          <div class="principle-card reveal reveal-d2">
-            <div class="principle-num">Prinsip 03</div>
-            <h3>Async Worker Queue</h3>
-            <p>Operasi berat seperti export Excel masif dan pengiriman email diproses via BullMQ worker queue agar API
-              utama tetap responsif.</p>
+            <h3 class="font-display text-base font-bold mb-2">Multi-outlet</h3>
+            <p class="text-sm text-text2 leading-relaxed">Kelola beberapa cabang untuk satu bisnis Anda dari satu akun
+              owner. Laporan performa per outlet tersedia.</p>
           </div>
         </div>
 
@@ -634,194 +719,349 @@
 
     <hr class="sep" />
 
-    <!-- ── TEAM ────────────────────────────────────── -->
+    <!-- ══════════════ PRICING ══════════════ -->
+    <div class="wrapper" id="harga">
+      <section class="py-16 md:py-20 lg:py-32" aria-labelledby="pricing-heading">
+        <span class="eyebrow reveal">Harga</span>
+        <h2 id="pricing-heading" class="section-h reveal reveal-d1">Harga yang Masuk Akal<br />untuk UMKM</h2>
+        <p class="section-p reveal reveal-d2">Mulai gratis, upgrade saat bisnis Anda berkembang. Tidak ada biaya
+          tersembunyi.</p>
+
+        <!-- Pricing rendered by JS. Menggunakan layout flex/grid gap-4 md:gap-6 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-10 md:mt-14" id="pricing-grid">
+          <!-- Skeleton Loading -->
+          <div
+            class="bg-surface border border-border-main rounded-2xl md:rounded-3xl p-6 md:p-8 pointer-events-none reveal">
+            <div
+              class="h-3.5 rounded-md mb-3 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[60%]">
+            </div>
+            <div
+              class="h-9 rounded-md mb-4 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[40%]">
+            </div>
+            <div
+              class="h-3.5 rounded-md mb-3 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[80%]">
+            </div>
+            <div
+              class="h-3.5 rounded-md mb-3 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[70%]">
+            </div>
+          </div>
+          <div
+            class="bg-surface border border-border-main rounded-2xl md:rounded-3xl p-6 md:p-8 pointer-events-none reveal reveal-d1">
+            <div
+              class="h-3.5 rounded-md mb-3 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[60%]">
+            </div>
+            <div
+              class="h-9 rounded-md mb-4 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[40%]">
+            </div>
+            <div
+              class="h-3.5 rounded-md mb-3 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[80%]">
+            </div>
+            <div
+              class="h-3.5 rounded-md mb-3 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[70%]">
+            </div>
+          </div>
+          <div
+            class="bg-surface border border-border-main rounded-2xl md:rounded-3xl p-6 md:p-8 pointer-events-none reveal reveal-d2">
+            <div
+              class="h-3.5 rounded-md mb-3 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[60%]">
+            </div>
+            <div
+              class="h-9 rounded-md mb-4 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[40%]">
+            </div>
+            <div
+              class="h-3.5 rounded-md mb-3 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[80%]">
+            </div>
+            <div
+              class="h-3.5 rounded-md mb-3 bg-gradient-to-r from-surface2 via-surface to-surface2 bg-[length:400px_100%] animate-[shimmer_1.4s_ease-in-out_infinite] w-[70%]">
+            </div>
+          </div>
+        </div>
+        <div id="pricing-error" class="hidden text-center p-10 text-text3 text-sm"></div>
+      </section>
+    </div>
+
+    <hr class="sep" />
+
+    <!-- ══════════════ FAQ ══════════════ -->
+    <div class="wrapper">
+      <section class="py-16 md:py-20 lg:py-32" aria-labelledby="faq-heading">
+        <span class="eyebrow reveal">FAQ</span>
+        <h2 id="faq-heading" class="section-h reveal reveal-d1">Pertanyaan yang<br />Sering Ditanyakan</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-10 md:mt-14 reveal reveal-d2">
+          <!-- Item FAQ -->
+          <div
+            class="faq-item bg-surface border border-border-main rounded-xl md:rounded-2xl p-5 md:p-6 cursor-pointer transition-colors duration-250"
+            onclick="toggleFaq(this)">
+            <div class="flex justify-between items-center gap-4">
+              <span class="text-[0.9rem] font-bold leading-[1.4]">Apakah BOSS benar-benar gratis?</span>
+              <div
+                class="faq-arrow w-6 h-6 border border-border-main rounded-full flex items-center justify-center shrink-0 transition-all duration-250">
+                <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </div>
+            </div>
+            <div
+              class="faq-a text-sm text-text2 leading-relaxed max-h-0 opacity-0 overflow-hidden transition-all duration-300 ease-out">
+              Ya, paket Trial sepenuhnya gratis selama masa percobaan (35 hari). Anda bisa mencoba fitur-fitur dasar
+              tanpa perlu kartu kredit. Setelah masa trial habis, Anda dapat melakukan upgrade untuk terus menggunakan
+              layanan.</div>
+          </div>
+
+          <div
+            class="faq-item bg-surface border border-border-main rounded-xl md:rounded-2xl p-5 md:p-6 cursor-pointer transition-colors duration-250"
+            onclick="toggleFaq(this)">
+            <div class="flex justify-between items-center gap-4">
+              <span class="text-[0.9rem] font-bold leading-[1.4]">Apakah bisa dipakai di HP / smartphone?</span>
+              <div
+                class="faq-arrow w-6 h-6 border border-border-main rounded-full flex items-center justify-center shrink-0 transition-all duration-250">
+                <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </div>
+            </div>
+            <div
+              class="faq-a text-sm text-text2 leading-relaxed max-h-0 opacity-0 overflow-hidden transition-all duration-300 ease-out">
+              Ya, BOSS berbasis web dan responsif — bisa diakses dari browser HP, tablet, maupun komputer tanpa perlu
+              instalasi apapun.</div>
+          </div>
+
+          <div
+            class="faq-item bg-surface border border-border-main rounded-xl md:rounded-2xl p-5 md:p-6 cursor-pointer transition-colors duration-250"
+            onclick="toggleFaq(this)">
+            <div class="flex justify-between items-center gap-4">
+              <span class="text-[0.9rem] font-bold leading-[1.4]">Apakah mendukung pembayaran QRIS?</span>
+              <div
+                class="faq-arrow w-6 h-6 border border-border-main rounded-full flex items-center justify-center shrink-0 transition-all duration-250">
+                <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </div>
+            </div>
+            <div
+              class="faq-a text-sm text-text2 leading-relaxed max-h-0 opacity-0 overflow-hidden transition-all duration-300 ease-out">
+              Ya, BOSS mendukung pembayaran digital termasuk QRIS, transfer bank, dan metode digital lainnya. Semua
+              transaksi tercatat otomatis.</div>
+          </div>
+
+          <div
+            class="faq-item bg-surface border border-border-main rounded-xl md:rounded-2xl p-5 md:p-6 cursor-pointer transition-colors duration-250"
+            onclick="toggleFaq(this)">
+            <div class="flex justify-between items-center gap-4">
+              <span class="text-[0.9rem] font-bold leading-[1.4]">Cocok untuk jenis bisnis apa saja?</span>
+              <div
+                class="faq-arrow w-6 h-6 border border-border-main rounded-full flex items-center justify-center shrink-0 transition-all duration-250">
+                <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </div>
+            </div>
+            <div
+              class="faq-a text-sm text-text2 leading-relaxed max-h-0 opacity-0 overflow-hidden transition-all duration-300 ease-out">
+              BOSS cocok untuk warung makan, kafe, toko retail, barbershop, salon, laundry, apotek kecil, dan hampir
+              semua UMKM.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <hr class="sep" />
+
+    <!-- ══════════════ TEAM ══════════════ -->
     <div class="wrapper" id="tim">
-      <section aria-labelledby="team-heading">
+      <section class="py-16 md:py-20 lg:py-32" aria-labelledby="team-heading">
+        <span class="eyebrow reveal">Tim Kami</span>
+        <h2 id="team-heading" class="section-h reveal reveal-d1">Sosok di Balik<br />BOSS</h2>
+        <p class="section-p reveal reveal-d2">Dibangun oleh talenta lokal yang berdedikasi tinggi dengan satu misi
+          utama: mendigitalisasi dan memajukan UMKM di seluruh wilayah Indonesia.</p>
 
-        <span class="section-tag reveal">Tim Kami</span>
-        <h2 id="team-heading" class="section-title reveal reveal-d1">
-          Orang-orang di<br />Balik BOSS
-        </h2>
-        <p class="section-desc reveal reveal-d2">
-          Lima profesional berdedikasi yang bersama-sama membangun, mengembangkan, dan memasarkan BOSS sebagai solusi
-          nyata bagi UMKM Indonesia.
-        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 mt-10 md:mt-14">
 
-        <div class="team-grid">
-
-          <article class="team-card reveal" itemscope itemtype="https://schema.org/Person">
-            <div class="team-avatar" style="background:linear-gradient(135deg,#7f1d1d,#dc2626)" aria-hidden="true">Bi
+          <!-- Member 1: Bima -->
+          <div
+            class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full reveal reveal-d1">
+            <div
+              class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#e03030] to-[#a81c1c] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
+              <span class="font-display text-xl md:text-2xl font-bold text-white">Bi</span>
             </div>
-            <h3 itemprop="name">Bima Lovrino Prakasa</h3>
-            <div class="team-role" itemprop="jobTitle">Founder — BOSS</div>
-            <p itemprop="description">Menginisiasi dan memimpin BOSS sebagai platform terpadu untuk digitalisasi UMKM
-              Indonesia. Menetapkan visi jangka panjang dan arah strategis perusahaan.</p>
-          </article>
+            <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Bima Lovrino Prakasa</h3>
+            <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">FOUNDER — BOSS</p>
+            <p class="text-sm text-text2 leading-[1.7] flex-grow">Menginisiasi dan memimpin BOSS sebagai platform
+              terpadu untuk digitalisasi UMKM Indonesia. Menetapkan visi jangka panjang dan arah strategis perusahaan.
+            </p>
+          </div>
 
-          <article class="team-card reveal reveal-d1" itemscope itemtype="https://schema.org/Person">
-            <div class="team-avatar" style="background:linear-gradient(135deg,#991b1b,#c2410c)" aria-hidden="true">K
+          <!-- Member 2: Kurnia -->
+          <div
+            class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full reveal reveal-d2">
+            <div
+              class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#d95d22] to-[#b33a10] flex items-center justify-center mb-6 shadow-lg shadow-orange-500/20">
+              <span class="font-display text-xl md:text-2xl font-bold text-white">K</span>
             </div>
-            <h3 itemprop="name">Kurnia Fajar Viliano</h3>
-            <div class="team-role" itemprop="jobTitle">Co-Founder — BOSS</div>
-            <p itemprop="description">Bersama membangun fondasi bisnis BOSS, mengelola operasional, dan memperluas
-              ekosistem kemitraan UMKM yang terhubung dengan platform.</p>
-          </article>
+            <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Kurnia Fajar Viliano</h3>
+            <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CO-FOUNDER — BOSS
+            </p>
+            <p class="text-sm text-text2 leading-[1.7] flex-grow">Bersama membangun fondasi bisnis BOSS, mengelola
+              operasional, dan memperluas ekosistem kemitraan UMKM yang terhubung dengan platform.</p>
+          </div>
 
-          <article class="team-card reveal reveal-d2" itemscope itemtype="https://schema.org/Person">
-            <div class="team-avatar" style="background:linear-gradient(135deg,#dc2626,#b91c1c)" aria-hidden="true">A
+          <!-- Member 3: Afca -->
+          <div
+            class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full reveal reveal-d3">
+            <div
+              class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#e03030] to-[#a81c1c] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
+              <span class="font-display text-xl md:text-2xl font-bold text-white">A</span>
             </div>
-            <h3 itemprop="name">Afca Arel Pratama</h3>
-            <div class="team-role" itemprop="jobTitle">CPO — BOSS</div>
-            <p itemprop="description">Mengelola roadmap produk, mendefinisikan fitur berdasarkan kebutuhan pasar, dan
-              memastikan BOSS terus relevan sebagai solusi bisnis bagi UMKM.</p>
-          </article>
+            <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Afca Arel Pratama</h3>
+            <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CPO — BOSS</p>
+            <p class="text-sm text-text2 leading-[1.7] flex-grow">Mengelola roadmap produk, mendefinisikan fitur
+              berdasarkan kebutuhan pasar, dan memastikan BOSS terus relevan sebagai solusi bisnis bagi UMKM.</p>
+          </div>
 
-          <article class="team-card reveal reveal-d1" itemscope itemtype="https://schema.org/Person">
-            <div class="team-avatar" style="background:linear-gradient(135deg,#dc2626,#ef4444)" aria-hidden="true">P
+          <!-- Member 4: Pito -->
+          <div
+            class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full reveal reveal-d1">
+            <div
+              class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#ff4d4d] to-[#cc1414] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
+              <span class="font-display text-xl md:text-2xl font-bold text-white">P</span>
             </div>
-            <h3 itemprop="name">Pito Desri Pauzi</h3>
-            <div class="team-role" itemprop="jobTitle">CTO — BOSS</div>
-            <p itemprop="description">Bertanggung jawab atas arsitektur teknis, infrastruktur platform, dan standar
-              rekayasa perangkat lunak yang menjadi tulang punggung BOSS.</p>
-            <a href="https://pitok.my.id/" target="_blank" rel="noopener noreferrer" class="team-link" itemprop="url">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M15 3h6v6" />
-                <path d="M10 14 21 3" />
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Pito Desri Pauzi</h3>
+            <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CTO — BOSS</p>
+            <p class="text-sm text-text2 leading-[1.7] flex-grow">Bertanggung jawab atas arsitektur teknis,
+              infrastruktur platform, dan standar rekayasa perangkat lunak yang menjadi tulang punggung BOSS.</p>
+
+            <div class="mt-6 pt-5 border-t border-border-main">
+              <a href="https://pitok.my.id" target="_blank" rel="noopener noreferrer"
+                class="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-border-main text-xs text-text3 hover:text-text-main hover:bg-surface2 transition-colors w-fit">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                pitok.my.id
+              </a>
+            </div>
+          </div>
+
+          <!-- Member 5: Baghaztra -->
+          <div
+            class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full reveal reveal-d2">
+            <div
+              class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#e01414] to-[#990d0d] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
+              <span class="font-display text-xl md:text-2xl font-bold text-white">Bg</span>
+            </div>
+            <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Baghaztra Van Ril</h3>
+            <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CMO — BOSS</p>
+            <p class="text-sm text-text2 leading-[1.7] flex-grow">Memimpin strategi pemasaran dan branding BOSS —
+              membangun awareness dan menghubungkan UMKM Indonesia dengan solusi digital yang tepat.</p>
+
+            <div class="mt-6 pt-5 border-t border-border-main">
+              <a href="https://bgztra.my.id" target="_blank" rel="noopener noreferrer"
+                class="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-border-main text-xs text-text3 hover:text-text-main hover:bg-surface2 transition-colors w-fit">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                bgztra.my.id
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+    <hr class="sep" />
+
+    <!-- ══════════════ CTA ══════════════ -->
+    <div class="wrapper">
+      <section class="py-16 md:py-20 lg:py-32" aria-labelledby="cta-heading">
+        <div
+          class="bg-surface border border-border-med rounded-2xl md:rounded-3xl p-8 md:p-12 lg:p-16 text-center relative overflow-hidden reveal">
+          <div
+            class="absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_50%_0%,rgba(224,48,48,0.08),transparent_60%)]">
+          </div>
+
+          <h2 id="cta-heading"
+            class="font-display text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-1.5px] mb-4 relative z-10">Siap
+            Digitalisasi<br />Bisnis Anda?</h2>
+          <p class="text-base md:text-[1.05rem] text-text2 max-w-lg mx-auto mb-8 md:mb-10 leading-[1.8] relative z-10">
+            Bergabung bersama ratusan UMKM Indonesia yang sudah kelola bisnis lebih mudah dan cerdas dengan BOSS.</p>
+
+          <div class="flex justify-center gap-3 flex-wrap relative z-10">
+            <a href="https://dashboard.bossapp.id/auth/register" class="btn btn-primary btn-lg w-full sm:w-auto">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
-              pitok.my.id
+              Mulai Gratis Sekarang
             </a>
-          </article>
-
-          <article class="team-card reveal reveal-d2" itemscope itemtype="https://schema.org/Person">
-            <div class="team-avatar" style="background:linear-gradient(135deg,#b91c1c,#dc2626)" aria-hidden="true">Bg
-            </div>
-            <h3 itemprop="name">Baghaztra Van Ril</h3>
-            <div class="team-role" itemprop="jobTitle">CMO — BOSS</div>
-            <p itemprop="description">Memimpin strategi pemasaran dan branding BOSS — membangun awareness dan
-              menghubungkan UMKM Indonesia dengan solusi digital yang tepat.</p>
-            <a href="https://bgztra.my.id/" target="_blank" rel="noopener noreferrer" class="team-link" itemprop="url">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M15 3h6v6" />
-                <path d="M10 14 21 3" />
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              </svg>
-              bgztra.my.id
-            </a>
-          </article>
-
+          </div>
+          <div class="mt-4 md:mt-4.5 text-[0.82rem] text-text3 relative z-10">Coba gratis 35 hari · Tidak perlu kartu
+            kredit</div>
         </div>
       </section>
     </div>
 
   </main>
 
-  <!-- ── FOOTER ──────────────────────────────────── -->
+  <!-- ══════════════ FOOTER ══════════════ -->
   <hr class="sep" />
-  <footer>
+  <footer class="py-16 md:py-20 relative z-10">
     <div class="wrapper">
-      <div class="footer-top">
-        <div class="footer-brand">
-          <a href="#" class="footer-logo">
-            <span class="nav-logo-icon"
-              style="width:30px;height:30px;font-size:.75rem;border-radius:8px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e03030,#b91c1c);color:#fff;font-weight:900;font-family:var(--font-display);box-shadow:0 4px 12px rgba(224,48,48,.3)">B</span>
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 md:gap-10 items-start mb-8 md:mb-10">
+        <div>
+          <a href="#" class="flex items-center gap-2.5 font-display text-xl font-extrabold text-text-main mb-3">
+            <img src="https://profile.bossapp.id/boss-icon.png" alt="BOSS Logo"
+              class="w-8 h-8 md:w-9 md:h-9 object-contain drop-shadow-[0_2px_10px_rgba(224,48,48,0.3)]" />
             BOSS
           </a>
-          <p class="footer-tagline">Business One Stop System — Solusi kasir &amp; manajemen bisnis all-in-one untuk UMKM
-            Indonesia. Multi-outlet, real-time, tanpa instalasi.</p>
+          <p class="text-sm text-text2 leading-[1.8] max-w-[360px]">Business One Stop System — Solusi kasir & manajemen
+            bisnis all-in-one untuk UMKM Indonesia. Multi-outlet, real-time, tanpa instalasi.</p>
         </div>
-        <nav class="footer-nav" aria-label="Footer navigation">
-          <div class="footer-nav-group">
-            <h4>Navigasi</h4>
-            <ul>
-              <li><a href="#fitur">Fitur</a></li>
-              <li><a href="#tech">Tech Stack</a></li>
-              <li><a href="#arsitektur">Arsitektur</a></li>
-              <li><a href="#tim">Tim</a></li>
+
+        <nav class="grid grid-cols-2 sm:flex sm:flex-row gap-8 sm:gap-12" aria-label="Footer navigation">
+          <div>
+            <h4 class="text-[0.7rem] font-bold uppercase tracking-[1.5px] text-text3 mb-3.5">Produk</h4>
+            <ul class="flex flex-col gap-2 list-none">
+              <li><a href="#cara-kerja" class="text-sm text-text2 hover:text-text-main transition-colors">Cara Kerja</a>
+              </li>
+              <li><a href="#fitur" class="text-sm text-text2 hover:text-text-main transition-colors">Fitur</a></li>
+              <li><a href="#harga" class="text-sm text-text2 hover:text-text-main transition-colors">Harga</a></li>
             </ul>
           </div>
-          <div class="footer-nav-group">
-            <h4>Produk</h4>
-            <ul>
-              <li><a href="https://bossapp.id" target="_blank" rel="noopener noreferrer">Customer View</a></li>
-              <li><a href="https://dashboard.bossapp.id" target="_blank" rel="noopener noreferrer">Dashboard Owner</a>
-              </li>
+          <div>
+            <h4 class="text-[0.7rem] font-bold uppercase tracking-[1.5px] text-text3 mb-3.5">Perusahaan</h4>
+            <ul class="flex flex-col gap-2 list-none">
+              <li><a href="#tim" class="text-sm text-text2 hover:text-text-main transition-colors">Tim</a></li>
+              <li><a href="mailto:hello@bossapp.id"
+                  class="text-sm text-text2 hover:text-text-main transition-colors">Kontak</a></li>
             </ul>
           </div>
         </nav>
       </div>
-      <div class="footer-bottom">
-        <p class="footer-copy">
-          &copy; 2025 <strong>BOSS</strong> — Business One Stop System. Dibuat dengan ❤️ untuk UMKM Indonesia.
-        </p>
 
+      <div class="flex items-center justify-between pt-6 border-t border-border-main flex-wrap gap-3">
+        <p class="text-[0.83rem] text-text3">&copy; 2026 <strong>BOSS</strong> — Dibuat dengan <svg
+            class="inline-block w-4 h-4 text-accent mx-0.5 align-text-bottom" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+          </svg> untuk UMKM Indonesia.</p>
+        <p class="text-[0.83rem] text-text3"><a href="#" class="hover:text-text-main transition-colors">bossapp.id</a>
+        </p>
       </div>
     </div>
   </footer>
-
-  <script>
-    // ── Tab switcher
-    function switchTab(btn, tab) {
-      document.querySelectorAll('.tab-btn').forEach(t => {
-        t.classList.remove('active');
-        t.setAttribute('aria-selected', 'false');
-      });
-      document.querySelectorAll('.feature-list').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
-      btn.setAttribute('aria-selected', 'true');
-      document.getElementById('tab-' + tab).classList.add('active');
-    }
-
-    // ── Nav scroll effect
-    const navEl = document.getElementById('nav');
-    window.addEventListener('scroll', () => {
-      navEl.classList.toggle('scrolled', window.scrollY > 20);
-    }, { passive: true });
-
-    // ── Mobile menu
-    const hamburger = document.getElementById('hamburger');
-    const mobileMenu = document.getElementById('mobileMenu');
-
-    hamburger.addEventListener('click', () => {
-      const isOpen = hamburger.classList.toggle('open');
-      mobileMenu.classList.toggle('open', isOpen);
-      hamburger.setAttribute('aria-expanded', isOpen);
-      document.body.style.overflow = isOpen ? 'hidden' : '';
-    });
-
-    document.querySelectorAll('.mobile-link, .mobile-menu a').forEach(a => {
-      a.addEventListener('click', () => {
-        hamburger.classList.remove('open');
-        mobileMenu.classList.remove('open');
-        hamburger.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-      });
-    });
-
-    // ── Scroll reveal
-    const observer = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting) {
-          e.target.classList.add('visible');
-          observer.unobserve(e.target);
-        }
-      }),
-      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
-    );
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-    // ── Bento card glow on mouse move
-    document.querySelectorAll('.bento-card').forEach(card => {
-      card.addEventListener('mousemove', e => {
-        const r = card.getBoundingClientRect();
-        card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
-        card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
-      });
-    });
-  </script>
-
 </body>
+
+<script src="script.js"></script>
 
 </html>
