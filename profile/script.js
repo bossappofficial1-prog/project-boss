@@ -189,7 +189,7 @@ function renderPricing(plans) {
 
 (async () => {
     try {
-        const response = await fetch('http://api.bossapp.id/api/v1/subscription-plans');
+        const response = await fetch('https://api.bossapp.id/api/v1/subscription-plans');
         const jsonResponse = await response.json();
         if (jsonResponse.success) {
             renderPricing(jsonResponse.data.filter(p => p.isActive));
