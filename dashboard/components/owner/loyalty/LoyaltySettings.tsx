@@ -4,7 +4,7 @@ import React from "react";
 import { useLoyaltyConfig, useUpsertLoyaltyConfig } from "@/hooks/api/use-loyalty";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Calculator } from "lucide-react";
+import { Loader2, Calculator, Trophy } from "lucide-react";
 import { ReusableForm, type FormFieldConfig } from "@/components/ui/reuseable-form";
 import * as z from "zod";
 
@@ -31,6 +31,7 @@ export function LoyaltySettings({ outletId }: { outletId: string }) {
             type: "dual-option-switch",
             description: "Aktifkan untuk mulai mencatat poin pelanggan secara otomatis.",
             className: "w-max",
+            colSpan: 2,
             switchOptions: {
                 left: { label: "Nonaktif", value: false },
                 right: { label: "Aktif", value: true },
@@ -88,16 +89,17 @@ export function LoyaltySettings({ outletId }: { outletId: string }) {
     const points = simulatedValues.pointsEarned ?? config?.pointsEarned ?? 1;
 
     return (
-        <Card className="w-full">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+        <Card className="w-full gap-0 py-0 rounded-md border border-border/80 bg-background shadow-sm overflow-hidden">
+            <CardHeader className="p-6 border-b border-border/40 bg-muted/30">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-foreground/90 flex items-center gap-2">
+                    <Calculator className="h-4 w-4 text-primary" />
                     Aturan Perolehan Poin
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-[10px] font-medium uppercase tracking-tighter opacity-70">
                     Tentukan bagaimana pelanggan mendapatkan poin dari setiap transaksi di outlet ini.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="p-6 space-y-8">
                 <ReusableForm
                     schema={loyaltySchema}
                     fields={fields}
@@ -116,23 +118,39 @@ export function LoyaltySettings({ outletId }: { outletId: string }) {
                     onValuesChange={setSimulatedValues}
                 />
 
-                <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
-                    <div className="flex items-center gap-2 mb-2 text-blue-800 dark:text-blue-300">
-                        <Calculator className="h-4 w-4" />
-                        <span className="text-sm font-bold">Simulasi Perolehan:</span>
+                <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-5 shadow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+                        <Calculator className="h-16 w-16" />
                     </div>
-                    <p className="text-sm text-blue-700 dark:text-blue-400 leading-relaxed">
-                        Jika pelanggan belanja <strong>Rp {(multiplier * 2.5).toLocaleString("id-ID")}</strong>,
-                        maka mereka akan mendapatkan
-                        <strong className="mx-1 px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-200">
-                            {Math.floor((multiplier * 2.5) / multiplier) * points} Poin
-                        </strong>.
-                    </p>
-                    {simulatedValues.pointValue !== undefined && simulatedValues.pointValue > 0 && (
-                        <p className="text-sm text-blue-700 dark:text-blue-400 mt-2 leading-relaxed italic">
-                            * Tiap 1 poin dapat ditukar dengan potongan belanja senilai <strong>Rp {simulatedValues.pointValue.toLocaleString("id-ID")}</strong>.
+
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="h-5 w-5 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600/80">Simulasi Perolehan Poin</span>
+                    </div>
+
+                    <div className="space-y-3 relative z-10">
+                        <p className="text-sm font-medium text-foreground/80 leading-relaxed">
+                            Jika pelanggan belanja <span className="font-bold text-foreground tabular-nums">Rp {(multiplier * 2.5).toLocaleString("id-ID")}</span>,
+                            maka mereka akan mendapatkan:
                         </p>
-                    )}
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-500/10 border border-blue-500/30">
+                            <Trophy className="h-4 w-4 text-blue-600" />
+                            <span className="text-lg font-bold text-blue-600 tabular-nums">
+                                {Math.floor((multiplier * 2.5) / multiplier) * points} Poin
+                            </span>
+                        </div>
+
+                        {simulatedValues.pointValue !== undefined && simulatedValues.pointValue > 0 && (
+                            <div className="pt-3 border-t border-blue-500/10">
+                                <p className="text-[10px] font-medium text-blue-600/70 italic flex items-center gap-1.5">
+                                    <span className="h-1 w-1 rounded-full bg-blue-500" />
+                                    Tiap 1 poin bernilai <span className="font-bold not-italic tabular-nums">Rp {simulatedValues.pointValue.toLocaleString("id-ID")}</span> untuk potongan belanja.
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </CardContent>
         </Card>

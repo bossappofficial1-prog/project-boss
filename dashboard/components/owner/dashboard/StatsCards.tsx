@@ -1,9 +1,10 @@
 "use client";
 
 import React from 'react';
-import { Card, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import type { DashboardStats } from '@/types/dashboard';
-import { Package, ShoppingCart, Wallet, Wrench } from 'lucide-react';
+import { Package, ShoppingCart, Wallet, Wrench, ArrowUpRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function formatCurrencyIDR(amount: number) {
 	return new Intl.NumberFormat('id-ID', {
@@ -22,65 +23,77 @@ export default function StatsCards({ stats }: StatsCardsProps) {
 		{
 			title: 'Total Produk',
 			value: stats.totalProducts.toLocaleString('id-ID'),
-			valueClass: 'text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100',
-			description: 'Barang & Jasa',
-			descriptionClass: 'text-sm font-medium text-green-600 dark:text-green-400',
+			description: 'Barang fisik di inventaris',
 			Icon: Package,
-			iconClass: 'bg-blue-500/10 text-blue-600',
-			delay: 0.1,
+			color: 'var(--chart-1)',
+			bg: 'bg-chart-1/10',
 		},
 		{
 			title: 'Total Layanan',
 			value: stats.totalServices.toLocaleString('id-ID'),
-			valueClass: 'text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100',
-			description: 'Jasa Tersedia',
-			descriptionClass: 'text-sm font-medium text-blue-600 dark:text-blue-400',
+			description: 'Jasa & layanan tersedia',
 			Icon: Wrench,
-			iconClass: 'bg-indigo-500/10 text-indigo-600',
-			delay: 0.2,
+			color: 'var(--chart-2)',
+			bg: 'bg-chart-2/10',
 		},
 		{
 			title: 'Total Pesanan',
 			value: stats.totalOrders.toLocaleString('id-ID'),
-			valueClass: 'text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100',
-			description: 'Keseluruhan',
-			descriptionClass: 'text-sm font-medium text-orange-600 dark:text-orange-400',
+			description: 'Keseluruhan transaksi',
 			Icon: ShoppingCart,
-			iconClass: 'bg-orange-500/10 text-orange-600',
-			delay: 0.3,
+			color: 'var(--chart-3)',
+			bg: 'bg-chart-3/10',
 		},
 		{
 			title: 'Total Pendapatan',
 			value: formatCurrencyIDR(stats.totalRevenue),
-			valueClass: 'text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 break-words',
-			description: 'Keseluruhan',
-			descriptionClass: 'text-sm font-medium text-green-600 dark:text-green-400',
+			description: 'Akumulasi omzet bisnis',
 			Icon: Wallet,
-			iconClass: 'bg-green-500/10 text-green-600',
-			delay: 0.4,
+			color: 'var(--chart-2)',
+			bg: 'bg-chart-2/10',
 		},
 	];
 
 	return (
-		<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3 xl:grid-cols-4">
-			{cards.map(({ title, value, valueClass, description, descriptionClass, Icon, iconClass, delay }) => (
+		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+			{cards.map((card, idx) => (
 				<Card
-					key={title}
-					className="card-hover animate-fade-in-up rounded-lg"
-					style={{ animationDelay: `${delay}s` }}
+					key={card.title}
+					className="group gap-0 py-0 relative overflow-hidden rounded-md border-border/60 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br from-background to-muted/20"
 				>
-					<CardHeader className="space-y-0">
-						<div className="flex items-center justify-between gap-3">
-							<div className="min-w-0">
-								<p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-								<p className={`mt-1 ${valueClass}`}>{value}</p>
-								<p className={`mt-2 ${descriptionClass}`}>{description}</p>
+					{/* Decorative Element */}
+					<div className={cn(
+						"absolute -right-4 -top-4 h-24 w-24 rounded-full opacity-5 transition-transform duration-500 group-hover:scale-150",
+						card.bg
+					)} />
+
+					<CardContent className="p-5 space-y-4">
+						<div className="flex items-center justify-between">
+							<div className={cn(
+								"p-2.5 rounded-lg transition-colors duration-300",
+								card.bg,
+								"text-foreground"
+							)} style={{ color: card.color }}>
+								<card.Icon className="h-5 w-5" />
 							</div>
-							<div className={`flex h-12 w-12 items-center justify-center rounded-lg ${iconClass} sm:h-16 sm:w-16`}>
-								<Icon className="h-6 w-6 sm:h-8 sm:w-8" strokeWidth={2.4} />
+							<div className="p-1 rounded-full bg-muted/50 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+								<ArrowUpRight className="h-3 w-3" />
 							</div>
 						</div>
-					</CardHeader>
+
+						<div className="space-y-1">
+							<p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+								{card.title}
+							</p>
+							<p className="text-2xl font-black tracking-tight text-foreground tabular-nums truncate">
+								{card.value}
+							</p>
+						</div>
+
+						<p className="text-[10px] text-muted-foreground italic font-medium pt-1">
+							{card.description}
+						</p>
+					</CardContent>
 				</Card>
 			))}
 		</div>

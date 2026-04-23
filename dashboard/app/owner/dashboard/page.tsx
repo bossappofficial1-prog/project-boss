@@ -5,6 +5,7 @@ import AddOutletModal from "@/components/modals/AddOutletModal";
 import DeleteOutletModal from "@/components/modals/DeleteOutletModal";
 import BusinessProfileModal from "@/components/modals/BusinessProfileModal";
 import BankAccountModal from "@/components/modals/BankAccountModal";
+import { Building2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import StatsCards from "@/components/owner/dashboard/StatsCards";
@@ -12,13 +13,14 @@ import BusinessProfileCard from "@/components/owner/dashboard/BusinessProfileCar
 import OutletsSection from "@/components/owner/dashboard/OutletsSection";
 import { PageSkeleton } from "@/components/owner/dashboard/Skeletons";
 import { useAutlet } from "@/hooks/use-outlet";
+import { Card } from "@/components/ui/card";
 
 
 
 export default function DashboardPage() {
   const { stats, business, outlets, selectedOutlet, isLoading, globalError, refetch } =
     useDashboardData();
-  const { updateStatusOutletLoading, updateStatusOutletMutate } = useAutlet()
+  const { updateStatusOutletMutate } = useAutlet()
 
   const [showOutletModal, setShowOutletModal] = useState(false);
   const [outletModalMode, setOutletModalMode] = useState<"add" | "edit">("add");
@@ -74,11 +76,15 @@ export default function DashboardPage() {
     <>
       <div className="space-y-3 animate-fade-in-up">
         {globalError && (
-          <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
-            {globalError}
+          <div className="flex items-center gap-3 rounded-md border border-red-200 bg-red-500/5 p-4 text-red-700 shadow-sm animate-shake">
+            <div className="p-1.5 rounded-full bg-red-500/10">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-xs font-bold uppercase tracking-tight">{globalError}</p>
           </div>
         )}
-        {/* <Toolbar selectedDate={selectedDate} onDateChange={setSelectedDate} isConnected={isConnected} /> */}
 
         {/* Business Profile Section */}
         {business ? (
@@ -88,22 +94,26 @@ export default function DashboardPage() {
             onEditBank={() => setShowBankModal(true)}
           />
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-red-50 dark:border-gray-700 animate-fade-in">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                  Profil Bisnis
+          <Card className="rounded-md overflow-hidden border-2 border-dashed border-red-200 bg-red-500/5 p-6 sm:p-8 animate-fade-in group hover:bg-red-500/10 transition-colors">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              <div className="p-4 rounded-full bg-red-500/10 text-red-600 group-hover:scale-110 transition-transform shadow-sm border border-red-500/20">
+                <Building2 className="h-10 w-10" />
+              </div>
+              <div className="flex-1 text-center sm:text-left space-y-2">
+                <h2 className="text-xl font-black text-foreground tracking-tight">
+                  Konfigurasi Profil Bisnis Diperlukan
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Belum ada data profil bisnis. Lengkapi terlebih dahulu agar dapat menggunakan
-                  fitur secara penuh.
+                <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
+                  Data profil bisnis Anda belum lengkap. Identitas bisnis yang jelas sangat krusial untuk laporan pajak, penagihan, dan kepercayaan pelanggan pada outlet Anda.
                 </p>
-                <div className="mt-4">
-                  <Button onClick={() => setShowBusinessModal(true)}>Lengkapi Profil Bisnis</Button>
+                <div className="pt-4 flex flex-wrap justify-center sm:justify-start gap-3">
+                  <Button onClick={() => setShowBusinessModal(true)} className="gap-2 font-bold uppercase tracking-wider text-xs px-6 py-5 rounded-md shadow-lg shadow-red-500/20">
+                    Lengkapi Profil Bisnis Sekarang
+                  </Button>
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Main Stats Cards */}
@@ -124,17 +134,26 @@ export default function DashboardPage() {
 
         {/* Bank owner info empty card if business exists but no bank */}
         {business && !(business.bankName && business.bankAccount) && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-green-100 dark:border-green-800/50 animate-fade-in">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              Informasi Pemilik Rekening
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Lengkapi informasi pemilik rekening untuk penarikan dana.
-            </p>
-            <div className="mt-4">
-              <Button onClick={() => setShowBankModal(true)}>Lengkapi Informasi Rekening</Button>
+          <Card className="rounded-md overflow-hidden border-2 border-dashed border-emerald-200 bg-emerald-500/5 p-6 sm:p-8 animate-fade-in group hover:bg-emerald-500/10 transition-colors">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              <div className="p-4 rounded-full bg-emerald-500/10 text-emerald-600 group-hover:scale-110 transition-transform shadow-sm border border-emerald-500/20">
+                <CreditCard className="h-10 w-10" />
+              </div>
+              <div className="flex-1 text-center sm:text-left space-y-2">
+                <h2 className="text-xl font-black text-foreground tracking-tight text-emerald-700">
+                  Metode Penarikan Belum Siap
+                </h2>
+                <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
+                  Anda belum mendaftarkan rekening bank utama. Informasi ini wajib diisi agar sistem dapat meneruskan dana hasil penjualan outlet ke rekening pribadi atau perusahaan Anda.
+                </p>
+                <div className="pt-4 flex flex-wrap justify-center sm:justify-start gap-3">
+                  <Button onClick={() => setShowBankModal(true)} className="gap-2 font-bold uppercase tracking-wider text-xs px-6 py-5 rounded-md shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700 text-white border-none">
+                    Atur Rekening Penarikan
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
+          </Card>
         )}
       </div>
 

@@ -229,6 +229,8 @@ async function seedOutletTransactions(outlets: Outlet[], productsByOutlet: Outle
               quantity,
               priceAtTimeOfOrder: preferredProduct.price,
               productId: preferredProduct.productId,
+              hppAtTimeOfOrder: preferredProduct.type === ProductType.GOODS ? preferredProduct.price * 0.6 : 0,
+              commissionAtTimeOfOrder: preferredProduct.type === ProductType.SERVICE ? preferredProduct.price * 0.1 : 0,
             },
           ],
         },
@@ -408,6 +410,7 @@ async function main() {
         latitude: location.lat,
         longitude: location.lng,
         image: imageUrl,
+        slug: `${businesses[i].name}-${location.name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       },
     });
     outlets.push(outlet);

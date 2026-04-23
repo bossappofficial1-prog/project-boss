@@ -13,14 +13,21 @@ import { useOutletContext } from "@/components/providers/OutletProvider";
 
 function PageSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-52" />
-          <Skeleton className="h-4 w-72" />
+    <div className="space-y-6 animate-pulse">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-64 bg-muted/30" />
+        <Skeleton className="h-4 w-96 bg-muted/20" />
+      </div>
+      <div className="rounded-md border border-border/40 p-1">
+        <div className="h-12 border-b border-border/40 bg-muted/5 flex items-center px-4">
+          <Skeleton className="h-4 w-32 bg-muted/20" />
+        </div>
+        <div className="p-4 space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full bg-muted/10 rounded-md" />
+          ))}
         </div>
       </div>
-      <Skeleton className="h-100 rounded-md" />
     </div>
   );
 }
@@ -63,7 +70,7 @@ export default function CustomerContent() {
     <div className="space-y-6">
       <SectionHeader
         title="Data Pelanggan"
-        description={`Outlet: ${currentOutletName}`}
+        description={`Kelola basis data pelanggan dan pantau riwayat transaksi untuk ${currentOutletName}`}
       />
 
       <CustomerTable

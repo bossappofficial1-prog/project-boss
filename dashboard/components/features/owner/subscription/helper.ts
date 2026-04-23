@@ -14,14 +14,14 @@ export const SUBSCRIPTION_STATUS_LABELS: Record<OwnerSubscriptionStatus, string>
 };
 
 export const SUBSCRIPTION_STATUS_STYLES: Record<OwnerSubscriptionStatus, string> = {
-    ACTIVE: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    TRIAL: 'bg-sky-100 text-sky-700 border-sky-200',
-    AWAITING_PAYMENT: 'bg-amber-100 text-amber-700 border-amber-200',
-    PROOF_SUBMITTED: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    PAST_DUE: 'bg-orange-100 text-orange-700 border-orange-200',
-    EXPIRED: 'bg-rose-100 text-rose-700 border-rose-200',
-    SUSPENDED: 'bg-slate-200 text-slate-700 border-slate-300',
-    CANCELLED: 'bg-gray-200 text-gray-700 border-gray-300',
+    ACTIVE: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+    TRIAL: 'bg-sky-500/10 text-sky-600 border-sky-500/20',
+    AWAITING_PAYMENT: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+    PROOF_SUBMITTED: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
+    PAST_DUE: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+    EXPIRED: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
+    SUSPENDED: 'bg-muted text-muted-foreground border-border',
+    CANCELLED: 'bg-muted text-muted-foreground border-border',
 };
 
 export const PAYMENT_STATUS_LABELS: Record<OwnerPaymentStatus, string> = {
@@ -37,15 +37,15 @@ export const PAYMENT_STATUS_LABELS: Record<OwnerPaymentStatus, string> = {
 };
 
 export const PAYMENT_STATUS_STYLES: Record<OwnerPaymentStatus, string> = {
-    PENDING: 'bg-amber-100 text-amber-700 border-amber-200',
-    PROOF_SUBMITTED: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    AWAITING_VERIFICATION: 'bg-blue-100 text-blue-700 border-blue-200',
-    SUCCESS: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    FAILED: 'bg-rose-100 text-rose-700 border-rose-200',
-    REFUNDED: 'bg-slate-200 text-slate-700 border-slate-300',
-    EXPIRED: 'bg-orange-100 text-orange-700 border-orange-200',
-    CANCELLED: 'bg-gray-200 text-gray-700 border-gray-300',
-    REJECTED_MANUAL: 'bg-red-100 text-red-700 border-red-200',
+    PENDING: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+    PROOF_SUBMITTED: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
+    AWAITING_VERIFICATION: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    SUCCESS: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+    FAILED: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
+    REFUNDED: 'bg-muted text-muted-foreground border-border',
+    EXPIRED: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+    CANCELLED: 'bg-muted text-muted-foreground border-border',
+    REJECTED_MANUAL: 'bg-red-500/10 text-red-600 border-red-500/20',
 };
 
 export const PAYMENT_ACTIONABLE_STATUSES: OwnerPaymentStatus[] = ['PENDING', 'PROOF_SUBMITTED', 'AWAITING_VERIFICATION'];
@@ -65,21 +65,21 @@ export const usageCardsConfig: Array<{
             label: 'Outlet Aktif',
             description: 'Jumlah outlet yang sedang berjalan',
             icon: Store,
-            accent: 'from-rose-50 to-white border-rose-100',
+            accent: 'border-border',
         },
         {
             key: 'products',
             label: 'Produk & Layanan',
             description: 'Item yang bisa dijual di semua outlet',
             icon: Package2,
-            accent: 'from-orange-50 to-white border-orange-100',
+            accent: 'border-border',
         },
         {
             key: 'staff',
             label: 'Staf Outlet',
             description: 'Kasir dan petugas yang aktif',
             icon: Users,
-            accent: 'from-amber-50 to-white border-amber-100',
+            accent: 'border-border',
         },
     ];
 

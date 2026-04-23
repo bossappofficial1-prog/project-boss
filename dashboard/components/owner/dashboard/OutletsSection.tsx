@@ -2,11 +2,12 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { toast } from "sonner";
 import { Outlet } from "@/types";
+import { cn } from "@/lib/utils";
 
 import {
   Building2,
@@ -19,8 +20,11 @@ import {
   Check,
   Store,
   Link2,
+  ArrowRight,
+  LayoutDashboard
 } from "lucide-react";
 import { copyToClipboard } from "@/lib/url";
+import { useRouter } from "next/navigation";
 
 interface OutletsSectionProps {
   outlets: Outlet[];
@@ -29,7 +33,6 @@ interface OutletsSectionProps {
   onEditOutlet?: (outlet: Outlet) => void;
   onDeleteOutlet?: (outlet: Outlet) => void;
   onToggleOutletActive?: (outlet: Outlet, isActive: boolean) => Promise<void> | void;
-
   isLoading?: boolean;
 }
 
@@ -40,21 +43,16 @@ export default function OutletsSection({
   onEditOutlet,
   onDeleteOutlet,
   onToggleOutletActive,
-
   isLoading = false,
 }: OutletsSectionProps) {
   const { setSelectedOutlet } = useOutletContext();
-  const [selectedForAction, setSelectedForAction] = useState<string | null>(null);
   const [togglingOutletId, setTogglingOutletId] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSelectOutlet = (outlet: Outlet) => {
-    if (outlet.id === selectedOutlet) {
-      console.log(`🔄 OutletsSection: Outlet already selected, returning early`);
-      return;
-    }
-
+    if (outlet.id === selectedOutlet) return;
     setSelectedOutlet(outlet);
-    toast.success("Outlet berubah", {
+    toast.success("Outlet terpilih", {
       description: `Beralih ke ${outlet.name}`,
       duration: 2000,
     });
@@ -63,23 +61,24 @@ export default function OutletsSection({
   const handleCopy = async (outletSlug: string) => {
     try {
       await copyToClipboard(`${process.env.NEXT_PUBLIC_CUSTOMER_URL}/outlet/${outletSlug}`);
-      toast.success('Berhasil salin link outlet')
-    } catch (error) {
-      toast.error('Gagal salin link outlet')
+      toast.success('Link outlet berhasil disalin');
+    } catch {
+      toast.error('Gagal menyalin link');
     }
+  };
+
+  const handleToOutletDashboard = (outlet: Outlet, e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/owner/dashboard/outlets`);
+    setSelectedOutlet(outlet);
   }
 
   const handleToggleOutletActive = async (outlet: Outlet, checked: boolean) => {
     if (!onToggleOutletActive) return;
-
     try {
       setTogglingOutletId(outlet.id);
       await onToggleOutletActive(outlet, checked);
-      toast.success(`Outlet ${checked ? "diaktifkan" : "dinonaktifkan"}`, {
-        description: outlet.name,
-      });
-    } catch {
-      toast.error("Gagal mengubah status outlet");
     } finally {
       setTogglingOutletId(null);
     }
@@ -87,219 +86,152 @@ export default function OutletsSection({
 
   if (!outlets || outlets.length === 0) {
     return (
-      <Card className="card-hover animate-fade-in-up rounded-md p-4">
-        <div className="py-6 text-center">
-          <div className="bg-muted mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
-            <Building2 className="text-muted-foreground h-8 w-8" />
-          </div>
-          <h3 className="text-foreground mb-2 text-lg font-semibold">
-            Belum ada outlet
-          </h3>
-          <p className="text-muted-foreground mx-auto mb-6 max-w-md">
-            Tambahkan outlet pertama Anda untuk mulai menjual produk dan layanan
-          </p>
-          <Button
-            onClick={onAddOutlet}
-            type="button"
-            className="shadow-md transition-shadow duration-300">
-            <Plus className="mr-2 inline h-5 w-5" />
-            Tambah Outlet Pertama
-          </Button>
+      <Card className="rounded-md gap-0 py-0 border-dashed flex flex-col items-center justify-center p-12 bg-muted/5 text-center">
+        <div className="p-4 rounded-full bg-primary/10 text-primary mb-4">
+          <Store className="h-10 w-10" />
         </div>
+        <CardTitle className="text-xl font-bold">Belum Ada Outlet</CardTitle>
+        <CardDescription className="max-w-xs mt-2">
+          Tambahkan outlet pertama Anda untuk mulai mengelola bisnis dan menerima pesanan.
+        </CardDescription>
+        <Button onClick={onAddOutlet} className="mt-6 gap-2">
+          <Plus className="h-4 w-4" /> Tambah Outlet Pertama
+        </Button>
       </Card>
     );
   }
 
   return (
-    <Card className="card-hover animate-fade-in-up rounded-md p-4">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-        <div className="flex items-center">
-          <div className="bg-primary text-primary-foreground mr-3 flex h-10 w-10 items-center justify-center rounded-md">
-            <Building2 className="h-5 w-5" />
+    <Card className="rounded-md gap-0 py-0 overflow-hidden border-border/60 shadow-md bg-gradient-to-b from-background to-muted/5">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 bg-muted/20 p-4 sm:p-6">
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-sm">
+            <Store className="h-6 w-6" />
           </div>
-          <div>
-            <h2 className="text-foreground text-xl font-bold sm:text-2xl">
-              Outlet Bisnis
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              {outlets.length} outlet tersedia • Klik untuk beralih
-            </p>
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-bold tracking-tight">Manajemen Outlet</CardTitle>
+            <CardDescription className="text-xs font-medium">
+              {outlets.length} outlet terdaftar dalam ekosistem bisnis Anda.
+            </CardDescription>
           </div>
         </div>
-
-        <Button onClick={onAddOutlet} disabled={isLoading} type="button">
-          {isLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="mr-1.5 h-4 w-4 sm:mr-2 sm:h-5 sm:w-5" />
-          )}
+        <Button onClick={onAddOutlet} disabled={isLoading} size="sm" className="gap-2 font-bold text-xs uppercase tracking-wider rounded-md">
+          {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
           Tambah Outlet
         </Button>
-      </div>
+      </CardHeader>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {outlets.map((outlet, index) => {
-          const isSelected = outlet.id === selectedOutlet;
-          const isActionSelected = selectedForAction === outlet.id;
-          const isOutletActive = outlet.isOpen !== false;
+      <CardContent className="p-4 sm:p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {outlets.map((outlet, index) => {
+            const isSelected = outlet.id === selectedOutlet;
+            const isOutletActive = outlet.isOpen !== false;
 
-          return (
-            <div
-              key={outlet.id}
-              className={`group relative cursor-pointer overflow-hidden rounded-xl border-2 p-4 transition-all duration-300 sm:p-5 ${isSelected
-                ? "scale-[1.02] border-primary bg-primary/10 shadow-lg"
-                : "border-border bg-card hover:scale-[1.01] hover:border-primary/40 hover:bg-muted/40 hover:shadow-md"
-                }`}
-              style={{ animationDelay: `${0.1 * index}s` }}
-              onClick={() => handleSelectOutlet(outlet)}
-              onMouseEnter={() => setSelectedForAction(outlet.id)}
-              onMouseLeave={() => setSelectedForAction(null)}>
-              {isSelected && <div className="absolute left-0 top-0 h-1 w-full bg-red-gradient" />}
-
-              {(onEditOutlet || onDeleteOutlet) && (
-                <div
-                  className={`absolute right-3 bottom-3 flex space-x-1 transition-all duration-200 `}>
-                  {onEditOutlet && (
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditOutlet(outlet);
-                      }}
-                      type="button"
-                      variant="secondary"
-                      size="icon-sm"
-                      className="rounded-md shadow-sm"
-                      title="Edit Outlet">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  {onDeleteOutlet && (
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteOutlet(outlet);
-                      }}
-                      type="button"
-                      variant="destructive"
-                      size="icon-sm"
-                      className="rounded-md shadow-sm"
-                      title="Hapus Outlet">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopy(outlet.slug!)
-                    }}
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    className="rounded-md bg-card"
-                    title="Salin link outlet ini untuk dibagikan">
-                    <Link2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )}
-
-              <div className="flex items-start space-x-4">
-                <div className="shrink-0">
-                  {outlet.image ? (
-                    <div className="relative">
-                      <img
-                        src={outlet.image}
-                        alt={outlet.name}
-                        className="h-14 w-14 rounded-xl object-cover shadow-md"
-                      />
-                      {isSelected && (
-                        <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500">
-                          <Check className="h-3 w-3 text-white" />
-                        </div>
-                      )}
+            return (
+              <div
+                key={outlet.id}
+                onClick={() => handleSelectOutlet(outlet)}
+                className={cn(
+                  "group relative flex flex-col p-5 rounded-xl border-2 transition-all duration-300 cursor-pointer overflow-hidden",
+                  isSelected
+                    ? "border-primary bg-primary/5 shadow-lg shadow-primary/5 scale-[1.02]"
+                    : "border-border bg-background hover:border-primary/40 hover:shadow-md"
+                )}
+              >
+                {/* Selection Pulse */}
+                {isSelected && (
+                  <div className="absolute top-3 right-3 flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-black uppercase tracking-tighter">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                      Selected
                     </div>
-                  ) : (
-                    <div
-                      className={`relative flex h-14 w-14 items-center justify-center rounded-xl shadow-md ${isSelected
-                        ? "bg-primary"
-                        : "bg-muted"
-                        }`}>
-                      <Store className={`h-7 w-7 ${isSelected ? "text-primary-foreground" : "text-muted-foreground"}`} />
-                      {isSelected && (
-                        <div className="bg-background absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full">
-                          <Check className="text-primary h-3 w-3" />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
-                <div className="min-w-0 flex-1">
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3
-                      className={`truncate text-base font-semibold ${isSelected
-                        ? "text-primary"
-                        : "text-foreground"
-                        }`}>
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="relative shrink-0">
+                    {outlet.image ? (
+                      <img src={outlet.image} alt={outlet.name} className="h-14 w-14 rounded-xl object-cover shadow-sm border border-border/50" />
+                    ) : (
+                      <div className={cn(
+                        "h-14 w-14 rounded-xl flex items-center justify-center shadow-sm border border-border/50",
+                        isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      )}>
+                        <Building2 className="h-7 w-7" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className={cn(
+                      "text-base font-bold truncate pr-16",
+                      isSelected ? "text-primary" : "text-foreground"
+                    )}>
                       {outlet.name}
                     </h3>
-                    <div
-                      className="ml-2 flex items-center gap-2"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      {togglingOutletId === outlet.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                      ) : null}
+                    <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1 mt-1 truncate">
+                      <MapPin className="h-3 w-3" /> {outlet.address}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-auto space-y-4">
+                  <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                    <div className="flex items-center gap-2">
                       <Switch
                         checked={isOutletActive}
                         onCheckedChange={(checked) => handleToggleOutletActive(outlet, checked)}
-                        disabled={!onToggleOutletActive || togglingOutletId === outlet.id}
-                        aria-label={`Ubah status ${outlet.name}`}
+                        disabled={togglingOutletId === outlet.id}
+                        onClick={(e) => e.stopPropagation()}
+                        className="scale-75 origin-left"
                       />
+                      <span className={cn(
+                        "text-[10px] font-bold uppercase tracking-widest",
+                        isOutletActive ? "text-emerald-600" : "text-muted-foreground"
+                      )}>
+                        {isOutletActive ? 'AKTIF' : 'NONAKTIF'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7 rounded-md"
+                        onClick={(e) => { e.stopPropagation(); onEditOutlet?.(outlet); }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7 rounded-md"
+                        onClick={(e) => { e.stopPropagation(); handleCopy(outlet.slug!); }}
+                      >
+                        <Link2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7 rounded-md text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={(e) => { e.stopPropagation(); onDeleteOutlet?.(outlet); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   </div>
 
-                  <p className="text-muted-foreground mb-2 line-clamp-2 text-sm">
-                    <MapPin className="mr-1 inline h-3.5 w-3.5" />
-                    {outlet.address}
-                  </p>
-
-                  {outlet.phone && (
-                    <p className="text-muted-foreground flex items-center text-xs">
-                      <Phone className="mr-1 h-3 w-3" />
-                      {outlet.phone}
-                    </p>
+                  <div className={cn(
+                    "flex items-center justify-between text-[10px] font-bold py-2 px-3 rounded-lg border transition-colors",
+                    isSelected
+                      ? "bg-primary/10 border-primary/20 text-primary"
+                      : "bg-muted/50 border-border/50 text-muted-foreground"
                   )}
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {isOutletActive ? (
-                      isSelected ? (
-                        <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/15 px-3 py-1 text-xs font-medium text-primary">
-                          <span className="mr-1.5 flex h-2 w-2 animate-pulse rounded-full bg-current" />
-                          Outlet Aktif
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground inline-flex items-center rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium transition-colors group-hover:border-primary/30 group-hover:bg-primary/10 group-hover:text-primary">
-                          Klik untuk pilih
-                        </span>
-                      )
-                    ) : (
-                      <span className="text-muted-foreground inline-flex items-center rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium">
-                        <span className="mr-1.5 flex h-2 w-2 rounded-full bg-muted-foreground/60" />
-                        Outlet Nonaktif
-                      </span>
-                    )}
+                    onClick={(e) => handleToOutletDashboard(outlet, e)}
+                  >
+                    <span className="flex items-center gap-1.5 uppercase tracking-widest">
+                      <LayoutDashboard className="h-3 w-3" /> Dashboard
+                    </span>
+                    <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
                   </div>
                 </div>
               </div>
-
-              <div
-                className={`pointer-events-none absolute inset-0 rounded-xl border-2 border-dashed transition-opacity duration-200 ${isActionSelected && !isSelected ? "border-primary opacity-20" : "opacity-0"
-                  }`}
-              />
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </CardContent>
     </Card>
   );
 }

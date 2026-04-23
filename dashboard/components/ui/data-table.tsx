@@ -16,7 +16,7 @@ import {
   Updater,
 } from "@tanstack/react-table";
 import type { LucideIcon } from "lucide-react";
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { ComponentProps, ReactNode } from "react";
 
 type ExportOption = {
@@ -91,10 +91,21 @@ import {
   X,
   FileSpreadsheet,
   FileText,
+  FileSearch,
   ChevronDown,
   MoreHorizontal,
   Columns3,
+  ChevronFirst,
+  ChevronLast,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 import * as XLSX from "xlsx";
@@ -106,6 +117,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Enhanced DataTable Props with comprehensive feature set
 interface DataTableProps<TData, TValue> {
@@ -191,13 +203,16 @@ interface DataTableProps<TData, TValue> {
   ariaLabel?: string;
   ariaDescription?: string;
 
+  // Persistence
+  tableId?: string; // unique ID to persist table settings (density, etc)
+
   // Callbacks
   onRowClick?: (row: TData) => void;
   onSortingChange?: (sorting: SortingState) => void;
   onColumnFiltersChange?: (filters: ColumnFiltersState) => void;
 }
 
-function DraggableRow({ row, children, isEnabled }: any) {
+function DraggableRow({ row, children, isEnabled, onRowClick }: any) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
   });
@@ -205,8 +220,8 @@ function DraggableRow({ row, children, isEnabled }: any) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1 : 0,
+    opacity: isDragging ? 0.8 : 1,
+    zIndex: isDragging ? 50 : 0,
     position: "relative" as const,
   };
 
@@ -215,16 +230,22 @@ function DraggableRow({ row, children, isEnabled }: any) {
       ref={setNodeRef}
       style={style}
       data-state={row.getIsSelected() && "selected"}
-      className={cn(isDragging && "bg-muted shadow-lg")}>
+      className={cn(
+        "transition-colors duration-200",
+        onRowClick && "cursor-pointer hover:bg-muted/40 active:bg-muted/60",
+        isDragging && "bg-muted shadow-md ring-1 ring-primary/10",
+        row.getIsSelected() && "bg-primary/5 hover:bg-primary/10"
+      )}
+      onClick={() => onRowClick?.(row.original)}>
       {isEnabled && (
         <TableCell className="w-10">
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 cursor-grab active:cursor-grabbing"
+            className="h-8 w-8 p-0 cursor-grab active:cursor-grabbing hover:bg-transparent"
             {...attributes}
             {...listeners}>
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
+            <GripVertical className="h-4 w-4 text-muted-foreground/50 hover:text-primary transition-colors" />
           </Button>
         </TableCell>
       )}
@@ -293,6 +314,7 @@ export function DataTable<TData, TValue>({
   onRowClick,
   onSortingChange,
   onColumnFiltersChange,
+  tableId,
 }: DataTableProps<TData, TValue>) {
   // State Management
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -339,6 +361,35 @@ export function DataTable<TData, TValue>({
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, [mobileBreakpoint]);
+
+  // Load Persisted Settings
+  useEffect(() => {
+    if (!tableId) return;
+    try {
+      const saved = localStorage.getItem(`dt_settings_${tableId}`);
+      if (saved) {
+        const settings = JSON.parse(saved);
+        if (settings.density) setCurrentDensity(settings.density);
+        if (typeof settings.striped === 'boolean') setIsStriped(settings.striped);
+        if (typeof settings.bordered === 'boolean') setIsBordered(settings.bordered);
+        if (settings.columnVisibility) setColumnVisibility(settings.columnVisibility);
+      }
+    } catch (e) {
+      console.warn("Failed to load table settings", e);
+    }
+  }, [tableId]);
+
+  // Save Persisted Settings
+  useEffect(() => {
+    if (!tableId) return;
+    const settings = {
+      density: currentDensity,
+      striped: isStriped,
+      bordered: isBordered,
+      columnVisibility,
+    };
+    localStorage.setItem(`dt_settings_${tableId}`, JSON.stringify(settings));
+  }, [tableId, currentDensity, isStriped, isBordered, columnVisibility]);
 
   useEffect(() => {
     if (serverSidePagination) {
@@ -740,8 +791,8 @@ export function DataTable<TData, TValue>({
             type: typeof response.headers["content-type"] === "string" ? response.headers["content-type"] : undefined,
           });
 
-          const contentDisposition = typeof response.headers["content-disposition"] === "string" 
-            ? response.headers["content-disposition"] 
+          const contentDisposition = typeof response.headers["content-disposition"] === "string"
+            ? response.headers["content-disposition"]
             : undefined;
           let filename = option.filename || `export-${option.id}-${new Date().getTime()}`;
 
@@ -828,453 +879,510 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <div
-        className="space-y-4 bg-card border shadow-md p-6 rounded-md"
-        role="region"
-        aria-label={ariaLabel}
-        aria-description={ariaDescription}>
-        {/* Header Section */}
-        {(title || description) && (
-          <div className="space-y-1">
-            {title && <h2 className="text-2xl font-bold tracking-tight">{title}</h2>}
-            {description && <p className="text-muted-foreground">{description}</p>}
-          </div>
-        )}
-
-        {/* Toolbar */}
-        <div className="flex flex-col gap-4">
-          {/* Top Row - Search and Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            {/* Search and Filters */}
-            <div className="flex flex-1 flex-col sm:flex-row gap-2 items-start sm:items-center">
-              {/* Global Search */}
-              {globalFilter && !enableRowDrag && (
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={searchPlaceholder}
-                    value={globalFilterValue}
-                    onChange={(event) => {
-                      const nextValue = event.target.value;
-                      setGlobalFilterValue(nextValue);
-                    }}
-                    className="pl-8 w-full h-9 sm:w-62.5"
-                  />
-                </div>
-              )}
-
-              {/* Column-specific Search */}
-              {searchKey && (
-                <div className="relative">
-                  <Filter className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={`Filter by ${searchKey}...`}
-                    value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      table.getColumn(searchKey)?.setFilterValue(value);
-                      if (serverSideSearch) {
-                        setGlobalFilterValue(value);
-                      }
-                    }}
-                    className="pl-8 w-full sm:w-50"
-                  />
-                </div>
-              )}
-
-              {/* Active Filters Indicator */}
-              {table.getState().columnFilters.length > 0 && (
-                <Badge variant="secondary" className="hidden sm:inline-flex">
-                  {table.getState().columnFilters.length} filter(s)
-                </Badge>
-              )}
+    <TooltipProvider>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <div
+          className="space-y-4 bg-card border shadow-md p-6 rounded-md"
+          role="region"
+          aria-label={ariaLabel}
+          aria-description={ariaDescription}>
+          {/* Header Section */}
+          {(title || description) && (
+            <div className="space-y-1">
+              {title && <h2 className="text-2xl font-bold tracking-tight">{title}</h2>}
+              {description && <p className="text-muted-foreground">{description}</p>}
             </div>
+          )}
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              {/* Refresh Button */}
-              {onRefresh && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onRefresh}
-                  disabled={isRefreshing}
-                  className="flex items-center gap-2">
-                  <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-                  {!isMobile && "Refresh"}
-                </Button>
-              )}
+          {/* Toolbar */}
+          <div className="flex flex-col gap-4">
+            {/* Top Row - Search and Actions */}
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              {/* Search and Filters */}
+              <div className="flex flex-1 flex-col sm:flex-row gap-2 items-start sm:items-center">
+                {/* Global Search */}
+                {globalFilter && !enableRowDrag && (
+                  <div className="relative group">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                    <Input
+                      placeholder={searchPlaceholder}
+                      value={globalFilterValue}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        setGlobalFilterValue(nextValue);
+                      }}
+                      className="pl-9 pr-8 w-full h-9 sm:w-64 transition-all focus:ring-1 focus:ring-primary/20"
+                    />
+                    {globalFilterValue && (
+                      <button
+                        onClick={() => setGlobalFilterValue("")}
+                        className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors">
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                )}
 
-              {/* Export Dropdown */}
-              {enableExport && exportConfig && exportConfig.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <Download className="h-4 w-4" />
-                      {!isMobile && "Export"}
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Pilih Format Export</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-
-                    {exportConfig
-                      .filter((opt) => opt.enabled)
-                      .map((option) => (
-                        <DropdownMenuItem
-                          key={option.id}
-                          onSelect={() => handleExport(option)}
-                          className="cursor-pointer">
-                          {/* Render icon dinamis berdasarkan config */}
-                          {option.icon === "spreadsheet" && (
-                            <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
-                          )}
-                          {option.icon === "pdf" && (
-                            <FileText className="mr-2 h-4 w-4 text-red-600" />
-                          )}
-                          {(!option.icon || option.icon === "file") && (
-                            <Download className="mr-2 h-4 w-4" />
-                          )}
-
-                          <span>{option.label}</span>
-                        </DropdownMenuItem>
-                      ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              {/* Column Visibility */}
-              {showColumnVisibility && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <Columns3 className="h-4 w-4" />
-                      {!isMobile && "Columns"}
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {table
-                      .getAllColumns()
-                      .filter((column) => column.getCanHide())
-                      .map((column) => {
-                        return (
-                          <DropdownMenuCheckboxItem
-                            key={column.id}
-                            className="capitalize"
-                            checked={column.getIsVisible()}
-                            onCheckedChange={(value) => column.toggleVisibility(!!value)}>
-                            {column.columnDef.header?.toString() || column.id}
-                          </DropdownMenuCheckboxItem>
-                        );
-                      })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              {/* Settings Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Settings2 className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Table settings</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuCheckboxItem
-                    checked={currentDensity === "compact"}
-                    onCheckedChange={(checked) => {
-                      setCurrentDensity(checked ? "compact" : "normal");
-                    }}>
-                    Compact view
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={isStriped}
-                    onCheckedChange={(checked) => {
-                      setIsStriped(!!checked);
-                    }}>
-                    Striped rows
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={isBordered}
-                    onCheckedChange={(checked) => {
-                      setIsBordered(!!checked);
-                    }}>
-                    Show borders
-                  </DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          {/* Bulk Actions Bar */}
-          {hasSelectedRows && bulkActions && (
-            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-dashed">
-              <Badge variant="secondary">{selectedRows.length} selected</Badge>
-              <div className="flex items-center gap-1">
-                {bulkActions.map((action, index) => {
-                  const Icon = action.icon;
-                  return (
-                    <Button
-                      key={index}
-                      variant={action.variant === "destructive" ? "destructive" : "outline"}
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          await action.onClick(selectedRows)
-                          table.resetRowSelection()
-                        } catch (error) {
-
+                {/* Column-specific Search */}
+                {searchKey && (
+                  <div className="relative">
+                    <Filter className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder={`Filter by ${table.getColumn(searchKey)?.columnDef.header}...`}
+                      value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        table.getColumn(searchKey)?.setFilterValue(value);
+                        if (serverSideSearch) {
+                          setGlobalFilterValue(value);
                         }
                       }}
-                      className="flex items-center gap-2">
-                      {Icon && <Icon className="h-4 w-4" />}
-                      {action.label}
-                    </Button>
-                  );
-                })}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => table.resetRowSelection()}
-                className="ml-auto">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
+                      className="pl-8 w-full h-9 sm:w-50"
+                    />
+                  </div>
+                )}
 
-        {/* Mobile Card View */}
-        {isMobile && mobileCardRender ? (
-          <div className="space-y-3">
-            {table.getRowModel().rows.map((row) => (
-              <div key={row.id} onClick={() => onRowClick?.(row.original)}>
-                {mobileCardRender(row.original)}
+                {/* Active Filters Indicator */}
+                {table.getState().columnFilters.length > 0 && (
+                  <Badge variant="secondary" className="hidden sm:inline-flex">
+                    {table.getState().columnFilters.length} filter(s)
+                  </Badge>
+                )}
               </div>
-            ))}
-          </div>
-        ) : (
-          /* Desktop Table View */
-          <div
-            className={cn(
-              "rounded-md border",
-              isBordered && "border-border",
-              !isBordered && "border-none",
-            )}>
-            <Table
-              className={cn(
-                densityStyles[currentDensity],
-                isStriped && "[&_tbody_tr:nth-child(odd)]:bg-muted/25",
-              )}>
-              <TableHeader className={cn(stickyHeader && "sticky top-0 z-10 bg-background")}>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {enableRowDrag && <TableHead className="text-center">#</TableHead>}
-                    {headerGroup.headers.map((header) => {
-                      const canSort = header.column.getCanSort();
-                      const sorted = header.column.getIsSorted();
 
-                      return (
-                        <TableHead
-                          key={header.id}
-                          className={cn(
-                            canSort && "cursor-pointer select-none hover:bg-muted/50",
-                            "transition-colors",
-                          )}
-                          onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                          style={{
-                            width: enableColumnResizing ? header.getSize() : undefined,
-                          }}>
-                          <div className="flex items-center gap-2">
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())}
-                            {canSort && (
-                              <div className="flex flex-col">
-                                {sorted === "asc" ? (
-                                  <ArrowUp className="h-3 w-3" />
-                                ) : sorted === "desc" ? (
-                                  <ArrowDown className="h-3 w-3" />
-                                ) : (
-                                  <ArrowUpDown className="h-3 w-3 opacity-50" />
-                                )}
-                              </div>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                {/* Refresh Button */}
+                {onRefresh && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onRefresh}
+                    disabled={isRefreshing}
+                    className="flex items-center gap-2">
+                    <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                    {!isMobile && "Refresh"}
+                  </Button>
+                )}
+
+                {/* Export Dropdown */}
+                {enableExport && exportConfig && exportConfig.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex items-center gap-2">
+                        <Download className="h-4 w-4" />
+                        {!isMobile && "Export"}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Pilih Format Export</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+
+                      {exportConfig
+                        .filter((opt) => opt.enabled)
+                        .map((option) => (
+                          <DropdownMenuItem
+                            key={option.id}
+                            onSelect={() => handleExport(option)}
+                            className="cursor-pointer">
+                            {/* Render icon dinamis berdasarkan config */}
+                            {option.icon === "spreadsheet" && (
+                              <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
                             )}
-                          </div>
-                          {/* Column Resizer */}
-                          {enableColumnResizing && header.column.getCanResize() && (
-                            <div
-                              className="absolute right-0 top-0 h-full w-1 bg-border opacity-0 hover:opacity-100 cursor-col-resize"
-                              onMouseDown={header.getResizeHandler()}
-                              onTouchStart={header.getResizeHandler()}
-                            />
-                          )}
-                        </TableHead>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                <SortableContext
-                  items={table.getRowModel().rows.map((r) => r.id)}
-                  strategy={verticalListSortingStrategy}
-                  disabled={!enableRowDrag}>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <DraggableRow
-                        key={row.id}
-                        row={row}
-                        isEnabled={enableRowDrag}
-                      // key={row.id}
-                      // data-state={row.getIsSelected() && "selected"}
-                      // className={cn(
-                      //     onRowClick && "cursor-pointer hover:bg-muted/50",
-                      //     "transition-colors"
-                      // )}
-                      // onClick={() => onRowClick?.(row.original)}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
+                            {option.icon === "pdf" && (
+                              <FileText className="mr-2 h-4 w-4 text-red-600" />
+                            )}
+                            {(!option.icon || option.icon === "file") && (
+                              <Download className="mr-2 h-4 w-4" />
+                            )}
+
+                            <span>{option.label}</span>
+                          </DropdownMenuItem>
                         ))}
-                      </DraggableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={enhancedColumns.length} className="h-24 text-center">
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="text-muted-foreground">{emptyMessage}</div>
-                          {table.getState().columnFilters.length > 0 && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => table.resetColumnFilters()}>
-                              Clear filters
-                            </Button>
-                          )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {/* Column Visibility */}
+                {showColumnVisibility && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex items-center gap-2">
+                        <Columns3 className="h-4 w-4" />
+                        {!isMobile && "Columns"}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {table
+                        .getAllColumns()
+                        .filter((column) => column.getCanHide())
+                        .map((column) => {
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={column.id}
+                              className="capitalize"
+                              checked={column.getIsVisible()}
+                              onCheckedChange={(value) => column.toggleVisibility(!!value)}>
+                              {column.columnDef.header?.toString() || column.id}
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {/* Settings Menu with Tooltip */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Settings2 className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Pengaturan Tabel</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Kepadatan Data
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </SortableContext>
-              </TableBody>
-              {showFooter && (
-                <TableFooter>
-                  {table.getFooterGroups().map((footerGroup) => (
-                    <TableRow key={footerGroup.id}>
-                      {enableRowDrag && <TableCell />}
-                      {footerGroup.headers.map((header) => (
-                        <TableCell key={header.id} className="font-bold">
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.footer, header.getContext())}
-                        </TableCell>
-                      ))}
+                        <DropdownMenuCheckboxItem
+                          checked={currentDensity === "compact"}
+                          onCheckedChange={(checked) => {
+                            setCurrentDensity(checked ? "compact" : "normal");
+                          }}>
+                          Rapat (Compact)
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={currentDensity === "normal"}
+                          onCheckedChange={(checked) => {
+                            setCurrentDensity(checked ? "normal" : "comfortable");
+                          }}>
+                          Normal
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={currentDensity === "comfortable"}
+                          onCheckedChange={(checked) => {
+                            setCurrentDensity(checked ? "comfortable" : "normal");
+                          }}>
+                          Nyaman (Comfortable)
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuSeparator />
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Tampilan
+                        </div>
+                        <DropdownMenuCheckboxItem
+                          checked={isStriped}
+                          onCheckedChange={(checked) => {
+                            setIsStriped(!!checked);
+                          }}>
+                          Baris Berwarna (Striped)
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={isBordered}
+                          onCheckedChange={(checked) => {
+                            setIsBordered(!!checked);
+                          }}>
+                          Tampilkan Border
+                        </DropdownMenuCheckboxItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TooltipTrigger>
+                  <TooltipContent>Pengaturan Tabel</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Card View */}
+          {isMobile && mobileCardRender ? (
+            <div className="space-y-3">
+              {table.getRowModel().rows.map((row) => (
+                <div key={row.id} onClick={() => onRowClick?.(row.original)}>
+                  {mobileCardRender(row.original)}
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Desktop Table View */
+            <div
+              className={cn(
+                "rounded-md border",
+                isBordered && "border-border",
+                !isBordered && "border-none",
+              )}>
+              <Table
+                className={cn(
+                  densityStyles[currentDensity],
+                  isStriped && "[&_tbody_tr:nth-child(odd)]:bg-muted/20",
+                )}>
+                <TableHeader className={cn(stickyHeader && "sticky top-0 z-10 bg-background/95 backdrop-blur-md shadow-sm")}>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {enableRowDrag && <TableHead className="text-center">#</TableHead>}
+                      {headerGroup.headers.map((header) => {
+                        const canSort = header.column.getCanSort();
+                        const sorted = header.column.getIsSorted();
+
+                        return (
+                          <TableHead
+                            key={header.id}
+                            className={cn(
+                              canSort && "cursor-pointer select-none hover:bg-muted/50",
+                              "transition-colors",
+                            )}
+                            onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                            style={{
+                              width: enableColumnResizing ? header.getSize() : undefined,
+                            }}>
+                            <div className="flex items-center gap-2">
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(header.column.columnDef.header, header.getContext())}
+                              {canSort && (
+                                <div className="flex flex-col">
+                                  {sorted === "asc" ? (
+                                    <ArrowUp className="h-3 w-3" />
+                                  ) : sorted === "desc" ? (
+                                    <ArrowDown className="h-3 w-3" />
+                                  ) : (
+                                    <ArrowUpDown className="h-3 w-3 opacity-50" />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            {/* Column Resizer */}
+                            {enableColumnResizing && header.column.getCanResize() && (
+                              <div
+                                className="absolute right-0 top-0 h-full w-1 bg-border opacity-0 hover:opacity-100 cursor-col-resize"
+                                onMouseDown={header.getResizeHandler()}
+                                onTouchStart={header.getResizeHandler()}
+                              />
+                            )}
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
                   ))}
-                </TableFooter>
-              )}
-            </Table>
-          </div>
-        )}
-
-        {/* Footer with Table Info and Pagination */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Table Info */}
-          {showTableInfo && (
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div>
-                Showing {pageStartLabel} to {pageEndLabel} of {totalRowCount} result(s)
-              </div>
-              {hasSelectedRows && (
-                <div>
-                  {selectedRows.length} of {effectiveRowModel.rows.length} row(s) selected
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Pagination Controls */}
-          {pagination && (
-            <div className="flex items-center gap-2">
-              {/* Page Size Selector */}
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium">Rows per page</p>
-                <Select
-                  value={`${table.getState().pagination.pageSize}`}
-                  onValueChange={(value) => {
-                    const newSize = Number(value);
-                    table.setPageSize(newSize);
-                  }}>
-                  <SelectTrigger className="h-8 w-17.5">
-                    <SelectValue placeholder={table.getState().pagination.pageSize} />
-                  </SelectTrigger>
-                  <SelectContent side="top">
-                    {pageSizeOptions.map((pageSize) => (
-                      <SelectItem key={pageSize} value={`${pageSize}`}>
-                        {pageSize}
-                      </SelectItem>
+                </TableHeader>
+                <TableBody>
+                  <SortableContext
+                    items={table.getRowModel().rows.map((r) => r.id)}
+                    strategy={verticalListSortingStrategy}
+                    disabled={!enableRowDrag}>
+                    {table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row) => (
+                        <DraggableRow
+                          key={row.id}
+                          row={row}
+                          isEnabled={enableRowDrag}
+                          onRowClick={onRowClick}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </DraggableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={enhancedColumns.length} className="h-64 text-center">
+                          <div className="flex flex-col items-center justify-center gap-3 animate-in fade-in duration-500">
+                            <div className="bg-muted/30 p-4 rounded-full">
+                              <FileSearch className="h-10 w-10 text-muted-foreground/40" />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-lg font-medium text-foreground">{emptyMessage}</div>
+                              <p className="text-sm text-muted-foreground">Coba ubah kata kunci atau filter pencarian Anda.</p>
+                            </div>
+                            {table.getState().columnFilters.length > 0 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => table.resetColumnFilters()}
+                                className="mt-2">
+                                Bersihkan Semua Filter
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </SortableContext>
+                </TableBody>
+                {showFooter && (
+                  <TableFooter>
+                    {table.getFooterGroups().map((footerGroup) => (
+                      <TableRow key={footerGroup.id}>
+                        {enableRowDrag && <TableCell />}
+                        {footerGroup.headers.map((header) => (
+                          <TableCell key={header.id} className="font-bold">
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.footer, header.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Page Navigation */}
-              <div className="flex items-center gap-1">
-                <p className="text-sm font-medium">
-                  Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-                </p>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.setPageIndex(0)}
-                    disabled={!table.getCanPreviousPage()}
-                    className="h-8 w-8 p-0"
-                    aria-label="Go to first page">
-                    «
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                    className="h-8 w-8 p-0"
-                    aria-label="Go to previous page">
-                    ‹
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                    className="h-8 w-8 p-0"
-                    aria-label="Go to next page">
-                    ›
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                    disabled={!table.getCanNextPage()}
-                    className="h-8 w-8 p-0"
-                    aria-label="Go to last page">
-                    »
-                  </Button>
-                </div>
-              </div>
+                  </TableFooter>
+                )}
+              </Table>
             </div>
           )}
+
+          {/* Footer with Table Info and Pagination */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Table Info */}
+            {showTableInfo && (
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div>
+                  Showing {pageStartLabel} to {pageEndLabel} of {totalRowCount} result(s)
+                </div>
+                {hasSelectedRows && (
+                  <div>
+                    {selectedRows.length} of {effectiveRowModel.rows.length} row(s) selected
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {pagination && (
+              <div className="flex items-center gap-2">
+                {/* Page Size Selector */}
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">Rows per page</p>
+                  <Select
+                    value={`${table.getState().pagination.pageSize}`}
+                    onValueChange={(value) => {
+                      const newSize = Number(value);
+                      table.setPageSize(newSize);
+                    }}>
+                    <SelectTrigger className="h-8 w-17.5">
+                      <SelectValue placeholder={table.getState().pagination.pageSize} />
+                    </SelectTrigger>
+                    <SelectContent side="top">
+                      {pageSizeOptions.map((pageSize) => (
+                        <SelectItem key={pageSize} value={`${pageSize}`}>
+                          {pageSize}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Page Navigation */}
+                <div className="flex items-center gap-1">
+                  <p className="text-sm font-medium">
+                    Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => table.setPageIndex(0)}
+                      disabled={!table.getCanPreviousPage()}
+                      className="h-8 w-8 p-0"
+                      aria-label="Go to first page">
+                      <ChevronFirst className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => table.previousPage()}
+                      disabled={!table.getCanPreviousPage()}
+                      className="h-8 w-8 p-0"
+                      aria-label="Go to previous page">
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => table.nextPage()}
+                      disabled={!table.getCanNextPage()}
+                      className="h-8 w-8 p-0"
+                      aria-label="Go to next page">
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                      disabled={!table.getCanNextPage()}
+                      className="h-8 w-8 p-0"
+                      aria-label="Go to last page">
+                      <ChevronLast className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </DndContext>
+      </DndContext>
+
+      {/* Floating Bulk Actions Bar */}
+      <AnimatePresence>
+        {hasSelectedRows && bulkActions && (
+          <motion.div
+            initial={{ y: 100, x: "-50%", opacity: 0 }}
+            animate={{ y: 0, x: "-50%", opacity: 1 }}
+            exit={{ y: 100, x: "-50%", opacity: 0 }}
+            className="fixed bottom-8 left-1/2 z-[100] flex items-center gap-4 px-6 py-3 bg-foreground/90 dark:bg-muted/90 backdrop-blur-xl border border-border/50 rounded-full shadow-2xl shadow-black/20 text-background dark:text-foreground min-w-[320px] max-w-[90vw]">
+            <div className="flex items-center gap-3 pr-4 border-r border-background/20 dark:border-foreground/20">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                {selectedRows.length}
+              </div>
+              <span className="text-sm font-medium whitespace-nowrap">Baris dipilih</span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-1 overflow-x-auto hide-scrollbar no-scrollbar py-1">
+              {bulkActions.map((action, index) => {
+                const Icon = action.icon;
+                return (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await action.onClick(selectedRows);
+                        table.resetRowSelection();
+                      } catch (error) {
+                        console.error("Bulk Action Error:", error);
+                      }
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 h-9 px-4 rounded-full transition-all text-background dark:text-foreground hover:bg-background/10 dark:hover:bg-foreground/10",
+                      action.variant === "destructive" && "text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    )}>
+                    {Icon && <Icon className="h-4 w-4" />}
+                    <span className="whitespace-nowrap">{action.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => table.resetRowSelection()}
+                  className="h-8 w-8 rounded-full hover:bg-background/20 dark:hover:bg-foreground/20 text-background dark:text-foreground">
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Batalkan Pilihan</TooltipContent>
+            </Tooltip>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </TooltipProvider>
   );
 }

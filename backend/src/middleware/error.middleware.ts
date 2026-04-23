@@ -82,20 +82,28 @@ export const errorHandler = (
 
     // ─── Log Error ──────────────────────────────────────────────────
     logger.error({
-        message: err.message,
+        message: err.message || "Unknown error",
         stack: err.stack,
         method: req.method,
         url: req.originalUrl,
         ip: req.ip,
         userAgent: req.get('User-Agent'),
         statusCode,
+        errorRaw: err // Log the whole thing for debugging
     }, 'Unhandled Error');
 
     if (message.includes("Email sudah terdaftar dengan akun lain.") && statusCode === HttpStatus.CONFLICT) {
         const clientUrl = config.CLIENT_URL[0]?.trim() || 'http://localhost:3010';
 
         return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent("Email sudah terdaftar dengan akun lain.")}`);
+    }
 
+    if (config.NODE_ENV === 'development') {
+        console.log("Error Detail:", {
+            message: err.message,
+            statusCode,
+            errors
+        });
     }
 
     // ─── Send Error Response ────────────────────────────────────────

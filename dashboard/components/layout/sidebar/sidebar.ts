@@ -13,6 +13,7 @@ import {
   UsersIcon,
   UserCheck,
   Gift,
+  TrendingUp,
 } from "lucide-react";
 
 interface MenuItem {
@@ -40,16 +41,16 @@ export const MENU_GROUPS: MenuGroup[] = [
     label: "Utama",
     items: [
       {
-        id: "owner-dashboard",
-        name: "Overview",
+        id: "overview",
+        name: "Ringkasan",
         href: "/owner/dashboard",
         icon: LayoutDashboard,
       },
       {
-        id: "overview",
-        name: "Dashboard Bisnis",
+        id: "business-analytics",
+        name: "Analitik Bisnis",
         href: "/owner/dashboard/business",
-        icon: LayoutDashboard,
+        icon: TrendingUp,
       },
       {
         id: "subscription",

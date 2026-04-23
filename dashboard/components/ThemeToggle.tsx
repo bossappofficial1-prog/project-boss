@@ -1,8 +1,10 @@
 'use client';
 
 import { useTheme } from '@/contexts/ThemeContext';
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { Sun, Moon, Monitor, ChevronDown, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export default function ThemeToggle() {
   const { theme, setTheme, actualTheme } = useTheme();
@@ -16,101 +18,133 @@ export default function ThemeToggle() {
   const themes = [
     {
       value: 'light',
-      label: 'Light',
-      icon: (
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-        </svg>
-      )
+      label: 'Terang',
+      icon: Sun,
+      color: 'text-orange-500',
     },
     {
       value: 'dark',
-      label: 'Dark',
-      icon: (
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-        </svg>
-      )
+      label: 'Gelap',
+      icon: Moon,
+      color: 'text-indigo-400',
     },
     {
       value: 'system',
-      label: 'System',
-      icon: (
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
-        </svg>
-      )
+      label: 'Sistem',
+      icon: Monitor,
+      color: 'text-slate-400',
     }
-  ];
+  ] as const;
 
-  const currentTheme = themes.find(t => t.value === theme) || themes[2]; // Default to system
+  const currentTheme = themes.find(t => t.value === theme) || themes[2];
+  const DisplayIcon = currentTheme.icon;
 
-  // Prevent hydration mismatch by not rendering dynamic content until mounted
+  // Prevent hydration mismatch
   if (!mounted) {
     return (
-      <div className="relative">
-        <button
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          disabled
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
-          </svg>
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-        </button>
-      </div>
+      <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />
     );
   }
 
   return (
     <div className="relative">
-      <button
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        title={`Current theme: ${currentTheme.label}`}
+        className={cn(
+          "group flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300",
+          "bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-gray-200 dark:border-gray-700",
+          "hover:border-red-500/50 dark:hover:border-red-500/50 hover:shadow-md hover:shadow-red-500/5",
+          isOpen && "ring-2 ring-red-500/20 border-red-500"
+        )}
+        title={`Tema saat ini: ${currentTheme.label}`}
       >
-        {currentTheme.icon}
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-        </svg>
-      </button>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={theme}
+            initial={{ rotate: -90, opacity: 0 }}
+            animate={{ rotate: 0, opacity: 1 }}
+            exit={{ rotate: 90, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <DisplayIcon size={20} className={cn("transition-colors", currentTheme.color)} />
+          </motion.div>
+        </AnimatePresence>
+      </motion.button>
 
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          />
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop for closing */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 cursor-default"
+              onClick={() => setIsOpen(false)}
+            />
 
-          {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-2 w-40 bg-card border-2 rounded-lg shadow-lg z-50">
-            {themes.map((themeOption) => (
-              <button
-                key={themeOption.value}
-                onClick={() => {
-                  setTheme(themeOption.value as any);
-                  setIsOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${theme === themeOption.value
-                  ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                  : 'text-gray-700 dark:text-gray-300'
-                  }`}
-              >
-                {themeOption.icon}
-                <span className="text-sm font-medium">{themeOption.label}</span>
-                {theme === themeOption.value && (
-                  <svg className="w-4 h-4 ml-auto text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+            {/* Dropdown Menu */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 10, x: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10, x: 20 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              className={cn(
+                "absolute right-0 top-full mt-3 w-48 z-50 overflow-hidden",
+                "bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl",
+                "border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/20",
+                "p-1.5"
+              )}
+            >
+              <div className="px-3 py-2 text-[10px] font-bold tracking-wider text-gray-400 dark:text-gray-500 uppercase">
+                Pilih Tema
+              </div>
+              
+              {themes.map((themeOption) => {
+                const Icon = themeOption.icon;
+                const isActive = theme === themeOption.value;
+
+                return (
+                  <button
+                    key={themeOption.value}
+                    onClick={() => {
+                      setTheme(themeOption.value as any);
+                      setIsOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 group/item",
+                      isActive 
+                        ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400" 
+                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+                    )}
+                  >
+                    <div className={cn(
+                      "flex items-center justify-center w-8 h-8 rounded-lg transition-colors",
+                      isActive ? "bg-white dark:bg-gray-900 shadow-sm" : "bg-gray-50 dark:bg-gray-800 group-hover/item:bg-white dark:group-hover/item:bg-gray-700"
+                    )}>
+                      <Icon size={16} className={cn(isActive ? themeOption.color : "text-gray-400 group-hover/item:text-gray-600 dark:group-hover/item:text-gray-300")} />
+                    </div>
+                    
+                    <span className="text-sm font-medium flex-1">{themeOption.label}</span>
+                    
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-check"
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                      >
+                        <Check size={16} className="text-red-500" />
+                      </motion.div>
+                    )}
+                  </button>
+                );
+              })}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -13,6 +13,11 @@ import { type Expense } from '@/hooks/api/use-expenses';
 import { toast } from 'sonner';
 import { uploadApi } from '@/lib/api';
 import { ReceiptPreviewModal } from '@/components/modals/ReceiptPreviewModal';
+import { SectionHeader } from '@/components/ui/section-header';
+import { Receipt, Wallet, Plus, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export default function ExpensesPage() {
 	const { selectedOutletId: outletId } = useOutletContext();
@@ -36,7 +41,12 @@ export default function ExpensesPage() {
 	const handleDelete = async (exp: Expense) => {
 		const ok = window.confirm(`Hapus pengeluaran: ${exp.description}?`);
 		if (!ok) return;
-		await remove(exp.id);
+		try {
+			await remove(exp.id);
+			toast.success("Pengeluaran berhasil dihapus");
+		} catch (error: any) {
+			toast.error(error?.message || "Gagal menghapus pengeluaran");
+		}
 	};
 
 	const handleFormSubmit = useCallback(
@@ -63,48 +73,91 @@ export default function ExpensesPage() {
 	);
 
 	return (
-		<>
-			<div className="space-y-6">
-				<ExpensesHeader saldo={summary.totalPengeluaran} onRefresh={refetch} />
+		<div className="space-y-6 animate-in fade-in duration-500">
+			{/* ══════════ Page Header ══════════ */}
+			<SectionHeader
+				title="Pengeluaran Outlet"
+				description="Kelola biaya operasional harian, gaji staf, dan modal inventaris Anda."
+				actions={
+					<Button onClick={handleAdd} className="font-bold text-xs uppercase tracking-widest h-10 shadow-none">
+						<Plus className="w-4 h-4 mr-2" />
+						Tambah Pengeluaran
+					</Button>
+				}
+			/>
 
-				<div className="bg-white/60 dark:bg-gray-800/60 rounded-xl border border-gray-200/70 dark:border-gray-700/70 p-4 sm:p-6">
-					<ExpensesControls startISO={startISO} endISO={endISO} onRangeChange={setRange} onAdd={handleAdd} />
+			{/* ══════════ Metrics & Controls ══════════ */}
+			{/* ══════════ Metrics & Controls ══════════ */}
+			<Card className="rounded-md border-border/80 bg-background shadow-sm p-1 pl-4 flex flex-col lg:flex-row lg:items-center justify-between gap-6 transition-all">
+				<div className="flex flex-col sm:flex-row sm:items-center gap-6 py-2">
+					{/* Metrik Terintegrasi */}
+					<div className="flex items-center gap-3">
+						<div className="w-1 h-8 rounded-full bg-rose-500/80" />
+						<div>
+							<p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-60 mb-0.5">Total Pengeluaran</p>
+							<p className="text-lg font-bold text-rose-600 dark:text-rose-400 tabular-nums leading-none">
+								{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(summary.totalPengeluaran)}
+							</p>
+						</div>
+					</div>
+
+					<div className="hidden sm:block h-10 w-px bg-border/40" />
+
+					{/* Kontrol Tanggal */}
+					<div className="flex-1">
+						<ExpensesControls
+							startISO={startISO}
+							endISO={endISO}
+							onRangeChange={setRange}
+							hideAddButton={true}
+						/>
+					</div>
 				</div>
 
-				{loading ? (
-					<ExpensesSkeleton />
-				) : error ? (
-					<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">{error}</div>
-				) : expenses.length === 0 ? (
-					<ExpensesEmptyState />
-				) : (
-					<>
-						<ExpensesDesktopTable
-							items={expenses as any}
-							onEdit={handleEdit as any}
-							onDelete={handleDelete as any}
-							onPreviewImage={(url) => {
-								setPreviewUrl(url);
-								setPreviewOpen(true);
-							}}
-						/>
-					</>
-				)}
+				<div className="flex items-center gap-2 pr-2">
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={refetch}
+						className="h-9 w-9 rounded-md hover:bg-background/50 transition-all text-muted-foreground"
+					>
+						<Loader2 className={cn("w-4 h-4", loading && "animate-spin")} />
+					</Button>
+				</div>
+			</Card>
 
-				<ExpenseFormDialog
-					open={modalOpen}
-					onOpenChange={setModalOpen}
-					initial={editing as any}
-					onSubmit={handleFormSubmit}
-				/>
+			{error && (
+				<div className="bg-rose-500/10 border border-rose-500/20 rounded-md p-4 flex items-center gap-3 text-rose-600">
+					<Receipt className="w-4 h-4" />
+					<p className="text-xs font-bold uppercase tracking-widest">{error}</p>
+					<Button onClick={refetch} variant="ghost" size="sm" className="ml-auto h-7 text-[10px] font-bold uppercase tracking-widest hover:bg-rose-500/20 text-rose-600">
+						Coba Lagi
+					</Button>
+				</div>
+			)}
 
-				<ReceiptPreviewModal
-					open={previewOpen}
-					onOpenChange={setPreviewOpen}
-					imageUrl={previewUrl}
-				/>
-			</div>
-		</>
+			<ExpensesDesktopTable
+				items={expenses as any}
+				isLoading={loading}
+				onEdit={handleEdit as any}
+				onDelete={handleDelete as any}
+				onPreviewImage={(url) => {
+					setPreviewUrl(url);
+					setPreviewOpen(true);
+				}}
+			/>
+			<ExpenseFormDialog
+				open={modalOpen}
+				onOpenChange={setModalOpen}
+				initial={editing as any}
+				onSubmit={handleFormSubmit}
+			/>
+
+			<ReceiptPreviewModal
+				open={previewOpen}
+				onOpenChange={setPreviewOpen}
+				imageUrl={previewUrl}
+			/>
+		</div>
 	);
 }
-

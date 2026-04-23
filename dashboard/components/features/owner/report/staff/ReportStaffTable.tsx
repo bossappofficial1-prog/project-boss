@@ -1,7 +1,7 @@
 "use client";
 
 import { DataTable } from "@/components/ui/data-table";
-import { formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { StaffReportItem } from "@/hooks/useReport";
 import { Row } from "@tanstack/react-table";
@@ -31,7 +31,8 @@ export function ReportStaffTable({ data, totals }: ReportStaffTableProps) {
         {
           accessorKey: "name",
           header: "Nama Staff",
-          footer: "Total",
+          cell: ({ row }) => <span className="font-bold text-foreground/90 text-xs">{row.original.name}</span>,
+          footer: () => <span className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground opacity-60">Total Staff</span>,
         },
         {
           accessorKey: "role",
@@ -40,12 +41,13 @@ export function ReportStaffTable({ data, totals }: ReportStaffTableProps) {
             const item = row.original;
             return (
               <Badge
-                variant={item.type === "CASHIER" ? "default" : "secondary"}
-                className={
+                variant="outline"
+                className={cn(
+                  "font-bold text-[10px] uppercase tracking-wider px-2 py-0 shadow-none border-opacity-20",
                   item.type === "CASHIER"
-                    ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none"
-                    : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none"
-                }>
+                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500"
+                    : "bg-indigo-500/10 text-indigo-600 border-indigo-500"
+                )}>
                 {item.role}
               </Badge>
             );
@@ -54,25 +56,30 @@ export function ReportStaffTable({ data, totals }: ReportStaffTableProps) {
         {
           accessorKey: "transactionCount",
           header: "Trx",
-          footer: () => totals.transactions,
+          cell: ({ row }) => <span className="font-bold text-foreground/80 tabular-nums text-xs">{row.original.transactionCount}</span>,
+          footer: () => <span className="font-bold tabular-nums text-xs">{totals.transactions}</span>,
         },
         {
           accessorKey: "revenue",
           header: "Penjualan",
           cell: ({ row }: { row: Row<StaffReportItem> }) =>
-            row.original.type === "CASHIER" ? formatCurrency(row.original.revenue) : "-",
-          footer: () => formatCurrency(totals.revenue),
+            row.original.type === "CASHIER" ? (
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-xs">{formatCurrency(row.original.revenue)}</span>
+            ) : <span className="opacity-20">-</span>,
+          footer: () => <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-xs">{formatCurrency(totals.revenue)}</span>,
         },
         {
           accessorKey: "commission",
           header: "Komisi",
           cell: ({ row }: { row: Row<StaffReportItem> }) => (
-            <span className="text-blue-600 dark:text-blue-400/80">
-              {row.original.type === "SERVICE" ? formatCurrency(row.original.commission) : "-"}
-            </span>
+            row.original.type === "SERVICE" ? (
+              <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums text-xs">
+                {formatCurrency(row.original.commission)}
+              </span>
+            ) : <span className="opacity-20">-</span>
           ),
           footer: () => (
-            <span className="text-blue-600 dark:text-blue-400/80">
+            <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums text-xs">
               {formatCurrency(totals.commission)}
             </span>
           ),

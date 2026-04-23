@@ -279,7 +279,7 @@ model SubscriptionInvoice {
 model Outlet {
   id          String   @id @default(uuid())
   name        String
-  slug        String?  @unique
+  slug        String   @unique
   description String?
   address     String?
   phone       String?

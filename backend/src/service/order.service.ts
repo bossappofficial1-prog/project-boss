@@ -339,38 +339,43 @@ export async function getServiceQueueByOutletService(
 
 export async function getOrderReceiptService(id: string) {
   const orderData = await OrderRepository.receiptData(id);
-  const { date, time } = formatDateTime(orderData?.createdAt.toISOString()!);
-  const items = orderData?.items.map((item) => ({
+  
+  if (!orderData) {
+    return null;
+  }
+
+  const { date, time } = formatDateTime(orderData.createdAt.toISOString());
+  const items = orderData.items.map((item) => ({
     name: item.product.name,
     qty: item.quantity,
     unit: item.product.goods?.unit ?? "",
     price: item.priceAtTimeOfOrder,
     subtotal: item.quantity * item.priceAtTimeOfOrder,
   }));
-  const totalQty = orderData?.items.reduce((prev, item) => {
+  const totalQty = orderData.items.reduce((prev, item) => {
     return prev + item.quantity;
   }, 0);
 
   return {
-    storeName: orderData?.outlet.name,
-    address: orderData?.outlet.address,
-    phone: orderData?.outlet.phone,
-    transactionId: orderData?.transaction?.id,
+    storeName: orderData.outlet.name,
+    address: orderData.outlet.address,
+    phone: orderData.outlet.phone,
+    transactionId: orderData.transaction?.id,
     date,
     time,
-    orderNo: orderData?.id,
-    cashier: orderData?.handledByStaff?.name ?? "-",
-    customerName: orderData?.guestCustomer.name ?? "-",
+    orderNo: orderData.id,
+    cashier: orderData.handledByStaff?.name ?? "-",
+    customerName: orderData.guestCustomer.name ?? "-",
     shippingAddress: null,
     items,
     totalQty,
-    subTotal: (orderData?.totalAmount ?? 0) + (orderData?.discountAmount ?? 0),
-    discountAmount: orderData?.discountAmount ?? 0,
-    total: orderData?.totalAmount,
-    printHeight: orderData?.outlet.receiptSettings?.printHeight,
-    printWidth: orderData?.outlet.receiptSettings?.printWidth,
-    showLogo: orderData?.outlet.receiptSettings?.showLogo,
-    photoString: orderData?.outlet.receiptSettings?.photoString,
+    subTotal: (orderData.totalAmount ?? 0) + (orderData.discountAmount ?? 0),
+    discountAmount: orderData.discountAmount ?? 0,
+    total: orderData.totalAmount,
+    printHeight: orderData.outlet.receiptSettings?.printHeight ?? "auto",
+    printWidth: orderData.outlet.receiptSettings?.printWidth ?? 58,
+    showLogo: orderData.outlet.receiptSettings?.showLogo ?? true,
+    photoString: orderData.outlet.receiptSettings?.photoString,
   };
 }
 

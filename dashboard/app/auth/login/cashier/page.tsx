@@ -1,245 +1,169 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import ThemeToggle from "@/components/ThemeToggle";
-import { PasswordInput } from "@/components/ui/password-input";
-import { Input } from "@/components/ui/input";
 import { authApi } from "@/lib/api";
 import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { Loader2, Lock, Mail, Store } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ReusableForm } from "@/components/ui/reuseable-form";
+import { z } from "zod";
+
+const loginSchema = z.object({
+	email: z.string().email("Email tidak valid").min(1, "Email wajib diisi"),
+	password: z.string().min(1, "Password wajib diisi"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 function CashierLoginForm() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const router = useRouter();
+	const [isLoading, setIsLoading] = useState(false);
+	const router = useRouter();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    if (error) {
-      setError("");
-    }
-  };
+	const handleSubmit = async (values: LoginFormValues) => {
+		setIsLoading(true);
+		try {
+			const response = await authApi.cashierLogin(values.email, values.password);
+			toast.success(response.message || "Login berhasil");
+			await new Promise((resolve) => setTimeout(resolve, 300));
+			router.push("/cashier/pos");
+		} catch (err: any) {
+			const msg = err.response?.data?.message || err.message || "Gagal login, periksa email dan password Anda";
+			toast.error(msg);
+			throw err; // Propagate to ReusableForm for root error handling
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
+	return (
+		<div className="min-h-screen bg-muted/30 flex flex-col md:flex-row relative overflow-hidden">
+			{/* Theme Toggle */}
+			<div className="absolute top-6 right-6 z-50">
+				<ThemeToggle />
+			</div>
 
-    try {
-      const response = await authApi.cashierLogin(formData.email, formData.password);
+			{/* Left Side: Branding & Info (Hidden on small screens) */}
+			<div className="hidden md:flex md:w-1/2 lg:w-3/5 bg-background border-r border-border/40 relative items-center justify-center p-12 overflow-hidden">
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--primary-rgb),0.03),transparent_100%)]" />
 
-      toast.success(response.message || "Login berhasil");
+				{/* Decorative circles */}
+				<div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+				<div className="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-rose-500/5 rounded-full blur-3xl" />
 
-      // Small delay to ensure cookies are set
-      await new Promise((resolve) => setTimeout(resolve, 200));
+				<div className="relative z-10 max-w-lg text-center md:text-left space-y-8">
+					<div className="inline-flex items-center gap-3 bg-primary/5 border border-primary/10 px-4 py-2 rounded-full mb-4">
+						<Store className="w-4 h-4 text-primary" />
+						<span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">BOSS POS SYSTEM v2.0</span>
+					</div>
 
-      // console.log("response login", response);
+					<div className="space-y-4">
+						<h1 className="text-5xl lg:text-7xl font-bold tracking-tighter text-foreground leading-[0.9]">
+							Kasir Pintar,<br />
+							<span className="text-primary">Bisnis Lancar.</span>
+						</h1>
+						<p className="text-lg text-muted-foreground/80 font-medium max-w-md">
+							Sistem Point of Sales yang didesain untuk kecepatan, ketepatan, dan kemudahan operasional outlet Anda.
+						</p>
+					</div>
 
-      // Redirect ke POS kasir
-      router.push("/cashier/pos");
-    } catch (err: any) {
-      console.error("Login error:", err);
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Gagal login, periksa email dan password Anda",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+					<div className="grid grid-cols-2 gap-4 pt-8">
+						<div className="p-4 rounded-2xl bg-muted/30 border border-border/40 backdrop-blur-sm transition-all hover:bg-muted/50">
+							<p className="text-2xl font-bold text-foreground">Fast</p>
+							<p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Checkout Process</p>
+						</div>
+						<div className="p-4 rounded-2xl bg-muted/30 border border-border/40 backdrop-blur-sm transition-all hover:bg-muted/50">
+							<p className="text-2xl font-bold text-foreground">Secure</p>
+							<p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Cloud Transactions</p>
+						</div>
+					</div>
+				</div>
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative">
-      {/* Theme Toggle */}
-      <div className="absolute top-4 right-4 z-10">
-        <ThemeToggle />
-      </div>
+				<div className="absolute bottom-8 left-12">
+					<Image
+						src="/Logo Boss.png"
+						alt="BOSS Logo"
+						width={120}
+						height={120}
+					/>
+				</div>
+			</div>
 
-      <div className="max-w-md w-full space-y-8">
-        {/* Logo and Header */}
-        <div className="text-center">
-          <div className="mx-auto mb-6 flex justify-center">
-            <Image
-              src="/Logo Boss.png"
-              alt="BOSS Logo"
-              width={200}
-              height={200}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 font-poppins">
-            Login Kasir
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 font-poppins">
-            Masuk ke sistem POS BOSS
-          </p>
-        </div>
+			{/* Right Side: Login Form */}
+			<div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
+				{/* Mobile Logo */}
+				<div className="absolute top-8 left-1/2 -translate-x-1/2 md:hidden">
+					<Image
+						src="/Logo Boss.png"
+						alt="BOSS Logo"
+						width={120}
+						height={120}
+						className="object-contain"
+					/>
+				</div>
 
-        {/* Login Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6 border border-blue-100 dark:border-gray-700">
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm font-poppins">
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {error}
-                </div>
-              </div>
-            )}
+				<Card className="w-full max-w-[440px] border-border/80 shadow-2xl rounded-3xl overflow-hidden bg-background/80 backdrop-blur-xl">
+					<div className="p-8 sm:p-10">
+						<div className="space-y-2 mb-10 text-center sm:text-left">
+							<h2 className="text-3xl font-bold tracking-tight text-foreground">Selamat Datang</h2>
+							<p className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-60">Silakan login untuk memulai shift.</p>
+						</div>
 
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
-                Email
-              </label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="kasir@outlet.com"
-              />
-            </div>
+						<ReusableForm<LoginFormValues>
+							schema={loginSchema}
+							onSubmit={handleSubmit}
+							isLoading={isLoading}
+							submitText="Masuk Shift"
+							loadingText="MEMPROSES..."
+							fields={[
+								{
+									name: "email",
+									label: "Email Pegawai",
+									type: "email",
+									placeholder: "nama@outlet.com",
+									icon: Mail,
+								},
+								{
+									name: "password",
+									label: "Password",
+									type: "password",
+									placeholder: "••••••••",
+									icon: Lock,
+								},
+							]}
+						>
+							{/* ReusableForm handles the children if we don't provide them, 
+							    but we can also use children for custom layout. 
+							    However, passing fields is cleaner for simple forms. */}
+						</ReusableForm>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 font-poppins">
-                Password
-              </label>
-              <PasswordInput
-                id="password"
-                name="password"
-                autoComplete="current-password"
-                required
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="Masukkan password"
-              />
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl font-poppins">
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Memproses...
-                  </div>
-                ) : (
-                  <>
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-                      />
-                    </svg>
-                    Masuk
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="text-center">
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-poppins">
-                Tidak punya akun? Hubungi owner outlet untuk membuat akun kasir.
-              </p>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+						<div className="mt-10 pt-10 border-t border-border/40 text-center">
+							<p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-40 leading-relaxed">
+								Butuh bantuan? Hubungi Manager atau Owner outlet Anda.
+							</p>
+						</div>
+					</div>
+				</Card>
+			</div>
+		</div>
+	);
 }
 
 function CashierLoginPageSkeleton() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative">
-      <div className="absolute top-4 right-4 z-10">
-        <ThemeToggle />
-      </div>
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="mx-auto mb-6 flex justify-center">
-            <Image
-              src="/Logo Boss.png"
-              alt="BOSS Logo"
-              width={200}
-              height={200}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 font-poppins">
-            Login Kasir
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 font-poppins">
-            Masuk ke sistem POS BOSS
-          </p>
-        </div>
-        <div className="mt-8 space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6 border border-blue-100 dark:border-gray-700 animate-pulse">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+	return (
+		<div className="min-h-screen bg-muted/30 flex items-center justify-center p-6">
+			<Card className="w-full max-w-[440px] h-[580px] rounded-3xl animate-pulse bg-background/50 border-border/40" />
+		</div>
+	);
 }
 
 export default function CashierLoginPage() {
-  return (
-    <Suspense fallback={<CashierLoginPageSkeleton />}>
-      <CashierLoginForm />
-    </Suspense>
-  );
+	return (
+		<Suspense fallback={<CashierLoginPageSkeleton />}>
+			<CashierLoginForm />
+		</Suspense>
+	);
 }

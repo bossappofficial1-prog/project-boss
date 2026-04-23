@@ -25,43 +25,55 @@ import { generateReceiptHtml } from "../service/helpers/receipt-template";
 
 export const getOrderReceiptController = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const receiptData = await getOrderReceiptService(id as string);
+  let browser;
+  
+  try {
+    const receiptData = await getOrderReceiptService(id);
 
-  if (!receiptData) {
-    throw new Error("Order not found");
+    if (!receiptData) {
+      throw new AppError("Pesanan tidak ditemukan atau data struk tidak lengkap", HttpStatus.NOT_FOUND);
+    }
+
+    browser = await puppeteer.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+    });
+
+    const page = await browser.newPage();
+    const html = await generateReceiptHtml(receiptData);
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    const bodyHandle = await page.$('body');
+    const boundingBox = await bodyHandle?.boundingBox();
+    const contentHeight = Math.ceil(boundingBox?.height || 120);
+    
+    const printWidth = receiptData.printWidth || 58;
+    const printHeight = receiptData.printHeight === 'auto' ? contentHeight + "px" : (receiptData.printHeight || 120) + "mm";
+
+    const pdfBuffer = await page.pdf({
+      width: `${printWidth}mm`,
+      height: printHeight,
+      printBackground: true,
+      pageRanges: "1",
+      margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    });
+
+    await browser.close();
+    browser = null;
+
+    res.contentType("application/pdf");
+    res.send(pdfBuffer);
+  } catch (error: any) {
+    if (browser) await (browser as any).close();
+    console.error(`[RECEIPT ERROR] ${id}:`, error);
+    throw error;
   }
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath:
-      process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-    ],
-  });
-
-  const page = await browser.newPage();
-  await page.setContent(await generateReceiptHtml(receiptData), { waitUntil: "networkidle0" });
-
-  const bodyHandle = await page.$('body');
-  const boundingBox = await bodyHandle?.boundingBox();
-  const contentHeight = Math.ceil(boundingBox?.height || 120);
-  console.log(contentHeight)
-
-  const pdfBuffer = await page.pdf({
-    width: `${receiptData.printWidth}mm`,
-    height: `${receiptData.printHeight == 'auto' ? contentHeight + "px" : receiptData.printHeight + "mm"}`,
-    printBackground: true,
-    pageRanges: "1",
-    margin: { top: 0, right: 0, bottom: 0, left: 0 },
-  });
-
-  await browser.close();
-
-  res.contentType("application/pdf");
-  res.send(pdfBuffer);
 });
 
 export const getOrderReceiptPrintController = asyncHandler(async (req: Request, res: Response) => {

@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { RefreshCw, Plus } from "lucide-react";
+import { RefreshCw, Plus, LayoutGrid, Monitor } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueueStatsBar } from "./QueueStatsBar";
 import { KanbanBoard } from "./KanbanBoard";
+import { ServiceFocusView } from "./ServiceFocusView";
 import { QueueDetailSheet } from "./QueueDetailSheet";
 import { ProofPreviewDialog } from "./ProofPreviewDialog";
 import { RescheduleDialog } from "./RescheduleDialog";
@@ -17,16 +18,15 @@ import { RescheduleDialog } from "./RescheduleDialog";
 import {
   useQueueV2Board,
   useQueueV2Transition,
-  useInvalidateQueueV2,
 } from "@/hooks/api/use-queue-v2";
 import type {
   QueueV2Entry,
   QueueOrderStatus,
-  QueueV2Board as BoardType,
 } from "@/lib/apis/queue-v2";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useDebounce } from "@/hooks/useDebounce";
+import { cn } from "@/lib/utils";
 
 interface QueueV2ContentProps {
   outletId: string;
@@ -56,12 +56,13 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function QueueV2Content({ outletId }: QueueV2ContentProps) {
   const router = useRouter();
+  const [viewMode, setViewMode] = useState<"kanban" | "focus">("focus");
   const [query, setQuery] = useState("");
   const [date, setDate] = useState<string | undefined>(undefined);
   const transition = useQueueV2Transition();
 
   const queryDebounce = useDebounce(query, 1000);
-  const { data, isLoading, refetch } = useQueueV2Board(outletId, queryDebounce, date);
+  const { data, isLoading, isFetching, refetch } = useQueueV2Board(outletId, queryDebounce, date);
 
   const [detailEntry, setDetailEntry] = useState<QueueV2Entry | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -71,6 +72,7 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
   const [proofOpen, setProofOpen] = useState(false);
   const [rescheduleEntry, setRescheduleEntry] = useState<QueueV2Entry | null>(null);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
+
   // Handle primary action (advance status)
   const handlePrimaryAction = useCallback((entry: QueueV2Entry, nextStatus: QueueOrderStatus) => {
     const currentLabel = STATUS_LABELS[entry.orderStatus] ?? entry.orderStatus;
@@ -166,7 +168,7 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
     <div className="mx-auto max-w-[1600px] p-4 space-y-4">
       {/* Header */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-foreground">
               Antrian Layanan
@@ -175,15 +177,42 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
               Kelola antrian layanan jasa secara real-time
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4 mr-2" />
+          <div className="flex flex-wrap items-center gap-2">
+            {/* View Toggle */}
+            <div className="flex items-center bg-muted/50 p-1 rounded-lg border border-border/40 mr-2">
+              <Button
+                variant={viewMode === "focus" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("focus")}
+                className={cn(
+                  "h-8 px-3 text-[10px] font-bold uppercase tracking-widest transition-all",
+                  viewMode === "focus" && "shadow-sm bg-red-500 text-red-50 hover:bg-red-600 hover:text-red-50"
+                )}
+              >
+                <Monitor className="w-3.5 h-3.5 mr-2" />
+                Focus
+              </Button>
+              <Button
+                variant={viewMode === "kanban" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("kanban")}
+                className={cn(
+                  "h-8 px-3 text-[10px] font-bold uppercase tracking-widest transition-all",
+                  viewMode === "kanban" && "shadow-sm bg-red-500 text-red-50 hover:bg-red-600 hover:text-red-50"
+                )}
+              >
+                <LayoutGrid className="w-3.5 h-3.5 mr-2" />
+                Kanban
+              </Button>
+            </div>
+
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="h-9 font-bold text-[10px] uppercase tracking-widest">
+              <RefreshCw className={cn("w-3.5 h-3.5 mr-2", isFetching && "animate-spin")} />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button size="sm" onClick={() => router.push("/cashier/pos")}>
+            <Button size="sm" onClick={() => router.push("/cashier/pos")} className="h-9 font-bold text-[10px] uppercase tracking-widest px-4">
               <Plus className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Tambah Antrian</span>
-              <span className="sm:hidden">Tambah</span>
+              Tambah Antrian
             </Button>
           </div>
         </div>
@@ -192,13 +221,13 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cari (Nama / No Telpon / Order ID)..."
-            className="w-full sm:max-w-sm"
+            className="w-full sm:max-w-sm h-10 text-xs font-bold"
           />
           <DatePicker
             value={date}
             onValueChange={setDate}
             placeholder="Semua Tanggal"
-            className="w-full sm:w-[240px]"
+            className="w-full sm:w-[240px] h-10"
           />
         </div>
       </div>
@@ -206,15 +235,26 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
       {/* Stats */}
       <QueueStatsBar stats={stats} />
 
-      {/* Kanban Board */}
-      <KanbanBoard
-        board={board}
-        onPrimaryAction={handlePrimaryAction}
-        onCancel={handleCancel}
-        onDetail={handleDetail}
-        onViewProof={handleViewProof}
-        pendingId={transition.isPending ? (confirmState?.entry.id ?? null) : null}
-      />
+      {/* Conditional View Rendering */}
+      {viewMode === "kanban" ? (
+        <KanbanBoard
+          board={board}
+          onPrimaryAction={handlePrimaryAction}
+          onCancel={handleCancel}
+          onDetail={handleDetail}
+          onViewProof={handleViewProof}
+          pendingId={transition.isPending ? (confirmState?.entry.id ?? null) : null}
+        />
+      ) : (
+        <ServiceFocusView
+          board={board}
+          onPrimaryAction={handlePrimaryAction}
+          onCancel={handleCancel}
+          onDetail={handleDetail}
+          onViewProof={handleViewProof}
+          pendingId={transition.isPending ? (confirmState?.entry.id ?? null) : null}
+        />
+      )}
 
       {/* Detail Sheet */}
       <QueueDetailSheet

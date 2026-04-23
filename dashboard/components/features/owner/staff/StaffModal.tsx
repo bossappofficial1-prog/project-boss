@@ -106,44 +106,44 @@ export function StaffDialog({
     const fields: FormFieldConfig<StaffFormValues>[] = [
         {
             name: "name",
-            label: "Nama",
-            placeholder: "Nama lengkap staff",
+            label: "Nama Lengkap",
+            placeholder: "Contoh: Budi Santoso",
             colSpan: 'full'
         },
         {
             name: 'phone',
             label: 'Nomor Telepon',
             type: `tel`,
-            placeholder: 'No Hp staff',
+            placeholder: '08xx-xxxx-xxxx',
             colSpan: 3
         },
         {
             name: 'email',
-            label: 'Email',
+            label: 'Alamat Email',
             type: `email`,
-            placeholder: 'staff@placeholder.com',
+            placeholder: 'kasir@bisnisanda.com',
             colSpan: 3
         },
         {
             name: "status",
-            label: "Status",
-            placeholder: "Pilih Status",
+            label: "Status Akses",
+            placeholder: "Pilih Status Keaktifan",
             type: 'select',
             colSpan: 'full',
             options: [
-                { label: 'Aktif', value: 'ACTIVE' },
-                { label: 'Libur', value: 'INACTIVE' },
+                { label: 'Aktif (Dapat Login)', value: 'ACTIVE' },
+                { label: 'Nonaktif (Akses Dicabut)', value: 'INACTIVE' },
             ]
         },
         {
             name: "password",
-            label: "Password",
+            label: "Kata Sandi Kasir",
             type: "password",
             colSpan: 'full',
             placeholder: isEditMode
-                ? "Kosongkan jika tidak diubah"
-                : "Minimal 6 karakter",
-            description: "Digunakan untuk login kasir"
+                ? "Biarkan kosong jika tidak ingin mengubah"
+                : "Minimal 6 karakter kombinasi",
+            description: "Kredensial ini digunakan kasir untuk masuk ke aplikasi Point of Sale (POS)."
         },
     ];
 
@@ -158,9 +158,9 @@ export function StaffDialog({
             withDialog
             isDialogOpen={isOpen}
             onDialogOpenChange={onOpenChange}
-            dialogTitle={isEditMode ? 'Edit Data Staff' : 'Tambah Staff Baru'}
-            submitText={isEditMode ? 'Simpan Perubahan' : 'Simpan Staff'}
-            dialogDescription='Masukkan informasi staff untuk outlet ini. Untuk kasir, email dan password wajib diisi agar bisa login ke sistem POS.'
+            dialogTitle={isEditMode ? 'Perbarui Akun Kasir' : 'Registrasi Kasir Baru'}
+            submitText={isEditMode ? 'Simpan Perubahan' : 'Daftarkan Kasir'}
+            dialogDescription='Lengkapi detail akun kasir di bawah ini. Email dan kata sandi akan digunakan petugas untuk masuk ke sistem transaksi POS.'
         />
 
     )

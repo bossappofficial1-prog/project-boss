@@ -117,11 +117,13 @@ export default function OwnerSubscriptionPage() {
       />
 
       {overviewQuery.error && (
-        <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          <AlertCircle className="h-4 w-4 mt-0.5" />
+        <div className="flex items-center gap-3 rounded-md border border-rose-200 bg-rose-500/10 p-4 text-rose-700 dark:text-rose-400 shadow-sm animate-shake">
+          <div className="p-1.5 rounded-md bg-background border border-rose-200">
+            <AlertCircle className="h-4 w-4" />
+          </div>
           <div>
-            <p className="font-semibold">Gagal memuat data langganan</p>
-            <p>{overviewErrorMessage ?? 'Coba segarkan ulang halaman.'}</p>
+            <p className="text-xs font-black uppercase tracking-tight">Gagal Memuat Data Langganan</p>
+            <p className="text-[10px] font-medium opacity-80">{overviewErrorMessage ?? 'Coba segarkan ulang halaman.'}</p>
           </div>
         </div>
       )}

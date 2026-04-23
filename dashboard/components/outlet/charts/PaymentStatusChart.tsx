@@ -1,23 +1,30 @@
-'use client';
+"use client";
 
-import { PieChartIcon } from 'lucide-react';
-import { useState } from 'react';
+import React from "react";
 import {
   PieChart,
   Pie,
   Cell,
-  ResponsiveContainer,
   Tooltip,
-} from 'recharts';
-import { EmptyChart } from './EmptyChart';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+  Legend,
+  Label,
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ChartContainer } from "@/components/ui/chart";
+import { CreditCard, TrendingUp, ShieldCheck } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface PaymentStatusData {
-  status: string;
+  name: string;
   count: number;
   amount: number;
-  percentage?: number;
 }
 
 interface PaymentStatusChartProps {
@@ -25,127 +32,137 @@ interface PaymentStatusChartProps {
   successRate: number;
 }
 
-const COLORS = {
-  SUCCESS: '#10B981',
-  PENDING: '#F59E0B',
-  PROOF_SUBMITTED: '#3B82F6',
-  AWAITING_VERIFICATION: '#6366F1',
-  FAILED: '#EF4444',
-  REJECTED_MANUAL: '#8B5CF6',
-  EXPIRED: '#6B7280',
-  REFUNDED: '#14B8A6',
-  CANCELLED: '#9CA3AF',
+const COLORS: Record<string, string> = {
+  PAID: "var(--chart-1)",
+  SUCCESS: "var(--chart-2)",
+  PENDING: "var(--chart-3)",
+  FAILED: "var(--chart-5)",
+  AWAITING_PAYMENT: "var(--chart-4)",
+};
+
+const LABELS: Record<string, string> = {
+  PAID: "Berhasil",
+  SUCCESS: "Sukses",
+  PENDING: "Menunggu",
+  FAILED: "Gagal",
+  AWAITING_PAYMENT: "Belum Bayar",
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (!active || !payload?.length) return null;
-
-  const data = payload[0].payload;
-  return (
-    <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-sm">
-      <p className="text-sm font-semibold text-foreground">{data.status}</p>
-      <div className="text-muted-foreground mt-2 space-y-1 text-[11px]">
-        <p className="flex justify-between">
-          <span>Jumlah</span>
-          <span className="font-semibold text-foreground">{data.count}</span>
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="rounded-lg border border-border/50 bg-background/95 p-3 shadow-xl backdrop-blur-sm">
+        <p className="mb-2 text-xs font-bold text-foreground uppercase tracking-tight border-b border-border/40 pb-1">
+          {LABELS[data.name] || data.name}
         </p>
-        <p className="flex justify-between">
-          <span>Nominal</span>
-          <span className="font-semibold text-foreground">Rp {data.amount.toLocaleString('id-ID')}</span>
-        </p>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-8">
+            <span className="text-[10px] text-muted-foreground uppercase font-medium">Transaksi</span>
+            <span className="font-bold text-foreground">{data.count}</span>
+          </div>
+          <div className="flex items-center justify-between gap-8">
+            <span className="text-[10px] text-muted-foreground uppercase font-medium">Nominal</span>
+            <span className="font-bold text-emerald-600">{formatCurrency(data.amount)}</span>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+  return null;
 };
 
-export default function PaymentStatusChart({
-  data,
-  successRate,
-}: PaymentStatusChartProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+export default function PaymentStatusChart({ data, successRate }: PaymentStatusChartProps) {
+  const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
 
-  // Calculate total
-  const total = data.reduce((sum, item) => sum + item.amount, 0);
+  const chartConfig = Object.keys(COLORS).reduce((acc: any, key) => {
+    acc[key] = { label: LABELS[key] || key, color: COLORS[key] };
+    return acc;
+  }, {});
 
   return (
-    <Card className="h-full rounded-md py-5">
-      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-muted-foreground text-xs uppercase tracking-wide">Pembayaran</p>
-          <CardTitle className="text-lg">Status Pembayaran</CardTitle>
-          <CardDescription className="mt-2 text-sm">
-            Total transaksi: Rp {total.toLocaleString('id-ID')}
-          </CardDescription>
+    <Card className="rounded-md gap-0 py-0 border-border/60 shadow-md overflow-hidden bg-gradient-to-b from-background to-muted/5 h-full">
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/40 bg-muted/20 p-4">
+        <div className="space-y-1">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600">
+              <CreditCard className="h-4 w-4" />
+            </div>
+            Status Pembayaran
+          </CardTitle>
+          <CardDescription className="text-xs">Ringkasan aliran dana berdasarkan status transaksi.</CardDescription>
         </div>
-
-        <Badge variant="success" className="rounded-md border border-emerald-200 bg-emerald-100/60 px-4 py-2 text-right dark:border-emerald-900/40 dark:bg-emerald-900/20">
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Tingkat sukses</p>
-          <p className="text-xl font-semibold text-emerald-600 dark:text-emerald-300">{successRate}%</p>
-        </Badge>
+        <div className="flex flex-col items-end gap-1">
+          <Badge variant="outline" className="rounded-md border-emerald-200 bg-emerald-100/60 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 text-[10px] font-bold">
+            {successRate.toFixed(1)}% Sukses
+          </Badge>
+        </div>
       </CardHeader>
-
-      <CardContent className="mt-2">
-        <div className="h-72 w-full">
-          {data.length > 0
-            ?
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ percentage }) => `${percentage}%`}
-                  outerRadius={102}
-                  innerRadius={64}
-                  dataKey="amount"
-                  onMouseEnter={(_, index) => setHoveredIndex(index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                >
-                  {data.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[entry.status as keyof typeof COLORS] || '#94a3b8'}
-                      opacity={hoveredIndex === null || hoveredIndex === index ? 1 : 0.45}
-                      style={{
-                        transition: 'opacity 0.2s ease, transform 0.2s ease',
-                        transform: hoveredIndex === index ? 'scale(1.02)' : 'scale(1)',
-                        transformOrigin: 'center',
-                      }}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-            : <EmptyChart icon={PieChartIcon} />
-          }
+      <CardContent className="p-4 pt-6">
+        <div className="h-[280px] w-full">
+          <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
+            <PieChart>
+              <Tooltip content={<CustomTooltip />} />
+              <Pie
+                data={data}
+                dataKey="amount"
+                nameKey="name"
+                innerRadius={70}
+                outerRadius={100}
+                strokeWidth={4}
+                stroke="var(--card)"
+                paddingAngle={2}
+                cornerRadius={6}
+              >
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[entry.name] || "var(--muted)"}
+                    className="transition-opacity hover:opacity-80"
+                  />
+                ))}
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                      return (
+                        <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                          <tspan x={viewBox.cx} y={viewBox.cy! - 10} className="fill-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+                            Total Dana
+                          </tspan>
+                          <tspan x={viewBox.cx} y={viewBox.cy! + 15} className="fill-foreground text-xl font-bold">
+                            {formatCurrency(totalAmount).replace("Rp", "").trim()}
+                          </tspan>
+                        </text>
+                      );
+                    }
+                  }}
+                />
+              </Pie>
+              <Legend
+                verticalAlign="bottom"
+                align="center"
+                content={({ payload }) => (
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-4">
+                    {payload?.map((entry: any, index) => (
+                      <div key={index} className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                          {LABELS[entry.value] || entry.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+            </PieChart>
+          </ChartContainer>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-3 border-t border-border pt-3 text-sm sm:grid-cols-3">
-          {data.map((item, index) => (
-            <button
-              key={index}
-              type="button"
-              className={`text-left rounded-md border px-3 py-3 transition-all ${hoveredIndex === index
-                ? 'border-border bg-muted/60'
-                : 'border-transparent bg-transparent'
-                }`}
-              onMouseEnter={() => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
-              <div className="text-muted-foreground flex items-center justify-between text-xs">
-                <span>{item.status}</span>
-                <span>{item.percentage}%</span>
-              </div>
-              <p className="text-foreground mt-1 text-sm font-semibold">
-                {item.count} transaksi
-              </p>
-              <p className="text-muted-foreground text-xs">
-                Rp {item.amount.toLocaleString('id-ID')}
-              </p>
-            </button>
-          ))}
+        <div className="mt-6 flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+          <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Mayoritas transaksi Anda <span className="font-bold text-emerald-600">berhasil terbayar</span>. Gunakan data ini untuk rekonsiliasi harian lebih cepat.
+          </p>
         </div>
       </CardContent>
     </Card>

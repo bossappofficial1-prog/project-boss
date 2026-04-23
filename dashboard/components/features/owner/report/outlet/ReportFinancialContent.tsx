@@ -22,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SectionHeader } from "@/components/ui/section-header";
 import {
   Select,
   SelectContent,
@@ -239,104 +240,113 @@ export default function ReportFinancialContent() {
   return (
     <>
       {/* ══════════ Page Header ══════════ */}
-      <div className="flex flex-col xl:flex-row xl:items-start justify-between mb-6 lg:mb-8 gap-5">
-        <div className="w-full xl:w-auto">
-          <h1 className="text-foreground flex items-center gap-2 text-2xl font-bold">
-            <Receipt className="text-emerald-500 w-7 h-7 shrink-0" />
-            Laporan Keuangan
-          </h1>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
-            <Select value={outletFilter} onValueChange={setOutletFilter}>
-              <SelectTrigger className="w-full sm:w-55">
-                <SelectValue placeholder="Pilih outlet" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Outlet</SelectItem>
-                {outlets.map((outlet) => (
-                  <SelectItem key={outlet.id} value={outlet.id}>
-                    {outlet.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
+      <SectionHeader
+        title="Laporan Keuangan"
+        description="Analisis mendalam performa bisnis, laba rugi, dan kinerja operasional outlet Anda."
+        actions={
+          <Select value={outletFilter} onValueChange={setOutletFilter}>
+            <SelectTrigger className="w-full sm:w-64 h-10 border-border/60 bg-background/50 focus:bg-background transition-all rounded-md font-bold text-xs uppercase tracking-widest shadow-none">
+              <SelectValue placeholder="Pilih outlet" />
+            </SelectTrigger>
+            <SelectContent className="border-border/80 shadow-2xl">
+              <SelectItem value="all" className="text-xs font-bold uppercase tracking-widest">Semua Outlet</SelectItem>
+              {outlets.map((outlet) => (
+                <SelectItem key={outlet.id} value={outlet.id} className="text-xs font-bold uppercase tracking-widest">
+                  {outlet.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
 
       {/* ══════════ 3 Tabs ══════════ */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-grid">
-          <TabsTrigger value="keuangan" className="gap-2">
-            <Receipt className="w-4 h-4 hidden sm:block" />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4 space-y-4">
+        <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1 w-full sm:w-auto">
+          <TabsTrigger value="keuangan" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
             Laporan Keuangan
           </TabsTrigger>
-          <TabsTrigger value="staff" className="gap-2">
-            <Users className="w-4 h-4 hidden sm:block" />
+          <TabsTrigger value="staff" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
             Laporan Staff
           </TabsTrigger>
-          <TabsTrigger value="stok" className="gap-2">
-            <Package className="w-4 h-4 hidden sm:block" />
+          <TabsTrigger value="stok" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
             Stok & Aset
           </TabsTrigger>
         </TabsList>
 
         {/* ═══════ TAB 1: Laporan Keuangan (P&L) ═══════ */}
         <TabsContent value="keuangan" className="space-y-6">
-          {/* P&L Summary Cards */}
-          <div className="space-y-4">
-            {/* (+) Pendapatan */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* P&L Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <SummaryCard
                 title="(+) Pendapatan"
                 value={totals.totalPendapatan}
-                icon={<ArrowUpRight className="w-4 h-4 text-emerald-500" />}
-                description="dari order completed"
+                variant="success"
+                highlight={true}
+                icon={<ArrowUpRight className="w-4 h-4" />}
+                description="Total omset dari pesanan selesai"
               />
               <SummaryCard
-              title="(-) Beban & HPP"
-              value={totalBeban}
-              icon={<ArrowDownRight className="h-4 w-4" />}
-              highlight={true}
-              description={`HPP ${formatCurrency(totals.totalHpp)} + Ops ${formatCurrency(totals.totalPengeluaran)} + Gaji ${formatCurrency(totals.gajiStaf)} + Biaya ${formatCurrency(totals.totalFees)}`}
-              tooltip={
-                <div className="space-y-3">
-                  <div>
-                    <p className="font-bold text-foreground mb-1">Daftar Beban & Modal:</p>
-                    <p>Total biaya yang mengurangi pendapatan kotor Anda untuk menghasilkan laba bersih.</p>
+                title="(-) Beban & HPP"
+                value={totalBeban}
+                variant="destructive"
+                highlight={true}
+                icon={<ArrowDownRight className="h-4 w-4" />}
+                description={`Total akumulasi beban modal & operasional`}
+                tooltip={
+                  <div className="space-y-3 p-1">
+                    <div>
+                      <p className="font-bold text-foreground mb-1 uppercase tracking-widest text-[10px]">Daftar Beban & Modal:</p>
+                      <p className="text-muted-foreground opacity-80">Total biaya yang mengurangi pendapatan kotor untuk menghasilkan laba bersih.</p>
+                    </div>
+                    <div className="space-y-3 pt-3 border-t border-border/40">
+                      <div className="flex items-start gap-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-amber-500 mt-1 shrink-0" />
+                        <div>
+                          <span className="font-bold block text-[10px] uppercase tracking-wider text-amber-600">1. Modal (HPP)</span>
+                          <p className="opacity-70">Harga Pokok Penjualan dari barang terjual.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-rose-500 mt-1 shrink-0" />
+                        <div>
+                          <span className="font-bold block text-[10px] uppercase tracking-wider text-rose-600">2. Beban Ops</span>
+                          <p className="opacity-70">Biaya operasional harian / bulanan.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1 shrink-0" />
+                        <div>
+                          <span className="font-bold block text-[10px] uppercase tracking-wider text-blue-600">3. Komisi/Gaji</span>
+                          <p className="opacity-70">Bonus staf per transaksi atau layanan.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-slate-400 mt-1 shrink-0" />
+                        <div>
+                          <span className="font-bold block text-[10px] uppercase tracking-wider text-slate-500">4. Biaya Layanan</span>
+                          <p className="opacity-70">Potongan platform atau biaya bank.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="border-t border-border/40 pt-2 italic text-[9px] font-bold text-center opacity-60">Laba Bersih = Penjualan - Total Beban</p>
                   </div>
-                  <div className="space-y-2">
-                    <div>
-                      <span className="font-semibold block text-orange-500">1. Modal (HPP)</span>
-                      <p>Harga Pokok Penjualan dari barang yang terjual. Dihitung berdasarkan nilai rata-rata stok saat barang masuk (Stock In).</p>
-                    </div>
-                    <div>
-                      <span className="font-semibold block text-rose-500">2. Beban Ops</span>
-                      <p>Biaya operasional lainnya yang dicatat secara manual di menu Pengeluaran.</p>
-                    </div>
-                    <div>
-                      <span className="font-semibold block text-blue-500">3. Komisi/Gaji</span>
-                      <p>Komisi staf dari penjualan jasa atau bonus per transaksi yang diatur di data produk jasa.</p>
-                    </div>
-                    <div>
-                      <span className="font-semibold block text-slate-400">4. Biaya Layanan</span>
-                      <p>Potongan biaya transaksi dari pihak ketiga (misal: Midtrans atau App Fee).</p>
-                    </div>
-                  </div>
-                  <p className="border-t border-border pt-2 italic">Laba Bersih = Penjualan - (HPP + Beban + Komisi + Biaya)</p>
-                </div>
-              }
-            />
+                }
+              />
               <SummaryCard
                 title="= Laba Bersih"
                 value={totals.labaBersih}
+                variant={totals.labaBersih >= 0 ? "success" : "destructive"}
                 highlight={true}
-                icon={<TrendingDown className={cn("w-4 h-4", totals.labaBersih >= 0 ? "text-emerald-500" : "text-rose-500")} />}
+                icon={<TrendingDown className="w-4 h-4" />}
+                description="Keuntungan bersih yang dapat ditarik"
                 tooltip={
-                  <div className="space-y-2">
-                    <p className="font-bold text-foreground">Laba Bersih (Net Profit):</p>
-                    <p>Keuntungan bersih Anda setelah dikurangi semua modal barang (HPP), biaya operasional, gaji staf, dan biaya layanan.</p>
-                    <div className="bg-muted p-2 rounded text-[10px] font-mono mt-2">
-                      Laba = Pendapatan - (HPP + Ops + Gaji + Biaya)
+                  <div className="space-y-2 p-1">
+                    <p className="font-bold text-foreground uppercase tracking-widest text-[10px]">Laba Bersih (Net Profit):</p>
+                    <p className="text-muted-foreground opacity-80">Keuntungan bersih setelah dikurangi semua modal (HPP), biaya operasional, gaji, dan biaya layanan.</p>
+                    <div className="bg-muted/50 border border-border/40 p-2 rounded text-[10px] font-bold tabular-nums mt-2 text-center">
+                      LABA = OMSET - BEBAN
                     </div>
                   </div>
                 }
@@ -345,14 +355,13 @@ export default function ReportFinancialContent() {
           </div>
 
           {/* View Mode Toggle + Export */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
             <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
-              <TabsList className="h-auto w-full md:w-auto">
-                <TabsTrigger value="time" className="px-3 py-2 text-sm">
+              <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1 w-full md:w-auto">
+                <TabsTrigger value="time" className="px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
                   Laporan Waktu
                 </TabsTrigger>
-                <TabsTrigger value="compare" className="px-3 py-2 text-sm">
-                  <BarChart3 className="w-4 h-4 shrink-0" />
+                <TabsTrigger value="compare" className="px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
                   Bandingkan Outlet
                 </TabsTrigger>
               </TabsList>
@@ -362,11 +371,13 @@ export default function ReportFinancialContent() {
               <Button
                 onClick={handleExport}
                 disabled={isExporting}
-                className="h-10 w-full md:w-auto">
+                variant="outline"
+                className="h-10 w-full md:w-auto font-bold text-[10px] uppercase tracking-widest border-border/60 hover:bg-muted/50 transition-all shadow-none"
+              >
                 {isExporting ? (
-                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : (
-                  <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                  <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-500" />
                 )}
                 {isExporting ? "Mengexport..." : "Export Excel"}
               </Button>
@@ -374,61 +385,37 @@ export default function ReportFinancialContent() {
           </div>
 
           {/* Filter & Date Navigation */}
-          <Card className="rounded-md py-3">
-            <CardContent className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          <Card className="rounded-md gap-0 py-0 border border-border/80 bg-background shadow-sm overflow-hidden">
+            <CardContent className="p-4 bg-muted/30 border-b border-border/40 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
               {/* Filter Buttons */}
-              <div className="flex w-full lg:w-auto bg-muted p-1 rounded-md border border-border overflow-x-auto hide-scrollbar">
+              <div className="flex w-full lg:w-auto bg-muted/50 p-1 rounded-md border border-border/40 overflow-x-auto hide-scrollbar gap-1">
                 {viewMode === "time" ? (
                   <>
-                    <FilterButton
-                      active={filterType === "daily"}
-                      onClick={() => setFilterType("daily")}>
-                      Harian
-                    </FilterButton>
-                    <FilterButton
-                      active={filterType === "weekly"}
-                      onClick={() => setFilterType("weekly")}>
-                      Mingguan
-                    </FilterButton>
-                    <FilterButton
-                      active={filterType === "monthly"}
-                      onClick={() => setFilterType("monthly")}>
-                      Bulanan
-                    </FilterButton>
+                    <FilterButton active={filterType === "daily"} onClick={() => setFilterType("daily")}>Harian</FilterButton>
+                    <FilterButton active={filterType === "weekly"} onClick={() => setFilterType("weekly")}>Mingguan</FilterButton>
+                    <FilterButton active={filterType === "monthly"} onClick={() => setFilterType("monthly")}>Bulanan</FilterButton>
                   </>
                 ) : (
                   <>
-                    <FilterButton
-                      active={compareFilterType === "daily"}
-                      onClick={() => setCompareFilterType("daily")}>
-                      Harian
-                    </FilterButton>
-                    <FilterButton
-                      active={compareFilterType === "monthly"}
-                      onClick={() => setCompareFilterType("monthly")}>
-                      Bulanan
-                    </FilterButton>
-                    <FilterButton
-                      active={compareFilterType === "yearly"}
-                      onClick={() => setCompareFilterType("yearly")}>
-                      Tahunan
-                    </FilterButton>
+                    <FilterButton active={compareFilterType === "daily"} onClick={() => setCompareFilterType("daily")}>Harian</FilterButton>
+                    <FilterButton active={compareFilterType === "monthly"} onClick={() => setCompareFilterType("monthly")}>Bulanan</FilterButton>
+                    <FilterButton active={compareFilterType === "yearly"} onClick={() => setCompareFilterType("yearly")}>Tahunan</FilterButton>
                   </>
                 )}
               </div>
 
               {/* Date Selector */}
-              <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
+              <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2 bg-background/50 border border-border/40 rounded-md p-1">
                 <Button
                   onClick={() => adjustDate(-1)}
                   variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full shrink-0">
-                  <ChevronLeft className="w-6 h-6" />
+                  size="icon"
+                  className="h-8 w-8 rounded-full hover:bg-muted/50 transition-all">
+                  <ChevronLeft className="w-5 h-5" />
                 </Button>
-                <div className="text-foreground flex flex-1 items-center justify-center gap-2 lg:gap-3 font-bold lg:flex-none min-w-0">
-                  <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
-                  <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
+                <div className="text-foreground flex flex-1 items-center justify-center gap-3 font-bold lg:flex-none min-w-0">
+                  <CalendarIcon className="w-4 h-4 text-emerald-500 opacity-60 shrink-0" />
+                  <span className="text-xs sm:text-sm uppercase tracking-widest text-center truncate px-2 font-bold opacity-90 tabular-nums">
                     {viewMode === "time"
                       ? formatPeriodLabel(filterType, currentDate)
                       : formatComparePeriodLabel(compareFilterType, currentDate)}
@@ -437,26 +424,29 @@ export default function ReportFinancialContent() {
                 <Button
                   onClick={() => adjustDate(1)}
                   variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full shrink-0">
-                  <ChevronRight className="w-6 h-6" />
+                  size="icon"
+                  className="h-8 w-8 rounded-full hover:bg-muted/50 transition-all">
+                  <ChevronRight className="w-5 h-5" />
                 </Button>
               </div>
 
-              <Badge variant="outline" className="hidden lg:flex items-center gap-2 text-[10px] text-muted-foreground pr-4 uppercase tracking-widest font-bold">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                Data Terverifikasi
-              </Badge>
+              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/5 border border-emerald-500/20">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600/70">Verified Data</span>
+              </div>
             </CardContent>
           </Card>
 
           {/* Financial Table */}
-          <Card className="rounded-md py-0 overflow-hidden relative">
+          <Card className="rounded-md gap-0 py-0 border border-border/80 bg-background shadow-sm overflow-hidden relative">
             {isLoading && (
-              <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-2"></div>
-                <span className="text-xs font-bold text-primary uppercase tracking-widest text-center">
-                  Menghitung Laporan...
+              <div className="absolute inset-0 bg-background/60 backdrop-blur-md z-10 flex flex-col items-center justify-center space-y-3">
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                  <Receipt className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                </div>
+                <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-[0.2em] animate-pulse">
+                  Mengolah Laporan...
                 </span>
               </div>
             )}
@@ -642,17 +632,21 @@ export default function ReportFinancialContent() {
           </Card>
 
           {/* Info Card */}
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-5">
-            <div className="flex items-start gap-3">
-              <Package className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="group rounded-md border border-blue-500/20 bg-blue-500/5 p-5 shadow-sm relative overflow-hidden transition-all hover:bg-blue-500/10">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+              <Package className="h-16 w-16" />
+            </div>
+            <div className="flex items-start gap-4 relative z-10">
+              <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shrink-0">
+                <HelpCircle className="h-5 w-5 text-blue-600" />
+              </div>
               <div>
-                <h3 className="font-bold text-amber-800 dark:text-amber-300 text-sm">
-                  Pembelian Stok adalah Aset
+                <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1.5">
+                  Catatan Penting: Pembelian Stok & Aset
                 </h3>
-                <p className="text-amber-700 dark:text-amber-400/80 text-sm mt-1">
-                  Pembelian stok dicatat sebagai penambahan aset (inventory), bukan sebagai
-                  pengurang laba operasional. Data ini ditarik dari log stok masuk (Stock IN) dan
-                  dihitung berdasarkan HPP per unit × jumlah unit.
+                <p className="text-[11px] font-medium text-foreground/70 leading-relaxed max-w-2xl">
+                  Pembelian stok dicatat sebagai penambahan aset (inventory), <span className="font-bold text-blue-600">bukanlah pengurang laba operasional (HPP)</span>.
+                  Data ini ditarik dari log stok masuk dan dihitung berdasarkan nilai perolehan. Laba Anda hanya berkurang secara finansial saat barang tersebut <span className="underline decoration-blue-500/30">terjual</span>.
                 </p>
               </div>
             </div>
@@ -717,7 +711,12 @@ const FilterButton: React.FC<FilterButtonProps> = ({ children, active, onClick }
   return (
     <button
       onClick={onClick}
-      className={`flex-1 lg:flex-none px-3 sm:px-5 py-2 text-xs sm:text-sm font-semibold transition-all rounded-md whitespace-nowrap ${active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+      className={cn(
+        "flex-1 lg:flex-none px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all rounded-md whitespace-nowrap shadow-none",
+        active
+          ? "bg-background text-foreground border border-border/60 shadow-sm"
+          : "text-muted-foreground hover:text-foreground/80 hover:bg-muted/30"
+      )}>
       {children}
     </button>
   );

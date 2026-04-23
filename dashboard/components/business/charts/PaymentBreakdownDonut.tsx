@@ -23,6 +23,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 const fmtNumber = (v: number) => new Intl.NumberFormat("id-ID").format(v);
+const fmtPct = (v: number, total: number) => total > 0 ? ((v / total) * 100).toFixed(1) + "%" : "0%";
 
 export function PaymentBreakdownDonut({ data }: PaymentBreakdownDonutProps) {
     const total = data.online + data.manual;
@@ -63,16 +64,18 @@ export function PaymentBreakdownDonut({ data }: PaymentBreakdownDonutProps) {
 
     if (total === 0) {
         return (
-            <Card className="rounded-md flex-1 border-border/60 shadow-sm overflow-hidden">
+            <Card className="rounded-md flex-1 border-border/60 shadow-sm overflow-hidden bg-muted/5">
                 <CardHeader className="border-b border-border/40 bg-muted/20 pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                        <CreditCard className="h-4 w-4 text-primary" />
+                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                        <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                            <CreditCard className="h-3.5 w-3.5" />
+                        </div>
                         Metode Pembayaran
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="flex h-[180px] items-center justify-center">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <CreditCard className="h-8 w-8 opacity-40" />
+                        <CreditCard className="h-8 w-8 opacity-20" />
                         <p className="text-xs font-medium">Belum ada data</p>
                     </div>
                 </CardContent>
@@ -80,31 +83,35 @@ export function PaymentBreakdownDonut({ data }: PaymentBreakdownDonutProps) {
         );
     }
 
+    const preferredMethod = data.online >= data.manual ? "Online" : "Manual";
+
     return (
-        <Card className="rounded-md flex-1 border-border/60 shadow-sm overflow-hidden">
-            <CardHeader className="border-b border-border/40 bg-muted/20 pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                    <CreditCard className="h-4 w-4 text-primary" />
+        <Card className="rounded-md flex-1 gap-0 pt-0 border-border/60 shadow-md overflow-hidden bg-gradient-to-b from-background to-muted/5 text-xs">
+            <CardHeader className="p-4 border-b border-border/40 bg-muted/20">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                    <div className="p-1.5 rounded-md bg-primary/10">
+                        <CreditCard className="h-3.5 w-3.5 text-primary" />
+                    </div>
                     Metode Pembayaran
                 </CardTitle>
                 <CardDescription className="text-xs">
-                    Distribusi metode pembayaran sukses.
+                    Preferensi kanal bayar pelanggan.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="p-3">
-                <ChartContainer config={chartConfig} className="mx-auto h-[140px] w-full max-w-[160px]">
+            <CardContent className="p-4 pt-2">
+                <ChartContainer config={chartConfig} className="mx-auto h-[200px] w-full">
                     <PieChart>
                         <Tooltip content={<CustomTooltip />} cursor={false} />
                         <Pie
                             data={pieData}
                             dataKey="value"
                             nameKey="name"
-                            innerRadius={42}
-                            outerRadius={62}
-                            strokeWidth={2}
+                            innerRadius={55}
+                            outerRadius={85}
+                            strokeWidth={3}
                             stroke="hsl(var(--card))"
-                            paddingAngle={3}
-                            cornerRadius={4}
+                            paddingAngle={4}
+                            cornerRadius={6}
                         >
                             {pieData.map((entry) => (
                                 <Cell key={entry.name} fill={entry.fill} className="transition-opacity hover:opacity-80" />
@@ -114,10 +121,10 @@ export function PaymentBreakdownDonut({ data }: PaymentBreakdownDonutProps) {
                                     if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                                         return (
                                             <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                                                <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-xl font-bold">
-                                                    {fmtNumber(total)}
+                                                <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-2xl font-bold">
+                                                    {total}
                                                 </tspan>
-                                                <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 16} className="fill-muted-foreground text-[10px]">
+                                                <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 20} className="fill-muted-foreground text-[10px] font-medium uppercase tracking-wider">
                                                     Transaksi
                                                 </tspan>
                                             </text>
@@ -129,18 +136,32 @@ export function PaymentBreakdownDonut({ data }: PaymentBreakdownDonutProps) {
                     </PieChart>
                 </ChartContainer>
 
-                <div className="flex items-center justify-center gap-4 text-xs">
-                    <div className="flex items-center gap-1.5">
-                        <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "var(--chart-4)" }} />
-                        <span className="text-muted-foreground">Online</span>
-                        <span className="font-semibold text-foreground">{fmtNumber(data.online)}</span>
+                <div className="mt-4 space-y-1.5">
+                    <div className="flex items-center justify-between p-1.5 rounded-md bg-muted/20 border border-border/40 hover:bg-muted/40 transition-colors group cursor-default">
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full shadow-sm" style={{ backgroundColor: "var(--chart-4)" }} />
+                            <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors">Online</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold tabular-nums text-foreground">{fmtNumber(data.online)}</span>
+                            <span className="text-[10px] opacity-60">({fmtPct(data.online, total)})</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "var(--chart-2)" }} />
-                        <span className="text-muted-foreground">Manual</span>
-                        <span className="font-semibold text-foreground">{fmtNumber(data.manual)}</span>
+                    <div className="flex items-center justify-between p-1.5 rounded-md bg-muted/20 border border-border/40 hover:bg-muted/40 transition-colors group cursor-default">
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full shadow-sm" style={{ backgroundColor: "var(--chart-2)" }} />
+                            <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors">Manual</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold tabular-nums text-foreground">{fmtNumber(data.manual)}</span>
+                            <span className="text-[10px] opacity-60">({fmtPct(data.manual, total)})</span>
+                        </div>
                     </div>
                 </div>
+
+                <p className="mt-4 text-[10px] text-muted-foreground text-center leading-tight border-t border-border/40 pt-3">
+                    Pelanggan lebih menyukai metode <span className="font-semibold text-primary">{preferredMethod}</span> untuk bertransaksi.
+                </p>
             </CardContent>
         </Card>
     );

@@ -74,7 +74,6 @@ const formatIDR = (value: number) => {
     }).format(value)
 }
 
-// --- TYPES ---
 type VerificationStatus = "verified" | "pending" | "rejected"
 type BusinessStatus = "active" | "suspended"
 
@@ -103,7 +102,6 @@ interface Business {
     }
 }
 
-// --- MOCK DATA ---
 const BUSINESSES: Business[] = [
     {
         id: "BIZ-001",

@@ -1,39 +1,65 @@
-'use client';
+"use client";
 
-import { ByType } from '@/types';
-import { useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { EmptyChart } from './EmptyChart';
-import { PieChartIcon } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import React from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  Label,
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
+import { Layers, Info, CheckCircle2 } from "lucide-react";
+import { formatNumberCompactID } from "@/lib/utils";
 
-interface ProductTypeChartProps {
-  data: ByType[];
+interface ProductTypeData {
+  type: string;
+  count: number;
+  percentage: number;
 }
 
-const COLORS = {
-  GOODS: '#EF4444',
-  SERVICE: '#0EA5E9',
-  TICKET: '#10B981',
+interface ProductTypeChartProps {
+  data: ProductTypeData[];
+}
+
+const COLORS: Record<string, string> = {
+  GOODS: "var(--chart-1)",
+  SERVICE: "var(--chart-2)",
+  TICKET: "var(--chart-3)"
+};
+
+const LABELS: Record<string, string> = {
+  GOODS: "Produk Fisik",
+  SERVICE: "Layanan",
+  TICKET: "Tiket",
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload?.length) {
+  if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-lg p-3 shadow-xl border border-gray-200 dark:border-gray-700">
-        <p className="text-sm font-semibold text-gray-800 dark:text-white mb-1">
-          {data.type}
+      <div className="rounded-lg border border-border/50 bg-background/95 p-3 shadow-xl backdrop-blur-sm">
+        <p className="mb-2 text-xs font-bold text-foreground uppercase tracking-tight border-b border-border/40 pb-1">
+          {LABELS[data.type] || data.type}
         </p>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          Total: <span className="font-medium">{data.count}</span>
-        </p>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          Aktif: <span className="font-medium">{data.activeCount}</span>
-        </p>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          Persentase: <span className="font-medium">{data.percentage}%</span>
-        </p>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-8">
+            <span className="text-[10px] text-muted-foreground uppercase font-medium">Jumlah Item</span>
+            <span className="font-bold text-foreground">{data.count}</span>
+          </div>
+          <div className="flex items-center justify-between gap-8">
+            <span className="text-[10px] text-muted-foreground uppercase font-medium">Kontribusi</span>
+            <span className="font-bold text-primary">{data.percentage}%</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -41,92 +67,95 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export default function ProductTypeChart({ data }: ProductTypeChartProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const totalItems = data.reduce((sum, item) => sum + item.count, 0);
+  const topType = [...data].sort((a, b) => b.count - a.count)[0];
 
-  const totalProducts = data.reduce((sum, item) => sum + item.count, 0);
+  const chartConfig = Object.keys(COLORS).reduce((acc: any, key) => {
+    acc[key] = { label: LABELS[key] || key, color: COLORS[key] };
+    return acc;
+  }, {}) satisfies ChartConfig;
 
   return (
-    <Card className="h-full rounded-md py-5">
-      <CardHeader>
-        <CardTitle className="text-lg">
-          Tipe Produk
-        </CardTitle>
-        <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
-          Total: {totalProducts} produk
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="mt-2">
-        <div className="h-72 w-full">
-          {
-            data.length > 0
-
-              ? <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ percentage }) => `${percentage}%`}
-                    outerRadius={100}
-                    innerRadius={60}
-                    fill="#8884d8"
-                    dataKey="count"
-                    onMouseEnter={(_, index) => setHoveredIndex(index)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                  >
-                    {data.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[entry.type]}
-                        opacity={
-                          hoveredIndex === null || hoveredIndex === index ? 1 : 0.5
-                        }
-                        style={{
-                          filter:
-                            hoveredIndex === index ? 'brightness(1.2)' : 'brightness(1)',
-                          transition: 'all 0.3s ease',
-                        }}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              : <EmptyChart icon={PieChartIcon} />
-          }
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-sm dark:border-gray-700/50">
-          {data.map((item, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg transition-all duration-200 cursor-pointer ${hoveredIndex === index
-                ? 'bg-white/20 dark:bg-gray-700/50 scale-105'
-                : 'bg-white/5 dark:bg-gray-700/20'
-                }`}
-              onMouseEnter={() => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: COLORS[item.type] }}
-                />
-                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  {item.type}
-                </p>
-              </div>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">
-                {item.count}
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {item.percentage}% dari total
-              </p>
+    <Card className="rounded-md gap-0 py-0 border-border/60 shadow-md overflow-hidden bg-gradient-to-b from-background to-muted/5 h-full">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/40 bg-muted/20 p-4">
+        <div className="space-y-1">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <div className="p-1.5 rounded-md bg-chart-1/10">
+              <Layers className="h-4 w-4 text-chart-1" />
             </div>
-          ))}
+            Tipe Produk
+          </CardTitle>
+          <CardDescription className="text-xs">Proporsi inventaris berdasarkan tipe.</CardDescription>
         </div>
+      </CardHeader>
+      <CardContent className="p-4 pt-6">
+        <div className="h-[280px] w-full">
+          <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
+            <PieChart>
+              <Tooltip content={<CustomTooltip />} />
+              <Pie
+                data={data}
+                dataKey="count"
+                nameKey="type"
+                innerRadius={70}
+                outerRadius={100}
+                strokeWidth={4}
+                stroke="var(--card)"
+                paddingAngle={2}
+                cornerRadius={6}
+              >
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[entry.type] || "var(--muted)"}
+                    className="transition-opacity hover:opacity-80"
+                  />
+                ))}
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                      return (
+                        <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                          <tspan x={viewBox.cx} y={viewBox.cy! - 10} className="fill-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+                            Total Item
+                          </tspan>
+                          <tspan x={viewBox.cx} y={viewBox.cy! + 15} className="fill-foreground text-2xl font-bold">
+                            {totalItems}
+                          </tspan>
+                        </text>
+                      );
+                    }
+                  }}
+                />
+              </Pie>
+              <Legend
+                verticalAlign="bottom"
+                align="center"
+                content={({ payload }) => (
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-4">
+                    {payload?.map((entry: any, index) => (
+                      <div key={index} className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                          {LABELS[entry.value] || entry.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+            </PieChart>
+          </ChartContainer>
+        </div>
+
+        {topType && (
+          <div className="mt-6 flex items-center gap-3 p-3 rounded-lg bg-chart-1/5 border border-chart-1/10">
+            <CheckCircle2 className="h-4 w-4 text-chart-1 shrink-0" />
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Inventaris Anda didominasi oleh <span className="font-bold text-foreground">{LABELS[topType.type] || topType.type}</span> ({topType.percentage}%).
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

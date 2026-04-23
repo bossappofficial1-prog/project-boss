@@ -14,7 +14,8 @@ interface ExpensesControlsProps {
 	startISO: string;
 	endISO: string;
 	onRangeChange: (startISO: string, endISO: string) => void;
-	onAdd: () => void;
+	onAdd?: () => void;
+	hideAddButton?: boolean;
 }
 
 function safeDate(iso?: string) {
@@ -29,9 +30,9 @@ function mergeISO(dateYmd: string, time: "start" | "end") {
 	return Number.isNaN(d.getTime()) ? "" : d.toISOString();
 }
 
-const DISPLAY_FORMAT = "d MMM yyyy";
+const DISPLAY_FORMAT = "dd MMM yyyy";
 
-export function ExpensesControls({ startISO, endISO, onRangeChange, onAdd }: ExpensesControlsProps) {
+export function ExpensesControls({ startISO, endISO, onRangeChange, onAdd, hideAddButton = false }: ExpensesControlsProps) {
 	const [open, setOpen] = useState(false);
 
 	const startDate = safeDate(startISO);
@@ -45,7 +46,7 @@ export function ExpensesControls({ startISO, endISO, onRangeChange, onAdd }: Exp
 		};
 	}, [startDate, endDate, hasRange]);
 
-	const formattedStart = startDate ? format(startDate, DISPLAY_FORMAT) : "Pilih tanggal";
+	const formattedStart = startDate ? format(startDate, DISPLAY_FORMAT) : "Pilih";
 	const formattedEnd = hasRange && endDate ? format(endDate, DISPLAY_FORMAT) : "-";
 
 	const handleSelect = (range?: DateRange) => {
@@ -68,30 +69,28 @@ export function ExpensesControls({ startISO, endISO, onRangeChange, onAdd }: Exp
 	};
 
 	return (
-		<div className="flex flex-col sm:flex-row gap-4">
-			<div className="flex-1 space-y-2">
-				<Label className="text-xs font-medium uppercase text-muted-foreground">Rentang Tanggal</Label>
+		<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+			<div className="flex-1 flex items-center gap-4">
 				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger asChild>
-						<Button
-							variant="outline"
-							className="h-auto w-full items-stretch justify-start gap-4 rounded-xl border border-border bg-background px-4 py-3 text-left"
+						<button
+							className="group flex flex-1 items-center justify-between gap-6 px-4 py-2 bg-background/50 hover:bg-background border border-border/40 hover:border-border/80 transition-all rounded-md shadow-none outline-none focus:ring-1 focus:ring-primary/20"
 						>
-							<div className="flex w-full items-center gap-4">
-								<div className="flex-1">
-									<p className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">Mulai</p>
-									<p className="text-sm font-semibold text-foreground">{formattedStart}</p>
+							<div className="flex items-center gap-8">
+								<div className="text-left">
+									<p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-60 mb-0.5">Dari</p>
+									<p className="text-xs font-bold text-foreground/80 tabular-nums">{formattedStart}</p>
 								</div>
-								<div className="h-10 w-px bg-border" />
-								<div className="flex-1">
-									<p className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">Selesai</p>
-									<p className="text-sm font-semibold text-foreground">{formattedEnd}</p>
+								<div className="h-6 w-px bg-border/40" />
+								<div className="text-left">
+									<p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-60 mb-0.5">Sampai</p>
+									<p className="text-xs font-bold text-foreground/80 tabular-nums">{formattedEnd}</p>
 								</div>
-								<CalendarIcon className="ml-auto h-4 w-4 text-muted-foreground" />
 							</div>
-						</Button>
+							<CalendarIcon className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+						</button>
 					</PopoverTrigger>
-					<PopoverContent className="w-auto p-0" align="start">
+					<PopoverContent className="w-auto p-0 border-border/80 shadow-2xl rounded-md" align="start">
 						<Calendar
 							mode="range"
 							numberOfMonths={1}
@@ -104,12 +103,12 @@ export function ExpensesControls({ startISO, endISO, onRangeChange, onAdd }: Exp
 				</Popover>
 			</div>
 
-			<div className="sm:w-60 flex items-end">
-				<Button onClick={onAdd} variant="default" className="w-full sm:w-auto">
-					<Plus className="h-4 w-4" />
+			{!hideAddButton && onAdd && (
+				<Button onClick={onAdd} className="font-bold text-xs uppercase tracking-widest h-10 shadow-none">
+					<Plus className="h-4 w-4 mr-2" />
 					Tambah Pengeluaran
 				</Button>
-			</div>
+			)}
 		</div>
 	);
 }

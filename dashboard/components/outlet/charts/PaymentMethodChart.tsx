@@ -1,55 +1,61 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import React from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
+  PieChart,
+  Pie,
   Cell,
-} from 'recharts';
-import { EmptyChart } from './EmptyChart';
-import { BarChart2Icon } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  Tooltip,
+  Legend,
+  Label,
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
+import { Wallet, Info, ArrowUpRight } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
-interface PaymentMethod {
+interface PaymentMethodData {
   method: string;
   count: number;
   amount: number;
-  percentage: number;
 }
 
 interface PaymentMethodChartProps {
-  data: PaymentMethod[];
+  data: PaymentMethodData[];
 }
 
-const METHOD_COLORS = {
-  QRIS: '#10b981',
-  Transfer: '#3b82f6',
-  'Tunai/Manual': '#f59e0b',
-  Booking: '#8b5cf6',
-};
+const COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload?.length) {
+  if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-lg p-3 shadow-xl border border-gray-200 dark:border-gray-700">
-        <p className="text-sm font-semibold text-gray-800 dark:text-white mb-1">
+      <div className="rounded-lg border border-border/50 bg-background/95 p-3 shadow-xl backdrop-blur-sm">
+        <p className="mb-2 text-xs font-bold text-foreground uppercase tracking-tight border-b border-border/40 pb-1">
           {data.method}
         </p>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          Transaksi: <span className="font-medium">{data.count}</span>
-        </p>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          Nominal: <span className="font-medium">Rp {data.amount.toLocaleString('id-ID')}</span>
-        </p>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          Persentase: <span className="font-medium">{data.percentage}%</span>
-        </p>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-8">
+            <span className="text-[10px] text-muted-foreground uppercase font-medium">Transaksi</span>
+            <span className="font-bold text-foreground">{data.count}</span>
+          </div>
+          <div className="flex items-center justify-between gap-8">
+            <span className="text-[10px] text-muted-foreground uppercase font-medium">Nominal</span>
+            <span className="font-bold text-primary">{formatCurrency(data.amount)}</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -57,108 +63,96 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export default function PaymentMethodChart({ data }: PaymentMethodChartProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
   const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
+  const topMethod = [...data].sort((a, b) => b.amount - a.amount)[0];
+
+  const chartConfig = data.reduce((acc: any, item, idx) => {
+    acc[item.method] = { label: item.method, color: COLORS[idx % COLORS.length] };
+    return acc;
+  }, {}) satisfies ChartConfig;
 
   return (
-    <Card className="rounded-md py-5">
-      <CardHeader>
-        <CardTitle className="text-lg">
-          Metode Pembayaran
-        </CardTitle>
-        <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
-          Total: Rp {totalAmount.toLocaleString('id-ID')}
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="mt-2">
-        <div className="h-72 w-full">
-          {
-            data.length > 0
-              ? <ResponsiveContainer width="100%" minHeight={430}>
-                <BarChart
-                  data={data}
-                  margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" vertical={false} />
-                  <XAxis
-                    dataKey="method"
-                    angle={-45}
-                    textAnchor="end"
-                    height={100}
-                    interval={0}
-                    tick={{ fontSize: 12 }}
-                    stroke="#999"
-                  />
-                  <YAxis stroke="#999" style={{ fontSize: '12px' }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar
-                    dataKey="amount"
-                    fill="#10b981"
-                    radius={[8, 8, 0, 0]}
-                    onMouseEnter={(_, index) => setHoveredIndex(index)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                    isAnimationActive={true}
-                  >
-                    {data.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          METHOD_COLORS[entry.method as keyof typeof METHOD_COLORS] ||
-                          '#6b7280'
-                        }
-                        opacity={
-                          hoveredIndex === null || hoveredIndex === index ? 1 : 0.5
-                        }
-                        style={{
-                          filter:
-                            hoveredIndex === index ? 'brightness(1.2)' : 'brightness(1)',
-                          transition: 'all 0.3s ease',
-                        }}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              : <EmptyChart icon={BarChart2Icon} />
-          }
+    <Card className="rounded-md gap-0 py-0 border-border/60 shadow-md overflow-hidden bg-gradient-to-b from-background to-muted/5 h-full">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/40 bg-muted/20 p-4">
+        <div className="space-y-1">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+              <Wallet className="h-4 w-4" />
+            </div>
+            Metode Pembayaran
+          </CardTitle>
+          <CardDescription className="text-xs">Distribusi penggunaan kanal pembayaran.</CardDescription>
         </div>
-
-        <div className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-3 text-sm dark:border-gray-700/50 lg:grid-cols-4">
-          {data.map((item, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg transition-all duration-200 cursor-pointer ${hoveredIndex === index
-                ? 'bg-white/20 dark:bg-gray-700/50 scale-105'
-                : 'bg-white/5 dark:bg-gray-700/20'
-                }`}
-              onMouseEnter={() => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{
-                    backgroundColor:
-                      METHOD_COLORS[item.method as keyof typeof METHOD_COLORS] ||
-                      '#6b7280',
+      </CardHeader>
+      <CardContent className="p-4 pt-6">
+        <div className="h-[280px] w-full">
+          <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
+            <PieChart>
+              <Tooltip content={<CustomTooltip />} />
+              <Pie
+                data={data}
+                dataKey="amount"
+                nameKey="method"
+                innerRadius={70}
+                outerRadius={100}
+                strokeWidth={4}
+                stroke="var(--card)"
+                paddingAngle={2}
+                cornerRadius={6}
+              >
+                {data.map((_, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                    className="transition-opacity hover:opacity-80"
+                  />
+                ))}
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                      return (
+                        <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                          <tspan x={viewBox.cx} y={viewBox.cy! - 10} className="fill-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+                            Total Dana
+                          </tspan>
+                          <tspan x={viewBox.cx} y={viewBox.cy! + 15} className="fill-foreground text-lg font-bold tabular-nums">
+                            {formatCurrency(totalAmount).replace("Rp", "").trim()}
+                          </tspan>
+                        </text>
+                      );
+                    }
                   }}
                 />
-                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  {item.method}
-                </p>
-              </div>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">
-                {item.count}x
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {item.percentage}%
-              </p>
-            </div>
-          ))}
+              </Pie>
+              <Legend
+                verticalAlign="bottom"
+                align="center"
+                content={({ payload }) => (
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-4">
+                    {payload?.map((entry: any, index) => (
+                      <div key={index} className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                          {entry.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+            </PieChart>
+          </ChartContainer>
         </div>
+
+        {topMethod && (
+          <div className="mt-6 flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+            <ArrowUpRight className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Metode <span className="font-bold text-foreground">{topMethod.method}</span> menjadi pilihan utama dengan kontribusi <span className="font-bold text-primary">{((topMethod.amount / totalAmount) * 100).toFixed(1)}%</span> dari total dana.
+            </p>
+          </div>
+        )}
       </CardContent>
-    </Card >
+    </Card>
   );
 }

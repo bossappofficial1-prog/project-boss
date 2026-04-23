@@ -55,8 +55,9 @@ export class DatabaseFactory {
           },
         });
 
-        createdProducts.push({ ...product, price, type });
+        createdProducts.push({ ...product, price, type, hpp });
       } else {
+        const commissionValue = faker.number.int({ min: 5, max: 25 });
         await this.prisma.productService.create({
           data: {
             productId: product.id,
@@ -64,12 +65,12 @@ export class DatabaseFactory {
             sellingPrice: price,
             providerName: faker.person.fullName(),
             commissionType: "PERCENTAGE",
-            commissionValue: faker.number.int({ min: 5, max: 25 }),
+            commissionValue: commissionValue,
             maxParallel: faker.number.int({ min: 1, max: 4 }),
           },
         });
 
-        createdProducts.push({ ...product, price, type });
+        createdProducts.push({ ...product, price, type, commissionValue });
       }
     }
     return createdProducts;
@@ -97,6 +98,8 @@ export class DatabaseFactory {
           productId: p.id,
           quantity: qty,
           priceAtTimeOfOrder: p.price,
+          hppAtTimeOfOrder: p.type === ProductType.GOODS ? p.hpp : 0,
+          commissionAtTimeOfOrder: p.type === ProductType.SERVICE ? (p.price * (p.commissionValue / 100)) : 0,
         };
       });
 

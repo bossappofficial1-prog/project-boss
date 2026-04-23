@@ -5,7 +5,7 @@ import { ProductItem, useProductsData } from '@/hooks/useProductsData'
 import { productApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { resolveUploadImageUrl } from '@/lib/url'
-import { formatCurrency } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -35,20 +35,40 @@ import { SectionHeader } from '@/components/ui/section-header'
 
 function PageSkeleton() {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/80 bg-background -mx-6 px-6 pt-2">
                 <div className="space-y-2">
-                    <Skeleton className="h-8 w-52" />
-                    <Skeleton className="h-4 w-72" />
+                    <Skeleton className="h-10 w-64 rounded-md" />
+                    <Skeleton className="h-4 w-96 rounded-full opacity-50" />
+                </div>
+                <div className="flex gap-2">
+                    <Skeleton className="h-11 w-32 rounded-md" />
+                    <Skeleton className="h-11 w-32 rounded-md" />
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-28 rounded-md" />
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <Card key={i} className="border-border/60 bg-background shadow-none">
+                        <CardContent className="p-4 space-y-3">
+                            <Skeleton className="h-8 w-8 rounded-md" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-3 w-16 rounded-full" />
+                                <Skeleton className="h-6 w-12 rounded-md" />
+                            </div>
+                        </CardContent>
+                    </Card>
                 ))}
             </div>
-            <Skeleton className="h-12 rounded-md" />
-            <Skeleton className="h-64 rounded-md" />
+            <div className="rounded-md border border-border/80 bg-background shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border/40 bg-muted/30">
+                    <Skeleton className="h-6 w-40 rounded-md" />
+                </div>
+                <div className="p-6 space-y-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <Skeleton key={i} className="h-16 w-full rounded-md opacity-40" />
+                    ))}
+                </div>
+            </div>
         </div>
     )
 }
@@ -63,22 +83,26 @@ interface OverviewCardProps {
 
 function OverviewCard({ icon, label, value, description, variant = 'default' }: OverviewCardProps) {
     const styles = {
-        default: 'bg-primary/10 text-primary',
-        warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-        danger: 'bg-destructive/10 text-destructive',
-        success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        default: 'bg-muted text-muted-foreground border-border',
+        warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+        danger: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+        success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     }
 
     return (
-        <Card className="pt-0">
-            <CardContent className="flex items-start gap-3 pt-6">
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${styles[variant]}`}>
+        <Card className="rounded-md gap-0 py-0 border-border/80 bg-background shadow-sm transition-all hover:shadow-md">
+            <CardContent className="flex flex-col items-start gap-3 p-4">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-md border shadow-sm ${styles[variant]}`}>
                     {icon}
                 </div>
-                <div className="min-w-0">
-                    <p className="text-xs font-medium text-muted-foreground">{label}</p>
-                    <p className="text-xl font-bold tabular-nums">{value}</p>
-                    {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
+                <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+                    <p className="text-2xl font-bold tracking-tighter text-foreground/90 tabular-nums">{value}</p>
+                    {description && (
+                        <p className="text-[10px] font-semibold text-muted-foreground italic opacity-70">
+                            {description}
+                        </p>
+                    )}
                 </div>
             </CardContent>
         </Card>
@@ -164,47 +188,63 @@ export default function ProductsContent() {
             <div className="space-y-6">
                 {/* Header */}
                 <SectionHeader
-                    title='Kelola Produk & Jasa'
-                    description={`Outlet: ${currentOutletName}`}
+                    title="Produk & Jasa"
+                    description={`Kelola inventaris barang, layanan jasa, dan tiket event untuk ${currentOutletName}`}
                     actions={
-                        <>
-                            <Button size="sm" onClick={() => { setAction('add'); setShowAddOrEditModal(true) }} disabled={!hasOutlet}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Tambah
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                size="sm"
+                                onClick={() => { setAction('add'); setShowAddOrEditModal(true) }}
+                                disabled={!hasOutlet}
+                                className="h-9 px-4 gap-2 font-bold text-xs uppercase tracking-wider"
+                            >
+                                <Plus className="h-4 w-4" /> Tambah Produk
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => setShowImportModal(true)} disabled={!hasOutlet}>
-                                <Upload className="mr-2 h-4 w-4" />
-                                Import
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setShowImportModal(true)}
+                                disabled={!hasOutlet}
+                                className="h-9 px-4 font-bold text-xs uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none"
+                            >
+                                <Upload className="mr-2 h-4 w-4" /> Import
                             </Button>
-                            <Button size="sm" variant="outline" onClick={handleExport} disabled={isExporting || products.length === 0}>
-                                <Download className="mr-2 h-4 w-4" />
-                                {isExporting ? 'Mengexport...' : 'Export'}
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleExport}
+                                disabled={isExporting || products.length === 0}
+                                className="h-9 px-4 font-bold text-xs uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none"
+                            >
+                                <Download className="mr-2 h-4 w-4" /> {isExporting ? 'Exporting...' : 'Export'}
                             </Button>
-                        </>
+                        </div>
                     }
                 />
 
                 {/* Error */}
                 {error && (
-                    <div className="flex items-start gap-3 rounded-md border border-destructive/50 bg-destructive/5 p-3">
-                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                        <div className="flex-1">
-                            <p className="text-sm font-medium text-destructive">Error</p>
-                            <p className="text-sm text-destructive/90">{error}</p>
+                    <div className="flex items-center gap-3 rounded-md border border-rose-200 bg-rose-500/10 p-4 text-rose-700 dark:text-rose-400 shadow-sm animate-shake">
+                        <div className="p-1.5 rounded-md bg-background border border-rose-200">
+                            <AlertCircle className="h-4 w-4" />
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => setError(null)} className="h-6 w-6 p-0">
+                        <div className="flex-1">
+                            <p className="text-xs font-bold uppercase tracking-tight">Gagal Memuat Data</p>
+                            <p className="text-[10px] font-medium opacity-80">{error}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => setError(null)} className="h-8 w-8 p-0 hover:bg-rose-500/10">
                             ✕
                         </Button>
                     </div>
                 )}
 
                 {/* Overview Cards */}
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
                     <OverviewCard
                         icon={<Boxes className="h-5 w-5" />}
                         label="Total Produk"
                         value={totalProducts}
-                        description={`${overview.active} aktif`}
+                        description={`${overview.active} produk aktif`}
                     />
                     <OverviewCard
                         icon={<Package className="h-5 w-5" />}
@@ -229,13 +269,13 @@ export default function ProductsContent() {
                         label="Stok Rendah"
                         value={overview.lowStock}
                         variant={overview.lowStock > 0 ? 'danger' : 'default'}
-                        description={overview.lowStock > 0 ? 'Perlu restock' : 'Semua aman'}
+                        description={overview.lowStock > 0 ? 'Perlu tindakan' : 'Semua aman'}
                     />
                 </div>
 
                 {/* Data Table */}
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                    <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1">
                         <TabsTrigger value="all">Semua</TabsTrigger>
                         <TabsTrigger value="goods">Barang</TabsTrigger>
                         <TabsTrigger value="service">Jasa</TabsTrigger>
@@ -275,18 +315,25 @@ export default function ProductsContent() {
                                         cell(props) {
                                             const p = props.row.original as ProductItem
                                             return (
-                                                <div className="flex items-center gap-3 w-[180px]">
-                                                    <img
-                                                        src={resolveUploadImageUrl(p.image)}
-                                                        alt={p.name}
-                                                        className="w-10 h-10 rounded-md object-cover"
-                                                        onError={(e) => {
-                                                            (e.currentTarget as HTMLImageElement).src = '/defaults/default-product-image.png'
-                                                        }}
-                                                    />
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-medium truncate">{p.name}</p>
-                                                        <Badge variant="outline" className={`text-[10px] mt-0.5 ${p.type === 'GOODS' ? 'border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400' : p.type === 'SERVICE' ? 'border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400' : 'border-emerald-200 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400'}`}>
+                                                <div className="flex items-center gap-3 w-[220px]">
+                                                    <div className="h-10 w-10 shrink-0 rounded-md border border-border/60 bg-muted/20 overflow-hidden shadow-sm">
+                                                        <img
+                                                            src={resolveUploadImageUrl(p.image)}
+                                                            alt={p.name}
+                                                            className="h-full w-full object-cover transition-transform hover:scale-110"
+                                                            onError={(e) => {
+                                                                (e.currentTarget as HTMLImageElement).src = '/defaults/default-product-image.png'
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="min-w-0 space-y-0.5">
+                                                        <p className="text-sm font-bold tracking-tight text-foreground/90 truncate">{p.name}</p>
+                                                        <Badge variant="outline" className={cn(
+                                                            "px-1.5 py-0 rounded-md border text-[8px] font-bold uppercase tracking-tighter shadow-none bg-current/5",
+                                                            p.type === 'GOODS' ? 'text-blue-600 dark:text-blue-400 border-blue-500/20' :
+                                                                p.type === 'SERVICE' ? 'text-purple-600 dark:text-purple-400 border-purple-500/20' :
+                                                                    'text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                                        )}>
                                                             {p.type === 'GOODS' ? 'Barang' : p.type === 'SERVICE' ? 'Jasa' : 'Tiket'}
                                                         </Badge>
                                                     </div>
@@ -296,27 +343,33 @@ export default function ProductsContent() {
                                     },
                                     {
                                         accessorKey: 'price',
-                                        header: 'Harga',
+                                        header: 'Harga & Biaya',
                                         cell(props) {
                                             const p = props.row.original as ProductItem
                                             const price = p.type === 'GOODS' ? p.goods?.sellingPrice : p.type === 'TICKET' ? p.ticket?.sellingPrice : p.service?.sellingPrice
                                             return (
-                                                <div>
-                                                    <p className="font-medium tabular-nums">{formatCurrency(price ?? 0)}</p>
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-bold tabular-nums text-foreground/90 tracking-tight">{formatCurrency(price ?? 0)}</p>
                                                     {p.type === 'GOODS' && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            HPP: {formatCurrency(p.goods?.averageHpp ?? 0)}
-                                                        </p>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="px-1 py-0 rounded bg-muted/50 border border-border/40 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">HPP</div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground tabular-nums">
+                                                                {formatCurrency(p.goods?.averageHpp ?? 0)}
+                                                            </p>
+                                                        </div>
                                                     )}
                                                     {p.type === 'SERVICE' && p.service && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Komisi: {p.service.commissionType === 'PERCENTAGE'
-                                                                ? `${p.service.commissionValue}%`
-                                                                : formatCurrency(p.service.commissionValue)}
-                                                        </p>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="px-1 py-0 rounded bg-muted/50 border border-border/40 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Komisi</div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground tabular-nums">
+                                                                {p.service.commissionType === 'PERCENTAGE'
+                                                                    ? `${p.service.commissionValue}%`
+                                                                    : formatCurrency(p.service.commissionValue)}
+                                                            </p>
+                                                        </div>
                                                     )}
                                                     {p.type === 'TICKET' && p.ticket && (
-                                                        <p className="text-xs text-muted-foreground">
+                                                        <p className="text-[10px] font-medium text-muted-foreground italic">
                                                             Kuota: {p.ticket.totalQuota - p.ticket.soldCount} tersisa
                                                         </p>
                                                     )}
@@ -326,19 +379,28 @@ export default function ProductsContent() {
                                     },
                                     {
                                         accessorKey: 'detail',
-                                        header: 'Detail',
+                                        header: 'Stok / Durasi',
                                         enableSorting: false,
                                         cell(props) {
                                             const p = props.row.original as ProductItem
                                             if (p.type === 'GOODS') {
                                                 const isLow = p.goods && (p.goods.currentStock === 0 || (p.goods.minStock != null && p.goods.currentStock <= p.goods.minStock))
                                                 return (
-                                                    <div className="space-y-0.5">
-                                                        <p className={`text-sm tabular-nums ${isLow ? 'text-destructive font-semibold' : ''}`}>
-                                                            Stok: {p.goods?.currentStock ?? 0} {p.goods?.unit}
-                                                        </p>
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={cn(
+                                                                "h-1.5 w-1.5 rounded-full",
+                                                                isLow ? "bg-rose-500 animate-pulse" : "bg-emerald-500"
+                                                            )} />
+                                                            <p className={cn(
+                                                                "text-sm font-bold tabular-nums tracking-tight",
+                                                                isLow ? "text-rose-600" : "text-foreground"
+                                                            )}>
+                                                                {p.goods?.currentStock ?? 0} {p.goods?.unit}
+                                                            </p>
+                                                        </div>
                                                         {p.goods?.minStock != null && (
-                                                            <p className="text-xs text-muted-foreground">Min: {p.goods.minStock}</p>
+                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Min Stock: {p.goods.minStock}</p>
                                                         )}
                                                     </div>
                                                 )
@@ -347,20 +409,24 @@ export default function ProductsContent() {
                                                 const available = p.ticket.totalQuota - p.ticket.soldCount
                                                 const isSoldOut = available <= 0
                                                 return (
-                                                    <div className="space-y-0.5">
-                                                        <p className={`text-sm tabular-nums ${isSoldOut ? 'text-destructive font-semibold' : ''}`}>
-                                                            {isSoldOut ? 'Habis' : `${available}/${p.ticket.totalQuota} tiket`}
+                                                    <div className="space-y-1">
+                                                        <p className={cn(
+                                                            "text-sm font-bold tabular-nums tracking-tight",
+                                                            isSoldOut ? "text-rose-600" : "text-foreground"
+                                                        )}>
+                                                            {isSoldOut ? 'HABIS' : `${available} / ${p.ticket.totalQuota} TIKET`}
                                                         </p>
-                                                        <p className="text-xs text-muted-foreground">
+                                                        <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+                                                            <Clock className="h-3 w-3" />
                                                             {new Date(p.ticket.eventDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                        </p>
+                                                        </div>
                                                     </div>
                                                 )
                                             }
                                             return (
-                                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                                    <Clock className="h-3.5 w-3.5" />
-                                                    {formatDuration(p.service?.durationMinutes)}
+                                                <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-muted/50 border border-border/40 w-fit">
+                                                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    <span className="text-xs font-bold tabular-nums text-foreground">{formatDuration(p.service?.durationMinutes)}</span>
                                                 </div>
                                             )
                                         },
@@ -382,20 +448,18 @@ export default function ProductsContent() {
                                 ]}
                                 rowActions={(row: ProductItem) => [
                                     ...(row.type === 'TICKET' ? [{
-                                        label: 'Detail',
                                         icon: Eye,
                                         variant: 'ghost' as const,
-                                        className: 'text-amber-700 hover:text-amber-800 hover:bg-amber-100',
+                                        className: 'h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-600',
                                         onClick(r: ProductItem) {
                                             setSelectedProduct(r)
                                             setShowTicketDetail(true)
                                         },
                                     }] : []),
                                     {
-                                        label: 'Edit',
                                         icon: PenBox,
                                         variant: 'ghost' as const,
-                                        className: 'text-blue-700 hover:text-blue-800 hover:bg-blue-100',
+                                        className: 'h-8 w-8 hover:bg-primary/10 hover:text-primary',
                                         onClick(r: ProductItem) {
                                             setSelectedProduct(r)
                                             setAction('edit')
@@ -403,10 +467,9 @@ export default function ProductsContent() {
                                         },
                                     },
                                     {
-                                        label: 'Hapus',
                                         icon: Trash2,
                                         variant: 'ghost' as const,
-                                        className: 'text-red-500 hover:text-red-600 hover:bg-red-100',
+                                        className: 'h-8 w-8 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600',
                                         onClick(r: ProductItem) {
                                             setSelectedProduct(r)
                                             setShowDeleteModal(true)

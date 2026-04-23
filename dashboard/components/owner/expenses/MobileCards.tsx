@@ -1,6 +1,7 @@
 "use client";
 
 import { type Expense } from "@/lib/apis/expense";
+import { formatCurrency } from "@/lib/utils";
 
 interface ExpensesMobileCardsProps {
   item: Expense;
@@ -25,40 +26,46 @@ const fmtDate = (iso: string) =>
 
 export function ExpensesMobileCards({ item, onEdit, onDelete }: ExpensesMobileCardsProps) {
   return (
-    <div className="space-y-3">
-      <div
-        key={item.id}
-        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {item.description}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{fmtDate(item.date)}</div>
-          </div>
-          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {fmtCurrency(item.amount)}
-          </div>
+    <div className="bg-background border border-border/60 rounded-md p-4 transition-all hover:bg-muted/30 shadow-sm relative overflow-hidden group">
+      <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="space-y-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">
+            {new Date(item.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
+          </p>
+          <p className="text-sm font-bold text-foreground/80 leading-tight">
+            {item.description}
+          </p>
         </div>
-        {(onEdit || onDelete) && (
-          <div className="mt-3 flex items-center gap-3 justify-end">
-            {onEdit && (
-              <button
-                onClick={() => onEdit(item)}
-                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 text-sm">
-                Edit
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={() => onDelete(item)}
-                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-sm">
-                Hapus
-              </button>
-            )}
-          </div>
-        )}
+        <div className="text-right">
+          <p className="text-sm font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+            -{formatCurrency(item.amount)}
+          </p>
+          <p className="text-[10px] text-muted-foreground/60 tabular-nums">
+            {new Date(item.date).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+          </p>
+        </div>
       </div>
+
+      {(onEdit || onDelete) && (
+        <div className="flex items-center gap-2 pt-3 border-t border-border/40 justify-end">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(item)}
+              className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:bg-blue-500/10 rounded-md transition-all"
+            >
+              Edit
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(item)}
+              className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-rose-600 hover:bg-rose-500/10 rounded-md transition-all"
+            >
+              Hapus
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -18,9 +18,25 @@ export default function LoyaltyContent() {
 
     if (outletLoading || authLoading) {
         return (
-            <div className="space-y-6 p-6">
-                <Skeleton className="h-10 w-1/4" />
-                <Skeleton className="h-[400px] w-full" />
+            <div className="space-y-6 animate-pulse">
+                <div className="space-y-2">
+                    <Skeleton className="h-8 w-64 bg-muted/30" />
+                    <Skeleton className="h-4 w-96 bg-muted/20" />
+                </div>
+                <div className="space-y-4">
+                    <Skeleton className="h-10 w-full max-w-md bg-muted/20" />
+                    <div className="rounded-md border border-border/40 p-1 space-y-4">
+                        <div className="flex items-center justify-between p-4 border-b border-border/40">
+                            <Skeleton className="h-6 w-32 bg-muted/20" />
+                            <Skeleton className="h-9 w-64 bg-muted/20" />
+                        </div>
+                        <div className="p-4 space-y-3">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <Skeleton key={i} className="h-16 w-full bg-muted/10 rounded-md" />
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -33,16 +49,20 @@ export default function LoyaltyContent() {
     const currentOutletName = authData?.outlets?.find((o) => o.id === outletId)?.name || "Outlet";
 
     return (
-        <>
+        <div className="space-y-6">
             <SectionHeader
                 title="Loyalty & Poin"
-                description={`Kelola program poin dan keanggotaan untuk ${currentOutletName}`}
+                description={`Kelola program poin, tier membership, dan basis data keanggotaan untuk ${currentOutletName}`}
             />
 
-            <Tabs defaultValue="members" className="w-full">
-                <TabsList className="grid w-full max-w-[400px] mt-4 grid-cols-2">
-                    <TabsTrigger value="members">Daftar Member</TabsTrigger>
-                    <TabsTrigger value="settings">Pengaturan Poin</TabsTrigger>
+            <Tabs defaultValue="members" className="space-y-4">
+                <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1 w-full sm:w-auto">
+                    <TabsTrigger value="members" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
+                        Daftar Member
+                    </TabsTrigger>
+                    <TabsTrigger value="settings" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
+                        Pengaturan Poin
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="members" className="mt-6">
@@ -53,6 +73,6 @@ export default function LoyaltyContent() {
                     <LoyaltySettings outletId={outletId!} />
                 </TabsContent>
             </Tabs>
-        </ >
+        </div >
     );
 }

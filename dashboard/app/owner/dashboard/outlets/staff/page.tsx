@@ -16,7 +16,7 @@ import { StaffDialog } from '@/components/features/owner/staff/StaffModal'
 import { StaffTable } from '@/components/features/owner/staff/StaffTable'
 import { EmptyOutletState } from '@/components/ui/empty-outlet'
 import { useRouter } from 'next/navigation'
-import { SectionHeader } from '@/components/ui/section-header'
+import { cn } from '@/lib/utils'
 
 export default function StaffManagementPage() {
     const { selectedOutlet } = useOutletContext()
@@ -121,29 +121,75 @@ export default function StaffManagementPage() {
         }
     }
 
+    const activeStaffCount = useMemo(() => staff.filter(s => s.status === 'ACTIVE').length, [staff])
+    const inactiveStaffCount = useMemo(() => staff.filter(s => s.status === 'INACTIVE').length, [staff])
+
     if (!selectedOutlet) return <EmptyOutletState onAddOutlet={() => router.push('/owner/dashboard#add-outlet')} />;
 
     return (
-        <div className="space-y-6 pb-12">
-            <SectionHeader
-                title='Kelola Staff'
-                description={`Atur daftar staff layanan untuk ${outletName}. Tambahkan anggota tim, ubah peran, dan atur status keaktifan mereka.`}
-                actions={
-                    <Button type="button" onClick={handleOpenCreate} className="inline-flex items-center gap-2">
-                        <UserPlus className="h-4 w-4" /> Tambah Staff
-                    </Button>
-                }
-            />
-            <StaffTable
-                data={staff}
-                onDelete={(member) => {
-                    setDeletingStaff(member)
-                    setIsDeleteDialogOpen(true)
-                }}
-                onEdit={(member) => {
-                    handleOpenEdit(member)
-                }}
-            />
+        <div className="space-y-6 pb-12 animate-fade-in">
+            {/* Solid & Clean Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/80 bg-background -mx-6 px-6 pt-2">
+                <div className="space-y-1.5">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-md bg-muted text-foreground flex items-center justify-center border border-border shadow-sm">
+                            <Users className="h-6 w-6" />
+                        </div>
+                        <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
+                            Kelola Kasir
+                        </h1>
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium max-w-2xl">
+                        Atur petugas kasir untuk <span className="text-foreground font-bold">{outletName}</span>. Kelola akses masuk mereka ke sistem Point of Sale (POS).
+                    </p>
+                </div>
+
+                <Button
+                    type="button"
+                    onClick={handleOpenCreate}
+                    className="h-11 px-6 gap-3 font-black uppercase tracking-widest text-[10px] shadow-sm border border-primary/20 transition-all hover:bg-primary/90"
+                >
+                    <UserPlus className="h-4 w-4" /> Tambah Kasir Baru
+                </Button>
+            </div>
+
+            {/* Solid Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                    { label: "Total Kasir Terdaftar", value: staff.length, icon: Users, color: "text-foreground", bg: "bg-muted/50", border: "border-border" },
+                    { label: "Kasir Aktif", value: activeStaffCount, icon: UserPlus, color: "text-emerald-600", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+                    { label: "Kasir Nonaktif", value: inactiveStaffCount, icon: Users, color: "text-rose-600", bg: "bg-rose-500/10", border: "border-rose-500/20" }
+                ].map((stat, idx) => (
+                    <div key={idx} className={cn(
+                        "flex items-center gap-4 p-4 rounded-md border bg-card shadow-sm transition-all hover:shadow-md",
+                        stat.border
+                    )}>
+                        <div className={`h-12 w-12 rounded-md ${stat.bg} ${stat.color} flex items-center justify-center border border-current/10`}>
+                            <stat.icon className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-0.5">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</p>
+                            <p className="text-2xl font-black tracking-tighter text-foreground">{stat.value} Petugas</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="rounded-md border border-border/80 bg-background shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border/40 bg-muted/30">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Database Petugas Kasir</p>
+                </div>
+                <StaffTable
+                    data={staff}
+                    onDelete={(member) => {
+                        setDeletingStaff(member)
+                        setIsDeleteDialogOpen(true)
+                    }}
+                    onEdit={(member) => {
+                        handleOpenEdit(member)
+                    }}
+                />
+            </div>
 
             <StaffDialog
                 onSubmit={handleSubmit}
@@ -151,7 +197,6 @@ export default function StaffManagementPage() {
                 isOpen={isModalOpen}
                 onOpenChange={(open) => !isSubmitting && setIsModalOpen(open)}
                 modalMode={modalMode}
-
             />
 
             <ConfirmDialog
@@ -162,9 +207,9 @@ export default function StaffManagementPage() {
                     }
                     setIsDeleteDialogOpen(open)
                 }}
-                title="Hapus staff?"
-                description={deletingStaff ? `Staff ${deletingStaff.name} tidak akan bisa dijadwalkan lagi setelah dihapus.` : undefined}
-                confirmLabel="Hapus"
+                title="Hapus Akun Kasir?"
+                description={deletingStaff ? `Apakah Anda yakin ingin menghapus akses kasir ${deletingStaff.name}? Kasir ini tidak akan bisa login lagi ke sistem POS.` : undefined}
+                confirmLabel="Hapus Akses"
                 confirmVariant="destructive"
                 confirmLoading={isDeleting}
                 onConfirm={handleDelete}

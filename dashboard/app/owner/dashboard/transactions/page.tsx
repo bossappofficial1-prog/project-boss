@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useOutletContext } from "@/components/providers/OutletProvider";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, TrendingUp, TrendingDown, DollarSign, FileText, FileDown, Loader2, CalendarIcon } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, DollarSign, FileText, FileDown, Loader2, RefreshCw, X } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format, subMonths } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -22,12 +22,8 @@ import { DateRange } from "react-day-picker";
 import { DataTable } from "@/components/ui/data-table";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useExportTransactionReport } from "@/hooks/use-export-transaction-report";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { SectionHeader } from "@/components/ui/section-header";
+import { ExpensesControls } from "@/components/owner/expenses/Controls";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +31,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { SectionHeader } from "@/components/ui/section-header";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
 
 export default function TransactionsPage() {
   const { outlets } = useOutletContext();
@@ -45,8 +47,8 @@ export default function TransactionsPage() {
   const [outletId, setOutletId] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [type, setType] = useState<string>("ALL");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>(subMonths(new Date(), 1).toISOString());
+  const [endDate, setEndDate] = useState<string>(new Date().toISOString());
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -83,7 +85,7 @@ export default function TransactionsPage() {
   const { data, isLoading, isFetching, error, refetch } = useTransactionList({
     outletId: outletId || undefined,
     status: status || undefined,
-    type: type as "INCOME" | "EXPENSE" | "ALL", // New: pass type filter
+    type: type as "INCOME" | "EXPENSE" | "ALL",
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     page,
@@ -91,15 +93,29 @@ export default function TransactionsPage() {
     q: searchQuery,
   });
 
+  const handleRangeChange = useCallback((start: string, end: string) => {
+    setStartDate(start);
+    setEndDate(end);
+    setPage(1);
+  }, []);
+
+  const handleResetFilters = () => {
+    setOutletId("");
+    setStatus("");
+    setType("ALL");
+    setStartDate(subMonths(new Date(), 1).toISOString());
+    setEndDate(new Date().toISOString());
+    setSearchTerm("");
+    setPage(1);
+  };
+
   const getStatusBadge = (transaction: any) => {
     const orderStatus = transaction.order?.orderStatus;
     const transactionStatus = transaction.status;
-    let displayStatus = transactionStatus;
     let displayLabel = "";
     let displayVariant: "default" | "destructive" | "success" | "warning" | "secondary" = "default";
 
     if (orderStatus === "AWAITING_PAYMENT" && transaction.isManual) {
-      displayStatus = "PENDING";
       displayLabel = "Menunggu Verifikasi";
       displayVariant = "warning";
     } else {
@@ -122,53 +138,10 @@ export default function TransactionsPage() {
     }
 
     return (
-      <Badge variant={displayVariant} className="font-poppins">
+      <Badge variant={displayVariant} className="font-bold text-[10px] uppercase tracking-wider">
         {displayLabel}
       </Badge>
     );
-  };
-
-  // Payment method badge
-  const getPaymentMethodBadge = (transaction: any) => {
-    const isManual = transaction.isManual;
-    const method = transaction.manualMethod || transaction.paymentMethod || "Online";
-    const hasProof = Boolean(transaction.paymentProofUrl);
-
-    return (
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-poppins">
-            {method}
-          </Badge>
-          {isManual && transaction.order?.orderStatus === "AWAITING_PAYMENT" && (
-            <Badge variant="warning" className="text-[0.65rem] font-poppins">
-              Belum Dikonfirmasi
-            </Badge>
-          )}
-        </div>
-        {hasProof && (
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto px-0 py-0 text-xs font-medium text-primary justify-start"
-            onClick={() => setProofPreview({ url: transaction.paymentProofUrl, transaction })}>
-            <FileText className="w-3 h-3 mr-1" />
-            Lihat Bukti
-          </Button>
-        )}
-      </div>
-    );
-  };
-
-  // Reset filters
-  const handleResetFilters = () => {
-    setOutletId("");
-    setStatus("");
-    setType("ALL");
-    setStartDate("");
-    setEndDate("");
-    setSearchTerm("");
-    setPage(1);
   };
 
   const totalTransactions = data?.pagination?.total ?? 0;
@@ -180,282 +153,234 @@ export default function TransactionsPage() {
     return base.sort((a, b) => a - b);
   }, [limit]);
 
+  const totals = data?.data.totals;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <SectionHeader
         title="Riwayat Transaksi"
-        description="Lihat dan kelola semua transaksi bisnis Anda"
+        description="Pantau arus kas masuk dan keluar bisnis Anda secara real-time."
         actions={
           <Button
             onClick={() => setShowExportDialog(true)}
-            className="font-poppins"
+            className="font-bold text-xs uppercase tracking-widest h-10 shadow-none"
           >
             <FileDown className="w-4 h-4 mr-2" />
-            Export Laporan PDF
+            Export PDF
           </Button>
         }
       />
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-poppins">
-            <Filter className="w-5 h-5" />
-            Filter
-          </CardTitle>
-          <CardDescription className="font-poppins">
-            Filter transaksi berdasarkan tipe, outlet, status, dan tanggal
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Cari transaksi..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(1);
-                }}
-                className="pl-10 font-poppins"
-              />
-            </div>
-
-            {/* Type Filter - NEW */}
-            <Select
-              value={type}
-              onValueChange={(value) => {
-                setType(value);
-                setPage(1);
-              }}>
-              <SelectTrigger className="font-poppins">
-                <SelectValue placeholder="Semua Tipe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL" className="font-poppins">
-                  Semua Tipe
-                </SelectItem>
-                <SelectItem value="INCOME" className="font-poppins">
-                  Pemasukan
-                </SelectItem>
-                <SelectItem value="EXPENSE" className="font-poppins">
-                  Pengeluaran
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Outlet Filter */}
-            <Select
-              value={outletId || "all"}
-              onValueChange={(value) => {
-                setOutletId(value === "all" ? "" : value);
-                setPage(1);
-              }}>
-              <SelectTrigger className="font-poppins">
-                <SelectValue placeholder="Semua Outlet" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="font-poppins">
-                  Semua Outlet
-                </SelectItem>
-                {outlets.map((outlet) => (
-                  <SelectItem key={outlet.id} value={outlet.id} className="font-poppins">
-                    {outlet.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Status Filter */}
-            <Select
-              value={status || "all"}
-              onValueChange={(value) => {
-                setStatus(value === "all" ? "" : value);
-                setPage(1);
-              }}>
-              <SelectTrigger className="font-poppins">
-                <SelectValue placeholder="Semua Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="font-poppins">
-                  Semua Status
-                </SelectItem>
-                <SelectItem value="PENDING" className="font-poppins">
-                  Pending
-                </SelectItem>
-                <SelectItem value="SUCCESS" className="font-poppins">
-                  Berhasil
-                </SelectItem>
-                <SelectItem value="FAILED" className="font-poppins">
-                  Gagal
-                </SelectItem>
-                <SelectItem value="CANCELLED" className="font-poppins">
-                  Dibatalkan
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Date Range */}
-            <div className="flex gap-2 md:col-span-2 lg:col-span-1">
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setPage(1);
-                }}
-                className="font-poppins"
-                placeholder="Dari tanggal"
-              />
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setPage(1);
-                }}
-                className="font-poppins"
-                placeholder="Sampai tanggal"
-              />
+      <Card className="rounded-md border-border/80 bg-background shadow-sm p-1 pl-4 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-8 py-2 overflow-x-auto no-scrollbar">
+          {/* Pemasukan */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-1 h-8 rounded-full bg-emerald-500/80" />
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-60 mb-0.5">Pemasukan</p>
+              <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums leading-none">
+                {formatCurrency(totals?.total_revenue || 0)}
+              </p>
             </div>
           </div>
 
-          {/* Reset Button */}
-          {(outletId || status || type !== "ALL" || startDate || endDate || searchTerm) && (
-            <div className="mt-4">
-              <Button variant="outline" onClick={handleResetFilters} className="font-poppins">
-                Reset Filter
-              </Button>
+          <div className="hidden sm:block h-8 w-px bg-border/40" />
+
+          {/* Pengeluaran */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-1 h-8 rounded-full bg-rose-500/80" />
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-60 mb-0.5">Pengeluaran</p>
+              <p className="text-base font-bold text-rose-600 dark:text-rose-400 tabular-nums leading-none">
+                {formatCurrency(totals?.total_expense || 0)}
+              </p>
             </div>
-          )}
-        </CardContent>
+          </div>
+
+          <div className="hidden sm:block h-8 w-px bg-border/40" />
+
+          {/* Saldo Bersih */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className={cn("w-1 h-8 rounded-full", (totals?.total_margin_pendapatan || 0) >= 0 ? "bg-blue-500/80" : "bg-orange-500/80")} />
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-60 mb-0.5">Saldo Bersih</p>
+              <p className={cn("text-base font-bold tabular-nums leading-none", (totals?.total_margin_pendapatan || 0) >= 0 ? "text-blue-600" : "text-orange-600")}>
+                {formatCurrency(totals?.total_margin_pendapatan || 0)}
+              </p>
+            </div>
+          </div>
+
+          <div className="hidden xl:block h-10 w-px bg-border/40 mx-2" />
+
+          {/* Date Range Controls */}
+          <div className="flex-1 min-w-[300px]">
+            <ExpensesControls
+              startISO={startDate}
+              endISO={endDate}
+              onRangeChange={handleRangeChange}
+              hideAddButton={true}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 pr-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => refetch()}
+            className="h-9 w-9 rounded-md hover:bg-muted/50 transition-all text-muted-foreground"
+          >
+            <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
+          </Button>
+        </div>
       </Card>
 
-      {/* Summary Cards */}
-      {!isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Total Income */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 font-poppins">Total Pemasukan</p>
-                  <p className="text-2xl font-bold text-green-600 font-poppins mt-2">
-                    {formatCurrency(data?.data.totals?.total_revenue || 0)}
-                  </p>
-                </div>
-                <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Total Expense */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 font-poppins">
-                    Total Pengeluaran
-                  </p>
-                  <p className="text-2xl font-bold text-red-600 font-poppins mt-2">
-                    {formatCurrency(data?.data.totals?.total_expense || 0)}
-                  </p>
-                </div>
-                <div className="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center">
-                  <TrendingDown className="h-6 w-6 text-red-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Net Amount */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 font-poppins">Saldo Bersih</p>
-                  <p
-                    className={`text-2xl font-bold font-poppins mt-2 ${(data?.data.totals?.total_margin_pendapatan || 0) >= 0 ? "text-blue-600" : "text-orange-600"}`}>
-                    {formatCurrency(data?.data.totals?.total_margin_pendapatan || 0)}
-                  </p>
-                </div>
-                <div
-                  className={`h-12 w-12 rounded-full flex items-center justify-center ${data?.data.totals?.total_margin_pendapatan || 0 >= 0 ? "bg-blue-100" : "bg-orange-100"}`}>
-                  <DollarSign
-                    className={`h-6 w-6 ${data?.data.totals?.total_margin_pendapatan || 0 >= 0 ? "text-blue-600" : "text-orange-600"}`}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="flex flex-col md:flex-row items-center gap-3">
+        <div className="relative group flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 group-focus-within:text-primary transition-colors" />
+          <Input
+            placeholder="Cari transaksi (ID, Deskripsi)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 h-10 text-xs font-bold bg-background/50 border-border/40 focus:border-primary/40 focus:ring-primary/10 transition-all"
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/30 hover:text-foreground transition-colors">
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
-      )}
+
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger className="h-10 w-[140px] text-[10px] font-bold uppercase tracking-widest bg-background/50 border-border/40">
+              <SelectValue placeholder="Tipe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Semua Tipe</SelectItem>
+              <SelectItem value="INCOME">Pemasukan</SelectItem>
+              <SelectItem value="EXPENSE">Pengeluaran</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={outletId || "all"} onValueChange={(v) => setOutletId(v === "all" ? "" : v)}>
+            <SelectTrigger className="h-10 w-[180px] text-[10px] font-bold uppercase tracking-widest bg-background/50 border-border/40">
+              <SelectValue placeholder="Outlet" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Outlet</SelectItem>
+              {outlets.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
+            <SelectTrigger className="h-10 w-[140px] text-[10px] font-bold uppercase tracking-widest bg-background/50 border-border/40">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Status</SelectItem>
+              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="SUCCESS">Berhasil</SelectItem>
+              <SelectItem value="FAILED">Gagal</SelectItem>
+              <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(outletId || status || type !== "ALL" || searchTerm) && (
+            <Button variant="ghost" size="icon" onClick={handleResetFilters} className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 transition-all">
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
 
       <DataTable
         isLoading={isLoading}
         isRefreshing={isFetching && !isLoading}
         onRefresh={refetch}
         data={data?.data.items || []}
+        emptyMessage="Belum ada transaksi ditemukan."
         columns={[
           {
             accessorKey: "createdAt",
             header: "Tanggal",
-            cell(props) {
-              return format(new Date(props.getValue() as Date), "dd MMM yyyy, HH:mm", {
-                locale: localeId,
-              });
-            },
+            cell: ({ row }) => (
+              <div className="flex flex-col">
+                <span className="font-bold text-foreground/90 text-xs tabular-nums">
+                  {format(new Date(row.original.createdAt), "dd MMM yyyy", { locale: localeId })}
+                </span>
+                <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                  {format(new Date(row.original.createdAt), "HH:mm", { locale: localeId })}
+                </span>
+              </div>
+            ),
           },
           {
             accessorKey: "type",
             header: "Tipe",
-            cell(props) {
+            cell: ({ row }) => {
+              const isIncome = row.original.type === "INCOME";
               return (
-                <Badge
-                  variant={(props.getValue() as any) === "INCOME" ? "success" : "destructive"}
-                  className="font-poppins">
-                  {(props.getValue() as any) === "INCOME" ? "Pemasukan" : "Pengeluaran"}
+                <Badge variant={isIncome ? "success" : "destructive"} className="font-bold text-[9px] uppercase tracking-wider">
+                  {isIncome ? "Pemasukan" : "Pengeluaran"}
                 </Badge>
               );
             },
           },
           {
             accessorKey: "description",
-            enableSorting: true,
             header: "Deskripsi",
+            cell: ({ row }) => (
+              <div className="max-w-[250px]">
+                <p className="font-bold text-foreground/80 text-xs truncate">{row.original.description}</p>
+                <p className="text-[9px] text-muted-foreground/50 tabular-nums mt-0.5">#{row.original.id.slice(-8).toUpperCase()}</p>
+              </div>
+            ),
           },
           {
             accessorKey: "outlet",
             header: "Outlet",
-            enableSorting: true,
-            cell: (outlet) => (outlet.getValue() as any).name || "-",
-          },
-          {
-            accessorKey: "cashier",
-            header: "Kasir",
-            enableSorting: true,
-            cell: (props) => props.row.original.cashier || "-",
+            cell: ({ row }) => (
+              <span className="text-xs font-bold text-foreground/70">{row.original.outlet?.name || "-"}</span>
+            ),
           },
           {
             accessorKey: "paymentMethod",
             header: "Metode",
-            cell: (props) => getPaymentMethodBadge(props.row.original),
+            cell: ({ row }) => {
+              const transaction = row.original;
+              const method = transaction.manualMethod || transaction.paymentMethod || "Online";
+              const hasProof = Boolean(transaction.paymentProofUrl);
+              return (
+                <div className="flex flex-col gap-1">
+                  <Badge variant="outline" className="w-fit font-bold text-[9px] uppercase tracking-tighter opacity-70">
+                    {method}
+                  </Badge>
+                  {hasProof && (
+                    <button
+                      onClick={() => setProofPreview({ url: transaction.paymentProofUrl!, transaction })}
+                      className="flex items-center gap-1 text-[9px] font-bold text-primary hover:underline"
+                    >
+                      <FileText className="w-2.5 h-2.5" />
+                      LIHAT BUKTI
+                    </button>
+                  )}
+                </div>
+              );
+            }
           },
           {
             accessorKey: "amount",
-            header: "Total",
-            cell: (props) => {
-              const transaction = props.row.original;
+            header: "Jumlah",
+            cell: ({ row }) => {
+              const isIncome = row.original.type === "INCOME";
               return (
-                <span
-                  className={`font-semibold font-poppins ${transaction.type === "EXPENSE" ? "text-red-600" : "text-green-600"}`}>
-                  {transaction.type === "EXPENSE" ? "- " : "+ "}
-                  {formatCurrency(transaction.amount)}
+                <span className={cn(
+                  "font-bold tabular-nums text-xs",
+                  isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                )}>
+                  {isIncome ? "+ " : "- "}
+                  {formatCurrency(row.original.amount)}
                 </span>
               );
             },
@@ -463,16 +388,10 @@ export default function TransactionsPage() {
           {
             accessorKey: "status",
             header: "Status",
-            enableSorting: false,
-            cell: (props) => {
-              const transaction = props.row.original;
-              return getStatusBadge(transaction);
-            },
+            cell: ({ row }) => getStatusBadge(row.original),
           },
         ]}
-        showColumnVisibility
-        enableColumnResizing
-        actionViewType="dropdown"
+        stickyHeader
         serverSidePagination
         totalItems={totalTransactions}
         serverPage={page}
@@ -484,46 +403,50 @@ export default function TransactionsPage() {
         pageSizeOptions={pageSizeOptions}
         globalFilter={false}
         enableExport
-        exportFilename="transactions"
+        exportFilename={`transaksi-${format(new Date(), "yyyy-MM-dd")}`}
         exportConfig={[
           {
             id: "csv",
             label: "Export CSV",
             enabled: true,
             type: "client",
-            filename: "TransactionsPage",
-            customMapping: (row: any) => {
-              return {
-                ...row,
-                Outlet: row.outlet?.name || "-",
-              };
-            },
+            filename: "transaksi-data",
+            customMapping: (row: any) => ({
+              ID: row.id,
+              Tanggal: format(new Date(row.createdAt), "yyyy-MM-dd HH:mm"),
+              Tipe: row.type,
+              Outlet: row.outlet?.name || "-",
+              Deskripsi: row.description,
+              Metode: row.manualMethod || row.paymentMethod || "-",
+              Jumlah: row.amount,
+              Status: row.status
+            }),
           },
         ]}
       />
 
-      {/* Export PDF Dialog */}
+      {/* ══════════ Export PDF Dialog ══════════ */}
       <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-poppins">Export Laporan PDF</DialogTitle>
-            <DialogDescription className="font-poppins">
-              Pilih rentang tanggal untuk laporan transaksi. Laporan akan dikirim ke email Anda.
+            <DialogTitle className="font-bold text-lg">Export Laporan PDF</DialogTitle>
+            <DialogDescription className="text-xs">
+              Pilih rentang tanggal untuk laporan transaksi. Laporan akan diproses secara real-time.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground font-poppins">Rentang Tanggal</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Rentang Tanggal</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal font-poppins",
+                      "w-full justify-start text-left font-bold text-xs h-12 bg-muted/20 border-border/40",
                       !exportDateRange && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <CalendarIcon className="mr-2 h-4 w-4 opacity-40" />
                     {exportDateRange?.from ? (
                       exportDateRange.to ? (
                         <>
@@ -553,69 +476,78 @@ export default function TransactionsPage() {
             </div>
 
             {exportDateRange?.from && exportDateRange?.to && (
-              <div className="rounded-md bg-muted/50 p-3 text-sm font-poppins text-muted-foreground">
-                Laporan akan mencakup transaksi dari{" "}
-                <strong className="text-foreground">
-                  {format(exportDateRange.from, "dd MMMM yyyy", { locale: localeId })}
-                </strong>{" "}
-                sampai{" "}
-                <strong className="text-foreground">
-                  {format(exportDateRange.to, "dd MMMM yyyy", { locale: localeId })}
-                </strong>
+              <div className="rounded-md bg-muted/50 p-4 border border-border/40">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-primary opacity-60" />
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Periode Laporan</p>
+                    <p className="text-xs font-bold text-foreground">
+                      {format(exportDateRange.from, "dd MMMM yyyy", { locale: localeId })} — {format(exportDateRange.to, "dd MMMM yyyy", { locale: localeId })}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
           <div className="flex justify-end gap-3">
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => setShowExportDialog(false)}
-              className="font-poppins"
+              className="font-bold text-[10px] uppercase tracking-widest"
             >
               Batal
             </Button>
             <Button
               onClick={handleExportPDF}
               disabled={!exportDateRange?.from || !exportDateRange?.to || exportReport.isPending}
-              className="font-poppins"
+              className="font-bold text-[10px] uppercase tracking-widest min-w-[120px]"
             >
               {exportReport.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <>
+                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                  Memproses...
+                </>
               ) : (
-                <FileDown className="w-4 h-4 mr-2" />
+                <>
+                  <FileDown className="w-3 h-3 mr-2" />
+                  Export PDF
+                </>
               )}
-              {exportReport.isPending ? "Memproses..." : "Export PDF"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Proof Preview Dialog */}
+      {/* ══════════ Proof Preview Dialog ══════════ */}
       <Dialog open={Boolean(proofPreview)} onOpenChange={(open) => !open && setProofPreview(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="font-poppins">Bukti Pembayaran</DialogTitle>
-            <DialogDescription className="font-poppins">
-              {proofPreview?.transaction?.description || "Detail transaksi"}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4">
-            {proofPreview?.url ? (
-              <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden">
+        <DialogContent className="max-w-md p-0 overflow-hidden border-none bg-transparent shadow-none">
+          {proofPreview?.url && (
+            <div className="relative group">
+              <div className="absolute top-4 right-4 z-10">
+                <Button size="icon" variant="secondary" onClick={() => setProofPreview(null)} className="h-8 w-8 rounded-full shadow-lg">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="rounded-lg overflow-hidden bg-background shadow-2xl border border-border/40">
+                <div className="p-4 bg-muted/30 border-b border-border/40">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Bukti Pembayaran</p>
+                  <p className="text-xs font-bold text-foreground truncate">{proofPreview.transaction?.description}</p>
+                </div>
                 <img
                   src={proofPreview.url}
                   alt="Bukti Pembayaran"
-                  className="w-full h-auto max-h-[60vh] object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/placeholder-image.png";
-                  }}
+                  className="w-full h-auto max-h-[70vh] object-contain"
                 />
+                <div className="p-4 flex justify-center">
+                  <Button asChild variant="outline" size="sm" className="font-bold text-[10px] uppercase tracking-widest">
+                    <a href={proofPreview.url} target="_blank" rel="noreferrer">
+                      Buka Gambar Penuh
+                    </a>
+                  </Button>
+                </div>
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500 font-poppins">
-                Bukti pembayaran tidak tersedia
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

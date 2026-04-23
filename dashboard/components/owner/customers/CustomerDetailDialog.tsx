@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCustomer } from "@/hooks/useCustomers";
+import { cn } from "@/lib/utils";
 
 interface CustomerDetailDialogProps {
     customerId: string | null;
@@ -90,86 +91,128 @@ export default function CustomerDetailDialog({ customerId, outletId, open, onOpe
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Detail Pelanggan</DialogTitle>
-                    <DialogDescription>Informasi pelanggan dan riwayat order (readonly).</DialogDescription>
+            <DialogContent className="max-w-2xl gap-0 p-0 min-w-3xl border-border/80 shadow-2xl overflow-hidden">
+                <DialogHeader className="p-6 border-b border-border/40 bg-muted/30">
+                    <DialogTitle className="text-sm font-bold uppercase tracking-widest text-foreground/90">Detail Pelanggan</DialogTitle>
+                    <DialogDescription className="text-[10px] font-medium uppercase tracking-tighter opacity-70">Informasi pelanggan dan riwayat transaksi mendetail.</DialogDescription>
                 </DialogHeader>
 
                 {(isLoading || isFetching) && (
-                    <div className="space-y-3">
-                        <Skeleton className="h-6 w-1/2" />
-                        <Skeleton className="h-20 w-full" />
-                        <Skeleton className="h-32 w-full" />
+                    <div className="p-6 space-y-6 animate-pulse">
+                        <div className="grid grid-cols-2 gap-4">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="space-y-2">
+                                    <Skeleton className="h-3 w-20 bg-muted/20" />
+                                    <Skeleton className="h-5 w-full bg-muted/30" />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="space-y-4 pt-4 border-t border-border/40">
+                            <Skeleton className="h-4 w-32 bg-muted/20" />
+                            <div className="space-y-2">
+                                {Array.from({ length: 3 }).map((_, i) => (
+                                    <Skeleton key={i} className="h-20 w-full bg-muted/10 rounded-md" />
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
 
                 {!isLoading && !isFetching && customer && (
-                    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                            <div>
-                                <p className="text-muted-foreground">Nama</p>
-                                <p className="font-medium">{customer.name || "-"}</p>
+                    <div className="p-6 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Nama Lengkap</p>
+                                <p className="text-sm font-bold text-foreground/90">{customer.name || "-"}</p>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground">No. HP</p>
-                                <p className="font-medium">{customer.phone || "-"}</p>
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">No. HP / WA</p>
+                                <p className="text-sm font-bold text-foreground/90 tabular-nums">{customer.phone || "-"}</p>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground">Email</p>
-                                <p className="font-medium">{customer.email || "-"}</p>
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Email Address</p>
+                                <p className="text-sm font-medium text-foreground/80 italic">{customer.email || "-"}</p>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground">Bergabung</p>
-                                <p className="font-medium">{formatDateTime(customer.createdAt)}</p>
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Tanggal Bergabung</p>
+                                <p className="text-sm font-bold text-foreground/90 tabular-nums">{formatDateTime(customer.createdAt)}</p>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground">Total Pesanan</p>
-                                <Badge variant="secondary">{totalOrders} Pesanan</Badge>
+                            <div className="space-y-2">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Total Pesanan</p>
+                                <Badge variant="outline" className="font-bold text-[10px] uppercase tracking-wider px-2 py-0 border-primary/20 bg-primary/5 text-primary shadow-none">
+                                    {totalOrders} Pesanan
+                                </Badge>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground">Total Belanja</p>
-                                <p className="font-semibold">{formatCurrency(totalSpending)}</p>
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Total Belanja</p>
+                                <p className="text-sm font-bold text-emerald-600 tabular-nums">{formatCurrency(totalSpending)}</p>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground">Poin</p>
-                                <p className="font-medium">{customer.totalPoint ?? 0}</p>
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Loyalty Poin</p>
+                                <p className="text-sm font-bold text-violet-600 tabular-nums">{customer.totalPoint ?? 0} Poin</p>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground">Transaksi Terakhir</p>
-                                <p className="font-medium">{formatDateTime(lastTransaction)}</p>
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Transaksi Terakhir</p>
+                                <p className="text-sm font-bold text-foreground/90 tabular-nums">{formatDateTime(lastTransaction)}</p>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <p className="text-sm font-semibold">Riwayat Order</p>
+                        <div className="space-y-4 pt-6 border-t border-border/40">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Riwayat Order (10 Terakhir)</h4>
+                                <Badge variant="outline" className="text-[9px] font-bold border-border/60 text-muted-foreground/60">{orders.length} Total</Badge>
+                            </div>
+
                             {orders.length > 0 ? (
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {orders.slice(0, 10).map((order: any) => (
-                                        <div key={order.id} className="rounded-md border p-3 text-sm space-y-1">
-                                            <p className="font-medium break-all">Order: {order.id || "-"}</p>
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <Badge variant={getOrderStatusVariant(order.orderStatus)}>
-                                                    {getOrderStatusLabel(order.orderStatus)}
-                                                </Badge>
-                                                <Badge variant={getPaymentStatusVariant(order.paymentStatus)}>
-                                                    {getPaymentStatusLabel(order.paymentStatus)}
-                                                </Badge>
-                                                <span className="text-muted-foreground">{formatDateTime(order.createdAt)}</span>
+                                        <div key={order.id} className="group rounded-md border border-border/60 bg-muted/5 p-4 transition-all hover:bg-muted/10 hover:border-border/80">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Order ID</p>
+                                                    <p className="text-xs font-bold text-foreground/90 break-all tabular-nums">#{order.id?.slice(-8).toUpperCase() || "-"}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+                                                    <Badge variant="outline" className={cn(
+                                                        "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 shadow-none border-opacity-20",
+                                                        getOrderStatusVariant(order.orderStatus) === "success" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500" :
+                                                            getOrderStatusVariant(order.orderStatus) === "warning" ? "bg-amber-500/10 text-amber-600 border-amber-500" :
+                                                                getOrderStatusVariant(order.orderStatus) === "destructive" ? "bg-rose-500/10 text-rose-600 border-rose-500" :
+                                                                    "bg-muted text-muted-foreground border-border"
+                                                    )}>
+                                                        {getOrderStatusLabel(order.orderStatus)}
+                                                    </Badge>
+                                                    <Badge variant="outline" className={cn(
+                                                        "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 shadow-none border-opacity-20",
+                                                        getPaymentStatusVariant(order.paymentStatus) === "success" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500" :
+                                                            getPaymentStatusVariant(order.paymentStatus) === "warning" ? "bg-amber-500/10 text-amber-600 border-amber-500" :
+                                                                getPaymentStatusVariant(order.paymentStatus) === "destructive" ? "bg-rose-500/10 text-rose-600 border-rose-500" :
+                                                                    "bg-muted text-muted-foreground border-border"
+                                                    )}>
+                                                        {getPaymentStatusLabel(order.paymentStatus)}
+                                                    </Badge>
+                                                </div>
                                             </div>
-                                            <p className="font-semibold">{formatCurrency(Number(order.totalAmount || 0))}</p>
+                                            <div className="flex items-center justify-between pt-3 border-t border-border/40">
+                                                <span className="text-[10px] font-medium text-muted-foreground tabular-nums">{formatDateTime(order.createdAt)}</span>
+                                                <p className="text-sm font-bold text-foreground/90 tabular-nums">{formatCurrency(Number(order.totalAmount || 0))}</p>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground">Belum ada riwayat order.</p>
+                                <div className="py-12 rounded-md border border-dashed border-border/60 flex flex-col items-center justify-center text-center">
+                                    <p className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest">Belum Ada Riwayat Order</p>
+                                </div>
                             )}
                         </div>
                     </div>
                 )}
 
                 {!isLoading && !isFetching && !customer && (
-                    <p className="text-sm text-muted-foreground">Detail pelanggan tidak tersedia.</p>
+                    <div className="p-12 text-center">
+                        <p className="text-sm font-bold text-muted-foreground/60 uppercase tracking-widest">Detail Pelanggan Tidak Tersedia</p>
+                    </div>
                 )}
             </DialogContent>
         </Dialog>

@@ -1,223 +1,152 @@
-'use client'
+"use client";
 
-import { useMemo, useState } from 'react'
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell
-} from 'recharts'
-import { Badge } from '@/components/ui/badge'
-import { TopProduct } from '@/types'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+    Bar,
+    BarChart,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+} from "recharts";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
+import { ShoppingBag, TrendingUp, Info } from "lucide-react";
+import { formatCurrency, formatNumberCompactID } from "@/lib/utils";
+
+interface TopProductsData {
+    name: string;
+    revenue: number;
+    sales: number;
+}
 
 interface TopProductsChartProps {
-  data: TopProduct[]
+    data: TopProductsData[];
 }
 
-const PRODUCT_COLORS: Record<TopProduct['type'], string> = {
-  GOODS: '#2563eb',
-  SERVICE: '#f59e0b'
-}
+const chartConfig = {
+    revenue: { label: "Pendapatan", color: "var(--chart-1)" },
+    sales: { label: "Terjual", color: "var(--chart-2)" },
+} satisfies ChartConfig;
 
-const CustomTooltip = ({ active, payload }: any) => {
-  if (!active || !payload?.length) return null
-  const item = payload[0].payload as TopProduct
-
-  return (
-    <div className="rounded-md border border-gray-200 bg-white px-3 py-2 text-xs shadow-sm dark:border-gray-800 dark:bg-gray-950">
-      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{item.name}</p>
-      <div className="mt-2 space-y-1 text-[11px] text-gray-600 dark:text-gray-400">
-        <p className="flex justify-between">
-          <span>Terjual</span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{item.quantity}</span>
-        </p>
-        <p className="flex justify-between">
-          <span>Revenue</span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">Rp {item.revenue.toLocaleString('id-ID')}</span>
-        </p>
-        <p className="flex justify-between">
-          <span>Tipe</span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{item.type === 'GOODS' ? 'Produk' : 'Jasa'}</span>
-        </p>
-      </div>
-    </div>
-  )
-}
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="rounded-lg border border-border/50 bg-background/95 p-3 shadow-xl backdrop-blur-sm">
+                <p className="mb-2 text-xs font-bold text-foreground uppercase tracking-tight border-b border-border/40 pb-1">
+                    {label}
+                </p>
+                <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-8">
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-chart-1" />
+                            <span className="text-[10px] text-muted-foreground uppercase font-medium">Pendapatan</span>
+                        </div>
+                        <span className="font-bold text-foreground">{formatCurrency(payload[0].value)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-8">
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-chart-2" />
+                            <span className="text-[10px] text-muted-foreground uppercase font-medium">Unit Terjual</span>
+                        </div>
+                        <span className="font-bold text-foreground">{payload[1].value} item</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
 
 export default function TopProductsChart({ data }: TopProductsChartProps) {
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart')
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+    const topProduct = data[0];
 
-  const { totalRevenue, totalQuantity, chartData } = useMemo(() => {
-    const sorted = [...data].sort((a, b) => b.revenue - a.revenue)
-    const revenueSum = sorted.reduce((sum, item) => sum + item.revenue, 0)
-    const quantitySum = sorted.reduce((sum, item) => sum + item.quantity, 0)
-    return {
-      chartData: sorted,
-      totalRevenue: revenueSum,
-      totalQuantity: quantitySum
-    }
-  }, [data])
-
-  return (
-    <Card className="rounded-md py-5">
-      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-500">Produk</p>
-          <CardTitle className="text-lg">Top Produk Terlaris</CardTitle>
-          <CardDescription className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Total revenue: Rp {totalRevenue.toLocaleString('id-ID')}
-          </CardDescription>
-        </div>
-
-        <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-1 py-1 text-xs font-medium dark:border-gray-700 dark:bg-gray-900">
-          {(['chart', 'table'] as const).map((mode) => (
-            <Button
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              variant="ghost"
-              size="sm"
-              className={`rounded-full px-3 py-1 transition-colors ${viewMode === mode
-                ? 'bg-white text-gray-900 shadow-sm hover:bg-white dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-100'
-                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
-                }`}
-            >
-              {mode === 'chart' ? 'Chart' : 'Tabel'}
-            </Button>
-          ))}
-        </div>
-      </CardHeader>
-
-      <CardContent className="mt-2">
-        <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Total produk</p>
-            <p className="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">{data.length}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Total penjualan</p>
-            <p className="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">{totalQuantity}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Pendapatan tertinggi</p>
-            <p className="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">
-              Rp {chartData[0]?.revenue.toLocaleString('id-ID')}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Produk teratas</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">{chartData[0]?.name}</p>
-          </div>
-        </div>
-
-        {viewMode === 'chart' ? (
-          <div className="mt-6 h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%" minHeight={370}>
-              <BarChart
-                data={chartData}
-                margin={{ top: 10, right: 20, left: 0, bottom: 40 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-
-                <XAxis
-                  dataKey="name"
-                  textAnchor="end"
-                  height={70}
-                  tick={{ fontSize: 12, fill: '#6b7280' }}
-                  stroke="#e5e7eb"
-                />
-
-                <YAxis
-                  stroke="#e5e7eb"
-                  tick={{ fontSize: 12, fill: '#6b7280' }}
-                />
-
-                <Tooltip
-                  content={<CustomTooltip />}
-                  cursor={{ fill: '#f1f5f9', opacity: 0.6 }}
-                />
-
-                <Bar
-                  dataKey="revenue"
-                  radius={[6, 6, 0, 0]}
-                  onMouseEnter={(_, index) => setHoveredIndex(index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell
-                      key={entry.id}
-                      fill={PRODUCT_COLORS[entry.type]}
-                      opacity={hoveredIndex === null || hoveredIndex === index ? 1 : 0.4}
-                      style={{
-                        transition: 'opacity 0.2s ease, transform 0.2s ease',
-                        transform: hoveredIndex === index ? 'scale(1.02)' : 'scale(1)',
-                        transformOrigin: 'bottom'
-                      }}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-
-          </div>
-        ) : (
-          <div className="mt-6 space-y-3">
-            {chartData.map((item, index) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`w-full rounded-lg border px-4 py-4 text-left transition-all ${hoveredIndex === index
-                  ? 'border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
-                  : 'border-transparent bg-white dark:bg-gray-950'
-                  }`}
-                onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">#{index + 1}</span>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{item.name}</p>
-                      <Badge variant={item.type === 'GOODS' ? 'default' : 'secondary'}>
-                        {item.type === 'GOODS' ? 'Produk' : 'Jasa'}
-                      </Badge>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Terjual {item.quantity} · Rp {item.revenue.toLocaleString('id-ID')}
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {((item.revenue / Math.max(totalRevenue, 1)) * 100).toFixed(1)}%
-                  </p>
+    return (
+        <Card className="rounded-md gap-0 py-0 border-border/60 shadow-md overflow-hidden bg-gradient-to-b from-background to-muted/5 h-full">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/40 bg-muted/20 p-4">
+                <div className="space-y-1">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <div className="p-1.5 rounded-md bg-chart-2/10">
+                            <ShoppingBag className="h-4 w-4 text-chart-2" />
+                        </div>
+                        Produk Terlaris
+                    </CardTitle>
+                    <CardDescription className="text-xs">Produk dengan performa penjualan tertinggi.</CardDescription>
                 </div>
-              </button>
-            ))}
-          </div>
-        )}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 bg-background/50 px-2 py-1 rounded-full border border-border/50 shadow-sm">
+                        <div className="h-2 w-2 rounded-full bg-chart-1" />
+                        <span className="text-[10px] font-semibold">Pendapatan</span>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-8">
+                <ChartContainer config={chartConfig} className="h-[320px] w-full">
+                    <BarChart
+                        data={data}
+                        margin={{ left: 10, right: 10, top: 20, bottom: 0 }}
+                    >
+                        <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="var(--border)"
+                            vertical={false}
+                            strokeOpacity={0.5}
+                        />
+                        <XAxis
+                            dataKey="name"
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                            interval={0}
+                            tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 10)}...` : value}
+                        />
+                        <YAxis
+                            yAxisId="left"
+                            tickFormatter={formatNumberCompactID}
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                        />
+                        <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                        />
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.15 }} />
+                        <Bar
+                            yAxisId="left"
+                            dataKey="revenue"
+                            fill="var(--color-revenue)"
+                            radius={[4, 4, 0, 0]}
+                            barSize={32}
+                        />
+                        <Bar
+                            yAxisId="right"
+                            dataKey="sales"
+                            fill="var(--color-sales)"
+                            radius={[4, 4, 0, 0]}
+                            barSize={32}
+                        />
+                    </BarChart>
+                </ChartContainer>
 
-        <div className="mt-6 grid grid-cols-1 gap-3 border-t border-gray-100 pt-3 text-sm dark:border-gray-800 sm:grid-cols-3">
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Total penjualan</p>
-            <p className="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">{totalQuantity}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Rata-rata per produk</p>
-            <p className="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">
-              Rp {Math.round(totalRevenue / Math.max(data.length, 1)).toLocaleString('id-ID')}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Jumlah produk aktif</p>
-            <p className="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">{data.length}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+                {topProduct && (
+                    <div className="mt-6 flex items-center gap-3 p-3 rounded-lg bg-chart-2/5 border border-chart-2/10">
+                        <TrendingUp className="h-4 w-4 text-chart-2 shrink-0" />
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            <span className="font-semibold text-foreground">{topProduct.name}</span> mendominasi dengan total penjualan <span className="font-bold text-chart-2">{topProduct.sales} item</span> periode ini.
+                        </p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
 }

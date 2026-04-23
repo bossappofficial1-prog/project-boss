@@ -4,7 +4,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { type OutletMembership } from "@/lib/apis/loyalty";
 import { useLoyaltyMembers, useAdjustPoints, useLoyaltyPointHistory } from "@/hooks/api/use-loyalty";
 import { Badge } from "@/components/ui/badge";
-import { User, Trophy, Calendar, PlusCircle, MinusCircle, History } from "lucide-react";
+import { User, Trophy, Calendar, PlusCircle, MinusCircle, History, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
     const [search, setSearch] = React.useState("");
@@ -81,14 +82,14 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
                 const m = row.original;
                 return (
                     <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted/50 border border-border/40 text-foreground/60 shadow-sm">
                             <User className="h-4 w-4" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="font-semibold text-slate-900 dark:text-slate-100">
+                            <span className="font-bold text-foreground/90 tracking-tight">
                                 {m.customer.name}
                             </span>
-                            <span className="text-xs text-slate-500">{m.customer.phone}</span>
+                            <span className="text-[10px] font-medium text-muted-foreground tabular-nums">{m.customer.phone}</span>
                         </div>
                     </div>
                 );
@@ -98,7 +99,7 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
             accessorKey: "tier",
             header: "Tier",
             cell: ({ row }) => (
-                <Badge variant="secondary" className="gap-1 font-medium bg-primary/10 text-primary">
+                <Badge variant="outline" className="gap-1.5 font-bold text-[10px] uppercase tracking-wider px-2 py-0 border-primary/20 bg-primary/5 text-primary shadow-none">
                     <Trophy className="h-3 w-3" />
                     {row.getValue("tier")}
                 </Badge>
@@ -106,18 +107,18 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
         },
         {
             accessorKey: "points",
-            header: () => <div className="">Total Poin</div>,
+            header: "Total Poin",
             cell: ({ row }) => (
-                <div className="font-bold text-primary">
+                <div className="font-bold text-primary tabular-nums">
                     {row.getValue<number>("points").toLocaleString("id-ID")}
                 </div>
             )
         },
         {
             accessorKey: "totalSpending",
-            header: () => <div className="">Total Belanja</div>,
+            header: "Total Belanja",
             cell: ({ row }) => (
-                <div className="font-medium ">
+                <div className="font-bold text-foreground/80 tabular-nums text-xs">
                     Rp {row.getValue<number>("totalSpending").toLocaleString("id-ID")}
                 </div>
             )
@@ -128,34 +129,34 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
             cell: ({ row }) => {
                 const date = row.getValue<string | null>("lastTransactionAt");
                 return (
-                    <div className="flex items-center gap-1.5 text-xs">
-                        <Calendar className="h-3 w-3" />
-                        {date ? format(new Date(date), "d MMM yyyy", { locale: localeId }) : "-"}
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground tabular-nums">
+                        <Calendar className="h-3 w-3 opacity-40" />
+                        {date ? format(new Date(date), "d MMM yyyy", { locale: localeId }) : <span className="opacity-30 italic">-</span>}
                     </div>
                 );
             }
         },
         {
             id: "actions",
-            header: () => <div className="">Aksi</div>,
+            header: "Aksi",
             cell: ({ row }) => (
-                <div className="flex gap-1">
+                <div className="flex gap-2">
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        className="h-8 gap-1.5 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                        className="h-8 font-bold text-[10px] uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none px-3"
                         onClick={() => setEditingMember(row.original)}
                     >
-                        <PlusCircle className="h-4 w-4" />
+                        <PlusCircle className="h-3.5 w-3.5 mr-1.5 text-blue-500" />
                         Atur Poin
                     </Button>
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        className="h-8 gap-1.5 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+                        className="h-8 font-bold text-[10px] uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none px-3"
                         onClick={() => setHistoryMember(row.original)}
                     >
-                        <History className="h-4 w-4" />
+                        <History className="h-3.5 w-3.5 mr-1.5 text-emerald-500" />
                         Riwayat
                     </Button>
                 </div>
@@ -191,47 +192,50 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
             />
 
             <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Atur Poin Member</DialogTitle>
-                        <DialogDescription>
-                            Tambahkan atau kurangi poin untuk {editingMember?.customer.name}.
-                            Gunakan tanda minus (-) untuk mengurangi poin.
+                <DialogContent className="sm:max-w-md gap-0 p-0 border-border/80 shadow-2xl overflow-hidden">
+                    <DialogHeader className="p-6 border-b border-border/40 bg-muted/30">
+                        <DialogTitle className="text-sm font-bold uppercase tracking-widest text-foreground/90">Atur Poin Member</DialogTitle>
+                        <DialogDescription className="text-[10px] font-medium uppercase tracking-tighter opacity-70">
+                            Sesuaikan saldo poin untuk {editingMember?.customer.name}.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="flex items-center justify-between rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
-                            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Poin Saat Ini:</span>
-                            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    <div className="p-6 space-y-6">
+                        <div className="flex items-center justify-between rounded-md border border-blue-500/20 bg-blue-500/5 p-4 shadow-sm">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600/70">Poin Saat Ini</span>
+                            <span className="text-xl font-bold text-blue-600 tabular-nums">
                                 {editingMember?.points.toLocaleString("id-ID")}
                             </span>
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="points">Jumlah Poin (Contoh: 100 atau -50)</Label>
+                        <div className="space-y-3">
+                            <Label htmlFor="points" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Jumlah Perubahan Poin</Label>
                             <div className="relative">
                                 <Input
                                     id="points"
                                     type="number"
+                                    placeholder="Contoh: 100 atau -50"
                                     value={pointsToAdjust}
                                     onChange={(e) => setPointsToAdjust(e.target.value)}
-                                    className="pr-10"
+                                    className="h-11 pl-4 pr-12 border-border/60 bg-background/50 focus:bg-background transition-all rounded-md font-bold text-sm tabular-nums"
                                 />
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-muted/50 border border-border/40">
                                     {parseInt(pointsToAdjust) >= 0 ? (
                                         <PlusCircle className="h-4 w-4 text-emerald-500" />
                                     ) : (
-                                        <MinusCircle className="h-4 w-4 text-red-500" />
+                                        <MinusCircle className="h-4 w-4 text-rose-500" />
                                     )}
                                 </div>
                             </div>
+                            <p className="text-[10px] font-medium text-muted-foreground/60 italic px-1">
+                                * Gunakan tanda minus (-) untuk mengurangi poin pelanggan.
+                            </p>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditingMember(null)}>Batal</Button>
+                    <DialogFooter className="p-4 border-t border-border/40 bg-muted/5 gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setEditingMember(null)} className="h-9 font-bold text-xs uppercase tracking-wider border-border/60 shadow-none">Batal</Button>
                         <Button
                             onClick={handleAdjustPoints}
                             disabled={adjustPoints.isPending}
-                            className="bg-blue-600 hover:bg-blue-500"
+                            className="h-9 font-bold text-xs uppercase tracking-wider bg-blue-600 hover:bg-blue-500 shadow-none"
                         >
                             {adjustPoints.isPending ? "Memproses..." : "Simpan Perubahan"}
                         </Button>
@@ -240,19 +244,25 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
             </Dialog>
 
             <Dialog open={!!historyMember} onOpenChange={(open) => !open && setHistoryMember(null)}>
-                <DialogContent className="sm:max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>Riwayat Poin Member</DialogTitle>
-                        <DialogDescription>
-                            Riwayat penggunaan dan perubahan poin untuk {historyMember?.customer.name}.
+                <DialogContent className="sm:max-w-2xl gap-0 p-0 border-border/80 shadow-2xl overflow-hidden">
+                    <DialogHeader className="p-6 border-b border-border/40 bg-muted/30">
+                        <DialogTitle className="text-sm font-bold uppercase tracking-widest text-foreground/90">Riwayat Poin Member</DialogTitle>
+                        <DialogDescription className="text-[10px] font-medium uppercase tracking-tighter opacity-70">
+                            Log aktivitas dan perubahan poin untuk {historyMember?.customer.name}.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="max-h-96 space-y-2 overflow-y-auto pr-1">
+                    <div className="p-6 max-h-96 space-y-3 overflow-y-auto custom-scrollbar">
                         {pointHistoryLoading ? (
-                            <p className="text-sm text-slate-500">Memuat riwayat poin...</p>
+                            <div className="py-20 flex flex-col items-center justify-center space-y-4">
+                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground opacity-20" />
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-40">Memuat riwayat...</p>
+                            </div>
                         ) : (pointHistoryData?.history?.length || 0) === 0 ? (
-                            <p className="text-sm text-slate-500">Belum ada riwayat poin untuk member ini.</p>
+                            <div className="py-20 rounded-md border border-dashed border-border/60 flex flex-col items-center justify-center text-center">
+                                <History className="h-10 w-10 text-muted-foreground/20 mb-4" />
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Belum ada riwayat poin</p>
+                            </div>
                         ) : (
                             pointHistoryData?.history.map((item) => {
                                 const isMinus = item.type === "REDEEM" || item.type === "ADJUSTMENT_OUT";
@@ -268,34 +278,39 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
                                 return (
                                     <div
                                         key={item.id}
-                                        className="flex items-start justify-between rounded-md border border-slate-200 p-3 dark:border-slate-800"
+                                        className="flex items-center justify-between rounded-md border border-border/60 bg-muted/5 p-4 transition-all hover:bg-muted/10"
                                     >
-                                        <div className="space-y-1">
-                                            <Badge variant="secondary" className="rounded-md">
+                                        <div className="space-y-1.5">
+                                            <Badge variant="outline" className={cn(
+                                                "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 shadow-none border-opacity-20",
+                                                !isMinus ? "bg-emerald-500/10 text-emerald-600 border-emerald-500" : "bg-rose-500/10 text-rose-600 border-rose-500"
+                                            )}>
                                                 {typeLabel}
                                             </Badge>
-                                            <p className="text-xs text-slate-500">
-                                                {format(new Date(item.createdAt), "d MMM yyyy HH:mm", {
-                                                    locale: localeId,
-                                                })}
-                                            </p>
-                                            {item.note && (
-                                                <p className="text-xs text-slate-600 dark:text-slate-400">
-                                                    {item.note}
+                                            <div className="flex flex-col gap-0.5">
+                                                <p className="text-[10px] font-medium text-muted-foreground tabular-nums opacity-70">
+                                                    {format(new Date(item.createdAt), "d MMM yyyy HH:mm", {
+                                                        locale: localeId,
+                                                    })}
                                                 </p>
-                                            )}
-                                            {item.order?.id && (
-                                                <p className="text-xs text-slate-500">Order: {item.order.id}</p>
-                                            )}
+                                                {item.note && (
+                                                    <p className="text-xs font-bold text-foreground/80">
+                                                        {item.note}
+                                                    </p>
+                                                )}
+                                                {item.order?.id && (
+                                                    <p className="text-[9px] font-medium text-muted-foreground italic">Order ID: #{item.order.id.slice(-8).toUpperCase()}</p>
+                                                )}
+                                            </div>
                                         </div>
                                         <div
-                                            className={`text-sm font-semibold ${isMinus
-                                                    ? "text-red-600 dark:text-red-400"
-                                                    : "text-emerald-600 dark:text-emerald-400"
+                                            className={`text-sm font-bold tabular-nums ${isMinus
+                                                ? "text-rose-600"
+                                                : "text-emerald-600"
                                                 }`}
                                         >
                                             {isMinus ? "-" : "+"}
-                                            {item.points.toLocaleString("id-ID")} poin
+                                            {item.points.toLocaleString("id-ID")}
                                         </div>
                                     </div>
                                 );
@@ -303,14 +318,18 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
                         )}
                     </div>
 
-                    <DialogFooter className="flex items-center justify-between gap-2 sm:justify-between">
-                        <p className="text-xs text-slate-500">
-                            {pointHistoryFetching ? "Memperbarui..." : `Total riwayat: ${pointHistoryData?.meta.total || 0}`}
-                        </p>
+                    <DialogFooter className="p-4 border-t border-border/40 bg-muted/5 flex items-center justify-between gap-2 sm:justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className={cn("h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse", pointHistoryFetching ? "opacity-100" : "opacity-0")} />
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                                {pointHistoryFetching ? "Memperbarui..." : `Total riwayat: ${pointHistoryData?.meta.total || 0}`}
+                            </p>
+                        </div>
                         <div className="flex gap-2">
                             <Button
                                 variant="outline"
                                 size="sm"
+                                className="h-8 font-bold text-[10px] uppercase tracking-wider border-border/60 shadow-none px-3"
                                 onClick={() => setHistoryPage((prev) => Math.max(1, prev - 1))}
                                 disabled={historyPage <= 1 || pointHistoryLoading}
                             >
@@ -319,6 +338,7 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
                             <Button
                                 variant="outline"
                                 size="sm"
+                                className="h-8 font-bold text-[10px] uppercase tracking-wider border-border/60 shadow-none px-3"
                                 onClick={() => setHistoryPage((prev) => prev + 1)}
                                 disabled={
                                     pointHistoryLoading ||

@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { PenBox, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/utils";
-import MobileCard from "./MobileCards";
 import { ProductItem } from "@/hooks/useProductsData";
 
 export interface DesktopTableProps {

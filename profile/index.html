@@ -10,7 +10,7 @@
   <meta name="description"
     content="BOSS (Business One Stop System) adalah aplikasi kasir, manajemen stok, antrian pelanggan, dan laporan bisnis berbasis web untuk UMKM Indonesia. Multi-outlet, pembayaran QRIS, real-time. Coba gratis sekarang." />
   <meta name="keywords"
-    content="aplikasi kasir, pos umkm, software kasir, aplikasi antrian, manajemen stok, qris umkm, bossapp, business one stop system, kasir online" />
+    content="aplikasi kasir, pos umkm, software kasir, aplikasi antrian, manajemen stok, qris umkm, bossapp, business one stop system, kasir online, e-commerce umkm, belanja online, cari outlet terdekat" />
   <meta name="author" content="BOSS" />
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#06060a" />
@@ -134,7 +134,7 @@
       /* Buttons */
       .btn { @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md font-semibold font-body cursor-pointer transition-all duration-200 whitespace-nowrap relative overflow-hidden; }
       .btn-primary { @apply bg-accent text-white shadow-[0_4px_20px_rgba(224,48,48,0.35)] hover:-translate-y-0.5 hover:bg-accent-hover hover:shadow-[0_8px_30px_rgba(224,48,48,0.5)]; }
-      .btn-ghost { @apply bg-black/5 dark:bg-white/5 text-text2 border border-border-main hover:bg-black/10 dark:hover:bg-white/10 hover:text-text-main hover:border-accent/35; }
+      .btn-ghost { @apply bg-black/5 dark:bg-white/5 text-text2 border border-border-med hover:bg-black/10 dark:hover:bg-white/10 hover:text-text-main hover:border-accent/50 hover:shadow-lg hover:shadow-accent/5; }
       .btn-lg { @apply px-6 md:px-8 py-3.5 md:py-4 text-[0.95rem] rounded-lg md:rounded-xl; }
       .btn-sm { @apply px-4 py-2 text-xs; }
 
@@ -149,6 +149,16 @@
       .faq-item.open { border-color: rgba(224, 48, 48, 0.4) !important; }
       .faq-item.open .faq-arrow { background-color: var(--color-accent) !important; border-color: var(--color-accent) !important; transform: rotate(45deg); color: white; }
       .faq-item.open .faq-a { max-height: 400px !important; margin-top: 0.875rem !important; opacity: 1 !important; }
+      
+      /* Subtle 3D Tilt for Mockups */
+      .browser-mockup, .browser-mockup-static {
+        @apply transition-all duration-500 ease-out;
+        perspective: 1000px;
+      }
+      .browser-mockup:hover, .browser-mockup-static:hover {
+        transform: translateY(-10px) rotateX(1deg) rotateY(-1deg);
+        @apply shadow-[0_30px_70px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.02)] dark:shadow-[0_40px_80px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.03)];
+      }
     }
   </style>
 
@@ -344,26 +354,25 @@
           </div>
 
           <!-- Kartu Placeholder -->
-          <div
-            class="browser-mockup block rounded-xl md:rounded-2xl border border-border-med shadow-[0_12px_40px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03),0_0_40px_rgba(224,48,48,0.04)] dark:shadow-[0_15px_50px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.03),0_0_40px_rgba(224,48,48,0.04)] bg-surface max-w-[960px] mx-auto overflow-hidden reveal reveal-d4 transition-shadow"
-            id="mock-dashboard">
-            <div class="bg-surface2 px-4 md:px-5 py-3 flex items-center gap-3 md:gap-3.5 border-b border-border-main">
-              <div class="flex gap-1.5">
-                <span class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ff5f57]"></span><span
-                  class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ffbd2e]"></span><span
-                  class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#28c840]"></span>
+            <div class="browser-mockup-static rounded-xl md:rounded-2xl border border-border-med shadow-[0_12px_40px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03),0_0_40px_rgba(224,48,48,0.04)] dark:shadow-[0_15px_50px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.03),0_0_40px_rgba(224,48,48,0.04)] bg-surface max-w-[960px] mx-auto overflow-hidden reveal reveal-d4 transition-shadow"
+              id="hero-mockup">
+              <div class="bg-surface2 px-4 md:px-5 py-3 flex items-center gap-3 md:gap-3.5 border-b border-border-main">
+                <div class="flex gap-1.5">
+                  <span class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ff5f57]"></span><span
+                    class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ffbd2e]"></span><span
+                    class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#28c840]"></span>
+                </div>
+                <div
+                  class="flex-1 bg-surface border border-border-main rounded-md px-3 py-1 font-mono text-[0.7rem] md:text-xs text-text3">
+                  dashboard.bossapp.id</div>
               </div>
-              <div
-                class="flex-1 bg-surface border border-border-main rounded-md px-3 py-1 font-mono text-[0.7rem] md:text-xs text-text3">
-                dashboard.bossapp.id</div>
+              <div class="bg-bg flex items-center justify-center">
+                <img src="images/dashboard-laporan-keuangan-light.png" class="w-full h-full object-contain dark:hidden"
+                  alt="Laporan Keuangan BOSS (light)" />
+                <img src="images/dashboard-laporan-keuangan-dark.png"
+                  class="w-full h-full object-contain hidden dark:block" alt="Laporan Keuangan BOSS (dark)" />
+              </div>
             </div>
-            <div class="bg-bg flex items-center justify-center">
-              <img src="images/dashboard-laporan-keuangan-light.png" class="w-full h-full object-contain dark:hidden"
-                alt="Dashboard Owner (light)" />
-              <img src="images/dashboard-laporan-keuangan-dark.png"
-                class="w-full h-full object-contain hidden dark:block" alt="Dashboard Owner (dark)" />
-            </div>
-          </div>
         </div>
 
       </section>
@@ -402,8 +411,7 @@
               </svg>
             </div>
             <h3 class="font-display text-[0.95rem] md:text-base font-bold mb-2">Banyak Aplikasi, Tidak Terintegrasi</h3>
-            <p class="text-sm text-text2 leading-relaxed">Kasir di satu app, stok di app lain, laporan manual di
-              spreadsheet. BOSS menyatukan semuanya dalam satu platform.</p>
+            <p class="text-sm text-text2 leading-relaxed">Kasir di satu app, stok di app lain, dan belanja online di platform berbeda. BOSS menyatukan manajemen bisnis dan aplikasi pelanggan dalam satu platform terintegrasi.</p>
           </div>
           <div
             class="bg-surface border border-border-main rounded-xl md:rounded-2xl p-6 md:p-8 md:col-span-2 lg:col-span-1 hover:border-accent/30 transition-colors">
@@ -458,9 +466,8 @@
             <div
               class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-surface2 border border-border-med flex items-center justify-center font-display text-xl md:text-2xl font-extrabold text-accent mx-auto mb-4 md:mb-5 relative z-10 shadow-[0_0_0_6px_var(--theme-bg),0_0_30px_rgba(224,48,48,0.15)]">
               3</div>
-            <h3 class="font-display text-base md:text-[1.05rem] font-bold mb-2">Pantau Laporan Real-time</h3>
-            <p class="text-sm text-text2 leading-relaxed">Lihat omzet, stok, dan laba bersih kapan saja. Export ke Excel
-              atau terima laporan via email.</p>
+            <h3 class="font-display text-base md:text-[1.05rem] font-bold mb-2">Pantau & Tumbuh</h3>
+            <p class="text-sm text-text2 leading-relaxed">Pantau laporan laba bersih (P&L) secara real-time, kelola stok otomatis dengan peringatan cerdas, dan kembangkan bisnis Anda ke banyak cabang.</p>
           </div>
         </div>
       </section>
@@ -473,8 +480,7 @@
       <section class="py-16 md:py-20 lg:py-[100px]" aria-labelledby="mockup-heading">
         <span class="eyebrow reveal">Demo Produk</span>
         <h2 id="mockup-heading" class="section-h reveal reveal-d1">Lihat BOSS<br />dalam Aksi</h2>
-        <p class="section-p reveal reveal-d2">Antarmuka yang bersih dan intuitif — dirancang agar kasir dan owner bisa
-          langsung pakai tanpa pelatihan panjang.</p>
+        <p class="section-p reveal reveal-d2">Antarmuka yang bersih dan intuitif — dirancang agar owner, kasir, hingga pelanggan bisa langsung pakai tanpa pelatihan panjang.</p>
 
         <!-- Tabs -->
         <div class="flex gap-2 md:gap-4 justify-center mt-10 md:mt-14 mb-8 md:mb-10 flex-wrap reveal reveal-d3">
@@ -576,9 +582,9 @@
                 <!-- App UI Content -->
                 <div class="bg-bg flex items-center justify-center">
                   <img src="images/app-boss-light.png" class="w-full h-full object-contain dark:hidden"
-                    alt="POS (light)" />
+                    alt="Aplikasi Pelanggan BOSS (light)" />
                   <img src="images/app-boss-dark.png" class="w-full h-full object-contain hidden dark:block"
-                    alt="POS (dark)" />
+                    alt="Aplikasi Pelanggan BOSS (dark)" />
                 </div>
 
                 <!-- iOS Home Indicator -->
@@ -615,11 +621,12 @@
               </svg>
             </div>
             <h3 class="font-display text-base font-bold mb-2">Kasir Digital (POS)</h3>
-            <p class="text-sm text-text2 leading-relaxed">Proses transaksi dengan cepat. Kelola produk, hitung
-              kembalian, cetak struk — semua dari satu layar.</p>
-            <span
-              class="inline-flex items-center gap-1 text-[0.7rem] font-bold px-2.5 py-1 rounded border border-accent/25 text-accent2 bg-accent/10 mt-3.5">Transaksi
-              real-time</span>
+            <p class="text-sm text-text2 leading-relaxed">Proses transaksi secepat kilat. Mendukung produk barang, layanan jasa dengan jadwal staff, hingga penjualan tiket dengan kuota.</p>
+            <div class="flex flex-wrap gap-1.5 mt-3.5">
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Produk, Jasa & Tiket</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Loyalty Points</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Scan Barcode</span>
+            </div>
           </div>
           <!-- Feat 2 -->
           <div
@@ -634,12 +641,13 @@
                   d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
               </svg>
             </div>
-            <h3 class="font-display text-base font-bold mb-2">Manajemen Stok</h3>
-            <p class="text-sm text-text2 leading-relaxed">Pantau stok masuk & keluar real-time. HPP dihitung otomatis
-              dari setiap log stok untuk akurasi laporan.</p>
-            <span
-              class="inline-flex items-center gap-1 text-[0.7rem] font-bold px-2.5 py-1 rounded border border-accent/25 text-accent2 bg-accent/10 mt-3.5">Auto
-              HPP</span>
+            <h3 class="font-display text-base font-bold mb-2">Manajemen Stok Cerdas</h3>
+            <p class="text-sm text-text2 leading-relaxed">Pantau pergerakan stok (Masuk, Keluar, Retur, Penyesuaian). Lengkap dengan fitur Peringatan Stok Rendah dan Nilai Aset real-time.</p>
+            <div class="flex flex-wrap gap-1.5 mt-3.5">
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Auto HPP</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Stock Alert</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">History Log</span>
+            </div>
           </div>
           <!-- Feat 3 -->
           <div
@@ -655,9 +663,13 @@
                 <line x1="8" y1="2" x2="8" y2="6" />
               </svg>
             </div>
-            <h3 class="font-display text-base font-bold mb-2">Booking & Antrian</h3>
-            <p class="text-sm text-text2 leading-relaxed">Pelanggan booking slot layanan secara online. Manajemen
-              antrian real-time tanpa antre fisik.</p>
+            <h3 class="font-display text-base font-bold mb-2">Aplikasi Pelanggan</h3>
+            <p class="text-sm text-text2 leading-relaxed">Berikan pengalaman belanja modern. Pelanggan bisa cari outlet terdekat, pesan produk secara online, hingga antre secara digital.</p>
+            <div class="flex flex-wrap gap-1.5 mt-3.5">
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Outlet Terdekat</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">E-Commerce</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Booking</span>
+            </div>
           </div>
           <!-- Feat 4 -->
           <div
@@ -673,12 +685,13 @@
                 <line x1="6" y1="20" x2="6" y2="16" />
               </svg>
             </div>
-            <h3 class="font-display text-base font-bold mb-2">Laporan Lengkap</h3>
-            <p class="text-sm text-text2 leading-relaxed">Omzet, HPP, komisi staff, dan laba bersih per outlet. Export
-              Excel otomatis & kirim via email.</p>
-            <span
-              class="inline-flex items-center gap-1 text-[0.7rem] font-bold px-2.5 py-1 rounded border border-accent/25 text-accent2 bg-accent/10 mt-3.5">Export
-              Excel</span>
+            <h3 class="font-display text-base font-bold mb-2">Laporan P&L Akurat</h3>
+            <p class="text-sm text-text2 leading-relaxed">Analisis laba bersih otomatis setelah dikurangi HPP, beban operasional, gaji/komisi staff, dan biaya layanan. Data terverifikasi & siap export.</p>
+            <div class="flex flex-wrap gap-1.5 mt-3.5">
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Net Profit</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Staff Commision</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Excel Export</span>
+            </div>
           </div>
           <!-- Feat 5 -->
           <div
@@ -693,12 +706,12 @@
                 <line x1="1" y1="10" x2="23" y2="10" />
               </svg>
             </div>
-            <h3 class="font-display text-base font-bold mb-2">Pembayaran Digital</h3>
-            <p class="text-sm text-text2 leading-relaxed">Terima pembayaran QRIS, transfer, dan metode digital lainnya.
-              Langsung tercatat otomatis.</p>
-            <span
-              class="inline-flex items-center gap-1 text-[0.7rem] font-bold px-2.5 py-1 rounded border border-accent/25 text-accent2 bg-accent/10 mt-3.5">QRIS
-              Ready</span>
+            <h3 class="font-display text-base font-bold mb-2">Pembayaran & QRIS</h3>
+            <p class="text-sm text-text2 leading-relaxed">Terima pembayaran QRIS Dinamis dan otomatis yang langsung tercatat dalam sistem laporan keuangan Anda.</p>
+            <div class="flex flex-wrap gap-1.5 mt-3.5">
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Dynamic QRIS</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Real-time Sync</span>
+            </div>
           </div>
           <!-- Feat 6 -->
           <div
@@ -715,9 +728,13 @@
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </div>
-            <h3 class="font-display text-base font-bold mb-2">Multi-outlet</h3>
-            <p class="text-sm text-text2 leading-relaxed">Kelola beberapa cabang untuk satu bisnis Anda dari satu akun
-              owner. Laporan performa per outlet tersedia.</p>
+            <h3 class="font-display text-base font-bold mb-2">Manajemen Multi-outlet</h3>
+            <p class="text-sm text-text2 leading-relaxed">Kelola puluhan cabang dari satu layar. Bandingkan performa antar outlet, kelola akses staff, dan pantau pertumbuhan bisnis secara terpusat.</p>
+            <div class="flex flex-wrap gap-1.5 mt-3.5">
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Outlet Comparison</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Centralized Auth</span>
+              <span class="inline-flex items-center gap-1 text-[0.65rem] font-bold px-2 py-0.5 rounded border border-accent/25 text-accent2 bg-accent/10">Staff Access</span>
+            </div>
           </div>
         </div>
 
@@ -891,97 +908,98 @@
         <p class="section-p reveal reveal-d2">Dibangun oleh talenta lokal yang berdedikasi tinggi dengan satu misi
           utama: mendigitalisasi dan memajukan UMKM di seluruh wilayah Indonesia.</p>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 mt-10 md:mt-14">
+        <div class="flex flex-wrap justify-center gap-6 mt-10 md:mt-14">
 
           <!-- Member 1: Bima -->
-          <div
-            class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full reveal reveal-d1">
-            <div
-              class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#e03030] to-[#a81c1c] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
-              <span class="font-display text-xl md:text-2xl font-bold text-white">Bi</span>
+          <div class="w-full md:w-[350px] flex reveal reveal-d1">
+            <div class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col w-full">
+              <div
+                class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#e03030] to-[#a81c1c] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
+                <span class="font-display text-xl md:text-2xl font-bold text-white">Bi</span>
+              </div>
+              <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Bima Lovrino Prakasa</h3>
+              <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">FOUNDER — BOSS</p>
+              <p class="text-sm text-text2 leading-[1.7] flex-grow">Menginisiasi dan memimpin BOSS sebagai platform
+                terpadu untuk digitalisasi UMKM Indonesia. Menetapkan visi jangka panjang dan arah strategis perusahaan.
+              </p>
             </div>
-            <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Bima Lovrino Prakasa</h3>
-            <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">FOUNDER — BOSS</p>
-            <p class="text-sm text-text2 leading-[1.7] flex-grow">Menginisiasi dan memimpin BOSS sebagai platform
-              terpadu untuk digitalisasi UMKM Indonesia. Menetapkan visi jangka panjang dan arah strategis perusahaan.
-            </p>
           </div>
 
           <!-- Member 2: Kurnia -->
-          <div
-            class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full reveal reveal-d2">
-            <div
-              class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#d95d22] to-[#b33a10] flex items-center justify-center mb-6 shadow-lg shadow-orange-500/20">
-              <span class="font-display text-xl md:text-2xl font-bold text-white">K</span>
-            </div>
-            <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Kurnia Fajar Viliano</h3>
-            <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CO-FOUNDER — BOSS
-            </p>
-            <p class="text-sm text-text2 leading-[1.7] flex-grow">Bersama membangun fondasi bisnis BOSS, mengelola
-              operasional, dan memperluas ekosistem kemitraan UMKM yang terhubung dengan platform.</p>
-          </div>
-
-          <!-- Member 3: Afca -->
-          <div
-            class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full reveal reveal-d3">
-            <div
-              class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#e03030] to-[#a81c1c] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
-              <span class="font-display text-xl md:text-2xl font-bold text-white">A</span>
-            </div>
-            <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Afca Arel Pratama</h3>
-            <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CPO — BOSS</p>
-            <p class="text-sm text-text2 leading-[1.7] flex-grow">Mengelola roadmap produk, mendefinisikan fitur
-              berdasarkan kebutuhan pasar, dan memastikan BOSS terus relevan sebagai solusi bisnis bagi UMKM.</p>
-          </div>
-
-          <!-- Member 4: Pito -->
-          <div
-            class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full reveal reveal-d1">
-            <div
-              class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#ff4d4d] to-[#cc1414] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
-              <span class="font-display text-xl md:text-2xl font-bold text-white">P</span>
-            </div>
-            <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Pito Desri Pauzi</h3>
-            <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CTO — BOSS</p>
-            <p class="text-sm text-text2 leading-[1.7] flex-grow">Bertanggung jawab atas arsitektur teknis,
-              infrastruktur platform, dan standar rekayasa perangkat lunak yang menjadi tulang punggung BOSS.</p>
-
-            <div class="mt-6 pt-5 border-t border-border-main">
-              <a target="_blank" href="https://pitok.my.id" target="_blank" rel="noopener noreferrer"
-                class="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-border-main text-xs text-text3 hover:text-text-main hover:bg-surface2 transition-colors w-fit">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                pitok.my.id
-              </a>
+          <div class="w-full md:w-[350px] flex reveal reveal-d2">
+            <div class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col w-full">
+              <div
+                class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#d95d22] to-[#b33a10] flex items-center justify-center mb-6 shadow-lg shadow-orange-500/20">
+                <span class="font-display text-xl md:text-2xl font-bold text-white">Ku</span>
+              </div>
+              <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Kurnia Fajar Viliano</h3>
+              <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CO-FOUNDER — BOSS
+              </p>
+              <p class="text-sm text-text2 leading-[1.7] flex-grow">Bersama membangun fondasi bisnis BOSS, mengelola
+                operasional, dan memperluas ekosistem kemitraan UMKM yang terhubung dengan platform.</p>
             </div>
           </div>
 
-          <!-- Member 5: Baghaztra -->
-          <div
-            class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col h-full reveal reveal-d2">
-            <div
-              class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#e01414] to-[#990d0d] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
-              <span class="font-display text-xl md:text-2xl font-bold text-white">Bg</span>
-            </div>
-            <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Baghaztra Van Ril</h3>
-            <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CMO — BOSS</p>
-            <p class="text-sm text-text2 leading-[1.7] flex-grow">Memimpin strategi pemasaran dan branding BOSS —
-              membangun awareness dan menghubungkan UMKM Indonesia dengan solusi digital yang tepat.</p>
+          <!-- Member 3: Pito (CTO) -->
+          <div class="w-full md:w-[350px] flex reveal reveal-d3">
+            <div class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col w-full">
+              <div
+                class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#ff4d4d] to-[#cc1414] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
+                <span class="font-display text-xl md:text-2xl font-bold text-white">Pi</span>
+              </div>
+              <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Pito Desri Pauzi</h3>
+              <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CTO — BOSS</p>
+              <p class="text-sm text-text2 leading-[1.7] flex-grow">Memastikan BOSS selalu cepat, aman, dan dapat diandalkan 24/7 sebagai tulang punggung teknologi UMKM Indonesia.</p>
 
-            <div class="mt-6 pt-5 border-t border-border-main">
-              <a target="_blank" href="https://bgztra.my.id" target="_blank" rel="noopener noreferrer"
-                class="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-border-main text-xs text-text3 hover:text-text-main hover:bg-surface2 transition-colors w-fit">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                bgztra.my.id
-              </a>
+              <div class="mt-6 pt-5 border-t border-border-main">
+                <a target="_blank" href="https://pitok.my.id" rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-border-main text-xs text-text3 hover:text-text-main hover:bg-surface2 transition-colors w-fit">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  pitok.my.id
+                </a>
+              </div>
             </div>
           </div>
 
+          <!-- Member 4: Afca (CPO) -->
+          <div class="w-full md:w-[350px] flex reveal reveal-d1">
+            <div class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col w-full">
+              <div
+                class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#e03030] to-[#a81c1c] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
+                <span class="font-display text-xl md:text-2xl font-bold text-white">Af</span>
+              </div>
+              <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Afca Arel Pratama</h3>
+              <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CPO — BOSS</p>
+              <p class="text-sm text-text2 leading-[1.7] flex-grow">Mengelola roadmap produk, mendefinisikan fitur berdasarkan kebutuhan pasar, dan memastikan BOSS terus relevan sebagai solusi bisnis bagi UMKM.</p>
+            </div>
+          </div>
+
+          <!-- Member 5: Baghaztra (CMO) -->
+          <div class="w-full md:w-[350px] flex reveal reveal-d2">
+            <div class="bg-surface border border-border-main rounded-3xl p-6 md:p-8 text-left hover:border-accent/40 transition-all duration-300 hover:-translate-y-1 flex flex-col w-full">
+              <div
+                class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#e01414] to-[#990d0d] flex items-center justify-center mb-6 shadow-lg shadow-accent/20">
+                <span class="font-display text-xl md:text-2xl font-bold text-white">Bg</span>
+              </div>
+              <h3 class="font-display text-lg md:text-xl font-bold text-text-main mb-1">Baghaztra Van Ril</h3>
+              <p class="text-[0.7rem] md:text-xs text-accent font-bold tracking-widest uppercase mb-4">CMO — BOSS</p>
+              <p class="text-sm text-text2 leading-[1.7] flex-grow">Memimpin strategi pemasaran dan branding BOSS — membangun awareness dan menghubungkan UMKM Indonesia dengan solusi digital yang tepat.</p>
+
+              <div class="mt-6 pt-5 border-t border-border-main">
+                <a target="_blank" href="https://bgztra.my.id" rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-border-main text-xs text-text3 hover:text-text-main hover:bg-surface2 transition-colors w-fit">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  bgztra.my.id
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </div>

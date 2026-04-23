@@ -41,7 +41,7 @@ export default function CustomerTable({
         header: "Nama Pelanggan",
         cell: ({ row }) => {
           const name = row.original.name || "-";
-          return <div className="font-medium text-foreground">{name}</div>;
+          return <div className="font-bold text-foreground/90 tracking-tight">{name}</div>;
         },
       },
       {
@@ -49,7 +49,7 @@ export default function CustomerTable({
         header: "No. HP / WA",
         cell: ({ row }) => {
           const phone = row.original.phone || "-";
-          return <div className="text-muted-foreground">{phone}</div>;
+          return <div className="text-xs font-bold text-muted-foreground tabular-nums">{phone}</div>;
         },
       },
       {
@@ -57,7 +57,7 @@ export default function CustomerTable({
         header: "Email",
         cell: ({ row }) => {
           const email = row.original.email || "-";
-          return <div className="text-muted-foreground">{email}</div>;
+          return <div className="text-xs font-medium text-muted-foreground opacity-70 italic">{email}</div>;
         },
       },
       {
@@ -66,7 +66,7 @@ export default function CustomerTable({
         cell: ({ row }) => {
           const totalOrders = row.original._count?.orders ?? 0;
           return (
-            <Badge variant="secondary" className="font-semibold px-2 py-1">
+            <Badge variant="outline" className="font-bold text-[10px] uppercase tracking-wider px-2 py-0 border-primary/20 bg-primary/5 text-primary">
               {totalOrders} Pesanan
             </Badge>
           );
@@ -76,11 +76,15 @@ export default function CustomerTable({
         accessorKey: "createdAt",
         header: "Bergabung Pada",
         cell: ({ row }) => {
-          if (!row.original.createdAt) return "-";
+          if (!row.original.createdAt) return <span className="text-xs text-muted-foreground opacity-30 italic">-</span>;
           try {
-            return format(new Date(row.original.createdAt), "dd MMM yyyy", { locale: id });
+            return (
+              <div className="text-xs font-medium text-muted-foreground tabular-nums">
+                {format(new Date(row.original.createdAt), "dd MMM yyyy", { locale: id })}
+              </div>
+            );
           } catch {
-            return "-";
+            return <span className="text-xs text-muted-foreground opacity-30 italic">-</span>;
           }
         },
       },
@@ -89,22 +93,31 @@ export default function CustomerTable({
         header: "Transaksi Terakhir",
         cell: ({ row }) => {
           const lastTransactionDate = row.original.orders?.[0]?.createdAt || row.original.memberships?.[0]?.joinedAt;
-          if (!lastTransactionDate) return "-";
+          if (!lastTransactionDate) return <span className="text-xs text-muted-foreground opacity-30 italic">-</span>;
 
           try {
-            return format(new Date(lastTransactionDate), "dd MMM yyyy, HH:mm", { locale: id });
+            return (
+              <div className="text-xs font-medium text-muted-foreground tabular-nums">
+                {format(new Date(lastTransactionDate), "dd MMM yyyy, HH:mm", { locale: id })}
+              </div>
+            );
           } catch {
-            return "-";
+            return <span className="text-xs text-muted-foreground opacity-30 italic">-</span>;
           }
         },
       },
       {
         id: "detail",
-        header: "Detail",
+        header: "Aksi",
         cell: ({ row }) => {
           return (
-            <Button variant="outline" size="sm" onClick={() => onViewDetail(row.original)}>
-              Lihat
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewDetail(row.original)}
+              className="h-8 font-bold text-[10px] uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none"
+            >
+              Detail
             </Button>
           );
         },
@@ -114,7 +127,7 @@ export default function CustomerTable({
   );
 
   return (
-    <div className="bg-background border rounded-lg overflow-hidden shadow-sm">
+    <div className="bg-background border border-border/80 rounded-md overflow-hidden shadow-sm">
       <DataTable
         columns={columns}
         data={data}

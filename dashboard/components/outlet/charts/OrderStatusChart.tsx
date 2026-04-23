@@ -1,169 +1,169 @@
-'use client';
+"use client";
 
-import { formatStatusPesanan } from '@/lib/formatter';
-import { useState } from 'react';
+import React, { useState } from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
+  PieChart,
+  Pie,
   Cell,
-} from 'recharts';
-import { EmptyChart } from './EmptyChart';
-import { BarChart2Icon } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+  Label,
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Package, CheckCircle2, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface OrderStatusData {
-  status: string;
+  name: string;
   count: number;
-  percentage: number;
-  totalAmount?: number;
+  amount: number;
 }
 
 interface OrderStatusChartProps {
   data: OrderStatusData[];
-  completionRate: number;
 }
 
-const STATUS_COLORS = {
-  COMPLETED: '#10b981',
-  PROCESSING: '#3b82f6',
-  AWAITING_PAYMENT: '#f59e0b',
-  CANCELLED: '#ef4444',
-  CONFIRMED: '#8b5cf6',
-  READY: '#06b6d4',
-  ON_GOING: '#ec4899',
+const COLORS: Record<string, string> = {
+  COMPLETED: "var(--chart-1)",
+  PROCESSING: "var(--chart-2)",
+  PENDING: "var(--chart-3)",
+  CANCELLED: "var(--chart-5)",
+  AWAITING_PAYMENT: "var(--chart-4)",
+};
+
+const LABELS: Record<string, string> = {
+  COMPLETED: "Selesai",
+  PROCESSING: "Diproses",
+  PENDING: "Menunggu",
+  CANCELLED: "Dibatalkan",
+  AWAITING_PAYMENT: "Belum Bayar",
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (!active || !payload?.length) return null;
-
-  const data = payload[0].payload;
-  return (
-    <div className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2 text-xs shadow-sm">
-      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{data.status}</p>
-      <div className="mt-2 space-y-1 text-[11px] text-gray-600 dark:text-gray-400">
-        <p className="flex justify-between">
-          <span>Jumlah</span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{data.count}</span>
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="rounded-lg border border-border/50 bg-background/95 p-3 shadow-xl backdrop-blur-sm">
+        <p className="mb-2 text-xs font-bold text-foreground uppercase tracking-tight border-b border-border/40 pb-1">
+          {LABELS[data.name] || data.name}
         </p>
-        <p className="flex justify-between">
-          <span>Persentase</span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{data.percentage}%</span>
-        </p>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-8">
+            <span className="text-[10px] text-muted-foreground uppercase font-medium">Jumlah Pesanan</span>
+            <span className="font-bold text-foreground">{data.count}</span>
+          </div>
+          <div className="flex items-center justify-between gap-8">
+            <span className="text-[10px] text-muted-foreground uppercase font-medium">Total Nominal</span>
+            <span className="font-bold text-primary">Rp {data.amount.toLocaleString("id-ID")}</span>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+  return null;
 };
 
-export default function OrderStatusChart({
-  data,
-  completionRate,
-}: OrderStatusChartProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
+export default function OrderStatusChart({ data }: OrderStatusChartProps) {
   const totalOrders = data.reduce((sum, item) => sum + item.count, 0);
-  const chartData = data.filter((item) => item.status !== 'COMPLETED');
+  const completedOrders = data.find(d => d.name === "COMPLETED")?.count || 0;
+  const completionRate = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
 
-  const getOriginalIndex = (filteredIndex: number | null) => {
-    if (filteredIndex === null) return null;
-    const hoveredStatus = chartData[filteredIndex]?.status;
-    if (!hoveredStatus) return null;
-    return data.findIndex(item => item.status === hoveredStatus);
-  };
+  const chartConfig = Object.keys(COLORS).reduce((acc: any, key) => {
+    acc[key] = { label: LABELS[key] || key, color: COLORS[key] };
+    return acc;
+  }, {});
 
   return (
-    <Card className="h-full rounded-md py-5">
-      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-500">Pesanan</p>
-          <CardTitle className="text-lg">Status Pesanan</CardTitle>
-          <CardDescription className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Total: {totalOrders.toLocaleString('id-ID')} pesanan
-          </CardDescription>
+    <Card className="rounded-md gap-0 py-0 border-border/60 shadow-md overflow-hidden bg-gradient-to-b from-background to-muted/5 h-full">
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/40 bg-muted/20 p-4">
+        <div className="space-y-1">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <div className="p-1.5 rounded-md bg-chart-1/10">
+              <Package className="h-4 w-4 text-chart-1" />
+            </div>
+            Status Pesanan
+          </CardTitle>
+          <CardDescription className="text-xs">Distribusi volume pesanan berdasarkan status.</CardDescription>
         </div>
-
-        <Badge variant="secondary" className="rounded-md border border-blue-200 bg-blue-100/60 px-4 py-2 text-right dark:border-blue-900/40 dark:bg-blue-900/20">
-          <p className="text-xs font-semibold text-blue-600 dark:text-blue-300">Tingkat selesai</p>
-          <p className="text-xl font-semibold text-blue-600 dark:text-blue-300">{completionRate}%</p>
+        <Badge variant="secondary" className="rounded-md bg-background/50 border-border/50 text-xs font-bold px-3 py-1">
+          Total: {totalOrders} Pesanan
         </Badge>
       </CardHeader>
-
-      <CardContent className="mt-2">
-        <div className="h-72 w-full">
-          {
-            chartData.length > 0
-              ? <ResponsiveContainer width="100%" height="100%" minHeight={300}>
-                <BarChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="4 4" stroke="#e5e7eb" vertical={false} />
-                  <XAxis
-                    dataKey="status"
-                    interval={0}
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                    stroke="#e5e7eb"
-                    tickFormatter={value => formatStatusPesanan(value)}
+      <CardContent className="p-4 pt-6">
+        <div className="h-[280px] w-full">
+          <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
+            <PieChart>
+              <Tooltip content={<CustomTooltip />} />
+              <Pie
+                data={data}
+                dataKey="count"
+                nameKey="name"
+                innerRadius={70}
+                outerRadius={100}
+                strokeWidth={4}
+                stroke="var(--card)"
+                paddingAngle={2}
+                cornerRadius={6}
+              >
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[entry.name] || "var(--muted)"}
+                    className="transition-opacity hover:opacity-80"
                   />
-                  <YAxis stroke="#e5e7eb" tick={{ fontSize: 12, fill: '#6b7280' }} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9', opacity: 0.6 }} />
-                  <Bar
-                    dataKey="count"
-                    radius={[6, 6, 0, 0]}
-                    onMouseEnter={(_, index) => setHoveredIndex(getOriginalIndex(index))}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={STATUS_COLORS[entry.status as keyof typeof STATUS_COLORS] || '#94a3b8'}
-                        opacity={hoveredIndex === null || hoveredIndex === getOriginalIndex(index) ? 1 : 0.35}
-                        style={{
-                          transition: 'opacity 0.2s ease, transform 0.2s ease',
-                          transform: hoveredIndex === getOriginalIndex(index) ? 'scale(1.02)' : 'scale(1)',
-                          transformOrigin: 'bottom',
-                        }}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              : <EmptyChart icon={BarChart2Icon} />
-          }
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-3 border-t border-gray-100 pt-3 text-sm dark:border-gray-800 sm:grid-cols-3 lg:grid-cols-3">
-          {chartData.map((item, index) => (
-            <button
-              key={index}
-              type="button"
-              className={`text-left rounded-lg border px-3 py-3 transition-all ${hoveredIndex === index
-                ? 'border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
-                : 'border-transparent bg-white dark:bg-gray-950'
-                }`}
-              onMouseEnter={() => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className="block h-2 w-2 rounded-full"
-                  style={{
-                    backgroundColor:
-                      STATUS_COLORS[item.status as keyof typeof STATUS_COLORS] || '#94a3b8',
+                ))}
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                      return (
+                        <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                          <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-3xl font-bold">
+                            {totalOrders}
+                          </tspan>
+                          <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 20} className="fill-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+                            Total Order
+                          </tspan>
+                        </text>
+                      );
+                    }
                   }}
                 />
-                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                  {formatStatusPesanan(item.status as any)}
-                </p>
-              </div>
-              <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {item.count.toLocaleString('id-ID')} pesanan
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500">{item.percentage}% dari total</p>
-            </button>
-          ))}
+              </Pie>
+              <Legend
+                verticalAlign="bottom"
+                align="center"
+                content={({ payload }) => (
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-4">
+                    {payload?.map((entry: any, index) => (
+                      <div key={index} className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                          {LABELS[entry.value] || entry.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+            </PieChart>
+          </ChartContainer>
+        </div>
+
+        <div className="mt-6 flex items-center gap-3 p-3 rounded-lg bg-chart-1/5 border border-chart-1/10">
+          <CheckCircle2 className="h-4 w-4 text-chart-1 shrink-0" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Tingkat penyelesaian pesanan berada di angka <span className="font-bold text-foreground">{completionRate.toFixed(1)}%</span>.
+            {completionRate > 80 ? " Performa operasional sangat baik." : " Perlu perhatian pada proses antrian."}
+          </p>
         </div>
       </CardContent>
     </Card>
