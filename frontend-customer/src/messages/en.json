@@ -231,7 +231,9 @@
         "noProductsDesc": "This outlet doesn't have any products available.",
         "noServices": "No services",
         "noServicesDesc": "This outlet doesn't provide any services.",
-        "whatsappMessage": "Hello, I'm interested in outlet"
+        "whatsappMessage": "Hello, I'm interested in outlet",
+        "tableIndicator": "Table {tableId}",
+        "tableOrderingActive": "Table Ordering Active"
     },
     "cart": {
         "title": "Shopping Cart",
@@ -538,7 +540,10 @@
         "searchPlaceholder": "Search products or services...",
         "searchResults": "{count} results found",
         "noSearchResults": "No results found",
-        "noSearchResultsDescription": "No products or services match your search"
+        "noSearchResultsDescription": "No products or services match your search",
+        "tableIndicator": "Table {tableId}",
+        "tableOrderingActive": "Table Ordering Active",
+        "active": "Active"
     },
     "text": {
         "open": "Open",
@@ -769,6 +774,12 @@
         "count": "methods"
     },
     "checkout": {
+        "title": "Checkout",
+        "secureCheckout": "Secure Checkout",
+        "secureCheckoutDesc": "Complete your payment details securely",
+        "securityNotice": "Your transaction is protected by 256-bit encryption",
+        "paymentSummary": "Payment Summary",
+        "secureSSL": "Secure 256-bit SSL Encryption",
         "orderSummary": {
             "productFrom": "Product from {outletName}",
             "otherProducts": "+ other products",
@@ -776,12 +787,21 @@
             "applicationFee": "Application Fee",
             "orderSubtotal": "Order Subtotal",
             "totalOrder": "Total Order ({count} outlets)",
-            "totalPayment": "Total Payment"
+            "totalPayment": "Total Payment",
+            "diningOption": "Dining Option",
+            "tableOrdering": "Order at Table {tableId}",
+            "tableOrderingDesc": "Order will be delivered to your table."
         },
         "checkoutButton": {
             "totalPayment": "Total Payment",
             "createOrder": "Create Order"
-        }
+        },
+        "stepper": {
+            "summary": "Summary",
+            "checkout": "Checkout",
+            "payment": "Payment"
+        },
+        "paymentMethod": "Payment Method"
     },
     "paymentPage": {
         "title": "Payment",
@@ -821,9 +841,20 @@
             "phoneInvalid": "Invalid phone number format"
         },
         "errors": {
-            "errorTitle": "Something went wrong",
-            "noItems": "No items found. Please go back to cart and add items.",
-            "paymentFailed": "Payment processing failed. Please try again."
+            "errorTitle": "An Error Occurred",
+            "noItems": "No items found. Please go back to the cart and add items.",
+            "paymentFailed": "Payment failed to process. Please try again."
+        },
+        "leaveDialog": {
+            "title": "Leave Payment?",
+            "description": "Your payment is not complete. If you leave this page, your payment progress will be lost and you will have to start over.",
+            "continue": "Continue to Pay",
+            "leave": "Yes, Leave"
+        },
+        "stepper": {
+            "summary": "Summary",
+            "checkout": "Checkout",
+            "payment": "Payment"
         }
     },
     "paymentProcessing": {
@@ -1085,8 +1116,11 @@
             "quota": "Quota",
             "maxPerOrder": "Max per Order",
             "salePeriod": "Sale Period",
-            "eventPassed": "Event has ended",
-            "ticketTerms": "Terms & Conditions"
+            "eventPassed": "Event has passed",
+            "ticketTerms": "Terms & Conditions",
+            "inactive": "Inactive",
+            "remaining": "Remaining",
+            "inCart": "in cart"
         },
         "buttons": {
             "productUnavailable": "Product Unavailable",
@@ -1095,7 +1129,8 @@
             "serviceUnavailable": "Service Unavailable",
             "bookService": "Book Service",
             "buyTicket": "Buy Ticket",
-            "openMap": "Open Map"
+            "openMap": "Open Map",
+            "schedule": "Schedule"
         }
     },
     "notFound": {

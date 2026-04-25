@@ -24,8 +24,9 @@ import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { ImageColorThief } from "../shared/ImageColorThief";
 import { Product } from "@/types/product";
-import { useLocalizedPath } from "@/hooks/useI18n";
+import { useLocalizedPath, useTranslations } from "@/hooks/useI18n";
 import Link from "next/link";
+import { formatCurrency } from "@/lib/utils";
 
 export default function ProductCard({
   product,
@@ -103,6 +104,8 @@ export default function ProductCard({
   const cartItems = getOutletItems(outlet.id);
   const cartItem = cartItems.find((item) => item.productId === product.id);
   const inCartQuantity = cartItem?.quantity || 0;
+  const t = useTranslations("productDetails");
+
   const maxQuantity =
     product.type === "GOODS" && productData.quantity !== null
       ? productData.quantity
@@ -116,7 +119,7 @@ export default function ProductCard({
       e.stopPropagation();
 
       if (isInactive) {
-        snackbar.error("Produk tidak tersedia", 3000);
+        snackbar.error(t("tooltips.productUnavailable"), 3000);
         return;
       }
 
@@ -126,14 +129,14 @@ export default function ProductCard({
             addItem(outlet.id, outlet.name, outlet.slug!, product, quantity);
             setQuantity(1);
             snackbar.success(
-              `${quantity} ${productData.unit || "item"} ditambahkan ke keranjang`,
+              t("toast.addProductSuccess"),
               2000,
             );
           } catch (error) {
             snackbar.error(
               error instanceof Error
                 ? error.message
-                : "Terjadi kesalahan saat menambahkan produk ke keranjang",
+                : t("toast.addProductErrorDesc"),
               10000,
             );
           }
@@ -150,8 +153,8 @@ export default function ProductCard({
       quantity,
       isOutOfStock,
       isInactive,
-      productData.unit,
       snackbar,
+      t,
     ],
   );
 
@@ -173,21 +176,21 @@ export default function ProductCard({
         const success = addItem(outlet.id, outlet.name, outlet.slug!, product, 1, selectedSchedule);
         if (success) {
           setIsScheduleModalOpen(false);
-          snackbar.success("Layanan berhasil ditambahkan ke keranjang", 2000);
+          snackbar.success(t("toast.addServiceSuccess"), 2000);
         } else {
-          snackbar.error("Jadwal bentrok dengan layanan lain di keranjang", 5000);
+          snackbar.error(t("toast.addServiceErrorDesc"), 5000);
           console.warn("Failed to add service to cart due to time conflict");
         }
       } catch (error) {
         snackbar.error(
           error instanceof Error
             ? error.message
-            : "Terjadi kesalahan saat menambahkan layanan ke keranjang",
+            : t("toast.addServiceErrorDesc"),
           10000,
         );
       }
     },
-    [addItem, outlet.id, outlet.name, product, snackbar],
+    [addItem, outlet.id, outlet.name, product, snackbar, t],
   );
 
   const isDisabled = isOutOfStock || isInactive || !!isEventPassed;
@@ -197,8 +200,8 @@ export default function ProductCard({
       <Card
         id={product.id}
         className={`flex flex-row p-3 transition-all duration-200 w-full overflow-hidden relative gap-0 group border border-border/60 rounded-xl items-stretch ${isDisabled
-            ? "opacity-50 cursor-not-allowed bg-muted/30"
-            : "hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
+          ? "opacity-50 cursor-not-allowed bg-muted/30"
+          : "hover:shadow-md hover:border-primary/20 active:scale-[0.99]"
           }`}
       >
         {!isDisabled && (
@@ -232,7 +235,7 @@ export default function ProductCard({
           {isOutOfStock && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
               <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
-                Habis
+                {t("labels.outOfStock")}
               </span>
             </div>
           )}
@@ -240,7 +243,7 @@ export default function ProductCard({
           {isInactive && !isOutOfStock && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
               <span className="text-[10px] font-bold text-white bg-gray-500 px-2 py-0.5 rounded-full">
-                Nonaktif
+                {t("labels.inactive") || "Nonaktif"}
               </span>
             </div>
           )}
@@ -248,7 +251,7 @@ export default function ProductCard({
           {isEventPassed && !isOutOfStock && !isInactive && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
               <span className="text-[10px] font-bold text-white bg-gray-500 px-2 py-0.5 rounded-full">
-                Event Selesai
+                {t("labels.eventPassed")}
               </span>
             </div>
           )}
@@ -270,7 +273,7 @@ export default function ProductCard({
           {product.type === "TICKET" && product.ticket && !isDisabled && (
             <span className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-emerald-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm z-20">
               <Calendar className="w-2.5 h-2.5" />
-              {new Date(product.ticket.eventDate).toLocaleDateString("id-ID", {
+              {new Date(product.ticket.eventDate).toLocaleDateString(locale === "id" ? "id-ID" : "en-US", {
                 day: "numeric",
                 month: "short",
               })}
@@ -279,7 +282,7 @@ export default function ProductCard({
 
           {isLowStock && !isInactive && (
             <span className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm z-20">
-              Stok: {productData.quantity}
+              {t("labels.quota")}: {productData.quantity}
             </span>
           )}
 
@@ -289,7 +292,7 @@ export default function ProductCard({
             productData.ticketAvailable <= 10 &&
             !isDisabled && (
               <span className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm z-20">
-                Sisa: {productData.ticketAvailable}
+                {t("labels.remaining") || "Sisa"}: {productData.ticketAvailable}
               </span>
             )}
         </div>
@@ -313,7 +316,7 @@ export default function ProductCard({
             <div className="flex items-center gap-1 text-[11px] text-primary font-medium mt-1.5 bg-primary/5 rounded-md px-2 py-1 w-fit">
               <ShoppingCart className="w-3 h-3" />
               <span>
-                {inCartQuantity} {productData.unit || "item"} di keranjang
+                {inCartQuantity} {productData.unit || "item"} {t("labels.inCart") || "di keranjang"}
               </span>
             </div>
           )}
@@ -321,7 +324,7 @@ export default function ProductCard({
           <div className="flex justify-between items-end mt-2 gap-2">
             <div>
               <p className="font-bold text-base text-primary tabular-nums">
-                Rp {productData.price.toLocaleString("id-ID")}
+                {formatCurrency(productData.price)}
               </p>
               {product.type === "GOODS" && productData.unit && (
                 <span className="text-[10px] text-muted-foreground leading-none">
@@ -379,7 +382,7 @@ export default function ProductCard({
                     onClick={handleAddToCart}
                   >
                     <Clock className="w-3 h-3" />
-                    Jadwal
+                    {t("buttons.schedule") || "Jadwal"}
                   </Button>
                 )}
               </div>

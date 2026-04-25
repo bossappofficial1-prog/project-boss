@@ -231,7 +231,9 @@
         "noProductsDesc": "Outlet ini belum menyediakan produk.",
         "noServices": "Tidak ada layanan",
         "noServicesDesc": "Outlet ini belum menyediakan layanan.",
-        "whatsappMessage": "Halo, saya tertarik dengan outlet"
+        "whatsappMessage": "Halo, saya tertarik dengan outlet",
+        "tableIndicator": "Meja {tableId}",
+        "tableOrderingActive": "Pemesanan di Meja Aktif"
     },
     "cart": {
         "title": "Keranjang Belanja",
@@ -538,7 +540,10 @@
         "searchPlaceholder": "Cari produk atau layanan...",
         "searchResults": "{count} hasil ditemukan",
         "noSearchResults": "Tidak ditemukan",
-        "noSearchResultsDescription": "Tidak ada produk atau layanan yang cocok dengan pencarian Anda"
+        "noSearchResultsDescription": "Tidak ada produk atau layanan yang cocok dengan pencarian Anda",
+        "tableIndicator": "Meja {tableId}",
+        "tableOrderingActive": "Pemesanan di Meja Aktif",
+        "active": "Aktif"
     },
     "text": {
         "open": "Buka",
@@ -769,6 +774,12 @@
         "count": "metode"
     },
     "checkout": {
+        "title": "Checkout",
+        "secureCheckout": "Secure Checkout",
+        "secureCheckoutDesc": "Lengkapi detail pembayaran Anda dengan aman",
+        "securityNotice": "Transaksi Anda dilindungi dengan enkripsi 256-bit",
+        "paymentSummary": "Ringkasan Pembayaran",
+        "secureSSL": "Secure 256-bit SSL Encryption",
         "orderSummary": {
             "productFrom": "Produk dari {outletName}",
             "otherProducts": "+ produk lainnya",
@@ -776,12 +787,21 @@
             "applicationFee": "Biaya Aplikasi",
             "orderSubtotal": "Subtotal Pesanan",
             "totalOrder": "Total Pesanan ({count} outlet)",
-            "totalPayment": "Total Pembayaran"
+            "totalPayment": "Total Pembayaran",
+            "diningOption": "Pilihan Tempat Makan",
+            "tableOrdering": "Pemesanan di Meja {tableId}",
+            "tableOrderingDesc": "Pesanan akan diantar ke meja Anda."
         },
         "checkoutButton": {
             "totalPayment": "Total Pembayaran",
             "createOrder": "Buat Pesanan"
-        }
+        },
+        "stepper": {
+            "summary": "Ringkasan",
+            "checkout": "Checkout",
+            "payment": "Pembayaran"
+        },
+        "paymentMethod": "Metode Pembayaran"
     },
     "paymentPage": {
         "title": "Pembayaran",
@@ -824,6 +844,17 @@
             "errorTitle": "Terjadi Kesalahan",
             "noItems": "Tidak ada item ditemukan. Silakan kembali ke keranjang dan tambahkan item.",
             "paymentFailed": "Pembayaran gagal diproses. Silakan coba lagi."
+        },
+        "leaveDialog": {
+            "title": "Tinggalkan Pembayaran?",
+            "description": "Pembayaran Anda belum selesai. Jika Anda meninggalkan halaman ini, progress pembayaran akan hilang dan Anda harus mengulang dari awal.",
+            "continue": "Lanjutkan Bayar",
+            "leave": "Ya, Tinggalkan"
+        },
+        "stepper": {
+            "summary": "Ringkasan",
+            "checkout": "Checkout",
+            "payment": "Pembayaran"
         }
     },
     "paymentProcessing": {
@@ -1086,7 +1117,10 @@
             "maxPerOrder": "Maks per Pesanan",
             "salePeriod": "Periode Penjualan",
             "eventPassed": "Event sudah berakhir",
-            "ticketTerms": "Syarat & Ketentuan"
+            "ticketTerms": "Syarat & Ketentuan",
+            "inactive": "Nonaktif",
+            "remaining": "Sisa",
+            "inCart": "di keranjang"
         },
         "buttons": {
             "productUnavailable": "Produk Tidak Tersedia",
@@ -1095,7 +1129,8 @@
             "serviceUnavailable": "Layanan Tidak Tersedia",
             "bookService": "Booking Layanan",
             "buyTicket": "Beli Tiket",
-            "openMap": "Buka Peta"
+            "openMap": "Buka Peta",
+            "schedule": "Jadwal"
         }
     },
     "notFound": {

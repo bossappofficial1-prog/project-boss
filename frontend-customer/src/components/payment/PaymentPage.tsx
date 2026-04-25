@@ -406,6 +406,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
         onlinePaymentChannel: selectedPaymentMethod.id as PaymentMethodId, // Map payment method to channel
         ...(selectedSlotId && { bookingSlotId: selectedSlotId }),
         ...(staffId && { staffId }),
+        ...(useCart.getState().tableId && { tableId: useCart.getState().tableId }),
       };
 
       // Check if we have any items
@@ -492,9 +493,9 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
           <div className="space-y-2">
             <p className="text-[13px] font-medium sm:text-sm">{t("title")}</p>
             <div className="grid grid-cols-3 gap-2 text-[11px] sm:text-xs">
-              <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">1. Ringkasan</div>
-              <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">2. Checkout</div>
-              <div className="rounded-md border bg-primary/10 px-2 py-1.5 text-center font-semibold text-primary">3. Pembayaran</div>
+              <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">{t("stepper.summary")}</div>
+              <div className="rounded-md border bg-muted/30 px-2 py-1.5 text-center font-medium">{t("stepper.checkout")}</div>
+              <div className="rounded-md border bg-primary/10 px-2 py-1.5 text-center font-semibold text-primary">{t("stepper.payment")}</div>
             </div>
           </div>
         </CardContent>
@@ -526,15 +527,14 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
       <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Tinggalkan Pembayaran?</DialogTitle>
+            <DialogTitle>{t("leaveDialog.title")}</DialogTitle>
             <DialogDescription>
-              Pembayaran Anda belum selesai. Jika Anda meninggalkan halaman ini, progress pembayaran
-              akan hilang dan Anda harus mengulang dari awal.
+              {t("leaveDialog.description")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowLeaveDialog(false)}>
-              Lanjutkan Bayar
+              {t("leaveDialog.continue")}
             </Button>
             <Button
               variant="destructive"
@@ -542,7 +542,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
                 setHasStartedPayment(false);
                 router.back();
               }}>
-              Ya, Tinggalkan
+              {t("leaveDialog.leave")}
             </Button>
           </DialogFooter>
         </DialogContent>

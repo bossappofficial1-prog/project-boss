@@ -3,7 +3,7 @@
 import { useFavorites } from "@/hooks/useFavorites";
 import { useTranslations } from "@/hooks/useI18n";
 import { Button } from "../ui/button";
-import { Heart, MapPin, Package, Phone, Share2, Store, Wrench, Clock, MessageCircle, Navigation, ChevronRight, Search, X, Ticket } from "lucide-react";
+import { Heart, MapPin, Package, Phone, Share2, Store, Wrench, Clock, MessageCircle, Navigation, ChevronRight, Search, X, Ticket, UtensilsCrossed } from "lucide-react";
 import { ShareOutlet } from "../shared/ShareOutlet";
 import { ImageRender } from "../shared/Image";
 import { resolveCustomerImageUrl } from "@/lib/url";
@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import ProductCard from "./ProductCard";
 import { useEffect, useMemo, useCallback, useRef, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
+import { useCart } from "@/hooks/useCart";
 import { Outlet } from "@/services/outlets";
 import { Product as ProductService } from "@/services/product";
 import { EmptyState, ErrorState, LoadingState } from "../Base";
@@ -213,6 +214,15 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
   const withLocalizedPath = useLocalizedPath();
 
   const router = useRouter();
+  const { setTableId, tableId: storedTableId } = useCart();
+
+  const tableIdFromUrl = searchParams.get("tableId");
+
+  useEffect(() => {
+    if (tableIdFromUrl) {
+      setTableId(tableIdFromUrl);
+    }
+  }, [tableIdFromUrl, setTableId]);
 
   // Prefetch likely back destinations
   useEffect(() => {
@@ -413,20 +423,48 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
       </div>
 
+      {/* Table Ordering Indicator - Floating Pill */}
+      {storedTableId && (
+        <div className="fixed bottom-5 left-0 right-0 z-30 px-4 pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-primary/95 text-primary-foreground backdrop-blur-md py-2.5 px-4 rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-between border border-white/10 pointer-events-auto max-w-lg mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-xl">
+                <UtensilsCrossed className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col">
+                <p className="text-[9px] font-bold opacity-80 uppercase tracking-[0.1em] leading-none mb-1">
+                  {t("tableOrderingActive")}
+                </p>
+                <p className="text-sm font-extrabold leading-none">
+                  {t("tableIndicator", { tableId: storedTableId })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-white/15 px-3 py-1 rounded-full border border-white/10">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">{t("active")}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Outlet Info Card - overlapping hero */}
       <div className="relative -mt-16">
         <div className="rounded-xl bg-background border border-border/60 shadow-lg p-4 space-y-3">
           {/* Status + Name */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1.5">
                 <Badge
                   variant={outlet.status ? "default" : "secondary"}
-                  className={`rounded-full text-[10px] px-2 py-0.5 font-semibold ${outlet.status ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-200 text-gray-600"}`}>
+                  className={`rounded-full text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-wider ${outlet.status ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-200 text-gray-600"}`}>
                   {outlet.status ? t("open") : t("closed")}
                 </Badge>
               </div>
-              <h1 className="text-lg font-bold leading-tight line-clamp-2">{outlet.name}</h1>
+              <h1 className="text-xl font-extrabold leading-tight tracking-tight line-clamp-2 text-foreground/90">{outlet.name}</h1>
             </div>
           </div>
 
@@ -434,17 +472,18 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
           <button
             type="button"
             onClick={() => toMapDestination(outlet.latitude, outlet.longitude)}
-            className="flex items-start gap-2 text-left w-full group">
-            <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
-              <MapPin className="w-3.5 h-3.5" />
+            className="flex items-start gap-3 text-left w-full group pt-1">
+            <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-all duration-300">
+              <MapPin className="w-4 h-4" />
             </div>
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground line-clamp-2 group-hover:text-foreground transition-colors">
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] text-muted-foreground/90 leading-relaxed line-clamp-2 group-hover:text-foreground transition-colors">
                 {outlet.address}
               </p>
-              <span className="text-[10px] text-primary font-medium flex items-center gap-0.5 mt-0.5">
-                <Navigation className="w-2.5 h-2.5" />
+              <span className="text-[11px] text-primary font-bold flex items-center gap-1 mt-1 transition-transform group-hover:translate-x-0.5">
+                <Navigation className="w-3 h-3" />
                 {t("openMap")}
+                <ChevronRight className="w-3 h-3" />
               </span>
             </div>
           </button>
