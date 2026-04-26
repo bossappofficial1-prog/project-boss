@@ -14,6 +14,8 @@ export interface OrderItemEntry {
   quantity: number;
   price: number;
   productType: "TICKET" | "GOODS" | "SERVICE";
+  duration: number | null;
+  createdAt: string;
 }
 
 export interface OrderV2Entry {
@@ -31,6 +33,9 @@ export interface OrderV2Entry {
   createdAt: string;
   updatedAt: string;
   cancellationReason: string | null;
+  tableId: string | null;
+  tableNumber: string | null;
+  staffName: string | null;
 }
 
 export interface OrdersV2Board {

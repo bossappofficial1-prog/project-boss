@@ -140,13 +140,7 @@ export class QueueV2Repository {
             ${sqlQueueBaseSelect}
             WHERE o."outletId" = ${outletId}
             AND o."orderStatus" IN ('AWAITING_PAYMENT', 'PROCESSING', 'CONFIRMED', 'READY', 'ON_GOING')
-            AND EXISTS (
-                SELECT 1 FROM "OrderItem" oi
-                JOIN "Product" p ON oi."productId" = p.id
-                WHERE oi."orderId" = o.id AND p.type = 'SERVICE'
-            )
             ${searchFilter}
-            ${dateFilter}
             ORDER BY o."createdAt" ASC
         `;
 
@@ -193,11 +187,6 @@ export class QueueV2Repository {
             AND o."orderStatus" = 'COMPLETED'
             AND o."updatedAt" >= ${startOfDay}
             AND o."updatedAt" <= ${endOfDay}
-            AND EXISTS (
-                SELECT 1 FROM "OrderItem" oi
-                JOIN "Product" p ON oi."productId" = p.id
-                WHERE oi."orderId" = o.id AND p.type = 'SERVICE'
-            )
             ${searchFilter}
             ORDER BY o."updatedAt" DESC
         `;
@@ -229,11 +218,6 @@ export class QueueV2Repository {
             AND o."orderStatus" = 'CANCELLED'
             AND o."updatedAt" >= ${startOfDay}
             AND o."updatedAt" <= ${endOfDay}
-            AND EXISTS (
-                SELECT 1 FROM "OrderItem" oi
-                JOIN "Product" p ON oi."productId" = p.id
-                WHERE oi."orderId" = o.id AND p.type = 'SERVICE'
-            )
         `;
 
     return result[0]?.count || 0;

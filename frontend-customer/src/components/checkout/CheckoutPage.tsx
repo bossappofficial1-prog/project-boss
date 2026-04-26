@@ -31,14 +31,16 @@ const OrderSummary: React.FC<CheckoutProps & {
     dynamicApplicationFee: number;
     dynamicGrandTotal: number;
     tableId: string | null;
-}> = ({ outlets, subtotal, selectedPaymentMethod, dynamicTransactionFee, dynamicApplicationFee, dynamicGrandTotal, tableId }) => {
+    tableName: string | null;
+    tableOutletId: string | null;
+}> = ({ outlets, subtotal, selectedPaymentMethod, dynamicTransactionFee, dynamicApplicationFee, dynamicGrandTotal, tableId, tableName, tableOutletId }) => {
     const t = useTranslations("checkout");
     const totalItems = outlets.reduce((total, outlet) => total + 1, 0);
 
     return (
         <div className="space-y-4">
             {/* Dining Info Card */}
-            {tableId && (
+            {tableId && outlets.some(o => o.outletId === tableOutletId) && (
                 <Card className="border-primary/20 py-0 bg-primary/5 dark:bg-primary/10">
                     <CardContent className="p-4 flex items-center gap-3">
                         <div className="h-10 w-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shrink-0">
@@ -46,7 +48,7 @@ const OrderSummary: React.FC<CheckoutProps & {
                         </div>
                         <div className="flex-1">
                             <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-0.5">{t("orderSummary.diningOption")}</p>
-                            <h3 className="text-sm font-bold">{t("orderSummary.tableOrdering", { tableId })}</h3>
+                            <h3 className="text-sm font-bold">{t("orderSummary.tableOrdering", { tableId: tableName || tableId })}</h3>
                             <p className="text-[11px] text-muted-foreground">{t("orderSummary.tableOrderingDesc")}</p>
                         </div>
                     </CardContent>
@@ -162,7 +164,7 @@ const CheckoutButton: React.FC<{
 };
 
 const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, grandTotal }) => {
-    const { tableId } = useCart();
+    const { tableId, tableName, tableOutletId } = useCart();
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
     const router = useRouter();
     const t = useTranslations("checkout");
@@ -280,6 +282,8 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, grandTotal }
                     dynamicApplicationFee={dynamicApplicationFee}
                     dynamicGrandTotal={dynamicGrandTotal}
                     tableId={tableId}
+                    tableName={tableName}
+                    tableOutletId={tableOutletId}
                     selectedPaymentMethod={selectedPaymentMethod}
                 />
             </div>

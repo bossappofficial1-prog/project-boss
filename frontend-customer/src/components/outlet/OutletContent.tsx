@@ -199,11 +199,16 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
     return sessionStorage.getItem(SESSION_KEY);
   });
 
-  const [selectedTabs, setSelectedTabs] = useState<string | undefined>(() => {
-    if (typeof window === "undefined") return undefined;
-    const storedSelectedTabs = localStorage.getItem("selectedTabs");
-    return storedSelectedTabs ?? "products";
-  });
+  const [selectedTabs, setSelectedTabs] = useState<string>("products");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedSelectedTabs = localStorage.getItem("selectedTabs");
+      if (storedSelectedTabs) {
+        setSelectedTabs(storedSelectedTabs);
+      }
+    }
+  }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -214,15 +219,10 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
   const withLocalizedPath = useLocalizedPath();
 
   const router = useRouter();
-  const { setTableId, tableId: storedTableId } = useCart();
+  const { setTableId, tableId: storedTableId, tableName: storedTableName, tableOutletId: storedTableOutletId } = useCart();
 
   const tableIdFromUrl = searchParams.get("tableId");
-
-  useEffect(() => {
-    if (tableIdFromUrl) {
-      setTableId(tableIdFromUrl);
-    }
-  }, [tableIdFromUrl, setTableId]);
+  const tableNameFromUrl = searchParams.get("tableName");
 
   // Prefetch likely back destinations
   useEffect(() => {
@@ -265,6 +265,11 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
   const [outletQuery, productQuery] = results;
 
   const trimmedSearch = debouncedSearchQuery.trim();
+  useEffect(() => {
+    if (tableIdFromUrl && outletQuery.data) {
+      setTableId(tableIdFromUrl, tableNameFromUrl, outletQuery.data.id);
+    }
+  }, [tableIdFromUrl, tableNameFromUrl, outletQuery.data?.id, setTableId]);
 
   const searchResult = useSearchProductsByOutlet({
     outletId: results[0].data?.id!,
@@ -424,7 +429,7 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
       </div>
 
       {/* Table Ordering Indicator - Floating Pill */}
-      {storedTableId && (
+      {storedTableId && storedTableOutletId === outletQuery.data?.id && (
         <div className="fixed bottom-5 left-0 right-0 z-30 px-4 pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="bg-primary/95 text-primary-foreground backdrop-blur-md py-2.5 px-4 rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-between border border-white/10 pointer-events-auto max-w-lg mx-auto">
             <div className="flex items-center gap-3">
@@ -436,7 +441,7 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
                   {t("tableOrderingActive")}
                 </p>
                 <p className="text-sm font-extrabold leading-none">
-                  {t("tableIndicator", { tableId: storedTableId })}
+                  {t("tableIndicator", { tableId: storedTableName || storedTableId })}
                 </p>
               </div>
             </div>

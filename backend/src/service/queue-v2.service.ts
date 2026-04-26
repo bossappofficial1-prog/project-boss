@@ -44,6 +44,8 @@ interface QueueEntry {
   paymentProofUrl: string | null;
   paymentStatus: string | null;
   cancellationReason: string | null;
+  tableId: string | null;
+  tableNumber: string | null;
 }
 
 interface QueueBoard {
@@ -66,7 +68,6 @@ interface QueueStats {
 const WAITING_STATUSES: OrderStatus[] = [
   OrderStatus.AWAITING_PAYMENT,
   OrderStatus.CONFIRMED,
-  OrderStatus.PROCESSING,
 ];
 
 function computeSchedule(order: any): { start: Date | null; end: Date | null } {
@@ -136,6 +137,8 @@ function mapOrderToEntry(order: any, position: number): QueueEntry {
     paymentProofUrl: order.transaction?.paymentProofUrl ?? null,
     paymentStatus: order.transaction?.status ?? null,
     cancellationReason: order.cancellationReason ?? null,
+    tableId: order.tableId ?? null,
+    tableNumber: order.tableNumber ?? null,
   };
 }
 
@@ -201,7 +204,7 @@ export class QueueV2Service {
         board.waiting.push(entry);
       } else if (status === OrderStatus.READY) {
         board.ready.push(entry);
-      } else if (status === OrderStatus.ON_GOING) {
+      } else if (status === OrderStatus.ON_GOING || status === OrderStatus.PROCESSING) {
         board.inProgress.push(entry);
       }
     }

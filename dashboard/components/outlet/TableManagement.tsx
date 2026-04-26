@@ -7,11 +7,13 @@ import {
     Edit2,
     Users,
     LayoutGrid,
+    QrCode,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { tableApi, type OutletTable } from '@/lib/apis/table'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
+import { TableQrDialog, BulkQrDownload } from './TableQrDialog'
 
 // Project UI Components
 import { DataTable } from '@/components/ui/data-table'
@@ -19,11 +21,15 @@ import { Badge } from '@/components/ui/badge'
 
 interface TableManagementProps {
     outletId: string
+    outletSlug?: string
+    outletName?: string
     onEdit?: (table: OutletTable) => void
     onDelete?: (table: OutletTable) => void
 }
 
-export function TableManagement({ outletId, onDelete, onEdit }: TableManagementProps) {
+export function TableManagement({ outletId, outletSlug, outletName, onDelete, onEdit }: TableManagementProps) {
+    const [qrTable, setQrTable] = useState<OutletTable | null>(null)
+
     // Queries
     const { data: tables = [], isLoading } = useQuery({
         queryKey: ['tables', outletId],
@@ -84,7 +90,19 @@ export function TableManagement({ outletId, onDelete, onEdit }: TableManagementP
                 description="Kelola ketersediaan meja dan kapasitas tempat duduk."
                 emptyMessage="Belum ada meja yang terdaftar."
                 tableId={`tables-${outletId}`}
+                titleActions={outletSlug && tables.length > 0 ? (
+                    <BulkQrDownload
+                        tables={tables}
+                        outletSlug={outletSlug}
+                        outletName={outletName || 'Outlet'}
+                    />
+                ) : undefined}
                 rowActions={(row) => [
+                    {
+                        label: 'QR Code',
+                        icon: QrCode,
+                        onClick: (row) => setQrTable(row)
+                    },
                     {
                         label: 'Edit',
                         icon: Edit2,
@@ -98,6 +116,12 @@ export function TableManagement({ outletId, onDelete, onEdit }: TableManagementP
                     }
                 ]}
                 actionViewType="flex"
+            />
+
+            <TableQrDialog
+                table={qrTable}
+                outletSlug={outletSlug}
+                onOpenChange={(open) => !open && setQrTable(null)}
             />
         </div>
     )

@@ -137,14 +137,13 @@ export class OrdersV2Repository {
     const rawOrders = await db.$queryRaw<any[]>`
             ${sqlBaseSelect}
             WHERE o."outletId" = ${outletId}
-            AND o."orderStatus" IN ('AWAITING_PAYMENT', 'PROCESSING', 'CONFIRMED', 'READY')
+            AND o."orderStatus" IN ('ON_GOING', 'AWAITING_PAYMENT', 'PROCESSING', 'CONFIRMED', 'READY')
             AND EXISTS (
                 SELECT 1 FROM "OrderItem" oi
                 JOIN "Product" p ON oi."productId" = p.id
                 WHERE oi."orderId" = o.id AND p.type IN ('GOODS', 'TICKET')
             )
             ${searchFilter}
-            ${dateFilter}
             ORDER BY o."createdAt" DESC
         `;
 

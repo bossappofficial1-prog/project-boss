@@ -12,6 +12,7 @@ interface QueueCardProps {
     onDetail?: (entry: QueueV2Entry) => void;
     onViewProof?: (entry: QueueV2Entry) => void;
     isPending?: boolean;
+    isKitchenView?: boolean;
 }
 
 const STATUS_CONFIG: Record<
@@ -104,7 +105,15 @@ function formatShortDate(dateStr: string): string {
 // Transitions beyond PROCESSING require today's date
 const NEEDS_TODAY_STATUSES: QueueOrderStatus[] = ["READY", "ON_GOING", "COMPLETED"];
 
-export function QueueCard({ entry, onPrimaryAction, onCancel, onDetail, onViewProof, isPending }: QueueCardProps) {
+export function QueueCard({ 
+    entry, 
+    onPrimaryAction, 
+    onCancel, 
+    onDetail, 
+    onViewProof, 
+    isPending = false,
+    isKitchenView = false 
+}: QueueCardProps) {
     const config = STATUS_CONFIG[entry.orderStatus] ?? STATUS_CONFIG.PROCESSING;
     const primary = PRIMARY_ACTIONS[entry.orderStatus];
     const isTerminal = entry.orderStatus === "COMPLETED" || entry.orderStatus === "CANCELLED";
@@ -183,24 +192,26 @@ export function QueueCard({ entry, onPrimaryAction, onCancel, onDetail, onViewPr
                 </div>
 
                 {/* Amount */}
-                <div className="flex flex-col">
-                    {entry.discountAmount > 0 && (
-                        <span className="text-[11px] text-muted-foreground line-through">
-                            {formatCurrency(entry.totalAmount + entry.discountAmount)}
+                {!isKitchenView && (
+                    <div className="flex flex-col">
+                        {entry.discountAmount > 0 && (
+                            <span className="text-[11px] text-muted-foreground line-through">
+                                {formatCurrency(entry.totalAmount + entry.discountAmount)}
+                            </span>
+                        )}
+                        <span className="text-sm font-semibold text-foreground">
+                            {formatCurrency(entry.totalAmount)}
                         </span>
-                    )}
-                    <span className="text-sm font-semibold text-foreground">
-                        {formatCurrency(entry.totalAmount)}
-                    </span>
-                    {entry.discountAmount > 0 && (
-                        <span className="text-[10px] text-emerald-500">
-                            Diskon Poin
-                        </span>
-                    )}
-                </div>
+                        {entry.discountAmount > 0 && (
+                            <span className="text-[10px] text-emerald-500">
+                                Diskon Poin
+                            </span>
+                        )}
+                    </div>
+                )}
 
                 {/* Actions */}
-                {!isTerminal && (
+                {!isTerminal && !isKitchenView && (
                     <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
                         {/* View proof button */}
                         {entry.isManualPayment && entry.paymentProofUrl && (

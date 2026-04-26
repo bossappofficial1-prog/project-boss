@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Plus, Minus, X, Package, Wrench, Clock, Calendar, MapPin, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, X, Package, Wrench, Clock, Calendar, MapPin, AlertCircle, UtensilsCrossed } from 'lucide-react';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { ImageRender } from '@/components/shared/Image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -198,7 +198,7 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ children }: CartDrawerProps) {
-    const { items, isOpen, setIsOpen, getTotalItems, getTotalPrice, clearCart } = useCart();
+    const { items, isOpen, setIsOpen, getTotalItems, getTotalPrice, clearCart, tableName, tableId, tableOutletId } = useCart();
     const t = useTranslations("cart");
 
     const totalItems = getTotalItems();
@@ -256,11 +256,19 @@ export function CartDrawer({ children }: CartDrawerProps) {
                                                 <CardHeader className="pb-3">
                                                     <div className="flex items-center justify-between">
                                                         <CardTitle className="text-base">{outletName}</CardTitle>
-                                                        {outletTotal && (
-                                                            <Badge variant="outline" className="text-xs">
-                                                                Rp{outletTotal.toLocaleString('id-ID')}
-                                                            </Badge>
-                                                        )}
+                                                        <div className="flex items-center gap-2">
+                                                            {tableId && tableOutletId === outletId && (
+                                                                <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 flex items-center gap-1.5 py-0 h-6 px-2">
+                                                                    <UtensilsCrossed className="w-3 h-3" />
+                                                                    <span className="text-[10px] font-black uppercase">{tableName || tableId.slice(0, 5)}</span>
+                                                                </Badge>
+                                                            )}
+                                                            {outletTotal && (
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    Rp{outletTotal.toLocaleString('id-ID')}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className="flex gap-4 text-xs text-muted-foreground">
                                                         {goodsItems.length > 0 && (

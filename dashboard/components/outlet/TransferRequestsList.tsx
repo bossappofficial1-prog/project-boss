@@ -31,7 +31,7 @@ export function TransferRequestsList() {
       queryClient.invalidateQueries({ queryKey: ['outlet-transfers'] })
       queryClient.invalidateQueries({ queryKey: ['outlets'] })
     },
-    onError: (err: any) => toast.error(err.message || 'Gagal menerima transfer'),
+    onError: (err: any) => toast.error(err.response.data.message || 'Gagal menerima transfer'),
   })
 
   const { mutate: reject } = useMutation({

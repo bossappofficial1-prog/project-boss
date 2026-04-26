@@ -31,6 +31,8 @@ interface CartState {
     items: CartItem[];
     isOpen: boolean;
     tableId: string | null;
+    tableName: string | null;
+    tableOutletId: string | null;
 
     // Actions
     addItem: (outletId: string, outletName: string, slug: string, product: Product, quantity?: number, selectedSchedule?: SelectedSchedule) => boolean;
@@ -40,7 +42,7 @@ interface CartState {
     clearCart: () => void;
     clearOutletItems: (outletId: string) => void;
     setIsOpen: (isOpen: boolean) => void;
-    setTableId: (tableId: string | null) => void;
+    setTableId: (tableId: string | null, tableName?: string | null, tableOutletId?: string | null) => void;
 
     // Getters
     getTotalItems: () => number;
@@ -58,6 +60,8 @@ export const useCart = create<CartState>()(
             items: [],
             isOpen: false,
             tableId: null,
+            tableName: null,
+            tableOutletId: null,
 
             addItem: (outletId: string, outletName: string, slug: string, product: Product, quantity = 1, selectedSchedule) => {
                 const { items } = get();
@@ -271,8 +275,8 @@ export const useCart = create<CartState>()(
             setIsOpen: (isOpen: boolean) => {
                 set({ isOpen });
             },
-            setTableId: (tableId: string | null) => {
-                set({ tableId });
+            setTableId: (tableId: string | null, tableName: string | null = null, tableOutletId: string | null = null) => {
+                set({ tableId, tableName, tableOutletId });
             },
 
             getTotalItems: () => {
@@ -354,7 +358,7 @@ export const useCart = create<CartState>()(
         {
             name: 'cart-storage',
             // Only persist items and tableId, not UI state
-            partialize: (state) => ({ items: state.items, tableId: state.tableId }),
+            partialize: (state) => ({ items: state.items, tableId: state.tableId, tableName: state.tableName, tableOutletId: state.tableOutletId }),
         }
     )
 );

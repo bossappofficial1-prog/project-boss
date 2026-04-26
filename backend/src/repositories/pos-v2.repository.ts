@@ -3,6 +3,20 @@ import { LoyaltyPointHistoryType, PaymentStatus, ManualPaymentType, OrderStatus,
 import { generateTicketCode } from "../utils";
 
 export class PosV2Repository {
+    static async findTableByIdAndOutlet(tableId: string, outletId: string) {
+        return db.outletTable.findFirst({
+            where: {
+                id: tableId,
+                outletId,
+            },
+            select: {
+                id: true,
+                outletId: true,
+                status: true,
+            },
+        });
+    }
+
     static async getProductsByOutlet(
         outletId: string,
         search?: string,

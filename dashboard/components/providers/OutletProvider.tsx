@@ -71,12 +71,32 @@ export function OutletProvider({ children }: OutletProviderProps) {
     const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
     const outlets = (data?.outlets || []) as Outlet[];
 
-    // Initialize selected outlet when outlets data is available
+    // Keep selected outlet in sync with latest query data.
     useEffect(() => {
-        if (outlets.length > 0 && !selectedOutlet) {
+        if (outlets.length === 0) {
+            if (selectedOutlet) {
+                setSelectedOutlet(null);
+            }
+            return;
+        }
+
+        if (!selectedOutlet) {
             const initialOutlet = getInitialSelectedOutlet(outlets);
             setSelectedOutlet(initialOutlet);
+            return;
         }
+
+        const matchedOutlet = outlets.find((outlet) => outlet.id === selectedOutlet.id);
+
+        if (matchedOutlet) {
+            if (matchedOutlet !== selectedOutlet) {
+                setSelectedOutlet(matchedOutlet);
+            }
+            return;
+        }
+
+        const fallbackOutlet = getInitialSelectedOutlet(outlets);
+        setSelectedOutlet(fallbackOutlet);
     }, [outlets, selectedOutlet]);
 
     const handleSetSelectedOutlet = (outlet: Outlet | null) => {

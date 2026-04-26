@@ -206,6 +206,9 @@ interface DataTableProps<TData, TValue> {
   // Persistence
   tableId?: string; // unique ID to persist table settings (density, etc)
 
+  // Header Actions
+  titleActions?: React.ReactNode;
+
   // Callbacks
   onRowClick?: (row: TData) => void;
   onSortingChange?: (sorting: SortingState) => void;
@@ -315,6 +318,7 @@ export function DataTable<TData, TValue>({
   onSortingChange,
   onColumnFiltersChange,
   tableId,
+  titleActions,
 }: DataTableProps<TData, TValue>) {
   // State Management
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -887,10 +891,13 @@ export function DataTable<TData, TValue>({
           aria-label={ariaLabel}
           aria-description={ariaDescription}>
           {/* Header Section */}
-          {(title || description) && (
-            <div className="space-y-1">
-              {title && <h2 className="text-2xl font-bold tracking-tight">{title}</h2>}
-              {description && <p className="text-muted-foreground">{description}</p>}
+          {(title || description || titleActions) && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                {title && <h2 className="text-2xl font-bold tracking-tight">{title}</h2>}
+                {description && <p className="text-muted-foreground">{description}</p>}
+              </div>
+              {titleActions && <div className="flex items-center gap-2">{titleActions}</div>}
             </div>
           )}
 

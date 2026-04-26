@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CartItem } from "@/hooks/useCart";
+import { CartItem, useCart } from "@/hooks/useCart";
 import { useTranslations } from "@/hooks/useI18n";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { CheckoutService } from "@/services/checkout";
-import { CreditCard } from "lucide-react";
+import { CreditCard, UtensilsCrossed } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useMemo } from "react";
 
@@ -34,6 +34,7 @@ export const OrderSummary = memo(({
     const router = useRouter();
     const t = useTranslations("cart");
     const snackbar = useSnackbar();
+    const { tableName, tableId, tableOutletId } = useCart();
 
     const handleCheckout = useCallback(async () => {
         if (hasUnscheduledServices) return;
@@ -88,6 +89,28 @@ export const OrderSummary = memo(({
                             }
                         </p>
                     </div>
+                    
+                    {/* Only show table indicator if it belongs to the selected outlet */}
+                    {(tableName || tableId) && tableOutletId === selectedOutletId && (
+                        <div className="bg-primary/5 border border-primary/20 rounded-md p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-primary/10 p-1.5 rounded-lg">
+                                    <UtensilsCrossed className="w-4 h-4 text-primary" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-primary/70 uppercase tracking-wider leading-none mb-1">Pesan untuk Meja</p>
+                                    <p className="text-sm font-black text-primary">{tableName || tableId?.slice(0, 8)}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 rounded-full">
+                                <span className="relative flex h-1.5 w-1.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
+                                </span>
+                                <span className="text-[9px] font-black uppercase text-primary tracking-tighter">Aktif</span>
+                            </div>
+                        </div>
+                    )}
 
                     {selectedOutletId ? (
                         <div className="bg-green-50 border border-green-200 rounded-md p-3">

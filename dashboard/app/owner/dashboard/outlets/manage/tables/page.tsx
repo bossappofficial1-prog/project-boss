@@ -110,7 +110,8 @@ export default function OutletTablesPage() {
                     setIsDeleteModalOpen(true)
                 }}
                 outletId={selectedOutlet.id}
-
+                outletSlug={selectedOutlet.slug}
+                outletName={selectedOutlet.name}
             />
 
             {/* Add Table Form */}

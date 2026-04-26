@@ -26,6 +26,7 @@ interface ServiceFocusViewProps {
     onDetail: (entry: QueueV2Entry) => void;
     onViewProof: (entry: QueueV2Entry) => void;
     pendingId: string | null;
+    isKitchenView?: boolean;
 }
 
 export function ServiceFocusView({
@@ -34,7 +35,8 @@ export function ServiceFocusView({
     onCancel,
     onDetail,
     onViewProof,
-    pendingId
+    pendingId,
+    isKitchenView = false
 }: ServiceFocusViewProps) {
     const activeEntries = board.inProgress;
     
@@ -94,6 +96,7 @@ export function ServiceFocusView({
                                 onDetail={onDetail}
                                 onViewProof={onViewProof}
                                 isPending={pendingId === entry.id}
+                                isKitchenView={isKitchenView}
                             />
                         ))}
                     </div>
@@ -159,6 +162,7 @@ export function ServiceFocusView({
                                                     onDetail={onDetail}
                                                     onViewProof={onViewProof}
                                                     isPending={pendingId === entry.id}
+                                                    isKitchenView={isKitchenView}
                                                 />
                                             ))}
                                         </div>

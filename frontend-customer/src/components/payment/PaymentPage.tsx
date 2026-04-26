@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { User, Phone, Receipt, AlertCircle, CheckCircle, Store, CreditCard } from "lucide-react";
+import { User, Phone, Receipt, AlertCircle, CheckCircle, Store, CreditCard, UtensilsCrossed } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CheckoutData, PaymentMethod } from "@/types/checkout";
 import { CheckoutService } from "@/services/checkout";
@@ -226,7 +226,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [hasStartedPayment, setHasStartedPayment] = useState(false);
   const router = useRouter();
-  const { items: cartItems, clearOutletItems } = useCart();
+  const { items: cartItems, clearOutletItems, tableName, tableId, tableOutletId, setTableId } = useCart();
   const t = useTranslations("paymentPage");
   const snackbar = useSnackbar();
 
@@ -452,6 +452,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
       CheckoutService.clearCheckoutDataFromStorage();
       CheckoutService.clearPaymentDataFromStorage();
       clearOutletItems(outletId);
+      setTableId(null);
 
       queryClient.invalidateQueries({ queryKey: ['orders'] })
 
@@ -511,6 +512,22 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
 
       {/* Payment Method Display */}
       <PaymentMethodDisplay method={selectedPaymentMethod} guideTarget="payment-method-display" />
+
+      {/* Dining Info for Confirmation */}
+      {(tableName || tableId) && checkoutData.outlets.some(o => o.outletId === tableOutletId) && (
+        <Card className="border-primary/20 gap-0 py-0 bg-primary/5">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 bg-primary/10 text-primary rounded-full flex items-center justify-center shrink-0">
+              <UtensilsCrossed className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] font-bold text-primary/70 uppercase tracking-wider mb-0.5">Dining Info</p>
+              <h3 className="text-sm font-bold">Serving to Table {tableName || tableId?.slice(0, 8)}</h3>
+              <p className="text-[11px] text-muted-foreground">Your order will be brought to your table shortly after payment.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Order Summary */}
       <PaymentOrderSummary checkoutData={checkoutData} guideTarget="payment-order-summary" />

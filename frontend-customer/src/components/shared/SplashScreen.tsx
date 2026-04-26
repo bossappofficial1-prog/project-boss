@@ -28,6 +28,7 @@ export default function SplashScreen() {
           {/* Logo */}
           <img
             id="splash-logo"
+            suppressHydrationWarning
             src="/assets/logo/logo-bossapp.svg"
             alt="BOSS"
             width={80}

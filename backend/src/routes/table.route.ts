@@ -7,18 +7,19 @@ import {
   deleteTable,
 } from "../controller/table.controller";
 import { createTableSchema, updateTableSchema } from "../schemas/table.schema";
-import { protect } from "../middleware/auth.middleware";
+import { protect, authorize, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
 import { validateSchema } from "../middleware/zod.middleware";
+import { UserRole } from "@prisma/client";
 
 const router = Router();
 
 // Public/Cashier/Owner can get tables
-router.get("/", protect, getTables);
-router.get("/:id", protect, getTableById);
+router.get("/", protect, authorizeOwnerOrCashier, getTables);
+router.get("/:id", protect, authorizeOwnerOrCashier, getTableById);
 
 // Only Owner/Admin can manage tables
-router.post("/", protect, validateSchema(createTableSchema), createTable);
-router.patch("/:id", protect, validateSchema(updateTableSchema), updateTable);
-router.delete("/:id", protect, deleteTable);
+router.post("/", protect, authorize(UserRole.OWNER, UserRole.ADMIN), validateSchema(createTableSchema), createTable);
+router.patch("/:id", protect, authorize(UserRole.OWNER, UserRole.ADMIN), validateSchema(updateTableSchema), updateTable);
+router.delete("/:id", protect, authorize(UserRole.OWNER, UserRole.ADMIN), deleteTable);
 
 export default router;

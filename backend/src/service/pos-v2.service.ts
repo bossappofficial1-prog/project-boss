@@ -7,6 +7,9 @@ import { SocketEmitter } from "../socket/socket-emiiter";
 import { generateServiceOrderNotificationQueue } from "../queues/generate-service-order-notification";
 import { RedisUtils } from "../utils/redis.utils";
 import { LoyaltyService } from "./loyalty.service";
+import { getOutletByIdService } from "./outlet.service";
+
+const TABLE_ENABLED_OUTLET_TYPES = new Set(["FNB", "CUSTOM"]);
 
 export interface PosV2OrderResult {
     orderId: string;
@@ -102,6 +105,26 @@ export class PosV2Service {
 
         // Prioritize staffId from payload (selected in UI) over cashierId from session
         const finalCashierId = payloadStaffId || cashierId;
+
+        const outlet = await getOutletByIdService(outletId);
+        const tableFeatureEnabled = TABLE_ENABLED_OUTLET_TYPES.has(outlet.type);
+
+        if (!tableFeatureEnabled && (tableId || tableNumber || isOpenBill)) {
+            throw new AppError(
+                "Open bill dan penggunaan meja hanya tersedia untuk outlet tipe F&B atau Custom.",
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        if (tableFeatureEnabled && tableId) {
+            const table = await PosV2Repository.findTableByIdAndOutlet(tableId, outletId);
+            if (!table) {
+                throw new AppError(
+                    "Meja tidak ditemukan pada outlet aktif.",
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+        }
 
         // Validate products exist and belong to outlet
         const productIds = items.map((i) => i.productId);
