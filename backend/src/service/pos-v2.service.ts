@@ -94,6 +94,10 @@ export class PosV2Service {
             paymentMethod,
             pointsRedeemed = 0,
             staffId: payloadStaffId,
+            tableId,
+            tableNumber,
+            isOpenBill = false,
+            existingOrderId,
         } = input;
 
         // Prioritize staffId from payload (selected in UI) over cashierId from session
@@ -253,15 +257,15 @@ export class PosV2Service {
         const grandTotal = Math.max(0, subtotal - discountAmount);
 
         // Validate cash
-        if (cashReceived < grandTotal && paymentMethod === 'cash') {
+        if (!isOpenBill && cashReceived < grandTotal && paymentMethod === 'cash') {
             throw new AppError(
                 `Cash kurang. Total: Rp ${grandTotal.toLocaleString("id-ID")}, Diterima: Rp ${cashReceived.toLocaleString("id-ID")}`,
                 HttpStatus.BAD_REQUEST,
             );
         }
 
-        // Generate order ID
-        const orderId = generateOrderCode(
+        // Generate or reuse order ID
+        const orderId = existingOrderId || generateOrderCode(
             { name: "POS", maxLength: 12 },
             { randomLength: 6 },
         );
@@ -282,9 +286,12 @@ export class PosV2Service {
             stockUpdates,
             ticketUpdates,
             hasService,
-            paymentMethod,
+            paymentMethod: paymentMethod || "none",
             bookingSlotId,
             bookingDate: bookingDate ? new Date(bookingDate) : null,
+            tableId,
+            tableNumber,
+            isOpenBill,
         });
 
         // Trigger Loyalty (Non-blocking)
@@ -318,8 +325,8 @@ export class PosV2Service {
             subtotal: subtotal,
             discountAmount: discountAmount,
             itemCount: items.reduce((sum, i) => sum + i.quantity, 0),
-            cashReceived: paymentMethod === 'qris' ? grandTotal : cashReceived,
-            change: paymentMethod === 'qris' ? 0 : (cashReceived - grandTotal),
+            cashReceived: isOpenBill ? 0 : (paymentMethod === 'qris' ? grandTotal : cashReceived),
+            change: isOpenBill ? 0 : (paymentMethod === 'qris' ? 0 : (cashReceived - grandTotal)),
             customerName: guestCustomer.name,
             createdAt: order.createdAt.toISOString(),
             hasTickets,
@@ -328,6 +335,44 @@ export class PosV2Service {
 
     static async getCashSummary(outletId: string) {
         return PosV2Repository.getCashSummaryToday(outletId);
+    }
+
+    static async getOpenOrders(outletId: string) {
+        const orders = await PosV2Repository.getOpenOrders(outletId, 20);
+
+        return orders.map((o) => ({
+            id: o.id,
+            totalAmount: o.totalAmount,
+            customerName: o.guestCustomer.name,
+            customerPhone: o.guestCustomer.phone,
+            tableNumber: o.tableNumber,
+            tableId: o.tableId,
+            itemCount: o.items.reduce((sum, i) => sum + i.quantity, 0),
+            itemsSummary: o.items
+                .slice(0, 3)
+                .map((i) => i.product.name)
+                .join(", "),
+            items: o.items.map((i) => {
+                const p = i.product as any;
+                let price = 0;
+                if (p.type === "GOODS") price = p.goods?.sellingPrice ?? 0;
+                else if (p.type === "SERVICE") price = p.service?.sellingPrice ?? 0;
+                else if (p.type === "TICKET") price = p.ticket?.sellingPrice ?? 0;
+
+                return {
+                    id: i.id,
+                    productId: i.productId,
+                    quantity: i.quantity,
+                    price: i.priceAtTimeOfOrder,
+                    product: {
+                        ...p,
+                        price,
+                    },
+                };
+            }),
+            cashier: o.handledByStaff?.name ?? "-",
+            createdAt: o.createdAt.toISOString(),
+        }));
     }
 
     static async getRecentOrders(outletId: string) {

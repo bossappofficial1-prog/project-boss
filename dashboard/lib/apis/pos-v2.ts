@@ -39,13 +39,17 @@ export interface PosV2OrderRequest {
         productId: string;
         quantity: number;
     }>;
-    paymentMethod: "cash" | "qris";
+    paymentMethod: "cash" | "qris" | "none";
     cashReceived?: number;
     notes?: string;
     bookingSlotId?: string;
     bookingDate?: string;
     staffId?: string;
     pointsRedeemed?: number;
+    tableNumber?: string;
+    tableId?: string;
+    isOpenBill?: boolean;
+    existingOrderId?: string;
 }
 
 export interface PosV2OrderResult {
@@ -73,6 +77,26 @@ export interface PosV2RecentOrder {
     customerName: string;
     itemCount: number;
     itemsSummary: string;
+    cashier: string;
+    createdAt: string;
+}
+
+export interface PosV2OpenOrder {
+    id: string;
+    totalAmount: number;
+    customerName: string;
+    customerPhone: string;
+    tableNumber?: string;
+    tableId?: string;
+    itemCount: number;
+    itemsSummary: string;
+    items: Array<{
+        id: string;
+        productId: string;
+        quantity: number;
+        price: number;
+        product: PosV2Product;
+    }>;
     cashier: string;
     createdAt: string;
 }
@@ -113,6 +137,9 @@ export const posV2Api = {
         return apiCall<PosV2CashSummary>(`/pos/v2/cash-summary?outletId=${outletId}`);
     },
 
+    async getOpenOrders(outletId: string): Promise<PosV2OpenOrder[]> {
+        return apiCall<PosV2OpenOrder[]>(`/pos/v2/open-orders?outletId=${outletId}`);
+    },
     async getRecentOrders(outletId: string): Promise<PosV2RecentOrder[]> {
         return apiCall<PosV2RecentOrder[]>(`/pos/v2/recent-orders?outletId=${outletId}`);
     },

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Calendar, Clock, Loader2, RefreshCw } from "lucide-react";
+import { Calendar, Clock, Loader2, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import {
@@ -15,9 +15,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { posV2Api } from "@/lib/apis/pos-v2";
 import type { PosV2Product, BookingSlot } from "@/lib/apis/pos-v2";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
 
 export interface ScheduleSelection {
     slotId: string;
@@ -45,8 +47,17 @@ const formatTimeRange = (start: string, end: string) => {
     const s = new Date(start);
     const e = new Date(end);
     if (isNaN(s.getTime()) || isNaN(e.getTime())) return "-";
-    return `${format(s, "HH:mm", { locale: localeId })} - ${format(e, "HH:mm", { locale: localeId })}`;
+    return `${format(s, "HH:mm")} – ${format(e, "HH:mm")}`;
 };
+
+function ErrorBanner({ message }: { message: string }) {
+    return (
+        <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            {message}
+        </div>
+    );
+}
 
 export function ServiceScheduleDialog({
     open,
@@ -75,7 +86,11 @@ export function ServiceScheduleDialog({
             setStaffError(null);
             return;
         }
-        setDate(existingSelection?.startTimeIso ? format(new Date(existingSelection.startTimeIso), "yyyy-MM-dd") : today());
+        setDate(
+            existingSelection?.startTimeIso
+                ? format(new Date(existingSelection.startTimeIso), "yyyy-MM-dd")
+                : today(),
+        );
         setSelectedSlotId(existingSelection?.slotId ?? "");
         setStaffId(existingSelection?.staffId ?? "");
     }, [open, existingSelection]);
@@ -88,7 +103,13 @@ export function ServiceScheduleDialog({
             const data = await posV2Api.getBookingSlots(product.id, date);
             setSlots(data);
             setSelectedSlotId((prev) =>
-                prev && data.some((s) => s.id === prev && s.status === "AVAILABLE" && new Date(s.startTime).getTime() > Date.now())
+                prev &&
+                    data.some(
+                        (s) =>
+                            s.id === prev &&
+                            s.status === "AVAILABLE" &&
+                            new Date(s.startTime).getTime() > Date.now(),
+                    )
                     ? prev
                     : "",
             );
@@ -126,124 +147,182 @@ export function ServiceScheduleDialog({
     useEffect(() => { fetchSlots(); }, [fetchSlots]);
     useEffect(() => { fetchStaff(); }, [fetchStaff]);
 
-    const selectedSlot = useMemo(() => slots.find((s) => s.id === selectedSlotId) ?? null, [slots, selectedSlotId]);
+    const selectedSlot = useMemo(
+        () => slots.find((s) => s.id === selectedSlotId) ?? null,
+        [slots, selectedSlotId],
+    );
 
-    const canConfirm = selectedSlot && selectedSlot.status === "AVAILABLE" && staffId && !staffLoading && new Date(selectedSlot.startTime).getTime() > now;
+    const canConfirm =
+        selectedSlot &&
+        selectedSlot.status === "AVAILABLE" &&
+        staffId &&
+        !staffLoading &&
+        new Date(selectedSlot.startTime).getTime() > now;
+
+    const handleDateChange = (value: string) => {
+        setDate(value);
+        setSelectedSlotId("");
+        setStaffId("");
+    };
+
+    const handleSlotSelect = (slotId: string) => {
+        setSelectedSlotId(slotId);
+        setStaffId("");
+    };
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
             <DialogContent className="max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>Pilih Jadwal Layanan</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        Pilih Jadwal Layanan
+                    </DialogTitle>
                     <DialogDescription>
-                        {product ? `Atur jadwal untuk layanan ${product.name}.` : "Pilih layanan untuk melihat jadwal."}
+                        {product
+                            ? `Atur jadwal untuk layanan ${product.name}.`
+                            : "Pilih layanan untuk melihat jadwal."}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-5">
                     {/* Date picker */}
                     <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm font-medium text-foreground">
-                            <Calendar className="h-4 w-4" /> Pilih tanggal
-                        </label>
-                        <div className="flex items-center gap-3">
-                            <Input
-                                type="date"
+                        <p className="text-sm font-medium text-foreground">Tanggal</p>
+                        <div className="flex items-center gap-2">
+                            <DatePicker
                                 value={date}
-                                onChange={(e) => { setDate(e.target.value); setSelectedSlotId(""); setStaffId(""); }}
-                                min={today()}
-                                className="w-full"
+                                onValueChange={(value) => handleDateChange(value!)}
+                                className="flex-1"
                             />
-                            <Button variant="outline" size="icon" onClick={fetchSlots} disabled={loading} aria-label="Muat ulang slot">
-                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={fetchSlots}
+                                disabled={loading}
+                                aria-label="Muat ulang slot">
+                                {loading
+                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                    : <RefreshCw className="h-4 w-4" />
+                                }
                             </Button>
                         </div>
                     </div>
 
                     {/* Slots */}
-                    <div className="space-y-3 max-h-[60dvh] overflow-y-scroll">
+                    <div className="space-y-3">
                         <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-                            <Clock className="h-4 w-4" /> Slot tersedia
+                            <Clock className="h-4 w-4 text-primary" />
+                            Slot Tersedia
                         </p>
 
-                        {error && (
-                            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-600 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
-                                {error}
-                            </div>
-                        )}
+                        {error && <ErrorBanner message={error} />}
 
                         {loading ? (
-                            <div className="flex items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
+                            <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/20 py-8 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
                                 Memuat slot jadwal...
                             </div>
                         ) : slots.length > 0 ? (
-                            <div className="grid gap-2 sm:grid-cols-2">
+                            <div className="grid max-h-[45dvh] gap-2 overflow-y-auto pr-0.5 sm:grid-cols-2">
                                 {slots.map((slot) => {
                                     const isSelected = slot.id === selectedSlotId;
                                     const isPast = new Date(slot.startTime).getTime() <= now;
+                                    const isBooked = slot.status === "BOOKED";
+                                    const isBlocked = slot.status === "BLOCKED";
                                     const isDisabled = slot.status !== "AVAILABLE" || isPast;
 
-                                    let slotLabel = "Tersedia";
-                                    if (isPast) slotLabel = "Lewat";
-                                    else if (slot.status === "BLOCKED") slotLabel = "Blocked";
-                                    else if (slot.status !== "AVAILABLE") slotLabel = "Booked";
+                                    const statusLabel = isPast
+                                        ? "Lewat"
+                                        : isBlocked
+                                            ? "Blocked"
+                                            : isBooked
+                                                ? "Booked"
+                                                : "Tersedia";
+
+                                    const statusVariant = isDisabled ? "outline" : "secondary";
 
                                     return (
-                                        <Button
+                                        <button
                                             key={slot.id}
                                             type="button"
-                                            variant={isSelected ? "default" : "outline"}
-                                            onClick={() => { if (!isDisabled) { setSelectedSlotId(slot.id); setStaffId(""); } }}
                                             disabled={isDisabled}
+                                            onClick={() => handleSlotSelect(slot.id)}
                                             className={cn(
-                                                "justify-between",
-                                                isSelected && "bg-primary text-primary-foreground hover:bg-primary/90",
-                                                isDisabled && slot.status === "BLOCKED" && "disabled:bg-orange-500 disabled:opacity-90 text-white disabled:hover:bg-orange-600",
-                                                isDisabled && slot.status === "BOOKED" && "disabled:bg-red-500 disabled:opacity-90 text-white disabled:hover:bg-red-600",
+                                                "flex items-center justify-between rounded-md border px-3 py-2.5 text-left transition-colors",
+                                                isSelected
+                                                    ? "border-primary bg-primary/10 ring-1 ring-primary"
+                                                    : isDisabled
+                                                        ? "cursor-not-allowed border-border bg-muted/30 opacity-60"
+                                                        : "border-border bg-card hover:border-primary/40 hover:bg-muted/30",
                                             )}>
-                                            <span className="text-sm font-semibold">
-                                                {formatTimeRange(slot.startTime, slot.endTime)}
-                                            </span>
-                                            <Badge variant={isDisabled ? "outline" : "secondary"}>
-                                                {slotLabel}
+                                            <div className="flex items-center gap-2">
+                                                {isSelected && (
+                                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
+                                                )}
+                                                <span className={cn(
+                                                    "text-sm font-semibold tabular-nums",
+                                                    isSelected ? "text-primary" : isDisabled ? "text-muted-foreground" : "text-foreground",
+                                                )}>
+                                                    {formatTimeRange(slot.startTime, slot.endTime)}
+                                                </span>
+                                            </div>
+                                            <Badge variant={statusVariant} className="rounded-sm text-xs">
+                                                {statusLabel}
                                             </Badge>
-                                        </Button>
+                                        </button>
                                     );
                                 })}
                             </div>
                         ) : (
-                            <div className="rounded-lg border border-dashed border-border bg-muted/10 p-6 text-center text-sm text-muted-foreground">
-                                Belum ada slot untuk tanggal ini. Pilih tanggal lain.
+                            <div className="rounded-lg border border-dashed border-border bg-muted/10 py-8 text-center text-sm text-muted-foreground">
+                                Belum ada slot untuk tanggal ini.
+                                <br />
+                                <span className="text-xs">Pilih tanggal lain.</span>
                             </div>
                         )}
                     </div>
 
-                    {/* Staff loading / error */}
-                    {selectedSlotId && staffLoading && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin" /> Memeriksa ketersediaan...
-                        </div>
-                    )}
-                    {selectedSlotId && staffError && !staffLoading && (
-                        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-600 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
-                            {staffError}
-                        </div>
+                    {/* Staff status */}
+                    {selectedSlotId && (
+                        staffLoading ? (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Memeriksa ketersediaan staff...
+                            </div>
+                        ) : staffError ? (
+                            <ErrorBanner message={staffError} />
+                        ) : null
                     )}
 
                     {/* Summary */}
                     {selectedSlot && staffId && !staffLoading && (
-                        <div className="rounded-lg border border-border bg-muted/20 p-3 text-sm text-muted-foreground">
-                            <p className="font-medium text-foreground">Jadwal terpilih</p>
-                            <p>{formatDate(selectedSlot.startTime)}</p>
-                            <p className="text-xs text-muted-foreground/80">
-                                {formatTimeRange(selectedSlot.startTime, selectedSlot.endTime)}
-                            </p>
-                        </div>
+                        <>
+                            <Separator />
+                            <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/20 p-3">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <p className="text-sm font-semibold text-foreground">Jadwal dipilih</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {formatDate(selectedSlot.startTime)}
+                                    </p>
+                                    <p className="text-xs font-medium text-foreground">
+                                        {formatTimeRange(selectedSlot.startTime, selectedSlot.endTime)}
+                                    </p>
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
 
-                <DialogFooter className="flex gap-3 sm:justify-between">
-                    <Button type="button" variant="outline" onClick={onClose} className="flex-1 sm:flex-initial">
+                <DialogFooter className="gap-2 sm:justify-between">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onClose}
+                        className="flex-1 sm:flex-initial">
                         Batal
                     </Button>
                     <Button
@@ -260,7 +339,10 @@ export function ServiceScheduleDialog({
                             }
                         }}
                         className="flex-1">
-                        {staffLoading ? "Memuat..." : "Simpan Jadwal"}
+                        {staffLoading
+                            ? <><Loader2 className="h-4 w-4 animate-spin" /> Memuat...</>
+                            : "Simpan Jadwal"
+                        }
                     </Button>
                 </DialogFooter>
             </DialogContent>

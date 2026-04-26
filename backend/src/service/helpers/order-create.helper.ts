@@ -267,6 +267,7 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
           bookingDate: slotStart ?? (data.bookingDate ? new Date(data.bookingDate) : null),
           orderStatus: !bookingSlotId && data.paymentMethod === "cash" ? "COMPLETED" : "CONFIRMED",
           handledByStaffId: handledByStaffId,
+          tableNumber: data.tableNumber,
         },
       });
 

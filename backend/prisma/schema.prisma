@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/prisma-schema
-
 generator client {
   provider   = "prisma-client-js"
   engineType = "client"
@@ -10,33 +7,653 @@ datasource db {
   provider = "postgresql"
 }
 
-// === ENUMS ===
+model User {
+  id                      String                  @id @default(uuid())
+  email                   String                  @unique
+  name                    String
+  avatar                  String?
+  password                String
+  role                    UserRole                @default(OWNER)
+  isVerified              Boolean                 @default(false)
+  verificationCode        String?
+  verificationCodeExpires DateTime?
+  phone                   String?
+  googleId                String?                 @unique
+  provider                String?                 @default("local")
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  business                Business?
+  receivedTransfers       OutletTransferRequest[] @relation("ReceivedTransfers")
+  sentTransfers           OutletTransferRequest[] @relation("SentTransfers")
+  pushSubscriptions       PushSubscription[]
+  transactionsVerified    Transaction[]           @relation("TransactionVerifiedBy")
+
+  @@index([email])
+  @@index([role])
+}
+
+model PushSubscription {
+  id              String         @id @default(uuid())
+  endpoint        String         @unique
+  p256dh          String
+  auth            String
+  guestCustomerId String?
+  userId          String?
+  staffId         String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  guestCustomer   GuestCustomer? @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+  staff           Staff?         @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  user            User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([guestCustomerId])
+  @@index([userId])
+  @@index([staffId])
+}
+
+model Business {
+  id                    String                 @id @default(uuid())
+  name                  String
+  description           String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  bankName              String?
+  bankAccount           String?
+  accountHolder         String?
+  currentSubscriptionId String?                @unique
+  subscriptionStatus    SubscriptionStatus     @default(ACTIVE)
+  subscriptionStartDate DateTime               @default(now())
+  subscriptionEndDate   DateTime?
+  subscriptionPlan      String                 @default("BASIC")
+  ownerId               String                 @unique
+  banners               Banner[]
+  currentSubscription   BusinessSubscription?  @relation("ActiveSubscription", fields: [currentSubscriptionId], references: [id])
+  owner                 User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  subscriptions         BusinessSubscription[] @relation("BusinessHistory")
+  outlets               Outlet[]
+  subscriptionInvoices  SubscriptionInvoice[]
+
+  @@index([ownerId])
+  @@index([subscriptionStatus])
+  @@index([description])
+}
+
+model SubscriptionPlan {
+  id            String                 @id @default(uuid())
+  name          String
+  code          String                 @unique
+  promo         String?
+  price         Float
+  durationDays  Int
+  features      Json
+  isActive      Boolean                @default(true)
+  isPopular     Boolean                @default(false)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  subscriptions BusinessSubscription[]
+}
+
+model BusinessSubscription {
+  id                String                @id @default(uuid())
+  status            SubscriptionStatus
+  startDate         DateTime              @default(now())
+  endDate           DateTime
+  businessId        String
+  planId            String
+  autoRenew         Boolean               @default(true)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  activeForBusiness Business?             @relation("ActiveSubscription")
+  business          Business              @relation("BusinessHistory", fields: [businessId], references: [id], onDelete: Cascade)
+  plan              SubscriptionPlan      @relation(fields: [planId], references: [id])
+  invoices          SubscriptionInvoice[]
+
+  @@index([businessId])
+  @@index([endDate])
+}
+
+model SubscriptionInvoice {
+  id              String                @id @default(uuid())
+  invoiceNumber   String                @unique
+  amount          Float
+  status          PaymentStatus
+  paymentUrl      String?
+  externalId      String?
+  proofImage      String?
+  proofUploadedAt DateTime?
+  verifiedAt      DateTime?
+  rejectionReason String?
+  paidAt          DateTime?
+  businessId      String?
+  subscriptionId  String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  business        Business?             @relation(fields: [businessId], references: [id])
+  subscription    BusinessSubscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([createdAt])
+}
+
+model Outlet {
+  id                  String                  @id @default(uuid())
+  name                String
+  slug                String                  @unique
+  description         String?
+  address             String?
+  phone               String?
+  email               String?                 @unique
+  createdAt           DateTime                @default(now())
+  image               String?                 @default("/defaults/default-outlet-image.webp")
+  updatedAt           DateTime                @updatedAt
+  latitude            Float?
+  longitude           Float?
+  isOpen              Boolean                 @default(false)
+  businessId          String
+  manualBankName      String?
+  manualBankAccount   String?
+  manualAccountHolder String?
+  manualPaymentNote   String?
+  manualQrImageUrl    String?
+  type                OutletType              @default(CUSTOM)
+  loyaltyConfig       LoyaltyConfig?
+  pointHistories      LoyaltyPointHistory[]
+  orders              Order[]
+  business            Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  memberships         OutletMembership[]
+  operatingHours      OutletOperatingHours[]
+  transferRequests    OutletTransferRequest[]
+  products            Product[]
+  staff               Staff[]
+  expenses            Expense[]
+  receiptSettings     receiptSetting?
+  tables              OutletTable[]
+
+  @@index([businessId])
+  @@index([slug])
+  @@index([latitude, longitude])
+  @@index([name])
+  @@index([description])
+}
+
+model OutletTable {
+  id        String      @id @default(uuid())
+  name      String
+  capacity  Int         @default(2)
+  status    TableStatus @default(AVAILABLE)
+  outletId  String
+  outlet    Outlet      @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  orders    Order[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([outletId])
+}
+
+model OutletTransferRequest {
+  id         String         @id @default(uuid())
+  outletId   String
+  senderId   String
+  receiverId String
+  status     TransferStatus @default(PENDING)
+  note       String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  outlet     Outlet         @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  receiver   User           @relation("ReceivedTransfers", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User           @relation("SentTransfers", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([outletId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+model OutletOperatingHours {
+  id        String   @id @default(uuid())
+  dayOfWeek Int
+  openTime  DateTime
+  closeTime DateTime
+  isOpen    Boolean  @default(true)
+  outletId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  outlet    Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@unique([outletId, dayOfWeek])
+  @@index([outletId])
+}
+
+model Staff {
+  id                  String             @id @default(uuid())
+  name                String
+  phone               String?
+  email               String?            @unique
+  password            String
+  status              StaffStatus        @default(ACTIVE)
+  outletId            String
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  ordersHandled       Order[]
+  pushSubscriptions   PushSubscription[]
+  outlet              Outlet             @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  ticketCodesRedeemed TicketCode[]
+
+  @@index([outletId])
+  @@index([email])
+}
+
+model Product {
+  id          String          @id @default(uuid())
+  name        String
+  description String?
+  type        ProductType
+  status      ServiceStatus   @default(ACTIVE)
+  outletId    String
+  image       String?         @default("/defaults/default-product-image.png")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  orderItems  OrderItem[]
+  outlet      Outlet          @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  goods       ProductGoods?
+  media       ProductMedia[]
+  service     ProductService?
+  ticket      ProductTicket?
+
+  @@index([outletId])
+  @@index([type])
+  @@index([status])
+}
+
+model ProductMedia {
+  id           String      @id @default(uuid())
+  productId    String
+  url          String
+  type         MediaType   @default(IMAGE)
+  source       MediaSource @default(UPLOAD)
+  alt          String?
+  order        Int         @default(0)
+  thumbnailUrl String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  product      Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, order])
+}
+
+model ProductGoods {
+  id           String     @id @default(uuid())
+  productId    String     @unique
+  currentStock Int        @default(0)
+  minStock     Int?
+  maxStock     Int?
+  unit         String
+  averageHpp   Float      @default(0)
+  sellingPrice Float
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockLogs    StockLog[]
+
+  @@index([productId])
+  @@index([currentStock])
+}
+
+model ProductService {
+  id                 String        @id @default(uuid())
+  productId          String        @unique
+  durationMinutes    Int
+  sellingPrice       Float
+  providerName       String
+  providerPhone      String?
+  providerEmail      String?
+  commissionType     String        @default("PERCENTAGE")
+  commissionValue    Float         @default(0)
+  maxParallel        Int           @default(1)
+  bookingInWorkHours Boolean       @default(true)
+  mondayOpen         DateTime?
+  mondayClose        DateTime?
+  tuesdayOpen        DateTime?
+  tuesdayClose       DateTime?
+  wednesdayOpen      DateTime?
+  wednesdayClose     DateTime?
+  thursdayOpen       DateTime?
+  thursdayClose      DateTime?
+  fridayOpen         DateTime?
+  fridayClose        DateTime?
+  saturdayOpen       DateTime?
+  saturdayClose      DateTime?
+  sundayOpen         DateTime?
+  sundayClose        DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  bookingSlots       BookingSlot[]
+  product            Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([providerName])
+}
+
+model ProductTicket {
+  id            String    @id @default(uuid())
+  productId     String    @unique
+  sellingPrice  Float
+  eventDate     DateTime
+  eventEndDate  DateTime?
+  venue         String
+  venueAddress  String?
+  mapUrl        String?
+  totalQuota    Int
+  soldCount     Int       @default(0)
+  maxPerOrder   Int       @default(5)
+  saleStartDate DateTime?
+  saleEndDate   DateTime?
+  terms         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([eventDate])
+  @@index([soldCount])
+}
+
+model StockLog {
+  id             String            @id @default(uuid())
+  type           StockMovementType
+  quantity       Int
+  hppPerUnit     Float?
+  referenceType  String?
+  referenceId    String?
+  notes          String?
+  productGoodsId String
+  faktur         String?
+  createdAt      DateTime          @default(now())
+  productGoods   ProductGoods      @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
+
+  @@index([productGoodsId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([referenceType, referenceId])
+}
+
+model BookingSlot {
+  id               String            @id @default(uuid())
+  date             DateTime
+  startTime        DateTime
+  endTime          DateTime
+  status           BookingSlotStatus @default(AVAILABLE)
+  productServiceId String
+  orderItemId      String?           @unique
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  order            OrderItem?        @relation(fields: [orderItemId], references: [id])
+  productService   ProductService    @relation(fields: [productServiceId], references: [id], onDelete: Cascade)
+
+  @@index([productServiceId])
+  @@index([date])
+  @@index([status])
+}
+
+model GuestCustomer {
+  id                String                @id @default(uuid())
+  name              String
+  email             String?
+  phone             String                @unique
+  createdAt         DateTime              @default(now())
+  pointHistories    LoyaltyPointHistory[]
+  memberships       Membership[]
+  orders            Order[]
+  outletMemberships OutletMembership[]
+  pushSubscriptions PushSubscription[]
+
+  @@index([email])
+  @@index([phone])
+}
+
+model LoyaltyConfig {
+  id               String   @id @default(uuid())
+  outletId         String   @unique
+  pointsEarned     Int      @default(1)
+  multiplierAmount Float    @default(10000)
+  minSpending      Float    @default(0)
+  pointValue       Float    @default(0)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  outlet           Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+}
+
+model OutletMembership {
+  id              String        @id @default(uuid())
+  guestCustomerId String
+  outletId        String
+  totalPoints     Int           @default(0)
+  totalSpending   Float         @default(0)
+  status          String        @default("ACTIVE")
+  joinedAt        DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+  outlet          Outlet        @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@unique([guestCustomerId, outletId])
+  @@index([guestCustomerId])
+  @@index([outletId])
+}
+
+model LoyaltyPointHistory {
+  id              String                  @id @default(uuid())
+  outletId        String
+  guestCustomerId String
+  orderId         String?
+  type            LoyaltyPointHistoryType
+  points          Int
+  note            String?
+  createdAt       DateTime                @default(now())
+  guestCustomer   GuestCustomer           @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+  order           Order?                  @relation(fields: [orderId], references: [id])
+  outlet          Outlet                  @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@index([outletId, guestCustomerId, createdAt])
+  @@index([orderId])
+}
+
+model Order {
+  id                       String                @id @default(uuid())
+  totalAmount              Float
+  discountAmount           Float                 @default(0)
+  pointsRedeemed           Int                   @default(0)
+  bookingDate              DateTime?
+  customerType             CustomerType          @default(GUEST)
+  paymentStatus            PaymentStatus         @default(PENDING)
+  paymentReminderSent      Boolean               @default(false)
+  orderStatus              OrderStatus           @default(AWAITING_PAYMENT)
+  cancellationReason       String?
+  midtransTransactionToken String?               @unique
+  midtransRedirectUrl      String?
+  midtransFee              Float                 @default(0)
+  appFee                   Float                 @default(0)
+  guestCustomerId          String
+  outletId                 String
+  handledByStaffId         String?
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+  tableNumber              String?
+  tableId                  String?
+  pointHistories           LoyaltyPointHistory[]
+  memberships              Membership[]
+  guestCustomer            GuestCustomer         @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+  handledByStaff           Staff?                @relation(fields: [handledByStaffId], references: [id])
+  outlet                   Outlet                @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  items                    OrderItem[]
+  transaction              Transaction?
+  table                    OutletTable?          @relation(fields: [tableId], references: [id])
+
+  @@index([guestCustomerId])
+  @@index([outletId])
+  @@index([bookingDate])
+  @@index([handledByStaffId])
+  @@index([orderStatus])
+  @@index([paymentStatus])
+  @@index([tableId])
+}
+
+model Membership {
+  id              String        @id @default(uuid())
+  guestCustomerId String
+  orderId         String
+  joinedAt        DateTime      @default(now())
+  point           Int           @default(0)
+  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([guestCustomerId, orderId])
+  @@index([guestCustomerId])
+  @@index([orderId])
+}
+
+model OrderItem {
+  id                      String       @id @default(uuid())
+  quantity                Int
+  priceAtTimeOfOrder      Float
+  hppAtTimeOfOrder        Float        @default(0)
+  commissionAtTimeOfOrder Float        @default(0)
+  orderId                 String
+  productId               String
+  bookingSlot             BookingSlot?
+  order                   Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product                 Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ticketCodes             TicketCode[]
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model TicketCode {
+  id           String           @id @default(uuid())
+  code         String           @unique
+  status       TicketCodeStatus @default(VALID)
+  orderItemId  String
+  redeemedAt   DateTime?
+  redeemedById String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  orderItem    OrderItem        @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  redeemedBy   Staff?           @relation(fields: [redeemedById], references: [id])
+
+  @@index([code])
+  @@index([orderItemId])
+  @@index([status])
+}
+
+model Transaction {
+  id              String             @id @default(uuid())
+  amount          Float
+  paymentMethod   String?
+  status          PaymentStatus      @default(PENDING)
+  isManual        Boolean            @default(false)
+  manualMethod    ManualPaymentType?
+  paymentProofUrl String?
+  proofUploadedAt DateTime?
+  verifiedAt      DateTime?
+  verifiedById    String?
+  rejectionNote   String?
+  rawMidtrans     Json?
+  externalId      String?            @unique
+  paymentUrl      String?
+  expiresAt       DateTime?
+  orderId         String             @unique
+  createdAt       DateTime           @default(now())
+  order           Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  verifiedBy      User?              @relation("TransactionVerifiedBy", fields: [verifiedById], references: [id])
+
+  @@index([status])
+  @@index([isManual, status])
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  cashier     String   @default("Owner")
+  description String
+  amount      Float
+  date        DateTime
+  receiptUrl  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  outletId    String
+  outlet      Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@index([outletId])
+  @@index([date])
+  @@map("expenses")
+}
+
+model Banner {
+  id         String    @id @default(uuid())
+  title      String
+  subtitle   String?
+  imageUrl   String
+  ctaType    String    @default("url")
+  ctaPayload String?
+  sortOrder  Int       @default(0)
+  isActive   Boolean   @default(true)
+  businessId String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([isActive, sortOrder])
+}
+
+model receiptSetting {
+  id             String  @id @default(uuid())
+  outletId       String  @unique
+
+  // Kertas
+  printWidth     Int     @default(80) // enum: 58 | 80
+  endFeed        Int     @default(3)
+  autoCut        Boolean @default(true)
+  copies         Int     @default(1)
+
+  // Logo
+  showLogo       Boolean @default(false)
+  photoString    String?
+  imageThreshold Int     @default(180)
+
+  // Konten
+  headerText     String?
+  footerText     String?
+  showCashier    Boolean @default(true)
+  showCustomer   Boolean @default(true)
+  showQR         Boolean @default(false)
+  qrContent      String?
+
+  outlet Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+}
 
 enum UserRole {
-  OWNER // Pemilik UMKM yang bisa login
-  ADMIN // Admin platform yang memproses manual payout
+  OWNER
+  ADMIN
 }
 
 enum ProductType {
-  GOODS // Produk barang yang memiliki stok
-  SERVICE // Layanan jasa
-  TICKET // Tiket event (konser, kapal, wisata, dll)
+  GOODS
+  SERVICE
+  TICKET
 }
 
-// Status pembayaran yang lebih sederhana untuk internal aplikasi
 enum PaymentStatus {
-  PENDING // Menunggu pembayaran
-  PROOF_SUBMITTED // Bukti pembayaran manual telah diunggah
-  AWAITING_VERIFICATION // Menunggu verifikasi admin/owner
-  SUCCESS // Pembayaran berhasil
-  FAILED // Pembayaran gagal
-  REFUNDED // Dana dikembalikan
-  EXPIRED // Waktu pembayaran habis
-  CANCELLED // Pembayaran dibatalkan
-  REJECTED_MANUAL // Bukti manual ditolak
+  PENDING
+  PROOF_SUBMITTED
+  AWAITING_VERIFICATION
+  SUCCESS
+  FAILED
+  REFUNDED
+  EXPIRED
+  CANCELLED
+  REJECTED_MANUAL
 }
 
-// Status alur pesanan secara keseluruhan
 enum OrderStatus {
   AWAITING_PAYMENT
   PROCESSING
@@ -55,7 +672,7 @@ enum ServiceStatus {
 enum BookingSlotStatus {
   AVAILABLE
   BOOKED
-  BLOCKED // Untuk maintenance atau libur
+  BLOCKED
 }
 
 enum StaffStatus {
@@ -71,7 +688,7 @@ enum ManualPaymentType {
 }
 
 enum CustomerType {
-  GUEST // Customer tanpa register
+  GUEST
 }
 
 enum SubscriptionStatus {
@@ -86,17 +703,23 @@ enum SubscriptionStatus {
 }
 
 enum StockMovementType {
-  IN // Barang masuk
-  OUT // Barang keluar (via order)
-  ADJUSTMENT // Koreksi stok
-  RETURN // Retur
+  IN
+  OUT
+  ADJUSTMENT
+  RETURN
 }
 
 enum TicketCodeStatus {
-  VALID // Tiket masih berlaku, belum digunakan
-  REDEEMED // Tiket sudah digunakan/di-scan
-  CANCELLED // Tiket dibatalkan
-  EXPIRED // Tiket sudah expired (event lewat)
+  VALID
+  REDEEMED
+  CANCELLED
+  EXPIRED
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
 }
 
 enum MediaType {
@@ -116,775 +739,17 @@ enum LoyaltyPointHistoryType {
   ADJUSTMENT_OUT
 }
 
-// Model untuk pengguna
-model User {
-  id                      String    @id @default(uuid())
-  email                   String    @unique
-  name                    String
-  avatar                  String?
-  password                String // Akan disimpan dalam bentuk hash
-  role                    UserRole  @default(OWNER)
-  isVerified              Boolean   @default(false)
-  verificationCode        String?
-  verificationCodeExpires DateTime?
-  phone                   String? // Penting untuk notifikasi WA
-  googleId                String?   @unique
-  provider                String?   @default("local")
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-
-  // Relasi: Satu user (owner) memiliki satu bisnis
-  business Business?
-
-  // Relasi: Admin/owner yang memverifikasi transaksi manual
-  transactionsVerified Transaction[]      @relation("TransactionVerifiedBy")
-  pushSubscriptions    PushSubscription[]
-
-  @@index([email])
-  @@index([role])
+enum TransferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
 }
 
-model PushSubscription {
-  id       String @id @default(uuid())
-  endpoint String @unique
-  p256dh   String
-  auth     String
-
-  // 1. Relasi untuk Customer
-  guestCustomerId String?
-  guestCustomer   GuestCustomer? @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
-
-  // 2. Relasi untuk Owner / Admin
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // 3. Relasi untuk Kasir
-  staffId String?
-  staff   Staff?  @relation(fields: [staffId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([guestCustomerId])
-  @@index([userId])
-  @@index([staffId])
-}
-
-model Business {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  bankName      String?
-  bankAccount   String?
-  accountHolder String?
-
-  currentSubscriptionId String?                @unique
-  currentSubscription   BusinessSubscription?  @relation("ActiveSubscription", fields: [currentSubscriptionId], references: [id], onDelete: SetNull)
-  subscriptionStatus    SubscriptionStatus     @default(ACTIVE)
-  subscriptionStartDate DateTime               @default(now())
-  subscriptionEndDate   DateTime?
-  subscriptionPlan      String                 @default("BASIC")
-  subscriptions         BusinessSubscription[] @relation("BusinessHistory")
-
-  // Relasi: Setiap bisnis dimiliki oleh satu User (Owner)
-  ownerId String @unique
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  // Relasi: Satu bisnis bisa memiliki banyak outlet
-  outlets Outlet[]
-
-  // Relasi: Satu bisnis bisa memiliki banyak banner
-  banners              Banner[]
-  subscriptionInvoices SubscriptionInvoice[]
-
-  @@index([ownerId])
-  @@index([subscriptionStatus])
-  @@index([description]) // Indeks untuk pencarian deskripsi bisnis
-}
-
-model SubscriptionPlan {
-  id           String  @id @default(uuid())
-  name         String // "Basic", "Pro", "Enterprise"
-  code         String  @unique // "BASIC", "PRO" (untuk referensi coding)
-  promo        String?
-  price        Float // Harga per bulan
-  durationDays Int // 30 hari, 365 hari, atau 14 (trial)
-  features     Json
-
-  isActive  Boolean @default(true)
-  isPopular Boolean @default(false)
-
-  subscriptions BusinessSubscription[]
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-}
-
-model BusinessSubscription {
-  id String @id @default(uuid())
-
-  status SubscriptionStatus
-
-  startDate DateTime @default(now())
-  endDate   DateTime
-
-  businessId        String
-  business          Business  @relation("BusinessHistory", fields: [businessId], references: [id], onDelete: Cascade)
-  activeForBusiness Business? @relation("ActiveSubscription")
-
-  planId String
-  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
-
-  invoices  SubscriptionInvoice[]
-  autoRenew Boolean               @default(true)
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
-
-  @@index([businessId])
-  @@index([endDate])
-}
-
-model SubscriptionInvoice {
-  id            String        @id @default(uuid())
-  invoiceNumber String        @unique
-  amount        Float
-  status        PaymentStatus // PENDING, PAID, FAILED, PROOF_SUBMITTED
-
-  paymentUrl String?
-  externalId String?
-
-  proofImage      String?
-  proofUploadedAt DateTime?
-  verifiedAt      DateTime?
-  rejectionReason String?
-
-  paidAt DateTime?
-
-  // Relasi
-  businessId String?
-  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
-
-  subscriptionId String?
-  subscription   BusinessSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([createdAt]) // Penting untuk Dashboard Chart Revenue
-}
-
-// Model untuk cabang/outlet dari sebuah bisnis
-model Outlet {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique
-  description String?
-  address     String?
-  phone       String?
-  email       String?  @unique
-  createdAt   DateTime @default(now())
-  image       String?  @default("/defaults/default-outlet-image.webp")
-  updatedAt   DateTime @updatedAt
-  latitude    Float?
-  longitude   Float?
-  isOpen      Boolean  @default(false)
-
-  // Relasi: Setiap outlet milik satu bisnis
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  // Informasi pembayaran manual
-  manualBankName      String?
-  manualBankAccount   String?
-  manualAccountHolder String?
-  manualPaymentNote   String?
-  manualQrImageUrl    String?
-
-  // Relasi: Satu outlet bisa memiliki banyak produk
-  products Product[]
-
-  // Relasi: Banyak pesanan bisa dibuat di satu outlet
-  orders Order[]
-
-  // Relasi: Banyak pengeluaran bisa dicatat per outlet
-  expenses Expense[]
-
-  // Relasi untuk operating hours dan staff
-  operatingHours  OutletOperatingHours[]
-  staff           Staff[]
-  receiptSettings receiptSetting?
-  loyaltyConfig   LoyaltyConfig?
-  memberships     OutletMembership[]
-  pointHistories  LoyaltyPointHistory[]
-
-  @@index([businessId])
-  @@index([slug])
-  @@index([latitude, longitude]) // Indeks untuk query lokasi (bounding box)
-  @@index([name]) // Indeks untuk pencarian nama outlet
-  @@index([description]) // Indeks untuk pencarian deskripsi outlet
-}
-
-// Model untuk jam operasional outlet
-model OutletOperatingHours {
-  id        String   @id @default(uuid())
-  dayOfWeek Int // 0-6 (Minggu-Sabtu)
-  openTime  DateTime
-  closeTime DateTime
-  isOpen    Boolean  @default(true)
-
-  // Relasi ke outlet
-  outletId String
-  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([outletId, dayOfWeek])
-  @@index([outletId])
-}
-
-// Model untuk staff/karyawan outlet (Kasir)
-model Staff {
-  id       String      @id @default(uuid())
-  name     String
-  phone    String?
-  email    String?     @unique
-  password String // Hash untuk login POS kasir
-  status   StaffStatus @default(ACTIVE)
-
-  // Relasi ke outlet
-  outletId String
-  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
-
-  // Relasi ke pesanan yang di-handle oleh kasir
-  ordersHandled Order[]
-
-  // Relasi ke tiket yang di-redeem oleh staff
-  ticketCodesRedeemed TicketCode[]
-
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  pushSubscriptions PushSubscription[]
-
-  @@index([outletId])
-  @@index([email])
-}
-
-// Model untuk produk (parent table - minimalis)
-model Product {
-  id          String        @id @default(uuid())
-  name        String
-  description String?
-  type        ProductType // GOODS atau SERVICE
-  status      ServiceStatus @default(ACTIVE)
-
-  // Relasi: Setiap produk/jasa terhubung ke satu outlet
-  outletId String
-  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
-
-  // Subtables (one-to-one polymorphic)
-  goods   ProductGoods?
-  service ProductService?
-  ticket  ProductTicket?
-  image   String?         @default("/defaults/default-product-image.png")
-  media   ProductMedia[]
-
-  orderItems OrderItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([outletId])
-  @@index([type])
-  @@index([status])
-}
-
-// Media gallery untuk produk (khusus SERVICE)
-model ProductMedia {
-  id           String      @id @default(uuid())
-  productId    String
-  product      Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  url          String
-  type         MediaType   @default(IMAGE)
-  source       MediaSource @default(UPLOAD)
-  alt          String?
-  order        Int         @default(0)
-  thumbnailUrl String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productId, order])
-}
-
-// Subtable untuk produk GOODS
-model ProductGoods {
-  id        String  @id @default(uuid())
-  productId String  @unique
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  // Goods-specific fields
-  currentStock Int    @default(0)
-  minStock     Int? // Alert threshold untuk low stock
-  maxStock     Int? // Alert threshold untuk over stock
-  unit         String // Pcs, Kg, Box, Liter, dll
-
-  // HPP (Harga Pokok Penjualan) - calculated from stock logs
-  averageHpp Float @default(0)
-
-  // Pricing
-  sellingPrice Float // Harga jual
-
-  // Relations
-  stockLogs StockLog[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productId])
-  @@index([currentStock]) // Untuk query low stock
-}
-
-// Subtable untuk produk SERVICE
-model ProductService {
-  id        String  @id @default(uuid())
-  productId String  @unique
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  // Service-specific fields
-  durationMinutes Int // Durasi layanan dalam menit
-  sellingPrice    Float
-
-  // Service Provider Info (penyedia jasa)
-  providerName  String
-  providerPhone String?
-  providerEmail String?
-
-  // Commission/Wage untuk provider
-  commissionType  String @default("PERCENTAGE") // PERCENTAGE atau FIXED
-  commissionValue Float  @default(0) // % atau nominal
-
-  // Capacity
-  maxParallel Int @default(1) // Berapa banyak service bisa dilakukan bersamaan
-
-  // Relations
-  bookingSlots BookingSlot[]
-
-  // Izinkan booking diluar jam kerja
-  bookingInWorkHours Boolean @default(true)
-
-  // Operating hours untuk setiap hari (jika null berarti tutup di hari tersebut)
-  mondayOpen     DateTime?
-  mondayClose    DateTime?
-  tuesdayOpen    DateTime?
-  tuesdayClose   DateTime?
-  wednesdayOpen  DateTime?
-  wednesdayClose DateTime?
-  thursdayOpen   DateTime?
-  thursdayClose  DateTime?
-  fridayOpen     DateTime?
-  fridayClose    DateTime?
-  saturdayOpen   DateTime?
-  saturdayClose  DateTime?
-  sundayOpen     DateTime?
-  sundayClose    DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productId])
-  @@index([providerName])
-}
-
-// Subtable untuk produk TICKET (tiket event)
-model ProductTicket {
-  id        String  @id @default(uuid())
-  productId String  @unique
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  // Pricing
-  sellingPrice Float
-
-  // Event info
-  eventDate    DateTime // Tanggal & waktu event
-  eventEndDate DateTime? // Opsional, akhir event
-  venue        String // Nama tempat/venue
-  venueAddress String? // Alamat lengkap
-  mapUrl       String? // Link Google Maps
-
-  // Quota / stock management
-  totalQuota  Int // Total tiket tersedia
-  soldCount   Int @default(0) // Tiket terjual
-  maxPerOrder Int @default(5) // Maks tiket per transaksi
-
-  // Sales window
-  saleStartDate DateTime? // Kapan penjualan dibuka
-  saleEndDate   DateTime? // Kapan penjualan ditutup
-
-  // Additional info
-  terms String? // Syarat & ketentuan
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productId])
-  @@index([eventDate])
-  @@index([soldCount])
-}
-
-// Log untuk tracking barang masuk/keluar (untuk HPP calculation)
-model StockLog {
-  id       String            @id @default(uuid())
-  type     StockMovementType
-  quantity Int // Positif untuk IN, bisa negatif untuk OUT
-
-  // HPP per unit saat barang masuk (untuk tipe IN)
-  hppPerUnit Float?
-
-  // Reference ke transaksi/order yang trigger movement ini
-  referenceType String? // "ORDER", "PURCHASE", "MANUAL", "ADJUSTMENT", "RETURN"
-  referenceId   String? // ID dari order/purchase/etc
-  notes         String?
-
-  // Relations
-  productGoodsId String
-  productGoods   ProductGoods @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
-
-  // Bukti pembelian
-  faktur String?
-
-  createdAt DateTime @default(now())
-
-  @@index([productGoodsId])
-  @@index([type])
-  @@index([createdAt])
-  @@index([referenceType, referenceId])
-}
-
-// Model untuk slot booking khusus layanan jasa
-model BookingSlot {
-  id        String            @id @default(uuid())
-  date      DateTime // Tanggal booking
-  startTime DateTime // Waktu mulai
-  endTime   DateTime // Waktu selesai
-  status    BookingSlotStatus @default(AVAILABLE)
-
-  // Relasi: Slot ini untuk produk jasa mana
-  productServiceId String
-  productService   ProductService @relation(fields: [productServiceId], references: [id], onDelete: Cascade)
-
-  // Relasi: Slot ini dibooking oleh order mana (jika sudah dibooking)
-  orderItemId String?    @unique
-  order       OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productServiceId])
-  @@index([date])
-  @@index([status])
-}
-
-// Model untuk menyimpan data customer guest (tanpa register)
-model GuestCustomer {
-  id    String  @id @default(uuid())
-  name  String
-  email String?
-  phone String  @unique // Penting untuk notifikasi WA dan data booking
-
-  // Relasi: Satu guest customer bisa punya banyak order
-  orders Order[]
-
-  // Relasi: Many-to-many ke Order melalui tabel Membership
-  memberships Membership[]
-
-  // Relasi: Menampung status membership di berbagai outlet
-  outletMemberships OutletMembership[]
-  pointHistories    LoyaltyPointHistory[]
-
-  createdAt         DateTime           @default(now())
-  pushSubscriptions PushSubscription[]
-
-  @@index([email])
-  @@index([phone])
-}
-
-// Model untuk menyimpan konfigurasi loyalty poin per outlet
-model LoyaltyConfig {
-  id       String @id @default(uuid())
-  outletId String @unique
-  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
-
-  pointsEarned     Int   @default(1) // Jumlah poin yang didapat
-  multiplierAmount Float @default(10000) // Kelipatan belanja (misal: per Rp 10.000)
-  minSpending      Float @default(0) // Minimum belanja untuk dapat poin
-  pointValue       Float @default(0) // Nilai tukar 1 poin ke rupiah (misal: 1 poin = Rp 100)
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// Model untuk menyimpan status membership customer di outlet tertentu
-model OutletMembership {
-  id              String        @id @default(uuid())
-  guestCustomerId String
-  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
-  outletId        String
-  outlet          Outlet        @relation(fields: [outletId], references: [id], onDelete: Cascade)
-
-  totalPoints   Int      @default(0)
-  totalSpending Float    @default(0)
-  status        String   @default("ACTIVE") // ACTIVE, SUSPENDED
-  joinedAt      DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@unique([guestCustomerId, outletId])
-  @@index([guestCustomerId])
-  @@index([outletId])
-}
-
-model LoyaltyPointHistory {
-  id String @id @default(uuid())
-
-  outletId String
-  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
-
-  guestCustomerId String
-  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
-
-  orderId String?
-  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
-
-  type   LoyaltyPointHistoryType
-  points Int
-  note   String?
-
-  createdAt DateTime @default(now())
-
-  @@index([outletId, guestCustomerId, createdAt])
-  @@index([orderId])
-}
-
-// Model untuk pesanan/booking yang dibuat oleh customer
-model Order {
-  id             String    @id @default(uuid())
-  totalAmount    Float // Menggunakan Float untuk nilai uang
-  discountAmount Float     @default(0) // Potongan dari poin loyalty/promo
-  pointsRedeemed Int       @default(0) // Jumlah poin yang ditukarkan
-  bookingDate    DateTime? // Digunakan khusus untuk booking jasa
-
-  // Tipe customer (hanya GUEST sesuai MoM)
-  customerType CustomerType @default(GUEST)
-
-  // Status pembayaran dari payment gateway
-  paymentStatus PaymentStatus @default(PENDING)
-
-  // Menandakan apakah pengingat pembayaran sudah dikirim
-  paymentReminderSent Boolean @default(false)
-
-  // Status alur pesanan secara keseluruhan
-  orderStatus        OrderStatus @default(AWAITING_PAYMENT)
-  cancellationReason String? // jika orderStatus = CANCELLED 
-
-  midtransTransactionToken String? @unique
-  midtransRedirectUrl      String?
-
-  // Fee structure sesuai diagram
-  midtransFee Float @default(0) // 0.7% dari subtotal
-  appFee      Float @default(0) // 2% dari subtotal
-
-  // Relasi: Pesanan dibuat oleh guest customer
-  guestCustomerId String
-  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
-
-  // Relasi: Pesanan dibuat di outlet mana
-  outletId String
-  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
-
-  // Relasi: Pesanan bisa di-handle oleh staff tertentu (kasir)
-  handledByStaffId String?
-  handledByStaff   Staff?  @relation(fields: [handledByStaffId], references: [id], onDelete: SetNull)
-
-  // Relasi: Satu pesanan punya banyak item
-  items OrderItem[]
-
-  // Relasi: Satu pesanan dibayar dengan satu transaksi
-  transaction Transaction?
-
-  // Relasi: Many-to-many ke GuestCustomer melalui tabel Membership
-  memberships    Membership[]
-  pointHistories LoyaltyPointHistory[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([guestCustomerId])
-  @@index([outletId])
-  @@index([bookingDate])
-  @@index([handledByStaffId])
-  @@index([orderStatus])
-  @@index([paymentStatus])
-}
-
-// Tabel junction many-to-many antara GuestCustomer dan Order
-model Membership {
-  id String @id @default(uuid())
-
-  // Relasi ke GuestCustomer
-  guestCustomerId String
-  guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
-
-  // Relasi ke Order
-  orderId String
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  // Field tambahan untuk membership
-  joinedAt DateTime @default(now())
-  point    Int      @default(0)
-
-  @@unique([guestCustomerId, orderId])
-  @@index([guestCustomerId])
-  @@index([orderId])
-}
-
-// Item-item yang ada di dalam sebuah pesanan
-model OrderItem {
-  id                 String @id @default(uuid())
-  quantity           Int
-  priceAtTimeOfOrder Float // Menyimpan harga saat itu untuk arsip
-  hppAtTimeOfOrder   Float @default(0) // Menyimpan HPP saat itu untuk arsip laba bersih
-  commissionAtTimeOfOrder Float @default(0) // Menyimpan komisi staff saat itu untuk arsip gaji
-
-  // Relasi: Item ini bagian dari pesanan mana
-  orderId String
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  // Relasi: Item ini merujuk ke produk apa
-  productId   String
-  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
-  // Relasi: Satu pesanan bisa book satu slot (untuk service)
-  bookingSlot BookingSlot?
-  // Relasi: Kode tiket untuk produk tipe TICKET
-  ticketCodes TicketCode[]
-
-  @@index([orderId])
-  @@index([productId])
-}
-
-// Model untuk mencatat kode tiket unik (QR code) per OrderItem
-model TicketCode {
-  id     String           @id @default(uuid())
-  code   String           @unique // Kode unik untuk QR (format: TIX-XXXXX)
-  status TicketCodeStatus @default(VALID)
-
-  // Relasi ke OrderItem
-  orderItemId String
-  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
-
-  // Info redemption
-  redeemedAt   DateTime?
-  redeemedById String? // Staff/User yang melakukan redeem
-  redeemedBy   Staff?    @relation(fields: [redeemedById], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([code])
-  @@index([orderItemId])
-  @@index([status])
-}
-
-// Model untuk mencatat setiap transaksi pembayaran
-model Transaction {
-  id            String        @id @default(uuid())
-  amount        Float
-  paymentMethod String? // misal: "qris", "gopay"
-  status        PaymentStatus @default(PENDING)
-
-  // Penanda pembayaran manual
-  isManual        Boolean            @default(false)
-  manualMethod    ManualPaymentType?
-  paymentProofUrl String?
-  proofUploadedAt DateTime?
-  verifiedAt      DateTime?
-  verifiedById    String?
-  rejectionNote   String?
-  rawMidtrans     Json?
-
-  // ID transaksi dari payment gateway (misal: Midtrans transaction_id atau token)
-  externalId String? @unique
-
-  // URL untuk melakukan pembayaran (misal: Midtrans Snap redirect_url)
-  paymentUrl String?
-
-  // Waktu kedaluwarsa pembayaran dari payment gateway
-  expiresAt DateTime?
-
-  // Relasi: Transaksi ini milik pesanan mana
-  orderId String @unique
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  // Relasi ke verifikator transaksi manual
-  verifiedBy User? @relation("TransactionVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-
-  @@index([status])
-  @@index([isManual, status])
-}
-
-// Model untuk mencatat pengeluaran
-model Expense {
-  id          String   @id @default(uuid())
-  cashier     String   @default("Owner")
-  description String
-  amount      Float
-  date        DateTime
-  receiptUrl  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relasi: Pengeluaran ini terjadi di outlet mana
-  outletId String
-  outlet   Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
-
-  @@index([outletId])
-  @@index([date])
-  @@map("expenses")
-}
-
-// Model for home page banners
-model Banner {
-  id         String  @id @default(uuid())
-  title      String
-  subtitle   String?
-  imageUrl   String
-  ctaType    String  @default("url")
-  ctaPayload String?
-  sortOrder  Int     @default(0)
-  isActive   Boolean @default(true)
-
-  // Optional relation to a business (banner scoped per business)
-  businessId String?
-  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([businessId])
-  @@index([isActive, sortOrder])
-}
-
-model receiptSetting {
-  id          String  @id @default(uuid())
-  outletId    String  @unique
-  photoString String?
-  showLogo    Boolean @default(false)
-  printHeight String  @default("120")
-  printWidth  String  @default("80")
-  outlet      Outlet  @relation(fields: [outletId], references: [id], onDelete: Cascade)
+enum OutletType {
+  FNB
+  RETAIL
+  EVENT
+  SERVICE
+  CUSTOM
 }

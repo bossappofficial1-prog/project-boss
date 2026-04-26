@@ -102,27 +102,94 @@ export class PosV2Repository {
             productId: string;
             quantity: number;
         }>;
+        tableId?: string;
+        tableNumber?: string;
+        isOpenBill?: boolean;
         bookingSlotId?: string;
     }) {
-        const { orderId, customerId, outletId, totalAmount, discountAmount, pointsRedeemed, cashierId, bookingDate, hasService, paymentMethod, items, stockUpdates, ticketUpdates, bookingSlotId } = params;
+        const {
+            orderId, customerId, outletId, totalAmount, discountAmount,
+            pointsRedeemed, cashierId, bookingDate, hasService,
+            paymentMethod, items, stockUpdates, ticketUpdates,
+            bookingSlotId, tableId, tableNumber, isOpenBill
+        } = params;
 
         return db.$transaction(async (tx) => {
-            const order = await tx.order.create({
-                data: {
-                    id: orderId,
-                    guestCustomerId: customerId,
-                    outletId,
-                    totalAmount,
-                    discountAmount,
-                    pointsRedeemed,
-                    midtransFee: 0,
-                    appFee: 0,
-                    paymentStatus: PaymentStatus.SUCCESS,
-                    orderStatus: hasService ? OrderStatus.PROCESSING : OrderStatus.COMPLETED,
-                    handledByStaffId: cashierId,
-                    bookingDate,
-                },
+            const isPaid = !isOpenBill && (paymentMethod === "cash" || paymentMethod === "qris");
+
+            // Check if order exists (for update/resume bill)
+            const existingOrder = await tx.order.findUnique({
+                where: { id: orderId },
+                include: { items: true }
             });
+
+            let order;
+            if (existingOrder) {
+                // Refund old points if any before re-deducting below
+                if (existingOrder.pointsRedeemed > 0) {
+                    await tx.outletMembership.update({
+                        where: {
+                            guestCustomerId_outletId: {
+                                guestCustomerId: existingOrder.guestCustomerId,
+                                outletId: existingOrder.outletId,
+                            },
+                        },
+                        data: {
+                            totalPoints: { increment: existingOrder.pointsRedeemed },
+                        },
+                    });
+                }
+
+                // Delete old items (and related ticket codes will be handled by cascade or manual cleanup)
+                await tx.orderItem.deleteMany({ where: { orderId } });
+
+                order = await tx.order.update({
+                    where: { id: orderId },
+                    data: {
+                        guestCustomerId: customerId,
+                        totalAmount,
+                        discountAmount,
+                        pointsRedeemed,
+                        paymentStatus: isPaid ? PaymentStatus.SUCCESS : PaymentStatus.PENDING,
+                        orderStatus: isPaid
+                            ? (hasService ? OrderStatus.PROCESSING : OrderStatus.COMPLETED)
+                            : OrderStatus.AWAITING_PAYMENT,
+                        handledByStaffId: cashierId,
+                        bookingDate,
+                        tableId,
+                        tableNumber: tableNumber || null,
+                    },
+                });
+            } else {
+                order = await tx.order.create({
+                    data: {
+                        id: orderId,
+                        guestCustomerId: customerId,
+                        outletId,
+                        totalAmount,
+                        discountAmount,
+                        pointsRedeemed,
+                        midtransFee: 0,
+                        appFee: 0,
+                        paymentStatus: isPaid ? PaymentStatus.SUCCESS : PaymentStatus.PENDING,
+                        orderStatus: isPaid
+                            ? (hasService ? OrderStatus.PROCESSING : OrderStatus.COMPLETED)
+                            : OrderStatus.AWAITING_PAYMENT,
+                        handledByStaffId: cashierId,
+                        bookingDate,
+                        tableId,
+                        tableNumber: tableNumber || null,
+                    },
+                });
+            }
+
+            // Update Table Status if tableId is provided
+            if (tableId) {
+                await tx.outletTable.update({
+                    where: { id: tableId },
+                    data: { status: isPaid ? "AVAILABLE" : "OCCUPIED" }
+                });
+            }
 
             // Point Redemption: deduct points if any
             if (pointsRedeemed > 0) {
@@ -222,18 +289,20 @@ export class PosV2Repository {
                 }
             }
 
-            const transaction = await tx.transaction.create({
-                data: {
-                    amount: totalAmount,
-                    paymentMethod: paymentMethod === "qris" ? "qris" : "cash",
-                    status: PaymentStatus.SUCCESS,
-                    isManual: true,
-                    manualMethod: paymentMethod === "qris" ? ManualPaymentType.QRIS_OFFLINE : ManualPaymentType.CASH,
-                    orderId: order.id,
-                },
-            });
+            if (isPaid) {
+                await tx.transaction.create({
+                    data: {
+                        amount: totalAmount,
+                        paymentMethod: paymentMethod === "qris" ? "qris" : "cash",
+                        status: PaymentStatus.SUCCESS,
+                        isManual: true,
+                        manualMethod: paymentMethod === "qris" ? ManualPaymentType.QRIS_OFFLINE : ManualPaymentType.CASH,
+                        orderId: order.id,
+                    },
+                });
+            }
 
-            return { order, transaction };
+            return { order };
         });
     }
 
@@ -303,6 +372,32 @@ export class PosV2Repository {
             transactionsCount: result._count.id ?? 0,
             date: startOfDay.toISOString().split("T")[0],
         };
+    }
+
+    static async getOpenOrders(outletId: string, limit: number = 20) {
+        return db.order.findMany({
+            where: {
+                outletId,
+                paymentStatus: PaymentStatus.PENDING,
+            },
+            include: {
+                guestCustomer: { select: { name: true, phone: true } },
+                items: {
+                    include: {
+                        product: {
+                            include: {
+                                goods: { select: { sellingPrice: true } },
+                                service: { select: { sellingPrice: true } },
+                                ticket: { select: { sellingPrice: true } },
+                            },
+                        },
+                    },
+                },
+                handledByStaff: { select: { name: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            take: limit,
+        });
     }
 
     static async getRecentOrders(outletId: string, limit: number = 10) {

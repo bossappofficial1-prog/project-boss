@@ -146,6 +146,37 @@ export default function AppSidebar() {
     }));
   }, []);
 
+  const filteredMenuGroups = useMemo(() => {
+    if (!selectedOutlet) return MENU_GROUPS;
+
+    return MENU_GROUPS.map((group) => ({
+      ...group,
+      items: group.items
+        .map((item) => ({ ...item })) // Clone item to avoid mutating original MENU_GROUPS
+        .filter((item) => {
+        // Check if item itself is allowed
+        const itemAllowed = !item.requiredTypes || item.requiredTypes.includes(selectedOutlet.type);
+        if (!itemAllowed) return false;
+
+        // If it has subitems, filter them too
+        if (item.subItems) {
+          const originalSubItems = [...item.subItems];
+          const filteredSubItems = originalSubItems.filter(
+            (sub) => !sub.requiredTypes || sub.requiredTypes.includes(selectedOutlet.type)
+          );
+          
+          // If all subitems are filtered out, don't show the parent either
+          if (filteredSubItems.length === 0) return false;
+          
+          // Note: we're creating a shallow copy with filtered subitems
+          item.subItems = filteredSubItems;
+        }
+
+        return true;
+      }),
+    })).filter((group) => group.items.length > 0);
+  }, [selectedOutlet, pathname]);
+
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       {/* Header with Logo */}
@@ -192,7 +223,7 @@ export default function AppSidebar() {
 
       {/* Navigation Content */}
       <SidebarContent className="bg-gradient-to-b from-red-800 to-red-900 dark:from-red-900 dark:to-red-950">
-        {MENU_GROUPS.map((group) => (
+        {filteredMenuGroups.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel className="text-red-200 dark:text-red-200 uppercase text-xs font-semibold tracking-wider">
               {!isCollapsed && group.label}

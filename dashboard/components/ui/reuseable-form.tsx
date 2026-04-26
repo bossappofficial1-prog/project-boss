@@ -13,8 +13,9 @@ import {
   UseFieldArrayReturn,
   ArrayPath,
   FieldArray,
+  useFormContext,
 } from "react-hook-form";
-import { useEffect, ReactNode, useState, useRef } from "react";
+import { useEffect, ReactNode, useState, useRef, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZodType } from "zod";
 import { AxiosError } from "axios";
@@ -131,6 +132,23 @@ function applyApiErrors<T extends FieldValues>(
   return true;
 }
 
+// Extracted outside component to avoid re-creation on every render
+function adaptNestedField<T extends FieldValues>(
+  subField: FormFieldConfig<T>,
+  newName: string,
+): FormFieldConfig<T> {
+  const cloned = { ...subField, name: newName as Path<T> };
+  if (cloned.type === "array") {
+    console.warn("Nested array fields are not supported, converting to text field");
+    (cloned as unknown as TextFieldConfig<T>).type = "text";
+  }
+  return cloned as FormFieldConfig<T>;
+}
+
+function getEmptyItem<T extends FieldValues>(): FieldArray<T, ArrayPath<T>> {
+  return {} as FieldArray<T, ArrayPath<T>>;
+}
+
 export type FieldType =
   | "text"
   | "email"
@@ -151,9 +169,10 @@ export type FieldType =
 
 type PlaceholderFn<T extends FieldValues> = (values: Partial<T>) => string;
 type PlaceholderResolver<T extends FieldValues> = string | PlaceholderFn<T>;
-
 type CustomRenderInput<T extends FieldValues> = (props: {
   field: ControllerRenderProps<T, Path<T>>;
+  values: Partial<T>;
+  form: UseFormReturn<T>;
 }) => ReactNode;
 
 interface BaseFieldConfig<T extends FieldValues> {
@@ -170,7 +189,7 @@ interface BaseFieldConfig<T extends FieldValues> {
   typeResolver?: (values: Partial<T>) => FieldType;
   dependsOn?: {
     field: Path<T>;
-    condition: (value: any, allValues: Partial<T>) => boolean;
+    condition: (value: unknown, allValues: Partial<T>) => boolean;
     then?: (fieldConfig: FormFieldConfig<T>) => Partial<FormFieldConfig<T>>;
   };
 }
@@ -194,13 +213,13 @@ interface DualSwitchFieldConfig<T extends FieldValues> extends BaseFieldConfig<T
   switchOptions: {
     left: {
       label: string;
-      value: any;
+      value: unknown;
       activeClass?: string;
       icon?: React.ComponentType<{ className?: string }>;
     };
     right: {
       label: string;
-      value: any;
+      value: unknown;
       activeClass?: string;
       icon?: React.ComponentType<{ className?: string }>;
     };
@@ -224,13 +243,11 @@ interface ArrayFieldConfig<T extends FieldValues>
   type: "array";
   name: ArrayPath<T>;
   arrayFields: FormFieldConfig<T>[];
-
   renderItem?: (
     index: number,
     remove: () => void,
-    fieldsArray: UseFieldArrayReturn<T, ArrayPath<T>>
+    fieldsArray: UseFieldArrayReturn<T, ArrayPath<T>>,
   ) => ReactNode;
-
   addButtonText?: string;
   removeButtonText?: string;
 }
@@ -270,13 +287,14 @@ export interface WizardStep<T extends FieldValues> {
 
 interface AutoSaveConfig<T extends FieldValues> {
   enabled: boolean;
-  delay?: number; // ms
+  delay?: number;
   onSave?: (data: Partial<T>) => void;
   storageKey?: string;
-  // optional: restore strategy
 }
 
-type AnyForm<T extends FieldValues> = UseFormReturn<T>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyForm<T extends FieldValues> = UseFormReturn<T, any, any>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySchema<T extends FieldValues> = ZodType<T, ZodTypeDef, any>;
 
 interface SharedFormProps<T extends FieldValues> {
@@ -345,78 +363,79 @@ export function ReusableForm<T extends FieldValues>({
   const [currentStep, setCurrentStep] = useState(0);
 
   const internalForm = useForm<T>({
-    resolver: zodResolver(schema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(schema as ZodType<FieldValues, ZodTypeDef, any>),
     defaultValues,
   });
 
-  const form: AnyForm<T> = externalForm ?? internalForm;
+  const form: AnyForm<T> = (externalForm ?? internalForm) as AnyForm<T>;
 
-  // Reset form when dialog re‑opens
+  // Reset when defaultValues change (covers async-loaded data for non-dialog forms)
+  // and reset on dialog re-open
   useEffect(() => {
-    if (!dialogProps) return;
-    if (dialogProps.isDialogOpen && !wasOpenRef.current) {
+    if (dialogProps) {
+      if (dialogProps.isDialogOpen && !wasOpenRef.current) {
+        form.reset(defaultValues);
+      }
+      wasOpenRef.current = dialogProps.isDialogOpen;
+    } else {
       form.reset(defaultValues);
     }
-    wasOpenRef.current = dialogProps.isDialogOpen;
-  }, [dialogProps?.isDialogOpen, dialogProps, defaultValues, form]);
+  }, [dialogProps?.isDialogOpen, defaultValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Notify parent of value changes
   const watchedValues = useWatch({ control: form.control });
+
   useEffect(() => {
     onValuesChange?.(watchedValues);
   }, [watchedValues, onValuesChange]);
 
-  // Auto‑save effect
+  // Auto-save: use stable refs for callbacks to avoid adding them as deps
+  const autoSaveOnSaveRef = useRef(autoSave?.onSave);
+  autoSaveOnSaveRef.current = autoSave?.onSave;
+
   useEffect(() => {
     if (!autoSave?.enabled) return;
     const delay = autoSave.delay ?? 1000;
-    const timeoutId = setTimeout(() => {
-      if (autoSave.onSave) {
-        autoSave.onSave(watchedValues);
+    const id = setTimeout(() => {
+      if (autoSaveOnSaveRef.current) {
+        autoSaveOnSaveRef.current(watchedValues);
       } else if (autoSave.storageKey) {
         localStorage.setItem(autoSave.storageKey, JSON.stringify(watchedValues));
       }
     }, delay);
-    return () => clearTimeout(timeoutId);
-  }, [watchedValues, autoSave]);
+    return () => clearTimeout(id);
+  }, [watchedValues, autoSave?.enabled, autoSave?.delay, autoSave?.storageKey]);
 
-  // Load saved data on mount (if storageKey provided)
+  // Load saved data on mount
   useEffect(() => {
-    if (autoSave?.storageKey) {
-      const saved = localStorage.getItem(autoSave.storageKey);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          form.reset(parsed);
-        } catch (e) {
-          console.error("Failed to parse saved form data", e);
-        }
-      }
+    if (!autoSave?.storageKey) return;
+    const saved = localStorage.getItem(autoSave.storageKey);
+    if (!saved) return;
+    try {
+      form.reset(JSON.parse(saved));
+    } catch {
+      // malformed storage data, ignore
     }
-  }, [autoSave?.storageKey]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Wizard helpers
-  const isWizard = steps && steps.length > 0;
-  const currentStepFields = isWizard ? steps[currentStep].fields : fields.map(f => f.name);
+  const isWizard = !!steps?.length;
+  const currentStepFields = isWizard ? steps![currentStep].fields : fields.map((f) => f.name);
   const visibleFields = isWizard
-    ? fields.filter(f => currentStepFields.includes(f.name))
+    ? fields.filter((f) => currentStepFields.includes(f.name))
     : fields;
 
-  const goToNextStep = async () => {
-    // Validate fields in current step
-    const fieldsToValidate = currentStepFields;
-    const isValid = await form.trigger(fieldsToValidate as Path<T>[]);
+  const goToNextStep = useCallback(async () => {
+    const isValid = await form.trigger(currentStepFields as Path<T>[]);
     if (isValid && currentStep < steps!.length - 1) {
-      setCurrentStep(prev => prev + 1);
-      // Optionally scroll to top
+      setCurrentStep((prev) => prev + 1);
     }
-  };
+  }, [form, currentStep, currentStepFields, steps]);
 
-  const goToPrevStep = () => {
-    if (currentStep > 0) setCurrentStep(prev => prev - 1);
-  };
+  const goToPrevStep = useCallback(() => {
+    if (currentStep > 0) setCurrentStep((prev) => prev - 1);
+  }, [currentStep]);
 
-  const canClose = (): boolean => {
+  const canClose = useCallback((): boolean => {
     if (!dialogProps) return true;
     if (dialogProps.preventClose) return false;
     if ((dialogProps.confirmClose ?? true) && form.formState.isDirty) {
@@ -424,61 +443,63 @@ export function ReusableForm<T extends FieldValues>({
       return typeof window !== "undefined" && window.confirm(message);
     }
     return true;
-  };
+  }, [dialogProps, form.formState.isDirty]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (!canClose() || !dialogProps) return;
     dialogProps.onDialogOpenChange(false);
     if (dialogProps.resetFormOnClose ?? true) {
       form.reset(defaultValues);
     }
-  };
+  }, [canClose, dialogProps, form, defaultValues]);
 
-  const handleDialogOpenChange = (open: boolean) => {
-    if (open) dialogProps?.onDialogOpenChange(true);
-    else handleClose();
-  };
+  const handleDialogOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) dialogProps?.onDialogOpenChange(true);
+      else handleClose();
+    },
+    [dialogProps, handleClose],
+  );
 
-  const handleFormSubmit = async (values: T) => {
-    form.clearErrors("root");
-    setSubmitting(true);
-
-    try {
-      const hasFileField = fields.some((f) => f.type === "file");
-
-      if (useFormData || hasFileField) {
-        const formData = objectToFormData(values as Record<string, unknown>);
-        await (onSubmit as (v: FormData) => void | Promise<void>)(formData);
-      } else {
-        await (onSubmit as (v: T) => void | Promise<void>)(values);
+  const handleFormSubmit = useCallback(
+    async (values: T) => {
+      form.clearErrors("root");
+      setSubmitting(true);
+      try {
+        const hasFileField = fields.some((f) => f.type === "file");
+        if (useFormData || hasFileField) {
+          const formData = objectToFormData(values as Record<string, unknown>);
+          await (onSubmit as (v: FormData) => void | Promise<void>)(formData);
+        } else {
+          await (onSubmit as (v: T) => void | Promise<void>)(values);
+        }
+      } catch (error) {
+        const handled = applyApiErrors(error, form);
+        if (!handled) {
+          const axiosError = error as AxiosError<ApiErrorResponse>;
+          form.setError("root", {
+            type: "server",
+            message: axiosError?.response?.data?.message ?? "Terjadi kesalahan pada server",
+          });
+        }
+      } finally {
+        setSubmitting(false);
       }
-    } catch (error) {
-      const handled = applyApiErrors(error, form);
+    },
+    [fields, form, onSubmit, useFormData],
+  );
 
-      if (!handled) {
-        const axiosError = error as AxiosError<ApiErrorResponse>;
-        form.setError("root", {
-          type: "server",
-          message: axiosError?.response?.data?.message ?? "Terjadi kesalahan pada server",
-        });
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const busy = isLoading || submitting;
-
-  const gridClass = GRID_COLS_CLASS[gridCols] ?? "md:grid-cols-1";
-
-  // Error summary click handler
-  const scrollToField = (fieldName: string) => {
-    const element = document.querySelector(`[name="${fieldName}"]`);
+  const scrollToField = useCallback((fieldName: string) => {
+    const element = document.querySelector<HTMLElement>(`[name="${fieldName}"]`);
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
-      (element as HTMLElement).focus();
+      element.focus();
     }
-  };
+  }, []);
+
+  const busy = isLoading || submitting;
+  const formControl = form.control as unknown as Control<T>;
+  const gridClass = GRID_COLS_CLASS[gridCols] ?? "md:grid-cols-1";
 
   const fieldGrid = children ?? (
     <>
@@ -503,9 +524,9 @@ export function ReusableForm<T extends FieldValues>({
 
       {isWizard && (
         <div className="mb-4">
-          <h3 className="text-lg font-medium">{steps[currentStep].title}</h3>
-          {steps[currentStep].description && (
-            <p className="text-sm text-muted-foreground">{steps[currentStep].description}</p>
+          <h3 className="text-lg font-medium">{steps![currentStep].title}</h3>
+          {steps![currentStep].description && (
+            <p className="text-sm text-muted-foreground">{steps![currentStep].description}</p>
           )}
         </div>
       )}
@@ -517,7 +538,7 @@ export function ReusableForm<T extends FieldValues>({
             <RenderField
               key={fieldConfig.name}
               field={fieldConfig}
-              control={form.control}
+              form={form}
               values={watchedValues}
             />
           );
@@ -619,14 +640,13 @@ function resolvePlaceholder<T extends FieldValues>(
 
 function RenderField<T extends FieldValues>({
   field,
-  control,
+  form,
   values,
 }: {
   field: FormFieldConfig<T>;
-  control: Control<T>;
+  form: UseFormReturn<T>;
   values: Partial<T>;
 }) {
-  // Apply conditional dependencies
   let finalField = field;
   if (field.dependsOn) {
     const depValue = values[field.dependsOn.field];
@@ -645,7 +665,7 @@ function RenderField<T extends FieldValues>({
 
   return (
     <FormField
-      control={control}
+      control={form.control}
       name={finalField.name as Path<T>}
       render={({ field: formField }) => (
         <FormItem className={cn("col-span-1", colSpanClass)}>
@@ -655,10 +675,10 @@ function RenderField<T extends FieldValues>({
               field={{ ...finalField, type: resolvedType } as FormFieldConfig<T>}
               formField={formField}
               values={values}
-              control={control}
+              form={form}
             />
           </FormControl>
-          {finalField.description && <FormDescription>{finalField.description}</FormDescription>}
+          {finalField.description && <FormDescription className="text-xs">{finalField.description}</FormDescription>}
           <FormMessage className="text-sm" />
         </FormItem>
       )}
@@ -666,17 +686,92 @@ function RenderField<T extends FieldValues>({
   );
 }
 
+// Extracted as its own component to satisfy Rules of Hooks
+// (useFieldArray cannot be called conditionally inside FieldInputSwitch)
+function ArrayFieldRenderer<T extends FieldValues>({
+  field,
+  form,
+  values,
+}: {
+  field: ArrayFieldConfig<T>;
+  form: UseFormReturn<T>;
+  values: Partial<T>;
+}) {
+  const arrayHelpers = useFieldArray({
+    control: form.control,
+    name: field.name as ArrayPath<T>,
+  });
+  const { fields: arrayFields, append, remove } = arrayHelpers;
+
+  const addButtonText = field.addButtonText ?? "Tambah Item";
+  const removeButtonText = field.removeButtonText ?? "Hapus";
+
+  return (
+    <div className="space-y-4">
+      {arrayFields.map((item, index) => (
+        <div key={item.id} className="border p-4 rounded-md relative">
+          {field.renderItem ? (
+            field.renderItem(index, () => remove(index), arrayHelpers)
+          ) : (
+            <>
+              {field.arrayFields.map((subField) => {
+                const newName = `${field.name}.${index}.${subField.name}`;
+                const adaptedField = adaptNestedField(subField, newName);
+                return (
+                  <RenderField
+                    key={subField.name}
+                    field={adaptedField}
+                    form={form}
+                    values={values}
+                  />
+                );
+              })}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => remove(index)}
+                className="absolute top-2 right-2"
+              >
+                {removeButtonText}
+              </Button>
+            </>
+          )}
+        </div>
+      ))}
+      <Button
+        type="button"
+        onClick={() => append(getEmptyItem<T>())}
+        variant="outline"
+        size="sm"
+      >
+        {addButtonText}
+      </Button>
+    </div>
+  );
+}
+
 function FieldInputSwitch<T extends FieldValues>({
   field,
   formField,
   values,
-  control,
+  form,
 }: {
   field: FormFieldConfig<T>;
   formField: ControllerRenderProps<T, Path<T>>;
   values: Partial<T>;
-  control: Control<T>;
+  form: UseFormReturn<T>;
 }) {
+  if (field.type === "array") {
+    return (
+      <ArrayFieldRenderer
+        field={field as ArrayFieldConfig<T>}
+        form={form}
+        values={values}
+      />
+    );
+  }
+
   const placeholder = resolvePlaceholder(field.placeholder, values);
   const Icon = field.icon;
   const iconClass = Icon ? "pl-9" : "";
@@ -691,75 +786,6 @@ function FieldInputSwitch<T extends FieldValues>({
     ) : (
       input
     );
-
-  // Handle array field
-  if (field.type === "array") {
-    const arrayConfig = field as ArrayFieldConfig<T>;
-    const arrayHelpers = useFieldArray({
-      control,
-      name: arrayConfig.name as ArrayPath<T>,
-    });
-    const { fields: arrayFields, append, remove } = arrayHelpers;
-
-    const addButtonText = arrayConfig.addButtonText ?? "Tambah Item";
-    const removeButtonText = arrayConfig.removeButtonText ?? "Hapus";
-
-    // Default item untuk append
-    const getEmptyItem = (): FieldArray<T, ArrayPath<T>> => {
-      return {} as FieldArray<T, ArrayPath<T>>;
-    };
-
-    // Fungsi untuk mengadaptasi field di dalam array
-    // Memastikan name menjadi Path<T> dan menghindari nested array
-    const adaptNestedField = (subField: FormFieldConfig<T>, newName: string): FormFieldConfig<T> => {
-      const cloned = { ...subField, name: newName as Path<T> };
-      // Nested array tidak didukung, ubah menjadi text field
-      if (cloned.type === "array") {
-        console.warn("Nested array fields are not supported, converting to text field");
-        (cloned as any).type = "text";
-      }
-      return cloned as FormFieldConfig<T>;
-    };
-
-    return (
-      <div className="space-y-4">
-        {arrayFields.map((item, index) => (
-          <div key={item.id} className="border p-4 rounded-md relative">
-            {arrayConfig.renderItem ? (
-              arrayConfig.renderItem(index, () => remove(index), arrayHelpers)
-            ) : (
-              <>
-                {arrayConfig.arrayFields.map((subField) => {
-                  const newName = `${arrayConfig.name}.${index}.${subField.name}`;
-                  const adaptedField = adaptNestedField(subField, newName);
-                  return (
-                    <RenderField
-                      key={subField.name}
-                      field={adaptedField}
-                      control={control}
-                      values={values}
-                    />
-                  );
-                })}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => remove(index)}
-                  className="absolute top-2 right-2"
-                >
-                  {removeButtonText}
-                </Button>
-              </>
-            )}
-          </div>
-        ))}
-        <Button type="button" onClick={() => append(getEmptyItem())} variant="outline" size="sm">
-          {addButtonText}
-        </Button>
-      </div>
-    );
-  }
 
   switch (field.type) {
     case "file":
@@ -866,14 +892,13 @@ function FieldInputSwitch<T extends FieldValues>({
 
     case "custom": {
       const { renderCustom } = field as CustomFieldConfig<T>;
-      return <>{renderCustom?.({ field: formField })}</>;
+      return <>{renderCustom?.({ field: formField, values, form })}</>;
     }
 
     case "date": {
       const rawValue = formField.value;
       const value =
         typeof rawValue === "string" && !isNaN(Date.parse(rawValue)) ? rawValue : "";
-
       return (
         <DatePicker
           id={formField.name}

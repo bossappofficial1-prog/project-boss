@@ -166,6 +166,14 @@ export interface UpdateBusinessDto {
 // OUTLET TYPES
 // ============================================================================
 
+export enum OutletType {
+  FNB = 'FNB',
+  RETAIL = 'RETAIL',
+  EVENT = 'EVENT',
+  SERVICE = 'SERVICE',
+  CUSTOM = 'CUSTOM'
+}
+
 export interface Outlet {
   id: string;
   name: string;
@@ -177,6 +185,7 @@ export interface Outlet {
   latitude?: number | null;
   longitude?: number | null;
   isOpen?: boolean;
+  type: OutletType;
   manualBankName?: string | null;
   manualBankAccount?: string | null;
   manualAccountHolder?: string | null;

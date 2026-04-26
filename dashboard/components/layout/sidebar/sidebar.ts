@@ -14,7 +14,10 @@ import {
   UserCheck,
   Gift,
   TrendingUp,
+  ArrowRightLeft,
+  LayoutGrid,
 } from "lucide-react";
+import { OutletType } from "@/types";
 
 interface MenuItem {
   id: string;
@@ -23,12 +26,14 @@ interface MenuItem {
   icon: React.ElementType;
   badge?: string;
   subItems?: SubMenuItem[];
+  requiredTypes?: OutletType[];
 }
 
 interface SubMenuItem {
   name: string;
   href: string;
   badge?: string;
+  requiredTypes?: OutletType[];
 }
 
 interface MenuGroup {
@@ -81,6 +86,19 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Kelola Kasir",
         href: "/owner/dashboard/outlets/staff",
       },
+      {
+        id: "transfer-outlet",
+        icon: ArrowRightLeft,
+        name: "Transfer Outlet",
+        href: "/owner/dashboard/outlets/transfer",
+      },
+      {
+        id: "kelola-meja",
+        icon: LayoutGrid,
+        name: "Manajemen Meja",
+        href: "/owner/dashboard/outlets/manage/tables",
+        requiredTypes: [OutletType.FNB, OutletType.CUSTOM],
+      },
     ],
   },
   {
@@ -97,6 +115,7 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Stok Produk",
         href: "/owner/dashboard/stock",
         icon: Box,
+        requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM],
       },
     ],
   },

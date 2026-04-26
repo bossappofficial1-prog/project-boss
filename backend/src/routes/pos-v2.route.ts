@@ -6,6 +6,7 @@ import {
     posV2GetProducts,
     posV2CreateOrder,
     posV2GetCashSummary,
+    posV2GetOpenOrders,
     posV2GetRecentOrders,
     posV2GetBookingSlots,
     posV2GetAvailableStaff,
@@ -18,6 +19,7 @@ posV2Router.use(protect, authorizeOwnerOrCashier);
 posV2Router.get("/products", posV2GetProducts);
 posV2Router.post("/orders", validateSchema(createPosV2OrderSchema), posV2CreateOrder);
 posV2Router.get("/cash-summary", posV2GetCashSummary);
+posV2Router.get("/open-orders", posV2GetOpenOrders);
 posV2Router.get("/recent-orders", posV2GetRecentOrders);
 posV2Router.get("/products/:productId/booking-slots", posV2GetBookingSlots);
 posV2Router.get("/products/:productId/available-staff", posV2GetAvailableStaff);

@@ -171,7 +171,11 @@ export default function CashierLayoutClient({ children }: { children: React.Reac
         <CashierContext.Provider value={{ cashierData, outletData }}>
           <PrinterProvider>
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-              <CashierNavbar cashierName={cashierData.name} outletName={outletData.name} />
+              <CashierNavbar 
+                cashierName={cashierData.name} 
+                outletName={outletData.name} 
+                outletType={outletData.type} 
+              />
               <main>{children}</main>
             </div>
             <Toaster position="top-right" toastOptions={{ duration: 5000 }} />

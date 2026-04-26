@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, ShoppingBag, Clock, Ticket } from "lucide-react";
+import { Search, ShoppingBag, Clock, Ticket, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { resolveUploadImageUrl } from "@/lib/url";
 import type { PosV2Product } from "@/lib/apis/pos-v2";
+import { OutletType } from "@/types";
 
 type FilterType = "ALL" | "GOODS" | "SERVICE" | "TICKET";
 
@@ -18,7 +19,15 @@ interface ProductCatalogProps {
     onSearchChange: (query: string) => void;
     onAddToCart: (product: PosV2Product) => void;
     cartQuantities: Record<string, number>;
+    outletType?: OutletType;
 }
+
+const FILTER_LABELS: Record<FilterType, string> = {
+    ALL: "Semua",
+    GOODS: "Barang",
+    SERVICE: "Layanan",
+    TICKET: "Tiket",
+};
 
 export function ProductCatalog({
     products,
@@ -27,13 +36,23 @@ export function ProductCatalog({
     onSearchChange,
     onAddToCart,
     cartQuantities,
+    outletType = OutletType.CUSTOM,
 }: ProductCatalogProps) {
     const [filter, setFilter] = useState<FilterType>("ALL");
 
     const filtered = filter === "ALL" ? products : products.filter((p) => p.type === filter);
 
+    const availableFilters = React.useMemo((): FilterType[] => {
+        if (outletType === OutletType.RETAIL) return ["ALL", "GOODS"];
+        if (outletType === OutletType.SERVICE) return ["ALL", "SERVICE"];
+        if (outletType === OutletType.EVENT) return ["ALL", "TICKET"];
+        if (outletType === OutletType.FNB) return ["ALL", "GOODS", "SERVICE"];
+        return ["ALL", "GOODS", "SERVICE", "TICKET"];
+    }, [outletType]);
+
     return (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
+            {/* Search + Filter */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -41,43 +60,65 @@ export function ProductCatalog({
                         placeholder="Cari produk atau layanan..."
                         value={searchQuery}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 h-10"
                     />
                 </div>
-                <div className="flex items-center gap-2">
-                    {(["ALL", "GOODS", "SERVICE", "TICKET"] as FilterType[]).map((f) => (
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5 sm:pb-0">
+                    {availableFilters.map((f) => (
                         <Button
                             key={f}
                             size="sm"
                             variant={filter === f ? "default" : "outline"}
                             onClick={() => setFilter(f)}
-                            className={filter === f ? "bg-primary hover:bg-primary/90" : ""}>
-                            {f === "ALL" ? "Semua" : f === "GOODS" ? "Barang" : f === "SERVICE" ? "Layanan" : "Tiket"}
+                            className="shrink-0 font-semibold uppercase tracking-tight text-xs">
+                            {FILTER_LABELS[f]}
                         </Button>
                     ))}
                 </div>
             </div>
 
+            {/* Grid */}
             {isLoading ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                     {Array.from({ length: 8 }).map((_, i) => (
-                        <Skeleton key={i} className="h-44 rounded-md" />
+                        <Skeleton key={i} className="h-48 rounded-lg" />
                     ))}
                 </div>
             ) : filtered.length === 0 ? (
-                <div className="flex h-40 items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
-                    {searchQuery ? "Tidak ada produk yang cocok" : "Belum ada produk aktif"}
+                <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border py-16 text-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                        {searchQuery
+                            ? <Search className="h-5 w-5 text-muted-foreground" />
+                            : <Package className="h-5 w-5 text-muted-foreground" />
+                        }
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium text-foreground">
+                            {searchQuery ? "Produk tidak ditemukan" : "Belum ada produk"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            {searchQuery
+                                ? `Tidak ada hasil untuk "${searchQuery}"`
+                                : "Tambahkan produk aktif untuk mulai berjualan"}
+                        </p>
+                    </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                <div className="grid grid-cols-2 max-h-[80vh] overflow-y-auto gap-3 sm:grid-cols-3 lg:grid-cols-4">
                     {filtered.map((product) => {
                         const qty = cartQuantities[product.id] ?? 0;
                         const isGoods = product.type === "GOODS";
                         const isTicket = product.type === "TICKET";
                         const outOfStock = isGoods && (product.stock ?? 0) <= 0;
-                        const ticketSoldOut = isTicket && (product.totalQuota ?? 0) > 0 && ((product.soldCount ?? 0) >= (product.totalQuota ?? 0));
+                        const ticketSoldOut =
+                            isTicket &&
+                            (product.totalQuota ?? 0) > 0 &&
+                            (product.soldCount ?? 0) >= (product.totalQuota ?? 0);
                         const disabled = outOfStock || ticketSoldOut;
                         const imageUrl = resolveUploadImageUrl(product.image ?? undefined);
+                        const remaining = isTicket
+                            ? (product.totalQuota ?? 0) - (product.soldCount ?? 0)
+                            : null;
 
                         return (
                             <button
@@ -85,73 +126,92 @@ export function ProductCatalog({
                                 type="button"
                                 disabled={disabled}
                                 onClick={() => onAddToCart(product)}
-                                className={`relative flex flex-col overflow-hidden rounded-md border text-left transition-all
+                                className={`group relative flex flex-col overflow-hidden rounded-lg border text-left
                                     ${disabled
-                                        ? "cursor-not-allowed border-border bg-muted/30 opacity-60"
-                                        : "border-border bg-card hover:border-primary/50 hover:shadow-md active:scale-[0.98]"
+                                        ? "cursor-not-allowed border-border bg-muted/20 opacity-55"
+                                        : "border-border bg-card hover:border-primary/40 hover:shadow-md active:scale-[0.98]"
                                     }`}>
-                                {/* Image */}
-                                <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/20">
+
+                                {/* Image area */}
+                                <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/30">
                                     {imageUrl ? (
                                         <img
                                             src={imageUrl}
                                             alt={product.name}
                                             loading="lazy"
-                                            className="h-full w-full object-cover"
+                                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             onError={(e) => {
                                                 (e.currentTarget as HTMLImageElement).style.display = "none";
                                                 e.currentTarget.nextElementSibling?.classList.remove("hidden");
                                             }}
                                         />
                                     ) : null}
-                                    <div className={`flex h-full w-full items-center justify-center text-muted-foreground ${imageUrl ? "hidden" : ""}`}>
-                                        <ShoppingBag className="h-8 w-8" />
+
+                                    {/* Fallback icon */}
+                                    <div className={`flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground/50 ${imageUrl ? "hidden" : ""}`}>
+                                        <ShoppingBag className="h-7 w-7" />
                                     </div>
+
+                                    {/* Sold out / habis overlay */}
+                                    {disabled && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">
+                                            <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
+                                                {outOfStock ? "Habis" : "Sold Out"}
+                                            </span>
+                                        </div>
+                                    )}
 
                                     {/* Type badge */}
                                     <Badge
-                                        variant="secondary"
-                                        className={`absolute right-1.5 top-1.5 text-[10px] ${isGoods
-                                            ? "bg-primary/10 text-primary"
-                                            : isTicket
-                                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                                : "bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                                            }`}>
+                                        variant={isGoods ? "default" : isTicket ? "outline" : "secondary"}
+                                        className="absolute left-1.5 top-1.5 rounded-sm px-1.5 text-xs">
                                         {isGoods ? "Barang" : isTicket ? "Tiket" : "Jasa"}
                                     </Badge>
 
-                                    {/* Cart badge */}
+                                    {/* Cart qty badge */}
                                     {qty > 0 && (
-                                        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground shadow-sm">
+                                        <span className="absolute right-1.5 top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground shadow-sm tabular-nums">
                                             {qty}
                                         </span>
                                     )}
                                 </div>
 
                                 {/* Info */}
-                                <div className="flex flex-1 flex-col gap-1 p-2.5">
-                                    <p className="line-clamp-2 text-sm font-medium text-foreground">
+                                <div className="flex flex-1 flex-col gap-1.5 p-2.5">
+                                    <p className="line-clamp-2 text-sm font-medium leading-tight text-foreground">
                                         {product.name}
                                     </p>
-                                    <p className="text-xs font-semibold text-primary">
+                                    <p className="text-xs font-bold text-primary">
                                         Rp {product.price.toLocaleString("id-ID")}
                                     </p>
-                                    {isGoods ? (
-                                        <p className={`text-[11px] ${outOfStock ? "text-destructive" : "text-muted-foreground"}`}>
-                                            {outOfStock ? "Habis" : `Stok: ${product.stock} ${product.unit ?? ""}`}
+
+                                    {/* Meta info */}
+                                    {isGoods && !outOfStock && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Stok: <span className="font-medium text-foreground">{product.stock}</span>
+                                            {product.unit ? ` ${product.unit}` : ""}
                                         </p>
-                                    ) : isTicket ? (
-                                        <p className={`flex items-center gap-1 text-[11px] ${ticketSoldOut ? "text-destructive" : "text-muted-foreground"}`}>
+                                    )}
+                                    {isTicket && !ticketSoldOut && remaining !== null && (
+                                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
                                             <Ticket className="h-3 w-3" />
-                                            {ticketSoldOut ? "Sold Out" : `${(product.totalQuota ?? 0) - (product.soldCount ?? 0)} tersisa`}
+                                            <span>
+                                                <span className="font-medium text-foreground">{remaining}</span> tersisa
+                                            </span>
                                         </p>
-                                    ) : (
-                                        <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                    )}
+                                    {!isGoods && !isTicket && (
+                                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
                                             <Clock className="h-3 w-3" />
                                             {product.durationMinutes ?? 0} menit
                                         </p>
                                     )}
                                 </div>
+
+                                {/* In-cart indicator bar */}
+                                {qty > 0 && (
+                                    <div className="h-0.5 w-full bg-primary" />
+                                )}
                             </button>
                         );
                     })}

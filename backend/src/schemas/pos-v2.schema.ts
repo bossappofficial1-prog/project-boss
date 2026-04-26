@@ -26,19 +26,21 @@ export const createPosV2OrderSchema = z.object({
         .array(posV2ItemSchema)
         .min(1, { message: "Minimal 1 item dalam pesanan" })
         .max(50, { message: "Maksimal 50 item berbeda" }),
-    paymentMethod: z.enum(["cash", "qris"], {
-        errorMap: () => ({ message: "Metode pembayaran saat ini hanya 'cash'" }),
-    }),
+    paymentMethod: z.enum(["cash", "qris", "none"]).optional(),
     cashReceived: z
         .number()
         .min(0, { message: "Nominal cash tidak boleh negatif" })
         .optional(),
+    tableId: z.string().uuid().optional(),
+    tableNumber: z.string().optional(),
+    isOpenBill: z.boolean().optional().default(false),
     notes: z.string().max(500).optional(),
     // Service booking fields
     bookingSlotId: z.string().uuid().optional(),
     bookingDate: z.string().datetime().optional(),
     staffId: z.string().uuid().optional(),
     pointsRedeemed: z.number().int().min(0).optional(),
+    existingOrderId: z.string().optional(),
 });
 
 export type CreatePosV2OrderInput = z.infer<typeof createPosV2OrderSchema>;

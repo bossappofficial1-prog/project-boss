@@ -17,7 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import ThemeToggle from '../ThemeToggle';
 import ConfirmationModal from '@/components/ui/confirmation-modal';
 import { useUserData } from '@/hooks/useUserData';
-// import ReceiptSetting from '../ReceiptSetting';
+
 import {
   Menu,
   PanelLeftClose,

@@ -9,6 +9,7 @@ const KEYS = {
     bookingSlots: (productId: string, date: string) => ["pos-v2", "booking-slots", productId, date] as const,
     availableStaff: (productId: string, slotId: string) => ["pos-v2", "available-staff", productId, slotId] as const,
     outletQris: (outletId: string) => ["pos-v2", "outlet-qris", outletId] as const,
+    openOrders: (outletId: string) => ["pos-v2", "open-orders", outletId] as const,
 };
 
 export function usePosV2Products(outletId: string, search?: string) {
@@ -35,6 +36,15 @@ export function usePosV2RecentOrders(outletId: string) {
         queryFn: () => posV2Api.getRecentOrders(outletId),
         enabled: !!outletId,
         staleTime: 15_000,
+    });
+}
+
+export function usePosV2OpenOrders(outletId: string) {
+    return useQuery({
+        queryKey: KEYS.openOrders(outletId),
+        queryFn: () => posV2Api.getOpenOrders(outletId),
+        enabled: !!outletId,
+        staleTime: 10_000,
     });
 }
 
@@ -78,6 +88,9 @@ export function usePosV2CreateOrder() {
             });
             queryClient.invalidateQueries({
                 queryKey: KEYS.recentOrders(variables.outletId),
+            });
+            queryClient.invalidateQueries({
+                queryKey: KEYS.openOrders(variables.outletId),
             });
         },
     });
