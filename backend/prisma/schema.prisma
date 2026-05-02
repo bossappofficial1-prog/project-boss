@@ -183,6 +183,7 @@ model OutletTable {
   outletId  String
   outlet    Outlet      @relation(fields: [outletId], references: [id], onDelete: Cascade)
   orders    Order[]
+  bills     Bill[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
@@ -283,6 +284,8 @@ model ProductMedia {
 model ProductGoods {
   id           String     @id @default(uuid())
   productId    String     @unique
+  barcode      String?    @unique
+  sku          String?
   currentStock Int        @default(0)
   minStock     Int?
   maxStock     Int?
@@ -294,6 +297,7 @@ model ProductGoods {
   product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   stockLogs    StockLog[]
 
+  @@index([barcode])
   @@index([productId])
   @@index([currentStock])
 }
@@ -479,6 +483,8 @@ model Order {
   updatedAt                DateTime              @updatedAt
   tableNumber              String?
   tableId                  String?
+  billId                   String?
+  bill                     Bill?                 @relation(fields: [billId], references: [id], onDelete: SetNull)
   pointHistories           LoyaltyPointHistory[]
   memberships              Membership[]
   guestCustomer            GuestCustomer         @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
@@ -495,6 +501,23 @@ model Order {
   @@index([orderStatus])
   @@index([paymentStatus])
   @@index([tableId])
+  @@index([billId])
+}
+
+model Bill {
+  id        String     @id @default(uuid())
+  outletId  String
+  tableId   String
+  status    BillStatus @default(OPEN)
+  total     Float      @default(0)
+  table     OutletTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  orders    Order[]
+  createdAt DateTime   @default(now())
+  closedAt  DateTime?
+  updatedAt DateTime   @updatedAt
+
+  @@index([tableId])
+  @@index([outletId, status])
 }
 
 model Membership {
@@ -720,6 +743,13 @@ enum TableStatus {
   AVAILABLE
   OCCUPIED
   RESERVED
+  BILLED
+}
+
+enum BillStatus {
+  OPEN
+  BILLED
+  PAID
 }
 
 enum MediaType {

@@ -8,6 +8,7 @@ import {
     createProductService,
     deleteProductService,
     getProductByIdService,
+    getProductByBarcodeService,
     getProductsByOutletIdService,
     searchProductsByNameService,
     updateProductService,
@@ -52,6 +53,13 @@ export const createProductController = asyncHandler(async (req: Request, res: Re
 export const getProductByIdController = asyncHandler(async (req: Request, res: Response) => {
     const id = ensureString(req.params?.id, 'id');
     const product = await getProductByIdService(id);
+    return ResponseUtil.success(res, product);
+});
+
+export const getProductByBarcodeController = asyncHandler(async (req: Request, res: Response) => {
+    const code = ensureString(req.params?.code, 'code');
+    const outletId = ensureString(req.query?.outletId, 'outletId');
+    const product = await getProductByBarcodeService(code, outletId);
     return ResponseUtil.success(res, product);
 });
 

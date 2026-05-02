@@ -300,6 +300,43 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
 
   const isLoadingSearch = trimmedSearch && searchResult.isLoading;
 
+  // Tab visibility depends on outlet.type (backend enum: FNB | RETAIL | EVENT | SERVICE | CUSTOM)
+  const tabDefinitions = useMemo(() => {
+    const all = [
+      { value: "products", icon: Package, label: t("products"), count: goods.length },
+      { value: "services", icon: Wrench, label: t("services"), count: services.length },
+      { value: "tickets", icon: Ticket, label: "Tiket", count: tickets.length },
+      { value: "hours", icon: Clock, label: t("openingHours") },
+    ];
+
+    switch (outletQuery.data?.type) {
+      case "RETAIL":
+        return all.filter((td) => td.value === "products" || td.value === "hours");
+      case "SERVICE":
+        return all.filter((td) => td.value === "services" || td.value === "hours");
+      case "EVENT":
+        return all.filter((td) => td.value === "tickets" || td.value === "hours");
+      default:
+        // FNB, CUSTOM and others: show all
+        return all;
+    }
+  }, [outletQuery.data?.type, goods.length, services.length, tickets.length, t]);
+
+  const availableTabValues = useMemo(
+    () => tabDefinitions.map((tab) => tab.value),
+    [tabDefinitions],
+  );
+
+  useEffect(() => {
+    if (!availableTabValues.includes(selectedTabs)) {
+      const fallbackTab = availableTabValues[0] ?? "products";
+      setSelectedTabs(fallbackTab);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("selectedTabs", fallbackTab);
+      }
+    }
+  }, [availableTabValues, selectedTabs]);
+
   useEffect(() => {
     if (typeof window !== "undefined" && from && from !== "") {
       sessionStorage.setItem(SESSION_KEY, from);
@@ -531,19 +568,16 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
       {/* Tabs Section */}
       <div className="mt-5">
         <Tabs
-          defaultValue={selectedTabs}
+          value={selectedTabs}
           onValueChange={(value) => {
             setSelectedTabs(value);
             localStorage.setItem("selectedTabs", value);
           }}
           className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-11 rounded-lg bg-muted/60 p-1">
-            {[
-              { value: "products", icon: Package, label: t("products"), count: goods.length },
-              { value: "services", icon: Wrench, label: t("services"), count: services.length },
-              { value: "tickets", icon: Ticket, label: "Tiket", count: tickets.length },
-              { value: "hours", icon: Clock, label: t("openingHours") },
-            ].map(({ value, icon: Icon, label, count }) => (
+          <TabsList
+            className="grid w-full h-11 rounded-lg bg-muted/60 p-1"
+            style={{ gridTemplateColumns: `repeat(${Math.max(1, tabDefinitions.length)}, minmax(0, 1fr))` }}>
+            {tabDefinitions.map(({ value, icon: Icon, label, count }) => (
               <TabsTrigger
                 key={value}
                 value={value}

@@ -5,6 +5,8 @@ export * from "./home";
 export interface OutletType {
   id: string;
   name: string;
+  /** Backend enum: FNB | RETAIL | EVENT | SERVICE | CUSTOM */
+  type: "FNB" | "RETAIL" | "EVENT" | "SERVICE" | "CUSTOM";
   slug?: string;
   address: string;
   phone: string;

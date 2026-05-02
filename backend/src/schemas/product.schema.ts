@@ -13,6 +13,8 @@ const mediaItemSchema = z.object({
 
 // ProductGoods
 const productGoodsSchema = z.object({
+  barcode: z.string().min(1).optional(),
+  sku: z.string().min(1).optional(),
   currentStock: z.number().int().min(0).optional(), // default di DB
   minStock: z.number().int().min(0).nullable().optional(),
   maxStock: z.number().int().min(0).nullable().optional(),

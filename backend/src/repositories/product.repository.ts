@@ -33,6 +33,8 @@ export class ProductRepository {
           image: data.image,
           goods: {
             create: {
+              barcode: data.goods.barcode,
+              sku: data.goods.sku,
               currentStock: data.goods.currentStock,
               minStock: data.goods.minStock,
               unit: data.goods.unit,
@@ -155,6 +157,26 @@ export class ProductRepository {
     });
   }
 
+  static async findByBarcode(barcode: string, outletId: string) {
+    return db.product.findFirst({
+      where: {
+        outletId,
+        status: ServiceStatus.ACTIVE,
+        type: ProductType.GOODS,
+        goods: {
+          is: {
+            barcode,
+          },
+        },
+      },
+      include: {
+        goods: true,
+        service: true,
+        ticket: true,
+      },
+    });
+  }
+
   /**
    * Paginated search for products within an outlet.
    */
@@ -236,7 +258,16 @@ export class ProductRepository {
 
     if (goods) {
       updateData.goods = {
-        update: goods,
+        update: {
+          ...(goods.barcode !== undefined && { barcode: goods.barcode }),
+          ...(goods.sku !== undefined && { sku: goods.sku }),
+          ...(goods.currentStock !== undefined && { currentStock: goods.currentStock }),
+          ...(goods.minStock !== undefined && { minStock: goods.minStock }),
+          ...(goods.maxStock !== undefined && { maxStock: goods.maxStock }),
+          ...(goods.unit !== undefined && { unit: goods.unit }),
+          ...(goods.averageHpp !== undefined && { averageHpp: goods.averageHpp }),
+          ...(goods.sellingPrice !== undefined && { sellingPrice: goods.sellingPrice }),
+        },
       };
     }
 

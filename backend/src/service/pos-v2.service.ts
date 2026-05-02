@@ -55,6 +55,8 @@ export class PosV2Service {
                 price,
                 stock: p.type === "GOODS" ? (p.goods?.currentStock ?? 0) : null,
                 unit: p.type === "GOODS" ? (p.goods?.unit ?? "pcs") : null,
+                barcode: p.type === "GOODS" ? (p.goods?.barcode ?? null) : null,
+                sku: p.type === "GOODS" ? (p.goods?.sku ?? null) : null,
                 goodsId: p.goods?.id ?? null,
                 serviceId: p.service?.id ?? null,
                 ticketId: p.ticket?.id ?? null,
@@ -121,6 +123,12 @@ export class PosV2Service {
             if (!table) {
                 throw new AppError(
                     "Meja tidak ditemukan pada outlet aktif.",
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+            if (table.status === "BILLED") {
+                throw new AppError(
+                    "Meja sedang diproses bill dan tidak dapat menerima order baru.",
                     HttpStatus.BAD_REQUEST,
                 );
             }

@@ -24,6 +24,7 @@ import {
     usePosV2CreateOrder,
     usePosV2OutletQris,
 } from "@/hooks/api/use-pos-v2";
+import { useProductBarcodeLookup } from "@/hooks/api/use-product-barcode";
 import { useLoyaltyConfig } from "@/hooks/api/use-loyalty";
 import type { PosV2Product, PosV2OrderResult, PosV2OpenOrder } from "@/lib/apis/pos-v2";
 import { ProductCatalog } from "./ProductCatalog";
@@ -89,6 +90,7 @@ export function PosV2Content() {
     const { data: outletQris, isLoading: qrisLoading } = usePosV2OutletQris(outletId);
     const { data: loyaltyConfig } = useLoyaltyConfig(outletId);
     const createOrder = usePosV2CreateOrder();
+    const barcodeLookup = useProductBarcodeLookup();
 
     const cartItems = React.useMemo(() => Object.values(cart), [cart]);
 
@@ -191,6 +193,23 @@ export function PosV2Content() {
             }
             return { ...prev, [product.id]: { product, quantity: current + 1 } };
         });
+    };
+
+    const handleScanBarcode = (code: string) => {
+        const barcode = code.trim();
+        if (!barcode) return;
+
+        barcodeLookup.mutate(
+            { code: barcode, outletId },
+            {
+                onSuccess: (product) => {
+                    handleAddToCart(product);
+                },
+                onError: (error: any) => {
+                    toast.error(error?.response?.data?.message || error?.message || "Barcode tidak ditemukan");
+                },
+            },
+        );
     };
 
     const handleIncrease = (productId: string) => {
@@ -460,6 +479,7 @@ export function PosV2Content() {
                                 searchQuery={searchQuery}
                                 onSearchChange={setSearchQuery}
                                 onAddToCart={handleAddToCart}
+                                onScanBarcode={handleScanBarcode}
                                 cartQuantities={cartQuantities}
                                 outletType={outletData?.type}
                             />

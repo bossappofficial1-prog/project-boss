@@ -5,7 +5,7 @@ export interface OutletTable {
   id: string;
   name: string;
   capacity: number;
-  status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED';
+  status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'BILLED';
   outletId: string;
   _count?: {
     orders: number;

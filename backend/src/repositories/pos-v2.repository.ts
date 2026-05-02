@@ -1,5 +1,5 @@
 import { db } from "../config/prisma";
-import { LoyaltyPointHistoryType, PaymentStatus, ManualPaymentType, OrderStatus, ServiceStatus } from "@prisma/client";
+import { LoyaltyPointHistoryType, PaymentStatus, ManualPaymentType, OrderStatus, ServiceStatus, TableStatus } from "@prisma/client";
 import { generateTicketCode } from "../utils";
 
 export class PosV2Repository {
@@ -17,6 +17,42 @@ export class PosV2Repository {
         });
     }
 
+    static async updateTableStatus(tableId: string, status: TableStatus) {
+        return db.outletTable.update({
+            where: { id: tableId },
+            data: { status },
+        });
+    }
+
+    static async getOrdersByTableId(tableId: string) {
+        return db.order.findMany({
+            where: {
+                tableId,
+                orderStatus: {
+                    notIn: ["COMPLETED", "CANCELLED"],
+                },
+            },
+            include: {
+                items: {
+                    include: {
+                        product: {
+                            include: {
+                                goods: true,
+                                service: true,
+                                ticket: true,
+                            },
+                        },
+                        bookingSlot: true,
+                    },
+                },
+                guestCustomer: true,
+                transaction: true,
+            },
+            orderBy: {
+                createdAt: "asc",
+            },
+        });
+    }
     static async getProductsByOutlet(
         outletId: string,
         search?: string,

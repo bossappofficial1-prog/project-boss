@@ -77,6 +77,29 @@ export async function getProductByIdService(id: string) {
   };
 }
 
+export async function getProductByBarcodeService(barcode: string, outletId: string) {
+  const product = await ProductRepository.findByBarcode(barcode, outletId);
+  if (!product || !product.goods) {
+    throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
+  }
+
+  return {
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    image: product.image,
+    type: product.type,
+    status: product.status,
+    outletId: product.outletId,
+    price: product.goods.sellingPrice,
+    stock: product.goods.currentStock,
+    unit: product.goods.unit,
+    goodsId: product.goods.id,
+    barcode: product.goods.barcode,
+    sku: product.goods.sku,
+  };
+}
+
 /**
  * Retrieves all products for a specific outlet with filtering and pagination.
  */

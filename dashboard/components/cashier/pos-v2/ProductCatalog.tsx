@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, ShoppingBag, Clock, Ticket, Package } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
+import { Camera, Search, ScanBarcode, ShoppingBag, Clock, Ticket, Package, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ interface ProductCatalogProps {
     searchQuery: string;
     onSearchChange: (query: string) => void;
     onAddToCart: (product: PosV2Product) => void;
+    onScanBarcode: (code: string) => void;
     cartQuantities: Record<string, number>;
     outletType?: OutletType;
 }
@@ -35,20 +37,104 @@ export function ProductCatalog({
     searchQuery,
     onSearchChange,
     onAddToCart,
+    onScanBarcode,
     cartQuantities,
     outletType = OutletType.CUSTOM,
 }: ProductCatalogProps) {
     const [filter, setFilter] = useState<FilterType>("ALL");
+    const [keyboardScanActive, setKeyboardScanActive] = useState(false);
+    const [barcodeBuffer, setBarcodeBuffer] = useState("");
+    const [cameraOpen, setCameraOpen] = useState(false);
+    const scannerInputRef = useRef<HTMLInputElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const readerRef = useRef<BrowserMultiFormatReader | null>(null);
 
     const filtered = filter === "ALL" ? products : products.filter((p) => p.type === filter);
 
-    const availableFilters = React.useMemo((): FilterType[] => {
+    const availableFilters = useMemo((): FilterType[] => {
         if (outletType === OutletType.RETAIL) return ["ALL", "GOODS"];
         if (outletType === OutletType.SERVICE) return ["ALL", "SERVICE"];
         if (outletType === OutletType.EVENT) return ["ALL", "TICKET"];
         if (outletType === OutletType.FNB) return ["ALL", "GOODS", "SERVICE"];
         return ["ALL", "GOODS", "SERVICE", "TICKET"];
     }, [outletType]);
+
+    const canScanGoods = availableFilters.includes("GOODS");
+
+    useEffect(() => {
+        if (keyboardScanActive) {
+            scannerInputRef.current?.focus();
+        }
+    }, [keyboardScanActive]);
+
+    useEffect(() => {
+        if (!cameraOpen || !videoRef.current) return;
+
+        let cancelled = false;
+        const reader = new BrowserMultiFormatReader();
+        readerRef.current = reader;
+
+        reader.decodeFromVideoDevice(undefined, videoRef.current, (result, _err, controls) => {
+            if (cancelled) {
+                controls?.stop();
+                return;
+            }
+
+            if (result?.getText()) {
+                onScanBarcode(result.getText());
+                controls?.stop();
+                setCameraOpen(false);
+                setKeyboardScanActive(false);
+                setBarcodeBuffer("");
+            }
+        }).catch(() => {
+            setCameraOpen(false);
+        });
+
+        return () => {
+            cancelled = true;
+            readerRef.current?.reset();
+            readerRef.current = null;
+        };
+    }, [cameraOpen, onScanBarcode]);
+
+    const handleScannerKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (!keyboardScanActive) return;
+
+        if (event.key === "Enter") {
+            event.preventDefault();
+            const code = barcodeBuffer.trim();
+            if (code) {
+                onScanBarcode(code);
+            }
+            setBarcodeBuffer("");
+            return;
+        }
+
+        if (event.key === "Backspace") {
+            event.preventDefault();
+            setBarcodeBuffer((prev) => prev.slice(0, -1));
+            return;
+        }
+
+        if (event.key.length === 1) {
+            setBarcodeBuffer((prev) => `${prev}${event.key}`);
+        }
+    };
+
+    const handleEnableScanner = () => {
+        if (!canScanGoods) return;
+        setCameraOpen(false);
+        setKeyboardScanActive(true);
+        setTimeout(() => scannerInputRef.current?.focus(), 0);
+    };
+
+    const handleOpenCamera = () => {
+        if (!canScanGoods) return;
+        setKeyboardScanActive(false);
+        setBarcodeBuffer("");
+        setCameraOpen(true);
+    };
 
     return (
         <div className="flex flex-col gap-4">
@@ -64,6 +150,30 @@ export function ProductCatalog({
                     />
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5 sm:pb-0">
+                    {canScanGoods && (
+                        <>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={keyboardScanActive ? "default" : "outline"}
+                                onClick={handleEnableScanner}
+                                className="shrink-0 gap-1.5 font-semibold uppercase tracking-tight text-xs"
+                            >
+                                <ScanBarcode className="h-4 w-4" />
+                                Scan Barcode
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={handleOpenCamera}
+                                className="shrink-0 gap-1.5 font-semibold uppercase tracking-tight text-xs"
+                            >
+                                <Camera className="h-4 w-4" />
+                                Scan Kamera
+                            </Button>
+                        </>
+                    )}
                     {availableFilters.map((f) => (
                         <Button
                             key={f}
@@ -215,6 +325,44 @@ export function ProductCatalog({
                             </button>
                         );
                     })}
+                </div>
+            )}
+
+            <input
+                ref={scannerInputRef}
+                type="text"
+                inputMode="none"
+                autoComplete="off"
+                value={barcodeBuffer}
+                onChange={() => undefined}
+                onKeyDown={handleScannerKeyDown}
+                className="absolute h-0 w-0 opacity-0 pointer-events-none"
+                aria-hidden="true"
+                tabIndex={-1}
+            />
+
+            {cameraOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-lg rounded-lg border border-border bg-card p-4 shadow-xl">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-lg font-medium">Scan Kamera</h3>
+                                <p className="text-xs text-muted-foreground">Arahkan kamera ke barcode atau QR code.</p>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-md"
+                                onClick={() => setCameraOpen(false)}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <div className="mt-4 overflow-hidden rounded-lg border border-border bg-muted/30">
+                            <video ref={videoRef} className="h-72 w-full object-cover" muted playsInline />
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

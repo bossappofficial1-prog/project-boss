@@ -30,6 +30,7 @@ export type Product = {
 export type OutletDetails = {
     id: string;
     name: string;
+    type: "FNB" | "RETAIL" | "EVENT" | "SERVICE" | "CUSTOM";
     slug?: string;
     description?: string;
     address: string;

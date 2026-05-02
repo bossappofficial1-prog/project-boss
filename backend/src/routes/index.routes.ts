@@ -38,6 +38,7 @@ import memberRouter from "./member.route";
 import loyaltyRouter from "./loyalty.route";
 import pushNotification from "./push-notification.routes";
 import tableRouter from "./table.route";
+import billRouter from "./bill.route";
 
 const apiRouter = Router();
 
@@ -55,6 +56,7 @@ apiRouter.use("/notifications", notificationRouter);
 apiRouter.use("/operating-hours", operatingHoursRouter);
 apiRouter.use("/orders", orderRouter);
 apiRouter.use("/orders/v2", ordersV2Router);
+apiRouter.use("/bills", billRouter);
 apiRouter.use("/outlets", outletRouter);
 apiRouter.use("/payments", paymentRouter);
 apiRouter.use("/pos/v2", posV2Router);

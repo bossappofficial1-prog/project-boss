@@ -10,6 +10,8 @@ export interface PosV2Product {
     price: number;
     stock: number | null;
     unit: string | null;
+    barcode: string | null;
+    sku: string | null;
     goodsId: string | null;
     serviceId: string | null;
     ticketId: string | null;
