@@ -11,107 +11,108 @@ import { config } from "../config";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 
 export const notFound = (req: Request, res: Response): void => {
-    ResponseUtil.notFound(res, `Route ${req.originalUrl} not found`);
+  ResponseUtil.notFound(res, `Route ${req.originalUrl} not found`);
 };
 
-export const errorHandler = (
-    err: any,
-    req: Request,
-    res: Response,
-    next: NextFunction
-): void => {
-    let statusCode: number = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message: string = Messages.INTERNAL_ERROR;
-    let errors: any[] | undefined;
+export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction): void => {
+  let statusCode: number = HttpStatus.INTERNAL_SERVER_ERROR;
+  let message: string = Messages.INTERNAL_ERROR;
+  let errors: any[] | undefined;
 
-    // ─── Handle Zod Validation Error ─────────────────────────────────
-    if (err instanceof ZodError) {
-        statusCode = HttpStatus.BAD_REQUEST;
-        message = "Invalid input data.";
-        errors = err.errors.map((e) => ({
-            path: e.path.join('.'),
-            message: e.message
-        }));
+  // ─── Handle Zod Validation Error ─────────────────────────────────
+  if (err instanceof ZodError) {
+    statusCode = HttpStatus.BAD_REQUEST;
+    message = "Invalid input data.";
+    errors = err.errors.map((e) => ({
+      path: e.path.join("."),
+      message: e.message,
+    }));
+  }
+
+  // ─── JWT Errors ─────────────────────────────────────────────────
+  else if (err.name === "JsonWebTokenError") {
+    statusCode = HttpStatus.UNAUTHORIZED;
+    message = "Invalid token";
+  } else if (err.name === "TokenExpiredError") {
+    statusCode = HttpStatus.UNAUTHORIZED;
+    message = "Token expired";
+  }
+
+  // ─── Multer Error (File Upload) ─────────────────────────────────
+  else if (err instanceof MulterError) {
+    statusCode = HttpStatus.BAD_REQUEST;
+    message = err.message || "File upload failed";
+  } else if (err.message?.startsWith("File type")) {
+    statusCode = HttpStatus.BAD_REQUEST;
+    message = err.message;
+  } else if (err instanceof PrismaClientKnownRequestError) {
+    switch (err.code) {
+      case "P2002":
+        statusCode = HttpStatus.CONFLICT;
+        message = "Data yang sama sudah terdaftar";
+        break;
+      case "P2025":
+        statusCode = HttpStatus.NOT_FOUND;
+        message = "Record not found";
+        break;
+      default:
+        message = `Database error: ${err.message}`;
     }
+  }
 
-    // ─── JWT Errors ─────────────────────────────────────────────────
-    else if (err.name === 'JsonWebTokenError') {
-        statusCode = HttpStatus.UNAUTHORIZED;
-        message = "Invalid token";
-    } else if (err.name === 'TokenExpiredError') {
-        statusCode = HttpStatus.UNAUTHORIZED;
-        message = "Token expired";
-    }
+  // ─── AppError (Custom Error) ────────────────────────────────────
+  else if (err instanceof AppError) {
+    statusCode = err.statusCode ?? HttpStatus.INTERNAL_SERVER_ERROR;
+    message = err.message;
+    errors = err.errors;
+  }
 
-    // ─── Multer Error (File Upload) ─────────────────────────────────
-    else if (err instanceof MulterError) {
-        statusCode = HttpStatus.BAD_REQUEST;
-        message = err.message || "File upload failed";
-    } else if (err.message?.startsWith("File type")) {
-        statusCode = HttpStatus.BAD_REQUEST;
-        message = err.message;
-    }
+  // ─── Body Parser JSON Syntax Error ──────────────────────────────
+  else if (err instanceof SyntaxError && "body" in err) {
+    statusCode = HttpStatus.BAD_REQUEST;
+    message = "Invalid JSON in request body";
+  }
 
-    else if (err instanceof PrismaClientKnownRequestError) {
-        switch (err.code) {
-            case 'P2002':
-                statusCode = HttpStatus.CONFLICT;
-                message = 'Unique constraint failed (duplicate data)';
-                break;
-            case 'P2025':
-                statusCode = HttpStatus.NOT_FOUND;
-                message = 'Record not found';
-                break;
-            default:
-                message = `Database error: ${err.message}`;
-        }
-    }
+  // ─── Log Error ──────────────────────────────────────────────────
+  logger.error(
+    {
+      message: err.message || "Unknown error",
+      stack: err.stack,
+      method: req.method,
+      url: req.originalUrl,
+      ip: req.ip,
+      userAgent: req.get("User-Agent"),
+      statusCode,
+      errorRaw: err, // Log the whole thing for debugging
+    },
+    "Unhandled Error",
+  );
 
-    // ─── AppError (Custom Error) ────────────────────────────────────
-    else if (err instanceof AppError) {
-        statusCode = err.statusCode ?? HttpStatus.INTERNAL_SERVER_ERROR;
-        message = err.message;
-        errors = err.errors;
-    }
+  if (
+    message.includes("Email sudah terdaftar dengan akun lain.") &&
+    statusCode === HttpStatus.CONFLICT
+  ) {
+    const clientUrl = config.CLIENT_URL[0]?.trim() || "http://localhost:3010";
 
-    // ─── Body Parser JSON Syntax Error ──────────────────────────────
-    else if (err instanceof SyntaxError && 'body' in err) {
-        statusCode = HttpStatus.BAD_REQUEST;
-        message = 'Invalid JSON in request body';
-    }
+    return res.redirect(
+      `${clientUrl}/auth/login?error=${encodeURIComponent("Email sudah terdaftar dengan akun lain.")}`,
+    );
+  }
 
-    // ─── Log Error ──────────────────────────────────────────────────
-    logger.error({
-        message: err.message || "Unknown error",
-        stack: err.stack,
-        method: req.method,
-        url: req.originalUrl,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        statusCode,
-        errorRaw: err // Log the whole thing for debugging
-    }, 'Unhandled Error');
+  if (config.NODE_ENV === "development") {
+    console.log("Error Detail:", {
+      message: err.message,
+      statusCode,
+      errors,
+    });
+  }
 
-    if (message.includes("Email sudah terdaftar dengan akun lain.") && statusCode === HttpStatus.CONFLICT) {
-        const clientUrl = config.CLIENT_URL[0]?.trim() || 'http://localhost:3010';
-
-        return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent("Email sudah terdaftar dengan akun lain.")}`);
-    }
-
-    if (config.NODE_ENV === 'development') {
-        console.log("Error Detail:", {
-            message: err.message,
-            statusCode,
-            errors
-        });
-    }
-
-    // ─── Send Error Response ────────────────────────────────────────
-    ResponseUtil.error(res, message, errors, statusCode);
+  // ─── Send Error Response ────────────────────────────────────────
+  ResponseUtil.error(res, message, errors, statusCode);
 };
 
 export const asyncHandler = (fn: Function) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        Promise.resolve(fn(req, res, next)).catch(next);
-    };
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
 };
