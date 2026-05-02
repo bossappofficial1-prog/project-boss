@@ -161,12 +161,12 @@ model Outlet {
   business            Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
   memberships         OutletMembership[]
   operatingHours      OutletOperatingHours[]
+  tables              OutletTable[]
   transferRequests    OutletTransferRequest[]
   products            Product[]
   staff               Staff[]
   expenses            Expense[]
   receiptSettings     receiptSetting?
-  tables              OutletTable[]
 
   @@index([businessId])
   @@index([slug])
@@ -181,11 +181,11 @@ model OutletTable {
   capacity  Int         @default(2)
   status    TableStatus @default(AVAILABLE)
   outletId  String
-  outlet    Outlet      @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  orders    Order[]
-  bills     Bill[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+  bills     Bill[]
+  orders    Order[]
+  outlet    Outlet      @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
   @@index([outletId])
 }
@@ -284,8 +284,6 @@ model ProductMedia {
 model ProductGoods {
   id           String     @id @default(uuid())
   productId    String     @unique
-  barcode      String?    @unique
-  sku          String?
   currentStock Int        @default(0)
   minStock     Int?
   maxStock     Int?
@@ -294,6 +292,8 @@ model ProductGoods {
   sellingPrice Float
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  barcode      String?    @unique
+  sku          String?
   product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   stockLogs    StockLog[]
 
@@ -484,15 +484,15 @@ model Order {
   tableNumber              String?
   tableId                  String?
   billId                   String?
-  bill                     Bill?                 @relation(fields: [billId], references: [id], onDelete: SetNull)
   pointHistories           LoyaltyPointHistory[]
   memberships              Membership[]
+  bill                     Bill?                 @relation(fields: [billId], references: [id])
   guestCustomer            GuestCustomer         @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
   handledByStaff           Staff?                @relation(fields: [handledByStaffId], references: [id])
   outlet                   Outlet                @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  table                    OutletTable?          @relation(fields: [tableId], references: [id])
   items                    OrderItem[]
   transaction              Transaction?
-  table                    OutletTable?          @relation(fields: [tableId], references: [id])
 
   @@index([guestCustomerId])
   @@index([outletId])
@@ -505,16 +505,16 @@ model Order {
 }
 
 model Bill {
-  id        String     @id @default(uuid())
+  id        String      @id @default(uuid())
   outletId  String
   tableId   String
-  status    BillStatus @default(OPEN)
-  total     Float      @default(0)
+  status    BillStatus  @default(OPEN)
+  total     Float       @default(0)
+  createdAt DateTime    @default(now())
+  closedAt  DateTime?
+  updatedAt DateTime    @updatedAt
   table     OutletTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
   orders    Order[]
-  createdAt DateTime   @default(now())
-  closedAt  DateTime?
-  updatedAt DateTime   @updatedAt
 
   @@index([tableId])
   @@index([outletId, status])
@@ -631,27 +631,20 @@ model Banner {
 model receiptSetting {
   id             String  @id @default(uuid())
   outletId       String  @unique
-
-  // Kertas
-  printWidth     Int     @default(80) // enum: 58 | 80
+  printWidth     Int     @default(80)
   endFeed        Int     @default(3)
   autoCut        Boolean @default(true)
   copies         Int     @default(1)
-
-  // Logo
   showLogo       Boolean @default(false)
   photoString    String?
   imageThreshold Int     @default(180)
-
-  // Konten
   headerText     String?
   footerText     String?
   showCashier    Boolean @default(true)
   showCustomer   Boolean @default(true)
   showQR         Boolean @default(false)
   qrContent      String?
-
-  outlet Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  outlet         Outlet  @relation(fields: [outletId], references: [id], onDelete: Cascade)
 }
 
 enum UserRole {
