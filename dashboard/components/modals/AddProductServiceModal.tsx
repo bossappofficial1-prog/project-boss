@@ -9,6 +9,7 @@ import { FormFieldConfig, ReusableForm } from "../ui/reuseable-form";
 import { ProductItem } from "@/hooks/useProductsData";
 import ServiceOperatingHoursSection from "./ServiceOperatingHoursSection";
 import ServiceMediaUploader, { MediaItem } from "./ServiceMediaUploader";
+import { useOutletContext } from "@/components/providers/OutletProvider";
 
 type Props = {
   open: boolean;
@@ -134,6 +135,7 @@ export default function AddOrEditProductServiceModal({
   onSuccess,
   action = "edit",
 }: Props) {
+  const { allowedProductTypes } = useOutletContext();
   const isEdit = action === "edit";
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
 
@@ -436,7 +438,7 @@ export default function AddOrEditProductServiceModal({
           label: "Tiket (Event)",
           value: "TICKET",
         },
-      ],
+      ].filter(opt => allowedProductTypes.includes(opt.value)),
     },
     {
       name: "status",

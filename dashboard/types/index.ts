@@ -215,7 +215,15 @@ export interface UpdateOutletDto {
 export enum ProductStatus {
   AVAILABLE = 'AVAILABLE',
   OUT_OF_STOCK = 'OUT_OF_STOCK',
-  DISCONTINUED = 'DISCONTINUED'
+  DISCONTINUED = 'DISCONTINUED',
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE'
+}
+
+export enum ProductType {
+  GOODS = 'GOODS',
+  SERVICE = 'SERVICE',
+  TICKET = 'TICKET'
 }
 
 export interface Product {
@@ -226,6 +234,7 @@ export interface Product {
   stock: number;
   image?: string;
   status: ProductStatus;
+  type: ProductType;
   outletId: string;
   outlet?: Outlet;
   createdAt: string;
