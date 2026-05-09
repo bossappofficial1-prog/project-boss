@@ -12,13 +12,15 @@ export interface OutletSummary {
 export interface CheckoutData {
     outlets: OutletSummary[];
     subtotal: number;
-    grandTotal: number;      // Total keseluruhan
-    selectedPaymentMethod?: PaymentMethod; // Untuk flow ke payment
+    tax: number;
+    grandTotal: number;
+    selectedPaymentMethod?: PaymentMethod;
 }
 
 export interface CheckoutProps {
     outlets: OutletSummary[];
     subtotal: number;
+    tax?: number;
     totalTransactionFee?: number;
     applicationFee?: number;
     grandTotal: number;

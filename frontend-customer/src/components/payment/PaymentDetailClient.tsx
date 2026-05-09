@@ -665,6 +665,16 @@ export function PaymentDetailClient({
             </span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
+          {(paymentData.taxAmount ?? 0) > 0 && (
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">
+                PPN
+              </span>
+              <span>
+                {formatCurrency(paymentData.taxAmount!)}
+              </span>
+            </div>
+          )}
           {showTxFee && (
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">

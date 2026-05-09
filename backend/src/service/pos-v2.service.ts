@@ -52,6 +52,7 @@ export class PosV2Service {
                 image: p.image,
                 type: p.type,
                 status: p.status,
+                taxPercentage: p.taxPercentage ?? null,
                 price,
                 stock: p.type === "GOODS" ? (p.goods?.currentStock ?? 0) : null,
                 unit: p.type === "GOODS" ? (p.goods?.unit ?? "pcs") : null,

@@ -464,6 +464,21 @@ export default function ProductsContent() {
                       },
                     },
                     {
+                      accessorKey: "taxPercentage",
+                      header: "Pajak",
+                      enableSorting: false,
+                      cell(props) {
+                        const p = props.row.original as ProductItem;
+                        return p.taxPercentage ? (
+                          <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30">
+                            {p.taxPercentage}%
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        );
+                      },
+                    },
+                    {
                       accessorKey: "detail",
                       header: "Stok / Durasi",
                       enableSorting: false,

@@ -244,15 +244,16 @@ model Staff {
 }
 
 model Product {
-  id          String          @id @default(uuid())
-  name        String
-  description String?
-  type        ProductType
-  status      ServiceStatus   @default(ACTIVE)
-  outletId    String
-  image       String?         @default("/defaults/default-product-image.png")
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id            String          @id @default(uuid())
+  name          String
+  description   String?
+  type          ProductType
+  status        ServiceStatus   @default(ACTIVE)
+  outletId      String
+  image         String?         @default("/defaults/default-product-image.png")
+  taxPercentage Float?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   orderItems  OrderItem[]
   outlet      Outlet          @relation(fields: [outletId], references: [id], onDelete: Cascade)
   goods       ProductGoods?
@@ -464,6 +465,7 @@ model LoyaltyPointHistory {
 model Order {
   id                       String                @id @default(uuid())
   totalAmount              Float
+  taxAmount                Float                 @default(0)
   discountAmount           Float                 @default(0)
   pointsRedeemed           Int                   @default(0)
   bookingDate              DateTime?

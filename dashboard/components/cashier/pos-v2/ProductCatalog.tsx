@@ -290,9 +290,16 @@ export function ProductCatalog({
                                     <p className="line-clamp-2 text-sm font-medium leading-tight text-foreground">
                                         {product.name}
                                     </p>
-                                    <p className="text-xs font-bold text-primary">
-                                        Rp {product.price.toLocaleString("id-ID")}
-                                    </p>
+                                    <div className="flex items-center gap-1.5">
+                                        <p className="text-xs font-bold text-primary">
+                                            Rp {product.price.toLocaleString("id-ID")}
+                                        </p>
+                                        {product.taxPercentage ? (
+                                            <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30 px-1 py-0.5 rounded border border-amber-500/20">
+                                                +PPN {product.taxPercentage}%
+                                            </span>
+                                        ) : null}
+                                    </div>
 
                                     {/* Meta info */}
                                     {isGoods && !outOfStock && (

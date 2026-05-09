@@ -873,6 +873,7 @@ export class PaymentService {
       id: transaction.orderId,
       status: order.orderStatus,
       totalAmount: transaction.amount,
+      taxAmount: order.taxAmount ?? 0,
       outletInfo: {
         name: outlet.name,
         isWithinOperatingHours,

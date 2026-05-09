@@ -61,11 +61,21 @@ export class CheckoutService {
 
     // Calculate totals
     const subtotal = outlets.reduce((total, outlet) => total + outlet.subtotal, 0);
-    const grandTotal = subtotal;
+
+    // Calculate tax per item
+    const tax = cartItems.reduce((total, item) => {
+      if (item.taxPercentage) {
+        return total + Math.round(item.price * item.quantity * (item.taxPercentage / 100));
+      }
+      return total;
+    }, 0);
+
+    const grandTotal = subtotal + tax;
 
     return {
       outlets,
       subtotal,
+      tax,
       grandTotal,
     };
   }

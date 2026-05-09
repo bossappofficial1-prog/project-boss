@@ -203,6 +203,11 @@ export function CartDrawer({ children }: CartDrawerProps) {
 
     const totalItems = getTotalItems();
     const totalPrice = getTotalPrice();
+    const totalTax = items.reduce(
+        (sum, item) => sum + (item.price * item.quantity * ((item.taxPercentage ?? 0) / 100)),
+        0,
+    );
+    const grandTotal = totalPrice + totalTax;
 
     // Group items by outlet
     const itemsByOutlet = items.reduce((acc, item) => {
@@ -344,7 +349,18 @@ export function CartDrawer({ children }: CartDrawerProps) {
                                 )}
 
                                 {/* Total */}
-                                <div className="bg-primary/5 rounded-lg p-4">
+                                <div className="bg-primary/5 rounded-lg p-4 space-y-1.5">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground">{t("subtotal") ?? "Subtotal"}</span>
+                                        <span className="font-medium">Rp{totalPrice.toLocaleString('id-ID')}</span>
+                                    </div>
+                                    {totalTax > 0 && (
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">PPN</span>
+                                            <span className="font-medium">Rp{totalTax.toLocaleString('id-ID')}</span>
+                                        </div>
+                                    )}
+                                    <div className="h-px bg-border/50 my-1" />
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <span className="font-semibold text-lg">{t("total")}</span>
@@ -353,7 +369,7 @@ export function CartDrawer({ children }: CartDrawerProps) {
                                             </p>
                                         </div>
                                         <span className="font-bold text-2xl text-primary">
-                                            Rp{totalPrice.toLocaleString('id-ID')}
+                                            Rp{grandTotal.toLocaleString('id-ID')}
                                         </span>
                                     </div>
                                 </div>

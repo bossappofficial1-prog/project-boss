@@ -10,6 +10,7 @@ export interface PaymentDetailData {
     id: string;
     status: string;
     totalAmount: number;
+    taxAmount?: number;
     outletInfo?: PaymentDetailOutletInfo;
     payment: PaymentDetailPayment;
     customerDetails: PaymentDetailCustomer;

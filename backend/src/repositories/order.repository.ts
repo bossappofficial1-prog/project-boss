@@ -9,6 +9,7 @@ export class OrderRepository {
         id: true,
         createdAt: true,
         totalAmount: true,
+        taxAmount: true,
         discountAmount: true,
         pointsRedeemed: true,
         transaction: { select: { id: true } },

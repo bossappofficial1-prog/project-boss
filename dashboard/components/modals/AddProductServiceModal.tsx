@@ -27,6 +27,7 @@ const baseSchema = z.object({
   name: z.string().min(2, "Nama produk minimal 2 karakter"),
   description: z.string().optional(),
   status: ProductStatus,
+  taxPercentage: z.coerce.number().min(0).nullable().optional(),
   file: z
     .union([
       z.instanceof(File).refine((f) => f.size <= 3 * 1024 * 1024, "Maksimal 3MB"),
@@ -162,6 +163,7 @@ export default function AddOrEditProductServiceModal({
         name: initialData.name ?? "",
         description: initialData.description ?? "",
         status: initialData.status ?? ("ACTIVE" as const),
+        taxPercentage: initialData.taxPercentage ?? null,
         file: initialData.image,
       };
 
@@ -271,11 +273,15 @@ export default function AddOrEditProductServiceModal({
     const otherValues = values as FormData;
     const formType = otherValues.get("type") as ProductFormValues["type"] | null;
 
+    const rawTax = otherValues.get("taxPercentage");
+    const taxPercentage = rawTax !== null && rawTax !== "" ? Number(rawTax) : null;
+
     const payload: any = {
       name: otherValues.get("name"),
       description: otherValues.get("description") || undefined,
       type: formType,
       status: otherValues.get("status"),
+      taxPercentage: taxPercentage,
       outletId,
     };
 
@@ -463,6 +469,13 @@ export default function AddOrEditProductServiceModal({
       type: "textarea",
       colSpan: "full",
       placeholder: "Deskripsikan produk anda",
+    },
+    {
+      name: "taxPercentage",
+      label: "Pajak (%)",
+      type: "number",
+      colSpan: 3,
+      placeholder: "Contoh: 11",
     },
 
     // product === goods

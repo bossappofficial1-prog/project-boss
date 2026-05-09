@@ -104,6 +104,13 @@ const OrderSummary: React.FC<CheckoutProps & {
                         <span>{formatCurrency(subtotal)}</span>
                     </div>
 
+                    {(props.tax ?? 0) > 0 && (
+                        <div className="flex justify-between text-[13px]">
+                            <span className="text-muted-foreground">PPN</span>
+                            <span>{formatCurrency(props.tax ?? 0)}</span>
+                        </div>
+                    )}
+
                     {selectedPaymentMethod && (
                         <>
                             {dynamicTransactionFee > 0 && (
@@ -163,7 +170,7 @@ const CheckoutButton: React.FC<{
     );
 };
 
-const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, grandTotal }) => {
+const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, tax, grandTotal }) => {
     const { tableId, tableName, tableOutletId } = useCart();
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
     const router = useRouter();
@@ -210,7 +217,7 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, grandTotal }
             return {
                 dynamicTransactionFee: 0,
                 dynamicApplicationFee: 0,
-                dynamicGrandTotal: subtotal
+                dynamicGrandTotal: subtotal + (tax ?? 0)
             };
         }
 
@@ -231,9 +238,9 @@ const CheckoutPage: React.FC<CheckoutProps> = ({ outlets, subtotal, grandTotal }
         return {
             dynamicTransactionFee: transactionFee,
             dynamicApplicationFee: appFee,
-            dynamicGrandTotal: subtotal + transactionFee + appFee
+            dynamicGrandTotal: subtotal + (tax ?? 0) + transactionFee + appFee
         };
-    }, [selectedPaymentMethod, subtotal]);
+    }, [selectedPaymentMethod, subtotal, tax]);
 
     const handleSelectPayment = (method: PaymentMethod) => {
         setSelectedPaymentMethod(method);

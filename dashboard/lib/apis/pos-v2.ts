@@ -7,6 +7,7 @@ export interface PosV2Product {
     image: string | null;
     type: "GOODS" | "SERVICE" | "TICKET";
     status: "ACTIVE";
+    taxPercentage: number | null;
     price: number;
     stock: number | null;
     unit: string | null;

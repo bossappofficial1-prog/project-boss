@@ -44,6 +44,11 @@ export function CartPanel({
     onScheduleService,
 }: CartPanelProps) {
     const subtotal = items.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
+    const taxAmount = items.reduce(
+        (sum, line) => sum + line.product.price * line.quantity * ((line.product.taxPercentage ?? 0) / 100),
+        0,
+    );
+    const total = subtotal + taxAmount;
     const totalItems = items.reduce((sum, line) => sum + line.quantity, 0);
     const hasUnscheduled = items.some(
         (line) => line.product.type === "SERVICE" && (!line.bookingStart || !line.bookingEnd)
@@ -217,11 +222,29 @@ export function CartPanel({
 
             <Separator />
 
-            {/* Total */}
+            {/* Subtotal */}
             <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Subtotal</span>
-                <span className="text-base font-bold text-foreground tabular-nums">
+                <span className="text-sm font-medium text-foreground tabular-nums">
                     Rp {fmt.format(subtotal)}
+                </span>
+            </div>
+
+            {/* Tax */}
+            {taxAmount > 0 && (
+                <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">PPN</span>
+                    <span className="text-sm font-medium text-foreground tabular-nums">
+                        Rp {fmt.format(taxAmount)}
+                    </span>
+                </div>
+            )}
+
+            {/* Total */}
+            <div className="flex items-center justify-between border-t border-border pt-2">
+                <span className="text-sm font-semibold text-foreground">Total</span>
+                <span className="text-base font-bold text-primary tabular-nums">
+                    Rp {fmt.format(total)}
                 </span>
             </div>
         </div>

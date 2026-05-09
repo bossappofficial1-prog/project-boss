@@ -61,10 +61,10 @@ export const productApi = {
   getById: (productId: string) =>
     apiClient.get(`/products/${productId}`).then(res => res.data.data),
 
-  create: (productData: { name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status?: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; outletId: string; }) =>
+  create: (productData: { name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status?: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; outletId: string; taxPercentage?: number | null; }) =>
     apiClient.post('/products', productData).then(res => res.data.data),
 
-  update: (productId: string, productData: Partial<{ name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; }>) =>
+  update: (productId: string, productData: Partial<{ name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; taxPercentage?: number | null; }>) =>
     apiClient.patch(`/products/${productId}`, productData).then(res => res.data.data),
 
   delete: (productId: string) =>
