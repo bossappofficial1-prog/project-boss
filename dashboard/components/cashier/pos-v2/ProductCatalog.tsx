@@ -52,10 +52,9 @@ export function ProductCatalog({
     const filtered = filter === "ALL" ? products : products.filter((p) => p.type === filter);
 
     const availableFilters = useMemo((): FilterType[] => {
-        if (outletType === OutletType.RETAIL) return ["ALL", "GOODS"];
+        if (outletType === OutletType.RETAIL || outletType === OutletType.FNB) return ["ALL", "GOODS"];
         if (outletType === OutletType.SERVICE) return ["ALL", "SERVICE"];
         if (outletType === OutletType.EVENT) return ["ALL", "TICKET"];
-        if (outletType === OutletType.FNB) return ["ALL", "GOODS", "SERVICE"];
         return ["ALL", "GOODS", "SERVICE", "TICKET"];
     }, [outletType]);
 

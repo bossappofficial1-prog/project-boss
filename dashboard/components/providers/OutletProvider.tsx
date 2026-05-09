@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { useOutletsQuery } from '@/hooks/useOutlets';
-import { Outlet } from '@/types';
+import { Outlet, OutletType, ProductType } from '@/types';
 
 interface OutletContextType {
     selectedOutlet: Outlet | null;
@@ -12,6 +12,7 @@ interface OutletContextType {
     isLoading: boolean;
     error: string | null;
     refetch: () => void;
+    allowedProductTypes: string[];
 }
 
 const OutletContext = createContext<OutletContextType | null>(null);
@@ -117,6 +118,23 @@ export function OutletProvider({ children }: OutletProviderProps) {
         }
     };
 
+    const allowedProductTypes = useMemo(() => {
+        if (!selectedOutlet) return [ProductType.GOODS, ProductType.SERVICE, ProductType.TICKET];
+        
+        switch (selectedOutlet.type) {
+            case OutletType.FNB:
+            case OutletType.RETAIL:
+                return [ProductType.GOODS];
+            case OutletType.EVENT:
+                return [ProductType.TICKET];
+            case OutletType.SERVICE:
+                return [ProductType.SERVICE];
+            case OutletType.CUSTOM:
+            default:
+                return [ProductType.GOODS, ProductType.SERVICE, ProductType.TICKET];
+        }
+    }, [selectedOutlet]);
+
     const contextValue: OutletContextType = {
         selectedOutlet,
         selectedOutletId: selectedOutlet?.id || null,
@@ -124,7 +142,8 @@ export function OutletProvider({ children }: OutletProviderProps) {
         setSelectedOutlet: handleSetSelectedOutlet,
         isLoading,
         error: error?.message || null,
-        refetch
+        refetch,
+        allowedProductTypes
     };
 
     return (
