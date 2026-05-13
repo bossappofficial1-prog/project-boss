@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { ProductItem, useProductsData } from "@/hooks/useProductsData";
-import { productApi } from "@/lib/api";
 import { toast } from "sonner";
 import { resolveUploadImageUrl } from "@/lib/url";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -11,10 +10,9 @@ import { useOutletContext } from "@/components/providers/OutletProvider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { DataTable } from "@/components/ui/data-table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import ImportDataModal from "@/components/modals/ImportDataModal";
@@ -89,19 +87,29 @@ interface OverviewCardProps {
   variant?: "default" | "warning" | "danger" | "success";
 }
 
-function OverviewCard({ icon, label, value, description, variant = "default" }: OverviewCardProps) {
+function OverviewCard({
+  icon,
+  label,
+  value,
+  description,
+  variant = "default",
+}: OverviewCardProps) {
   const styles = {
     default: "bg-muted text-muted-foreground border-border",
-    warning: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-    danger: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
-    success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    warning:
+      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    danger:
+      "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    success:
+      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   };
 
   return (
     <Card className="rounded-md gap-0 py-0 border-border/80 bg-background shadow-sm transition-all hover:shadow-md">
       <CardContent className="flex flex-col items-start gap-3 p-4">
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-md border shadow-sm ${styles[variant]}`}>
+          className={`flex h-10 w-10 items-center justify-center rounded-md border shadow-sm ${styles[variant]}`}
+        >
           {icon}
         </div>
         <div className="space-y-0.5">
@@ -127,7 +135,9 @@ export default function ProductsContent() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showTicketDetail, setShowTicketDetail] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(
+    null,
+  );
   const [actionLoading, setActionLoading] = useState(false);
   const [action, setAction] = useState<"add" | "edit">("add");
   const [isExporting, setIsExporting] = useState(false);
@@ -172,7 +182,8 @@ export default function ProductsContent() {
     const lowStock = goods.filter((p) => {
       if (!p.goods) return false;
       if (p.goods.currentStock === 0) return true;
-      if (p.goods.minStock && p.goods.currentStock <= p.goods.minStock) return true;
+      if (p.goods.minStock && p.goods.currentStock <= p.goods.minStock)
+        return true;
       return false;
     });
     return {
@@ -212,12 +223,17 @@ export default function ProductsContent() {
   if (isLoading && products.length === 0) return <PageSkeleton />;
 
   if (!isLoading && !hasBusinessProfile && !hasOutlet) {
-    return <EmptyOutletState onAddOutlet={() => router.push(`/owner/dashboard#add-outlet`)} />;
+    return (
+      <EmptyOutletState
+        onAddOutlet={() => router.push(`/owner/dashboard#add-outlet`)}
+      />
+    );
   }
 
   const pageSizeOptions = (() => {
     const base = [5, 10, 20, 50, 100];
-    const norm = Number.isFinite(itemsPerPage) && itemsPerPage > 0 ? itemsPerPage : 10;
+    const norm =
+      Number.isFinite(itemsPerPage) && itemsPerPage > 0 ? itemsPerPage : 10;
     if (!base.includes(norm)) base.push(norm);
     return base.sort((a, b) => a - b);
   })();
@@ -238,7 +254,8 @@ export default function ProductsContent() {
                   setShowAddOrEditModal(true);
                 }}
                 disabled={!hasOutlet}
-                className="h-9 px-4 gap-2 font-bold text-xs uppercase tracking-wider">
+                className="h-9 px-4 gap-2 font-bold text-xs uppercase tracking-wider"
+              >
                 <Plus className="h-4 w-4" /> Tambah Produk
               </Button>
               <Button
@@ -246,7 +263,8 @@ export default function ProductsContent() {
                 variant="outline"
                 onClick={() => setShowImportModal(true)}
                 disabled={!hasOutlet}
-                className="h-9 px-4 font-bold text-xs uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none">
+                className="h-9 px-4 font-bold text-xs uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none"
+              >
                 <Upload className="mr-2 h-4 w-4" /> Import
               </Button>
               <Button
@@ -254,8 +272,10 @@ export default function ProductsContent() {
                 variant="outline"
                 onClick={handleExport}
                 disabled={isExporting || products.length === 0}
-                className="h-9 px-4 font-bold text-xs uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none">
-                <Download className="mr-2 h-4 w-4" /> {isExporting ? "Exporting..." : "Export"}
+                className="h-9 px-4 font-bold text-xs uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none"
+              >
+                <Download className="mr-2 h-4 w-4" />{" "}
+                {isExporting ? "Exporting..." : "Export"}
               </Button>
             </div>
           }
@@ -268,14 +288,17 @@ export default function ProductsContent() {
               <AlertCircle className="h-4 w-4" />
             </div>
             <div className="flex-1">
-              <p className="text-xs font-bold uppercase tracking-tight">Gagal Memuat Data</p>
+              <p className="text-xs font-bold uppercase tracking-tight">
+                Gagal Memuat Data
+              </p>
               <p className="text-[10px] font-medium opacity-80">{error}</p>
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setError(null)}
-              className="h-8 w-8 p-0 hover:bg-rose-500/10">
+              className="h-8 w-8 p-0 hover:bg-rose-500/10"
+            >
               ✕
             </Button>
           </div>
@@ -312,12 +335,18 @@ export default function ProductsContent() {
             label="Stok Rendah"
             value={overview.lowStock}
             variant={overview.lowStock > 0 ? "danger" : "default"}
-            description={overview.lowStock > 0 ? "Perlu tindakan" : "Semua aman"}
+            description={
+              overview.lowStock > 0 ? "Perlu tindakan" : "Semua aman"
+            }
           />
         </div>
 
         {/* Data Table */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-4"
+        >
           <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1">
             <TabsTrigger value="all">Semua</TabsTrigger>
             {allowedProductTypes.includes("GOODS") && (
@@ -336,7 +365,8 @@ export default function ProductsContent() {
               (tab) =>
                 tab === "all" ||
                 (tab === "goods" && allowedProductTypes.includes("GOODS")) ||
-                (tab === "service" && allowedProductTypes.includes("SERVICE")) ||
+                (tab === "service" &&
+                  allowedProductTypes.includes("SERVICE")) ||
                 (tab === "ticket" && allowedProductTypes.includes("TICKET")),
             )
             .map((tab) => (
@@ -404,7 +434,8 @@ export default function ProductsContent() {
                                     : p.type === "SERVICE"
                                       ? "text-purple-600 dark:text-purple-400 border-purple-500/20"
                                       : "text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-                                )}>
+                                )}
+                              >
                                 {p.type === "GOODS"
                                   ? "Barang"
                                   : p.type === "SERVICE"
@@ -456,7 +487,9 @@ export default function ProductsContent() {
                             )}
                             {p.type === "TICKET" && p.ticket && (
                               <p className="text-[10px] font-medium text-muted-foreground italic">
-                                Kuota: {p.ticket.totalQuota - p.ticket.soldCount} tersisa
+                                Kuota:{" "}
+                                {p.ticket.totalQuota - p.ticket.soldCount}{" "}
+                                tersisa
                               </p>
                             )}
                           </div>
@@ -470,7 +503,10 @@ export default function ProductsContent() {
                       cell(props) {
                         const p = props.row.original as ProductItem;
                         return p.taxPercentage ? (
-                          <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30">
+                          <Badge
+                            variant="outline"
+                            className="text-amber-600 border-amber-500/30 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30"
+                          >
                             {p.taxPercentage}%
                           </Badge>
                         ) : (
@@ -496,14 +532,17 @@ export default function ProductsContent() {
                                 <div
                                   className={cn(
                                     "h-1.5 w-1.5 rounded-full",
-                                    isLow ? "bg-rose-500 animate-pulse" : "bg-emerald-500",
+                                    isLow
+                                      ? "bg-rose-500 animate-pulse"
+                                      : "bg-emerald-500",
                                   )}
                                 />
                                 <p
                                   className={cn(
                                     "text-sm font-bold tabular-nums tracking-tight",
                                     isLow ? "text-rose-600" : "text-foreground",
-                                  )}>
+                                  )}
+                                >
                                   {p.goods?.currentStock ?? 0} {p.goods?.unit}
                                 </p>
                               </div>
@@ -516,22 +555,28 @@ export default function ProductsContent() {
                           );
                         }
                         if (p.type === "TICKET" && p.ticket) {
-                          const available = p.ticket.totalQuota - p.ticket.soldCount;
+                          const available =
+                            p.ticket.totalQuota - p.ticket.soldCount;
                           const isSoldOut = available <= 0;
                           return (
                             <div className="space-y-1">
                               <p
                                 className={cn(
                                   "text-sm font-bold tabular-nums tracking-tight",
-                                  isSoldOut ? "text-rose-600" : "text-foreground",
-                                )}>
+                                  isSoldOut
+                                    ? "text-rose-600"
+                                    : "text-foreground",
+                                )}
+                              >
                                 {isSoldOut
                                   ? "HABIS"
                                   : `${available} / ${p.ticket.totalQuota} TIKET`}
                               </p>
                               <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
                                 <Clock className="h-3 w-3" />
-                                {new Date(p.ticket.eventDate).toLocaleDateString("id-ID", {
+                                {new Date(
+                                  p.ticket.eventDate,
+                                ).toLocaleDateString("id-ID", {
                                   day: "numeric",
                                   month: "short",
                                   year: "numeric",
@@ -571,7 +616,8 @@ export default function ProductsContent() {
                           {
                             icon: Eye,
                             variant: "ghost" as const,
-                            className: "h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-600",
+                            className:
+                              "h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-600",
                             onClick(r: ProductItem) {
                               setSelectedProduct(r);
                               setShowTicketDetail(true);
@@ -582,7 +628,8 @@ export default function ProductsContent() {
                     {
                       icon: PenBox,
                       variant: "ghost" as const,
-                      className: "h-8 w-8 hover:bg-primary/10 hover:text-primary",
+                      className:
+                        "h-8 w-8 hover:bg-primary/10 hover:text-primary",
                       onClick(r: ProductItem) {
                         setSelectedProduct(r);
                         setAction("edit");
@@ -592,7 +639,8 @@ export default function ProductsContent() {
                     {
                       icon: Trash2,
                       variant: "ghost" as const,
-                      className: "h-8 w-8 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600",
+                      className:
+                        "h-8 w-8 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600",
                       onClick(r: ProductItem) {
                         setSelectedProduct(r);
                         setShowDeleteModal(true);

@@ -79,7 +79,9 @@ export default function StaffManagementPage() {
 
       const finalPayload = {
         ...payload,
-        email: payload.email ? `${payload.email}${payload.domain || "@bossapp.id"}` : payload.email,
+        email: payload.email
+          ? `${payload.email}${payload.domain || "@bossapp.id"}`
+          : payload.email,
       };
 
       if (modalMode === "create") {
@@ -135,7 +137,11 @@ export default function StaffManagementPage() {
   );
 
   if (!selectedOutlet)
-    return <EmptyOutletState onAddOutlet={() => router.push("/owner/dashboard#add-outlet")} />;
+    return (
+      <EmptyOutletState
+        onAddOutlet={() => router.push("/owner/dashboard#add-outlet")}
+      />
+    );
 
   return (
     <div className="space-y-6 pb-12 animate-fade-in">
@@ -151,15 +157,17 @@ export default function StaffManagementPage() {
             </h1>
           </div>
           <p className="text-sm text-muted-foreground font-medium max-w-2xl">
-            Atur petugas kasir untuk <span className="text-foreground font-bold">{outletName}</span>
-            . Kelola akses masuk mereka ke sistem Point of Sale (POS).
+            Atur petugas kasir untuk{" "}
+            <span className="text-foreground font-bold">{outletName}</span>.
+            Kelola akses masuk mereka ke sistem Point of Sale (POS).
           </p>
         </div>
 
         <Button
           type="button"
           onClick={handleOpenCreate}
-          className="h-11 px-6 gap-3 font-black uppercase tracking-widest text-[10px] shadow-sm border border-primary/20 transition-all hover:bg-primary/90">
+          className="h-11 px-6 gap-3 font-black uppercase tracking-widest text-[10px] shadow-sm border border-primary/20 transition-all hover:bg-primary/90"
+        >
           <UserPlus className="h-4 w-4" /> Tambah Kasir Baru
         </Button>
       </div>
@@ -197,9 +205,11 @@ export default function StaffManagementPage() {
             className={cn(
               "flex items-center gap-4 p-4 rounded-md border bg-card shadow-sm transition-all hover:shadow-md",
               stat.border,
-            )}>
+            )}
+          >
             <div
-              className={`h-12 w-12 rounded-md ${stat.bg} ${stat.color} flex items-center justify-center border border-current/10`}>
+              className={`h-12 w-12 rounded-md ${stat.bg} ${stat.color} flex items-center justify-center border border-current/10`}
+            >
               <stat.icon className="h-6 w-6" />
             </div>
             <div className="space-y-0.5">

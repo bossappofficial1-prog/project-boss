@@ -6,10 +6,10 @@ on:
       - develop
       - main
     paths:
-      - 'frontend-customer/**'
-      - '.github/workflows/deploy-frontend-customer.yml'
-      - 'docker-compose.dev.yml'
-      - 'docker-compose.prod.yml'
+      - "customer/**"
+      - ".github/workflows/deploy-customer.yml"
+      - "docker-compose.dev.yml"
+      - "docker-compose.prod.yml"
 
 jobs:
   deploy_dev:
@@ -33,10 +33,10 @@ jobs:
       - name: Build and push Frontend Customer
         uses: docker/build-push-action@v6
         with:
-          context: ./frontend-customer
-          file: ./frontend-customer/Dockerfile
+          context: ./customer
+          file: ./customer/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USER }}/project-frontend-customer:development
+          tags: ${{ secrets.DOCKER_USER }}/project-customer:development
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -74,10 +74,10 @@ jobs:
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/boss-project/dev
-            echo "Pulling frontend-customer image..."
-            docker compose -f docker-compose.dev.yml pull frontend-customer
-            echo "Starting frontend-customer service..."
-            docker compose -f docker-compose.dev.yml up -d --no-deps --build frontend-customer
+            echo "Pulling customer image..."
+            docker compose -f docker-compose.dev.yml pull customer
+            echo "Starting customer service..."
+            docker compose -f docker-compose.dev.yml up -d --no-deps --build customer
             echo "Frontend Customer deployed successfully"
 
       - name: Send Telegram Notification (Deploy)
@@ -115,10 +115,10 @@ jobs:
       - name: Build and push Frontend Customer
         uses: docker/build-push-action@v6
         with:
-          context: ./frontend-customer
-          file: ./frontend-customer/Dockerfile
+          context: ./customer
+          file: ./customer/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USER }}/project-frontend-customer:production
+          tags: ${{ secrets.DOCKER_USER }}/project-customer:production
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |

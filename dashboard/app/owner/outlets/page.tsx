@@ -22,7 +22,7 @@ export default function OutletsDashboard() {
   const { data: dashboardData, kpiCards, isPending, topProductsData, lowStockProducts, productTypeData, topPaymentMethod } = useOutletAnalytics(selectedOutlet?.id);
   const router = useRouter();
 
-  if (!selectedOutlet?.id) return <EmptyOutletState onAddOutlet={() => router.push('/owner/dashboard#add-outlet')} />;
+  if (!selectedOutlet?.id) return <EmptyOutletState onAddOutlet={() => router.push('/owner#add-outlet')} />;
   if (isPending) {
     return (
       <Card className="rounded-md py-5">

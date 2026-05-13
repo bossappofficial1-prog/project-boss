@@ -94,8 +94,8 @@ services:
     networks:
       - default
 
-  frontend-customer:
-    image: ${DOCKER_USER:-pitok}/project-frontend-customer:production
+  customer:
+    image: ${DOCKER_USER:-pitok}/project-customer:production
     environment:
       NODE_ENV: production
       SERVER_API_URL: https://api.bossapp.id/api/v1

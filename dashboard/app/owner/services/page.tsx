@@ -66,7 +66,7 @@ export default function ServicesPage() {
                 </ul>
                 <div className="mt-6">
                   <button
-                    onClick={() => (window.location.href = '/owner/dashboard')}
+                    onClick={() => (window.location.href = '/owner')}
                     className="inline-flex items-center px-5 py-3 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
                   >
                     Oke, ke Dashboard

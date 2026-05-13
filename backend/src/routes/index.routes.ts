@@ -39,6 +39,7 @@ import loyaltyRouter from "./loyalty.route";
 import pushNotification from "./push-notification.routes";
 import tableRouter from "./table.route";
 import billRouter from "./bill.route";
+import toolsRouter from "./tools.routes";
 
 const apiRouter = Router();
 
@@ -75,6 +76,7 @@ apiRouter.use("/subscription-plans", subscriptionPlanRouter);
 apiRouter.use("/tickets", ticketRouter);
 apiRouter.use("/transactions", transactionRouter);
 apiRouter.use("/tables", tableRouter);
+apiRouter.use("/tools", toolsRouter);
 apiRouter.use("/upload", uploadRouter);
 apiRouter.use("/users", userRouter);
 

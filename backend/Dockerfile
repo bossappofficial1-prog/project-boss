@@ -1,25 +1,34 @@
-# --- Stage 1: Builder (Build + prune production deps) ---
+# --- Dependencies ---
+FROM oven/bun:1-alpine AS deps
+WORKDIR /app
+
+COPY package.json bun.lockb* ./
+
+RUN bun install --frozen-lockfile
+
+# --- Builder ---
 FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
 ARG DATABASE_URL
-ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV DATABASE_URL=$DATABASE_URL
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
-COPY package.json bun.lockb* ./
-COPY prisma ./prisma/
-
-RUN bun install --frozen-lockfile
-
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN bunx prisma generate \
-    && bun run build \
-    && rm -rf node_modules \
-    && bun install --production --frozen-lockfile \
-    && bunx prisma generate
+RUN bunx prisma generate
+RUN bun run build
 
-# --- Stage 2: Runner (Image Final) ---
+# --- Production Dependencies ---
+FROM oven/bun:1-alpine AS prod-deps
+WORKDIR /app
+
+COPY package.json bun.lockb* ./
+
+RUN bun install --production --frozen-lockfile
+
+# --- Runner ---
 FROM oven/bun:1-alpine AS runner
 WORKDIR /app
 
@@ -38,16 +47,13 @@ RUN if [ "$INSTALL_CHROMIUM" = "true" ]; then \
         font-noto-emoji; \
     fi
 
-COPY package.json bun.lockb* ./
-
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/prisma ./prisma
 
-# Buat folder uploads dengan permission yang benar
 RUN mkdir -p /app/uploads && chmod 777 /app/uploads
 
 VOLUME ["/app/uploads"]

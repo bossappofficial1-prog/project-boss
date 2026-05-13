@@ -19,7 +19,7 @@ export default function Home() {
       if (user?.role === 'ADMIN') {
         router.push('/admin/dashboard');
       } else {
-        router.push('/owner/dashboard');
+        router.push('/owner');
       }
     } catch {
       router.push('/auth/login');
