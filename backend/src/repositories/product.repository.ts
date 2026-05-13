@@ -1,4 +1,4 @@
-import { Product, Prisma, ProductType } from "@prisma/client";
+import { Product, Prisma, ProductType, ServiceStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateProductInput, UpdateProductInput } from "../schemas/product.schema";
 
@@ -31,8 +31,11 @@ export class ProductRepository {
           status: data.status,
           outletId: data.outletId,
           image: data.image,
+          taxPercentage: data.taxPercentage,
           goods: {
             create: {
+              barcode: data.goods.barcode,
+              sku: data.goods.sku,
               currentStock: data.goods.currentStock,
               minStock: data.goods.minStock,
               unit: data.goods.unit,
@@ -54,6 +57,7 @@ export class ProductRepository {
           status: data.status,
           outletId: data.outletId,
           image: data.image,
+          taxPercentage: data.taxPercentage,
           service: {
             create: {
               durationMinutes: data.service.durationMinutes,
@@ -97,6 +101,7 @@ export class ProductRepository {
           status: data.status,
           outletId: data.outletId,
           image: data.image,
+          taxPercentage: data.taxPercentage,
           ticket: {
             create: {
               sellingPrice: data.ticket.sellingPrice,
@@ -151,6 +156,26 @@ export class ProductRepository {
             },
           },
         },
+      },
+    });
+  }
+
+  static async findByBarcode(barcode: string, outletId: string) {
+    return db.product.findFirst({
+      where: {
+        outletId,
+        status: ServiceStatus.ACTIVE,
+        type: ProductType.GOODS,
+        goods: {
+          is: {
+            barcode,
+          },
+        },
+      },
+      include: {
+        goods: true,
+        service: true,
+        ticket: true,
       },
     });
   }
@@ -232,11 +257,21 @@ export class ProductRepository {
       ...(data.description !== undefined && { description: data.description }),
       ...(data.status !== undefined && { status: data.status }),
       ...(data.image !== undefined && { image: data.image }),
+      ...(data.taxPercentage !== undefined && { taxPercentage: data.taxPercentage }),
     };
 
     if (goods) {
       updateData.goods = {
-        update: goods,
+        update: {
+          ...(goods.barcode !== undefined && { barcode: goods.barcode }),
+          ...(goods.sku !== undefined && { sku: goods.sku }),
+          ...(goods.currentStock !== undefined && { currentStock: goods.currentStock }),
+          ...(goods.minStock !== undefined && { minStock: goods.minStock }),
+          ...(goods.maxStock !== undefined && { maxStock: goods.maxStock }),
+          ...(goods.unit !== undefined && { unit: goods.unit }),
+          ...(goods.averageHpp !== undefined && { averageHpp: goods.averageHpp }),
+          ...(goods.sellingPrice !== undefined && { sellingPrice: goods.sellingPrice }),
+        },
       };
     }
 

@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, ShoppingBag, ShoppingCart, Package, Receipt, LayoutGrid, Ticket, Store } from "lucide-react";
+import { LogOut, ShoppingBag, ShoppingCart, Package, Receipt, LayoutGrid, Ticket, Store, Table2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -11,16 +11,18 @@ import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { apiClient } from "@/lib/apis/base";
 import { cn } from "@/lib/utils";
-import ReceiptSetting from "../ReceiptSetting";
+import { PrinterSettings } from "../PrinterSettings";
+import { Badge } from "@/components/ui/badge";
 import { useOutletContext } from "../providers/CashierOutletProvider";
-import { PrinterSettingDialog } from "./PrinterSettingDialog";
+import { OutletType } from "@/types";
 
 interface CashierNavbarProps {
   cashierName: string;
   outletName: string;
+  outletType?: OutletType;
 }
 
-export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
+export function CashierNavbar({ cashierName, outletName, outletType = OutletType.CUSTOM }: CashierNavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -58,14 +60,21 @@ export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
     placeholderData: (previousData) => previousData,
   });
 
-  const CASHIER_NAV_ITEMS = useMemo(() => [
-    { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
-    { href: "/cashier/orders", badge: data?.orderBadgeCount, label: "Pesanan Barang", icon: ShoppingBag },
-    { href: "/cashier/queue", badge: data?.serviceBadgeCount, label: "Antrian", icon: LayoutGrid },
-    { href: "/cashier/pob", label: "POB", icon: Package },
-    { href: "/cashier/ticket-scan", label: "Scan Tiket", icon: Ticket },
-    { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
-  ], [data]);
+  const CASHIER_NAV_ITEMS = useMemo(() => {
+    const items = [
+      { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
+      { href: "/cashier/orders", badge: data?.orderBadgeCount, label: "Pesanan Barang", icon: ShoppingBag, requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM] },
+      { href: "/cashier/tables", label: "Meja & Bill", icon: Table2, requiredTypes: [OutletType.FNB] },
+      { href: "/cashier/queue", badge: data?.serviceBadgeCount, label: "Antrian", icon: LayoutGrid, requiredTypes: [OutletType.SERVICE, OutletType.FNB, OutletType.CUSTOM] },
+      { href: "/cashier/pob", label: "POB", icon: Package, requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM] },
+      { href: "/cashier/ticket-scan", label: "Scan Tiket", icon: Ticket, requiredTypes: [OutletType.EVENT, OutletType.CUSTOM] },
+      { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
+    ];
+
+    return items.filter(item =>
+      !item.requiredTypes || item.requiredTypes.includes(outletType)
+    );
+  }, [data, outletType]);
 
   useEffect(() => {
     CASHIER_NAV_ITEMS.forEach((item) => {
@@ -84,9 +93,14 @@ export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
             <Store className="h-5 w-5" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-sm md:text-base font-bold leading-tight text-foreground truncate max-w-[140px] md:max-w-[250px]">
-              {outletName}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm md:text-base font-bold leading-tight text-foreground truncate max-w-[140px] md:max-w-[250px]">
+                {outletName}
+              </h1>
+              <Badge variant="secondary" className="h-5 px-2 text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border-none">
+                {outletType}
+              </Badge>
+            </div>
             <p className="text-[11px] md:text-xs font-medium text-muted-foreground truncate max-w-[140px] md:max-w-[250px]">
               Kasir: {cashierName}
             </p>
@@ -116,7 +130,7 @@ export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
                 {!!item.badge && item.badge > 0 && (
                   <span className={cn(
                     "ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold transition-colors",
-                    isActive ? "bg-primary-foreground text-primary" : "bg-destructive text-destructive-foreground"
+                    isActive ? "bg-primary-foreground text-primary" : "bg-destructive text-primary-foreground"
                   )}>
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
@@ -128,8 +142,7 @@ export function CashierNavbar({ cashierName, outletName }: CashierNavbarProps) {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
-          <PrinterSettingDialog />
-          <ReceiptSetting outletId={selectedOutletId!} />
+          <PrinterSettings outletId={selectedOutletId!} />
           <ThemeToggle />
           <Button onClick={handleLogout} variant="outline" size="sm" className="hidden sm:flex rounded-full px-4">
             <LogOut className="mr-2 h-4 w-4" />

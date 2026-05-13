@@ -12,8 +12,8 @@ import apiRouter from "./routes/index.routes";
 import { requestLogger } from "./middleware/logging.middleware";
 import path from "path";
 import passport from "./config/passport";
-import internalApiRouter from './routes/internal-api.route';
-import { traffictMiddleware } from "./middleware/traffict.middleware"
+import internalApiRouter from "./routes/internal-api.route";
+import { traffictMiddleware } from "./middleware/traffict.middleware";
 
 const app = express();
 
@@ -81,7 +81,7 @@ app.use(
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(traffictMiddleware)
+app.use(traffictMiddleware);
 app.use(compression());
 
 // HTTP request logger (pino-http) — non-blocking, logs after response is sent
@@ -114,7 +114,7 @@ app.get("/health", (req, res) => {
 
 app.use(App.API_PREFIX, apiRouter);
 
-app.use(App.API_PREFIX, apiRouter)
+app.use(App.API_PREFIX, apiRouter);
 app.use(`${App.API_PREFIX}/internal`, internalApiRouter);
 
 app.use(notFound);

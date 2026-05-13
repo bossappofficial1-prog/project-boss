@@ -2,6 +2,7 @@ import { PaginatedResponse } from '@/types';
 import { apiClient, API_BASE_URL } from './base';
 import { Product } from '@/hooks/useProducts';
 import { ProductItem } from '@/hooks/useProductsData';
+import type { PosV2Product } from './pos-v2';
 
 export const productApi = {
   // File operations (using fetch for blob handling)
@@ -60,10 +61,10 @@ export const productApi = {
   getById: (productId: string) =>
     apiClient.get(`/products/${productId}`).then(res => res.data.data),
 
-  create: (productData: { name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status?: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; outletId: string; }) =>
+  create: (productData: { name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status?: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; outletId: string; taxPercentage?: number | null; }) =>
     apiClient.post('/products', productData).then(res => res.data.data),
 
-  update: (productId: string, productData: Partial<{ name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; }>) =>
+  update: (productId: string, productData: Partial<{ name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; taxPercentage?: number | null; }>) =>
     apiClient.patch(`/products/${productId}`, productData).then(res => res.data.data),
 
   delete: (productId: string) =>
@@ -71,6 +72,10 @@ export const productApi = {
 
   search: (query: string) =>
     apiClient.get(`/products/search?name=${encodeURIComponent(query)}`).then(res => res.data.data),
+
+  getByBarcode: (code: string, outletId: string): Promise<PosV2Product> =>
+    apiClient.get(`/products/barcode/${encodeURIComponent(code)}?outletId=${encodeURIComponent(outletId)}`)
+      .then(res => res.data.data),
 
   confirmImport: (importData: { outletId: string; data: any[]; }) =>
     apiClient.post('/products/import/confirm', importData).then(res => res.data.data),

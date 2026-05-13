@@ -51,6 +51,17 @@ export const posV2GetCashSummary = asyncHandler(async (req: Request, res: Respon
     return ResponseUtil.success(res, summary);
 });
 
+export const posV2GetOpenOrders = asyncHandler(async (req: Request, res: Response) => {
+    const outletId = req.query.outletId as string;
+
+    if (!outletId) {
+        return ResponseUtil.badRequest(res, "Parameter outletId wajib diisi");
+    }
+
+    const orders = await PosV2Service.getOpenOrders(outletId);
+    return ResponseUtil.success(res, orders);
+});
+
 export const posV2GetRecentOrders = asyncHandler(async (req: Request, res: Response) => {
     const outletId = req.query.outletId as string;
 

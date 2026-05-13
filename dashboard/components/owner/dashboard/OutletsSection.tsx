@@ -70,7 +70,7 @@ export default function OutletsSection({
   const handleToOutletDashboard = (outlet: Outlet, e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     e.preventDefault();
     e.stopPropagation();
-    router.push(`/owner/dashboard/outlets`);
+    router.push(`/owner/outlets`);
     setSelectedOutlet(outlet);
   }
 

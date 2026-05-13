@@ -14,7 +14,8 @@ import {
     UserCheck,
     MessageSquare,
     Phone,
-    CreditCard
+    CreditCard,
+    LayoutGrid
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ interface FocusCardProps {
     onDetail?: (entry: QueueV2Entry) => void;
     onViewProof?: (entry: QueueV2Entry) => void;
     isPending?: boolean;
+    isKitchenView?: boolean;
 }
 
 const STATUS_CONFIG: Record<
@@ -124,7 +126,15 @@ function formatShortDate(dateStr: string): string {
     return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
 }
 
-export function FocusCard({ entry, onPrimaryAction, onCancel, onDetail, onViewProof, isPending }: FocusCardProps) {
+export function FocusCard({
+    entry,
+    onPrimaryAction,
+    onCancel,
+    onDetail,
+    onViewProof,
+    isPending = false,
+    isKitchenView = false
+}: FocusCardProps) {
     const config = STATUS_CONFIG[entry.orderStatus] ?? STATUS_CONFIG.PROCESSING;
     const primary = PRIMARY_ACTIONS[entry.orderStatus];
     const isTerminal = entry.orderStatus === "COMPLETED" || entry.orderStatus === "CANCELLED";
@@ -164,15 +174,30 @@ export function FocusCard({ entry, onPrimaryAction, onCancel, onDetail, onViewPr
                                     <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">ID:</span>
                                     <span className="text-xs font-bold tabular-nums">#{entry.id.slice(-8).toUpperCase()}</span>
                                 </div>
-                                <div className="hidden sm:block h-3 w-px bg-border/40" />
-                                <div className="flex items-center gap-2">
-                                    <Phone className="w-3.5 h-3.5 opacity-40" />
-                                    <span className="text-xs font-bold tabular-nums">{entry.customerPhone || "08xx-xxxx-xxxx"}</span>
-                                </div>
+                                {entry.tableNumber && (
+                                    <>
+                                        <div className="hidden sm:block h-3 w-px bg-border/40" />
+                                        <div className="flex items-center gap-2">
+                                            <LayoutGrid className="w-3.5 h-3.5 text-primary" />
+                                            <span className="text-xs font-black uppercase tracking-widest text-primary">Meja {entry.tableNumber}</span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
+                            {!isKitchenView && (
+                                <>
+                                    <div className="hidden sm:block h-3 w-px bg-border/40" />
+                                    <div className="flex items-center gap-2">
+                                        <Phone className="w-3.5 h-3.5 opacity-40" />
+                                        <span className="text-xs font-bold tabular-nums">{entry.customerPhone || "08xx-xxxx-xxxx"}</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
+                </div>
 
+                {!isKitchenView && (
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" className="h-9 px-3 font-bold text-[10px] uppercase tracking-widest" onClick={() => onDetail?.(entry)}>
                             <MessageSquare className="w-3.5 h-3.5 mr-2" />
@@ -182,59 +207,61 @@ export function FocusCard({ entry, onPrimaryAction, onCancel, onDetail, onViewPr
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
+                )}
+            </div>
+
+            {/* Info Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-muted/30 p-4 rounded-md border border-border/40 space-y-2">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-60">Informasi Layanan</p>
+                    <div className="space-y-1">
+                        <p className="text-sm font-bold text-foreground leading-tight">{entry.productName}</p>
+                        {entry.goodsCount > 0 && (
+                            <p className="text-[10px] font-bold text-primary flex items-center gap-1.5">
+                                <ShoppingBag className="w-3 h-3" />
+                                {entry.goodsCount} PRODUK TAMBAHAN
+                            </p>
+                        )}
+                    </div>
                 </div>
 
-                {/* Info Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-muted/30 p-4 rounded-md border border-border/40 space-y-2">
-                        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-60">Informasi Layanan</p>
+                <div className="bg-muted/30 p-4 rounded-md border border-border/40 space-y-2">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-60">Waktu & Durasi</p>
+                    <div className="flex items-center gap-4">
                         <div className="space-y-1">
-                            <p className="text-sm font-bold text-foreground leading-tight">{entry.productName}</p>
-                            {entry.goodsCount > 0 && (
-                                <p className="text-[10px] font-bold text-primary flex items-center gap-1.5">
-                                    <ShoppingBag className="w-3 h-3" />
-                                    {entry.goodsCount} PRODUK TAMBAHAN
-                                </p>
-                            )}
+                            <p className="text-sm font-bold text-foreground tabular-nums">
+                                {entry.scheduledStart ? formatTime(entry.scheduledStart) : "Sekarang"}
+                            </p>
+                            <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest flex items-center gap-1">
+                                <Timer className="w-3 h-3" />
+                                {entry.productDuration || 0} Mnt
+                            </p>
                         </div>
-                    </div>
-
-                    <div className="bg-muted/30 p-4 rounded-md border border-border/40 space-y-2">
-                        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-60">Waktu & Durasi</p>
-                        <div className="flex items-center gap-4">
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold text-foreground tabular-nums">
-                                    {entry.scheduledStart ? formatTime(entry.scheduledStart) : "Sekarang"}
-                                </p>
-                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest flex items-center gap-1">
-                                    <Timer className="w-3 h-3" />
-                                    {entry.productDuration || 0} Mnt
-                                </p>
+                        {isFuture && entry.scheduledStart && (
+                            <div className="ml-auto px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[9px] font-bold text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
+                                <CalendarClock className="w-3 h-3" />
+                                {formatShortDate(entry.scheduledStart)}
                             </div>
-                            {isFuture && entry.scheduledStart && (
-                                <div className="ml-auto px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[9px] font-bold text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
-                                    <CalendarClock className="w-3 h-3" />
-                                    {formatShortDate(entry.scheduledStart)}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="bg-muted/30 p-4 rounded-md border border-border/40 space-y-2">
-                        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-60">Staf Pelaksana</p>
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
-                                <User className="w-4 h-4 text-primary" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-bold text-foreground">{entry.staffName || "Belum Ditentukan"}</p>
-                                <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">Teknisi</p>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Footer Section */}
+                <div className="bg-muted/30 p-4 rounded-md border border-border/40 space-y-2">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-60">Staf Pelaksana</p>
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                            <User className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-foreground">{entry.staffName || "Belum Ditentukan"}</p>
+                            <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">Teknisi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer Section */}
+            {!isKitchenView && (
                 <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-6">
                     <div className="flex flex-col">
                         <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-60 mb-0.5">Total Pembayaran</p>
@@ -308,7 +335,7 @@ export function FocusCard({ entry, onPrimaryAction, onCancel, onDetail, onViewPr
                         )}
                     </div>
                 </div>
-            </div>
+            )}
         </Card>
     );
 }

@@ -1,5 +1,7 @@
 // Shared types for the Dashboard domain
 
+import { OutletType } from ".";
+
 export interface DashboardStats {
   totalProducts: number;
   totalServices: number;
@@ -53,6 +55,7 @@ export interface OutletDetail extends Outlet {
   operatingHours: OperatingHours[];
   isOpen: boolean;
   image?: string; // Note: API uses 'image' instead of 'imageUrl'
+  type: OutletType;
   description?: string;
 }
 

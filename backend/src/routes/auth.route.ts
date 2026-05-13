@@ -7,6 +7,7 @@ import { checkEmailExists } from "../validators/user.validator";
 import { protect } from "../middleware/auth.middleware";
 import passport from "../config/passport";
 import { updatePasswordSchema, updateProfileSchema } from "../schemas/profile-setting.schema";
+import { config } from "../config";
 
 const authRouter = Router();
 
@@ -68,17 +69,48 @@ authRouter.post(
 
 authRouter.get("/google",
     (req, res, next) => {
-        const redirectPath = req.query.redirect || '/owner/dashboard';
+        const redirectPath = typeof req.query.redirect === "string" ? req.query.redirect : "/owner";
+        const isPopup = req.query.popup === "1";
+        const state = JSON.stringify({
+            redirect: redirectPath,
+            popup: isPopup,
+        });
+
+        if (isPopup) {
+            const cookiePath = req.baseUrl || "/api/v1/auth";
+
+            res.cookie("google_oauth_popup", "1", {
+                httpOnly: true,
+                sameSite: "lax",
+                secure: config.NODE_ENV === "production",
+                maxAge: 10 * 60 * 1000,
+                path: cookiePath,
+            });
+            res.cookie("google_oauth_redirect", redirectPath, {
+                httpOnly: true,
+                sameSite: "lax",
+                secure: config.NODE_ENV === "production",
+                maxAge: 10 * 60 * 1000,
+                path: cookiePath,
+            });
+        }
 
         passport.authenticate("google", {
             scope: ["profile", "email"],
-            state: redirectPath as string
+            state,
+            session: false,
         })(req, res, next);
     }
 );
 
 authRouter.get("/google/callback",
-    passport.authenticate("google", { failureRedirect: "/auth/login?error=oauth_failed" }),
+    (req, res, next) => {
+        passport.authenticate("google", { session: false }, (error: unknown, user: any) => {
+            (req as any).authError = error;
+            (req as any).user = user || undefined;
+            next();
+        })(req, res, next);
+    },
     googleOAuthCallbackController
 );
 

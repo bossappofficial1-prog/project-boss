@@ -26,7 +26,7 @@ import { generateReceiptHtml } from "../service/helpers/receipt-template";
 export const getOrderReceiptController = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;
   let browser;
-  
+
   try {
     const receiptData = await getOrderReceiptService(id);
 
@@ -52,13 +52,12 @@ export const getOrderReceiptController = asyncHandler(async (req: Request, res: 
     const bodyHandle = await page.$('body');
     const boundingBox = await bodyHandle?.boundingBox();
     const contentHeight = Math.ceil(boundingBox?.height || 120);
-    
-    const printWidth = receiptData.printWidth || 58;
-    const printHeight = receiptData.printHeight === 'auto' ? contentHeight + "px" : (receiptData.printHeight || 120) + "mm";
 
+    const printWidth = receiptData.printWidth || 80;
+    
     const pdfBuffer = await page.pdf({
       width: `${printWidth}mm`,
-      height: printHeight,
+      height: contentHeight + "px",
       printBackground: true,
       pageRanges: "1",
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -106,12 +105,14 @@ export const getOrderReceiptPrintController = asyncHandler(async (req: Request, 
   const boundingBox = await bodyHandle?.boundingBox();
   const contentHeight = Math.ceil(boundingBox?.height || 400);
 
-  // Take screenshot
+  await page.setViewport({ width: pixelWidth, height: contentHeight });
+
   const screenshot = await page.screenshot({
-    fullPage: true,
+    clip: { x: 0, y: 0, width: pixelWidth, height: contentHeight }, // bukan fullPage
     type: 'png',
     omitBackground: true
   });
+
   await browser.close();
 
   // 2. Process Image with Sharp for Thermal Printer
@@ -119,7 +120,7 @@ export const getOrderReceiptPrintController = asyncHandler(async (req: Request, 
   const { data, info } = await sharp(screenshot)
     .resize(pixelWidth)
     .grayscale()
-    .threshold(180) // Brighter threshold for sharper 1-bit result
+    .threshold(receiptData.imageThreshold || 180) // Use saved threshold
     .raw()
     .toBuffer({ resolveWithObject: true });
 
@@ -146,11 +147,18 @@ export const getOrderReceiptPrintController = asyncHandler(async (req: Request, 
   encoder.initialize()
     .alignLeft() // Always left align image payload to ensure correct bit positioning
     .image(packedData, pixelWidth, info.height)
-    .feed(3)
-    .cut();
+    .feed(receiptData.endFeed || 3);
+  
+  if (receiptData.autoCut !== false) {
+    encoder.cut();
+  }
+
+  const payload = encoder.encode();
+  const copies = receiptData.copies || 1;
+  const finalBuffer = Buffer.concat(Array(copies).fill(payload));
 
   res.contentType("application/octet-stream");
-  res.send(encoder.encode());
+  res.send(finalBuffer);
 });
 
 export const updateOrderStatusController = asyncHandler(async (req: Request, res: Response) => {

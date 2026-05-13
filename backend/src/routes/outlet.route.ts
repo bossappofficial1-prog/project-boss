@@ -19,6 +19,14 @@ import {
     getOutletBySlugController,
     getOutletSlugsController
 } from "../controller/outlet.controller";
+import {
+    createTransferRequestController,
+    acceptTransferRequestController,
+    rejectTransferRequestController,
+    cancelTransferRequestController,
+    getIncomingTransfersController,
+    getOutgoingTransfersController
+} from "../controller/outlet-transfer.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOutletSchema, updateOutletSchema, updateOutletLocationSchema } from "../schemas/outlet.schema";
 import { authorize, protect } from "../middleware/auth.middleware";
@@ -32,6 +40,14 @@ outletRouter.get("/", getAllOutletsController);
 outletRouter.get("/featured", getFeaturedOutletsController);
 outletRouter.get("/nearby", findNearbyOutletsController);
 outletRouter.get("/slugs", getOutletSlugsController);
+
+// Transfer Routes (Must be before /:id)
+outletRouter.get("/transfers/incoming", protect, getIncomingTransfersController);
+outletRouter.get("/transfers/outgoing", protect, getOutgoingTransfersController);
+outletRouter.post("/transfers/:id/accept", protect, acceptTransferRequestController);
+outletRouter.post("/transfers/:id/reject", protect, rejectTransferRequestController);
+outletRouter.delete("/transfers/:id/cancel", protect, cancelTransferRequestController);
+
 outletRouter.get("/:id", getOutletByIdController);
 outletRouter.get("/slug/:slug", getOutletBySlugController);
 outletRouter.get("/business/:businessId", getOutletsByBusinessIdController);
@@ -41,6 +57,7 @@ outletRouter.post("/", protect, authorize(UserRole.OWNER), requireActiveSubscrip
 outletRouter.patch("/:id", protect, authorize(UserRole.OWNER), requireActiveSubscription, validateSchema(updateOutletSchema), updateOutletController);
 outletRouter.delete("/:id", protect, authorize(UserRole.OWNER), requireActiveSubscription, deleteOutletController);
 outletRouter.patch("/:outletId/location", protect, authorize(UserRole.OWNER), requireActiveSubscription, validateSchema(updateOutletLocationSchema), updateOutletLocationController);
+outletRouter.post("/:outletId/transfer", protect, authorize(UserRole.OWNER), createTransferRequestController);
 
 // QRIS Management Routes
 outletRouter.post(

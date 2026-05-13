@@ -3,10 +3,19 @@ import { apiClient } from "./base";
 export interface ReceiptSettingType {
     "id": string,
     "outletId": string,
-    "photoString": string | null,
+    "printWidth": number,
+    "endFeed": number,
+    "autoCut": boolean,
+    "copies": number,
     "showLogo": boolean,
-    "printHeight": number | null,
-    "printWidth": number | null
+    "photoString": string | null,
+    "imageThreshold": number,
+    "headerText": string | null,
+    "footerText": string | null,
+    "showCashier": boolean,
+    "showCustomer": boolean,
+    "showQR": boolean,
+    "qrContent": string | null
 }
 
 export class ReceiptSettingService {

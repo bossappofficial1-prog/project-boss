@@ -14,6 +14,7 @@ export interface OrderCreationResult {
   appFee: number;
   feeBearer: "CUSTOMER" | "OWNER";
   totalAmount: number;
+  taxAmount: number;
 }
 
 /**
@@ -186,6 +187,21 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
         productDetails.push({ ...product, orderQuantity: item.quantity });
       }
 
+      // Tax Calculation per item
+      let totalTax = 0;
+      for (const prod of productDetails) {
+        const itemQty = prod.orderQuantity ?? 1;
+        const itemPrice = prod.type === "GOODS"
+          ? prod.goods?.sellingPrice
+          : prod.type === "TICKET"
+            ? prod.ticket?.sellingPrice
+            : prod.service?.sellingPrice;
+        const taxPct = (prod as any).taxPercentage;
+        if (taxPct != null && taxPct > 0 && itemPrice != null) {
+          totalTax += Math.round(itemPrice * itemQty * (taxPct / 100));
+        }
+      }
+
       // Amount Constraints
       if (subTotal < 1000) throw new AppError("Minimum order is Rp 1.000", HttpStatus.BAD_REQUEST);
       if (subTotal > 50000000)
@@ -197,7 +213,7 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
         (data.paymentMethod === "qris" && !!data.onlinePaymentChannel);
       const midtransFee = isDigitalPayment ? Math.ceil(subTotal * 0.02) : 0;
       const appFee = isDigitalPayment ? Math.ceil(subTotal * 0.03) : 0;
-      const totalAmount = subTotal;
+      const totalAmount = subTotal + totalTax;
 
       // 5. Check overlapping bookings for ad-hoc (non-slot) service orders
       const serviceItems = productDetails.filter((p) => p.type === "SERVICE");
@@ -261,12 +277,14 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
           guestCustomerId: customer.id,
           outletId,
           totalAmount,
+          taxAmount: totalTax,
           midtransFee,
           appFee,
           paymentStatus: data.paymentMethod === "cash" ? "SUCCESS" : "PENDING",
           bookingDate: slotStart ?? (data.bookingDate ? new Date(data.bookingDate) : null),
           orderStatus: !bookingSlotId && data.paymentMethod === "cash" ? "COMPLETED" : "CONFIRMED",
           handledByStaffId: handledByStaffId,
+          tableNumber: data.tableNumber,
         },
       });
 
@@ -348,7 +366,7 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
         }
       }
 
-      return { order, midtransFee, appFee, feeBearer: "CUSTOMER", totalAmount };
+      return { order, midtransFee, appFee, feeBearer: "CUSTOMER", totalAmount, taxAmount: totalTax };
     });
   } catch (error) {
     console.error("[POS Order Create Error] Payload:", JSON.stringify(data, null, 2));

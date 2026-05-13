@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     CheckCircle2,
     Store,
@@ -21,6 +21,7 @@ import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
 
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 const getPlanColor = (code: string, isSelected: boolean) => {
     if (isSelected) return "border-red-600 bg-white ring-1 ring-red-600 shadow-md";
@@ -69,6 +70,7 @@ const transformFeaturesToDisplay = (features: PlanFeatures) => {
 export default function RegistrationContent() {
     const searchParams = useSearchParams();
     const router = useRouter()
+    const queryClient = useQueryClient()
     const { data: subscriptionPlans, isLoading } = useSubscriptionPlans()
 
     // Derive all params from URL on every render — no local state needed
@@ -103,9 +105,94 @@ export default function RegistrationContent() {
 
     const [timer, setTimer] = useState(0);
 
-    const handleGoogleLogin = async () => {
+    const handleOAuthResult = useCallback((payload: { redirect?: unknown; error?: unknown }) => {
+        setIsSubmitting(false);
+
+        if (typeof payload.error === 'string' && payload.error) {
+            toast.error(payload.error);
+            return;
+        }
+
+        queryClient.removeQueries({ queryKey: ['auth-me'] });
+        try { sessionStorage.removeItem('auth-me-cache-v2'); } catch { }
+
+        const nextPath = typeof payload.redirect === 'string' ? payload.redirect : '/auth/register?step=2&provider=google';
+        router.push(nextPath);
+    }, [queryClient, router]);
+
+    useEffect(() => {
+        const handleOAuthMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+            if (event.data?.type !== 'google-oauth-callback') return;
+
+            handleOAuthResult(event.data);
+        };
+
+        const handleOAuthStorage = (event: StorageEvent) => {
+            if (event.key !== 'google-oauth-callback' || !event.newValue) return;
+
+            try {
+                handleOAuthResult(JSON.parse(event.newValue));
+                localStorage.removeItem('google-oauth-callback');
+            } catch { }
+        };
+
+        window.addEventListener('message', handleOAuthMessage);
+        window.addEventListener('storage', handleOAuthStorage);
+
+        const channel = 'BroadcastChannel' in window ? new BroadcastChannel('google-oauth') : null;
+        channel?.addEventListener('message', (event) => {
+            if (event.data?.type !== 'google-oauth-callback') return;
+            handleOAuthResult(event.data);
+        });
+
+        return () => {
+            window.removeEventListener('message', handleOAuthMessage);
+            window.removeEventListener('storage', handleOAuthStorage);
+            channel?.close();
+        };
+    }, [handleOAuthResult]);
+
+    const handleGoogleLogin = () => {
         setIsSubmitting(true);
-        window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/google`;
+        const googleLoginUrl = '/auth/google-popup-start';
+        const popupWidth = 480;
+        const popupHeight = 640;
+        const left = window.screenX + (window.outerWidth - popupWidth) / 2;
+        const top = window.screenY + (window.outerHeight - popupHeight) / 2;
+
+        const popup = window.open(
+            googleLoginUrl,
+            'google-oauth-login',
+            `width=${popupWidth},height=${popupHeight},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+        );
+
+        if (!popup) {
+            window.location.href = googleLoginUrl;
+            return;
+        }
+
+        popup.focus();
+
+        const popupClosedCheck = window.setInterval(() => {
+            if (popup.closed) {
+                window.clearInterval(popupClosedCheck);
+                setIsSubmitting(false);
+                return;
+            }
+
+            try {
+                const popupUrl = new URL(popup.location.href);
+                if (popupUrl.origin !== window.location.origin) return;
+
+                if (popupUrl.pathname === '/auth/oauth-popup' || popupUrl.pathname === '/auth/google-popup-start') return;
+
+                const fallbackRedirect = `${popupUrl.pathname}${popupUrl.search}${popupUrl.hash}`;
+                popup.close();
+                window.clearInterval(popupClosedCheck);
+                handleOAuthResult({ redirect: fallbackRedirect });
+            } catch { }
+        }, 500);
     };
 
     const handleRegister = async (formData: any) => {
@@ -185,7 +272,7 @@ export default function RegistrationContent() {
             const invoiceId = data.data?.invoice?.id;
 
             if (formData.selectedPlan === 'TRIAL') {
-                router.push('/owner/dashboard');
+                router.push('/owner');
             } else if (invoiceId) {
                 router.push(`/subscription/payment/${invoiceId}`);
             } else {
@@ -196,7 +283,7 @@ export default function RegistrationContent() {
 
             // Bug 6 fix: jika bisnis sudah ada (misal double submit), langsung redirect ke dashboard
             if (msg.includes('Bisnis sudah terdaftar')) {
-                router.push('/owner/dashboard');
+                router.push('/owner');
                 return;
             }
 

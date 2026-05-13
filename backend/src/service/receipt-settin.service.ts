@@ -9,8 +9,11 @@ export class ReceiptSettingService {
     }
 
     static async getByOutlet(outletId: string) {
-        const receiptSetting = await ReceiptSettingRepository.getByOutlet(outletId)
+        let receiptSetting = await ReceiptSettingRepository.getByOutlet(outletId)
 
+        if (!receiptSetting) {
+            receiptSetting = await ReceiptSettingRepository.create(outletId)
+        }
         return receiptSetting
     }
 }

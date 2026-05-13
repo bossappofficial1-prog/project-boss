@@ -14,3 +14,5 @@ export { outletManagementApi } from './apis/outletManagement';
 export { userApi } from './apis/user';
 export { transactionApi } from './apis/transaction';
 export { staffApi } from './apis/staff';
+export { outletTransferApi } from './apis/outletTransfer';
+export { tableApi } from './apis/table';

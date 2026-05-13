@@ -69,7 +69,7 @@ export default function VerificationPendingPage() {
 
                     // Auto-redirect if already active
                     if (payload.subscription?.status === 'ACTIVE') {
-                        window.location.href = '/owner/dashboard'
+                        window.location.href = '/owner'
                     }
                 } else if (!data.success) {
                     console.error('Failed to fetch status:', data.message)
@@ -113,7 +113,7 @@ export default function VerificationPendingPage() {
 
                     if (payload.subscription?.status === 'ACTIVE') {
                         // Cookie already refreshed by backend, use full reload
-                        window.location.href = '/owner/dashboard'
+                        window.location.href = '/owner'
                     }
                 }
             } catch (err) {
@@ -134,7 +134,7 @@ export default function VerificationPendingPage() {
 
                 if (payload.subscription?.status === 'ACTIVE') {
                     // Cookie already refreshed by backend, use full reload
-                    window.location.href = '/owner/dashboard'
+                    window.location.href = '/owner'
                 }
             } else if (!data.success) {
                 console.error('Failed to refresh status:', data.message)
@@ -221,7 +221,7 @@ export default function VerificationPendingPage() {
                         )}
 
                         <Button
-                            onClick={() => window.location.href = '/owner/dashboard'}
+                            onClick={() => window.location.href = '/owner'}
                             size="lg"
                             className="w-full"
                         >
@@ -414,7 +414,7 @@ export default function VerificationPendingPage() {
                                     : 'Periksa Status'}
                             </Button>
                             <Button
-                                onClick={() => window.location.href = '/owner/dashboard'}
+                                onClick={() => window.location.href = '/owner'}
                                 className="flex-1"
                             >
                                 Ke Dashboard

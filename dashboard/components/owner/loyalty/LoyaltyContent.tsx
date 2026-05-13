@@ -43,7 +43,7 @@ export default function LoyaltyContent() {
 
     const hasOutlet = authData?.outlets && authData.outlets.length > 0;
     if (!hasOutlet && !outletId) {
-        return <EmptyOutletState onAddOutlet={() => router.push(`/owner/dashboard#add-outlet`)} />;
+        return <EmptyOutletState onAddOutlet={() => router.push(`/owner#add-outlet`)} />;
     }
 
     const currentOutletName = authData?.outlets?.find((o) => o.id === outletId)?.name || "Outlet";

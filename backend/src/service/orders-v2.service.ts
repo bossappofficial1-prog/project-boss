@@ -9,6 +9,9 @@ interface OrderItemEntry {
   productName: string;
   quantity: number;
   price: number;
+  productType: string;
+  duration: number | null;
+  createdAt: string;
 }
 
 interface OrderEntry {
@@ -26,6 +29,9 @@ interface OrderEntry {
   createdAt: string;
   updatedAt: string;
   cancellationReason: string | null;
+  tableId: string | null;
+  tableNumber: string | null;
+  staffName: string | null;
 }
 
 interface OrdersBoard {
@@ -66,6 +72,8 @@ function mapOrder(order: any): OrderEntry {
       quantity: item.quantity,
       price: Number(item.priceAtTimeOfOrder),
       productType: item.product.type,
+      duration: item.product.service?.durationMinutes ?? null,
+      createdAt: item.createdAt?.toISOString?.() ?? item.createdAt,
     })),
     paymentMethod: method,
     isManualPayment: isManual,
@@ -74,6 +82,9 @@ function mapOrder(order: any): OrderEntry {
     createdAt: order.createdAt?.toISOString?.() ?? order.createdAt,
     updatedAt: order.updatedAt?.toISOString?.() ?? order.updatedAt,
     cancellationReason: order.cancellationReason ?? null,
+    tableId: order.tableId ?? null,
+    tableNumber: order.tableNumber ?? null,
+    staffName: order.handledByStaff?.name ?? null,
   };
 }
 
@@ -127,7 +138,11 @@ export class OrdersV2Service {
 
       if (status === OrderStatus.AWAITING_PAYMENT) {
         board.pending.push(entry);
-      } else if (status === OrderStatus.PROCESSING || status === OrderStatus.CONFIRMED) {
+      } else if (
+        status === OrderStatus.PROCESSING ||
+        status === OrderStatus.CONFIRMED ||
+        status === OrderStatus.ON_GOING
+      ) {
         board.processing.push(entry);
       } else if (status === OrderStatus.READY) {
         board.ready.push(entry);

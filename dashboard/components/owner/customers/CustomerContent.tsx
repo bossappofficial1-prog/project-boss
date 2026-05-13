@@ -58,7 +58,7 @@ export default function CustomerContent() {
 
   const hasOutlet = authData?.outlets && authData.outlets.length > 0;
   if (!outletLoading && !hasOutlet) {
-    return <EmptyOutletState onAddOutlet={() => router.push(`/owner/dashboard#add-outlet`)} />;
+    return <EmptyOutletState onAddOutlet={() => router.push(`/owner#add-outlet`)} />;
   }
 
   const currentOutletName = authData?.outlets?.find((o) => o.id === outletId)?.name || "Semua Outlet";

@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { useOutletsQuery } from '@/hooks/useOutlets';
-import { Outlet } from '@/types';
+import { Outlet, OutletType, ProductType } from '@/types';
 
 interface OutletContextType {
     selectedOutlet: Outlet | null;
@@ -12,6 +12,7 @@ interface OutletContextType {
     isLoading: boolean;
     error: string | null;
     refetch: () => void;
+    allowedProductTypes: string[];
 }
 
 const OutletContext = createContext<OutletContextType | null>(null);
@@ -71,12 +72,32 @@ export function OutletProvider({ children }: OutletProviderProps) {
     const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
     const outlets = (data?.outlets || []) as Outlet[];
 
-    // Initialize selected outlet when outlets data is available
+    // Keep selected outlet in sync with latest query data.
     useEffect(() => {
-        if (outlets.length > 0 && !selectedOutlet) {
+        if (outlets.length === 0) {
+            if (selectedOutlet) {
+                setSelectedOutlet(null);
+            }
+            return;
+        }
+
+        if (!selectedOutlet) {
             const initialOutlet = getInitialSelectedOutlet(outlets);
             setSelectedOutlet(initialOutlet);
+            return;
         }
+
+        const matchedOutlet = outlets.find((outlet) => outlet.id === selectedOutlet.id);
+
+        if (matchedOutlet) {
+            if (matchedOutlet !== selectedOutlet) {
+                setSelectedOutlet(matchedOutlet);
+            }
+            return;
+        }
+
+        const fallbackOutlet = getInitialSelectedOutlet(outlets);
+        setSelectedOutlet(fallbackOutlet);
     }, [outlets, selectedOutlet]);
 
     const handleSetSelectedOutlet = (outlet: Outlet | null) => {
@@ -97,6 +118,23 @@ export function OutletProvider({ children }: OutletProviderProps) {
         }
     };
 
+    const allowedProductTypes = useMemo(() => {
+        if (!selectedOutlet) return [ProductType.GOODS, ProductType.SERVICE, ProductType.TICKET];
+        
+        switch (selectedOutlet.type) {
+            case OutletType.FNB:
+            case OutletType.RETAIL:
+                return [ProductType.GOODS];
+            case OutletType.EVENT:
+                return [ProductType.TICKET];
+            case OutletType.SERVICE:
+                return [ProductType.SERVICE];
+            case OutletType.CUSTOM:
+            default:
+                return [ProductType.GOODS, ProductType.SERVICE, ProductType.TICKET];
+        }
+    }, [selectedOutlet]);
+
     const contextValue: OutletContextType = {
         selectedOutlet,
         selectedOutletId: selectedOutlet?.id || null,
@@ -104,7 +142,8 @@ export function OutletProvider({ children }: OutletProviderProps) {
         setSelectedOutlet: handleSetSelectedOutlet,
         isLoading,
         error: error?.message || null,
-        refetch
+        refetch,
+        allowedProductTypes
     };
 
     return (

@@ -13,3 +13,4 @@ docs
 test-*.js
 *.md
 .dockerignore
+Dockerfile

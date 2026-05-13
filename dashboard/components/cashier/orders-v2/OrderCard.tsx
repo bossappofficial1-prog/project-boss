@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, ChevronRight, X, Printer, ShoppingBag, CreditCard, ImageIcon } from "lucide-react";
+import { Clock, ChevronRight, X, Printer, ShoppingBag, CreditCard, ImageIcon, LayoutGrid } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { OrderV2Entry, GoodsOrderStatus } from "@/lib/apis/orders-v2";
@@ -99,11 +99,19 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
         >
             <div className="p-3 space-y-2">
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-foreground truncate max-w-[160px]">
-                        {entry.customerName}
-                    </span>
-                    <Badge variant="outline" className={`text-[10px] ${config.color} border-0`}>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-foreground truncate">
+                            {entry.customerName}
+                        </span>
+                        {entry.tableNumber && (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase">
+                                <LayoutGrid className="w-2.5 h-2.5" />
+                                Meja {entry.tableNumber}
+                            </div>
+                        )}
+                    </div>
+                    <Badge variant="outline" className={`text-[10px] shrink-0 ${config.color} border-0`}>
                         {config.label}
                     </Badge>
                 </div>

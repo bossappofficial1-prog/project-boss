@@ -156,7 +156,7 @@ export function getDefaultDashboard(role: UserRole): string {
     case 'ADMIN':
       return '/admin/dashboard';
     case 'OWNER':
-      return '/owner/dashboard';
+      return '/owner';
     default:
       return '/auth/login';
   }

@@ -30,7 +30,7 @@ export function QuickNavigation() {
             {/* Method 2: Menggunakan useInstantNavigation hook */}
             <div>
                 <h3 className="text-sm font-medium mb-2">Menggunakan useInstantNavigation:</h3>
-                <Button onClick={() => handleNavigate('/owner/dashboard')} size="sm">
+                <Button onClick={() => handleNavigate('/owner')} size="sm">
                     Go to Owner Dashboard
                 </Button>
             </div>

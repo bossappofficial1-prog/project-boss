@@ -47,6 +47,8 @@ export interface QueueV2Entry {
   paymentProofUrl: string | null;
   paymentStatus: string | null;
   cancellationReason: string | null;
+  tableId: string | null;
+  tableNumber: string | null;
 }
 
 export interface QueueV2Board {

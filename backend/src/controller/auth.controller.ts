@@ -11,6 +11,55 @@ import { BusinessRepository } from "../repositories/business.repository";
 import { SubscriptionStatus } from "@prisma/client";
 import { UserRepository } from "../repositories/user.repository";
 
+type GoogleOAuthState = {
+    redirect?: string;
+    popup?: boolean;
+};
+
+const DEFAULT_GOOGLE_REDIRECT = "/owner";
+
+const getPrimaryClientUrl = () => {
+    const clientUrls = Array.isArray(config.CLIENT_URL) ? config.CLIENT_URL : [config.CLIENT_URL];
+    return clientUrls[0]?.trim() || "http://localhost:3010";
+};
+
+const getSafeRedirectPath = (value: unknown) => {
+    if (typeof value !== "string") return DEFAULT_GOOGLE_REDIRECT;
+    if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/auth/oauth-popup")) {
+        return DEFAULT_GOOGLE_REDIRECT;
+    }
+    return value;
+};
+
+const parseGoogleOAuthState = (value: unknown): GoogleOAuthState => {
+    if (typeof value !== "string") return {};
+
+    try {
+        const parsed = JSON.parse(value) as GoogleOAuthState;
+        return {
+            redirect: getSafeRedirectPath(parsed.redirect),
+            popup: parsed.popup === true,
+        };
+    } catch {
+        return {
+            redirect: getSafeRedirectPath(value),
+            popup: false,
+        };
+    }
+};
+
+const buildOAuthPopupRedirect = (clientUrl: string, redirectPath: string, error?: string) => {
+    const params = new URLSearchParams({
+        redirect: redirectPath,
+    });
+
+    if (error) {
+        params.set("error", error);
+    }
+
+    return `${clientUrl}/auth/oauth-popup?${params.toString()}`;
+};
+
 export const verifyController = asyncHandler(async (req: Request, res: Response) => {
     const { email, code } = req.body;
     const user = await verifyUserService(email, code);
@@ -116,12 +165,12 @@ export const getMeController = asyncHandler(async (req: Request, res: Response) 
 
     const cacheKey = `user:${req.storedUser?.id}`
     const cacheData = await redis.get(cacheKey)
-    if (cacheData) {
-        console.log('get user from redis')
-        const data = JSON.parse(cacheData)
-        const { password, ...userWithoutPassword } = data.userWithoutBusiness
-        return ResponseUtil.success(res, { user: userWithoutPassword, outlets: data?.outlets ?? null, business: data?.business ?? null });
-    }
+    // if (cacheData) {
+    //     console.log('get user from redis')
+    //     const data = JSON.parse(cacheData)
+    //     const { password, ...userWithoutPassword } = data.userWithoutBusiness
+    //     return ResponseUtil.success(res, { user: userWithoutPassword, outlets: data?.outlets ?? null, business: data?.business ?? null });
+    // }
 
     const user = await getMeService(req.storedUser!.id);
 
@@ -206,13 +255,28 @@ export const changePasswordController = asyncHandler(async (req: Request, res: R
 });
 
 export const googleOAuthCallbackController = asyncHandler(async (req: any, res: Response) => {
-    const clientUrl = config.CLIENT_URL[0]?.trim() || 'http://localhost:3010';
+    const clientUrl = getPrimaryClientUrl();
+    const oauthState = parseGoogleOAuthState(req.query.state);
+    const isPopupOAuth = oauthState.popup || req.cookies?.google_oauth_popup === "1";
+    const redirectPath = getSafeRedirectPath(oauthState.redirect || req.cookies?.google_oauth_redirect);
+    const errorMessage = req.authError?.message?.includes("Email sudah terdaftar")
+        ? "Email sudah terdaftar dengan akun lain."
+        : "Google authentication failed";
+    const clearPopupCookies = () => {
+        const cookiePath = req.baseUrl || "/api/v1/auth";
+        res.clearCookie("google_oauth_popup", { path: cookiePath });
+        res.clearCookie("google_oauth_redirect", { path: cookiePath });
+    };
 
     try {
         const user = req.user;
 
         if (!user) {
-            return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent("Google authentication failed")}`);
+            clearPopupCookies();
+            if (isPopupOAuth) {
+                return res.redirect(buildOAuthPopupRedirect(clientUrl, redirectPath, errorMessage));
+            }
+            return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent(errorMessage)}`);
         }
         const checkBusinessUser = await BusinessRepository.findByOwnerId(user.user.id)
 
@@ -229,17 +293,31 @@ export const googleOAuthCallbackController = asyncHandler(async (req: any, res: 
         });
 
         if (checkBusinessUser) {
-            if (req.query.state) {
-                return res.redirect(`${clientUrl}${req.query.state}`)
+            clearPopupCookies();
+            if (isPopupOAuth) {
+                return res.redirect(buildOAuthPopupRedirect(clientUrl, redirectPath))
             }
-            return res.redirect(`${clientUrl}/owner/dashboard`)
+            return res.redirect(`${clientUrl}${redirectPath}`)
         }
-        res.redirect(`${clientUrl}/auth/register?step=2&provider=google&name=${user.user.name}`);
+        const onboardingPath = `/auth/register?step=2&provider=google&name=${encodeURIComponent(user.user.name)}`;
+        clearPopupCookies();
+        if (isPopupOAuth) {
+            return res.redirect(buildOAuthPopupRedirect(clientUrl, onboardingPath));
+        }
+        return res.redirect(`${clientUrl}${onboardingPath}`);
     } catch (error: any) {
         console.log(error)
         if (error.message && error.message.includes("Email sudah terdaftar")) {
             const errorMessage = encodeURIComponent("Email sudah terdaftar dengan akun lain.");
+            clearPopupCookies();
+            if (isPopupOAuth) {
+                return res.redirect(buildOAuthPopupRedirect(clientUrl, redirectPath, "Email sudah terdaftar dengan akun lain."));
+            }
             return res.redirect(`${clientUrl}/auth/login?error=${errorMessage}`);
+        }
+        clearPopupCookies();
+        if (isPopupOAuth) {
+            return res.redirect(buildOAuthPopupRedirect(clientUrl, redirectPath, "Google authentication failed"));
         }
         return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent("Google authentication failed")}`);
     }

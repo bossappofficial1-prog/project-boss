@@ -9,6 +9,7 @@ import { FormFieldConfig, ReusableForm } from "../ui/reuseable-form";
 import { ProductItem } from "@/hooks/useProductsData";
 import ServiceOperatingHoursSection from "./ServiceOperatingHoursSection";
 import ServiceMediaUploader, { MediaItem } from "./ServiceMediaUploader";
+import { useOutletContext } from "@/components/providers/OutletProvider";
 
 type Props = {
   open: boolean;
@@ -26,6 +27,7 @@ const baseSchema = z.object({
   name: z.string().min(2, "Nama produk minimal 2 karakter"),
   description: z.string().optional(),
   status: ProductStatus,
+  taxPercentage: z.coerce.number().min(0).nullable().optional(),
   file: z
     .union([
       z.instanceof(File).refine((f) => f.size <= 3 * 1024 * 1024, "Maksimal 3MB"),
@@ -134,6 +136,7 @@ export default function AddOrEditProductServiceModal({
   onSuccess,
   action = "edit",
 }: Props) {
+  const { allowedProductTypes } = useOutletContext();
   const isEdit = action === "edit";
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
 
@@ -160,6 +163,7 @@ export default function AddOrEditProductServiceModal({
         name: initialData.name ?? "",
         description: initialData.description ?? "",
         status: initialData.status ?? ("ACTIVE" as const),
+        taxPercentage: initialData.taxPercentage ?? null,
         file: initialData.image,
       };
 
@@ -269,11 +273,15 @@ export default function AddOrEditProductServiceModal({
     const otherValues = values as FormData;
     const formType = otherValues.get("type") as ProductFormValues["type"] | null;
 
+    const rawTax = otherValues.get("taxPercentage");
+    const taxPercentage = rawTax !== null && rawTax !== "" ? Number(rawTax) : null;
+
     const payload: any = {
       name: otherValues.get("name"),
       description: otherValues.get("description") || undefined,
       type: formType,
       status: otherValues.get("status"),
+      taxPercentage: taxPercentage,
       outletId,
     };
 
@@ -436,7 +444,7 @@ export default function AddOrEditProductServiceModal({
           label: "Tiket (Event)",
           value: "TICKET",
         },
-      ],
+      ].filter(opt => allowedProductTypes.includes(opt.value)),
     },
     {
       name: "status",
@@ -461,6 +469,13 @@ export default function AddOrEditProductServiceModal({
       type: "textarea",
       colSpan: "full",
       placeholder: "Deskripsikan produk anda",
+    },
+    {
+      name: "taxPercentage",
+      label: "Pajak (%)",
+      type: "number",
+      colSpan: 3,
+      placeholder: "Contoh: 11",
     },
 
     // product === goods

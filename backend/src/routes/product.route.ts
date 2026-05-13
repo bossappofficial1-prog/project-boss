@@ -4,6 +4,7 @@ import {
     createProductController,
     deleteProductController,
     getProductByIdController,
+    getProductByBarcodeController,
     getProductsByOutletIdController,
     searchProductsByNameController,
     updateProductController,
@@ -22,6 +23,7 @@ const productRouter = Router();
 
 // Rute Publik (tidak perlu login)
 productRouter.get("/search", searchProductsByNameController);
+productRouter.get("/barcode/:code", getProductByBarcodeController);
 productRouter.get("/:id", getProductByIdController);
 productRouter.get("/outlet/:outletId", getProductsByOutletIdController);
 productRouter.get("/:productId/booking-slots", getBookingSlotByOutlet)

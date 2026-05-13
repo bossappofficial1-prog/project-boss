@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
     Clock, User, Phone, CreditCard, Calendar, ChevronRight, X,
-    Printer, ImageIcon, ShoppingBag,
+    Printer, ImageIcon, ShoppingBag, LayoutGrid,
 } from "lucide-react";
 import type { OrderV2Entry, GoodsOrderStatus } from "@/lib/apis/orders-v2";
 import { formatCurrency } from "@/lib/utils";
@@ -130,6 +130,9 @@ export function OrderDetailSheet({
                             <InfoRow icon={User} label="Nama" value={entry.customerName} />
                             {entry.customerPhone && (
                                 <InfoRow icon={Phone} label="Telepon" value={entry.customerPhone} />
+                            )}
+                            {entry.tableNumber && (
+                                <InfoRow icon={LayoutGrid} label="Meja" value={entry.tableNumber} />
                             )}
                         </div>
                     </section>

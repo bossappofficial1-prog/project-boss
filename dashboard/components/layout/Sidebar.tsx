@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import Image from 'next/image';
-import { usePathname } from 'next/navigation';
-import { useUserData } from '@/hooks/useUserData';
-import { useOutletContext } from '@/components/providers/OutletProvider';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useUserData } from "@/hooks/useUserData";
+import { useOutletContext } from "@/components/providers/OutletProvider";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "@/components/ui/tooltip";
 import {
   Sidebar,
   SidebarContent,
@@ -27,12 +27,12 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
-} from '@/components/ui/sidebar';
+} from "@/components/ui/sidebar";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,49 +40,51 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
-import { cn } from '@/lib/utils';
-import { MENU_GROUPS } from './sidebar/sidebar';
-import { OutletSelector } from './sidebar/OutletSelector';
-import { ChevronDown, ChevronRight, Zap } from 'lucide-react';
-import { InstantLink } from '../ui/instant-link';
+import { cn } from "@/lib/utils";
+import { MENU_GROUPS } from "./sidebar/sidebar";
+import { OutletSelector } from "./sidebar/OutletSelector";
+import { ChevronDown, ChevronRight, Settings } from "lucide-react";
+import { InstantLink } from "../ui/instant-link";
 
 export default function AppSidebar() {
   const pathname = usePathname();
-  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
+    {},
+  );
   const { state } = useSidebar();
-  const isCollapsed = state === 'collapsed';
+  const isCollapsed = state === "collapsed";
 
   const {
     selectedOutlet = null,
     outlets = [],
     isLoading: outletLoading = true,
-    setSelectedOutlet = () => console.warn('setSelectedOutlet not available'),
+    setSelectedOutlet = () => console.warn("setSelectedOutlet not available"),
   } = (() => {
     try {
       return useOutletContext();
     } catch {
-      if (typeof window !== 'undefined') {
-        const oldSavedOutlet = localStorage.getItem('selectedOutletId');
+      if (typeof window !== "undefined") {
+        const oldSavedOutlet = localStorage.getItem("selectedOutletId");
 
         if (oldSavedOutlet) {
           try {
             const parsed = JSON.parse(oldSavedOutlet);
             if (parsed?.id) {
-              localStorage.setItem('selectedOutlet', parsed.id);
-              localStorage.removeItem('selectedOutletId');
+              localStorage.setItem("selectedOutlet", parsed.id);
+              localStorage.removeItem("selectedOutletId");
               return {
                 selectedOutlet: parsed,
                 outlets: [parsed],
                 isLoading: false,
-                setSelectedOutlet: () => { },
+                setSelectedOutlet: () => {},
               };
             }
           } catch {
             if (oldSavedOutlet) {
-              localStorage.setItem('selectedOutlet', oldSavedOutlet);
-              localStorage.removeItem('selectedOutletId');
+              localStorage.setItem("selectedOutlet", oldSavedOutlet);
+              localStorage.removeItem("selectedOutletId");
             }
           }
         }
@@ -91,12 +93,12 @@ export default function AppSidebar() {
         selectedOutlet: null,
         outlets: [],
         isLoading: true,
-        setSelectedOutlet: () => { },
+        setSelectedOutlet: () => {},
       };
     }
   })();
 
-  const { data: userData, isLoading, error, refetch } = useUserData();
+  const { isLoading, error, refetch } = useUserData();
 
   // Auto-expand menu if a sub-item is active
   useEffect(() => {
@@ -108,7 +110,7 @@ export default function AppSidebar() {
       group.items.forEach((item) => {
         if (item.subItems) {
           const hasActiveSubItem = item.subItems.some(
-            (subItem) => pathname === subItem.href
+            (subItem) => pathname === subItem.href,
           );
           if (hasActiveSubItem) {
             newExpandedMenus[item.id] = true;
@@ -122,7 +124,7 @@ export default function AppSidebar() {
 
   // Prefetch on hover for better performance (lazy prefetch)
   const handlePrefetch = useCallback((href: string) => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     try {
       // Next.js router.prefetch is available through Link component
       // but we don't need aggressive prefetch anymore since we have instant nav
@@ -132,12 +134,15 @@ export default function AppSidebar() {
     }
   }, []);
 
-  const handleOutletChange = useCallback((outletId: string) => {
-    const outlet = outlets.find((o) => o.id === outletId);
-    if (outlet && setSelectedOutlet) {
-      setSelectedOutlet(outlet);
-    }
-  }, [outlets, setSelectedOutlet]);
+  const handleOutletChange = useCallback(
+    (outletId: string) => {
+      const outlet = outlets.find((o) => o.id === outletId);
+      if (outlet && setSelectedOutlet) {
+        setSelectedOutlet(outlet);
+      }
+    },
+    [outlets, setSelectedOutlet],
+  );
 
   const toggleMenu = useCallback((menuId: string) => {
     setExpandedMenus((prev) => ({
@@ -146,34 +151,87 @@ export default function AppSidebar() {
     }));
   }, []);
 
+  const filteredMenuGroups = useMemo(() => {
+    if (!selectedOutlet) return MENU_GROUPS;
+
+    return MENU_GROUPS.map((group) => ({
+      ...group,
+      items: group.items
+        .map((item) => ({ ...item })) // Clone item to avoid mutating original MENU_GROUPS
+        .filter((item) => {
+          // Check if item itself is allowed
+          const itemAllowed =
+            !item.requiredTypes ||
+            item.requiredTypes.includes(selectedOutlet.type);
+          if (!itemAllowed) return false;
+
+          // If it has subitems, filter them too
+          if (item.subItems) {
+            const originalSubItems = [...item.subItems];
+            const filteredSubItems = originalSubItems.filter(
+              (sub) =>
+                !sub.requiredTypes ||
+                sub.requiredTypes.includes(selectedOutlet.type),
+            );
+
+            // If all subitems are filtered out, don't show the parent either
+            if (filteredSubItems.length === 0) return false;
+
+            // Note: we're creating a shallow copy with filtered subitems
+            item.subItems = filteredSubItems;
+          }
+
+          return true;
+        }),
+    })).filter((group) => group.items.length > 0);
+  }, [selectedOutlet, pathname]);
+  const isHrefActive = useCallback(
+    (href?: string) => {
+      if (!href) return false;
+      if (href === "/owner")
+        return pathname === href || pathname === "/owner/dashboard";
+      return pathname === href || pathname.startsWith(`${href}/`);
+    },
+    [pathname],
+  );
+
   return (
-    <Sidebar collapsible="icon" className="border-r-0">
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-sidebar-border bg-sidebar"
+    >
       {/* Header with Logo */}
-      <SidebarHeader className="border-b border-red-500/20 bg-gradient-to-b from-red-700 to-red-800 dark:from-red-800 dark:to-red-900">
-        <div className="flex items-center justify-center py-4 px-2">
+      <SidebarHeader className="border-b border-sidebar-border bg-sidebar px-3 py-4">
+        <div className="flex items-center justify-center">
           {isCollapsed ? (
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-red-700 font-bold text-lg">B</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+              <span className="text-lg font-bold">B</span>
             </div>
           ) : (
-            <Image
-              src="/Logo Boss Putih.png"
-              alt="BOSS Logo"
-              width={120}
-              height={120}
-              className="object-contain"
-              priority
-            />
+            <div className="relative h-14 w-36">
+              <Image
+                src="/Logo Boss.png"
+                alt="BOSS Logo"
+                fill
+                sizes="144px"
+                className="object-contain"
+                unoptimized
+                priority
+              />
+            </div>
           )}
         </div>
 
         {/* Outlet Selector */}
-        <div className="px-2 pb-4">
+        <div className="mt-4">
           {!isCollapsed && (
-            <label className="flex items-center justify-between text-xs font-semibold text-red-100 mb-2 uppercase tracking-wide px-1">
+            <label className="mb-2 flex items-center justify-between px-1 text-xs font-semibold uppercase text-muted-foreground">
               <span>Outlet</span>
               {outlets.length > 0 && (
-                <Badge variant="secondary" className="bg-white/20 text-white text-xs px-2 py-0.5">
+                <Badge
+                  variant="secondary"
+                  className="rounded-sm bg-sidebar-accent px-2 py-0.5 text-xs text-sidebar-accent-foreground"
+                >
                   {outlets.length}
                 </Badge>
               )}
@@ -191,19 +249,17 @@ export default function AppSidebar() {
       </SidebarHeader>
 
       {/* Navigation Content */}
-      <SidebarContent className="bg-gradient-to-b from-red-800 to-red-900 dark:from-red-900 dark:to-red-950">
-        {MENU_GROUPS.map((group) => (
+      <SidebarContent>
+        {filteredMenuGroups.map((group) => (
           <SidebarGroup key={group.label}>
-            <SidebarGroupLabel className="text-red-200 dark:text-red-200 uppercase text-xs font-semibold tracking-wider">
-              {!isCollapsed && group.label}
-            </SidebarGroupLabel>
+            <SidebarGroupLabel>{!isCollapsed && group.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  const hasActiveSubItem = item.subItems?.some(
-                    (subItem) => pathname === subItem.href
+                  const isActive = isHrefActive(item.href);
+                  const hasActiveSubItem = item.subItems?.some((subItem) =>
+                    isHrefActive(subItem.href),
                   );
 
                   // Dropdown/Collapsible menu item for items with subItems
@@ -220,14 +276,16 @@ export default function AppSidebar() {
                                   <DropdownMenuTrigger asChild>
                                     <SidebarMenuButton
                                       className={cn(
-                                        'group h-11',
+                                        "group relative h-11 rounded-lg text-sidebar-foreground",
                                         hasActiveSubItem
-                                          ? 'bg-white/15 text-white hover:bg-white/20'
-                                          : 'text-red-100 hover:bg-white/10 hover:text-white'
+                                          ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                                          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                                       )}
                                     >
-                                      <Icon className="w-5 h-5" />
-                                      <span className="flex-1">{item.name}</span>
+                                      <Icon className="h-5 w-5" />
+                                      <span className="flex-1">
+                                        {item.name}
+                                      </span>
                                     </SidebarMenuButton>
                                   </DropdownMenuTrigger>
                                 </TooltipTrigger>
@@ -241,29 +299,34 @@ export default function AppSidebar() {
                               side="right"
                               align="start"
                               sideOffset={16}
-                              className="w-48 bg-gradient-to-b from-red-800 to-red-900 border-red-700/50 text-red-100 shadow-xl rounded-xl p-1 z-[100]"
+                              className="z-[100] w-56 rounded-lg border-sidebar-border bg-popover p-1 text-popover-foreground shadow-xl"
                             >
-                              <DropdownMenuLabel className="text-white px-2 py-1.5 text-sm font-semibold">
+                              <DropdownMenuLabel className="px-2 py-1.5 text-sm font-semibold">
                                 {item.name}
                               </DropdownMenuLabel>
-                              <DropdownMenuSeparator className="bg-red-700/50 mx-1 mb-1" />
+                              <DropdownMenuSeparator className="mx-1 mb-1" />
                               {item.subItems.map((subItem) => {
-                                const isSubActive = pathname === subItem.href;
+                                const isSubActive = isHrefActive(subItem.href);
                                 return (
                                   <DropdownMenuItem key={subItem.href} asChild>
                                     <InstantLink
                                       href={subItem.href}
-                                      onMouseEnter={() => handlePrefetch(subItem.href)}
+                                      onMouseEnter={() =>
+                                        handlePrefetch(subItem.href)
+                                      }
                                       className={cn(
                                         "cursor-pointer flex items-center w-full px-2 py-1.5 text-sm rounded-md outline-none transition-colors",
                                         isSubActive
-                                          ? "bg-white text-red-700 font-medium"
-                                          : "hover:bg-white/10 focus:bg-white/10 hover:text-white focus:text-white"
+                                          ? "bg-primary/10 text-primary font-medium"
+                                          : "hover:bg-sidebar-accent focus:bg-sidebar-accent",
                                       )}
                                     >
                                       <span>{subItem.name}</span>
                                       {subItem.badge && (
-                                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0 bg-red-950/40 text-white border-none">
+                                        <Badge
+                                          variant="secondary"
+                                          className="ml-auto rounded-sm px-1.5 py-0 text-[10px]"
+                                        >
                                           {subItem.badge}
                                         </Badge>
                                       )}
@@ -288,46 +351,54 @@ export default function AppSidebar() {
                           <CollapsibleTrigger asChild>
                             <SidebarMenuButton
                               className={cn(
-                                'group h-11',
-                                (hasActiveSubItem || isExpanded)
-                                  ? 'bg-white/15 text-white hover:bg-white/20'
-                                  : 'text-red-100 hover:bg-white/10 hover:text-white'
+                                "group relative h-11 rounded-lg text-sidebar-foreground",
+                                hasActiveSubItem || isExpanded
+                                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                               )}
                             >
-                              <Icon className="w-5 h-5" />
+                              {hasActiveSubItem && (
+                                <span className="absolute left-0 top-2 h-7 w-1 rounded-r-full bg-primary" />
+                              )}
+                              <Icon className="h-5 w-5" />
                               <span className="flex-1">{item.name}</span>
                               <ChevronDown
                                 className={cn(
-                                  'w-4 h-4 transition-transform',
-                                  isExpanded && 'rotate-180'
+                                  "w-4 h-4 transition-transform",
+                                  isExpanded && "rotate-180",
                                 )}
                               />
                             </SidebarMenuButton>
                           </CollapsibleTrigger>
 
                           <CollapsibleContent>
-                            <SidebarMenuSub className="ml-4 border-l-2 border-white/20">
+                            <SidebarMenuSub className="ml-4 border-l border-sidebar-border pl-2">
                               {item.subItems.map((subItem) => {
-                                const isSubActive = pathname === subItem.href;
+                                const isSubActive = isHrefActive(subItem.href);
                                 return (
                                   <SidebarMenuSubItem key={subItem.href}>
                                     <SidebarMenuSubButton
                                       asChild
                                       isActive={isSubActive}
                                       className={cn(
-                                        'h-9',
+                                        "h-9",
                                         isSubActive
-                                          ? 'bg-white dark:bg-red-700/60 text-red-600 dark:text-white hover:bg-white dark:hover:bg-red-700/70'
-                                          : 'text-red-100 hover:bg-white/10 hover:text-white'
+                                          ? "bg-primary/10 text-primary hover:bg-primary/10"
+                                          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                                       )}
                                     >
                                       <InstantLink
                                         href={subItem.href}
-                                        onMouseEnter={() => handlePrefetch(subItem.href)}
+                                        onMouseEnter={() =>
+                                          handlePrefetch(subItem.href)
+                                        }
                                       >
                                         <span>{subItem.name}</span>
                                         {subItem.badge && (
-                                          <Badge variant="secondary" className="ml-auto text-xs">
+                                          <Badge
+                                            variant="secondary"
+                                            className="ml-auto text-xs"
+                                          >
                                             {subItem.badge}
                                           </Badge>
                                         )}
@@ -353,23 +424,31 @@ export default function AppSidebar() {
                               asChild
                               isActive={isActive}
                               className={cn(
-                                'group h-11',
+                                "group relative h-11 rounded-lg text-sidebar-foreground",
                                 isActive
-                                  ? 'bg-white dark:bg-red-700/60 text-red-600 dark:text-white hover:bg-white dark:hover:bg-red-700/70'
-                                  : 'text-red-100 hover:bg-white/10 hover:text-white'
+                                  ? "bg-primary/10 text-primary shadow-sm hover:bg-primary/10"
+                                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                               )}
                             >
-                              <InstantLink href={item.href!} onMouseEnter={() => handlePrefetch(item.href!)}
+                              <InstantLink
+                                href={item.href!}
+                                onMouseEnter={() => handlePrefetch(item.href!)}
                               >
-                                <Icon className="w-5 h-5" />
+                                {isActive && (
+                                  <span className="absolute left-0 top-2 h-7 w-1 rounded-r-full bg-primary" />
+                                )}
+                                <Icon className="h-5 w-5" />
                                 <span className="flex-1">{item.name}</span>
                                 {item.badge && !isCollapsed && (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge
+                                    variant="secondary"
+                                    className="rounded-sm text-xs"
+                                  >
                                     {item.badge}
                                   </Badge>
                                 )}
                                 {isActive && !isCollapsed && (
-                                  <ChevronRight className="w-4 h-4 opacity-60" />
+                                  <ChevronRight className="h-4 w-4 opacity-70" />
                                 )}
                               </InstantLink>
                             </SidebarMenuButton>
@@ -391,26 +470,33 @@ export default function AppSidebar() {
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter className="border-t border-red-500/20 bg-gradient-to-b from-red-900 to-red-950">
-        <div className="p-2">
+      <SidebarFooter className="border-t border-sidebar-border bg-sidebar p-3">
+        <div>
           {isCollapsed ? (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center justify-center w-full h-10 text-red-100 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
-                    <Zap className="w-4 h-4" />
-                  </div>
+                  <InstantLink
+                    href="/owner/settings"
+                    className="flex h-10 w-full cursor-pointer items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </InstantLink>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <p>BOSS Dashboard v1.0</p>
+                  <p>Pengaturan</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           ) : (
-            <div className="flex items-center justify-center gap-2 text-red-100 bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors cursor-pointer">
-              <Zap className="w-4 h-4" />
-              <span className="text-xs font-medium">BOSS Dashboard v1.0</span>
-            </div>
+            <InstantLink
+              href="/owner/settings"
+              className="flex h-11 items-center gap-3 rounded-lg bg-sidebar-accent px-3 text-sm font-medium text-sidebar-accent-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="flex-1">Pengaturan</span>
+              <span className="text-xs text-muted-foreground">v1.0</span>
+            </InstantLink>
           )}
         </div>
       </SidebarFooter>

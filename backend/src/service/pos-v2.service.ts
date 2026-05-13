@@ -7,6 +7,9 @@ import { SocketEmitter } from "../socket/socket-emiiter";
 import { generateServiceOrderNotificationQueue } from "../queues/generate-service-order-notification";
 import { RedisUtils } from "../utils/redis.utils";
 import { LoyaltyService } from "./loyalty.service";
+import { getOutletByIdService } from "./outlet.service";
+
+const TABLE_ENABLED_OUTLET_TYPES = new Set(["FNB", "CUSTOM"]);
 
 export interface PosV2OrderResult {
     orderId: string;
@@ -49,9 +52,12 @@ export class PosV2Service {
                 image: p.image,
                 type: p.type,
                 status: p.status,
+                taxPercentage: p.taxPercentage ?? null,
                 price,
                 stock: p.type === "GOODS" ? (p.goods?.currentStock ?? 0) : null,
                 unit: p.type === "GOODS" ? (p.goods?.unit ?? "pcs") : null,
+                barcode: p.type === "GOODS" ? (p.goods?.barcode ?? null) : null,
+                sku: p.type === "GOODS" ? (p.goods?.sku ?? null) : null,
                 goodsId: p.goods?.id ?? null,
                 serviceId: p.service?.id ?? null,
                 ticketId: p.ticket?.id ?? null,
@@ -94,10 +100,40 @@ export class PosV2Service {
             paymentMethod,
             pointsRedeemed = 0,
             staffId: payloadStaffId,
+            tableId,
+            tableNumber,
+            isOpenBill = false,
+            existingOrderId,
         } = input;
 
         // Prioritize staffId from payload (selected in UI) over cashierId from session
         const finalCashierId = payloadStaffId || cashierId;
+
+        const outlet = await getOutletByIdService(outletId);
+        const tableFeatureEnabled = TABLE_ENABLED_OUTLET_TYPES.has(outlet.type);
+
+        if (!tableFeatureEnabled && (tableId || tableNumber || isOpenBill)) {
+            throw new AppError(
+                "Open bill dan penggunaan meja hanya tersedia untuk outlet tipe F&B atau Custom.",
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        if (tableFeatureEnabled && tableId) {
+            const table = await PosV2Repository.findTableByIdAndOutlet(tableId, outletId);
+            if (!table) {
+                throw new AppError(
+                    "Meja tidak ditemukan pada outlet aktif.",
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+            if (table.status === "BILLED") {
+                throw new AppError(
+                    "Meja sedang diproses bill dan tidak dapat menerima order baru.",
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+        }
 
         // Validate products exist and belong to outlet
         const productIds = items.map((i) => i.productId);
@@ -253,15 +289,15 @@ export class PosV2Service {
         const grandTotal = Math.max(0, subtotal - discountAmount);
 
         // Validate cash
-        if (cashReceived < grandTotal && paymentMethod === 'cash') {
+        if (!isOpenBill && cashReceived < grandTotal && paymentMethod === 'cash') {
             throw new AppError(
                 `Cash kurang. Total: Rp ${grandTotal.toLocaleString("id-ID")}, Diterima: Rp ${cashReceived.toLocaleString("id-ID")}`,
                 HttpStatus.BAD_REQUEST,
             );
         }
 
-        // Generate order ID
-        const orderId = generateOrderCode(
+        // Generate or reuse order ID
+        const orderId = existingOrderId || generateOrderCode(
             { name: "POS", maxLength: 12 },
             { randomLength: 6 },
         );
@@ -282,9 +318,12 @@ export class PosV2Service {
             stockUpdates,
             ticketUpdates,
             hasService,
-            paymentMethod,
+            paymentMethod: paymentMethod || "none",
             bookingSlotId,
             bookingDate: bookingDate ? new Date(bookingDate) : null,
+            tableId,
+            tableNumber,
+            isOpenBill,
         });
 
         // Trigger Loyalty (Non-blocking)
@@ -318,8 +357,8 @@ export class PosV2Service {
             subtotal: subtotal,
             discountAmount: discountAmount,
             itemCount: items.reduce((sum, i) => sum + i.quantity, 0),
-            cashReceived: paymentMethod === 'qris' ? grandTotal : cashReceived,
-            change: paymentMethod === 'qris' ? 0 : (cashReceived - grandTotal),
+            cashReceived: isOpenBill ? 0 : (paymentMethod === 'qris' ? grandTotal : cashReceived),
+            change: isOpenBill ? 0 : (paymentMethod === 'qris' ? 0 : (cashReceived - grandTotal)),
             customerName: guestCustomer.name,
             createdAt: order.createdAt.toISOString(),
             hasTickets,
@@ -328,6 +367,44 @@ export class PosV2Service {
 
     static async getCashSummary(outletId: string) {
         return PosV2Repository.getCashSummaryToday(outletId);
+    }
+
+    static async getOpenOrders(outletId: string) {
+        const orders = await PosV2Repository.getOpenOrders(outletId, 20);
+
+        return orders.map((o) => ({
+            id: o.id,
+            totalAmount: o.totalAmount,
+            customerName: o.guestCustomer.name,
+            customerPhone: o.guestCustomer.phone,
+            tableNumber: o.tableNumber,
+            tableId: o.tableId,
+            itemCount: o.items.reduce((sum, i) => sum + i.quantity, 0),
+            itemsSummary: o.items
+                .slice(0, 3)
+                .map((i) => i.product.name)
+                .join(", "),
+            items: o.items.map((i) => {
+                const p = i.product as any;
+                let price = 0;
+                if (p.type === "GOODS") price = p.goods?.sellingPrice ?? 0;
+                else if (p.type === "SERVICE") price = p.service?.sellingPrice ?? 0;
+                else if (p.type === "TICKET") price = p.ticket?.sellingPrice ?? 0;
+
+                return {
+                    id: i.id,
+                    productId: i.productId,
+                    quantity: i.quantity,
+                    price: i.priceAtTimeOfOrder,
+                    product: {
+                        ...p,
+                        price,
+                    },
+                };
+            }),
+            cashier: o.handledByStaff?.name ?? "-",
+            createdAt: o.createdAt.toISOString(),
+        }));
     }
 
     static async getRecentOrders(outletId: string) {

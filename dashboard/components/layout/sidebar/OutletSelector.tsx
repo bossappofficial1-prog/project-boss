@@ -29,7 +29,7 @@ export function OutletSelector({
 
     if (isLoading) {
         return (
-            <div className="w-full px-3 py-2.5 rounded-lg bg-white/10 backdrop-blur-sm text-white text-sm font-medium flex items-center justify-center gap-2">
+            <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-sidebar-accent px-3 py-2.5 text-sm font-medium text-sidebar-accent-foreground">
                 <RefreshCw className="w-4 h-4 animate-spin flex-shrink-0" />
                 {!isCollapsed && <span>Memuat...</span>}
             </div>
@@ -38,7 +38,7 @@ export function OutletSelector({
 
     if (error) {
         return (
-            <div className="w-full px-3 py-2.5 rounded-lg bg-red-500/20 backdrop-blur-sm text-red-100 text-sm font-medium">
+            <div className="w-full rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2.5 text-sm font-medium text-destructive">
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -48,7 +48,7 @@ export function OutletSelector({
                         onClick={onRefetch}
                         variant="ghost"
                         size="sm"
-                        className="h-auto p-1 text-red-200 hover:text-white hover:bg-red-500/30 flex-shrink-0"
+                        className="h-auto flex-shrink-0 p-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
                         <RefreshCw className="w-3 h-3" />
                     </Button>
@@ -65,7 +65,7 @@ export function OutletSelector({
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full h-10 px-2 bg-white/10 hover:bg-white/15 text-white"
+                            className="h-10 w-full rounded-lg bg-sidebar-accent px-2 text-sidebar-accent-foreground hover:bg-primary/10 hover:text-primary"
                         >
                             <Store className="w-4 h-4" />
                         </Button>
@@ -80,10 +80,10 @@ export function OutletSelector({
 
     return (
         <Select value={selectedOutlet?.id || ''} onValueChange={onOutletChange}>
-            <SelectTrigger className="w-full px-3 py-2.5 border-0 rounded-lg bg-white/10 backdrop-blur-sm text-white placeholder:text-red-200 focus:outline-none focus:ring-2 focus:ring-white/30 hover:bg-white/15 text-sm font-medium transition-all">
+            <SelectTrigger className="w-full rounded-lg border-sidebar-border bg-card px-3 py-2.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-sidebar-accent focus:ring-2 focus:ring-ring">
                 <SelectValue placeholder="Pilih outlet" />
             </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-red-950 border-gray-200 dark:border-red-800">
+            <SelectContent className="border-border bg-popover text-popover-foreground">
                 {outlets.length === 0 ? (
                     <SelectItem value="outlet_not_found" disabled>
                         Belum ada outlet
@@ -93,7 +93,7 @@ export function OutletSelector({
                         <SelectItem
                             key={outlet.id}
                             value={outlet.id}
-                            className="text-gray-900 dark:text-red-50 cursor-pointer dark:focus:bg-red-900/50"
+                            className="cursor-pointer"
                         >
                             {outlet.name}
                         </SelectItem>

@@ -44,6 +44,7 @@ export const createOrderSchema = z
     staffId: z.string().uuid().optional(),
     cashierId: z.string().uuid().optional(),
     orderSource: z.enum(["CUSTOMER", "POS"]).default("CUSTOMER"),
+    tableNumber: z.string().optional(),
   })
   .refine(
     (data) => {

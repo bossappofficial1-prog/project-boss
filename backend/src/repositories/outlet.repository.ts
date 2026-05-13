@@ -1,485 +1,680 @@
-import { Outlet, OutletOperatingHours, PaymentStatus, ProductType, ServiceStatus } from "@prisma/client";
+import {
+  OrderStatus,
+  Outlet,
+  OutletOperatingHours,
+  PaymentStatus,
+  ProductType,
+  ServiceStatus,
+} from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 import { generateOutletId, StringUtil } from "../utils";
 
+export interface RawOrderItem {
+  productId: string;
+  productName: string;
+  productImage: string | null;
+  unit: string;
+  averageHpp: number;
+  quantity: number;
+  priceAtTimeOfOrder: number;
+  hppAtTimeOfOrder: number;
+}
+
+export interface RawExpense {
+  description: string;
+  amount: number;
+}
+
+export interface RawProductGoods {
+  productId: string;
+  productName: string;
+  isActive: boolean;
+}
+
+const COMPLETED_FILTER = {
+  orderStatus: OrderStatus.COMPLETED,
+  paymentStatus: PaymentStatus.SUCCESS,
+};
+
 export class OutletRepository {
-    static async getAll() {
-        return db.outlet.findMany({
-            include: {
-                business: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                },
-                operatingHours: true
-            }
-        });
-    }
-
-    static async getOutletSlugs() {
-        return db.outlet.findMany({ select: { slug: true }, take: 50000 })
-    }
-
-    static async create(data: CreateOutletInput): Promise<Outlet> {
-        return db.$transaction(async (trx) => {
-            const outlet = await trx.outlet.create({
-                data: { ...data, id: generateOutletId(), slug: StringUtil.slugify(data.name) },
-            });
-
-            await trx.receiptSetting.create({
-                data: { outletId: outlet.id }
-            })
-
-            return outlet
-        })
-    }
-
-    static async findById(id: string) {
-        return db.outlet.findUnique({
-            where: { id },
-            include: {
-                business: {
-                    select: {
-                        id: true,
-                        name: true,
-                        description: true,
-                        accountHolder: true,
-                        bankAccount: true,
-                        bankName: true
-                    }
-                },
-                operatingHours: true,
+  static async getCompletedOrderItems(
+    outletId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<RawOrderItem[]> {
+    // query to db
+    const items = await db.orderItem.findMany({
+      where: {
+        order: {
+          outletId,
+          ...COMPLETED_FILTER,
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        product: {
+          type: ProductType.GOODS,
+        },
+      },
+      select: {
+        quantity: true,
+        priceAtTimeOfOrder: true,
+        hppAtTimeOfOrder: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            goods: {
+              select: {
+                unit: true,
+                averageHpp: true,
+              },
             },
-        });
-    }
+          },
+        },
+      },
+    });
 
-    static async findByEmail(email: string) {
-        return db.outlet.findFirst({
-            where: { email },
-        });
-    }
+    // mapping value
+    return items
+      .filter((item) => item.product.goods !== null)
+      .map((item) => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        productImage: item.product.image,
+        unit: item.product.goods!.unit,
+        averageHpp: item.product.goods!.averageHpp,
+        quantity: item.quantity,
+        priceAtTimeOfOrder: item.priceAtTimeOfOrder,
+        hppAtTimeOfOrder: item.hppAtTimeOfOrder,
+      }));
+  }
 
-    static async findBySlug(slug: string) {
-        return db.outlet.findUnique({
-            where: { slug },
-            include: {
-                business: {
-                    select: {
-                        id: true,
-                        name: true,
-                        description: true,
-                        accountHolder: true,
-                        bankAccount: true,
-                        bankName: true
-                    }
-                },
-                operatingHours: true,
+  static async getTotalOrders(
+    outletId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number> {
+    return db.order.count({
+      where: {
+        outletId,
+        ...COMPLETED_FILTER,
+        createdAt: { gte: startDate, lte: endDate },
+      },
+    });
+  }
+
+  static async getExpenses(
+    outletId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<RawExpense[]> {
+    return db.expense.findMany({
+      where: {
+        outletId,
+        date: { gte: startDate, lte: endDate },
+      },
+      select: {
+        description: true,
+        amount: true,
+      },
+      orderBy: { amount: "desc" },
+    });
+  }
+
+  static async getGoodsProducts(outletId: string): Promise<RawProductGoods[]> {
+    const products = await db.product.findMany({
+      where: {
+        outletId,
+        type: ProductType.GOODS,
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
+    });
+
+    return products.map((p) => ({
+      productId: p.id,
+      productName: p.name,
+      isActive: p.status === "ACTIVE",
+    }));
+  }
+
+  static async getSoldProductIds(
+    outletId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<Set<string>> {
+    const items = await db.orderItem.findMany({
+      where: {
+        order: {
+          outletId,
+          ...COMPLETED_FILTER,
+          createdAt: { gte: startDate, lte: endDate },
+        },
+        product: { type: ProductType.GOODS },
+      },
+      select: { productId: true },
+      distinct: ["productId"],
+    });
+
+    return new Set(items.map((i) => i.productId));
+  }
+
+  static async getAll() {
+    return db.outlet.findMany({
+      include: {
+        business: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        operatingHours: true,
+      },
+    });
+  }
+
+  static async getOutletSlugs() {
+    return db.outlet.findMany({ select: { slug: true }, take: 50000 });
+  }
+
+  static async create(data: CreateOutletInput): Promise<Outlet> {
+    return db.$transaction(async (trx) => {
+      const outlet = await trx.outlet.create({
+        data: {
+          ...data,
+          id: generateOutletId(),
+          slug: StringUtil.slugify(data.name),
+        },
+      });
+
+      await trx.receiptSetting.create({
+        data: { outletId: outlet.id },
+      });
+
+      return outlet;
+    });
+  }
+
+  static async findById(id: string) {
+    return db.outlet.findUnique({
+      where: { id },
+      include: {
+        business: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            accountHolder: true,
+            bankAccount: true,
+            bankName: true,
+          },
+        },
+        operatingHours: true,
+      },
+    });
+  }
+
+  static async findByEmail(email: string) {
+    return db.outlet.findFirst({
+      where: { email },
+    });
+  }
+
+  static async findBySlug(slug: string) {
+    return db.outlet.findUnique({
+      where: { slug },
+      include: {
+        business: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            accountHolder: true,
+            bankAccount: true,
+            bankName: true,
+          },
+        },
+        operatingHours: true,
+      },
+    });
+  }
+
+  static async findByIdWithProducts(id: string): Promise<any | null> {
+    return db.outlet.findUnique({
+      where: { id },
+      include: {
+        business: true,
+        products: {
+          where: {
+            status: "ACTIVE",
+          },
+          orderBy: {
+            name: "asc",
+          },
+        },
+      },
+    });
+  }
+
+  static async findByBusinessId(businessId: string): Promise<Outlet[]> {
+    return db.outlet.findMany({
+      where: { businessId },
+    });
+  }
+
+  static async update(id: string, data: UpdateOutletInput): Promise<Outlet> {
+    return db.outlet.update({
+      where: { id },
+      data: {
+        ...data,
+        ...(data.name && { slug: StringUtil.slugify(data.name!) }),
+      },
+    });
+  }
+
+  static async delete(id: string): Promise<Outlet> {
+    return db.outlet.delete({
+      where: { id },
+    });
+  }
+
+  static async findManyWithPagination(
+    businessId?: string,
+    search?: string,
+    take?: number,
+    skip?: number,
+  ): Promise<{
+    outlets: Array<Outlet & { operatingHours: OutletOperatingHours[] }>;
+    total: number;
+  }> {
+    const whereClause: any = {
+      ...(businessId && { businessId }),
+      ...(search && {
+        OR: [
+          {
+            name: {
+              contains: search,
+              mode: "insensitive",
             },
-        });
-    }
-
-    static async findByIdWithProducts(id: string): Promise<any | null> {
-        return db.outlet.findUnique({
-            where: { id },
-            include: {
-                business: true,
-                products: {
-                    where: {
-                        status: 'ACTIVE',
-                    },
-                    orderBy: {
-                        name: 'asc',
-                    },
-                },
+          },
+          {
+            business: {
+              description: {
+                contains: search,
+                mode: "insensitive",
+              },
+              name: {
+                contains: search,
+                mode: "insensitive",
+              },
             },
-        });
-    }
+          },
+        ],
+      }),
+    };
 
-    static async findByBusinessId(businessId: string): Promise<Outlet[]> {
-        return db.outlet.findMany({
-            where: { businessId },
-        });
-    }
-
-    static async update(id: string, data: UpdateOutletInput): Promise<Outlet> {
-        return db.outlet.update({
-            where: { id },
-            data: { ...data, ...(data.name && { slug: StringUtil.slugify(data.name!) }) },
-        });
-    }
-
-    static async delete(id: string): Promise<Outlet> {
-        return db.outlet.delete({
-            where: { id },
-        });
-    }
-
-    static async findManyWithPagination(
-        businessId?: string,
-        search?: string,
-        take?: number,
-        skip?: number
-    ): Promise<{ outlets: Array<Outlet & { operatingHours: OutletOperatingHours[] }>, total: number }> {
-        const whereClause: any = {
-            ...(businessId && { businessId }),
-            ...(search && {
-                OR: [
-                    {
-                        name: {
-                            contains: search,
-                            mode: "insensitive"
-                        }
-                    },
-                    {
-                        business: {
-                            description: {
-                                contains: search,
-                                mode: "insensitive"
-                            },
-                            name: {
-                                contains: search,
-                                mode: "insensitive"
-                            }
-                        }
-                    }
-                ]
-            })
-        };
-
-        const [outlets, total] = await db.$transaction([
-            db.outlet.findMany({
-                where: whereClause,
-                take: take,
-                skip: skip,
-                include: {
-                    business: {
-                        select: {
-                            id: true,
-                            name: true
-                        }
-                    },
-                    operatingHours: true
-                }
-            }),
-            db.outlet.count({
-                where: whereClause,
-            }),
-        ]);
-
-        return { outlets, total };
-    }
-
-    static async findNearby(latitude: number, longitude: number, longDiff: number, latDiff: number) {
-        return db.outlet.findMany({
-            where: {
-                AND: [
-                    { latitude: { gte: latitude - latDiff } },
-                    { latitude: { lte: latitude + latDiff } },
-                    { longitude: { gte: longitude - longDiff } },
-                    { longitude: { lte: longitude + longDiff } }
-                ]
-            },
-            include: {
-                business: {
-                    select: {
-                        name: true,
-                        description: true
-                    }
-                },
-                operatingHours: true,
-                _count: {
-                    select: {
-                        orders: {
-                            where: {
-                                OR: [
-                                    { orderStatus: "COMPLETED" }
-                                ]
-                            }
-                        },
-                        products: true
-                    }
-                }
-            }
-        })
-    }
-
-    static async findFeaturedOutlets() {
-        return db.outlet.findMany({
-            include: {
-                business: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                },
-                operatingHours: true,
-                _count: {
-                    select: {
-                        orders: {
-                            where: {
-                                OR: [
-                                    { orderStatus: "COMPLETED" }
-                                ]
-                            }
-                        },
-                    },
-                },
-            },
-            orderBy: {
-                orders: {
-                    _count: 'desc'
-                }
-            },
-            take: 5
-        });
-    }
-
-    static async findNearbyWithPagination(
-        latitude: number,
-        longitude: number,
-        latMin: number,
-        latMax: number,
-        longMin: number,
-        longMax: number,
-        page: number = 1,
-        limit: number = 10,
-        search?: string
-    ) {
-        const skip = (page - 1) * limit;
-
-        let where: any = {
-            AND: [
-                { latitude: { gte: latMin } },
-                { latitude: { lte: latMax } },
-                { longitude: { gte: longMin } },
-                { longitude: { lte: longMax } }
-            ]
-        }
-
-        if (search && search !== "") where.AND.push({
-            OR: [{ name: { contains: search, mode: "insensitive" } }]
-        })
-
-        // Get total count within bounding box
-        const total = await db.outlet.count({ where });
-
-        // Get outlets within bounding box with pagination
-        const outlets = await db.outlet.findMany({
-            where,
-            include: {
-                business: {
-                    select: {
-                        name: true,
-                        description: true
-                    }
-                },
-                operatingHours: true,
-                _count: {
-                    select: {
-                        orders: {
-                            where: {
-                                OR: [
-                                    { orderStatus: "COMPLETED" }
-                                ]
-                            }
-                        },
-                        products: true
-                    }
-                }
-            },
-            skip,
-            take: limit
-        });
-
-        return { outlets, total };
-    }
-
-    static async getAllWithPagination(page: number = 1, limit: number = 10) {
-        const skip = (page - 1) * limit;
-
-        const [outlets, total] = await db.$transaction([
-            db.outlet.findMany({
-                include: {
-                    business: {
-                        select: {
-                            id: true,
-                            name: true
-                        }
-                    },
-                    operatingHours: true
-                },
-                skip,
-                take: limit
-            }),
-            db.outlet.count()
-        ]);
-
-        return { outlets, total };
-    }
-
-    static async getRevenueOrdersWithinRange(outletId: string, startDate: Date, endDate: Date) {
-        return db.order.findMany({
-            where: {
-                outletId,
-                paymentStatus: PaymentStatus.SUCCESS,
-                createdAt: {
-                    gte: startDate,
-                    lte: endDate,
-                },
-            },
+    const [outlets, total] = await db.$transaction([
+      db.outlet.findMany({
+        where: whereClause,
+        take: take,
+        skip: skip,
+        include: {
+          business: {
             select: {
-                totalAmount: true,
-                createdAt: true,
-                orderStatus: true,
-                paymentStatus: true,
-                appFee: true,
-                midtransFee: true,
-                transaction: {
-                    select: {
-                        paymentMethod: true,
-                        amount: true,
-                        isManual: true,
-                        manualMethod: true,
-                    },
-                },
+              id: true,
+              name: true,
             },
-            orderBy: {
-                createdAt: 'asc',
+          },
+          operatingHours: true,
+        },
+      }),
+      db.outlet.count({
+        where: whereClause,
+      }),
+    ]);
+
+    return { outlets, total };
+  }
+
+  static async findNearby(
+    latitude: number,
+    longitude: number,
+    longDiff: number,
+    latDiff: number,
+  ) {
+    return db.outlet.findMany({
+      where: {
+        AND: [
+          { latitude: { gte: latitude - latDiff } },
+          { latitude: { lte: latitude + latDiff } },
+          { longitude: { gte: longitude - longDiff } },
+          { longitude: { lte: longitude + longDiff } },
+        ],
+      },
+      include: {
+        business: {
+          select: {
+            name: true,
+            description: true,
+          },
+        },
+        operatingHours: true,
+        _count: {
+          select: {
+            orders: {
+              where: {
+                OR: [{ orderStatus: "COMPLETED" }],
+              },
             },
-        });
-    }
+            products: true,
+          },
+        },
+      },
+    });
+  }
 
-    static async analytics(outletId: string, startMonth: Date, endMonth: Date, options?: { lowStockThreshold?: number }) {
-        const lowStockThreshold = options?.lowStockThreshold ?? 10;
+  static async findFeaturedOutlets() {
+    return db.outlet.findMany({
+      include: {
+        business: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        operatingHours: true,
+        _count: {
+          select: {
+            orders: {
+              where: {
+                OR: [{ orderStatus: "COMPLETED" }],
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        orders: {
+          _count: "desc",
+        },
+      },
+      take: 5,
+    });
+  }
 
-        const [revenueOrders, expenses, productTypeCounts, topProductItems, lowStockProducts, paymentOrders] = await db.$transaction([
-            db.order.findMany({
-                where: {
-                    AND: [
-                        { outletId },
-                        { createdAt: { gte: endMonth, lte: startMonth } },
-                        { paymentStatus: "SUCCESS" }
-                    ]
-                },
+  static async findNearbyWithPagination(
+    latitude: number,
+    longitude: number,
+    latMin: number,
+    latMax: number,
+    longMin: number,
+    longMax: number,
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+  ) {
+    const skip = (page - 1) * limit;
 
-                select: {
-                    totalAmount: true,
-                    createdAt: true,
-                    orderStatus: true,
-                    paymentStatus: true,
-                    appFee: true,
-                    midtransFee: true,
+    let where: any = {
+      AND: [
+        { latitude: { gte: latMin } },
+        { latitude: { lte: latMax } },
+        { longitude: { gte: longMin } },
+        { longitude: { lte: longMax } },
+      ],
+    };
 
-                    transaction: {
-                        select: {
-                            paymentMethod: true,
-                            amount: true,
-                            isManual: true,
-                            manualMethod: true
-                        }
-                    }
-                },
-            }),
+    if (search && search !== "")
+      where.AND.push({
+        OR: [{ name: { contains: search, mode: "insensitive" } }],
+      });
 
-            db.expense.findMany({
-                where: {
-                    AND: [
-                        { outletId },
-                        { createdAt: { gte: endMonth, lte: startMonth } }
-                    ]
-                },
-                select: {
-                    id: true,
-                    amount: true,
-                    date: true,
-                    description: true
-                },
-            }),
+    // Get total count within bounding box
+    const total = await db.outlet.count({ where });
 
-            db.product.groupBy({
-                by: ['type'],
-                where: {
-                    outletId,
-                },
-                _count: {
-                    _all: true,
-                },
-                orderBy: {
-                    type: 'asc',
-                },
-            }),
+    // Get outlets within bounding box with pagination
+    const outlets = await db.outlet.findMany({
+      where,
+      include: {
+        business: {
+          select: {
+            name: true,
+            description: true,
+          },
+        },
+        operatingHours: true,
+        _count: {
+          select: {
+            orders: {
+              where: {
+                OR: [{ orderStatus: "COMPLETED" }],
+              },
+            },
+            products: true,
+          },
+        },
+      },
+      skip,
+      take: limit,
+    });
 
-            db.orderItem.findMany({
-                where: {
-                    order: {
-                        outletId,
-                        createdAt: { gte: endMonth, lte: startMonth },
-                        paymentStatus: {
-                            in: [PaymentStatus.SUCCESS],
-                        },
-                    },
-                },
-                select: {
-                    productId: true,
-                    quantity: true,
-                    priceAtTimeOfOrder: true,
-                    product: {
-                        select: {
-                            name: true,
-                            type: true,
-                            status: true,
-                        },
-                    },
-                },
-            }),
+    return { outlets, total };
+  }
 
-            db.product.findMany({
-                where: {
-                    outletId,
-                    type: ProductType.GOODS,
-                    status: ServiceStatus.ACTIVE,
-                    goods: {
-                        currentStock: { lte: lowStockThreshold },
-                    },
-                },
-                select: {
-                    id: true,
-                    name: true,
-                    goods: true,
-                },
-                orderBy: {
-                    goods: { currentStock: 'asc' },
-                },
-                take: 10,
-            }),
+  static async getAllWithPagination(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
 
-            db.order.findMany({
-                where: {
-                    outletId,
-                    createdAt: { gte: endMonth, lte: startMonth }
-                },
-                select: {
-                    id: true,
-                    totalAmount: true,
-                    paymentStatus: true,
-                    createdAt: true,
-                    appFee: true,
-                    midtransFee: true,
-                    transaction: {
-                        select: {
-                            amount: true,
-                            paymentMethod: true,
-                            isManual: true,
-                            manualMethod: true,
-                            status: true
-                        }
-                    }
-                }
-            })
-        ])
+    const [outlets, total] = await db.$transaction([
+      db.outlet.findMany({
+        include: {
+          business: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          operatingHours: true,
+        },
+        skip,
+        take: limit,
+      }),
+      db.outlet.count(),
+    ]);
 
-        return { revenueOrders, expenses, productTypeCounts, topProductItems, lowStockProducts, paymentOrders }
-    }
+    return { outlets, total };
+  }
+
+  static async getRevenueOrdersWithinRange(
+    outletId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    return db.order.findMany({
+      where: {
+        outletId,
+        paymentStatus: PaymentStatus.SUCCESS,
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      select: {
+        totalAmount: true,
+        createdAt: true,
+        orderStatus: true,
+        paymentStatus: true,
+        appFee: true,
+        midtransFee: true,
+        transaction: {
+          select: {
+            paymentMethod: true,
+            amount: true,
+            isManual: true,
+            manualMethod: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+  }
+
+  static async analytics(
+    outletId: string,
+    startMonth: Date,
+    endMonth: Date,
+    options?: { lowStockThreshold?: number },
+  ) {
+    const lowStockThreshold = options?.lowStockThreshold ?? 10;
+
+    const [
+      revenueOrders,
+      expenses,
+      productTypeCounts,
+      topProductItems,
+      lowStockProducts,
+      paymentOrders,
+    ] = await db.$transaction([
+      db.order.findMany({
+        where: {
+          AND: [
+            { outletId },
+            { createdAt: { gte: endMonth, lte: startMonth } },
+            { paymentStatus: "SUCCESS" },
+          ],
+        },
+
+        select: {
+          totalAmount: true,
+          createdAt: true,
+          orderStatus: true,
+          paymentStatus: true,
+          appFee: true,
+          midtransFee: true,
+
+          transaction: {
+            select: {
+              paymentMethod: true,
+              amount: true,
+              isManual: true,
+              manualMethod: true,
+            },
+          },
+        },
+      }),
+
+      db.expense.findMany({
+        where: {
+          AND: [
+            { outletId },
+            { createdAt: { gte: endMonth, lte: startMonth } },
+          ],
+        },
+        select: {
+          id: true,
+          amount: true,
+          date: true,
+          description: true,
+        },
+      }),
+
+      db.product.groupBy({
+        by: ["type"],
+        where: {
+          outletId,
+        },
+        _count: {
+          _all: true,
+        },
+        orderBy: {
+          type: "asc",
+        },
+      }),
+
+      db.orderItem.findMany({
+        where: {
+          order: {
+            outletId,
+            createdAt: { gte: endMonth, lte: startMonth },
+            paymentStatus: {
+              in: [PaymentStatus.SUCCESS],
+            },
+          },
+        },
+        select: {
+          productId: true,
+          quantity: true,
+          priceAtTimeOfOrder: true,
+          product: {
+            select: {
+              name: true,
+              type: true,
+              status: true,
+            },
+          },
+        },
+      }),
+
+      db.product.findMany({
+        where: {
+          outletId,
+          type: ProductType.GOODS,
+          status: ServiceStatus.ACTIVE,
+          goods: {
+            currentStock: { lte: lowStockThreshold },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          goods: true,
+        },
+        orderBy: {
+          goods: { currentStock: "asc" },
+        },
+        take: 10,
+      }),
+
+      db.order.findMany({
+        where: {
+          outletId,
+          createdAt: { gte: endMonth, lte: startMonth },
+        },
+        select: {
+          id: true,
+          totalAmount: true,
+          paymentStatus: true,
+          createdAt: true,
+          appFee: true,
+          midtransFee: true,
+          transaction: {
+            select: {
+              amount: true,
+              paymentMethod: true,
+              isManual: true,
+              manualMethod: true,
+              status: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      revenueOrders,
+      expenses,
+      productTypeCounts,
+      topProductItems,
+      lowStockProducts,
+      paymentOrders,
+    };
+  }
 }

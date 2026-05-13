@@ -235,7 +235,7 @@ export default function StockContent() {
 
   if (!hasBusinessProfile && !hasOutlet) {
     return (
-      <EmptyOutletState onAddOutlet={() => router.push(`/owner/dashboard#add-outlet`)} />
+      <EmptyOutletState onAddOutlet={() => router.push(`/owner#add-outlet`)} />
     );
   }
 

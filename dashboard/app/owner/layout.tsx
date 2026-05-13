@@ -1,5 +1,6 @@
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Metadata } from 'next';
+import OutletTypeChecker from '@/components/layout/OutletTypeChecker';
 
 export const metadata: Metadata = {
     title: "Owner Dashboard | BOSS",
@@ -17,6 +18,7 @@ export default function OwnerLayout({
 }) {
     return (
         <DashboardLayout requiredRole="OWNER">
+            <OutletTypeChecker />
             {children}
         </DashboardLayout>
     );

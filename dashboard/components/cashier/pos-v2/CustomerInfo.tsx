@@ -25,7 +25,18 @@ interface CustomerInfoProps {
     loyaltyDiscount: number;
     loyaltyConfig: any;
     subtotal: number;
+    outletType?: string;
+    tableId?: string;
+    onTableIdChange?: (value: string) => void;
+    tableNumber?: string;
+    onTableNumberChange?: (value: string) => void;
 }
+
+import { useQuery } from "@tanstack/react-query";
+import { useGetTables } from "@/hooks/api/use-tables";
+import { LayoutGrid } from "lucide-react";
+import { TableSelector } from "./TableSelector";
+import { cn } from "@/lib/utils";
 
 export function CustomerInfo({
     outletId,
@@ -41,8 +52,22 @@ export function CustomerInfo({
     loyaltyDiscount,
     loyaltyConfig,
     subtotal,
+    outletType,
+    tableId,
+    onTableIdChange,
+    tableNumber,
+    onTableNumberChange,
 }: CustomerInfoProps) {
     const registerMember = useRegisterLoyaltyMember();
+    const isTableFeatureEnabled = outletType === "FNB" || outletType === "CUSTOM";
+
+    const [isTableSelectorOpen, setIsTableSelectorOpen] = React.useState(false);
+
+    // Fetch tables for F&B
+    const { data: tables = [], isLoading: isTablesLoading } = useGetTables(
+        outletId,
+        outletType === "FNB" || outletType === "CUSTOM"
+    );
 
     // Search for member if phone is valid (min 10 digits)
     const isPhoneValid = phone.length >= 10;
@@ -78,10 +103,39 @@ export function CustomerInfo({
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Pelanggan</Label>
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Walk-in</span>
-                    <Switch checked={isWalkIn} onCheckedChange={onWalkInChange} />
+                <Label className="text-sm font-bold">Pelanggan</Label>
+                <div className="flex items-center gap-4">
+                    {isTableFeatureEnabled && (
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="table" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Meja</Label>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 gap-2 px-3 text-xs font-bold bg-background border-border/60 hover:border-primary/40"
+                                onClick={() => setIsTableSelectorOpen(true)}
+                            >
+                                <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground" />
+                                {tableNumber ? `Meja ${tableNumber}` : "Pilih..."}
+                            </Button>
+
+                            <TableSelector
+                                open={isTableSelectorOpen}
+                                onOpenChange={setIsTableSelectorOpen}
+                                tables={tables}
+                                selectedTableId={tableId}
+                                onSelect={(t) => {
+                                    onTableIdChange?.(t.id);
+                                    onTableNumberChange?.(t.name);
+                                }}
+                                isLoading={isTablesLoading}
+                            />
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Walk-in</span>
+                        <Switch checked={isWalkIn} onCheckedChange={onWalkInChange} />
+                    </div>
                 </div>
             </div>
 

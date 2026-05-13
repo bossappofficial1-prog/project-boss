@@ -77,6 +77,7 @@ export class UserRepository {
                                 latitude: true,
                                 longitude: true,
                                 manualQrImageUrl: true,
+                                type: true,
                                 phone: true,
                                 createdAt: true,
                                 updatedAt: true

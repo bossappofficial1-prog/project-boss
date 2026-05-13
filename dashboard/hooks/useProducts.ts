@@ -14,6 +14,7 @@ export interface Product {
     serviceDurationMinutes?: number;
     image?: string;
     outletId?: string;
+    taxPercentage?: number | null;
     createdAt: string;
     updatedAt: string;
 }

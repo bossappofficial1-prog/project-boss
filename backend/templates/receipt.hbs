@@ -7,27 +7,29 @@
     <title>Struk Pembelian</title>
     <style>
         @page {
-            size: 80mm auto;
+            size: 100% auto;
             margin: 0;
         }
 
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            width: 80mm;
-            /* Lebar standar printer thermal */
+            width: 100%;
             margin: 0 auto;
             padding: 5mm;
             font-family: 'Consolas', 'Courier New', Courier, monospace;
             font-size: 12px;
             color: #000;
             background-color: #fff;
-            line-height: 1.4;
+            line-height: 1.5;
+            height: fit-content;
+            min-height: unset;
         }
 
-        /* --- Text Alignments --- */
         .text-center {
             text-align: center;
         }
@@ -44,55 +46,62 @@
             font-weight: bold;
         }
 
-        /* --- Header Section --- */
+        /* Header */
         .header {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .header img {
-            width: 50px;
-            margin-bottom: 5px;
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            margin-bottom: 6px;
         }
 
         .store-name {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 2px 0;
+            letter-spacing: 2px;
+            margin: 3px 0 2px;
         }
 
         .store-address,
         .store-phone {
-            font-size: 11px;
-            color: #222;
+            font-size: 10.5px;
+            color: #333;
+            line-height: 1.6;
         }
 
         .transaction-id {
-            font-size: 10px;
-            margin-top: 5px;
-            padding-top: 5px;
-            border-top: 1px solid #000;
+            font-size: 9.5px;
+            letter-spacing: 0.5px;
+            margin-top: 6px;
+            padding: 3px 8px;
+            border: 1px solid #000;
             display: inline-block;
         }
 
-        /* --- Dividers --- */
+        /* Dividers */
         .divider-dashed {
-            border-top: 1px dashed #000;
+            border: none;
+            border-top: 1px dashed #888;
             margin: 8px 0;
         }
 
         .divider-solid {
-            border-top: 1.5px solid #000;
+            border: none;
+            border-top: 2px solid #000;
             margin: 8px 0;
         }
 
-        /* --- Meta Info Grid --- */
+        /* Meta Info */
         .meta-info {
             display: flex;
             justify-content: space-between;
-            font-size: 11px;
+            font-size: 10.5px;
             margin-bottom: 8px;
+            gap: 6px;
         }
 
         .meta-col {
@@ -103,17 +112,16 @@
 
         .highlight-box {
             display: inline-block;
-            padding: 2px 4px;
+            padding: 2px 5px;
             background-color: #000;
             color: #fff;
-            font-size: 10px;
-            border-radius: 2px;
+            font-size: 9.5px;
             margin-top: 2px;
         }
 
-        /* --- Items Section --- */
+        /* Items */
         .item-list {
-            margin: 10px 0;
+            margin: 8px 0;
         }
 
         .item-row {
@@ -130,15 +138,14 @@
         .item-calc {
             display: flex;
             justify-content: space-between;
-            font-size: 11.5px;
-            color: #111;
+            font-size: 11px;
+            color: #222;
             padding-left: 12px;
-            /* Indentasi agar rapi di bawah nama item */
         }
 
-        /* --- Totals Section --- */
+        /* Totals */
         .total-section {
-            margin-top: 10px;
+            margin-top: 8px;
             page-break-inside: avoid;
         }
 
@@ -146,7 +153,7 @@
             display: flex;
             justify-content: space-between;
             margin: 3px 0;
-            font-size: 12px;
+            font-size: 11.5px;
         }
 
         .total-row.discount {
@@ -155,15 +162,15 @@
 
         .total-row.grand-total {
             font-weight: bold;
-            font-size: 16px;
-            margin-top: 6px;
-            padding-top: 6px;
-            border-top: 1px solid #000;
+            font-size: 15px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 2px solid #000;
         }
 
-        /* --- Footer Section --- */
+        /* Footer */
         .footer {
-            margin-top: 20px;
+            margin-top: 16px;
             font-size: 11px;
         }
 
@@ -175,8 +182,10 @@
 
         .footer-brand {
             font-size: 9px;
-            color: #555;
-            letter-spacing: 1px;
+            color: #666;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -187,6 +196,10 @@
     <div class="header text-center">
         {{#if showLogo}}
         <img src="{{photoString}}" alt="Logo Toko" />
+        {{/if}}
+        {{#if headerText}}
+        <div style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #444; margin-bottom: 4px;">
+            {{headerText}}</div>
         {{/if}}
         <div class="store-name">{{storeName}}</div>
         <div class="store-address">{{address}}</div>
@@ -203,8 +216,12 @@
             <span class="text-bold">Order: #{{orderNo}}</span>
         </div>
         <div class="meta-col text-right">
+            {{#if showCashier}}
             <span>Kasir: {{cashier}}</span>
+            {{/if}}
+            {{#if showCustomer}}
             <span>Plg: {{customerName}}</span>
+            {{/if}}
             {{#if shippingAddress}}
             <div><span class="highlight-box">{{shippingAddress}}</span></div>
             {{/if}}
@@ -256,7 +273,15 @@
 
     <!-- Footer -->
     <div class="footer text-center">
-        <div class="footer-thanks">Terima Kasih Telah Berbelanja!</div>
+        {{#if showQR}}
+        {{#if qrContent}}
+        <div style="margin-bottom: 10px;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{qrContent}}"
+                style="width: 80px; height: 80px;">
+        </div>
+        {{/if}}
+        {{/if}}
+        <div class="footer-thanks">{{#if footerText}}{{footerText}}{{else}}Terima Kasih Telah Berbelanja!{{/if}}</div>
         <div class="footer-brand">Powered by bossapp.id</div>
     </div>
 

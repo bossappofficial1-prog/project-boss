@@ -17,6 +17,7 @@ import { parseOperatingHours } from '@/lib/utils'
 import { AxiosError } from 'axios'
 import { ReusableForm, type FormFieldConfig } from '@/components/ui/reuseable-form'
 import { ACCEPTED_FILE_TYPES } from '@/constants/file-types'
+import { OutletType } from '@/types'
 
 const outletSchema = z.object({
   name: z.string().min(1, 'Nama outlet wajib diisi'),
@@ -30,6 +31,7 @@ const outletSchema = z.object({
     }, { message: 'Masukkan nomor telepon yang valid (contoh: 081234567890 atau +6281234567890)' }),
   email: z.string().email('Format email tidak valid').optional().or(z.literal('')),
   description: z.string().optional(),
+  type: z.nativeEnum(OutletType).default(OutletType.CUSTOM),
   status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
@@ -66,6 +68,7 @@ export default function AddOutletModal({
       phone: '',
       email: '',
       description: '',
+      type: OutletType.CUSTOM,
       status: 'ACTIVE',
       latitude: undefined,
       longitude: undefined,
@@ -97,6 +100,7 @@ export default function AddOutletModal({
       phone: outletDetail.phone || '',
       email: outletDetail.email || '',
       description: outletDetail.description || '',
+      type: outletDetail.type || OutletType.CUSTOM,
       status: outletDetail.isOpen === true ? 'ACTIVE' : 'INACTIVE',
       latitude: outletDetail.latitude || undefined,
       longitude: outletDetail.longitude || undefined,
@@ -146,6 +150,7 @@ export default function AddOutletModal({
         phone: formData.get('phone') as string,
         email: (formData.get('email') as string) || undefined,
         description: (formData.get('description') as string) || undefined,
+        type: formData.get('type') as OutletType,
         latitude: latValue && latValue !== 'undefined' ? Number(latValue) : undefined,
         longitude: lngValue && lngValue !== 'undefined' ? Number(lngValue) : undefined,
         isOpen: status === 'ACTIVE',
@@ -210,6 +215,7 @@ export default function AddOutletModal({
         phone: '',
         email: '',
         description: '',
+        type: OutletType.CUSTOM,
         status: 'ACTIVE',
         latitude: undefined,
         longitude: undefined,
@@ -257,6 +263,22 @@ export default function AddOutletModal({
       placeholder: 'Deskripsi singkat outlet',
       icon: FileText,
       colSpan: 'full' as const,
+    },
+    {
+      name: 'type',
+      label: 'Tipe Bisnis',
+      type: 'select' as const,
+      placeholder: 'Pilih Tipe Bisnis',
+      icon: Building2,
+      colSpan: 'full' as const,
+      description: 'Menentukan fitur default yang paling relevan untuk operasional outlet.',
+      options: [
+        { label: 'F&B (Makanan & Minuman)', value: OutletType.FNB },
+        { label: 'Retail (Barang/Stok)', value: OutletType.RETAIL },
+        { label: 'Jasa (Layanan/Booking)', value: OutletType.SERVICE },
+        { label: 'Event (Tiket/Check-in)', value: OutletType.EVENT },
+        { label: 'Custom (Semua Fitur)', value: OutletType.CUSTOM },
+      ],
     },
     {
       name: 'phone',
@@ -344,6 +366,7 @@ export default function AddOutletModal({
         phone: '',
         email: '',
         description: '',
+        type: OutletType.CUSTOM,
         status: 'ACTIVE',
         latitude: undefined,
         longitude: undefined,

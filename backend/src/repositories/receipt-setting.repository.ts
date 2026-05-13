@@ -6,12 +6,15 @@ export class ReceiptSettingRepository {
         return db.receiptSetting.update({
             where: { outletId },
             data: {
-                outletId,
-                photoString: data.photoString,
-                printHeight: data.printHeight,
-                printWidth: data.printWidth,
-                showLogo: data.showLogo,
+                ...data,
+                outletId, // Ensure outletId doesn't get overwritten
             }
+        })
+    }
+
+    static async create(outletId: string) {
+        return db.receiptSetting.create({
+            data: { outletId }
         })
     }
 
