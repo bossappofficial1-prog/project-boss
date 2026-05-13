@@ -31,9 +31,16 @@ export function DatePickerWithRange({
 
   React.useEffect(() => {
     if (date) {
-      onDateChange?.(date);
+      setDateRange(date);
     }
-  }, [dateRange, setDateRange, date, onDateChange]);
+  }, [date]);
+
+  const handleSelect = (newRange: DateRange | undefined) => {
+    setDateRange(newRange);
+    if (newRange?.from && newRange?.to) {
+      onDateChange?.(newRange);
+    }
+  };
 
   return (
     <div className={cn("grid gap-2", className)}>
@@ -71,7 +78,7 @@ export function DatePickerWithRange({
             mode="range"
             defaultMonth={date?.from}
             selected={dateRange}
-            onSelect={setDateRange}
+            onSelect={handleSelect}
             numberOfMonths={2}
           />
         </PopoverContent>

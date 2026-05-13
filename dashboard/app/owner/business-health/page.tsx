@@ -23,6 +23,8 @@ import { addDays } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { Grade, HealthStatus, useTools } from "@/hooks/use-tools";
+import { Skeleton } from "@/components/ui/skeleton";
+
 
 function formatCompact(value: number): string {
   if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}M`;
@@ -189,6 +191,90 @@ function MetricRow({
   );
 }
 
+function BusinessHealthSkeleton() {
+  return (
+    <div className="space-y-3 animate-in fade-in duration-500">
+      {/* Header Skeleton */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <Skeleton className="h-9 w-60" />
+      </div>
+
+      {/* Overall Score Skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="shadow-none border-border/50 md:col-span-1">
+          <CardContent className="p-6 flex flex-col items-center justify-center gap-4 h-full">
+            <Skeleton className="h-24 w-24 rounded-full" />
+            <div className="space-y-2 flex flex-col items-center">
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none border-border/50 md:col-span-2">
+          <CardHeader className="p-4 pb-2">
+            <Skeleton className="h-4 w-32" />
+          </CardHeader>
+          <CardContent className="p-4 pt-2 space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+                <Skeleton className="h-2 w-full" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Metric Cards Skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Card key={i} className="shadow-none border-border/50 py-0">
+            <CardHeader className="p-4 pb-2">
+              <div className="flex justify-between items-center">
+                <div className="flex gap-2 items-center">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-2 w-full mt-2" />
+            </CardHeader>
+            <CardContent className="p-4 pt-2 space-y-4">
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BusinessHealthEmpty() {
+  return (
+    <Card className="py-20 flex flex-col items-center justify-center text-center space-y-4 border-dashed bg-muted/20 shadow-none">
+      <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+        <Package className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <div className="space-y-2 px-4">
+        <h3 className="text-xl font-semibold">Data Tidak Ditemukan</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+          Maaf, kami tidak menemukan data kesehatan bisnis untuk periode dan outlet ini. Coba pilih rentang tanggal lain atau pastikan outlet telah memiliki transaksi.
+        </p>
+      </div>
+    </Card>
+  );
+}
+
 export default function BusinessHealth() {
   const { selectedOutletId } = useOutletContext();
 
@@ -202,11 +288,11 @@ export default function BusinessHealth() {
     to: dateRange?.to!,
   });
 
-  if (businessHealth.isPending) return <p>Loading...</p>;
+  if (businessHealth.isPending) return <BusinessHealthSkeleton />;
 
   const data = businessHealth.data;
 
-  if (!data) return <p>No data found.</p>;
+  if (!data) return <BusinessHealthEmpty />;
 
   const gradeCfg = GRADE_CONFIG[data.grade];
   const {
