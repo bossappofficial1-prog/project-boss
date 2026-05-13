@@ -2,8 +2,9 @@ import { Staff } from "@prisma/client";
 import { db } from "../config/prisma";
 import { BcryptUtil } from "../utils";
 import { StaffFormValues, UpdateStaffSchemaValues } from "../schemas/staff.schema";
-import { AppError } from "src/errors/app-error";
-import { HttpStatus } from "src/constants/http-status";
+import { AppError } from "../errors/app-error";
+import { HttpStatus } from "../constants/http-status";
+
 
 export class StaffRepository {
   static async create(data: StaffFormValues): Promise<Staff> {

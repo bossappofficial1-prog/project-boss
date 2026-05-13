@@ -10,7 +10,8 @@ import {
   SnapChargeParams,
   SnapChargeResult,
 } from "./payment-provider.interface";
-import { MidtransWebhookPayloadType } from "src/types/Others";
+import { MidtransWebhookPayloadType } from "../../types/Others";
+
 import { PaymentStatus } from "@prisma/client";
 
 /** Mapping dari channel generik ke format Midtrans Core API */

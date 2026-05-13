@@ -1,7 +1,8 @@
 import {
   OutletRepository,
   RawOrderItem,
-} from "src/repositories/outlet.repository";
+} from "../repositories/outlet.repository";
+
 
 export interface ProductProfitItem {
   productId: string;

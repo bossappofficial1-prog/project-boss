@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
-import { asyncHandler } from "src/middleware/error.middleware";
-import { ToolsService } from "src/service/tools.service";
-import { ResponseUtil } from "src/utils";
+import { asyncHandler } from "../middleware/error.middleware";
+import { ToolsService } from "../service/tools.service";
+import { ResponseUtil } from "../utils";
+
 
 export class ToolsController {
   constructor(private toolsService: ToolsService) {}

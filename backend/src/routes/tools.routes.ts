@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { ToolsController } from "src/controller/tools.controller";
-import { ToolsService } from "src/service/tools.service";
+import { ToolsController } from "../controller/tools.controller";
+import { ToolsService } from "../service/tools.service";
+
 
 const toolsRouter = Router();
 
