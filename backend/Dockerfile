@@ -49,10 +49,13 @@ RUN if [ "$INSTALL_CHROMIUM" = "true" ]; then \
 
 COPY --from=prod-deps /app/node_modules ./node_modules
 
+# Copy built app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/prisma ./prisma
+
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 RUN mkdir -p /app/uploads && chmod 777 /app/uploads
 

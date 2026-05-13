@@ -1,9 +1,7 @@
 services:
   redis:
     image: redis:7-alpine
-    deploy:
-      restart_policy:
-        condition: any
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -11,9 +9,12 @@ services:
       retries: 5
     ports:
       - "6379:6379"
+    networks:
+      - default
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
+    restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -26,14 +27,12 @@ services:
       timeout: 3s
       retries: 5
       start_period: 30s
-    deploy:
-      restart_policy:
-        condition: any
     networks:
       - default
 
   backend:
     image: ${DOCKER_USER:-pitok}/project-backend:production
+    restart: unless-stopped
     env_file:
       - .env.backend
     environment:
@@ -54,48 +53,34 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    deploy:
-      replicas: 1
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
-      rollback_config:
-        parallelism: 1
-        order: start-first
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - default
 
   consumer:
     image: ${DOCKER_USER:-pitok}/project-consumer:production
+    restart: unless-stopped
     env_file:
       - .env.consumer
     environment:
       - BACKEND_API_URL=http://backend:1234/api/v1
       - RABBITMQ_URL=amqp://rabbitmq
       - NODE_ENV=production
-    deploy:
-      replicas: 1
-      update_config:
-        parallelism: 1
-        delay: 5s
-        order: start-first
-      rollback_config:
-        parallelism: 1
-        order: start-first
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
     networks:
       - default
 
   customer:
     image: ${DOCKER_USER:-pitok}/project-customer:production
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       SERVER_API_URL: https://api.bossapp.id/api/v1
@@ -103,68 +88,32 @@ services:
       - "3000:3000"
     env_file:
       - .env.frontend-customer
-    deploy:
-      replicas: 1
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
-      rollback_config:
-        parallelism: 1
-        order: start-first
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
     networks:
       - default
 
   dashboard:
     image: ${DOCKER_USER:-pitok}/project-dashboard:production
+    restart: unless-stopped
     ports:
       - "3010:3010"
     environment:
       NODE_ENV: production
     env_file:
       - .env.dashboard
-    deploy:
-      replicas: 1
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
-      rollback_config:
-        parallelism: 1
-        order: start-first
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
     networks:
       - default
 
   profile:
     image: ${DOCKER_USER:-pitok}/project-profile:production
+    restart: unless-stopped
     ports:
       - "3020:80"
-    deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
-      rollback_config:
-        parallelism: 1
-        order: start-first
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
     networks:
       - default
 
   nginx-proxy-manager:
     image: "jc21/nginx-proxy-manager:latest"
+    restart: unless-stopped
     ports:
       - "80:80"
       - "81:81"
@@ -172,13 +121,9 @@ services:
     volumes:
       - ./npm/data:/data
       - ./npm/letsencrypt:/etc/letsencrypt
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: any
     networks:
       - default
 
 networks:
   default:
-    driver: overlay
+    driver: bridge
