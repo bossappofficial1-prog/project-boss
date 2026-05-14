@@ -40,6 +40,16 @@ export default function JamRamai() {
     );
   }
 
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">
+          Tidak ada data untuk rentang tanggal ini.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
