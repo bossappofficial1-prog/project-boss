@@ -1,5 +1,5 @@
 import { OrderStatus, PaymentStatus, ProductType } from "@prisma/client";
-import { db } from "src/config/prisma";
+import { db } from "..//config/prisma";
 
 export interface RawOrderTimestamp {
   createdAt: Date;

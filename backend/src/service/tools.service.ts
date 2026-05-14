@@ -1,14 +1,14 @@
+import { id } from "date-fns/locale";
 import {
   RawPLExpense,
   RawPLOrderItem,
   ToolsRepository,
-} from "src/repositories/tools.repository";
+} from "..//repositories/tools.repository";
 import {
   OutletRepository,
   RawOrderItem,
 } from "../repositories/outlet.repository";
 import { format } from "date-fns";
-import { id } from "node_modules/date-fns/locale/id";
 
 export interface ProductProfitItem {
   productId: string;

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { ToolsController } from "../controller/tools.controller";
 import { ToolsService } from "../service/tools.service";
-import { protect } from "src/middleware/auth.middleware";
+import { protect } from "../middleware/auth.middleware";
 
 const toolsRouter = Router();
 
