@@ -1,8 +1,14 @@
 import {
+  RawPLExpense,
+  RawPLOrderItem,
+  ToolsRepository,
+} from "src/repositories/tools.repository";
+import {
   OutletRepository,
   RawOrderItem,
 } from "../repositories/outlet.repository";
-
+import { format } from "date-fns";
+import { id } from "node_modules/date-fns/locale/id";
 
 export interface ProductProfitItem {
   productId: string;
@@ -32,6 +38,82 @@ export interface ProfitPerProductResult {
   products: ProductProfitItem[];
 }
 
+export interface HourSlot {
+  hour: number;
+  orderCount: number;
+  revenue: number;
+}
+
+export interface DayData {
+  day: number; // 0 = Senin (ISO: 1), 6 = Minggu (ISO: 0)
+  dayName: string;
+  totalOrders: number;
+  totalRevenue: number;
+  slots: HourSlot[];
+}
+
+export interface JamRamaResult {
+  period: { startDate: string; endDate: string };
+  summary: {
+    totalOrders: number;
+    totalRevenue: number;
+    avgOrdersPerDay: number;
+    avgRevenuePerDay: number;
+    peakHour: number;
+    peakDay: string;
+    peakDayOrders: number;
+    peakHourOrders: number;
+  };
+  days: DayData[];
+}
+
+export interface ExpenseEntry {
+  description: string;
+  amount: number;
+  date: string;
+}
+
+export interface MonthlySnapshot {
+  month: string;
+  monthName: string;
+  revenue: number;
+  hpp: number;
+  grossProfit: number;
+  expenses: number;
+  netProfit: number;
+}
+
+export interface PLResult {
+  period: { startDate: string; endDate: string; label: string };
+  current: {
+    revenue: number;
+    hpp: number;
+    grossProfit: number;
+    grossMargin: number;
+    expenses: number;
+    expenseBreakdown: ExpenseEntry[];
+    netProfit: number;
+    netMargin: number;
+    totalOrders: number;
+    totalQtySold: number;
+  };
+  previous: {
+    revenue: number;
+    grossProfit: number;
+    netProfit: number;
+  };
+  monthly: MonthlySnapshot[];
+}
+
+const DAY_NAMES = [
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+  "Minggu",
+];
 type HealthStatus = "healthy" | "warning" | "danger";
 type Grade = "A" | "B" | "C" | "D";
 
@@ -310,14 +392,197 @@ export class ToolsService {
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
       },
-      overallScore,
+      overallScore: overallScore,
       grade: this.toGrade(overallScore),
       metrics,
       insights: this.buildInsights(metrics),
     };
   }
 
+  public async getIncomeStatement(
+    outletId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    const durationMs = endDate.getTime() - startDate.getTime();
+    const prevEnd = new Date(startDate.getTime() - 1);
+    const prevStart = new Date(prevEnd.getTime() - durationMs);
+
+    const [
+      currentItems,
+      prevItems,
+      totalOrders,
+      currentExpenses,
+      prevExpenses,
+    ] = await Promise.all([
+      ToolsRepository.getOrderItems(outletId, startDate, endDate),
+      ToolsRepository.getOrderItems(outletId, prevStart, prevEnd),
+      ToolsRepository.getTotalOrders(outletId, startDate, endDate),
+      ToolsRepository.getExpenses(outletId, startDate, endDate),
+      ToolsRepository.getExpenses(outletId, prevStart, prevEnd),
+    ]);
+
+    // Current period
+    const revenue = this.calcRevenue(currentItems);
+    const hpp = this.calcHpp(currentItems);
+    const grossProfit = revenue - hpp;
+    const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+    const totalExpenses = this.calcTotalExpenses(currentExpenses);
+    const netProfit = grossProfit - totalExpenses;
+    const netMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+    const totalQtySold = currentItems.reduce((s, i) => s + i.quantity, 0);
+
+    // Previous period
+    const prevRevenue = this.calcRevenue(prevItems);
+    const prevHpp = this.calcHpp(prevItems);
+    const prevGrossProfit = prevRevenue - prevHpp;
+    const prevTotalExpenses = this.calcTotalExpenses(prevExpenses);
+    const prevNetProfit = prevGrossProfit - prevTotalExpenses;
+
+    // Monthly breakdown
+    const itemsByMonth = this.groupItemsByMonth(currentItems);
+    const expensesByMonth = this.groupExpensesByMonth(currentExpenses);
+
+    const allMonths = new Set([
+      ...itemsByMonth.keys(),
+      ...expensesByMonth.keys(),
+    ]);
+
+    const monthly: MonthlySnapshot[] = [...allMonths].sort().map((month) => {
+      const monthItems = itemsByMonth.get(month) ?? [];
+      const monthExpenses = expensesByMonth.get(month) ?? [];
+      const mRevenue = this.calcRevenue(monthItems);
+      const mHpp = this.calcHpp(monthItems);
+      const mGrossProfit = mRevenue - mHpp;
+      const mExpenses = this.calcTotalExpenses(monthExpenses);
+      const mNetProfit = mGrossProfit - mExpenses;
+
+      return {
+        month,
+        monthName: format(new Date(month + "-01"), "MMM", { locale: id }),
+        revenue: mRevenue,
+        hpp: mHpp,
+        grossProfit: mGrossProfit,
+        expenses: mExpenses,
+        netProfit: mNetProfit,
+      };
+    });
+
+    return {
+      period: {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        label: this.getPeriodLabel(startDate, endDate),
+      },
+      current: {
+        revenue,
+        hpp,
+        grossProfit,
+        grossMargin,
+        expenses: totalExpenses,
+        expenseBreakdown: currentExpenses.map((e) => ({
+          description: e.description,
+          amount: e.amount,
+          date: e.date.toISOString(),
+        })),
+        netProfit,
+        netMargin,
+        totalOrders,
+        totalQtySold,
+      },
+      previous: {
+        revenue: prevRevenue,
+        grossProfit: prevGrossProfit,
+        netProfit: prevNetProfit,
+      },
+      monthly,
+    };
+  }
+
+  public async getPeakHours(outletId: string, startDate: Date, endDate: Date) {
+    const orders = await ToolsRepository.getPeakHours(
+      outletId,
+      startDate,
+      endDate,
+    );
+
+    const days = this.buildEmptyDays();
+
+    for (const order of orders) {
+      const dayIndex = this.toDayIndex(order.createdAt.getDay());
+      const hour = order.createdAt.getHours();
+
+      days[dayIndex].totalOrders++;
+      days[dayIndex].totalRevenue += order.totalAmount;
+      days[dayIndex].slots[hour].orderCount++;
+      days[dayIndex].slots[hour].revenue += order.totalAmount;
+    }
+
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce((s, o) => s + o.totalAmount, 0);
+
+    // Unique operational days in range
+    const uniqueDays = new Set(orders.map((o) => o.createdAt.toDateString()))
+      .size;
+    const safeDays = uniqueDays > 0 ? uniqueDays : 1;
+
+    // Peak day
+    const peakDay = [...days].sort((a, b) => b.totalOrders - a.totalOrders)[0];
+
+    // Peak hour (aggregate across all days)
+    const hourTotals = this.buildEmptySlots();
+    for (const day of days) {
+      for (const slot of day.slots) {
+        hourTotals[slot.hour].orderCount += slot.orderCount;
+        hourTotals[slot.hour].revenue += slot.revenue;
+      }
+    }
+    const peakHourSlot = [...hourTotals].sort(
+      (a, b) => b.orderCount - a.orderCount,
+    )[0];
+
+    return {
+      period: {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      },
+      summary: {
+        totalOrders,
+        totalRevenue,
+        avgOrdersPerDay: Math.round(totalOrders / safeDays),
+        avgRevenuePerDay: Math.round(totalRevenue / safeDays),
+        peakHour: peakHourSlot?.hour ?? 0,
+        peakDay: peakDay?.dayName ?? "-",
+        peakDayOrders: peakDay?.totalOrders ?? 0,
+        peakHourOrders: peakHourSlot?.orderCount ?? 0,
+      },
+      days,
+    };
+  }
+
   // --- Private Helper Methods ---
+
+  private toDayIndex(jsDay: number): number {
+    return jsDay === 0 ? 6 : jsDay - 1;
+  }
+
+  private buildEmptySlots(): HourSlot[] {
+    return Array.from({ length: 24 }, (_, hour) => ({
+      hour,
+      orderCount: 0,
+      revenue: 0,
+    }));
+  }
+
+  private buildEmptyDays(): DayData[] {
+    return DAY_NAMES.map((dayName, day) => ({
+      day,
+      dayName,
+      totalOrders: 0,
+      totalRevenue: 0,
+      slots: this.buildEmptySlots(),
+    }));
+  }
 
   private groupOrderItemsByProduct(
     items: RawOrderItem[],
@@ -424,8 +689,6 @@ export class ToolsService {
     return insights.slice(0, 5);
   }
 
-  // --- Scoring Helpers ---
-
   private toStatus(score: number): HealthStatus {
     if (score >= 70) return "healthy";
     if (score >= 45) return "warning";
@@ -471,6 +734,55 @@ export class ToolsService {
     if (ratio > 70) return 80 + (ratio - 70) * 0.67;
     if (ratio >= 40) return 50 + (ratio - 40) * 1;
     return ratio * 1.25;
+  }
+
+  private calcRevenue(items: RawPLOrderItem[]): number {
+    return items.reduce((s, i) => s + i.priceAtTimeOfOrder * i.quantity, 0);
+  }
+
+  private calcHpp(items: RawPLOrderItem[]): number {
+    return items.reduce((s, i) => s + i.hppAtTimeOfOrder * i.quantity, 0);
+  }
+
+  private calcTotalExpenses(expenses: RawPLExpense[]): number {
+    return expenses.reduce((s, e) => s + e.amount, 0);
+  }
+
+  private getPeriodLabel(startDate: Date, endDate: Date): string {
+    const sameMonth =
+      startDate.getMonth() === endDate.getMonth() &&
+      startDate.getFullYear() === endDate.getFullYear();
+
+    if (sameMonth) {
+      return format(startDate, "MMMM yyyy", { locale: id });
+    }
+
+    const sameYear = startDate.getFullYear() === endDate.getFullYear();
+    if (sameYear) {
+      return `${format(startDate, "MMM", { locale: id })} – ${format(endDate, "MMM yyyy", { locale: id })}`;
+    }
+
+    return `${format(startDate, "MMM yyyy", { locale: id })} – ${format(endDate, "MMM yyyy", { locale: id })}`;
+  }
+
+  private groupItemsByMonth(
+    items: RawPLOrderItem[],
+  ): Map<string, RawPLOrderItem[]> {
+    return items.reduce((map, item) => {
+      const key = format(item.createdAt, "yyyy-MM");
+      map.set(key, [...(map.get(key) ?? []), item]);
+      return map;
+    }, new Map<string, RawPLOrderItem[]>());
+  }
+
+  private groupExpensesByMonth(
+    expenses: RawPLExpense[],
+  ): Map<string, RawPLExpense[]> {
+    return expenses.reduce((map, expense) => {
+      const key = format(expense.date, "yyyy-MM");
+      map.set(key, [...(map.get(key) ?? []), expense]);
+      return map;
+    }, new Map<string, RawPLExpense[]>());
   }
 }
 

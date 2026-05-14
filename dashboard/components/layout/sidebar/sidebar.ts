@@ -20,6 +20,7 @@ import {
   Boxes,
   PieChart,
   Activity,
+  Clock,
 } from "lucide-react";
 import { OutletType } from "@/types";
 
@@ -200,6 +201,18 @@ export const MENU_GROUPS: MenuGroup[] = [
         icon: Activity,
         name: "Kesehatan Bisnis",
         href: "/owner/business-health",
+      },
+      {
+        id: "jam-ramai",
+        icon: Clock,
+        name: "Analisis Jam Ramai",
+        href: "/owner/peak-hours",
+      },
+      {
+        id: "laporan-laba-rugi",
+        icon: FileText,
+        name: "Laporan Laba Rugi",
+        href: "/owner/income-statement",
       },
     ],
   },

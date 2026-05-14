@@ -24,7 +24,8 @@ import { formatCurrency } from "@/lib/utils";
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { Grade, HealthStatus, useTools } from "@/hooks/use-tools";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import { useStoreState } from "@/stores/use-state";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 
 function formatCompact(value: number): string {
   if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}M`;
@@ -103,7 +104,7 @@ function ScoreBar({ score, status }: { score: number; status: HealthStatus }) {
         />
       </div>
       <span className="text-xs tabular-nums text-muted-foreground w-8 text-right">
-        {score}
+        {score.toPrecision(2)}%
       </span>
     </div>
   );
@@ -268,7 +269,9 @@ function BusinessHealthEmpty() {
       <div className="space-y-2 px-4">
         <h3 className="text-xl font-semibold">Data Tidak Ditemukan</h3>
         <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-          Maaf, kami tidak menemukan data kesehatan bisnis untuk periode dan outlet ini. Coba pilih rentang tanggal lain atau pastikan outlet telah memiliki transaksi.
+          Maaf, kami tidak menemukan data kesehatan bisnis untuk periode dan
+          outlet ini. Coba pilih rentang tanggal lain atau pastikan outlet telah
+          memiliki transaksi.
         </p>
       </div>
     </Card>
@@ -277,11 +280,14 @@ function BusinessHealthEmpty() {
 
 export default function BusinessHealth() {
   const { selectedOutletId } = useOutletContext();
+  const { dateRange: dateRangeValue } = useStoreState();
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -30),
-    to: new Date(),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(
+    dateRangeValue || {
+      from: addDays(new Date(), -30),
+      to: new Date(),
+    },
+  );
 
   const { businessHealth } = useTools(selectedOutletId!, {
     from: dateRange?.from!,
@@ -316,7 +322,7 @@ export default function BusinessHealth() {
             pengeluaran
           </p>
         </div>
-        <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
+        <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Overall Score */}
