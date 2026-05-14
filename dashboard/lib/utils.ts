@@ -1,11 +1,10 @@
 import { OperatingHours, OperatingHoursFormData } from "@/types/dashboard";
-import { clsx, type ClassValue } from "clsx"
+import { clsx, type ClassValue } from "clsx";
 import { RemotePattern } from "next/dist/shared/lib/image-config";
-import { useCallback } from "react";
-import { twMerge } from "tailwind-merge"
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /**
@@ -15,27 +14,27 @@ export function cn(...inputs: ClassValue[]) {
  * @returns Formatted currency string
  */
 export function formatCurrency(
-    value: number | string,
-    options: {
-        currency?: string;
-        locale?: string;
-        minimumFractionDigits?: number;
-        maximumFractionDigits?: number;
-    } = {}
+  value: number | string,
+  options: {
+    currency?: string;
+    locale?: string;
+    minimumFractionDigits?: number;
+    maximumFractionDigits?: number;
+  } = {},
 ): string {
-    const {
-        currency = 'IDR',
-        locale = 'id-ID', // Indonesian locale for better Rupiah formatting
-        minimumFractionDigits = 0,
-        maximumFractionDigits = 0,
-    } = options;
+  const {
+    currency = "IDR",
+    locale = "id-ID", // Indonesian locale for better Rupiah formatting
+    minimumFractionDigits = 0,
+    maximumFractionDigits = 0,
+  } = options;
 
-    return new Intl.NumberFormat(locale, {
-        style: 'currency',
-        currency,
-        minimumFractionDigits,
-        maximumFractionDigits,
-    }).format(value as number);
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    minimumFractionDigits,
+    maximumFractionDigits,
+  }).format(value as number);
 }
 
 /**
@@ -46,193 +45,201 @@ export function formatCurrency(
  * @returns Formatted date string
  */
 export function formatChartDate(
-    dateString: string,
-    period: 'daily' | 'weekly' | 'monthly',
-    options: {
-        locale?: string;
-        timeZone?: string;
-    } = {}
+  dateString: string,
+  period: "daily" | "weekly" | "monthly",
+  options: {
+    locale?: string;
+    timeZone?: string;
+  } = {},
 ): string {
-    const {
-        locale = 'en-US',
-        timeZone,
-    } = options;
+  const { locale = "en-US", timeZone } = options;
 
-    const date = new Date(dateString);
+  const date = new Date(dateString);
 
-    if (period === 'daily') {
-        return date.toLocaleDateString(locale, {
-            month: 'short',
-            day: 'numeric',
-            timeZone
-        });
-    } else if (period === 'weekly') {
-        return `Week ${Math.ceil(date.getDate() / 7)}`;
-    } else {
-        return date.toLocaleDateString(locale, {
-            month: 'short',
-            year: 'numeric',
-            timeZone
-        });
-    }
+  if (period === "daily") {
+    return date.toLocaleDateString(locale, {
+      month: "short",
+      day: "numeric",
+      timeZone,
+    });
+  } else if (period === "weekly") {
+    return `Week ${Math.ceil(date.getDate() / 7)}`;
+  } else {
+    return date.toLocaleDateString(locale, {
+      month: "short",
+      year: "numeric",
+      timeZone,
+    });
+  }
 }
 
 export function formatISOStringDate(isoString: string) {
-    const date = new Date(isoString)
-    return date.toLocaleDateString(`id-ID`, {
-        day: `numeric`,
-        month: `long`,
-        year: `numeric`
-    })
+  const date = new Date(isoString);
+  return date.toLocaleDateString(`id-ID`, {
+    day: `numeric`,
+    month: `long`,
+    year: `numeric`,
+  });
 }
 
 export function parseRemotePatterns(patterns: string): RemotePattern[] {
-    // Helper to extract a RemotePattern from a URL string
-    const fromUrl = (urlStr: string): RemotePattern | null => {
-        try {
-            const url = new URL(urlStr);
-            const proto = url.protocol.replace(':', '');
-            const protocol = proto === 'http' || proto === 'https' ? (proto as 'http' | 'https') : undefined;
-            const pattern: RemotePattern = {
-                protocol,
-                hostname: url.hostname,
-                pathname: url.pathname === '/' ? '/**' : url.pathname
-            } as RemotePattern;
-            // Attach port if present
-            // @ts-ignore next RemotePattern allows optional port in runtime even if type differs
-            if (url.port) (pattern as any).port = url.port;
-            return pattern;
-        } catch {
-            return null;
-        }
-    };
-
-    const defaults: RemotePattern[] = [
-        { protocol: 'https', hostname: 'bossapp.id' },
-        { protocol: 'https', hostname: 'api.bossapp.id' },
-        { protocol: 'https', hostname: 'dashboard.bossapp.id' },
-        { protocol: 'http', hostname: 'localhost' }
-    ];
-
-    // Always include API origin if provided, so uploaded images served by API are allowed in dev/prod
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (apiUrl) {
-        const p = fromUrl(apiUrl);
-        if (p) {
-            const key = `${p.protocol || ''}//${p.hostname}:${(p as any).port || ''}`;
-            const seen = new Set(defaults.map(d => `${d.protocol || ''}//${d.hostname}:${(d as any).port || ''}`));
-            if (!seen.has(key)) defaults.push(p);
-        }
-    }
-
-    if (!patterns || patterns.trim() === '') {
-        return defaults;
-    }
-
+  // Helper to extract a RemotePattern from a URL string
+  const fromUrl = (urlStr: string): RemotePattern | null => {
     try {
-        const parsed = patterns
-            .split(',')
-            .map((pattern) => {
-                const trimmed = pattern.trim();
-                if (!trimmed) return null;
-                if (trimmed.includes('://')) return fromUrl(trimmed);
-                // Hostname only -> assume https
-                return { protocol: 'https' as const, hostname: trimmed, pathname: '/**' } as RemotePattern;
-            })
-            .filter(Boolean) as RemotePattern[];
-
-        // Merge parsed with defaults (and API origin), avoiding duplicates
-        const map = new Map<string, RemotePattern>();
-        for (const p of [...defaults, ...parsed]) {
-            const key = `${p.protocol || ''}//${p.hostname}:${(p as any).port || ''}${p.pathname || ''}`;
-            map.set(key, p);
-        }
-        return Array.from(map.values());
-    } catch (error) {
-        console.warn('Error parsing remote patterns, using defaults:', error);
-        return defaults;
+      const url = new URL(urlStr);
+      const proto = url.protocol.replace(":", "");
+      const protocol =
+        proto === "http" || proto === "https"
+          ? (proto as "http" | "https")
+          : undefined;
+      const pattern: RemotePattern = {
+        protocol,
+        hostname: url.hostname,
+        pathname: url.pathname === "/" ? "/**" : url.pathname,
+      } as RemotePattern;
+      // Attach port if present
+      // @ts-ignore next RemotePattern allows optional port in runtime even if type differs
+      if (url.port) (pattern as any).port = url.port;
+      return pattern;
+    } catch {
+      return null;
     }
+  };
+
+  const defaults: RemotePattern[] = [
+    { protocol: "https", hostname: "bossapp.id" },
+    { protocol: "https", hostname: "api.bossapp.id" },
+    { protocol: "https", hostname: "dashboard.bossapp.id" },
+    { protocol: "http", hostname: "localhost" },
+  ];
+
+  // Always include API origin if provided, so uploaded images served by API are allowed in dev/prod
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (apiUrl) {
+    const p = fromUrl(apiUrl);
+    if (p) {
+      const key = `${p.protocol || ""}//${p.hostname}:${(p as any).port || ""}`;
+      const seen = new Set(
+        defaults.map(
+          (d) => `${d.protocol || ""}//${d.hostname}:${(d as any).port || ""}`,
+        ),
+      );
+      if (!seen.has(key)) defaults.push(p);
+    }
+  }
+
+  if (!patterns || patterns.trim() === "") {
+    return defaults;
+  }
+
+  try {
+    const parsed = patterns
+      .split(",")
+      .map((pattern) => {
+        const trimmed = pattern.trim();
+        if (!trimmed) return null;
+        if (trimmed.includes("://")) return fromUrl(trimmed);
+        // Hostname only -> assume https
+        return {
+          protocol: "https" as const,
+          hostname: trimmed,
+          pathname: "/**",
+        } as RemotePattern;
+      })
+      .filter(Boolean) as RemotePattern[];
+
+    // Merge parsed with defaults (and API origin), avoiding duplicates
+    const map = new Map<string, RemotePattern>();
+    for (const p of [...defaults, ...parsed]) {
+      const key = `${p.protocol || ""}//${p.hostname}:${(p as any).port || ""}${p.pathname || ""}`;
+      map.set(key, p);
+    }
+    return Array.from(map.values());
+  } catch (error) {
+    console.warn("Error parsing remote patterns, using defaults:", error);
+    return defaults;
+  }
 }
 
 export const parseOperatingHours = (operatingHours: OperatingHours[]) => {
-    const hoursMap: Record<number, OperatingHoursFormData> = {}
-    operatingHours.forEach((hour: OperatingHours) => {
-        // Convert ISO time strings to HH:MM format
-        let openTime = '09:00'
-        let closeTime = '17:00'
+  const hoursMap: Record<number, OperatingHoursFormData> = {};
+  operatingHours.forEach((hour: OperatingHours) => {
+    // Convert ISO time strings to HH:MM format
+    let openTime = "09:00";
+    let closeTime = "17:00";
 
-        if (hour.openTime) {
-            const openDate = new Date(hour.openTime)
-            openTime = openDate.toTimeString().slice(0, 5)
-        }
+    if (hour.openTime) {
+      const openDate = new Date(hour.openTime);
+      openTime = openDate.toTimeString().slice(0, 5);
+    }
 
-        if (hour.closeTime) {
-            const closeDate = new Date(hour.closeTime)
-            closeTime = closeDate.toTimeString().slice(0, 5)
-        }
+    if (hour.closeTime) {
+      const closeDate = new Date(hour.closeTime);
+      closeTime = closeDate.toTimeString().slice(0, 5);
+    }
 
-        hoursMap[hour.dayOfWeek] = {
-            id: hour.id,
-            outletId: hour.outletId,
-            dayOfWeek: hour.dayOfWeek,
-            openTime: openTime,
-            closeTime: closeTime,
-            isOpen: hour.isOpen
-        }
-    })
-    return hoursMap
-}
+    hoursMap[hour.dayOfWeek] = {
+      id: hour.id,
+      outletId: hour.outletId,
+      dayOfWeek: hour.dayOfWeek,
+      openTime: openTime,
+      closeTime: closeTime,
+      isOpen: hour.isOpen,
+    };
+  });
+  return hoursMap;
+};
 
 export const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (error) => reject(error);
-        reader.readAsDataURL(file);
-    });
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
 };
 
 export function formatNumberCompactID(value: number): string {
-    if (value < 1000) return value.toString()
+  if (value < 1000) return value.toString();
 
-    const units = [
-        { value: 1_000_000_000_000, symbol: " T" },
-        { value: 1_000_000_000, symbol: " M" },
-        { value: 1_000_000, symbol: " jt" },
-        { value: 1_000, symbol: " rb" },
-    ]
+  const units = [
+    { value: 1_000_000_000_000, symbol: " T" },
+    { value: 1_000_000_000, symbol: " M" },
+    { value: 1_000_000, symbol: " jt" },
+    { value: 1_000, symbol: " rb" },
+  ];
 
-    for (const unit of units) {
-        if (value >= unit.value) {
-            const formatted = value / unit.value
-            return `${removeTrailingZero(formatted.toFixed(2))}${unit.symbol}`
-        }
+  for (const unit of units) {
+    if (value >= unit.value) {
+      const formatted = value / unit.value;
+      return `${removeTrailingZero(formatted.toFixed(2))}${unit.symbol}`;
     }
+  }
 
-    return value.toString()
+  return value.toString();
 }
 
 function removeTrailingZero(value: string) {
-    return value.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1")
+  return value.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
 }
 
 export function formatDuration(totalSeconds: number): string {
-    if (Number.isNaN(totalSeconds) || totalSeconds <= 0) return '00:00:00';
+  if (Number.isNaN(totalSeconds) || totalSeconds <= 0) return "00:00:00";
 
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
-    const pad = (value: number) => String(value).padStart(2, '0');
+  const pad = (value: number) => String(value).padStart(2, "0");
 
-    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
 export function getCookie(name: string) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) {
-        return parts.pop()!.split(';').shift();
-    }
-    return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop()!.split(";").shift();
+  }
+  return null;
 }

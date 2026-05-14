@@ -1,3 +1,4 @@
+import { ProfitPerProductData } from "@/components/pages/profit-per-product/types";
 import { apiClient } from "@/lib/apis/base";
 import { useQuery } from "@tanstack/react-query";
 
@@ -209,6 +210,28 @@ export const useTools = (
     enabled: !!outletId && !!dateRange?.from && !!dateRange?.to,
   });
 
+  const profitPerProduct = useQuery({
+    queryKey: ["profitPerProduct", outletId, dateRange?.from, dateRange?.to],
+
+    queryFn: async () => {
+      if (!outletId || !dateRange?.from || !dateRange?.to) {
+        throw new Error("Missing required parameters");
+      }
+
+      const start = dateRange.from;
+      const end = dateRange.to;
+
+      console.log("Fetching profit per product:", { outletId, start, end });
+
+      const response = await apiClient.get(`/tools/profit-per-product`, {
+        params: { outletId, startDate: start, endDate: end },
+      });
+      return response.data.data as ProfitPerProductData;
+    },
+
+    enabled: !!outletId && !!dateRange?.from && !!dateRange?.to,
+  });
+
   const businessHealth = useQuery({
     queryKey: ["businessHealth", outletId, dateRange?.from, dateRange?.to],
 
@@ -235,5 +258,6 @@ export const useTools = (
     businessHealth,
     incomeStatement,
     peakHours,
+    profitPerProduct,
   };
 };
