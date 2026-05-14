@@ -133,6 +133,7 @@ export class PosV2Repository {
         totalAmount: number;
         discountAmount: number;
         pointsRedeemed: number;
+        taxAmount: number;
         cashierId: string | null;
         bookingDate: Date | null;
         hasService: boolean;
@@ -159,7 +160,7 @@ export class PosV2Repository {
     }) {
         const {
             orderId, customerId, outletId, totalAmount, discountAmount,
-            pointsRedeemed, cashierId, bookingDate, hasService,
+            pointsRedeemed, taxAmount, cashierId, bookingDate, hasService,
             paymentMethod, items, stockUpdates, ticketUpdates,
             bookingSlotId, tableId, tableNumber, isOpenBill
         } = params;
@@ -198,6 +199,7 @@ export class PosV2Repository {
                     data: {
                         guestCustomerId: customerId,
                         totalAmount,
+                        taxAmount,
                         discountAmount,
                         pointsRedeemed,
                         paymentStatus: isPaid ? PaymentStatus.SUCCESS : PaymentStatus.PENDING,
@@ -217,6 +219,7 @@ export class PosV2Repository {
                         guestCustomerId: customerId,
                         outletId,
                         totalAmount,
+                        taxAmount,
                         discountAmount,
                         pointsRedeemed,
                         midtransFee: 0,

@@ -87,7 +87,7 @@ export class ReportRepository {
         ) as items
       FROM "Order" o
       WHERE o."outletId" IN (${joinedOutletIds})
-        AND o."orderStatus" = 'COMPLETED'::"OrderStatus"
+        AND o."orderStatus" NOT IN ('AWAITING_PAYMENT'::"OrderStatus", 'CANCELLED'::"OrderStatus")
         AND o."createdAt" >= ${startDate}
         AND o."createdAt" <= ${endDate}
     `;

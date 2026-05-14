@@ -156,6 +156,7 @@ export class PosV2Service {
 
         // Validate stock and calculate total
         let subtotal = 0;
+        let totalTax = 0;
         let hasService = false;
         let hasTickets = false;
         const orderItems: Array<{
@@ -192,6 +193,9 @@ export class PosV2Service {
                 }
                 const price = product.goods.sellingPrice;
                 subtotal += price * item.quantity;
+                if (product.taxPercentage && product.taxPercentage > 0) {
+                    totalTax += Math.round(price * item.quantity * (product.taxPercentage / 100));
+                }
                 orderItems.push({
                     productId: product.id,
                     quantity: item.quantity,
@@ -218,6 +222,9 @@ export class PosV2Service {
                 hasService = true;
                 const price = product.service.sellingPrice;
                 subtotal += price * 1; // Service always qty 1
+                if (product.taxPercentage && product.taxPercentage > 0) {
+                    totalTax += Math.round(price * 1 * (product.taxPercentage / 100));
+                }
                 orderItems.push({
                     productId: product.id,
                     quantity: 1,
@@ -240,6 +247,9 @@ export class PosV2Service {
                 }
                 const price = product.ticket.sellingPrice;
                 subtotal += price * item.quantity;
+                if (product.taxPercentage && product.taxPercentage > 0) {
+                    totalTax += Math.round(price * item.quantity * (product.taxPercentage / 100));
+                }
                 orderItems.push({
                     productId: product.id,
                     quantity: item.quantity,
@@ -286,7 +296,7 @@ export class PosV2Service {
             }
         }
 
-        const grandTotal = Math.max(0, subtotal - discountAmount);
+        const grandTotal = Math.max(0, subtotal - discountAmount + totalTax);
 
         // Validate cash
         if (!isOpenBill && cashReceived < grandTotal && paymentMethod === 'cash') {
@@ -313,6 +323,7 @@ export class PosV2Service {
             totalAmount: grandTotal,
             discountAmount,
             pointsRedeemed,
+            taxAmount: totalTax,
             cashierId: finalCashierId,
             items: orderItems,
             stockUpdates,
