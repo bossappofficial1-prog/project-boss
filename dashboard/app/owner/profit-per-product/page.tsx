@@ -106,7 +106,12 @@ export default function ProfitPerProduct() {
       </div>
 
       {/* Highlight Cards */}
-      <HighlightCard topProduct={topProduct} lowMarginCount={lowMarginCount} />
+      {topProduct && (
+        <HighlightCard
+          topProduct={topProduct}
+          lowMarginCount={lowMarginCount}
+        />
+      )}
 
       {/* Table */}
       <ProductProfitTable products={data.products} />
