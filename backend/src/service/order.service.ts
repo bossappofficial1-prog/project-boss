@@ -1350,6 +1350,7 @@ export async function getOrdersListService(
     orderStatus: order.orderStatus,
     paymentStatus: order.paymentStatus,
     totalAmount: order.totalAmount,
+    taxAmount: order.taxAmount ?? 0,
     createdAt: order.createdAt,
   }));
 

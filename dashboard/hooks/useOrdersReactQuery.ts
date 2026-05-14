@@ -9,6 +9,7 @@ export interface Order {
     orderStatus: 'AWAITING_PAYMENT' | 'PROCESSING' | 'CONFIRMED' | 'READY' | 'ON_GOING' | 'COMPLETED' | 'CANCELLED';
     paymentStatus: 'PENDING' | 'PROOF_SUBMITTED' | 'AWAITING_VERIFICATION' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'EXPIRED' | 'CANCELLED' | 'REJECTED_MANUAL';
     totalAmount: number;
+    taxAmount: number;
     createdAt: string;
 }
 

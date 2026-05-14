@@ -69,6 +69,7 @@ export class ReportRepository {
         o.id, 
         o."createdAt", 
         o."totalAmount", 
+        o."taxAmount", 
         o."midtransFee", 
         o."appFee",
         COALESCE(

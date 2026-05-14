@@ -5,6 +5,7 @@ export interface OutletReport {
   label: string;
   jumlahTransaksi: number;
   totalPendapatan: number;
+  totalPajak: number;
   totalPembelian: number;
   totalPengeluaran: number;
   gajiStaf: number;

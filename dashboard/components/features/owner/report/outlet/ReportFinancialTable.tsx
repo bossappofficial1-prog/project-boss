@@ -10,6 +10,7 @@ import { Row } from "@tanstack/react-table";
 export interface Totals {
   jumlahTransaksi: number;
   totalPendapatan: number;
+  totalPajak: number;
   totalPembelian: number;
   totalPengeluaran: number;
   gajiStaf: number;
@@ -61,6 +62,21 @@ export function ReportFinancialTable({
             return <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-xs">{formatCurrency(totalPendapatan)}</span>;
           },
           footer: () => <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-xs">{formatCurrency(totals.totalPendapatan)}</span>,
+        },
+        {
+          accessorKey: "totalPajak",
+          header: "(+) PPN",
+          cell({ row }) {
+            const p = row.original.totalPajak;
+            return p ? (
+              <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums text-xs">{formatCurrency(p)}</span>
+            ) : (
+              <span className="text-muted-foreground/40 text-xs">—</span>
+            );
+          },
+          footer: () => (
+            <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums text-xs">{formatCurrency(totals.totalPajak)}</span>
+          ),
         },
         ...(!hideTrend
           ? [

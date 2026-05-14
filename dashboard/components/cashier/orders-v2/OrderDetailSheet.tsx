@@ -178,10 +178,23 @@ export function OrderDetailSheet({
                             <InfoRow icon={CreditCard} label="Metode" value={getPaymentLabel(entry.paymentMethod)} />
                             <InfoRow icon={Calendar} label="Waktu Pesan" value={formatDateTime(entry.createdAt)} />
                         </div>
-                        <div className="rounded-md border border-border p-3">
-                            <p className="text-xl font-bold text-foreground">
-                                {formatCurrency(entry.totalAmount)}
-                            </p>
+                        <div className="rounded-md border border-border p-3 space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">Subtotal</span>
+                                <span className="font-medium">{formatCurrency(entry.totalAmount - (entry.taxAmount ?? 0))}</span>
+                            </div>
+                            {(entry.taxAmount ?? 0) > 0 && (
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-muted-foreground">PPN</span>
+                                    <span className="font-medium">{formatCurrency(entry.taxAmount)}</span>
+                                </div>
+                            )}
+                            <div className="border-t border-border pt-1 flex items-center justify-between">
+                                <span className="text-sm font-semibold">Total</span>
+                                <p className="text-xl font-bold text-foreground">
+                                    {formatCurrency(entry.totalAmount)}
+                                </p>
+                            </div>
                         </div>
                         {entry.isManualPayment && entry.paymentProofUrl && (
                             <Button

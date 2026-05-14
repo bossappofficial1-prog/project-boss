@@ -25,6 +25,7 @@ interface OutletReport {
   label: string;
   jumlahTransaksi: number;
   totalPendapatan: number;
+  totalPajak: number;
   totalPembelian: any;
   totalPengeluaran: any;
   gajiStaf: number;
@@ -175,6 +176,7 @@ export class ReportService {
           label: format(monthStart, "MMMM yyyy"),
           jumlahTransaksi: stats.count,
           totalPendapatan: stats.revenue,
+          totalPajak: stats.totalPajak,
           totalPembelian: stats.pembelian,
           totalPengeluaran: stats.pengeluaran,
           gajiStaf: stats.gaji,
@@ -212,6 +214,7 @@ export class ReportService {
           label: `Minggu ${weekIdx++} (${format(wStart, "dd/MM")})`,
           jumlahTransaksi: stats.count,
           totalPendapatan: stats.revenue,
+          totalPajak: stats.totalPajak,
           totalPembelian: stats.pembelian,
           totalPengeluaran: stats.pengeluaran,
           gajiStaf: stats.gaji,
@@ -249,6 +252,7 @@ export class ReportService {
           label: format(day, "dd MMM yyyy"),
           jumlahTransaksi: stats.count,
           totalPendapatan: stats.revenue,
+          totalPajak: stats.totalPajak,
           totalPembelian: stats.pembelian,
           totalPengeluaran: stats.pengeluaran,
           gajiStaf: stats.gaji,
@@ -311,6 +315,7 @@ export class ReportService {
         outletId: outlet.id,
         jumlahTransaksi: stats.count,
         totalPendapatan: stats.revenue,
+        totalPajak: stats.totalPajak,
         totalPembelian: stats.pembelian,
         totalPengeluaran: stats.pengeluaran,
         gajiStaf: stats.gaji,
@@ -332,6 +337,7 @@ export class ReportService {
     filteredLogs: any[],
   ) {
     let revenue = 0;
+    let totalPajak = 0;
     let gaji = 0;
     let totalHpp = 0;
     let totalFees = 0;
@@ -344,6 +350,7 @@ export class ReportService {
 
     filteredOrders.forEach((order) => {
       revenue += order.totalAmount;
+      totalPajak += order.taxAmount ?? 0;
       totalFees += (order.midtransFee || 0) + (order.appFee || 0);
 
       order.items.forEach((item: any) => {
@@ -354,6 +361,7 @@ export class ReportService {
 
     return {
       revenue,
+      totalPajak,
       pembelian,
       pengeluaran,
       gaji,
@@ -555,6 +563,7 @@ export class ReportService {
       { header: viewMode === "compare" ? "Outlet" : "Periode", key: "label", width: 28 },
       { header: "Jml Transaksi", key: "trx", width: 15 },
       { header: "(+) Pendapatan", key: "pendapatan", width: 20 },
+      { header: "(+) PPN", key: "ppn", width: 18 },
       { header: "(-) Pengeluaran", key: "pengeluaran", width: 18 },
       { header: "(-) Gaji/Komisi", key: "gaji", width: 18 },
       { header: "= Laba Bersih", key: "laba", width: 20 },
@@ -562,8 +571,8 @@ export class ReportService {
     ];
     this.applyHeaderStyle(sheet);
 
-    const currCols = [4, 5, 6, 7, 8];
-    const totals = { trx: 0, pendapatan: 0, pengeluaran: 0, gaji: 0, laba: 0, pembelian: 0 };
+    const currCols = [4, 5, 6, 7, 8, 9];
+    const totals = { trx: 0, pendapatan: 0, ppn: 0, pengeluaran: 0, gaji: 0, laba: 0, pembelian: 0 };
 
     data.forEach((item: any, i: number) => {
       const row = sheet.addRow({
@@ -571,6 +580,7 @@ export class ReportService {
         label: item.label,
         trx: item.jumlahTransaksi,
         pendapatan: item.totalPendapatan,
+        ppn: item.totalPajak,
         pengeluaran: item.totalPengeluaran,
         gaji: item.gajiStaf,
         laba: item.labaBersih,
@@ -579,7 +589,7 @@ export class ReportService {
       this.applyRowBorder(row);
       this.setCurrencyFormat(row, currCols);
 
-      const labaCell = row.getCell(7);
+      const labaCell = row.getCell(8);
       if (typeof labaCell.value === "number") {
         labaCell.font =
           labaCell.value >= 0
@@ -587,13 +597,19 @@ export class ReportService {
             : { color: { argb: "FFDC2626" }, bold: true };
       }
 
-      const pembelianCell = row.getCell(8);
+      const ppnCell = row.getCell(5);
+      if (typeof ppnCell.value === "number" && ppnCell.value > 0) {
+        ppnCell.font = { color: { argb: "FF2563EB" } };
+      }
+
+      const pembelianCell = row.getCell(9);
       if (typeof pembelianCell.value === "number") {
         pembelianCell.font = { color: { argb: "FFD97706" } };
       }
 
       totals.trx += item.jumlahTransaksi;
       totals.pendapatan += item.totalPendapatan;
+      totals.ppn += item.totalPajak;
       totals.pengeluaran += item.totalPengeluaran;
       totals.gaji += item.gajiStaf;
       totals.laba += item.labaBersih;

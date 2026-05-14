@@ -289,6 +289,7 @@ export class PaymentRepository {
       });
 
       let linkedSlotOrderItemId: string | null = null;
+      let totalTax = 0;
 
       for (const item of items) {
         const product = await tr.product.findUnique({
@@ -301,6 +302,11 @@ export class PaymentRepository {
             `Produk dengan ID ${item.productId} tidak ditemukan`,
             HttpStatus.NOT_FOUND,
           );
+        }
+
+        if (product.taxPercentage && product.taxPercentage > 0) {
+          const price = PaymentRepository.resolveProductPrice(product);
+          totalTax += Math.round(price * item.quantity * (product.taxPercentage / 100));
         }
 
         if (product.type === "GOODS") {
@@ -364,6 +370,15 @@ export class PaymentRepository {
         ) {
           linkedSlotOrderItemId = orderItem.id;
         }
+      }
+
+      if (totalTax > 0) {
+        await tr.order.update({
+          where: { id: orderId },
+          data: {
+            taxAmount: totalTax,
+          },
+        });
       }
 
       if (slotRecord && linkedSlotOrderItemId && selectedSlotId) {

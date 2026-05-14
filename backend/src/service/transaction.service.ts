@@ -91,6 +91,7 @@ export async function getTransactionListService(params: TransactionListParams) {
       order: {
         id: transaction.order.id,
         totalAmount: transaction.order.totalAmount,
+        taxAmount: transaction.order.taxAmount ?? 0,
         orderStatus: transaction.order.orderStatus,
         paymentStatus: transaction.order.paymentStatus,
         customerType: transaction.order.customerType,

@@ -22,6 +22,7 @@ export interface OrderV2Entry {
   id: string;
   orderStatus: GoodsOrderStatus;
   totalAmount: number;
+  taxAmount: number;
   discountAmount: number;
   customerName: string;
   customerPhone: string | null;

@@ -166,6 +166,11 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                         <span className="text-sm font-semibold text-foreground">
                             {formatCurrency(entry.totalAmount)}
                         </span>
+                        {(entry.taxAmount ?? 0) > 0 && (
+                            <span className="text-[10px] text-blue-500">
+                                Termasuk PPN {formatCurrency(entry.taxAmount)}
+                            </span>
+                        )}
                         {entry.discountAmount > 0 && (
                             <span className="text-[10px] text-emerald-500">
                                 Diskon Poin

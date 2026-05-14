@@ -32,6 +32,7 @@ export interface Transaction {
   order?: {
     id: string;
     totalAmount: number;
+    taxAmount: number;
     orderStatus: string;
     paymentStatus: string;
     customerType: string;

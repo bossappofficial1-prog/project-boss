@@ -50,6 +50,7 @@ export interface PaymentDetailItem {
     price: number;
     quantity: number;
     subtotal?: number;
+    taxPercentage?: number | null;
 }
 
 export interface PaymentDetailPayment {

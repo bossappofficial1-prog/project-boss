@@ -650,6 +650,9 @@ export function PaymentDetailClient({
                 <p className="text-sm font-medium truncate">{item.name}</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {item.quantity} x {formatCurrency(item.price)}
+                  {item.taxPercentage ? (
+                    <span className="text-blue-500 ml-1">+PPN {item.taxPercentage}%</span>
+                  ) : null}
                 </p>
               </div>
               <span className="text-sm font-semibold ml-3 shrink-0">

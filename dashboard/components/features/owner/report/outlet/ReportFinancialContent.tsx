@@ -109,6 +109,7 @@ export default function ReportFinancialContent() {
       (acc, curr) => ({
         jumlahTransaksi: acc.jumlahTransaksi + (curr.jumlahTransaksi || 0),
         totalPendapatan: acc.totalPendapatan + (curr.totalPendapatan || 0),
+        totalPajak: acc.totalPajak + (curr.totalPajak || 0),
         totalPembelian: acc.totalPembelian + (curr.totalPembelian || 0),
         totalPengeluaran: acc.totalPengeluaran + (curr.totalPengeluaran || 0),
         gajiStaf: acc.gajiStaf + (curr.gajiStaf || 0),
@@ -119,6 +120,7 @@ export default function ReportFinancialContent() {
       {
         jumlahTransaksi: 0,
         totalPendapatan: 0,
+        totalPajak: 0,
         totalPembelian: 0,
         totalPengeluaran: 0,
         gajiStaf: 0,
@@ -278,7 +280,7 @@ export default function ReportFinancialContent() {
         <TabsContent value="keuangan" className="space-y-6">
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* P&L Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <SummaryCard
                 title="(+) Pendapatan"
                 value={totals.totalPendapatan}
@@ -286,6 +288,14 @@ export default function ReportFinancialContent() {
                 highlight={true}
                 icon={<ArrowUpRight className="w-4 h-4" />}
                 description="Total omset dari pesanan selesai"
+              />
+              <SummaryCard
+                title="(+) PPN"
+                value={totals.totalPajak}
+                variant="info"
+                highlight={true}
+                icon={<Receipt className="w-4 h-4" />}
+                description="Total pajak dari penjualan"
               />
               <SummaryCard
                 title="(-) Beban & HPP"

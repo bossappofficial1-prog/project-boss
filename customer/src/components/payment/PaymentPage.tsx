@@ -141,6 +141,13 @@ const PaymentOrderSummary: React.FC<{ checkoutData: CheckoutData; guideTarget?: 
             <span>{formatCurrency(checkoutData.subtotal)}</span>
           </div>
 
+          {checkoutData.tax ? (
+            <div className="flex justify-between text-xs sm:text-sm">
+              <span>PPN</span>
+              <span>{formatCurrency(checkoutData.tax)}</span>
+            </div>
+          ) : null}
+
           <div className="flex justify-between border-t pt-2 text-base font-semibold sm:text-lg">
             <span>{t("orderSummary.totalPayment")}</span>
             <span className="text-primary">{formatCurrency(checkoutData.grandTotal)}</span>

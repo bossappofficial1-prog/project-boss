@@ -136,8 +136,26 @@ export default function OrdersTable({
         },
       },
       {
+        id: "tax",
+        header: "PPN",
+        cell: ({ row }) => {
+          const tax = (row.original as any).taxAmount ?? 0;
+          return tax > 0 ? (
+            <span className="font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+              {new Intl.NumberFormat("id-ID", {
+                style: "currency",
+                currency: "IDR",
+                maximumFractionDigits: 0,
+              }).format(tax)}
+            </span>
+          ) : (
+            <span className="text-muted-foreground/40">—</span>
+          );
+        },
+      },
+      {
         accessorKey: "totalAmount",
-        header: "Total Pembayaran",
+        header: "Total",
         cell: ({ row }) => {
           const amount = row.original.totalAmount || 0;
           return (

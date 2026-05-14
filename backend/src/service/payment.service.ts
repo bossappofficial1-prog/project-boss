@@ -336,11 +336,29 @@ export class PaymentService {
     const paymentMethodForFees =
       payment_method === "online" && onlinePaymentChannel ? onlinePaymentChannel : payment_method;
 
-    const { transactionFeeTotal, applicationFee, grossAmount } = this.calculateFees(
+    const { transactionFeeTotal, applicationFee, grossAmount: grossFees } = this.calculateFees(
       totalProductPrice,
       outlet,
       paymentMethodForFees
     );
+
+    // Calculate total tax from items
+    let totalTax = 0;
+    for (const item of inputItems) {
+      const product = productMap.get(item.productId);
+      if (product?.taxPercentage && product.taxPercentage > 0) {
+        const price = product.type === 'GOODS'
+          ? product.goods?.sellingPrice
+          : product.type === 'TICKET'
+            ? product.ticket?.sellingPrice
+            : product.service?.sellingPrice;
+        if (price) {
+          totalTax += Math.round(price * item.quantity * (product.taxPercentage / 100));
+        }
+      }
+    }
+
+    const grossAmount = grossFees + totalTax;
 
     const itemDetails = [...baseItemDetails];
     if (transactionFeeTotal > 0) {
@@ -952,6 +970,7 @@ export class PaymentService {
           price: productPrice,
           quantity: item.quantity,
           subtotal: productPrice * item.quantity,
+          taxPercentage: item.product.taxPercentage ?? null,
         };
       }),
     };

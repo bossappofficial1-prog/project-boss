@@ -386,6 +386,20 @@ export default function TransactionsPage() {
             },
           },
           {
+            id: "tax",
+            header: "PPN",
+            cell: ({ row }) => {
+              const tax = row.original.order?.taxAmount ?? 0;
+              return tax > 0 ? (
+                <span className="font-bold tabular-nums text-xs text-blue-600 dark:text-blue-400">
+                  {formatCurrency(tax)}
+                </span>
+              ) : (
+                <span className="text-muted-foreground/40 text-xs">—</span>
+              );
+            },
+          },
+          {
             accessorKey: "status",
             header: "Status",
             cell: ({ row }) => getStatusBadge(row.original),
@@ -419,6 +433,7 @@ export default function TransactionsPage() {
               Deskripsi: row.description,
               Metode: row.manualMethod || row.paymentMethod || "-",
               Jumlah: row.amount,
+              PPN: row.order?.taxAmount ?? 0,
               Status: row.status
             }),
           },

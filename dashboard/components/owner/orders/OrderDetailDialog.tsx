@@ -125,6 +125,14 @@ export default function OrderDetailDialog({ orderId, open, onOpenChange }: Order
                                 <p className="font-medium uppercase">{order.transaction?.paymentMethod || "-"}</p>
                             </div>
                             <div>
+                                <p className="text-muted-foreground">Subtotal</p>
+                                <p className="font-medium">{formatCurrency((order.totalAmount || 0) - (order.taxAmount ?? 0))}</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground">PPN</p>
+                                <p className="font-medium text-blue-600 dark:text-blue-400">{formatCurrency(order.taxAmount ?? 0)}</p>
+                            </div>
+                            <div>
                                 <p className="text-muted-foreground">Total</p>
                                 <p className="font-bold">{formatCurrency(order.totalAmount || 0)}</p>
                             </div>
