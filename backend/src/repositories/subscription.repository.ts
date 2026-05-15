@@ -39,6 +39,7 @@ export class SubscriptionRepository {
                 data: {
                     status: SubscriptionStatus.PROOF_SUBMITTED,
                 },
+                include: { plan: true }
             });
 
             const updatedBusiness = await tx.business.update({
@@ -184,6 +185,41 @@ export class SubscriptionRepository {
             });
 
             return { subscription, invoice };
+        });
+    }
+
+    static async cancelInvoice(invoiceId: string, businessId: string) {
+        return db.$transaction(async (tx) => {
+            const invoice = await tx.subscriptionInvoice.findUnique({
+                where: { id: invoiceId },
+                include: { subscription: true }
+            });
+
+            if (!invoice || invoice.businessId !== businessId) {
+                throw new Error('Invoice tidak ditemukan atau tidak milik bisnis Anda');
+            }
+
+            if (invoice.status !== PaymentStatus.PENDING) {
+                throw new Error('Hanya invoice dengan status PENDING yang bisa dibatalkan');
+            }
+
+            const updatedInvoice = await tx.subscriptionInvoice.update({
+                where: { id: invoiceId },
+                data: {
+                    status: PaymentStatus.CANCELLED,
+                },
+            });
+
+            if (invoice.subscriptionId) {
+                await tx.businessSubscription.update({
+                    where: { id: invoice.subscriptionId },
+                    data: {
+                        status: SubscriptionStatus.CANCELLED,
+                    },
+                });
+            }
+
+            return updatedInvoice;
         });
     }
 

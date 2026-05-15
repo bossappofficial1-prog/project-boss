@@ -215,7 +215,7 @@ export class UserRepository {
                 provider: true,
                 createdAt: true,
                 updatedAt: true,
-                business: { select: { id: true } }
+                business: { select: { id: true, subscriptionPlan: true, subscriptionStatus: true } }
             }
         });
     }
@@ -346,7 +346,7 @@ export class UserRepository {
                 provider: true,
                 createdAt: true,
                 updatedAt: true,
-                business: { select: { id: true } }
+                business: { select: { id: true, subscriptionPlan: true, subscriptionStatus: true } }
             }
         });
     }

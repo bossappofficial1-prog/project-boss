@@ -32,6 +32,7 @@ interface MenuItem {
   badge?: string;
   subItems?: SubMenuItem[];
   requiredTypes?: OutletType[];
+  requirePro?: boolean;
 }
 
 interface SubMenuItem {
@@ -39,6 +40,7 @@ interface SubMenuItem {
   href: string;
   badge?: string;
   requiredTypes?: OutletType[];
+  requirePro?: boolean;
 }
 
 interface MenuGroup {
@@ -61,6 +63,7 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Analitik Bisnis",
         href: "/owner/analytics",
         icon: TrendingUp,
+        requirePro: true,
       },
       {
         id: "subscription",
@@ -102,7 +105,8 @@ export const MENU_GROUPS: MenuGroup[] = [
         icon: LayoutGrid,
         name: "Manajemen Meja",
         href: "/owner/outlets-manage-tables",
-        requiredTypes: [OutletType.FNB, OutletType.CUSTOM],
+        requiredTypes: [OutletType.FNB],
+        requirePro: true,
       },
     ],
   },
@@ -144,6 +148,7 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Loyalty & Poin",
         href: "/owner/loyalty",
         icon: Gift,
+        requirePro: true,
         requiredTypes: [
           OutletType.FNB,
           OutletType.RETAIL,
@@ -195,24 +200,28 @@ export const MENU_GROUPS: MenuGroup[] = [
         icon: PieChart,
         name: "Profit per Produk",
         href: "/owner/profit-per-product",
+        requirePro: true,
       },
       {
         id: "business-health",
         icon: Activity,
         name: "Kesehatan Bisnis",
         href: "/owner/business-health",
+        requirePro: true,
       },
       {
         id: "jam-ramai",
         icon: Clock,
         name: "Analisis Jam Ramai",
         href: "/owner/peak-hours",
+        requirePro: true,
       },
       {
         id: "laporan-laba-rugi",
         icon: FileText,
         name: "Laporan Laba Rugi",
         href: "/owner/income-statement",
+        requirePro: true,
       },
     ],
   },
@@ -224,18 +233,21 @@ export const MENU_GROUPS: MenuGroup[] = [
         icon: Boxes,
         name: "Kalkulator HPP",
         href: "/owner/calculator-hpp",
+        requirePro: true,
       },
       {
         id: "calculator-bep",
         icon: BarChart2,
         name: "Kalkulator BEP",
         href: "/owner/calculator-bep",
+        requirePro: true,
       },
       {
         id: "sales-target-breakdown",
         icon: Target,
         name: "Sales Target Breakdown",
         href: "/owner/sales-target-breakdown",
+        requirePro: true,
       },
     ],
   },

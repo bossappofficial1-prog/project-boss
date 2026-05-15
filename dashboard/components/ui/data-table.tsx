@@ -604,7 +604,7 @@ export function DataTable<TData, TValue>({
                           className={cn(
                             action.render ? "cursor-default" : "cursor-pointer",
                             action.variant === "destructive" &&
-                              "text-red-600 focus:text-red-600",
+                            "text-red-600 focus:text-red-600",
                             action.className,
                           )}
                         >
@@ -617,7 +617,7 @@ export function DataTable<TData, TValue>({
                                   className={cn(
                                     "h-4 w-4",
                                     action.variant === "destructive" &&
-                                      "text-red-600 focus:text-red-600",
+                                    "text-red-600 focus:text-red-600",
                                   )}
                                 />
                               )}
@@ -753,11 +753,11 @@ export function DataTable<TData, TValue>({
     manualFiltering: serverSideSearch,
     pageCount: serverSidePagination
       ? Math.max(
-          1,
-          Math.ceil(
-            (totalItems ?? data.length) / Math.max(1, paginationState.pageSize),
-          ),
-        )
+        1,
+        Math.ceil(
+          (totalItems ?? data.length) / Math.max(1, paginationState.pageSize),
+        ),
+      )
       : undefined,
     enableRowSelection,
     enableColumnResizing,
@@ -839,9 +839,9 @@ export function DataTable<TData, TValue>({
     totalRowCount === 0
       ? 0
       : Math.min(
-          (tablePagination.pageIndex + 1) * tablePagination.pageSize,
-          totalRowCount,
-        );
+        (tablePagination.pageIndex + 1) * tablePagination.pageSize,
+        totalRowCount,
+      );
   const pageStartLabel = totalRowCount === 0 ? 0 : pageStart;
   const pageEndLabel = totalRowCount === 0 ? 0 : pageEnd;
 
@@ -996,7 +996,7 @@ export function DataTable<TData, TValue>({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 {title && (
-                  <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+                  <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
                 )}
                 {description && (
                   <p className="text-muted-foreground">{description}</p>
@@ -1268,7 +1268,7 @@ export function DataTable<TData, TValue>({
                 <TableHeader
                   className={cn(
                     stickyHeader &&
-                      "sticky top-0 z-10 bg-background/95 backdrop-blur-md shadow-sm",
+                    "sticky top-0 z-10 bg-background/95 backdrop-blur-md shadow-sm",
                   )}
                 >
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -1285,7 +1285,7 @@ export function DataTable<TData, TValue>({
                             key={header.id}
                             className={cn(
                               canSort &&
-                                "cursor-pointer select-none hover:bg-muted/50",
+                              "cursor-pointer select-none hover:bg-muted/50",
                               "transition-colors",
                             )}
                             onClick={
@@ -1303,9 +1303,9 @@ export function DataTable<TData, TValue>({
                               {header.isPlaceholder
                                 ? null
                                 : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext(),
-                                  )}
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
                               {canSort && (
                                 <div className="flex flex-col">
                                   {sorted === "asc" ? (
@@ -1401,9 +1401,9 @@ export function DataTable<TData, TValue>({
                             {header.isPlaceholder
                               ? null
                               : flexRender(
-                                  header.column.columnDef.footer,
-                                  header.getContext(),
-                                )}
+                                header.column.columnDef.footer,
+                                header.getContext(),
+                              )}
                           </TableCell>
                         ))}
                       </TableRow>
@@ -1554,7 +1554,7 @@ export function DataTable<TData, TValue>({
                     className={cn(
                       "flex items-center gap-2 h-9 px-4 rounded-full transition-all text-background dark:text-foreground hover:bg-background/10 dark:hover:bg-foreground/10",
                       action.variant === "destructive" &&
-                        "text-red-400 hover:text-red-300 hover:bg-red-500/10",
+                      "text-red-400 hover:text-red-300 hover:bg-red-500/10",
                     )}
                   >
                     {Icon && <Icon className="h-4 w-4" />}

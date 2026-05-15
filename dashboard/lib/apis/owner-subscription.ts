@@ -188,4 +188,9 @@ export const ownerSubscriptionApi = {
 
     return response.data.data;
   },
+
+  cancelInvoice: (invoiceId: string) =>
+    apiCall<{ message: string }>(`/subscription/invoice/${invoiceId}/cancel`, {
+      method: "POST",
+    }),
 };

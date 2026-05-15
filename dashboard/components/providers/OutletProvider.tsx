@@ -108,12 +108,17 @@ export function OutletProvider({ children }: OutletProviderProps) {
                 try {
                     localStorage.setItem('selectedOutlet', outlet.id);
                     localStorage.removeItem('selectedOutletId');
+                    // Set cookie for middleware access
+                    document.cookie = `selectedOutlet=${outlet.id}; path=/; max-age=${30 * 24 * 60 * 60}`;
+                    document.cookie = `selectedOutletType=${outlet.type}; path=/; max-age=${30 * 24 * 60 * 60}`;
                 } catch (error) {
                     console.error('Failed to save outlet to localStorage:', error);
                 }
             } else {
                 localStorage.removeItem('selectedOutlet');
                 localStorage.removeItem('selectedOutletId');
+                document.cookie = `selectedOutlet=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+                document.cookie = `selectedOutletType=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
             }
         }
     };

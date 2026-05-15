@@ -7,6 +7,7 @@ import {
   useOwnerSubscriptionInvoices,
   useOwnerSubscriptionOverview,
   useRenewSubscription,
+  useCancelSubscriptionInvoice,
 } from '@/hooks/api/use-owner-subscription';
 import { InvoiceHistorySection } from '@/components/features/owner/subscription/InvoiceHistorySection';
 import { SubscriptionSkeleton } from '../../../components/features/owner/subscription/SubscriptionSkeleton';
@@ -18,6 +19,7 @@ import { NoPendingInvoiceCard } from '@/components/features/owner/subscription/N
 import { EmptySubscriptionState } from '@/components/features/owner/subscription/EmptySubscriptionState';
 import { PlanSelectorDialog } from '@/components/features/owner/subscription/PlanSelectorDialog';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlan';
+import ConfirmationModal from '@/components/ui/confirmation-modal';
 
 const PAGE_SIZE = 6;
 
@@ -26,11 +28,14 @@ export default function OwnerSubscriptionPage() {
   const [page, setPage] = useState(1);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [selectedPlanCode, setSelectedPlanCode] = useState<string | null>(null);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [invoiceIdToCancel, setInvoiceIdToCancel] = useState<string | null>(null);
   const limit = PAGE_SIZE;
 
   const overviewQuery = useOwnerSubscriptionOverview();
   const invoicesQuery = useOwnerSubscriptionInvoices({ page, limit });
   const renewMutation = useRenewSubscription();
+  const cancelMutation = useCancelSubscriptionInvoice();
   const plansQuery = useSubscriptionPlans();
 
   const overview = overviewQuery.data;
@@ -104,6 +109,22 @@ export default function OwnerSubscriptionPage() {
     invoicesQuery.refetch();
   };
 
+  const handleCancelInvoice = (invoiceId: string) => {
+    setInvoiceIdToCancel(invoiceId);
+    setCancelModalOpen(true);
+  };
+
+  const onConfirmCancel = async () => {
+    if (!invoiceIdToCancel) return;
+    try {
+      await cancelMutation.mutateAsync(invoiceIdToCancel);
+      setCancelModalOpen(false);
+      setInvoiceIdToCancel(null);
+    } catch {
+      // Error handled in hook
+    }
+  };
+
   return (
     <div className="space-y-6">
       <OwnerSubscriptionHeader
@@ -142,7 +163,7 @@ export default function OwnerSubscriptionPage() {
 
           <section>
             {pendingInvoice ? (
-              <PendingInvoiceCard pendingInvoice={pendingInvoice} />
+              <PendingInvoiceCard pendingInvoice={pendingInvoice} onCancel={handleCancelInvoice} isCancelling={cancelMutation.isPending} />
             ) : (
               <NoPendingInvoiceCard onRenew={handleRenew} disabled={renewMutation.isPending || (!plan && planOptions.length === 0)} loading={renewMutation.isPending} />
             )}
@@ -153,6 +174,7 @@ export default function OwnerSubscriptionPage() {
             page={page}
             limit={limit}
             onPageChange={setPage}
+            onCancelInvoice={handleCancelInvoice}
           />
         </>
       ) : (
@@ -169,6 +191,18 @@ export default function OwnerSubscriptionPage() {
         isConfirming={renewMutation.isPending}
         shouldForcePlanSelection={shouldForcePlanSelection}
         onConfirm={handleConfirmPlan}
+      />
+
+      <ConfirmationModal
+        open={cancelModalOpen}
+        onOpenChange={setCancelModalOpen}
+        title="Batalkan Invoice"
+        description="Apakah Anda yakin ingin membatalkan invoice ini? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Ya, Batalkan"
+        cancelText="Tidak"
+        confirmVariant="destructive"
+        loading={cancelMutation.isPending}
+        onConfirm={onConfirmCancel}
       />
     </div>
   );

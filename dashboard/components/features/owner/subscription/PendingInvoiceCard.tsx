@@ -13,9 +13,11 @@ import { cn } from "@/lib/utils";
 
 interface Props {
     pendingInvoice: OwnerSubscriptionInvoice;
+    onCancel?: (invoiceId: string) => void;
+    isCancelling?: boolean;
 }
 
-export function PendingInvoiceCard({ pendingInvoice }: Props) {
+export function PendingInvoiceCard({ pendingInvoice, onCancel, isCancelling }: Props) {
     return (
         <Card className="gap-0 py-0 rounded-md overflow-hidden border-amber-500/20 bg-amber-500/5 shadow-sm border">
             <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-amber-500/20 p-6 bg-amber-500/10">
@@ -73,6 +75,16 @@ export function PendingInvoiceCard({ pendingInvoice }: Props) {
                             Lihat Status Verifikasi <ExternalLink className="h-3.5 w-3.5" />
                         </Link>
                     </Button>
+                    {pendingInvoice.status === 'PENDING' && onCancel && (
+                        <Button
+                            variant="ghost"
+                            disabled={isCancelling}
+                            onClick={() => onCancel(pendingInvoice.id)}
+                            className="h-12 px-6 font-bold uppercase tracking-widest text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 transition-all active:scale-95"
+                        >
+                            {isCancelling ? 'Membatalkan...' : 'Batalkan'}
+                        </Button>
+                    )}
                 </div>
             </CardContent>
         </Card>

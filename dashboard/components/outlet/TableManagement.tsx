@@ -20,14 +20,6 @@ import { TableQrDialog, BulkQrDownload } from "./TableQrDialog";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type ViewMode = "grid" | "list";
 type TableStatus = OutletTable["status"];
@@ -36,11 +28,10 @@ interface TableManagementProps {
   outletId: string;
   outletSlug?: string;
   outletName?: string;
+  onAdd?: (open: boolean) => void;
   onEdit?: (table: OutletTable) => void;
   onDelete?: (table: OutletTable) => void;
 }
-
-// ─── Status Config ────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<
   TableStatus,
@@ -71,8 +62,6 @@ const STATUS_CONFIG: Record<
     badge: "bg-amber-500/10 text-amber-600 border-amber-500/20",
   },
 };
-
-// ─── Table Card ───────────────────────────────────────────────────────────────
 
 function TableCard({
   table,
@@ -161,8 +150,6 @@ function TableCard({
     </div>
   );
 }
-
-// ─── Grid View ────────────────────────────────────────────────────────────────
 
 function TableGrid({
   tables,
@@ -258,12 +245,11 @@ function TableGrid({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export function TableManagement({
   outletId,
   outletSlug,
   outletName,
+  onAdd,
   onDelete,
   onEdit,
 }: TableManagementProps) {
@@ -274,8 +260,6 @@ export function TableManagement({
     queryKey: ["tables", outletId],
     queryFn: () => tableApi.getTables(outletId),
   });
-
-  // ── List Columns ────────────────────────────────────────────────────────────
 
   const columns = useMemo<ColumnDef<OutletTable>[]>(
     () => [
@@ -331,8 +315,6 @@ export function TableManagement({
     [],
   );
 
-  // ── View Toggle ─────────────────────────────────────────────────────────────
-
   const viewToggle = (
     <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
       <button
@@ -385,6 +367,13 @@ export function TableManagement({
                 />
               )}
               {viewToggle}
+              <Button
+                onClick={() => onAdd?.(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Meja
+              </Button>
             </div>
           }
           rowActions={() => [
@@ -426,6 +415,13 @@ export function TableManagement({
                 />
               )}
               {viewToggle}
+              <Button
+                onClick={() => onAdd?.(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Meja
+              </Button>
             </div>
           </div>
 

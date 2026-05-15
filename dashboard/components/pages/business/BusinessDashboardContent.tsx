@@ -33,24 +33,6 @@ import { HighlightsCard } from "./HighlightsCard";
 import { DashboardSkeleton } from "./DashboardSkeleton";
 import { EmptyDashboardState } from "./EmptyDashboardState";
 
-const ORDER_STATUS_LABEL: Record<string, string> = {
-    AWAITING_PAYMENT: "Menunggu Bayar",
-    PROCESSING: "Diproses",
-    CONFIRMED: "Dikonfirmasi",
-    READY: "Siap",
-    ON_GOING: "Berjalan",
-    COMPLETED: "Selesai",
-    CANCELLED: "Dibatalkan",
-};
-
-const PAYMENT_STATUS_MAP: Record<string, { label: string; className: string }> = {
-    SUCCESS: { label: "Sukses", className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-    PENDING: { label: "Pending", className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
-    FAILED: { label: "Gagal", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
-    EXPIRED: { label: "Expired", className: "bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400" },
-    CANCELLED: { label: "Batal", className: "bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400" },
-};
-
 const fmtNumber = (v: number) =>
     new Intl.NumberFormat("id-ID").format(Number.isFinite(v) ? v : 0);
 
@@ -220,7 +202,7 @@ export default function BusinessDashboardContent() {
                     services={ov?.productService.services || 0}
                 />
                 <PaymentBreakdownDonut data={ov?.paymentBreakdown || { online: 0, manual: 0 }} />
-                <HighlightsCard 
+                <HighlightsCard
                     topOutlet={topPerformer ? { name: topPerformer.name, revenue: topPerformer.revenue } : undefined}
                     avgOrdersPerOutlet={avgOrdersPerOutlet}
                 />

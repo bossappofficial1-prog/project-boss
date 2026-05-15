@@ -98,7 +98,10 @@ export default function AppSidebar() {
     }
   })();
 
-  const { isLoading, error, refetch } = useUserData();
+  const { data: userData, isLoading, error, refetch } = useUserData();
+  const hasProAccess = ["TRIAL", "PRO", "ENTERPRISE"].includes(
+    userData?.business?.subscriptionPlan?.toUpperCase() || "BASIC"
+  );
 
   // Auto-expand menu if a sub-item is active
   useEffect(() => {
@@ -157,7 +160,13 @@ export default function AppSidebar() {
     return MENU_GROUPS.map((group) => ({
       ...group,
       items: group.items
-        .map((item) => ({ ...item })) // Clone item to avoid mutating original MENU_GROUPS
+        .map((item) => {
+          const clonedItem = { ...item };
+          if (clonedItem.requirePro && !hasProAccess) {
+            clonedItem.badge = "PRO";
+          }
+          return clonedItem;
+        }) // Clone item to avoid mutating original MENU_GROUPS
         .filter((item) => {
           // Check if item itself is allowed
           const itemAllowed =
@@ -172,7 +181,13 @@ export default function AppSidebar() {
               (sub) =>
                 !sub.requiredTypes ||
                 sub.requiredTypes.includes(selectedOutlet.type),
-            );
+            ).map((sub) => {
+              const clonedSub = { ...sub };
+              if (clonedSub.requirePro && !hasProAccess) {
+                clonedSub.badge = "PRO";
+              }
+              return clonedSub;
+            });
 
             // If all subitems are filtered out, don't show the parent either
             if (filteredSubItems.length === 0) return false;
@@ -184,7 +199,7 @@ export default function AppSidebar() {
           return true;
         }),
     })).filter((group) => group.items.length > 0);
-  }, [selectedOutlet, pathname]);
+  }, [selectedOutlet, pathname, hasProAccess]);
   const isHrefActive = useCallback(
     (href?: string) => {
       if (!href) return false;

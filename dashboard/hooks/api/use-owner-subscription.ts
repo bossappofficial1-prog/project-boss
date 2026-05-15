@@ -53,3 +53,21 @@ export function useRenewSubscription() {
     },
   });
 }
+
+export function useCancelSubscriptionInvoice() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ message: string }, Error, string>({
+    mutationFn: (invoiceId) => ownerSubscriptionApi.cancelInvoice(invoiceId),
+    onSuccess: async (data) => {
+      toast.success(data?.message ?? 'Invoice berhasil dibatalkan');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: OVERVIEW_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: ['owner-subscription', 'invoices'] }),
+      ]);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data.message ?? 'Gagal membatalkan invoice');
+    },
+  });
+}

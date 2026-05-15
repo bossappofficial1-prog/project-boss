@@ -86,21 +86,8 @@ export default function OutletTablesPage() {
 
     return (
         <div className="space-y-4">
-            <SectionHeader
-                title="Manajemen Meja"
-                description="Kelola ketersediaan meja dan kapasitas tempat duduk di outlet Anda."
-                actions={<div className="flex justify-end mb-4">
-                    <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Tambah Meja
-                    </button>
-                </div>} // Spacer to match height if needed
-            />
-
             <TableManagement
+                onAdd={setIsAddModalOpen}
                 onEdit={(table) => {
                     setSelectedTable(table)
                     setIsEditModalOpen(true)

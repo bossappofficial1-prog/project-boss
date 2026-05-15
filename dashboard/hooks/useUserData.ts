@@ -22,6 +22,7 @@ interface Business {
     accountNumber?: string;
     accountHolderName?: string;
     transactionFeeBearer?: string;
+    subscriptionPlan?: string;
 }
 
 interface UserData {

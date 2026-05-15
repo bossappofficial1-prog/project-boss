@@ -11,13 +11,17 @@ interface InvoiceHistorySectionProps {
     page: number;
     limit: number;
     onPageChange: (page: number) => void;
+    onCancelInvoice?: (invoiceId: string) => void;
 }
 
-export function InvoiceHistorySection({ query, page, limit, onPageChange }: InvoiceHistorySectionProps) {
+export function InvoiceHistorySection({ query, page, limit, onPageChange, onCancelInvoice }: InvoiceHistorySectionProps) {
     const rows = query.data?.data ?? [];
 
     return (
         <DataTable
+            // pageSize={page}
+            // serverLimit={limit}
+            // onPaginationChange={params => onPageChange(params.page)}
             data={rows}
             columns={[
                 {
@@ -77,18 +81,35 @@ export function InvoiceHistorySection({ query, page, limit, onPageChange }: Invo
             rowActions={() => [
                 {
                     render(row) {
-                        return PAYMENT_ACTIONABLE_STATUSES.includes(row.status) ? (
-                            <Button asChild size="sm" variant="outline">
-                                <Link href={`/subscription/payment/${row.id}`}>
-                                    Lanjutkan
-                                </Link>
-                            </Button>
-                        ) : (
-                            <Button asChild size="sm" variant="ghost">
-                                <Link href={`/subscription/payment/${row.id}`}>
-                                    Detail
-                                </Link>
-                            </Button>
+                        const canCancel = row.status === 'PENDING';
+
+                        return (
+                            <div className="flex items-center gap-2">
+                                {PAYMENT_ACTIONABLE_STATUSES.includes(row.status) ? (
+                                    <Button asChild size="sm" variant="outline">
+                                        <Link href={`/subscription/payment/${row.id}`}>
+                                            Lanjutkan
+                                        </Link>
+                                    </Button>
+                                ) : (
+                                    <Button asChild size="sm" variant="ghost">
+                                        <Link href={`/subscription/payment/${row.id}`}>
+                                            Detail
+                                        </Link>
+                                    </Button>
+                                )}
+
+                                {canCancel && onCancelInvoice && (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 font-medium"
+                                        onClick={() => onCancelInvoice(row.id)}
+                                    >
+                                        Batalkan
+                                    </Button>
+                                )}
+                            </div>
                         )
                     },
                 }

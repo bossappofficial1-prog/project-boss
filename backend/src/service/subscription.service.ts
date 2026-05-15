@@ -79,6 +79,7 @@ export class SubscriptionService {
                 name: business.name,
                 subscriptionStatus: business.subscriptionStatus,
                 subscriptionEndDate: business.subscriptionEndDate,
+                subscriptionPlan: business.subscriptionPlan,
             },
             subscription: business.currentSubscription,
             pendingInvoice,
@@ -198,5 +199,13 @@ export class SubscriptionService {
         });
 
         return renewal;
+    }
+    
+    static async cancelInvoice(businessId: string, invoiceId: string) {
+        try {
+            return await SubscriptionRepository.cancelInvoice(invoiceId, businessId);
+        } catch (error: any) {
+            throw new AppError(error.message || 'Gagal membatalkan invoice', HttpStatus.BAD_REQUEST);
+        }
     }
 }

@@ -7,6 +7,7 @@ import {
     getOwnerSubscriptionOverviewController,
     listOwnerInvoicesController,
     renewSubscriptionController,
+    cancelSubscriptionInvoiceController,
 } from "../controller/subscription.controller";
 import multer from "multer";
 import path from "path";
@@ -95,6 +96,13 @@ subscriptionRouter.post(
     authorize(UserRole.OWNER),
     validateSchema(renewSubscriptionSchema),
     renewSubscriptionController
+);
+
+subscriptionRouter.post(
+    '/invoice/:invoiceId/cancel',
+    protect,
+    authorize(UserRole.OWNER),
+    cancelSubscriptionInvoiceController
 );
 
 export default subscriptionRouter;

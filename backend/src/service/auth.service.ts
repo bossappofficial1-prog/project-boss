@@ -39,7 +39,8 @@ export async function loginService(data: LoginInput) {
         isVerified: user.isVerified,
         provider: user.provider === 'local' ? 'email' : user.provider,
         businessId: user.business?.id,
-        subscriptionStatus: user.business?.subscriptionStatus
+        subscriptionStatus: user.business?.subscriptionStatus,
+        subscriptionPlan: user.business?.subscriptionPlan
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
@@ -274,7 +275,9 @@ export async function googleOAuthService(profile: {
         email: user.email,
         name: user.name,
         provider: user.provider,
-        businessId: user.business?.id ?? null
+        businessId: user.business?.id ?? null,
+        subscriptionStatus: user.business?.subscriptionStatus ?? null,
+        subscriptionPlan: user.business?.subscriptionPlan ?? null
     });
 
     return {

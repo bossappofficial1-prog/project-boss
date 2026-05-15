@@ -18,8 +18,9 @@ export default function OwnerLayout({
 }) {
     return (
         <DashboardLayout requiredRole="OWNER">
-            <OutletTypeChecker />
-            {children}
+            <OutletTypeChecker>
+                {children}
+            </OutletTypeChecker>
         </DashboardLayout>
     );
 }

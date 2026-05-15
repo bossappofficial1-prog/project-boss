@@ -118,6 +118,7 @@ export const uploadPaymentProofController = asyncHandler(async (req: Request, re
             isVerified: req.storedUser.isVerified,
             businessId,
             subscriptionStatus: result.subscription.status,
+            subscriptionPlan: result.subscription.plan.code,
         });
 
         res.cookie("token", refreshedToken, {
@@ -191,6 +192,7 @@ export const getSubscriptionStatusController = asyncHandler(async (req: Request,
             isVerified: storedUser.isVerified,
             businessId,
             subscriptionStatus: dbStatus,
+            subscriptionPlan: status.business.subscriptionPlan,
         });
 
         await redis.set(
@@ -273,4 +275,25 @@ export const renewSubscriptionController = asyncHandler(async (req: Request, res
         invoice: renewal.invoice,
         subscription: renewal.subscription,
     }, HttpStatus.CREATED);
+});
+
+export const cancelSubscriptionInvoiceController = asyncHandler(async (req: Request, res: Response) => {
+    const storedUser = req.storedUser as typeof req.storedUser & {
+        businessId?: string;
+        business?: { id: string } | null;
+    };
+    const businessId = storedUser?.businessId ?? storedUser?.business?.id;
+    const invoiceId = ensureString(req.params?.invoiceId, 'invoiceId');
+
+    if (!businessId) {
+        throw new AppError('Business ID tidak ditemukan di token', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!invoiceId) {
+        throw new AppError('Invoice ID diperlukan', HttpStatus.BAD_REQUEST);
+    }
+
+    await SubscriptionService.cancelInvoice(businessId, invoiceId);
+
+    return ResponseUtil.success(res, { message: 'Invoice berhasil dibatalkan' });
 });

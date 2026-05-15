@@ -63,7 +63,7 @@ const buildOAuthPopupRedirect = (clientUrl: string, redirectPath: string, error?
 export const verifyController = asyncHandler(async (req: Request, res: Response) => {
     const { email, code } = req.body;
     const user = await verifyUserService(email, code);
-    const business = user.business as (typeof user.business & { subscriptionStatus?: SubscriptionStatus }) | null;
+    const business = user.business as (typeof user.business & { subscriptionStatus?: SubscriptionStatus, subscriptionPlan: any }) | null;
     await redis.set(`session:${user.id}`, JSON.stringify({ ...user, businessId: user.business?.id }), 'EX', 60 * 60 * 24);
 
     const token = JwtUtil.generate({
@@ -74,7 +74,8 @@ export const verifyController = asyncHandler(async (req: Request, res: Response)
         isVerified: user.isVerified,
         provider: user.provider === 'local' ? 'email' : user.provider,
         businessId: business?.id,
-        subscriptionStatus: business?.subscriptionStatus
+        subscriptionStatus: business?.subscriptionStatus,
+        subscriptionPlan: business?.subscriptionPlan
     });
 
     res.cookie("token", token, {
@@ -111,6 +112,7 @@ export const completeOnboardingController = asyncHandler(async (req: Request, re
         provider: user.provider === 'local' ? 'email' : user.provider,
         businessId: onboardingResult.business.id,
         subscriptionStatus: onboardingResult.business.subscriptionStatus,
+        subscriptionPlan: onboardingResult.business.subscriptionPlan,
     });
 
     await redis.set(
@@ -216,7 +218,9 @@ export const registerController = asyncHandler(async (req: Request, res: Respons
         email: user.email,
         isVerified: user.isVerified,
         provider: user.provider === 'local' ? 'email' : user.provider,
-        businessId: user.business?.id
+        businessId: user.business?.id,
+        subscriptionStatus: user.business?.subscriptionStatus,
+        subscriptionPlan: user.business?.subscriptionPlan
     });
 
     res.cookie("token", token, {
