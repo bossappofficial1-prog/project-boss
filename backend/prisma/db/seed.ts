@@ -1,5 +1,5 @@
 import { DatabaseFactory } from './factories';
-import type { Business, Outlet, SubscriptionPlan, ProductType as ProductTypeEnum } from "@prisma/client";
+import type { Business, SubscriptionPlan } from "@prisma/client";
 
 const {
   PrismaClient,
@@ -9,6 +9,7 @@ const {
   SubscriptionStatus,
   PaymentStatus,
   OrderStatus,
+  OutletType,
 } = require("@prisma/client");
 const { hash } = require("bcryptjs");
 const { Pool } = require("pg");
@@ -19,22 +20,10 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
-type OutletCatalogProduct = {
-  productId: string;
-  price: number;
-  type: ProductTypeEnum;
-};
-
-type OutletProductCatalog = Record<string, OutletCatalogProduct[]>;
-
-const roundCurrency = (value: number): number => Math.round(value * 100) / 100;
-
 const sanitizeForCode = (value: string): string => {
   const sanitized = value.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
   return (sanitized || "BIZ").toUpperCase();
 };
-
-const forceReseed = process.argv.includes("--force") || process.argv.includes("-f");
 
 // Subscription Plan Features Definition
 const SUBSCRIPTION_PLANS = [
@@ -174,86 +163,6 @@ async function seedBusinessSubscriptionsAndInvoices(businesses: Business[]) {
   console.log(`✅ ${businesses.length} business subscriptions and invoices created.`);
 }
 
-async function seedOutletTransactions(outlets: Outlet[], productsByOutlet: OutletProductCatalog) {
-  if (!outlets.length) return;
-
-  console.log("💰 Creating sample orders and transactions...");
-
-  let transactionCount = 0;
-
-  for (let i = 0; i < outlets.length; i++) {
-    const outlet = outlets[i];
-    const outletProducts = productsByOutlet[outlet.id] || [];
-
-    if (!outletProducts.length) {
-      console.warn(
-        `⚠️  Skipping transactions for outlet ${outlet.name} because no products were found.`,
-      );
-      continue;
-    }
-
-    const preferredProduct =
-      outletProducts.find((product) => product.type === ProductType.GOODS) || outletProducts[0];
-
-    const quantity = (i % 3) + 1;
-    const subtotal = preferredProduct.price * quantity;
-    const midtransFee = roundCurrency(subtotal * 0.007);
-    const appFee = roundCurrency(subtotal * 0.02);
-    const totalAmount = roundCurrency(subtotal + midtransFee + appFee);
-
-    const guestCustomer = await prisma.guestCustomer.create({
-      data: {
-        name: `Guest ${outlet.name}`,
-        phone: `+6281300${String(5000 + i).padStart(4, "0")}`,
-        email: `guest${i + 1}@example.com`,
-      },
-    });
-
-    const midtransToken = `MID-${outlet.id.slice(0, 8)}-${i + 1}`;
-
-    const order = await prisma.order.create({
-      data: {
-        totalAmount,
-        paymentStatus: PaymentStatus.SUCCESS,
-        orderStatus: OrderStatus.COMPLETED,
-        paymentReminderSent: true,
-        midtransTransactionToken: midtransToken,
-        midtransRedirectUrl: `https://payments.example.com/${midtransToken}`,
-        guestCustomerId: guestCustomer.id,
-        outletId: outlet.id,
-        midtransFee,
-        appFee,
-        items: {
-          create: [
-            {
-              quantity,
-              priceAtTimeOfOrder: preferredProduct.price,
-              productId: preferredProduct.productId,
-              hppAtTimeOfOrder: preferredProduct.type === ProductType.GOODS ? preferredProduct.price * 0.6 : 0,
-              commissionAtTimeOfOrder: preferredProduct.type === ProductType.SERVICE ? preferredProduct.price * 0.1 : 0,
-            },
-          ],
-        },
-      },
-    });
-
-    await prisma.transaction.create({
-      data: {
-        amount: totalAmount,
-        paymentMethod: "midtrans",
-        status: PaymentStatus.SUCCESS,
-        paymentUrl: order.midtransRedirectUrl,
-        externalId: `TRX-${midtransToken}`,
-        orderId: order.id,
-      },
-    });
-
-    transactionCount += 1;
-  }
-
-  console.log(`✅ ${transactionCount} sample transactions created (one per outlet).`);
-}
-
 function validateEnvironment() {
   const requiredEnvVars = ["DATABASE_URL"];
   const missing = requiredEnvVars.filter((env) => !process.env[env]);
@@ -269,35 +178,38 @@ async function main() {
 
   await seedSubscriptionPlans();
 
-  if (forceReseed) {
-    console.log("⚡ FORCE RESEED MODE: Clearing all existing data!");
-    console.log("🗑️  Cleaning existing data...");
-
-    await prisma.expense.deleteMany({});
-    await prisma.transaction.deleteMany({});
-    await prisma.orderItem.deleteMany({});
-    await prisma.order.deleteMany({});
-    await prisma.guestCustomer.deleteMany({});
-    await prisma.stockLog.deleteMany({}); // Added cleanup for StockLog
-    await prisma.productGoods.deleteMany({}); // Added cleanup
-    await prisma.productService.deleteMany({}); // Added cleanup
-    await prisma.product.deleteMany({});
-    await prisma.outletOperatingHours.deleteMany({});
-    await prisma.outlet.deleteMany({});
-    await prisma.subscriptionInvoice.deleteMany({});
-    await prisma.businessSubscription.deleteMany({});
-    // await prisma.wallet.deleteMany({}); // Removed Wallet
-    await prisma.business.deleteMany({});
-    await prisma.user.deleteMany({});
-    console.log("✅ Old data cleaned.");
-  } else {
-    const existingProducts = await prisma.product.count();
-    if (existingProducts > 0) {
-      console.log(`⚠️  Database already contains ${existingProducts} products. Skipping seeding.`);
-      console.log("   Use --force or -f flag to force reseed.");
-      return;
-    }
-  }
+  console.log("🗑️  Clearing all existing data...");
+  await prisma.ticketCode.deleteMany({});
+  await prisma.bookingSlot.deleteMany({});
+  await prisma.productMedia.deleteMany({});
+  await prisma.outletTransferRequest.deleteMany({});
+  await prisma.banner.deleteMany({});
+  await prisma.expense.deleteMany({});
+  await prisma.transaction.deleteMany({});
+  await prisma.orderItem.deleteMany({});
+  await prisma.order.deleteMany({});
+  await prisma.bill.deleteMany({});
+  await prisma.outletTable.deleteMany({});
+  await prisma.membership.deleteMany({});
+  await prisma.loyaltyPointHistory.deleteMany({});
+  await prisma.outletMembership.deleteMany({});
+  await prisma.loyaltyConfig.deleteMany({});
+  await prisma.receiptSetting.deleteMany({});
+  await prisma.guestCustomer.deleteMany({});
+  await prisma.pushSubscription.deleteMany({});
+  await prisma.staff.deleteMany({});
+  await prisma.stockLog.deleteMany({});
+  await prisma.productGoods.deleteMany({});
+  await prisma.productService.deleteMany({});
+  await prisma.productTicket.deleteMany({});
+  await prisma.product.deleteMany({});
+  await prisma.outletOperatingHours.deleteMany({});
+  await prisma.outlet.deleteMany({});
+  await prisma.subscriptionInvoice.deleteMany({});
+  await prisma.businessSubscription.deleteMany({});
+  await prisma.business.deleteMany({});
+  await prisma.user.deleteMany({});
+  console.log("✅ Old data cleaned.");
 
   // --- 1. Create Users ---
   console.log("👥 Creating users...");
@@ -393,12 +305,58 @@ async function main() {
       lng: 106.7808,
       address: "Jl. Metro Pondok Indah No. 5, Jakarta Selatan",
     },
+    {
+      name: "Jasa",
+      lat: -6.2615,
+      lng: 106.8105,
+      address: "Jl. Panglima Polim Raya No. 12, Jakarta Selatan",
+    },
   ];
   let outlets = [];
-  for (let i = 0; i < businesses.length; i++) {
-    const location = jakselLocations[i % jakselLocations.length];
-    const businessType = businessTypes[i]; // Ambil tipe bisnis
-    const imageUrl = outletImages[businessType as keyof typeof outletImages]; // Pilih URL gambar yang sesuai
+
+  // Default Owner → 2 outlet (FNB + SERVICE)
+  const fnbLocation = jakselLocations[0];
+  const fnbOutlet = await prisma.outlet.create({
+    data: {
+      name: `${businesses[0].name} - ${fnbLocation.name}`,
+      address: fnbLocation.address,
+      phone: "+6281234560001",
+      isOpen: true,
+      businessId: businesses[0].id,
+      latitude: fnbLocation.lat,
+      longitude: fnbLocation.lng,
+      image: outletImages.coffee,
+      slug: "kopi-nusantara-kemang",
+      type: OutletType.FNB,
+    },
+  });
+  outlets.push(fnbOutlet);
+
+  const svcLocation = jakselLocations[5];
+  const svcOutlet = await prisma.outlet.create({
+    data: {
+      name: `${businesses[0].name} - ${svcLocation.name}`,
+      address: svcLocation.address,
+      phone: "+6281234560002",
+      isOpen: true,
+      businessId: businesses[0].id,
+      latitude: svcLocation.lat,
+      longitude: svcLocation.lng,
+      image: outletImages.coffee,
+      slug: "kopi-nusantara-jasa",
+      type: OutletType.SERVICE,
+    },
+  });
+  outlets.push(svcOutlet);
+
+  // Other 4 businesses → 1 outlet each
+  for (let i = 1; i < businesses.length; i++) {
+    const location = jakselLocations[i];
+    const businessType = businessTypes[i];
+    const imageUrl = outletImages[businessType as keyof typeof outletImages];
+    const outletType = businessType === "food" ? OutletType.FNB
+      : businessType === "electronics" ? OutletType.RETAIL
+      : OutletType.SERVICE;
 
     const outlet = await prisma.outlet.create({
       data: {
@@ -411,6 +369,7 @@ async function main() {
         longitude: location.lng,
         image: imageUrl,
         slug: `${businesses[i].name}-${location.name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        type: outletType,
       },
     });
     outlets.push(outlet);
@@ -432,50 +391,231 @@ async function main() {
   }
   console.log("✅ Operating hours created.");
 
-  // --- 5. Create Products, Transactions, and Expenses using Factory ---
-  console.log("📦 Generating mass dummy data for reports using Laravel-style Factories...");
-  
+  // --- 5. Deterministic Products + Staff per Outlet ---
+  console.log("👨‍🍳 Creating deterministic products and staff...");
+
+  const cashierPassword = await hash("111111", 10);
+
+  // FNB Outlet (outlets[0]): 1 GOODS product + 1 cashier
+  const fnbProduct = await prisma.product.create({
+    data: {
+      name: "Kopi Susu Spesial",
+      description: "Kopi susu dengan biji pilihan Arabica, disajikan dengan steamed milk",
+      type: ProductType.GOODS,
+      outletId: outlets[0].id,
+      taxPercentage: 11,
+      status: "ACTIVE",
+      image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?q=80&w=800",
+    },
+  });
+  await prisma.productGoods.create({
+    data: {
+      productId: fnbProduct.id,
+      currentStock: 100,
+      minStock: 10,
+      unit: "cup",
+      sellingPrice: 25000,
+      averageHpp: 10000,
+    },
+  });
+  const fnbCashier = await prisma.staff.create({
+    data: {
+      name: "Kasir FNB",
+      phone: "+6281234567001",
+      email: "kasir.fnb@bossapp.id",
+      password: cashierPassword,
+      outletId: outlets[0].id,
+    },
+  });
+
+  // SERVICE Outlet (outlets[1]): 1 SERVICE product + 1 cashier
+  const svcProduct = await prisma.product.create({
+    data: {
+      name: "Barista Training",
+      description: "Pelatihan barista profesional untuk pemula hingga mahir",
+      type: ProductType.SERVICE,
+      outletId: outlets[1].id,
+      taxPercentage: 0,
+      status: "ACTIVE",
+      image: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=800",
+    },
+  });
+  await prisma.productService.create({
+    data: {
+      productId: svcProduct.id,
+      durationMinutes: 120,
+      sellingPrice: 250000,
+      providerName: "Bambang Barista",
+      commissionType: "PERCENTAGE",
+      commissionValue: 10,
+    },
+  });
+  const svcCashier = await prisma.staff.create({
+    data: {
+      name: "Kasir Jasa",
+      phone: "+6281234567002",
+      email: "kasir.jasa@bossapp.id",
+      password: cashierPassword,
+      outletId: outlets[1].id,
+    },
+  });
+
+  const productImages: Record<string, string> = {
+    food: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800",
+    beauty: "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=800",
+    electronics: "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?q=80&w=800",
+    laundry: "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?q=80&w=800",
+  };
+
+  // Other 4 outlets: 1 deterministic product + 1 cashier each
+  const otherProducts = [
+    { idx: 2, name: "Nasi Goreng Spesial", price: 35000, type: ProductType.GOODS, unit: "porsi", tax: 11, hpp: 15000, stock: 80, staffName: "Kasir Warung", imgKey: "food" },
+    { idx: 3, name: "Hair Cut & Wash", price: 75000, type: ProductType.SERVICE, duration: 60, tax: 0, provider: "Rina Hair", comm: 15, staffName: "Kasir Salon", imgKey: "beauty" },
+    { idx: 4, name: "Screen Repair", price: 500000, type: ProductType.SERVICE, duration: 120, tax: 0, provider: "Tono Tech", comm: 20, staffName: "Kasir Elektronik", imgKey: "electronics" },
+    { idx: 5, name: "Wash & Fold", price: 10000, type: ProductType.SERVICE, duration: 180, tax: 0, provider: "Laundry Team", comm: 10, staffName: "Kasir Laundry", imgKey: "laundry" },
+  ];
+  for (const p of otherProducts) {
+    const outlet = outlets[p.idx];
+    const prod = await prisma.product.create({
+      data: {
+        name: p.name,
+        type: p.type,
+        outletId: outlet.id,
+        taxPercentage: p.tax,
+        status: "ACTIVE",
+        image: productImages[p.imgKey],
+      },
+    });
+    if (p.type === ProductType.GOODS) {
+      await prisma.productGoods.create({
+        data: {
+          productId: prod.id,
+          currentStock: p.stock!,
+          minStock: 10,
+          unit: p.unit!,
+          sellingPrice: p.price,
+          averageHpp: p.hpp!,
+        },
+      });
+    } else {
+      await prisma.productService.create({
+        data: {
+          productId: prod.id,
+          durationMinutes: p.duration!,
+          sellingPrice: p.price,
+          providerName: p.provider!,
+          commissionType: "PERCENTAGE",
+          commissionValue: p.comm!,
+        },
+      });
+    }
+    await prisma.staff.create({
+      data: {
+        name: p.staffName,
+        phone: `+6281234567${String(700 + p.idx).padStart(3, "0")}`,
+        email: `${p.staffName.toLowerCase().replace(/\s+/g, ".")}@example.com`,
+        password: cashierPassword,
+        outletId: outlet.id,
+      },
+    });
+  }
+
+  console.log("✅ Deterministic products and staff created.");
+
+  // --- 6. FNB: 100 dummy transactions with PPN 11% & cashier ---
+  console.log("💰 Generating 100 FNB transactions with PPN 11%...");
   const factory = new DatabaseFactory(prisma);
   const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - 6); // Data dummy untuk 6 bulan terakhir
+  startDate.setMonth(startDate.getMonth() - 6);
   const endDate = new Date();
 
-  for (let i = 0; i < outlets.length; i++) {
+  const fnbProducts = [{
+    id: fnbProduct.id,
+    price: 25000,
+    type: ProductType.GOODS,
+    hpp: 10000,
+    taxPercentage: 11,
+  }];
+  await factory.createDummyTransactions(
+    fnbOutlet.id, fnbProducts, 100, startDate, endDate, fnbCashier.id,
+  );
+  console.log("✅ 100 FNB transactions created.");
+
+  // --- 7. Factory mass data for remaining outlets ---
+  console.log("📦 Generating mass dummy data for reports...");
+  for (let i = 1; i < outlets.length; i++) {
     const outlet = outlets[i];
     console.log(`Generating data for outlet: ${outlet.name}`);
-    
-    // Generate 30 produk per outlet
+
     const products = await factory.createDummyProducts(outlet.id, 30);
-    
-    // Generate 150 transaksi per outlet selama 6 bulan terakhir
     await factory.createDummyTransactions(outlet.id, products, 150, startDate, endDate);
-    
-    // Generate 50 pengeluaran per outlet selama 6 bulan terakhir
     await factory.createDummyExpenses(outlet.id, 50, startDate, endDate);
   }
-  
   console.log("✅ Mass dummy data generation for reports completed.");
 
-  // --- 6. Summary ---
+  // --- 8. OutletTable, LoyaltyConfig, receiptSetting per outlet ---
+  console.log("🪑 Creating tables, loyalty configs, and receipt settings...");
+  for (const outlet of outlets) {
+    await prisma.outletTable.createMany({
+      data: Array.from({ length: 6 }, (_, i) => ({
+        name: `Meja ${i + 1}`,
+        capacity: i < 2 ? 2 : i < 4 ? 4 : 6,
+        outletId: outlet.id,
+      })),
+    });
+
+    await prisma.loyaltyConfig.upsert({
+      where: { outletId: outlet.id },
+      update: {},
+      create: {
+        outletId: outlet.id,
+        pointsEarned: 1,
+        multiplierAmount: 10000,
+        pointValue: 100,
+        isActive: true,
+      },
+    });
+
+    await prisma.receiptSetting.upsert({
+      where: { outletId: outlet.id },
+      update: {},
+      create: {
+        outletId: outlet.id,
+        headerText: `${outlet.name}`,
+        footerText: "Terima kasih atas kunjungan Anda",
+        showCashier: true,
+        showCustomer: true,
+      },
+    });
+  }
+  console.log("✅ Tables, loyalty configs, and receipt settings created.");
+
+  // --- 9. Summary ---
   console.log("\n📊 SEEDING SUMMARY:");
   const counts = await prisma.$transaction([
     prisma.user.count(),
     prisma.business.count(),
     prisma.outlet.count(),
     prisma.product.count(),
+    prisma.staff.count(),
     prisma.businessSubscription.count(),
     prisma.subscriptionInvoice.count(),
     prisma.order.count(),
     prisma.transaction.count(),
+    prisma.outletTable.count(),
+    prisma.loyaltyConfig.count(),
   ]);
   console.log(`👥 Users: ${counts[0]}`);
   console.log(`🏢 Businesses: ${counts[1]}`);
   console.log(`🏪 Outlets: ${counts[2]}`);
   console.log(`📦 Products: ${counts[3]}`);
-  console.log(`📄 Business Subscriptions: ${counts[4]}`);
-  console.log(`🧾 Subscription Invoices: ${counts[5]}`);
-  console.log(`🛒 Orders: ${counts[6]}`);
-  console.log(`💸 Transactions: ${counts[7]}`);
+  console.log(`👨‍🍳 Staff: ${counts[4]}`);
+  console.log(`📄 Business Subscriptions: ${counts[5]}`);
+  console.log(`🧾 Subscription Invoices: ${counts[6]}`);
+  console.log(`🛒 Orders: ${counts[7]}`);
+  console.log(`💸 Transactions: ${counts[8]}`);
+  console.log(`🪑 Outlet Tables: ${counts[9]}`);
+  console.log(`⭐ Loyalty Configs: ${counts[10]}`);
 
   console.log("\n✨ Database seeding completed successfully!");
 }

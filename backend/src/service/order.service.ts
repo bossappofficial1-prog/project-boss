@@ -17,6 +17,7 @@ import Console from "../utils/logger";
 import { orderExpiryJob } from "../jobs/payment-expiry.job";
 import { formatDateTime, generateTicketCode } from "../utils";
 import { LoyaltyService } from "./loyalty.service";
+import { RedisUtils } from "../utils/redis.utils";
 
 type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> &
   Record<string, any>;
@@ -1080,6 +1081,8 @@ export async function cancelOrderByCustomerService(
     });
   });
 
+  await RedisUtils.deleteByPattern(`pos:products:${order.outletId}:*`);
+
   SocketEmitter.getInstance().emitNotificationToOutlet(order.outletId, {
     message: `Pesanan ${orderId}, telah dibatalkan customer`,
     timestamp: new Date(),
@@ -1288,6 +1291,8 @@ export async function expirePaymentOrder(orderId: string) {
       },
     });
   });
+
+  await RedisUtils.deleteByPattern(`pos:products:${order.outletId}:*`);
 
   SocketEmitter.getInstance().emitToOrder(orderId, {
     message: `Payment for ${orderId} has expired`,

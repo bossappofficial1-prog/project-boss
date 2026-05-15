@@ -11,6 +11,7 @@ import {
 } from "../schemas/stock.schema";
 import { AppError } from "../errors/app-error";
 import { HttpStatus } from "../constants/http-status";
+import { RedisUtils } from "../utils/redis.utils";
 
 /**
  * Record incoming stock (purchase/restock)
@@ -29,7 +30,9 @@ export async function recordStockIn(data: StockInInput) {
     throw new AppError("Product Goods tidak ditemukan", HttpStatus.NOT_FOUND);
   }
 
-  return db.$transaction(async (tx) => {
+  const outletId = productGoods.product.outletId;
+
+  const result = await db.$transaction(async (tx) => {
     // Create stock log
     const stockLog = await tx.stockLog.create({
       data: {
@@ -69,6 +72,9 @@ export async function recordStockIn(data: StockInInput) {
       newAverageHpp,
     };
   });
+
+  await RedisUtils.deleteByPattern(`pos:products:${outletId}:*`);
+  return result;
 }
 
 /**
@@ -79,8 +85,14 @@ export async function recordStockInBulk(data: StockInInput[]) {
     return [];
   }
 
+  const goods = await db.productGoods.findMany({
+    where: { id: { in: data.map((d) => d.productGoodsId) } },
+    include: { product: { select: { outletId: true } } },
+  });
+  const outletIds = [...new Set(goods.map((g) => g.product.outletId).filter(Boolean))];
+
   // Use a transaction to ensure all stock movements succeed or fail together
-  return db.$transaction(
+  const result = await db.$transaction(
     async (tx) => {
       const results = [];
 
@@ -172,6 +184,11 @@ export async function recordStockInBulk(data: StockInInput[]) {
       timeout: 20000, // Increase timeout for bulk operations
     },
   );
+
+  for (const oid of outletIds) {
+    await RedisUtils.deleteByPattern(`pos:products:${oid}:*`);
+  }
+  return result;
 }
 
 /**
@@ -198,7 +215,9 @@ export async function recordStockOut(data: StockOutInput) {
     );
   }
 
-  return db.$transaction(async (tx) => {
+  const outletId = productGoods.product.outletId;
+
+  const result = await db.$transaction(async (tx) => {
     // Create stock log
     const stockLog = await tx.stockLog.create({
       data: {
@@ -226,6 +245,9 @@ export async function recordStockOut(data: StockOutInput) {
       productGoods: updatedGoods,
     };
   });
+
+  await RedisUtils.deleteByPattern(`pos:products:${outletId}:*`);
+  return result;
 }
 
 /**
@@ -252,7 +274,9 @@ export async function adjustStock(data: StockAdjustmentInput) {
     );
   }
 
-  return db.$transaction(async (tx) => {
+  const outletId = productGoods.product.outletId;
+
+  const result = await db.$transaction(async (tx) => {
     // Create stock log
     const stockLog = await tx.stockLog.create({
       data: {
@@ -276,6 +300,9 @@ export async function adjustStock(data: StockAdjustmentInput) {
       productGoods: updatedGoods,
     };
   });
+
+  await RedisUtils.deleteByPattern(`pos:products:${outletId}:*`);
+  return result;
 }
 
 /**
@@ -294,7 +321,9 @@ export async function recordReturn(data: StockReturnInput) {
     throw new AppError("Product Goods tidak ditemukan", HttpStatus.NOT_FOUND);
   }
 
-  return db.$transaction(async (tx) => {
+  const outletId = productGoods.product.outletId;
+
+  const result = await db.$transaction(async (tx) => {
     // Create stock log
     const stockLog = await tx.stockLog.create({
       data: {
@@ -323,6 +352,9 @@ export async function recordReturn(data: StockReturnInput) {
       productGoods: updatedGoods,
     };
   });
+
+  await RedisUtils.deleteByPattern(`pos:products:${outletId}:*`);
+  return result;
 }
 
 /**
@@ -334,7 +366,13 @@ export async function recordReturnBulk(data: StockReturnInput[]) {
     return [];
   }
 
-  return db.$transaction(
+  const goods = await db.productGoods.findMany({
+    where: { id: { in: data.map((d) => d.productGoodsId) } },
+    include: { product: { select: { outletId: true } } },
+  });
+  const outletIds = [...new Set(goods.map((g) => g.product.outletId).filter(Boolean))];
+
+  const result = await db.$transaction(
     async (tx) => {
       const results = [];
 
@@ -394,6 +432,11 @@ export async function recordReturnBulk(data: StockReturnInput[]) {
       timeout: 20000,
     },
   );
+
+  for (const oid of outletIds) {
+    await RedisUtils.deleteByPattern(`pos:products:${oid}:*`);
+  }
+  return result;
 }
 
 /**

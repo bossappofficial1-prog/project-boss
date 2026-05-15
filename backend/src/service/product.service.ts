@@ -20,6 +20,7 @@ import { Product, ProductType, ServiceStatus, Prisma } from "@prisma/client";
 import { config } from "../config";
 import { ImageService } from "./image.service";
 import { ProductMediaService, MediaItemInput } from "./product-media.service";
+import { RedisUtils } from "../utils/redis.utils";
 
 /**
  * Creates a single product and associated records.
@@ -41,6 +42,7 @@ export async function createProductService(data: CreateProductInput) {
   }
 
   await PlanLimitService.invalidateUsageCache(businessId);
+  await RedisUtils.deleteByPattern(`pos:products:${data.outletId}:*`);
   return createdProduct;
 }
 
@@ -173,6 +175,9 @@ export async function updateProductService(id: string, data: UpdateProductInput)
   }
 
   await redis.del(`product:${id}`);
+  if (existingProduct.outletId) {
+    await RedisUtils.deleteByPattern(`pos:products:${existingProduct.outletId}:*`);
+  }
   return product;
 }
 
@@ -194,6 +199,9 @@ export async function deleteProductService(id: string) {
     // Clean up media files (cascade deletes DB records but not files)
     await ProductMediaService.deleteAllMedia(id).catch(() => { });
     await redis.del(`product:${id}`);
+    if (existingProduct.outletId) {
+      await RedisUtils.deleteByPattern(`pos:products:${existingProduct.outletId}:*`);
+    }
   } catch (error) {
     console.log(`gagal hapus gambar, error:`, error);
   }
@@ -555,6 +563,7 @@ export async function bulkCreateProductsFromExcelService(
       }
     }
 
+    await RedisUtils.deleteByPattern(`pos:products:${outletId}:*`);
     return { created: createdCount, updated: updatedCount, total: rows.length };
   } finally {
     if (workDir && fs.existsSync(workDir)) fs.rmSync(workDir, { recursive: true, force: true });
