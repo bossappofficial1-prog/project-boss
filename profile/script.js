@@ -102,7 +102,7 @@ const SUPPORT_LABEL = { EMAIL: 'Dukungan via Email', WHATSAPP: 'Dukungan via Wha
 const CODE_DESC = {
     TRIAL: 'Cocok untuk mencoba semua fitur dasar BOSS tanpa biaya.',
     BASIC: 'Untuk UMKM yang mulai tumbuh dan butuh lebih banyak kapasitas.',
-    PRO: 'Untuk UMKM serius yang ingin skalabilitas penuh tanpa batas.',
+    PRO: 'Untuk UMKM serius yang ingin skalabilitas penuh, analitik mendalam, dan tools finansial.',
 };
 
 function featureList(f, code) {
@@ -113,7 +113,8 @@ function featureList(f, code) {
         { label: SUPPORT_LABEL[f.supportLevel] || f.supportLevel, ok: true },
         { label: 'Export laporan Excel & email', ok: f.canExportReport },
         { label: 'Pembayaran QRIS & digital', ok: code !== 'TRIAL' },
-        { label: 'Sistem komisi staff', ok: code === 'PRO' },
+        { label: 'Analitik Kesehatan Bisnis & Laba Rugi', ok: code === 'PRO' },
+        { label: 'Tools HPP, BEP & Target Sales', ok: code === 'PRO' },
     ];
     return items.map(i =>
         `<div class="flex items-center gap-3 text-[0.875rem] mb-3.5 ${i.ok ? 'text-text2' : 'text-text3'}">
