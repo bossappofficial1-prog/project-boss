@@ -1,3 +1,4 @@
+import { ProfitPerProductData } from "@/components/pages/profit-per-product/types";
 import { apiClient } from "@/lib/apis/base";
 import { useQuery } from "@tanstack/react-query";
 
@@ -76,25 +77,171 @@ export interface Insight {
   message: string;
 }
 
+export interface PeakHoursData {
+  period: Period;
+  summary: Summary;
+  days: Day[];
+}
+
+export interface Period {
+  startDate: string;
+  endDate: string;
+}
+
+export interface Summary {
+  totalOrders: number;
+  totalRevenue: number;
+  avgOrdersPerDay: number;
+  avgRevenuePerDay: number;
+  peakHour: number;
+  peakDay: string;
+  peakDayOrders: number;
+  peakHourOrders: number;
+}
+
+export interface Day {
+  day: number;
+  dayName: string;
+  totalOrders: number;
+  totalRevenue: number;
+  slots: Slot[];
+}
+
+export interface Slot {
+  hour: number;
+  orderCount: number;
+  revenue: number;
+}
+
+// income statement types
+export interface IncomeStatementData {
+  period: Period;
+  current: Current;
+  previous: Previous;
+  monthly: Monthly[];
+}
+
+export interface Period {
+  startDate: string;
+  endDate: string;
+  label: string;
+}
+
+export interface Current {
+  revenue: number;
+  hpp: number;
+  grossProfit: number;
+  grossMargin: number;
+  expenses: number;
+  expenseBreakdown: ExpenseBreakdown[];
+  netProfit: number;
+  netMargin: number;
+  totalOrders: number;
+  totalQtySold: number;
+}
+
+export interface ExpenseBreakdown {
+  description: string;
+  amount: number;
+  date: string;
+}
+
+export interface Previous {
+  revenue: number;
+  grossProfit: number;
+  netProfit: number;
+}
+
+export interface Monthly {
+  month: string;
+  monthName: string;
+  revenue: number;
+  hpp: number;
+  grossProfit: number;
+  expenses: number;
+  netProfit: number;
+}
+
 export const useTools = (
   outletId?: string,
   dateRange?: { from: Date; to: Date },
 ) => {
-  const businessHealth = useQuery({
-    queryKey: [
-      "businessHealth",
-      outletId,
-      dateRange?.from?.toISOString(),
-      dateRange?.to?.toISOString(),
-    ],
+  const incomeStatement = useQuery({
+    queryKey: ["incomeStatement", outletId, dateRange?.from, dateRange?.to],
 
     queryFn: async () => {
       if (!outletId || !dateRange?.from || !dateRange?.to) {
         throw new Error("Missing required parameters");
       }
 
-      const start = dateRange.from.toISOString();
-      const end = dateRange.to.toISOString();
+      const start = dateRange.from;
+      const end = dateRange.to;
+
+      console.log("Fetching income statement:", { outletId, start, end });
+
+      const response = await apiClient.get(`/tools/income-statement`, {
+        params: { outletId, startDate: start, endDate: end },
+      });
+      return response.data.data as IncomeStatementData;
+    },
+
+    enabled: !!outletId && !!dateRange?.from && !!dateRange?.to,
+  });
+
+  const peakHours = useQuery({
+    queryKey: ["peakHours", outletId, dateRange?.from, dateRange?.to],
+
+    queryFn: async () => {
+      if (!outletId || !dateRange?.from || !dateRange?.to) {
+        throw new Error("Missing required parameters");
+      }
+
+      const start = dateRange.from;
+      const end = dateRange.to;
+
+      console.log("Fetching peak hours:", { outletId, start, end });
+
+      const response = await apiClient.get(`/tools/peak-hours`, {
+        params: { outletId, startDate: start, endDate: end },
+      });
+      return response.data.data as PeakHoursData;
+    },
+
+    enabled: !!outletId && !!dateRange?.from && !!dateRange?.to,
+  });
+
+  const profitPerProduct = useQuery({
+    queryKey: ["profitPerProduct", outletId, dateRange?.from, dateRange?.to],
+
+    queryFn: async () => {
+      if (!outletId || !dateRange?.from || !dateRange?.to) {
+        throw new Error("Missing required parameters");
+      }
+
+      const start = dateRange.from;
+      const end = dateRange.to;
+
+      console.log("Fetching profit per product:", { outletId, start, end });
+
+      const response = await apiClient.get(`/tools/profit-per-product`, {
+        params: { outletId, startDate: start, endDate: end },
+      });
+      return response.data.data as ProfitPerProductData;
+    },
+
+    enabled: !!outletId && !!dateRange?.from && !!dateRange?.to,
+  });
+
+  const businessHealth = useQuery({
+    queryKey: ["businessHealth", outletId, dateRange?.from, dateRange?.to],
+
+    queryFn: async () => {
+      if (!outletId || !dateRange?.from || !dateRange?.to) {
+        throw new Error("Missing required parameters");
+      }
+
+      const start = dateRange.from;
+      const end = dateRange.to;
 
       console.log("Fetching business health:", { outletId, start, end });
 
@@ -109,5 +256,8 @@ export const useTools = (
 
   return {
     businessHealth,
+    incomeStatement,
+    peakHours,
+    profitPerProduct,
   };
 };

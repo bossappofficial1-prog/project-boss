@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Plus, Trash2, ChevronDown, ChevronUp, Calculator } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Trash2, ChevronDown, ChevronUp, Calculator, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,28 +13,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { useAutoSaveCalchpp } from "@/stores/use-auto-save-calchpp";
+import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { productApi } from "@/lib/apis/product";
+import { useOutletContext } from "@/components/providers/OutletProvider";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type BusinessType = "manufaktur" | "dagang" | "fnb" | "jasa" | "custom";
-
-interface CostItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unitCost: number;
-}
-
-interface CostCategory {
-  id: string;
-  name: string;
-  collapsed: boolean;
-  items: CostItem[];
-}
-
-const generateId = () => Math.random().toString(36).slice(2, 9);
 
 const PRESETS: Record<
   BusinessType,
@@ -185,6 +187,36 @@ export default function HppCalculator() {
     updateCategoryName,
   } = useAutoSaveCalchpp();
 
+  const { selectedOutletId } = useOutletContext();
+  const queryClient = useQueryClient();
+  const [selectedProductId, setSelectedProductId] = useState<string>("none");
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isComboboxOpen, setIsComboboxOpen] = useState(false);
+
+  const { data: productsData } = useQuery({
+    queryKey: ["products", selectedOutletId, "GOODS"],
+    queryFn: () => productApi.getByOutlet(selectedOutletId!, { type: "GOODS", limit: 100 }),
+    enabled: !!selectedOutletId,
+  });
+
+  const products = productsData?.data || [];
+  const selectedProduct = products.find((p: any) => p.id === selectedProductId);
+
+  const applyMutation = useMutation({
+    mutationFn: async (payload: { price: number; hpp: number }) => {
+      if (!selectedProductId) throw new Error("No product selected");
+      return productApi.update(selectedProductId, { type: "GOODS", goods: { sellingPrice: payload.price, averageHpp: payload.hpp } } as any);
+    },
+    onSuccess: () => {
+      toast.success("HPP dan Harga Jual berhasil diterapkan ke produk");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setIsConfirmOpen(false);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Gagal menerapkan harga jual");
+    }
+  });
+
   const categories = preset[businessType].categories;
 
   const handleBusinessTypeChange = (value: BusinessType) => {
@@ -230,6 +262,100 @@ export default function HppCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Input */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Integrasi Produk */}
+          <Card className="py-0 gap-0 shadow-none border-border/50 bg-primary/5">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-sm font-medium">Integrasi Produk</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="flex-1 space-y-2 w-full">
+                  <Label className="text-xs text-muted-foreground">Pilih Produk untuk Dihubungkan</Label>
+                  <Popover open={isComboboxOpen} onOpenChange={setIsComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isComboboxOpen}
+                        className="w-full justify-between rounded-md bg-background border-border font-normal"
+                      >
+                        {selectedProductId && selectedProductId !== "none"
+                          ? products.find((p: any) => p.id === selectedProductId)?.name
+                          : "-- Tidak ada produk yang dipilih --"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Cari produk..." />
+                        <CommandList>
+                          <CommandEmpty>Produk tidak ditemukan.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="none"
+                              onSelect={() => {
+                                setSelectedProductId("none");
+                                setIsComboboxOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedProductId === "none" ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              -- Tidak ada produk yang dipilih --
+                            </CommandItem>
+                            {products.map((p: any) => (
+                              <CommandItem
+                                key={p.id}
+                                value={p.id}
+                                keywords={[p.name]}
+                                onSelect={(currentValue) => {
+                                  setSelectedProductId(currentValue === selectedProductId ? "none" : currentValue);
+                                  setIsComboboxOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedProductId === p.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {p.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                {selectedProduct && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full md:w-auto bg-background"
+                    onClick={() => {
+                      if (!selectedProduct?.goods?.averageHpp) {
+                        toast.error("Produk ini belum memiliki HPP (Stok kosong)");
+                        return;
+                      }
+                      const firstCat = categories[0];
+                      if (firstCat && firstCat.items.length > 0) {
+                        updateItem(firstCat.id, firstCat.items[0].id, "unitCost", selectedProduct.goods.averageHpp);
+                        toast.success("HPP berhasil dimuat ke kalkulator");
+                      } else {
+                        toast.error("Kategori kalkulator kosong");
+                      }
+                    }}
+                  >
+                    Muat HPP Sistem (Rp {selectedProduct.goods?.averageHpp.toLocaleString('id-ID')})
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Config */}
           <Card className="py-0 gap-0 shadow-none border-border/50">
             <CardContent className="p-6">
@@ -244,9 +370,9 @@ export default function HppCalculator() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {(Object.keys(PRESETS) as BusinessType[]).map((key) => (
+                      {(Object.keys(preset) as BusinessType[]).map((key) => (
                         <SelectItem key={key} value={key}>
-                          {PRESETS[key].label}
+                          {preset[key].label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -529,10 +655,46 @@ export default function HppCalculator() {
                   {formatCurrency((hargaJual - hppPerUnit) * units)}
                 </span>
               </div>
+
+              {selectedProduct && (
+                <>
+                  <Separator />
+                  <div className="pt-2 space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Produk Terpilih</span>
+                      <span className="font-medium text-right max-w-[150px] truncate" title={selectedProduct.name}>{selectedProduct.name}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Harga Jual Saat Ini</span>
+                      <span className="font-medium text-muted-foreground line-through">
+                        {formatCurrency(selectedProduct.goods?.sellingPrice || 0)}
+                      </span>
+                    </div>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => setIsConfirmOpen(true)}
+                      disabled={applyMutation.isPending}
+                    >
+                      Terapkan HPP & Harga ke Sistem
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title="Terapkan Hasil Kalkulator"
+        description={<>Apakah Anda yakin ingin memperbarui data produk <b>{selectedProduct?.name}</b> di sistem?<br/><br/>HPP akan diubah menjadi <b className="text-primary">{formatCurrency(hppPerUnit)}</b><br/>Harga Jual akan diubah menjadi <b className="text-primary">{formatCurrency(hargaJual)}</b></>}
+        confirmLabel="Ya, Terapkan"
+        confirmLoadingLabel="Menerapkan..."
+        confirmVariant="default"
+        onConfirm={() => applyMutation.mutateAsync({ price: hargaJual, hpp: hppPerUnit })}
+      />
     </div>
   );
 }
