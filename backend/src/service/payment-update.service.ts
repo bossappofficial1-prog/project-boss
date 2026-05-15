@@ -7,6 +7,7 @@ import { SocketEmitter } from '../socket/socket-emiiter';
 import { MidtransWebhookPayloadType } from '../types/Others';
 import { OperatingHoursRepository } from '../repositories/operating-hours.repository';
 import { generateTicketCode } from '../utils/code-generator';
+import { RedisUtils } from '../utils/redis.utils';
 
 export async function handlePaymentSuccess(orderId: string) {
     let order = await db.order.findUnique({
@@ -90,6 +91,8 @@ export async function handlePaymentSuccess(orderId: string) {
                 });
             }
         });
+
+        await RedisUtils.deleteByPattern(`pos:products:${order.outlet.id}:*`);
     } else {
         console.log('🧪 Skipping database operations for test order');
     }
@@ -234,6 +237,8 @@ export async function handlePaymentFailure(orderId: string) {
             data: { paymentStatus: 'FAILED', orderStatus: 'CANCELLED' },
         });
     });
+
+    await RedisUtils.deleteByPattern(`pos:products:${order.outletId}:*`);
 
     // Emit notification to business outlet
     try {

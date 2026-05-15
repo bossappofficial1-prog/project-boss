@@ -16,6 +16,10 @@ export class DatabaseFactory {
       const type = faker.helpers.arrayElement([ProductType.GOODS, ProductType.SERVICE]);
       const price = faker.number.int({ min: 5, max: 150 }) * 1000;
 
+      const taxPct = type === ProductType.GOODS
+        ? faker.helpers.arrayElement([11, 11, 11, 0])
+        : 0;
+
       const product = await this.prisma.product.create({
         data: {
           name: faker.commerce.productName(),
@@ -24,6 +28,7 @@ export class DatabaseFactory {
           outletId,
           status: "ACTIVE",
           image: faker.image.url({ width: 800, height: 800 }),
+          taxPercentage: taxPct,
         },
       });
 
@@ -55,7 +60,7 @@ export class DatabaseFactory {
           },
         });
 
-        createdProducts.push({ ...product, price, type, hpp });
+        createdProducts.push({ ...product, price, type, hpp, taxPercentage: product.taxPercentage });
       } else {
         const commissionValue = faker.number.int({ min: 5, max: 25 });
         await this.prisma.productService.create({
@@ -70,7 +75,7 @@ export class DatabaseFactory {
           },
         });
 
-        createdProducts.push({ ...product, price, type, commissionValue });
+        createdProducts.push({ ...product, price, type, commissionValue, taxPercentage: product.taxPercentage });
       }
     }
     return createdProducts;
@@ -82,11 +87,11 @@ export class DatabaseFactory {
     count: number,
     startDate: Date,
     endDate: Date,
+    cashierId?: string | null,
   ) {
     for (let i = 0; i < count; i++) {
       const date = faker.date.between({ from: startDate, to: endDate });
 
-      // Memilih produk acak untuk pesanan ini
       const itemCount = faker.number.int({ min: 1, max: 4 });
       const orderProducts = faker.helpers.arrayElements(products, itemCount);
 
@@ -103,9 +108,17 @@ export class DatabaseFactory {
         };
       });
 
+      let totalTax = 0;
+      for (const item of itemsData) {
+        const prod = products.find((p: any) => p.id === item.productId);
+        if (prod?.taxPercentage && prod.taxPercentage > 0) {
+          totalTax += Math.round(item.priceAtTimeOfOrder * item.quantity * (prod.taxPercentage / 100));
+        }
+      }
+
       const midtransFee = Math.round(subtotal * 0.007);
       const appFee = Math.round(subtotal * 0.02);
-      const totalAmount = subtotal + midtransFee + appFee;
+      const totalAmount = subtotal + totalTax;
 
       const guestCustomer = await this.prisma.guestCustomer.create({
         data: {
@@ -121,6 +134,7 @@ export class DatabaseFactory {
       const order = await this.prisma.order.create({
         data: {
           totalAmount,
+          taxAmount: totalTax,
           paymentStatus: PaymentStatus.SUCCESS,
           orderStatus: OrderStatus.COMPLETED,
           paymentReminderSent: true,
@@ -130,6 +144,7 @@ export class DatabaseFactory {
           outletId: outletId,
           midtransFee,
           appFee,
+          handledByStaffId: cashierId ?? null,
           createdAt: date,
           updatedAt: date,
           items: {

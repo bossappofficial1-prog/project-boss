@@ -27,7 +27,7 @@ const randomDate = (daysAgo: number): Date => {
   const now = new Date();
   const past = subDays(now, daysAgo);
   return new Date(
-    past.getTime() + Math.random() * (now.getTime() - past.getTime())
+    past.getTime() + Math.random() * (now.getTime() - past.getTime()),
   );
 };
 
@@ -260,8 +260,8 @@ async function main() {
           status: TableStatus.AVAILABLE,
           outletId: outletFnb.id,
         },
-      })
-    )
+      }),
+    ),
   );
   console.log("✅ Tables created");
 
@@ -272,7 +272,8 @@ async function main() {
       {
         outletId: outletFnb.id,
         printWidth: 80,
-        headerText: "Warung Makan Sederhana\nJl. Sudirman No. 12\nTerima kasih atas kunjungan Anda!",
+        headerText:
+          "Warung Makan Sederhana\nJl. Sudirman No. 12\nTerima kasih atas kunjungan Anda!",
         footerText: "Selamat makan!",
         showCashier: true,
         showCustomer: true,
@@ -363,16 +364,86 @@ async function main() {
   // ── 9. Products — FNB ─────────────────────────────────────────────────────
 
   const fnbProductsData = [
-    { name: "Nasi Padang Komplit", hpp: 18_000, price: 38_000, unit: "porsi", stock: 0, tax: 11 },
-    { name: "Ayam Goreng Kremes", hpp: 14_000, price: 32_000, unit: "porsi", stock: 0, tax: 11 },
-    { name: "Ikan Bakar Bumbu Rujak", hpp: 22_000, price: 48_000, unit: "porsi", stock: 0, tax: 11 },
-    { name: "Soto Ayam Lamongan", hpp: 10_000, price: 22_000, unit: "mangkuk", stock: 0, tax: 11 },
-    { name: "Nasi Goreng Spesial", hpp: 12_000, price: 28_000, unit: "porsi", stock: 0, tax: 11 },
-    { name: "Mie Goreng Jawa", hpp: 9_000, price: 22_000, unit: "porsi", stock: 0, tax: 11 },
-    { name: "Tempe Mendoan", hpp: 4_000, price: 10_000, unit: "porsi", stock: 0, tax: 0 },
-    { name: "Es Teh Manis", hpp: 2_500, price: 8_000, unit: "gelas", stock: 0, tax: 0 },
-    { name: "Jus Alpukat", hpp: 8_000, price: 18_000, unit: "gelas", stock: 0, tax: 0 },
-    { name: "Es Jeruk Peras", hpp: 5_000, price: 12_000, unit: "gelas", stock: 0, tax: 0 },
+    {
+      name: "Nasi Padang Komplit",
+      hpp: 18_000,
+      price: 38_000,
+      unit: "porsi",
+      stock: 0,
+      tax: 11,
+    },
+    {
+      name: "Ayam Goreng Kremes",
+      hpp: 14_000,
+      price: 32_000,
+      unit: "porsi",
+      stock: 0,
+      tax: 11,
+    },
+    {
+      name: "Ikan Bakar Bumbu Rujak",
+      hpp: 22_000,
+      price: 48_000,
+      unit: "porsi",
+      stock: 0,
+      tax: 11,
+    },
+    {
+      name: "Soto Ayam Lamongan",
+      hpp: 10_000,
+      price: 22_000,
+      unit: "mangkuk",
+      stock: 0,
+      tax: 11,
+    },
+    {
+      name: "Nasi Goreng Spesial",
+      hpp: 12_000,
+      price: 28_000,
+      unit: "porsi",
+      stock: 0,
+      tax: 11,
+    },
+    {
+      name: "Mie Goreng Jawa",
+      hpp: 9_000,
+      price: 22_000,
+      unit: "porsi",
+      stock: 0,
+      tax: 11,
+    },
+    {
+      name: "Tempe Mendoan",
+      hpp: 4_000,
+      price: 10_000,
+      unit: "porsi",
+      stock: 0,
+      tax: 0,
+    },
+    {
+      name: "Es Teh Manis",
+      hpp: 2_500,
+      price: 8_000,
+      unit: "gelas",
+      stock: 0,
+      tax: 0,
+    },
+    {
+      name: "Jus Alpukat",
+      hpp: 8_000,
+      price: 18_000,
+      unit: "gelas",
+      stock: 0,
+      tax: 0,
+    },
+    {
+      name: "Es Jeruk Peras",
+      hpp: 5_000,
+      price: 12_000,
+      unit: "gelas",
+      stock: 0,
+      tax: 0,
+    },
   ];
 
   const fnbProducts = await Promise.all(
@@ -397,23 +468,96 @@ async function main() {
         },
       });
 
-      return { product, goods: { sellingPrice: p.price, averageHpp: p.hpp, tax: p.tax } };
-    })
+      return {
+        product,
+        goods: { sellingPrice: p.price, averageHpp: p.hpp, tax: p.tax },
+      };
+    }),
   );
 
   // ── 10. Products — Retail ─────────────────────────────────────────────────
 
   const retailProductsData = [
-    { name: "Beras Premium 5kg", hpp: 62_000, price: 75_000, unit: "karung", stock: 50, tax: 0 },
-    { name: "Minyak Goreng Bimoli 2L", hpp: 28_000, price: 35_000, unit: "botol", stock: 40, tax: 11 },
-    { name: "Gula Pasir 1kg", hpp: 13_000, price: 16_000, unit: "kg", stock: 80, tax: 0 },
-    { name: "Tepung Terigu Segitiga 1kg", hpp: 10_000, price: 13_500, unit: "kg", stock: 60, tax: 0 },
-    { name: "Kopi Kapal Api Box", hpp: 22_000, price: 28_000, unit: "box", stock: 30, tax: 11 },
-    { name: "Sabun Mandi Lifebuoy 4pcs", hpp: 16_000, price: 21_000, unit: "pack", stock: 45, tax: 11 },
-    { name: "Sampo Sunsilk 170ml", hpp: 18_000, price: 24_000, unit: "botol", stock: 35, tax: 11 },
-    { name: "Indomie Goreng Box", hpp: 28_000, price: 35_000, unit: "box", stock: 25, tax: 11 },
-    { name: "Aqua Galon 19L", hpp: 18_000, price: 22_000, unit: "galon", stock: 15, tax: 0 },
-    { name: "Snack Chitato 68g", hpp: 8_500, price: 12_000, unit: "pcs", stock: 70, tax: 11 },
+    {
+      name: "Beras Premium 5kg",
+      hpp: 62_000,
+      price: 75_000,
+      unit: "karung",
+      stock: 50,
+      tax: 0,
+    },
+    {
+      name: "Minyak Goreng Bimoli 2L",
+      hpp: 28_000,
+      price: 35_000,
+      unit: "botol",
+      stock: 40,
+      tax: 11,
+    },
+    {
+      name: "Gula Pasir 1kg",
+      hpp: 13_000,
+      price: 16_000,
+      unit: "kg",
+      stock: 80,
+      tax: 0,
+    },
+    {
+      name: "Tepung Terigu Segitiga 1kg",
+      hpp: 10_000,
+      price: 13_500,
+      unit: "kg",
+      stock: 60,
+      tax: 0,
+    },
+    {
+      name: "Kopi Kapal Api Box",
+      hpp: 22_000,
+      price: 28_000,
+      unit: "box",
+      stock: 30,
+      tax: 11,
+    },
+    {
+      name: "Sabun Mandi Lifebuoy 4pcs",
+      hpp: 16_000,
+      price: 21_000,
+      unit: "pack",
+      stock: 45,
+      tax: 11,
+    },
+    {
+      name: "Sampo Sunsilk 170ml",
+      hpp: 18_000,
+      price: 24_000,
+      unit: "botol",
+      stock: 35,
+      tax: 11,
+    },
+    {
+      name: "Indomie Goreng Box",
+      hpp: 28_000,
+      price: 35_000,
+      unit: "box",
+      stock: 25,
+      tax: 11,
+    },
+    {
+      name: "Aqua Galon 19L",
+      hpp: 18_000,
+      price: 22_000,
+      unit: "galon",
+      stock: 15,
+      tax: 0,
+    },
+    {
+      name: "Snack Chitato 68g",
+      hpp: 8_500,
+      price: 12_000,
+      unit: "pcs",
+      stock: 70,
+      tax: 11,
+    },
   ];
 
   const retailProducts = await Promise.all(
@@ -453,9 +597,14 @@ async function main() {
 
       return {
         product,
-        goods: { id: goods.id, sellingPrice: p.price, averageHpp: p.hpp, tax: p.tax },
+        goods: {
+          id: goods.id,
+          sellingPrice: p.price,
+          averageHpp: p.hpp,
+          tax: p.tax,
+        },
       };
-    })
+    }),
   );
   console.log("✅ Products created");
 
@@ -485,9 +634,7 @@ async function main() {
   ];
 
   const customers = await Promise.all(
-    customersData.map((c) =>
-      db.guestCustomer.create({ data: c })
-    )
+    customersData.map((c) => db.guestCustomer.create({ data: c })),
   );
 
   // Memberships per outlet
@@ -560,12 +707,36 @@ async function main() {
     ManualPaymentType.OWNER_TRANSFER,
   ];
 
-  const orderStatusWeights: { status: OrderStatus; payStatus: PaymentStatus; weight: number }[] = [
-    { status: OrderStatus.COMPLETED, payStatus: PaymentStatus.SUCCESS, weight: 75 },
-    { status: OrderStatus.PROCESSING, payStatus: PaymentStatus.PENDING, weight: 8 },
-    { status: OrderStatus.CONFIRMED, payStatus: PaymentStatus.PENDING, weight: 7 },
-    { status: OrderStatus.CANCELLED, payStatus: PaymentStatus.CANCELLED, weight: 5 },
-    { status: OrderStatus.AWAITING_PAYMENT, payStatus: PaymentStatus.PENDING, weight: 5 },
+  const orderStatusWeights: {
+    status: OrderStatus;
+    payStatus: PaymentStatus;
+    weight: number;
+  }[] = [
+    {
+      status: OrderStatus.COMPLETED,
+      payStatus: PaymentStatus.SUCCESS,
+      weight: 75,
+    },
+    {
+      status: OrderStatus.PROCESSING,
+      payStatus: PaymentStatus.PENDING,
+      weight: 8,
+    },
+    {
+      status: OrderStatus.CONFIRMED,
+      payStatus: PaymentStatus.PENDING,
+      weight: 7,
+    },
+    {
+      status: OrderStatus.CANCELLED,
+      payStatus: PaymentStatus.CANCELLED,
+      weight: 5,
+    },
+    {
+      status: OrderStatus.AWAITING_PAYMENT,
+      payStatus: PaymentStatus.PENDING,
+      weight: 5,
+    },
   ];
 
   function pickOrderStatus() {
@@ -596,7 +767,13 @@ async function main() {
       const price = p.goods.sellingPrice;
       const hpp = p.goods.averageHpp;
       subtotal += price * qty;
-      return { productId: p.product.id, quantity: qty, price, hpp, tax: p.goods.tax };
+      return {
+        productId: p.product.id,
+        quantity: qty,
+        price,
+        hpp,
+        tax: p.goods.tax,
+      };
     });
 
     const taxAmount = orderItems.reduce((sum, item) => {
