@@ -29,6 +29,8 @@ services:
       start_period: 30s
     networks:
       - default
+    volumes:
+    - rabbitmq_data:/var/lib/rabbitmq
 
   backend:
     image: ${DOCKER_USER:-pitok}/project-backend:production
@@ -127,3 +129,6 @@ services:
 networks:
   default:
     driver: bridge
+
+volumes:
+  rabbitmq_data:

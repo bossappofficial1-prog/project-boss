@@ -1,6 +1,13 @@
 "use client";
 
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { SubscriptionPlanDetail } from "@/lib/apis/owner-subscription";
 import { Loader2, Crown, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
@@ -36,24 +43,23 @@ export function PlanSelectorDialog({
     );
 
     const handleOpenChange = (open: boolean) => {
-        if (!isConfirming && onOpenChange) {
-            onOpenChange(open);
-        }
+        if (!isConfirming) onOpenChange(open);
     };
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="max-w-2xl p-0 overflow-hidden border border-border/80 shadow-xl bg-background rounded-md">
-                <DialogHeader className="p-4 border-b border-border/40 bg-muted/30">
-                    <div className="flex items-center gap-4 mb-2">
-                        <div className="h-12 w-12 rounded-md bg-background text-foreground flex items-center justify-center border border-border shadow-sm">
-                            <Crown className="text-primary h-7 w-7" />
+            <DialogContent className="max-w-2xl p-0 overflow-hidden border border-border/50 shadow-none bg-background rounded-xl">
+                {/* Header */}
+                <DialogHeader className="p-6 border-b border-border/50 bg-muted">
+                    <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-lg bg-background text-muted-foreground flex items-center justify-center border border-border/50 shadow-none shrink-0">
+                            <Crown className="h-5 w-5" />
                         </div>
                         <div className="space-y-0.5">
-                            <DialogTitle className="text-xl font-black tracking-tight text-foreground">
-                                Pilih Paket Ekosistem
+                            <DialogTitle className="text-lg font-medium text-foreground">
+                                Pilih Paket Langganan
                             </DialogTitle>
-                            <DialogDescription className="text-sm font-medium opacity-80">
+                            <DialogDescription className="text-sm text-muted-foreground">
                                 {shouldForcePlanSelection
                                     ? "Masa uji coba berakhir. Pilih paket untuk melanjutkan."
                                     : "Tingkatkan kapasitas operasional bisnis Anda."}
@@ -62,39 +68,47 @@ export function PlanSelectorDialog({
                     </div>
                 </DialogHeader>
 
-                <div className="max-h-[60vh] overflow-y-auto px-4 py-4 space-y-5 custom-scrollbar bg-background">
+                {/* Content */}
+                <div className="max-h-[60vh] overflow-y-auto p-6 space-y-3 bg-background">
                     {isLoading ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                            <Loader2 className="h-10 w-10 animate-spin mb-4 text-slate-400" />
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em]">Menyiapkan Katalog...</p>
+                        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                            <p className="text-sm text-muted-foreground">Memuat paket...</p>
                         </div>
                     ) : planOptions.length === 0 ? (
-                        <div className="text-center py-16 px-4 space-y-4">
-                            <div className="mx-auto h-16 w-16 rounded-md bg-muted/50 flex items-center justify-center text-3xl border border-border/40">
+                        <div className="text-center py-16 space-y-3">
+                            <div className="mx-auto h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-2xl border border-border/50">
                                 📦
                             </div>
-                            <p className="text-lg font-black tracking-tight">Katalog Paket Kosong</p>
+                            <p className="text-sm font-medium">Tidak ada paket tersedia</p>
                         </div>
                     ) : (
                         <div className="grid gap-3">
-                            {planOptions.map((planOption) => <PlanCard key={planOption.code} plan={planOption as any} isSelected={selectedPlanCode === planOption.code} onSelectedChange={onSelectPlan} />)}
+                            {planOptions.map((planOption) => (
+                                <PlanCard
+                                    key={planOption.code}
+                                    plan={planOption as any}
+                                    isSelected={selectedPlanCode === planOption.code}
+                                    onSelectedChange={onSelectPlan}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>
 
-                <DialogFooter className="p-4 border-t border-border/40 bg-muted/30 sm:justify-end gap-3">
+                {/* Footer */}
+                <DialogFooter className="p-6 border-t border-border/50 bg-muted gap-2 sm:justify-end">
                     <Button
                         variant="outline"
-                        onClick={() => onOpenChange && onOpenChange(false)}
+                        onClick={() => onOpenChange(false)}
                         disabled={isConfirming}
-                    // className="h-12 px-6 font-black uppercase tracking-widest text-[10px] bg-background border-border/60 hover:bg-muted/50 rounded-md shadow-none"
                     >
                         Nanti Saja
                     </Button>
                     <Button
                         onClick={onConfirm}
                         disabled={!selectedPlan || isConfirming || planOptions.length === 0}
-                    // className="h-12 px-10 gap-3 font-black uppercase tracking-widest text-[10px] shadow-sm bg-foreground hover:bg-foreground/90 text-background rounded-md transition-all active:scale-95"
+                        className="gap-2"
                     >
                         {isConfirming ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -104,7 +118,6 @@ export function PlanSelectorDialog({
                         Konfirmasi & Bayar
                     </Button>
                 </DialogFooter>
-
             </DialogContent>
         </Dialog>
     );

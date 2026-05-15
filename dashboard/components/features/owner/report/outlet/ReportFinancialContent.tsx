@@ -677,8 +677,6 @@ export default function ReportFinancialContent() {
   );
 }
 
-// ── Sub Components ──
-
 function StockAssetTable({ data, totalPembelian }: { data: any[]; totalPembelian: number }) {
   return (
     <DataTable
@@ -728,8 +726,6 @@ const FilterButton: React.FC<FilterButtonProps> = ({ children, active, onClick }
     </button>
   );
 };
-
-// ── Period Label Formatters ──
 
 const formatPeriodLabel = (type: FilterType, date: Date): string => {
   if (type === "daily") {
