@@ -25,10 +25,12 @@ export default function JamRamai() {
     dateRangeValue,
   );
 
-  const { peakHours } = useTools(selectedOutletId!, {
+  const { peakHours } = useTools("peakHours", selectedOutletId!, {
     from: dateRange?.from!,
     to: dateRange?.to!,
   });
+
+  console.log(dateRange, dateRangeValue)
 
   const data = peakHours.data;
 
@@ -58,7 +60,6 @@ export default function JamRamai() {
         description="Pola transaksi berdasarkan hari dan jam operasional"
         actions={
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
-          // <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
         }
       />
 

@@ -165,7 +165,7 @@ jobs:
             echo "Starting backend service..."
             docker compose -f docker-compose.prod.yml up -d --no-deps backend
             echo "Backend deployed successfully."
-            docker image prune -af
+            docker image prune -af || true
 
       - name: Send Telegram Notification (Deploy)
         if: always()

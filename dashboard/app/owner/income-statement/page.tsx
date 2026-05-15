@@ -108,9 +108,8 @@ function PLRow({
 }) {
   return (
     <div
-      className={`flex items-start justify-between gap-4 py-2 ${
-        highlight ? "bg-muted rounded-lg px-3 -mx-3" : ""
-      } ${indent ? "pl-4" : ""}`}
+      className={`flex items-start justify-between gap-4 py-2 ${highlight ? "bg-muted rounded-lg px-3 -mx-3" : ""
+        } ${indent ? "pl-4" : ""}`}
     >
       <div>
         <p
@@ -121,17 +120,15 @@ function PLRow({
         {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
       </div>
       <p
-        className={`text-sm tabular-nums shrink-0 ${
-          bold || highlight ? "font-semibold" : ""
-        } ${
-          negative
+        className={`text-sm tabular-nums shrink-0 ${bold || highlight ? "font-semibold" : ""
+          } ${negative
             ? "text-muted-foreground"
             : highlight
               ? amount >= 0
                 ? "text-primary"
                 : "text-destructive"
               : ""
-        }`}
+          }`}
       >
         {negative ? `- ${formatCurrency(amount)}` : formatCurrency(amount)}
       </p>
@@ -152,7 +149,7 @@ export default function LaporanLabaRugi() {
 
   const [expenseExpanded, setExpenseExpanded] = useState(false);
 
-  const { incomeStatement } = useTools(selectedOutletId!, {
+  const { incomeStatement } = useTools("incomeStatement", selectedOutletId!, {
     from: dateRange?.from!,
     to: dateRange?.to!,
   });
@@ -422,7 +419,7 @@ export default function LaporanLabaRugi() {
                   : item.value < 40;
                 const isWarning = !item.invert
                   ? item.value >= item.threshold.warning &&
-                    item.value < item.threshold.healthy
+                  item.value < item.threshold.healthy
                   : item.value >= 40 && item.value < 60;
 
                 const badgeClass = isHealthy

@@ -38,7 +38,7 @@ export default function BusinessHealth() {
     },
   );
 
-  const { businessHealth } = useTools(selectedOutletId!, {
+  const { businessHealth } = useTools("businessHealth", selectedOutletId!, {
     from: dateRange?.from!,
     to: dateRange?.to!,
   });

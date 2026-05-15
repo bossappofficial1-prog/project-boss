@@ -1,491 +1,847 @@
-import { DatabaseFactory } from './factories';
-import type { Business, Outlet, SubscriptionPlan, ProductType as ProductTypeEnum } from "@prisma/client";
-
-const {
-  PrismaClient,
+import {
   ProductType,
-  UserRole,
   ServiceStatus,
-  SubscriptionStatus,
-  PaymentStatus,
   OrderStatus,
-} = require("@prisma/client");
-const { hash } = require("bcryptjs");
-const { Pool } = require("pg");
-const { PrismaPg } = require("@prisma/adapter-pg");
+  PaymentStatus,
+  ManualPaymentType,
+  StockMovementType,
+  CustomerType,
+  OutletType,
+  TableStatus,
+  BillStatus,
+  StaffStatus,
+  LoyaltyPointHistoryType,
+} from "@prisma/client";
+import { hash } from "bcryptjs";
+import { subDays, addHours, setHours, startOfDay } from "date-fns";
+import { db } from "../../src/config/prisma";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
-const DAY_IN_MS = 1000 * 60 * 60 * 24;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-type OutletCatalogProduct = {
-  productId: string;
-  price: number;
-  type: ProductTypeEnum;
+const rand = (min: number, max: number) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+
+const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+const randomDate = (daysAgo: number): Date => {
+  const now = new Date();
+  const past = subDays(now, daysAgo);
+  return new Date(
+    past.getTime() + Math.random() * (now.getTime() - past.getTime())
+  );
 };
 
-type OutletProductCatalog = Record<string, OutletCatalogProduct[]>;
-
-const roundCurrency = (value: number): number => Math.round(value * 100) / 100;
-
-const sanitizeForCode = (value: string): string => {
-  const sanitized = value.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-  return (sanitized || "BIZ").toUpperCase();
+const randomHour = (date: Date, minH = 9, maxH = 21): Date => {
+  const hour = rand(minH, maxH);
+  const minute = rand(0, 59);
+  return setHours(startOfDay(date), hour + minute / 60);
 };
 
-const forceReseed = process.argv.includes("--force") || process.argv.includes("-f");
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
-// Subscription Plan Features Definition
-const SUBSCRIPTION_PLANS = [
-  {
-    name: "Trial",
-    code: "TRIAL",
-    price: 0,
-    durationDays: 14,
-    isPopular: false,
-    features: {
-      maxOutlets: 1,
-      maxProducts: 10,
-      maxStaff: 1,
-      canExportReport: false,
-      supportLevel: "EMAIL"
-    }
-  },
-  {
-    name: "Basic",
-    code: "BASIC",
-    price: 99000,
-    durationDays: 30,
-    isPopular: false,
-    features: {
-      maxOutlets: 3,
-      maxProducts: 100,
-      maxStaff: 5,
-      canExportReport: true,
-      supportLevel: "WHATSAPP"
-    }
-  },
-  {
-    name: "Pro",
-    code: "PRO",
-    price: 199000,
-    durationDays: 30,
-    isPopular: true,
-    features: {
-      maxOutlets: -1,
-      maxProducts: -1,
-      maxStaff: -1,
-      canExportReport: true,
-      supportLevel: "PRIORITY"
+async function main() {
+  console.log("🌱 Seeding database...");
+
+  await cleanDatabase();
+
+  // ── 1. Owner ──────────────────────────────────────────────────────────────
+
+  const owner = await db.user.create({
+    data: {
+      name: "Budi Santoso",
+      email: "budi@bossapp.id",
+      password: await hash("password123", 10),
+      role: "OWNER",
+      isVerified: true,
+      phone: "081234567890",
+    },
+  });
+  console.log("✅ Owner created");
+
+  // ── 1b. Admin ─────────────────────────────────────────────────────────────
+
+  await db.user.create({
+    data: {
+      name: "Admin BOSS",
+      email: "admin@bossapp.id",
+      password: await hash("admin123", 10),
+      role: "ADMIN",
+      isVerified: true,
+      phone: "089999999999",
+    },
+  });
+  console.log("✅ Admin created");
+
+  // ── 2. Subscription Plans ─────────────────────────────────────────────────
+
+  await db.subscriptionPlan.create({
+    data: {
+      name: "Trial",
+      code: "TRIAL",
+      price: 0,
+      durationDays: 14,
+      isActive: true,
+      isPopular: false,
+      promo: "Coba gratis 14 hari, semua fitur Pro tersedia",
+      features: {
+        maxOutlets: 2,
+        maxProducts: 100,
+        maxStaff: 5,
+        analytics: true,
+        loyaltyProgram: true,
+        multiOutlet: true,
+        exportReport: false,
+      },
+    },
+  });
+
+  const planBasic = await db.subscriptionPlan.create({
+    data: {
+      name: "Basic",
+      code: "BASIC",
+      price: 0,
+      durationDays: 30,
+      isActive: true,
+      isPopular: false,
+      features: {
+        maxOutlets: 1,
+        maxProducts: 50,
+        maxStaff: 2,
+        analytics: false,
+        loyaltyProgram: false,
+        multiOutlet: false,
+      },
+    },
+  });
+
+  await db.subscriptionPlan.create({
+    data: {
+      name: "Pro",
+      code: "PRO",
+      price: 149_000,
+      durationDays: 30,
+      isActive: true,
+      isPopular: true,
+      promo: "Hemat 20% untuk 3 bulan pertama",
+      features: {
+        maxOutlets: 3,
+        maxProducts: 500,
+        maxStaff: 10,
+        analytics: true,
+        loyaltyProgram: true,
+        multiOutlet: true,
+        exportReport: true,
+      },
+    },
+  });
+
+  await db.subscriptionPlan.create({
+    data: {
+      name: "Enterprise",
+      code: "ENTERPRISE",
+      price: 349_000,
+      durationDays: 30,
+      isActive: true,
+      isPopular: false,
+      features: {
+        maxOutlets: -1,
+        maxProducts: -1,
+        maxStaff: -1,
+        analytics: true,
+        loyaltyProgram: true,
+        multiOutlet: true,
+        exportReport: true,
+        dedicatedSupport: true,
+        customIntegration: true,
+      },
+    },
+  });
+  console.log("✅ Subscription plans created");
+
+  // ── 3. Business ───────────────────────────────────────────────────────────
+
+  const business = await db.business.create({
+    data: {
+      name: "Usaha Pak Budi",
+      description: "Bisnis kuliner dan retail milik Pak Budi",
+      ownerId: owner.id,
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: planBasic.code,
+      subscriptionStartDate: subDays(new Date(), 60),
+    },
+  });
+
+  // Business subscription untuk Budi
+  const businessSubscription = await db.businessSubscription.create({
+    data: {
+      businessId: business.id,
+      planId: planBasic.id,
+      status: "ACTIVE",
+      startDate: subDays(new Date(), 60),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 30)),
+      autoRenew: true,
+    },
+  });
+
+  // Link ke currentSubscription
+  await db.business.update({
+    where: { id: business.id },
+    data: { currentSubscriptionId: businessSubscription.id },
+  });
+  console.log("✅ Business & subscription created");
+
+  // ── 4. Outlets ────────────────────────────────────────────────────────────
+
+  const outletFnb = await db.outlet.create({
+    data: {
+      name: "Warung Makan Sederhana",
+      slug: "warung-makan-sederhana",
+      description: "Warung makan dengan masakan rumahan khas Padang",
+      address: "Jl. Sudirman No. 12, Pekanbaru",
+      phone: "0761-123456",
+      email: "warung@bossapp.id",
+      businessId: business.id,
+      type: OutletType.FNB,
+      isOpen: true,
+      latitude: 0.5135,
+      longitude: 101.4477,
+    },
+  });
+
+  const outletRetail = await db.outlet.create({
+    data: {
+      name: "Toko Sembako Sejahtera",
+      slug: "toko-sembako-sejahtera",
+      description: "Toko kebutuhan sehari-hari lengkap dan terpercaya",
+      address: "Jl. Imam Bonjol No. 45, Pekanbaru",
+      phone: "0761-654321",
+      email: "toko@bossapp.id",
+      businessId: business.id,
+      type: OutletType.RETAIL,
+      isOpen: true,
+      latitude: 0.5071,
+      longitude: 101.4482,
+    },
+  });
+  console.log("✅ Outlets created");
+
+  // ── 4. Operating Hours ────────────────────────────────────────────────────
+
+  const outlets = [outletFnb, outletRetail];
+  for (const outlet of outlets) {
+    for (let day = 0; day <= 6; day++) {
+      const isFnb = outlet.id === outletFnb.id;
+      const isClosed = !isFnb && day === 0; // retail tutup Minggu
+      const openHour = isFnb ? 9 : 8;
+      const closeHour = isFnb ? 21 : 18;
+
+      const base = new Date("2000-01-01T00:00:00Z");
+      await db.outletOperatingHours.create({
+        data: {
+          outletId: outlet.id,
+          dayOfWeek: day,
+          openTime: setHours(base, openHour),
+          closeTime: setHours(base, closeHour),
+          isOpen: !isClosed,
+        },
+      });
     }
   }
-];
+  console.log("✅ Operating hours created");
 
-async function seedSubscriptionPlans() {
-  console.log("💳 Creating subscription plans...");
+  // ── 5. Outlet Tables (FNB) ────────────────────────────────────────────────
 
-  await Promise.all(
-    SUBSCRIPTION_PLANS.map((plan) =>
-      prisma.subscriptionPlan.upsert({
-        where: { code: plan.code },
-        update: {
-          name: plan.name,
-          price: plan.price,
-          durationDays: plan.durationDays,
-          features: plan.features,
-          isPopular: plan.isPopular,
-          isActive: true,
-        },
-        create: {
-          name: plan.name,
-          code: plan.code,
-          price: plan.price,
-          durationDays: plan.durationDays,
-          features: plan.features,
-          isPopular: plan.isPopular,
-          isActive: true,
+  const tables = await Promise.all(
+    Array.from({ length: 8 }, (_, i) =>
+      db.outletTable.create({
+        data: {
+          name: `Meja ${i + 1}`,
+          capacity: i < 4 ? 2 : 4,
+          status: TableStatus.AVAILABLE,
+          outletId: outletFnb.id,
         },
       })
     )
   );
+  console.log("✅ Tables created");
 
-  console.log(`✅ ${SUBSCRIPTION_PLANS.length} subscription plans synced.`);
-}
+  // ── 6. Receipt Settings ───────────────────────────────────────────────────
 
-async function seedBusinessSubscriptionsAndInvoices(businesses: Business[]) {
-  if (!businesses.length) return;
-
-  console.log("🧾 Creating business subscriptions and invoices...");
-
-  const plans: SubscriptionPlan[] = await prisma.subscriptionPlan.findMany();
-  if (!plans.length) {
-    throw new Error(
-      "Subscription plans must be seeded before creating business subscriptions.",
-    );
-  }
-
-  const planMap: Record<string, SubscriptionPlan> = {};
-  plans.forEach((plan) => {
-    planMap[plan.code] = plan;
+  await db.receiptSetting.createMany({
+    data: [
+      {
+        outletId: outletFnb.id,
+        printWidth: 80,
+        headerText: "Warung Makan Sederhana\nJl. Sudirman No. 12\nTerima kasih atas kunjungan Anda!",
+        footerText: "Selamat makan!",
+        showCashier: true,
+        showCustomer: true,
+      },
+      {
+        outletId: outletRetail.id,
+        printWidth: 58,
+        headerText: "Toko Sembako Sejahtera\nJl. Imam Bonjol No. 45",
+        footerText: "Terima kasih, datang lagi ya!",
+        showCashier: true,
+        showCustomer: false,
+      },
+    ],
   });
 
-  for (let i = 0; i < businesses.length; i++) {
-    const business = businesses[i];
-    const targetPlan = planMap[business.subscriptionPlan] || planMap.BASIC || plans[0];
-    const startDate = new Date();
-    const endDate = new Date(startDate.getTime() + targetPlan.durationDays * DAY_IN_MS);
+  // ── 7. Staff ──────────────────────────────────────────────────────────────
 
-    const subscription = await prisma.businessSubscription.create({
+  const staffFnb = await Promise.all([
+    db.staff.create({
       data: {
-        businessId: business.id,
-        planId: targetPlan.id,
-        status: SubscriptionStatus.ACTIVE,
-        startDate,
-        endDate,
+        name: "Siti Rahayu",
+        email: "siti@warung.id",
+        password: await hash("staff123", 10),
+        phone: "08112345001",
+        outletId: outletFnb.id,
+        status: StaffStatus.ACTIVE,
       },
-    });
-
-    await prisma.business.update({
-      where: { id: business.id },
+    }),
+    db.staff.create({
       data: {
-        currentSubscriptionId: subscription.id,
-        subscriptionPlan: targetPlan.code,
-        subscriptionStatus: SubscriptionStatus.ACTIVE,
-        subscriptionStartDate: startDate,
-        subscriptionEndDate: endDate,
+        name: "Andi Pratama",
+        email: "andi@warung.id",
+        password: await hash("staff123", 10),
+        phone: "08112345002",
+        outletId: outletFnb.id,
+        status: StaffStatus.ACTIVE,
       },
-    });
+    }),
+  ]);
 
-    const invoiceNumber = `INV-${sanitizeForCode(business.name)}-${String(i + 1).padStart(3, "0")}`;
-
-    await prisma.subscriptionInvoice.create({
+  const staffRetail = await Promise.all([
+    db.staff.create({
       data: {
-        invoiceNumber,
-        amount: targetPlan.price,
-        status: PaymentStatus.SUCCESS,
-        paidAt: new Date(),
-        businessId: business.id,
-        subscriptionId: subscription.id,
+        name: "Dewi Lestari",
+        email: "dewi@toko.id",
+        password: await hash("staff123", 10),
+        phone: "08112345003",
+        outletId: outletRetail.id,
+        status: StaffStatus.ACTIVE,
       },
-    });
-  }
-
-  console.log(`✅ ${businesses.length} business subscriptions and invoices created.`);
-}
-
-async function seedOutletTransactions(outlets: Outlet[], productsByOutlet: OutletProductCatalog) {
-  if (!outlets.length) return;
-
-  console.log("💰 Creating sample orders and transactions...");
-
-  let transactionCount = 0;
-
-  for (let i = 0; i < outlets.length; i++) {
-    const outlet = outlets[i];
-    const outletProducts = productsByOutlet[outlet.id] || [];
-
-    if (!outletProducts.length) {
-      console.warn(
-        `⚠️  Skipping transactions for outlet ${outlet.name} because no products were found.`,
-      );
-      continue;
-    }
-
-    const preferredProduct =
-      outletProducts.find((product) => product.type === ProductType.GOODS) || outletProducts[0];
-
-    const quantity = (i % 3) + 1;
-    const subtotal = preferredProduct.price * quantity;
-    const midtransFee = roundCurrency(subtotal * 0.007);
-    const appFee = roundCurrency(subtotal * 0.02);
-    const totalAmount = roundCurrency(subtotal + midtransFee + appFee);
-
-    const guestCustomer = await prisma.guestCustomer.create({
+    }),
+    db.staff.create({
       data: {
-        name: `Guest ${outlet.name}`,
-        phone: `+6281300${String(5000 + i).padStart(4, "0")}`,
-        email: `guest${i + 1}@example.com`,
+        name: "Roni Susanto",
+        email: "roni@toko.id",
+        password: await hash("staff123", 10),
+        phone: "08112345004",
+        outletId: outletRetail.id,
+        status: StaffStatus.ACTIVE,
       },
-    });
+    }),
+  ]);
+  console.log("✅ Staff created");
 
-    const midtransToken = `MID-${outlet.id.slice(0, 8)}-${i + 1}`;
+  // ── 8. Loyalty Config ─────────────────────────────────────────────────────
 
-    const order = await prisma.order.create({
-      data: {
-        totalAmount,
-        paymentStatus: PaymentStatus.SUCCESS,
-        orderStatus: OrderStatus.COMPLETED,
-        paymentReminderSent: true,
-        midtransTransactionToken: midtransToken,
-        midtransRedirectUrl: `https://payments.example.com/${midtransToken}`,
-        guestCustomerId: guestCustomer.id,
-        outletId: outlet.id,
-        midtransFee,
-        appFee,
-        items: {
-          create: [
-            {
-              quantity,
-              priceAtTimeOfOrder: preferredProduct.price,
-              productId: preferredProduct.productId,
-              hppAtTimeOfOrder: preferredProduct.type === ProductType.GOODS ? preferredProduct.price * 0.6 : 0,
-              commissionAtTimeOfOrder: preferredProduct.type === ProductType.SERVICE ? preferredProduct.price * 0.1 : 0,
-            },
-          ],
-        },
+  await db.loyaltyConfig.createMany({
+    data: [
+      {
+        outletId: outletFnb.id,
+        pointsEarned: 1,
+        multiplierAmount: 10_000,
+        minSpending: 20_000,
+        pointValue: 100,
+        isActive: true,
       },
-    });
-
-    await prisma.transaction.create({
-      data: {
-        amount: totalAmount,
-        paymentMethod: "midtrans",
-        status: PaymentStatus.SUCCESS,
-        paymentUrl: order.midtransRedirectUrl,
-        externalId: `TRX-${midtransToken}`,
-        orderId: order.id,
+      {
+        outletId: outletRetail.id,
+        pointsEarned: 1,
+        multiplierAmount: 5_000,
+        minSpending: 10_000,
+        pointValue: 50,
+        isActive: true,
       },
-    });
+    ],
+  });
 
-    transactionCount += 1;
-  }
+  // ── 9. Products — FNB ─────────────────────────────────────────────────────
 
-  console.log(`✅ ${transactionCount} sample transactions created (one per outlet).`);
-}
-
-function validateEnvironment() {
-  const requiredEnvVars = ["DATABASE_URL"];
-  const missing = requiredEnvVars.filter((env) => !process.env[env]);
-  if (missing.length > 0) {
-    console.error("❌ Missing required environment variables:", missing.join(", "));
-    process.exit(1);
-  }
-}
-
-async function main() {
-  console.log("🌱 Starting database seeding with VERIFIED images for both Outlets and Products...");
-  validateEnvironment();
-
-  await seedSubscriptionPlans();
-
-  if (forceReseed) {
-    console.log("⚡ FORCE RESEED MODE: Clearing all existing data!");
-    console.log("🗑️  Cleaning existing data...");
-
-    await prisma.expense.deleteMany({});
-    await prisma.transaction.deleteMany({});
-    await prisma.orderItem.deleteMany({});
-    await prisma.order.deleteMany({});
-    await prisma.guestCustomer.deleteMany({});
-    await prisma.stockLog.deleteMany({}); // Added cleanup for StockLog
-    await prisma.productGoods.deleteMany({}); // Added cleanup
-    await prisma.productService.deleteMany({}); // Added cleanup
-    await prisma.product.deleteMany({});
-    await prisma.outletOperatingHours.deleteMany({});
-    await prisma.outlet.deleteMany({});
-    await prisma.subscriptionInvoice.deleteMany({});
-    await prisma.businessSubscription.deleteMany({});
-    // await prisma.wallet.deleteMany({}); // Removed Wallet
-    await prisma.business.deleteMany({});
-    await prisma.user.deleteMany({});
-    console.log("✅ Old data cleaned.");
-  } else {
-    const existingProducts = await prisma.product.count();
-    if (existingProducts > 0) {
-      console.log(`⚠️  Database already contains ${existingProducts} products. Skipping seeding.`);
-      console.log("   Use --force or -f flag to force reseed.");
-      return;
-    }
-  }
-
-  // --- 1. Create Users ---
-  console.log("👥 Creating users...");
-  const hashedPassword = await hash("password123", 10);
-  const usersData = [
-    { name: "Default Owner", email: "owner@example.com" },
-    { name: "John Coffee", email: "john@coffee.com" },
-    { name: "Sarah Food", email: "sarah@food.com" },
-    { name: "Lisa Beauty", email: "lisa@beauty.com" },
-    { name: "Mike Tech", email: "mike@tech.com" },
-    { name: "admin", email: "admin@gmail.com", role: UserRole.ADMIN },
+  const fnbProductsData = [
+    { name: "Nasi Padang Komplit", hpp: 18_000, price: 38_000, unit: "porsi", stock: 0, tax: 11 },
+    { name: "Ayam Goreng Kremes", hpp: 14_000, price: 32_000, unit: "porsi", stock: 0, tax: 11 },
+    { name: "Ikan Bakar Bumbu Rujak", hpp: 22_000, price: 48_000, unit: "porsi", stock: 0, tax: 11 },
+    { name: "Soto Ayam Lamongan", hpp: 10_000, price: 22_000, unit: "mangkuk", stock: 0, tax: 11 },
+    { name: "Nasi Goreng Spesial", hpp: 12_000, price: 28_000, unit: "porsi", stock: 0, tax: 11 },
+    { name: "Mie Goreng Jawa", hpp: 9_000, price: 22_000, unit: "porsi", stock: 0, tax: 11 },
+    { name: "Tempe Mendoan", hpp: 4_000, price: 10_000, unit: "porsi", stock: 0, tax: 0 },
+    { name: "Es Teh Manis", hpp: 2_500, price: 8_000, unit: "gelas", stock: 0, tax: 0 },
+    { name: "Jus Alpukat", hpp: 8_000, price: 18_000, unit: "gelas", stock: 0, tax: 0 },
+    { name: "Es Jeruk Peras", hpp: 5_000, price: 12_000, unit: "gelas", stock: 0, tax: 0 },
   ];
-  const users = await Promise.all(
-    usersData.map(async (user, i) => {
-      // Gunakan upsert untuk handle duplicate
-      return prisma.user.upsert({
-        where: { email: user.email },
-        update: {},
-        create: {
-          ...user,
-          phone: `+628123456789${i}`,
-          password: hashedPassword,
-          ...(user.role ? { role: user.role } : { role: UserRole.OWNER }),
-          isVerified: true,
+
+  const fnbProducts = await Promise.all(
+    fnbProductsData.map(async (p) => {
+      const product = await db.product.create({
+        data: {
+          name: p.name,
+          type: ProductType.GOODS,
+          status: ServiceStatus.ACTIVE,
+          outletId: outletFnb.id,
+          taxPercentage: p.tax,
         },
       });
-    }),
-  );
-  console.log("✅ Users created.");
 
-  // --- 2. Create Businesses ---
-  console.log("🏢 Creating 5 businesses...");
-  const businessesData = [
-    { name: "Kopi Nusantara", ownerId: users[0].id },
-    { name: "Warung Makan Sederhana", ownerId: users[1].id },
-    { name: "Salon Cantik", ownerId: users[2].id },
-    { name: "Toko Elektronik Maju", ownerId: users[3].id },
-    { name: "Laundry Express", ownerId: users[4].id },
-  ];
-  const businesses = await Promise.all(
-    businessesData.map((biz) =>
-      prisma.business.create({
+      await db.productGoods.create({
         data: {
-          ...biz,
-          description: `${biz.name} description`,
-          bankName: "Bank BCA",
-          bankAccount: "1234567890",
-          accountHolder: biz.name,
-          subscriptionStatus: SubscriptionStatus.ACTIVE,
-          subscriptionPlan: "BASIC",
+          productId: product.id,
+          sellingPrice: p.price,
+          averageHpp: p.hpp,
+          currentStock: p.stock,
+          unit: p.unit,
         },
-      }),
-    ),
+      });
+
+      return { product, goods: { sellingPrice: p.price, averageHpp: p.hpp, tax: p.tax } };
+    })
   );
-  console.log("✅ 5 Businesses with wallets created.");
 
-  await seedBusinessSubscriptionsAndInvoices(businesses);
+  // ── 10. Products — Retail ─────────────────────────────────────────────────
 
-  const businessTypes = ["coffee", "food", "beauty", "electronics", "laundry"];
-  const outletImages = {
-    coffee: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1200",
-    food: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1200",
-    beauty: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?q=80&w=1200",
-    electronics: "https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=1200",
-    laundry: "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?q=80&w=1200",
-  };
-
-  // --- 3. Create Outlets ---
-  console.log("🏪 Creating outlets with relevant images...");
-  const jakselLocations = [
-    {
-      name: "Kemang",
-      lat: -6.2665,
-      lng: 106.8167,
-      address: "Jl. Kemang Raya No. 25, Jakarta Selatan",
-    },
-    {
-      name: "Senopati",
-      lat: -6.2297,
-      lng: 106.8197,
-      address: "Jl. Senopati No. 15, Jakarta Selatan",
-    },
-    { name: "Blok M", lat: -6.2443, lng: 106.7993, address: "Jl. Blok M No. 10, Jakarta Selatan" },
-    {
-      name: "Cipete",
-      lat: -6.2704,
-      lng: 106.8058,
-      address: "Jl. Cipete Raya No. 35, Jakarta Selatan",
-    },
-    {
-      name: "Pondok Indah",
-      lat: -6.2655,
-      lng: 106.7808,
-      address: "Jl. Metro Pondok Indah No. 5, Jakarta Selatan",
-    },
+  const retailProductsData = [
+    { name: "Beras Premium 5kg", hpp: 62_000, price: 75_000, unit: "karung", stock: 50, tax: 0 },
+    { name: "Minyak Goreng Bimoli 2L", hpp: 28_000, price: 35_000, unit: "botol", stock: 40, tax: 11 },
+    { name: "Gula Pasir 1kg", hpp: 13_000, price: 16_000, unit: "kg", stock: 80, tax: 0 },
+    { name: "Tepung Terigu Segitiga 1kg", hpp: 10_000, price: 13_500, unit: "kg", stock: 60, tax: 0 },
+    { name: "Kopi Kapal Api Box", hpp: 22_000, price: 28_000, unit: "box", stock: 30, tax: 11 },
+    { name: "Sabun Mandi Lifebuoy 4pcs", hpp: 16_000, price: 21_000, unit: "pack", stock: 45, tax: 11 },
+    { name: "Sampo Sunsilk 170ml", hpp: 18_000, price: 24_000, unit: "botol", stock: 35, tax: 11 },
+    { name: "Indomie Goreng Box", hpp: 28_000, price: 35_000, unit: "box", stock: 25, tax: 11 },
+    { name: "Aqua Galon 19L", hpp: 18_000, price: 22_000, unit: "galon", stock: 15, tax: 0 },
+    { name: "Snack Chitato 68g", hpp: 8_500, price: 12_000, unit: "pcs", stock: 70, tax: 11 },
   ];
-  let outlets = [];
-  for (let i = 0; i < businesses.length; i++) {
-    const location = jakselLocations[i % jakselLocations.length];
-    const businessType = businessTypes[i]; // Ambil tipe bisnis
-    const imageUrl = outletImages[businessType as keyof typeof outletImages]; // Pilih URL gambar yang sesuai
 
-    const outlet = await prisma.outlet.create({
+  const retailProducts = await Promise.all(
+    retailProductsData.map(async (p) => {
+      const product = await db.product.create({
+        data: {
+          name: p.name,
+          type: ProductType.GOODS,
+          status: ServiceStatus.ACTIVE,
+          outletId: outletRetail.id,
+          taxPercentage: p.tax,
+        },
+      });
+
+      const goods = await db.productGoods.create({
+        data: {
+          productId: product.id,
+          sellingPrice: p.price,
+          averageHpp: p.hpp,
+          currentStock: p.stock,
+          minStock: 5,
+          unit: p.unit,
+        },
+      });
+
+      // Stock IN log
+      await db.stockLog.create({
+        data: {
+          productGoodsId: goods.id,
+          type: StockMovementType.IN,
+          quantity: p.stock,
+          hppPerUnit: p.hpp,
+          notes: "Stok awal",
+          referenceType: "SEED",
+        },
+      });
+
+      return {
+        product,
+        goods: { id: goods.id, sellingPrice: p.price, averageHpp: p.hpp, tax: p.tax },
+      };
+    })
+  );
+  console.log("✅ Products created");
+
+  // ── 11. Guest Customers ───────────────────────────────────────────────────
+
+  const customersData = [
+    { name: "Ahmad Fauzi", phone: "08211000001", email: "ahmad@gmail.com" },
+    { name: "Rina Marlina", phone: "08211000002", email: "rina@gmail.com" },
+    { name: "Doni Kusuma", phone: "08211000003", email: null },
+    { name: "Fitri Handayani", phone: "08211000004", email: "fitri@gmail.com" },
+    { name: "Bambang Wijaya", phone: "08211000005", email: null },
+    { name: "Sari Dewi", phone: "08211000006", email: "sari@gmail.com" },
+    { name: "Hendra Gunawan", phone: "08211000007", email: null },
+    { name: "Nurul Aini", phone: "08211000008", email: "nurul@gmail.com" },
+    { name: "Rudi Hartono", phone: "08211000009", email: null },
+    { name: "Maya Sari", phone: "08211000010", email: "maya@gmail.com" },
+    { name: "Agus Prasetyo", phone: "08211000011", email: null },
+    { name: "Lina Octavia", phone: "08211000012", email: "lina@gmail.com" },
+    { name: "Fajar Setiawan", phone: "08211000013", email: null },
+    { name: "Indah Permata", phone: "08211000014", email: "indah@gmail.com" },
+    { name: "Bayu Nugroho", phone: "08211000015", email: null },
+    { name: "Putri Rahayu", phone: "08211000016", email: "putri@gmail.com" },
+    { name: "Wahyu Saputra", phone: "08211000017", email: null },
+    { name: "Citra Lestari", phone: "08211000018", email: "citra@gmail.com" },
+    { name: "Iwan Setiadi", phone: "08211000019", email: null },
+    { name: "Yuni Astuti", phone: "08211000020", email: "yuni@gmail.com" },
+  ];
+
+  const customers = await Promise.all(
+    customersData.map((c) =>
+      db.guestCustomer.create({ data: c })
+    )
+  );
+
+  // Memberships per outlet
+  for (const customer of customers) {
+    for (const outlet of outlets) {
+      await db.outletMembership.create({
+        data: {
+          guestCustomerId: customer.id,
+          outletId: outlet.id,
+          totalPoints: rand(0, 250),
+          totalSpending: rand(50_000, 2_000_000),
+          status: "ACTIVE",
+        },
+      });
+    }
+  }
+  console.log("✅ Customers & memberships created");
+
+  // ── 12. Expenses ──────────────────────────────────────────────────────────
+
+  const fnbExpenses = [
+    { description: "Sewa tempat", amount: 4_000_000 },
+    { description: "Gaji karyawan", amount: 3_200_000 },
+    { description: "Listrik & air", amount: 650_000 },
+    { description: "Gas LPG 12kg x4", amount: 840_000 },
+    { description: "Perlengkapan kebersihan", amount: 185_000 },
+    { description: "Biaya pemasaran online", amount: 250_000 },
+    { description: "Servis peralatan dapur", amount: 150_000 },
+  ];
+
+  const retailExpenses = [
+    { description: "Sewa tempat", amount: 2_500_000 },
+    { description: "Gaji karyawan", amount: 2_400_000 },
+    { description: "Listrik", amount: 400_000 },
+    { description: "Plastik & perlengkapan toko", amount: 220_000 },
+    { description: "Ongkir pembelian barang", amount: 350_000 },
+    { description: "Biaya aplikasi POS", amount: 99_000 },
+  ];
+
+  for (const expense of fnbExpenses) {
+    await db.expense.create({
       data: {
-        name: `${businesses[i].name} - ${location.name}`,
-        address: location.address,
-        phone: `+62812345${String(60000 + i).padStart(5, "0")}`,
-        isOpen: Math.random() > 0.2,
-        businessId: businesses[i].id,
-        latitude: location.lat,
-        longitude: location.lng,
-        image: imageUrl,
-        slug: `${businesses[i].name}-${location.name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        ...expense,
+        cashier: "Owner",
+        date: randomDate(rand(1, 180)),
+        outletId: outletFnb.id,
       },
     });
-    outlets.push(outlet);
   }
-  console.log(`✅ ${outlets.length} outlets created.`);
 
-  // --- 4. Create Operating Hours ---
-  console.log("⏰ Creating operating hours...");
-  for (const outlet of outlets) {
-    await prisma.outletOperatingHours.createMany({
-      data: Array.from({ length: 7 }, (_, day) => ({
-        dayOfWeek: day,
-        openTime: new Date("1970-01-01T02:00:00Z"),
-        closeTime: new Date("1970-01-01T14:00:00Z"),
-        isOpen: day !== 0,
-        outletId: outlet.id,
-      })),
+  for (const expense of retailExpenses) {
+    await db.expense.create({
+      data: {
+        ...expense,
+        cashier: "Owner",
+        date: randomDate(rand(1, 180)),
+        outletId: outletRetail.id,
+      },
     });
   }
-  console.log("✅ Operating hours created.");
+  console.log("✅ Expenses created");
 
-  // --- 5. Create Products, Transactions, and Expenses using Factory ---
-  console.log("📦 Generating mass dummy data for reports using Laravel-style Factories...");
-  
-  const factory = new DatabaseFactory(prisma);
-  const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - 6); // Data dummy untuk 6 bulan terakhir
-  const endDate = new Date();
+  // ── 13. Orders — FNB ─────────────────────────────────────────────────────
 
-  for (let i = 0; i < outlets.length; i++) {
-    const outlet = outlets[i];
-    console.log(`Generating data for outlet: ${outlet.name}`);
-    
-    // Generate 30 produk per outlet
-    const products = await factory.createDummyProducts(outlet.id, 30);
-    
-    // Generate 150 transaksi per outlet selama 6 bulan terakhir
-    await factory.createDummyTransactions(outlet.id, products, 150, startDate, endDate);
-    
-    // Generate 50 pengeluaran per outlet selama 6 bulan terakhir
-    await factory.createDummyExpenses(outlet.id, 50, startDate, endDate);
+  console.log("⏳ Creating FNB orders...");
+
+  const paymentMethods: ManualPaymentType[] = [
+    ManualPaymentType.CASH,
+    ManualPaymentType.QRIS_OFFLINE,
+    ManualPaymentType.OWNER_TRANSFER,
+  ];
+
+  const orderStatusWeights: { status: OrderStatus; payStatus: PaymentStatus; weight: number }[] = [
+    { status: OrderStatus.COMPLETED, payStatus: PaymentStatus.SUCCESS, weight: 75 },
+    { status: OrderStatus.PROCESSING, payStatus: PaymentStatus.PENDING, weight: 8 },
+    { status: OrderStatus.CONFIRMED, payStatus: PaymentStatus.PENDING, weight: 7 },
+    { status: OrderStatus.CANCELLED, payStatus: PaymentStatus.CANCELLED, weight: 5 },
+    { status: OrderStatus.AWAITING_PAYMENT, payStatus: PaymentStatus.PENDING, weight: 5 },
+  ];
+
+  function pickOrderStatus() {
+    const total = orderStatusWeights.reduce((s, w) => s + w.weight, 0);
+    let r = Math.random() * total;
+    for (const w of orderStatusWeights) {
+      r -= w.weight;
+      if (r <= 0) return w;
+    }
+    return orderStatusWeights[0];
   }
-  
-  console.log("✅ Mass dummy data generation for reports completed.");
 
-  // --- 6. Summary ---
-  console.log("\n📊 SEEDING SUMMARY:");
-  const counts = await prisma.$transaction([
-    prisma.user.count(),
-    prisma.business.count(),
-    prisma.outlet.count(),
-    prisma.product.count(),
-    prisma.businessSubscription.count(),
-    prisma.subscriptionInvoice.count(),
-    prisma.order.count(),
-    prisma.transaction.count(),
-  ]);
-  console.log(`👥 Users: ${counts[0]}`);
-  console.log(`🏢 Businesses: ${counts[1]}`);
-  console.log(`🏪 Outlets: ${counts[2]}`);
-  console.log(`📦 Products: ${counts[3]}`);
-  console.log(`📄 Business Subscriptions: ${counts[4]}`);
-  console.log(`🧾 Subscription Invoices: ${counts[5]}`);
-  console.log(`🛒 Orders: ${counts[6]}`);
-  console.log(`💸 Transactions: ${counts[7]}`);
+  for (let i = 0; i < 130; i++) {
+    const customer = pick(customers);
+    const staff = pick(staffFnb);
+    const { status, payStatus } = pickOrderStatus();
+    const orderDate = randomDate(180);
+    const itemCount = rand(1, 4);
 
-  console.log("\n✨ Database seeding completed successfully!");
+    // Pick random products
+    const selectedProducts = [...fnbProducts]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, itemCount);
+
+    let subtotal = 0;
+    const orderItems = selectedProducts.map((p) => {
+      const qty = rand(1, 3);
+      const price = p.goods.sellingPrice;
+      const hpp = p.goods.averageHpp;
+      subtotal += price * qty;
+      return { productId: p.product.id, quantity: qty, price, hpp, tax: p.goods.tax };
+    });
+
+    const taxAmount = orderItems.reduce((sum, item) => {
+      return sum + Math.round(item.price * item.quantity * (item.tax / 100));
+    }, 0);
+    const totalAmount = subtotal + taxAmount;
+
+    // Bill & table for dine-in (60% orders)
+    const isDineIn = Math.random() < 0.6 && status === OrderStatus.COMPLETED;
+    let billId: string | undefined;
+    let tableId: string | undefined;
+
+    if (isDineIn) {
+      const table = pick(tables);
+      const bill = await db.bill.create({
+        data: {
+          outletId: outletFnb.id,
+          tableId: table.id,
+          status: BillStatus.PAID,
+          total: totalAmount,
+          closedAt: orderDate,
+        },
+      });
+      billId = bill.id;
+      tableId = table.id;
+    }
+
+    const order = await db.order.create({
+      data: {
+        outletId: outletFnb.id,
+        guestCustomerId: customer.id,
+        handledByStaffId: staff.id,
+        totalAmount,
+        taxAmount,
+        orderStatus: status,
+        paymentStatus: payStatus,
+        customerType: CustomerType.GUEST,
+        tableId: tableId ?? null,
+        billId: billId ?? null,
+        tableNumber: isDineIn ? `Meja ${rand(1, 8)}` : null,
+        createdAt: orderDate,
+        updatedAt: orderDate,
+        items: {
+          create: orderItems.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            priceAtTimeOfOrder: item.price,
+            hppAtTimeOfOrder: item.hpp,
+          })),
+        },
+      },
+    });
+
+    if (status === OrderStatus.COMPLETED) {
+      await db.transaction.create({
+        data: {
+          orderId: order.id,
+          amount: totalAmount,
+          status: PaymentStatus.SUCCESS,
+          isManual: true,
+          manualMethod: pick(paymentMethods),
+          verifiedAt: orderDate,
+          verifiedById: owner.id,
+        },
+      });
+
+      // Loyalty points
+      const points = Math.floor(totalAmount / 10_000);
+      if (points > 0) {
+        await db.loyaltyPointHistory.create({
+          data: {
+            outletId: outletFnb.id,
+            guestCustomerId: customer.id,
+            orderId: order.id,
+            type: LoyaltyPointHistoryType.EARN,
+            points,
+            note: "Poin dari transaksi",
+          },
+        });
+      }
+    }
+  }
+  console.log("✅ FNB orders created");
+
+  // ── 14. Orders — Retail ───────────────────────────────────────────────────
+
+  console.log("⏳ Creating Retail orders...");
+
+  for (let i = 0; i < 120; i++) {
+    const customer = pick(customers);
+    const staff = pick(staffRetail);
+    const { status, payStatus } = pickOrderStatus();
+    const orderDate = randomDate(180);
+    const itemCount = rand(1, 5);
+
+    const selectedProducts = [...retailProducts]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, itemCount);
+
+    let subtotal = 0;
+    const orderItems = selectedProducts.map((p) => {
+      const qty = rand(1, 4);
+      const price = p.goods.sellingPrice;
+      const hpp = p.goods.averageHpp;
+      subtotal += price * qty;
+      return {
+        productId: p.product.id,
+        goodsId: p.goods.id,
+        quantity: qty,
+        price,
+        hpp,
+        tax: p.goods.tax,
+      };
+    });
+
+    const taxAmount = orderItems.reduce((sum, item) => {
+      return sum + Math.round(item.price * item.quantity * (item.tax / 100));
+    }, 0);
+    const totalAmount = subtotal + taxAmount;
+
+    const order = await db.order.create({
+      data: {
+        outletId: outletRetail.id,
+        guestCustomerId: customer.id,
+        handledByStaffId: staff.id,
+        totalAmount,
+        taxAmount,
+        orderStatus: status,
+        paymentStatus: payStatus,
+        customerType: CustomerType.GUEST,
+        createdAt: orderDate,
+        updatedAt: orderDate,
+        items: {
+          create: orderItems.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            priceAtTimeOfOrder: item.price,
+            hppAtTimeOfOrder: item.hpp,
+          })),
+        },
+      },
+    });
+
+    if (status === OrderStatus.COMPLETED) {
+      await db.transaction.create({
+        data: {
+          orderId: order.id,
+          amount: totalAmount,
+          status: PaymentStatus.SUCCESS,
+          isManual: true,
+          manualMethod: pick(paymentMethods),
+          verifiedAt: orderDate,
+          verifiedById: owner.id,
+        },
+      });
+
+      // Stock OUT logs
+      for (const item of orderItems) {
+        await db.stockLog.create({
+          data: {
+            productGoodsId: item.goodsId,
+            type: StockMovementType.OUT,
+            quantity: item.quantity,
+            hppPerUnit: item.hpp,
+            referenceType: "ORDER",
+            referenceId: order.id,
+          },
+        });
+      }
+
+      // Loyalty points
+      const points = Math.floor(totalAmount / 5_000);
+      if (points > 0) {
+        await db.loyaltyPointHistory.create({
+          data: {
+            outletId: outletRetail.id,
+            guestCustomerId: customer.id,
+            orderId: order.id,
+            type: LoyaltyPointHistoryType.EARN,
+            points,
+            note: "Poin dari transaksi",
+          },
+        });
+      }
+    }
+  }
+  console.log("✅ Retail orders created");
+
+  console.log("\n🎉 Seeding completed!");
+  console.log("─────────────────────────────────");
+  console.log(`📧 Owner email : budi@bossapp.id`);
+  console.log(`🔑 Password    : password123`);
+  console.log(`📧 Admin email : admin@bossapp.id`);
+  console.log(`🔑 Password    : admin123`);
+  console.log(`🏪 FNB Outlet  : /warung-makan-sederhana`);
+  console.log(`🏪 Retail Outlet: /toko-sembako-sejahtera`);
+  console.log("─────────────────────────────────");
 }
 
+// ─── Clean ────────────────────────────────────────────────────────────────────
+
+async function cleanDatabase() {
+  console.log("🧹 Cleaning database...");
+
+  // Hapus dalam urutan yang aman (respek foreign key)
+  await db.loyaltyPointHistory.deleteMany();
+  await db.membership.deleteMany();
+  await db.stockLog.deleteMany();
+  await db.transaction.deleteMany();
+  await db.bookingSlot.deleteMany();
+  await db.ticketCode.deleteMany();
+  await db.orderItem.deleteMany();
+  await db.order.deleteMany();
+  await db.bill.deleteMany();
+  await db.outletMembership.deleteMany();
+  await db.productGoods.deleteMany();
+  await db.productService.deleteMany();
+  await db.productTicket.deleteMany();
+  await db.productMedia.deleteMany();
+  await db.product.deleteMany();
+  await db.expense.deleteMany();
+  await db.loyaltyConfig.deleteMany();
+  await db.receiptSetting.deleteMany();
+  await db.outletOperatingHours.deleteMany();
+  await db.outletTable.deleteMany();
+  await db.outletTransferRequest.deleteMany();
+  await db.staff.deleteMany();
+  await db.guestCustomer.deleteMany();
+  await db.outlet.deleteMany();
+  await db.pushSubscription.deleteMany();
+  await db.businessSubscription.deleteMany();
+  await db.subscriptionInvoice.deleteMany();
+  await db.banner.deleteMany();
+  await db.business.deleteMany();
+  await db.subscriptionPlan.deleteMany();
+  await db.user.deleteMany();
+}
+
+// ─── Run ──────────────────────────────────────────────────────────────────────
+
 main()
-  .catch((err) => {
-    console.error("❌ Seeding error:", err);
+  .catch((e) => {
+    console.error("❌ Seed failed:", e);
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
-    console.log("🔌 Database connection closed.");
+    await db.$disconnect();
   });

@@ -241,7 +241,6 @@ export default function ReportFinancialContent() {
 
   return (
     <>
-      {/* ══════════ Page Header ══════════ */}
       <SectionHeader
         title="Laporan Keuangan"
         description="Analisis mendalam performa bisnis, laba rugi, dan kinerja operasional outlet Anda."
@@ -262,9 +261,8 @@ export default function ReportFinancialContent() {
         }
       />
 
-      {/* ══════════ 3 Tabs ══════════ */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4 space-y-4">
-        <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1 w-full sm:w-auto">
+        <TabsList >
           <TabsTrigger value="keuangan" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
             Laporan Keuangan
           </TabsTrigger>
@@ -276,7 +274,6 @@ export default function ReportFinancialContent() {
           </TabsTrigger>
         </TabsList>
 
-        {/* ═══════ TAB 1: Laporan Keuangan (P&L) ═══════ */}
         <TabsContent value="keuangan" className="space-y-6">
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* P&L Summary Cards */}

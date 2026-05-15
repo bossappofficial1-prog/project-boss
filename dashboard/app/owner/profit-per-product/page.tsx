@@ -18,7 +18,7 @@ export default function ProfitPerProduct() {
     to: new Date(),
   });
 
-  const { profitPerProduct } = useTools(selectedOutletId!, {
+  const { profitPerProduct } = useTools("profitPerProduct", selectedOutletId!, {
     from: dateRange?.from!,
     to: dateRange?.to!,
   });

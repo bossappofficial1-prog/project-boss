@@ -39,6 +39,7 @@ export function StaffTable({
 }: StaffTableProps) {
 
     return <DataTable
+        title="Database Petugas Kasir"
         data={data}
         columns={[
             {

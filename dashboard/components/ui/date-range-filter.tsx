@@ -39,7 +39,9 @@ export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
   const handlePreset = (preset: Preset) => {
     setDateRangeFilter(preset);
     if (preset !== "custom") {
-      onChange(getPresetRange(preset));
+      const presetRange = getPresetRange(preset);
+      setDateRange(presetRange);
+      onChange(presetRange);
     }
   };
 

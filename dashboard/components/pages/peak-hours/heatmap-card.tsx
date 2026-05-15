@@ -18,6 +18,8 @@ export function HeatmapCard({
   days,
   setHeatmapFilter,
 }: HeatmapCardProps) {
+
+  console.log(days)
   const maxOrderCount = Math.max(
     ...days.flatMap((d) =>
       d.slots
@@ -45,11 +47,10 @@ export function HeatmapCard({
               <button
                 key={m}
                 onClick={() => setHeatmapFilter(m)}
-                className={`text-xs px-3 py-1 rounded-md transition-colors ${
-                  heatmapFilter === m
-                    ? "bg-background shadow-sm font-medium"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`text-xs px-3 py-1 rounded-md transition-colors ${heatmapFilter === m
+                  ? "bg-background shadow-sm font-medium"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 {m === "orders" ? "Order" : "Omzet"}
               </button>
@@ -63,7 +64,7 @@ export function HeatmapCard({
           <div className="flex gap-1 mb-1 pl-16">
             {OPERATING_HOURS.map((h) => (
               <div
-                key={h}
+                key={h++}
                 className="flex-1 text-center text-[10px] text-muted-foreground"
               >
                 {h}
@@ -74,7 +75,7 @@ export function HeatmapCard({
           {/* Grid */}
           <div className="space-y-1">
             {days.map((day) => (
-              <div key={day.day} className="flex items-center gap-1">
+              <div key={day.day++} className="flex items-center gap-1">
                 <div className="w-14 shrink-0 text-xs text-muted-foreground text-right pr-2">
                   {day.dayName}
                 </div>

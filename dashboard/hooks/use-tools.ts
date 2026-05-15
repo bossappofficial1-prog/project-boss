@@ -5,6 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 export type HealthStatus = "healthy" | "warning" | "danger";
 export type Grade = "A" | "B" | "C" | "D";
 export type InsightType = "positive" | "warning" | "danger";
+type ToolType =
+  | "incomeStatement"
+  | "peakHours"
+  | "profitPerProduct"
+  | "businessHealth";
 
 export interface BusinessHealthData {
   period: Period;
@@ -163,6 +168,7 @@ export interface Monthly {
 }
 
 export const useTools = (
+  tools: ToolType,
   outletId?: string,
   dateRange?: { from: Date; to: Date },
 ) => {
@@ -185,7 +191,7 @@ export const useTools = (
       return response.data.data as IncomeStatementData;
     },
 
-    enabled: !!outletId && !!dateRange?.from && !!dateRange?.to,
+    enabled: tools.includes("incomeStatement") && !!outletId && !!dateRange?.from && !!dateRange?.to,
   });
 
   const peakHours = useQuery({
@@ -207,7 +213,7 @@ export const useTools = (
       return response.data.data as PeakHoursData;
     },
 
-    enabled: !!outletId && !!dateRange?.from && !!dateRange?.to,
+    enabled: tools.includes("peakHours") && !!outletId && !!dateRange?.from && !!dateRange?.to,
   });
 
   const profitPerProduct = useQuery({
@@ -229,7 +235,7 @@ export const useTools = (
       return response.data.data as ProfitPerProductData;
     },
 
-    enabled: !!outletId && !!dateRange?.from && !!dateRange?.to,
+    enabled: tools.includes("profitPerProduct") && !!outletId && !!dateRange?.from && !!dateRange?.to,
   });
 
   const businessHealth = useQuery({
@@ -251,7 +257,7 @@ export const useTools = (
       return response.data.data as BusinessHealthData;
     },
 
-    enabled: !!outletId && !!dateRange?.from && !!dateRange?.to,
+    enabled: tools.includes("businessHealth") && !!outletId && !!dateRange?.from && !!dateRange?.to,
   });
 
   return {
