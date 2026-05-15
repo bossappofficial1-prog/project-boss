@@ -1,18 +1,25 @@
+import { jwtVerify, decodeJwt } from "jose";
 import { NextRequest, NextResponse } from "next/server";
-import * as jose from "jose";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
 async function verify(token: string) {
   try {
-    const { payload } = await jose.jwtVerify(token, secret);
+    // 1. Fast decode check for expiration before doing crypto
+    const decoded = decodeJwt(token);
+    if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+
+    // 2. Full cryptographic verification
+    const { payload } = await jwtVerify(token, secret);
     return payload;
   } catch {
     return null;
   }
 }
 
-const PRO_ROUTES = [
+const PRO_ROUTES_PREFIXES = [
   "/owner/analytics",
   "/owner/loyalty",
   "/owner/profit-per-product",
@@ -25,19 +32,29 @@ const PRO_ROUTES = [
   "/owner/outlets-manage-tables",
 ];
 
-const FNB_ONLY_ROUTES = ["/owner/outlets-manage-tables"];
+const FNB_ONLY_ROUTES_PREFIXES = ["/owner/outlets-manage-tables"];
 
 export async function proxy(req: NextRequest) {
-  const token = req.cookies.get("token")?.value;
-  const selectedOutletType = req.cookies.get("selectedOutletType")?.value;
   const { pathname, searchParams } = req.nextUrl;
 
+  if (req.headers.get("x-middleware-prefetch")) {
+    return NextResponse.next();
+  }
+
+  const token = req.cookies.get("token")?.value;
   if (!token) return NextResponse.next();
 
+  // 2. Heavy verification only if token exists and it's not a prefetch
   const payload = await verify(token);
 
-  if (!payload) return NextResponse.next();
+  // If token is invalid or expired, clear it and send to login
+  if (!payload) {
+    const response = NextResponse.redirect(new URL("/auth/login", req.url));
+    response.cookies.delete("token");
+    return response;
+  }
 
+  const selectedOutletType = req.cookies.get("selectedOutletType")?.value;
   const role = payload.role as "ADMIN" | "OWNER";
   const businessId = payload.businessId;
   const subscriptionPlan = (
@@ -48,11 +65,11 @@ export async function proxy(req: NextRequest) {
    * ROUTE PROTECTION (PRO & OUTLET TYPE)
    */
   if (role === "OWNER") {
-    const isProRoute = PRO_ROUTES.some(
-      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    const isProRoute = PRO_ROUTES_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
     );
-    const isFnbOnlyRoute = FNB_ONLY_ROUTES.some(
-      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    const isFnbOnlyRoute = FNB_ONLY_ROUTES_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
     );
     const hasProAccess = ["TRIAL", "PRO", "ENTERPRISE"].includes(
       subscriptionPlan
@@ -84,11 +101,11 @@ export async function proxy(req: NextRequest) {
    */
   if (pathname === "/") {
     if (role === "ADMIN") {
-      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+      return NextResponse.rewrite(new URL("/admin/dashboard", req.url));
     }
 
     if (role === "OWNER") {
-      return NextResponse.redirect(new URL("/owner/dashboard", req.url));
+      return NextResponse.rewrite(new URL("/owner/dashboard", req.url));
     }
   }
 
@@ -100,13 +117,8 @@ export async function proxy(req: NextRequest) {
       return NextResponse.next();
     }
 
-    if (role === "ADMIN") {
-      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
-    }
-
-    if (role === "OWNER") {
-      return NextResponse.redirect(new URL("/owner/dashboard", req.url));
-    }
+    const target = role === "ADMIN" ? "/admin/dashboard" : "/owner/dashboard";
+    return NextResponse.redirect(new URL(target, req.url));
   }
 
   return NextResponse.next();

@@ -22,7 +22,7 @@ export function InstantLink({
     useTransition: useTransitionMode = true,
     ...props
 }: InstantLinkProps) {
-    const { push } = useInstantNavigation()
+    const { push, prefetch } = useInstantNavigation()
 
     if (!useTransitionMode) {
         // Fallback to regular Link
@@ -39,8 +39,18 @@ export function InstantLink({
         push(href)
     }
 
+    const handleMouseEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        props.onMouseEnter?.(e)
+        prefetch(href)
+    }
+
     return (
-        <a href={href} onClick={handleClick} {...props}>
+        <a
+            href={href}
+            onClick={handleClick}
+            onMouseEnter={handleMouseEnter}
+            {...props}
+        >
             {children}
         </a>
     )

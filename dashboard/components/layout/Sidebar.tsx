@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUserData } from "@/hooks/useUserData";
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +78,7 @@ export default function AppSidebar() {
                 selectedOutlet: parsed,
                 outlets: [parsed],
                 isLoading: false,
-                setSelectedOutlet: () => {},
+                setSelectedOutlet: () => { },
               };
             }
           } catch {
@@ -93,7 +93,7 @@ export default function AppSidebar() {
         selectedOutlet: null,
         outlets: [],
         isLoading: true,
-        setSelectedOutlet: () => {},
+        setSelectedOutlet: () => { },
       };
     }
   })();
@@ -125,17 +125,17 @@ export default function AppSidebar() {
     setExpandedMenus((prev) => ({ ...prev, ...newExpandedMenus }));
   }, [pathname, isCollapsed]);
 
+  const router = useRouter();
+
   // Prefetch on hover for better performance (lazy prefetch)
   const handlePrefetch = useCallback((href: string) => {
-    if (typeof window === "undefined") return;
+    if (!href || typeof window === "undefined") return;
     try {
-      // Next.js router.prefetch is available through Link component
-      // but we don't need aggressive prefetch anymore since we have instant nav
-      // This is just a fallback for slower connections
+      router.prefetch(href);
     } catch {
-      // Prefetch failures are non-blocking (e.g., offline); safe to ignore
+      // Prefetch failures are non-blocking
     }
-  }, []);
+  }, [router]);
 
   const handleOutletChange = useCallback(
     (outletId: string) => {
@@ -199,7 +199,7 @@ export default function AppSidebar() {
           return true;
         }),
     })).filter((group) => group.items.length > 0);
-  }, [selectedOutlet, pathname, hasProAccess]);
+  }, [selectedOutlet, hasProAccess]);
   const isHrefActive = useCallback(
     (href?: string) => {
       if (!href) return false;

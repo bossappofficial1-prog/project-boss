@@ -31,5 +31,11 @@ export function useInstantNavigation() {
         router.back()
     }
 
-    return { push, replace, back, isPending }
+    const prefetch = (href: string) => {
+        try {
+            router.prefetch(href)
+        } catch { }
+    }
+
+    return { push, replace, back, prefetch, isPending }
 }
