@@ -140,7 +140,7 @@ export default function StaffManagementPage() {
   if (!selectedOutlet)
     return (
       <EmptyOutletState
-        onAddOutlet={() => router.push("/owner/dashboard#add-outlet")}
+        onAddOutlet={() => router.push("/owner#add-outlet")}
       />
     );
 

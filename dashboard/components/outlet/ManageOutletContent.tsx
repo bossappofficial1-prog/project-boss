@@ -352,7 +352,7 @@ export default function ManageOutletContent() {
   if (!selectedOutlet?.id)
     return (
       <EmptyOutletState
-        onAddOutlet={() => router.push("/owner/dashboard#add-outlet")}
+        onAddOutlet={() => router.push("/owner#add-outlet")}
       />
     );
   if (outletLoading) return <ManageOutletSkeleton />;

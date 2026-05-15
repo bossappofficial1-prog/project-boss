@@ -81,7 +81,7 @@ export default function OutletTablesPage() {
     }
 
     if (!selectedOutlet?.id) {
-        return <EmptyOutletState onAddOutlet={() => router.push("/owner/dashboard#add-outlet")} />;
+        return <EmptyOutletState onAddOutlet={() => router.push("/owner#add-outlet")} />;
     }
 
     return (

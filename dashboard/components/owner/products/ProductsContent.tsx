@@ -30,7 +30,6 @@ import {
   PenBox,
   Trash2,
   Boxes,
-  TrendingUp,
   Clock,
   Ticket,
   Eye,
@@ -225,7 +224,7 @@ export default function ProductsContent() {
   if (!isLoading && !hasBusinessProfile && !hasOutlet) {
     return (
       <EmptyOutletState
-        onAddOutlet={() => router.push(`/owner/dashboard#add-outlet`)}
+        onAddOutlet={() => router.push(`/owner#add-outlet`)}
       />
     );
   }
@@ -391,9 +390,9 @@ export default function ProductsContent() {
                   onPaginationChange={
                     tab === "all"
                       ? ({ page, limit }) => {
-                          setItemsPerPage(limit);
-                          setCurrentPage(page);
-                        }
+                        setItemsPerPage(limit);
+                        setCurrentPage(page);
+                      }
                       : undefined
                   }
                   pageSizeOptions={pageSizeOptions}
@@ -613,17 +612,17 @@ export default function ProductsContent() {
                   rowActions={(row: ProductItem) => [
                     ...(row.type === "TICKET"
                       ? [
-                          {
-                            icon: Eye,
-                            variant: "ghost" as const,
-                            className:
-                              "h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-600",
-                            onClick(r: ProductItem) {
-                              setSelectedProduct(r);
-                              setShowTicketDetail(true);
-                            },
+                        {
+                          icon: Eye,
+                          variant: "ghost" as const,
+                          className:
+                            "h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-600",
+                          onClick(r: ProductItem) {
+                            setSelectedProduct(r);
+                            setShowTicketDetail(true);
                           },
-                        ]
+                        },
+                      ]
                       : []),
                     {
                       icon: PenBox,
