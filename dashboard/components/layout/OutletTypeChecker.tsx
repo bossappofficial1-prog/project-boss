@@ -15,7 +15,6 @@ export default function OutletTypeChecker({ children }: { children: React.ReactN
     const { data: userData, isLoading: isUserLoading } = useUserData();
     const pathname = usePathname();
     const router = useRouter();
-    const [isAuthorized, setIsAuthorized] = useState(false);
 
     useEffect(() => {
         // Wait until we have the required data
@@ -28,7 +27,7 @@ export default function OutletTypeChecker({ children }: { children: React.ReactN
         // Find matching route in MENU_GROUPS
         let matchedItem: any = null;
         let longestMatchLength = 0;
-        
+
         for (const group of MENU_GROUPS) {
             for (const item of group.items) {
                 // Check if current route matches parent item
@@ -38,7 +37,7 @@ export default function OutletTypeChecker({ children }: { children: React.ReactN
                         longestMatchLength = item.href.length;
                     }
                 }
-                
+
                 // Check if current route matches sub items
                 if (item.subItems) {
                     for (const sub of item.subItems) {
@@ -69,12 +68,7 @@ export default function OutletTypeChecker({ children }: { children: React.ReactN
             }
         }
 
-        // If all checks pass, authorize rendering
-        setIsAuthorized(true);
-
     }, [pathname, selectedOutlet, userData, isUserLoading, router]);
-
-    if (!isAuthorized) return null;
 
     return <>{children}</>;
 }
