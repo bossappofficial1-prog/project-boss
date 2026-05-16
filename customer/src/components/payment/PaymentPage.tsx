@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { User, Phone, Receipt, AlertCircle, CheckCircle, Store, CreditCard, UtensilsCrossed } from "lucide-react";
+import { User, Receipt, AlertCircle, Store, CreditCard, UtensilsCrossed } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CheckoutData, PaymentMethod } from "@/types/checkout";
 import { CheckoutService } from "@/services/checkout";
@@ -22,11 +22,11 @@ import { useCart } from "@/hooks/useCart";
 import { useTranslations } from "@/hooks/useI18n";
 import { ManualPaymentResponse, PaymentMethodId } from "@/types";
 import { ImageRender } from "../shared/Image";
-import { Alert } from "../Base";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { useFeatureGuide } from "@/hooks/useFeatureGuide";
 import { GuideStep } from "@/providers/FeatureGuideProvider";
 import { useQueryClient } from "@tanstack/react-query";
+import { STORAGE_PROFILE_KEY } from "@/constants";
 
 interface PaymentPageProps {
   checkoutData: CheckoutData;
@@ -284,7 +284,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
   // Load customer info from ProfileSettings (if available)
   useEffect(() => {
     // Try to get customer info from localStorage or other sources
-    const savedProfile = localStorage.getItem("user_preferences");
+    const savedProfile = localStorage.getItem(STORAGE_PROFILE_KEY);
     if (savedProfile) {
       try {
         const profile = JSON.parse(savedProfile);
@@ -297,6 +297,28 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
       }
     }
   }, []);
+
+  // Save customer info to ProfileSettings (localStorage) whenever it changes
+  useEffect(() => {
+    if (customerInfo.name || customerInfo.phone) {
+      try {
+        const raw = localStorage.getItem(STORAGE_PROFILE_KEY);
+        const prefs = raw ? JSON.parse(raw) : {};
+
+        const newPrefs = {
+          ...prefs,
+          fullName: customerInfo.name || prefs.fullName || "",
+          phone: customerInfo.phone || prefs.phone || ""
+        };
+
+        if (JSON.stringify(prefs) !== JSON.stringify(newPrefs)) {
+          localStorage.setItem(STORAGE_PROFILE_KEY, JSON.stringify(newPrefs));
+        }
+      } catch (error) {
+        console.error("Failed to save profile:", error);
+      }
+    }
+  }, [customerInfo.name, customerInfo.phone]);
 
   // Prevent accidental page leave during payment
   useEffect(() => {
