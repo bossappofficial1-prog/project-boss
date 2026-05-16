@@ -75,8 +75,6 @@ function SectionSkeleton() {
   );
 }
 
-// ── Types ──
-
 interface PaymentDetailClientProps {
   orderId: string;
   payment: PaymentDetailData;
@@ -521,7 +519,7 @@ export function PaymentDetailClient({
       )}
 
       {/* Operating Hours Confirmation Notice */}
-      {normalizedStatus === "SUCCESS" && paymentData.outletInfo && !paymentData.outletInfo.isWithinOperatingHours && paymentData.outletInfo.todaySchedule?.isOpen && (
+      {/* {normalizedStatus === "SUCCESS" && paymentData.outletInfo && !paymentData.outletInfo.isWithinOperatingHours && paymentData.outletInfo.todaySchedule?.isOpen && (
         <div className="rounded-md border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 flex items-start gap-3">
           <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
@@ -541,7 +539,7 @@ export function PaymentDetailClient({
             </p>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Payment Overview */}
       <div className="rounded-md border overflow-hidden">

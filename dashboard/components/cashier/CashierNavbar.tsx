@@ -63,7 +63,7 @@ export function CashierNavbar({ cashierName, outletName, outletType = OutletType
   const CASHIER_NAV_ITEMS = useMemo(() => {
     const items = [
       { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
-      { href: "/cashier/orders", badge: data?.orderBadgeCount, label: "Pesanan Barang", icon: ShoppingBag, requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM] },
+      { href: "/cashier/orders", badge: data?.orderBadgeCount, label: "Pesanan", icon: ShoppingBag, requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM] },
       { href: "/cashier/tables", label: "Meja & Bill", icon: Table2, requiredTypes: [OutletType.FNB] },
       { href: "/cashier/queue", badge: data?.serviceBadgeCount, label: "Antrian", icon: LayoutGrid, requiredTypes: [OutletType.SERVICE, OutletType.CUSTOM] },
       { href: `/kitchen/${selectedOutletId}`, label: "Kitchen (KDS)", icon: ChefHat, requiredTypes: [OutletType.FNB, OutletType.CUSTOM] },

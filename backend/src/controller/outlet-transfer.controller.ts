@@ -20,7 +20,7 @@ export const createTransferRequestController = asyncHandler(async (req: Request,
         return ResponseUtil.badRequest(res, "Email penerima diperlukan.");
     }
 
-    const request = await createTransferRequestService(outletId, senderId, receiverEmail, note);
+    const request = await createTransferRequestService(outletId as string, senderId, receiverEmail, note);
     return ResponseUtil.success(res, request, HttpStatus.CREATED, "Permintaan transfer berhasil dibuat.");
 });
 
@@ -28,7 +28,7 @@ export const acceptTransferRequestController = asyncHandler(async (req: Request,
     const { id } = req.params;
     const userId = req.storedUser!.id;
 
-    await acceptTransferRequestService(id, userId);
+    await acceptTransferRequestService(id as string, userId);
     return ResponseUtil.success(res, null, HttpStatus.OK, "Permintaan transfer berhasil diterima.");
 });
 
@@ -36,7 +36,7 @@ export const rejectTransferRequestController = asyncHandler(async (req: Request,
     const { id } = req.params;
     const userId = req.storedUser!.id;
 
-    await rejectTransferRequestService(id, userId);
+    await rejectTransferRequestService(id as string, userId);
     return ResponseUtil.success(res, null, HttpStatus.OK, "Permintaan transfer berhasil ditolak.");
 });
 
@@ -44,7 +44,7 @@ export const cancelTransferRequestController = asyncHandler(async (req: Request,
     const { id } = req.params;
     const userId = req.storedUser!.id;
 
-    await cancelTransferRequestService(id, userId);
+    await cancelTransferRequestService(id as string, userId);
     return ResponseUtil.success(res, null, HttpStatus.OK, "Permintaan transfer berhasil dibatalkan.");
 });
 

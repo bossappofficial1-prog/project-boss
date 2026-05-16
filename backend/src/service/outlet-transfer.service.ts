@@ -42,6 +42,10 @@ export async function createTransferRequestService(
         throw new AppError("Anda tidak bisa mentransfer ke diri sendiri.", HttpStatus.BAD_REQUEST);
     }
 
+    if (receiver.business?.subscriptionPlan === "TRIAL") {
+        throw new AppError("Transfer akun tidak bisa dilakukan. Upgrade akun tujuan ke paket BASIC atau PRO.", HttpStatus.BAD_REQUEST);
+    }
+
     if (!receiver.business) {
         throw new AppError("Penerima belum memiliki profil bisnis.", HttpStatus.BAD_REQUEST);
     }
