@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, ShoppingBag, ShoppingCart, Package, Receipt, LayoutGrid, Ticket, Store, Table2 } from "lucide-react";
+import { LogOut, ShoppingBag, ShoppingCart, Package, Receipt, LayoutGrid, Ticket, Store, Table2, ChefHat } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -66,6 +66,7 @@ export function CashierNavbar({ cashierName, outletName, outletType = OutletType
       { href: "/cashier/orders", badge: data?.orderBadgeCount, label: "Pesanan Barang", icon: ShoppingBag, requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM] },
       { href: "/cashier/tables", label: "Meja & Bill", icon: Table2, requiredTypes: [OutletType.FNB] },
       { href: "/cashier/queue", badge: data?.serviceBadgeCount, label: "Antrian", icon: LayoutGrid, requiredTypes: [OutletType.SERVICE, OutletType.CUSTOM] },
+      { href: `/kitchen/${selectedOutletId}`, label: "Kitchen (KDS)", icon: ChefHat, requiredTypes: [OutletType.FNB, OutletType.CUSTOM] },
       { href: "/cashier/pob", label: "POB", icon: Package, requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM] },
       { href: "/cashier/ticket-scan", label: "Scan Tiket", icon: Ticket, requiredTypes: [OutletType.EVENT, OutletType.CUSTOM] },
       { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },

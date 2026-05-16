@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-export type PaymentMethodType = "cash" | "qris";
+export type PaymentMethodType = "cash" | "qris" | "none";
 
 interface PaymentSectionProps {
   method: PaymentMethodType;

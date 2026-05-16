@@ -22,7 +22,7 @@ export interface OrderCreationResult {
  * manages stock for goods, and calculates transaction fees.
  */
 export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCreationResult> {
-  const { items, outletId, bookingSlotId, staffId, cashierId } = data;
+  const { items, outletId, bookingSlotId, staffId, cashierId, tableId } = data;
 
   // 1. Validate Booking Slot if provided
   const slot = bookingSlotId
@@ -270,6 +270,43 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
         });
       }
 
+      // 6.5 Handle Bill integration if tableId is provided
+      let billId: string | undefined = undefined;
+      if (tableId) {
+        const activeBill = await tx.bill.findFirst({
+          where: {
+            tableId,
+            status: { in: ["OPEN", "BILLED"] }
+          }
+        });
+
+        if (activeBill) {
+          billId = activeBill.id;
+          await tx.bill.update({
+            where: { id: billId },
+            data: {
+              total: { increment: totalAmount }
+            }
+          });
+        } else {
+          const newBill = await tx.bill.create({
+            data: {
+              outletId,
+              tableId,
+              total: totalAmount,
+              status: "OPEN"
+            }
+          });
+          billId = newBill.id;
+        }
+
+        // Update Table Status to OCCUPIED
+        await tx.outletTable.update({
+          where: { id: tableId },
+          data: { status: "OCCUPIED" }
+        });
+      }
+
       // 7. Finalize Records
       const order = await tx.order.create({
         data: {
@@ -284,7 +321,9 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
           bookingDate: slotStart ?? (data.bookingDate ? new Date(data.bookingDate) : null),
           orderStatus: !bookingSlotId && data.paymentMethod === "cash" ? "COMPLETED" : "CONFIRMED",
           handledByStaffId: handledByStaffId,
-          tableNumber: data.tableNumber,
+          tableNumber: data.tableNumber || (tableId ? (await tx.outletTable.findUnique({ where: { id: tableId } }))?.name : null),
+          tableId: tableId,
+          billId: billId,
         },
       });
 

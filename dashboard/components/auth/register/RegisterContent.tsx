@@ -359,13 +359,6 @@ export default function RegistrationContent() {
                                 )}
                             </div>
 
-                            <div className="bg-slate-50 p-3 rounded-lg flex items-start gap-3 border border-slate-100">
-                                <ShieldCheck className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-slate-600">
-                                    <span className="font-bold">Jaminan Keamanan Data.</span> Data Anda terenkripsi dan dapat diexport kapan saja.
-                                </p>
-                            </div>
-
                             <div className="pt-2 flex gap-3">
                                 <button
                                     type="button"

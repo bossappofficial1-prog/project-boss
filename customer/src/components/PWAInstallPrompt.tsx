@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download, X } from 'lucide-react'
+import { useStoreState } from '@/stores/use-store-state'
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[]
@@ -21,7 +22,9 @@ declare global {
 
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const { dismissInstallTimeout, setDismissInstallTimeout } = useStoreState()
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
+
   const [isInstalled, setIsInstalled] = useState(false)
 
   useEffect(() => {
@@ -33,17 +36,21 @@ export default function PWAInstallPrompt() {
     if (isStandalone || (isIOS && isInStandaloneMode)) {
       setIsInstalled(true)
     }
+  }, [])
 
-    // Listen for beforeinstallprompt event
+  useEffect(() => {
+    if (deferredPrompt && Date.now() > dismissInstallTimeout && !isInstalled) {
+      setShowInstallPrompt(true)
+    }
+  }, [deferredPrompt, dismissInstallTimeout, isInstalled])
+
+  useEffect(() => {
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault()
 
       // Stash the event so it can be triggered later
       setDeferredPrompt(e)
-
-      // Show our custom install prompt
-      setShowInstallPrompt(true)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -81,6 +88,8 @@ export default function PWAInstallPrompt() {
   }
 
   const handleDismiss = () => {
+    const ONE_DAY = 24 * 60 * 60 * 1000
+    setDismissInstallTimeout(Date.now() + ONE_DAY)
     setShowInstallPrompt(false)
   }
 

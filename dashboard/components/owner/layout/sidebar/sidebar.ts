@@ -23,6 +23,7 @@ import {
   Clock,
   CalendarDays,
   ClipboardList,
+  CalendarCheck,
 } from "lucide-react";
 import { OutletType } from "@/types";
 
@@ -114,6 +115,15 @@ export const MENU_GROUPS: MenuGroup[] = [
         requiredTypes: [OutletType.FNB],
         requirePro: true,
       },
+      {
+        id: "reservations",
+        icon: CalendarCheck,
+        name: "Reservasi Meja",
+        href: "/owner/reservations",
+        requiredTypes: [OutletType.FNB, OutletType.CUSTOM],
+        requirePro: true,
+        disabled: true
+      }
     ],
   },
   {

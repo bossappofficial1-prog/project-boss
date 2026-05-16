@@ -253,8 +253,15 @@
         </div>
         <div class="total-row">
             <span>Subtotal</span>
-            <span>Rp {{formatRupiah subTotal}}</span>
+            <span>{{formatRupiah subTotal}}</span>
         </div>
+
+        {{#if taxAmount}}
+        <div class="total-row">
+            <span>PPN (11%)</span>
+            <span>{{formatRupiah taxAmount}}</span>
+        </div>
+        {{/if}}
 
         {{#if discountAmount}}
         <div class="total-row discount">
@@ -265,7 +272,7 @@
 
         <div class="total-row grand-total">
             <span>TOTAL</span>
-            <span>Rp {{formatRupiah total}}</span>
+            <span>{{formatRupiah total}}</span>
         </div>
     </div>
 

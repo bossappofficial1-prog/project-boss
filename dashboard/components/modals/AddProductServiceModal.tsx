@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { productApi, uploadApi } from "@/lib/api";
 import z from "zod";
 import { useForm } from "react-hook-form";
@@ -470,13 +470,6 @@ export default function AddOrEditProductServiceModal({
       colSpan: "full",
       placeholder: "Deskripsikan produk anda",
     },
-    {
-      name: "taxPercentage",
-      label: "Pajak (%)",
-      type: "number",
-      colSpan: 3,
-      placeholder: "Contoh: 11",
-    },
 
     // product === goods
 
@@ -484,21 +477,28 @@ export default function AddOrEditProductServiceModal({
       name: "goods.averageHpp",
       label: "Harga Modal (HPP) *",
       type: "currency",
-      colSpan: "full",
+      colSpan: 3,
       condition: (values) => values.type === "GOODS",
+    },
+    {
+      name: "taxPercentage",
+      label: "Pajak (%)",
+      type: "number",
+      colSpan: 3,
+      placeholder: "Contoh: 11",
     },
     {
       name: "goods.currentStock",
       label: "Stok Sekarang *",
       type: "number",
-      colSpan: 2,
+      colSpan: 3,
       condition: (values) => values.type === "GOODS",
     },
     {
       name: "goods.unit",
       label: "Satuan *",
       type: "text",
-      colSpan: 2,
+      colSpan: 3,
       placeholder: "pcs, kg, box...",
       condition: (values) => values.type === "GOODS",
     },

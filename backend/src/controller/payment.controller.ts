@@ -23,8 +23,10 @@ export class PaymentController {
       bookingSlotId,
       staffId,
       outletId,
+      tableId,
+      tableNumber,
     } = req.body as CreatePaymentPayload;
-
+ 
     const result = await this.service.createPayment({
       guestCustomer,
       items,
@@ -33,6 +35,8 @@ export class PaymentController {
       outletId,
       bookingSlotId,
       staffId,
+      tableId,
+      tableNumber,
     });
 
     return ResponseUtil.success(res, result, HttpStatus.CREATED);

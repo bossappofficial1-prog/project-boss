@@ -81,6 +81,8 @@ export class PosV2Repository {
                             currentStock: true,
                             unit: true,
                             averageHpp: true,
+                            barcode: true,
+                            sku: true,
                         },
                     },
                     service: {
@@ -174,6 +176,38 @@ export class PosV2Repository {
                 include: { items: true }
             });
 
+            // Handle Bill integration if tableId is provided and it's an open bill
+            let billId: string | null = null;
+            if (tableId && isOpenBill) {
+                const activeBill = await tx.bill.findFirst({
+                    where: {
+                        tableId,
+                        status: { in: ["OPEN", "BILLED"] }
+                    }
+                });
+
+                if (activeBill) {
+                    billId = activeBill.id;
+                    const amountDiff = totalAmount - (existingOrder?.totalAmount ?? 0);
+                    await tx.bill.update({
+                        where: { id: billId },
+                        data: {
+                            total: { increment: amountDiff }
+                        }
+                    });
+                } else {
+                    const newBill = await tx.bill.create({
+                        data: {
+                            outletId,
+                            tableId,
+                            total: totalAmount,
+                            status: "OPEN"
+                        }
+                    });
+                    billId = newBill.id;
+                }
+            }
+
             let order;
             if (existingOrder) {
                 // Refund old points if any before re-deducting below
@@ -210,6 +244,7 @@ export class PosV2Repository {
                         bookingDate,
                         tableId,
                         tableNumber: tableNumber || null,
+                        billId: billId || undefined,
                     },
                 });
             } else {
@@ -232,6 +267,7 @@ export class PosV2Repository {
                         bookingDate,
                         tableId,
                         tableNumber: tableNumber || null,
+                        billId: billId || undefined,
                     },
                 });
             }

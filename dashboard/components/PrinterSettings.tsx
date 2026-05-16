@@ -143,6 +143,8 @@ export function PrinterSettings({ outletId }: { outletId?: string }) {
         qrContent: receiptData?.qrContent || null,
     }), [receiptData]);
 
+    console.log(receiptDefaultValues)
+
     const handleReceiptSubmit = async (values: any) => {
         if (!outletId) return;
         setIsSubmitting(true);

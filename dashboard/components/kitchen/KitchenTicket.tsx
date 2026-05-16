@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, Hash, AlertCircle } from "lucide-react";
+import { Clock, Hash, AlertCircle, Play, Check, CheckCheck, Loader2, UtensilsCrossed } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { OrderV2Entry } from "@/lib/apis/orders-v2";
+import { OrderV2Entry, GoodsOrderStatus } from "@/lib/apis/orders-v2";
+import { useOrdersV2UpdateStatus } from "@/hooks/api/use-orders-v2";
 
 interface KitchenTicketProps {
     entry: OrderV2Entry;
@@ -15,7 +17,6 @@ export function KitchenTicket({ entry }: KitchenTicketProps) {
     const [elapsed, setElapsed] = useState(0);
     const [now, setNow] = useState(Date.now());
 
-    // Timer logic following UI guidelines (tabular-nums for metrics)
     useEffect(() => {
         const start = new Date(entry.createdAt).getTime();
         const update = () => {
@@ -23,42 +24,72 @@ export function KitchenTicket({ entry }: KitchenTicketProps) {
             setElapsed(Math.floor((Date.now() - start) / 1000 / 60));
         };
         update();
-        const interval = setInterval(update, 10000); 
+        const interval = setInterval(update, 10000);
         return () => clearInterval(interval);
     }, [entry.createdAt]);
 
-    // Urgent status based on B2B status colors
     const isOverdue = elapsed >= 15;
+    const isAlready = entry.orderStatus === "READY"
     const isWarning = elapsed >= 10 && elapsed < 15;
 
-    // F&B Rule: Highlight items added in the last 60 seconds (Open Bill logic)
+    const { mutate: updateStatus, isPending: isUpdating } = useOrdersV2UpdateStatus();
+
     const isNewItem = (itemCreatedAt: string) => {
-        const itemTime = new Date(itemCreatedAt).getTime();
-        return (now - itemTime) < 60000;
+        // Highlight items added in the last 5 minutes
+        return (now - new Date(itemCreatedAt).getTime()) < 300000;
+    };
+
+    const hasNewItems = entry.items.some(item => isNewItem(item.createdAt));
+    const isAddition = hasNewItems && (entry.orderStatus !== "AWAITING_PAYMENT" && entry.orderStatus !== "CONFIRMED");
+
+    const getActionConfig = () => {
+        const s = entry.orderStatus;
+        if (s === "AWAITING_PAYMENT" || s === "CONFIRMED") {
+            return { label: "Mulai Masak", status: "PROCESSING" as GoodsOrderStatus, icon: Play, variant: "default" as const };
+        }
+        if (s === "PROCESSING" || s === "ON_GOING") {
+            return { label: "Selesai Masak", status: "READY" as GoodsOrderStatus, icon: Check, variant: "default" as const };
+        }
+        if (s === "READY") {
+            return { label: "Sajikan", status: "COMPLETED" as GoodsOrderStatus, icon: CheckCheck, variant: "outline" as const };
+        }
+        return null;
+    };
+
+    const action = getActionConfig();
+
+    const handleAction = () => {
+        if (!action || isUpdating) return;
+        updateStatus({ orderId: entry.id, status: action.status });
     };
 
     return (
         <Card className={cn(
-            "relative flex flex-col h-full rounded-md border-t-4 shadow-sm overflow-hidden transition-all duration-300",
-            isOverdue ? "border-t-red-500 bg-red-500/5 animate-pulse" :
-            isWarning ? "border-t-amber-500 bg-amber-500/5" : "border-t-primary bg-background"
+            "relative flex py-0 flex-col h-fit rounded-md border-t-4 shadow-sm overflow-hidden transition-all duration-300",
+            isAddition ? "border-t-primary bg-primary/5 animate-in fade-in" :
+                isWarning ? "border-t-chart-4 bg-chart-4/5" : "border-t-primary bg-background"
         )}>
-            {/* Header: Table & Time following text-[10px] label guidelines */}
+            {isAddition && (
+                <div className="bg-primary text-primary-foreground py-1 px-3 flex items-center justify-center gap-2 animate-pulse">
+                    <UtensilsCrossed className="w-3 h-3" />
+                    <span className="text-[9px] font-black">Pesanan Tambahan</span>
+                </div>
+            )}
             <div className="p-3 border-b border-border/40 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <div className="bg-foreground text-background w-8 h-8 rounded flex items-center justify-center">
                         <Hash className="w-4 h-4" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">Meja</p>
+                        <p className="text-[10px] font-bold text-muted-foreground leading-none mb-1">Meja</p>
                         <h2 className="text-xl font-black tracking-tighter leading-none tabular-nums">{entry.tableNumber || "TA"}</h2>
                     </div>
                 </div>
                 <div className="text-right">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">Durasi</p>
+                    <p className="text-[10px] font-bold text-muted-foreground leading-none mb-1">Durasi</p>
                     <div className={cn(
                         "flex items-center justify-end gap-1 font-black tabular-nums tracking-tighter text-lg leading-none",
-                        isOverdue ? "text-red-600" : isWarning ? "text-amber-600" : "text-primary"
+                        isOverdue ? "text-destructive" : isWarning ? "text-chart-4" : "text-primary"
                     )}>
                         <Clock className="w-3.5 h-3.5" />
                         {elapsed}m
@@ -66,15 +97,13 @@ export function KitchenTicket({ entry }: KitchenTicketProps) {
                 </div>
             </div>
 
-            {/* Body: Items List */}
             <div className="flex-1 p-3 space-y-3">
                 <div className="space-y-2">
                     {entry.items.map((item, idx) => {
                         const isRecent = isNewItem(item.createdAt);
-                        
                         return (
-                            <div 
-                                key={`${entry.id}-item-${idx}`} 
+                            <div
+                                key={`${entry.id}-item-${idx}`}
                                 className={cn(
                                     "flex items-start gap-3 p-1.5 rounded-sm transition-all duration-500",
                                     isRecent ? "bg-primary/10 ring-1 ring-primary/20 animate-in fade-in zoom-in" : ""
@@ -82,7 +111,7 @@ export function KitchenTicket({ entry }: KitchenTicketProps) {
                             >
                                 <div className={cn(
                                     "px-2 py-0.5 rounded text-sm font-black tabular-nums min-w-[32px] text-center border",
-                                    isRecent ? "bg-primary text-white border-primary" : "bg-muted border-border/40"
+                                    isRecent ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border/40 text-foreground"
                                 )}>
                                     {item.quantity}
                                 </div>
@@ -92,13 +121,13 @@ export function KitchenTicket({ entry }: KitchenTicketProps) {
                                             {item.productName}
                                         </p>
                                         {isRecent && (
-                                            <span className="bg-primary text-white text-[8px] font-black px-1 rounded-sm animate-pulse">BARU</span>
+                                            <span className="bg-primary text-primary-foreground text-[8px] font-black px-1 rounded-sm animate-pulse">BARU</span>
                                         )}
                                     </div>
                                     {item.productType === "SERVICE" && item.duration && (
-                                         <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mt-0.5">
+                                        <p className="text-[10px] font-bold text-muted-foreground/60 mt-0.5">
                                             {item.duration}m
-                                         </p>
+                                        </p>
                                     )}
                                 </div>
                             </div>
@@ -106,33 +135,57 @@ export function KitchenTicket({ entry }: KitchenTicketProps) {
                     })}
                 </div>
 
-                {/* Staff Info */}
                 {entry.staffName && (
                     <div className="mt-4 pt-3 border-t border-dashed border-border/60">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Oleh: {entry.staffName}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground">Oleh: {entry.staffName}</p>
                     </div>
                 )}
             </div>
 
-            {/* Footer: Customer & Status using Semantic B2B badges */}
             <div className="p-3 bg-muted/20 border-t border-border/40 flex items-center justify-between">
                 <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Customer</p>
-                    <p className="text-xs font-bold truncate tracking-tight">{entry.customerName}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground mb-0.5">Customer</p>
+                    <p className="text-xs font-bold truncate tracking-tight text-foreground">{entry.customerName}</p>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[9px] font-black px-2 py-0.5 uppercase tracking-widest">
-                        {entry.orderStatus}
-                    </Badge>
-                </div>
+                <Badge variant="outline" className="bg-chart-3/10 text-chart-3 border-chart-3/20 text-[9px] font-black px-2 py-0.5">
+                    {entry.orderStatus}
+                </Badge>
             </div>
 
-            {/* High Priority Alert Overlay */}
-            {isOverdue && (
-                <div className="bg-red-500 text-white py-1 px-3 flex items-center justify-center gap-2">
+            {isOverdue && !isAlready && (
+                <div className="bg-destructive text-destructive-foreground py-1 px-3 flex items-center justify-center gap-2">
                     <AlertCircle className="w-3 h-3" />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Priority Prep</span>
+                    <span className="text-[9px] font-black">Priority Prep</span>
                 </div>
+            )}
+
+            {action && (
+                <div className="p-2 bg-background border-t border-border/40">
+                    <Button
+                        onClick={handleAction}
+                        disabled={isUpdating}
+                        variant={action.variant}
+                        size="sm"
+                        className={cn(
+                            "w-full h-10 font-black text-[10px] gap-2 rounded-lg",
+                            action.status === "READY" && "bg-chart-1 hover:bg-chart-1/90",
+                            action.status === "COMPLETED" && "border-chart-3 text-chart-3 hover:bg-chart-3/5"
+                        )}
+                    >
+                        {isUpdating ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                            <>
+                                <action.icon className="w-3.5 h-3.5" />
+                                {action.label}
+                            </>
+                        )}
+                    </Button>
+                </div>
+            )}
+
+            {hasNewItems && (
+                <div className="absolute inset-0 pointer-events-none ring-1 ring-primary/20 ring-inset rounded-md" />
             )}
         </Card>
     );

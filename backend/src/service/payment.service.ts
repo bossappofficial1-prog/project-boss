@@ -276,7 +276,9 @@ export class PaymentService {
     outletId: string,
     customerDetails: any,
     inputItems: any[],
-    productMap: Map<string, Product>
+    productMap: Map<string, Product>,
+    tableId?: string,
+    tableNumber?: string
   ) {
     try {
       await this.paymentRepo.createOrderWithItems({
@@ -289,6 +291,8 @@ export class PaymentService {
         outletId,
         customer: { name: customerDetails.name, phone: customerDetails.phone },
         items: inputItems.map((it) => ({ productId: it.productId, quantity: it.quantity })),
+        tableId,
+        tableNumber,
       });
     } catch (err: any) {
       const msg = err && err.message ? String(err.message).toLowerCase() : "";
@@ -324,6 +328,8 @@ export class PaymentService {
       bookingSlotId: selectedSlotId,
       staffId,
       outletId,
+      tableId,
+      tableNumber,
     } = data;
 
     const {
@@ -414,7 +420,9 @@ export class PaymentService {
           outletId,
           customerDetails,
           inputItems,
-          productMap
+          productMap,
+          tableId,
+          tableNumber
         );
 
         const expiresAt = new Date(Date.now() + Time.PAYMENT_EXPIRY_TIME_MS);
@@ -500,7 +508,9 @@ export class PaymentService {
       outletId,
       customerDetails,
       inputItems,
-      productMap
+      productMap,
+      tableId,
+      tableNumber
     );
 
     if (!onlinePaymentChannel) {

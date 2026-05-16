@@ -169,6 +169,8 @@ export class PaymentRepository {
     outletId: string;
     customer: { name: string; phone: string };
     items: Array<{ productId: string; quantity: number }>;
+    tableId?: string;
+    tableNumber?: string;
   }) {
     const {
       orderId,
@@ -180,6 +182,8 @@ export class PaymentRepository {
       outletId,
       customer,
       items,
+      tableId,
+      tableNumber,
     } = params;
 
     return db.$transaction(async (tr) => {
@@ -267,6 +271,50 @@ export class PaymentRepository {
         }
       })
 
+      // Handle Bill integration if tableId is provided
+      let billId: string | undefined = undefined;
+      let resolvedTableNumber = tableNumber;
+
+      if (tableId) {
+        const table = await tr.outletTable.findUnique({ where: { id: tableId } });
+        if (table) {
+          if (!resolvedTableNumber) resolvedTableNumber = table.name;
+
+          const activeBill = await tr.bill.findFirst({
+            where: {
+              tableId,
+              status: { in: ["OPEN", "BILLED"] }
+            }
+          });
+
+          if (activeBill) {
+            billId = activeBill.id;
+            await tr.bill.update({
+              where: { id: billId },
+              data: {
+                total: { increment: grossAmount }
+              }
+            });
+          } else {
+            const newBill = await tr.bill.create({
+              data: {
+                outletId,
+                tableId,
+                total: grossAmount,
+                status: "OPEN"
+              }
+            });
+            billId = newBill.id;
+          }
+
+          // Update Table Status to OCCUPIED
+          await tr.outletTable.update({
+            where: { id: tableId },
+            data: { status: "OCCUPIED" }
+          });
+        }
+      }
+
       await tr.order.create({
         data: {
           id: orderId,
@@ -274,17 +322,12 @@ export class PaymentRepository {
           appFee,
           midtransFee,
           bookingDate: slotRecord ? slotRecord.startTime : null,
-          guestCustomer: {
-            connect: { id: guestCustomer.id },
-          },
-          outlet: {
-            connect: { id: outletId },
-          },
-          ...(staffId && {
-            handledByStaff: {
-              connect: { id: staffId },
-            },
-          }),
+          guestCustomerId: guestCustomer.id,
+          outletId,
+          tableId,
+          tableNumber: resolvedTableNumber,
+          billId,
+          handledByStaffId: staffId || null,
         },
       });
 

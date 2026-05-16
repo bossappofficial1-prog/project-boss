@@ -66,6 +66,7 @@ export function PosV2Content() {
         cashierName: string;
         outletName: string;
     } | null>(null);
+    const [showPayConfirm, setShowPayConfirm] = React.useState(false);
     const [scheduleDialog, setScheduleDialog] = React.useState<ScheduleDialogState | null>(null);
     const [pendingOpenOrder, setPendingOpenOrder] = React.useState<PosV2OpenOrder | null>(null);
     const [member, setMember] = React.useState<any>(null);
@@ -380,6 +381,8 @@ export function PosV2Content() {
                     resetForm();
                     queryClient.invalidateQueries({ queryKey: ["loyalty", "members", outletId] });
                     queryClient.invalidateQueries({ queryKey: ["tables"] });
+                    queryClient.invalidateQueries({ queryKey: ["cashier-tables"] });
+                    queryClient.invalidateQueries({ queryKey: ["cashier-bills"] });
                     toast.success(isSaved ? "Pesanan berhasil disimpan!" : "Pesanan berhasil dibayar!");
                 },
                 onError: (error: any) => {
@@ -539,6 +542,7 @@ export function PosV2Content() {
                             {cartItems.length > 0 && (
                                 <>
                                     <Separator className="bg-border/60" />
+
                                     <div className="space-y-4">
                                         <p className="flex items-center gap-2 text-sm font-bold text-foreground">
                                             <ReceiptText className="h-4 w-4 text-primary" />
@@ -582,16 +586,18 @@ export function PosV2Content() {
 
                     {/* Pinned bottom: validation hint + action buttons */}
                     <div className="shrink-0 space-y-2 border-t border-border/60 bg-background p-4">
-                        {!canSubmit && cartItems.length > 0 && (
+                        {(!canSubmit && paymentMethod !== "none" && cartItems.length > 0) || (isFnbOrCustom && !tableId && !isWalkIn && cartItems.length > 0) ? (
                             <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
                                 <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
                                 <p className="text-xs text-destructive">
                                     {hasUnscheduledService
                                         ? "Pilih jadwal layanan terlebih dahulu"
+                                        : isFnbOrCustom && !tableId && !isWalkIn
+                                        ? "Pilih meja untuk melanjutkan pesanan"
                                         : "Lengkapi data pelanggan dan nominal pembayaran"}
                                 </p>
                             </div>
-                        )}
+                        ) : null}
 
                         {isFnbOrCustom && (
                             <Button
@@ -604,7 +610,7 @@ export function PosV2Content() {
                         )}
 
                         <Button
-                            onClick={() => handleSubmitOrder(false)}
+                            onClick={() => setShowPayConfirm(true)}
                             disabled={!canSubmit || createOrder.isPending}
                             className="h-12 w-full text-sm font-bold tabular-nums">
                             {createOrder.isPending ? (
@@ -643,6 +649,18 @@ export function PosV2Content() {
                 existingSelection={scheduleDialog?.selection}
                 onClose={() => setScheduleDialog(null)}
                 onConfirm={handleScheduleConfirm}
+            />
+
+            <ConfirmDialog
+                open={showPayConfirm}
+                onOpenChange={setShowPayConfirm}
+                title="Konfirmasi Pembayaran"
+                description={`Apakah Anda yakin ingin memproses pembayaran sebesar Rp ${grandTotal.toLocaleString("id-ID")}?`}
+                confirmLabel="Ya, Bayar Sekarang"
+                onConfirm={() => {
+                    setShowPayConfirm(false);
+                    handleSubmitOrder(false);
+                }}
             />
         </div>
     );

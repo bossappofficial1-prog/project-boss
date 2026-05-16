@@ -28,7 +28,7 @@ export default function OAuthPopupContent() {
       channel?.postMessage(message);
       channel?.close();
       localStorage.setItem("google-oauth-callback", JSON.stringify(message));
-    } catch {}
+    } catch { }
 
     window.setTimeout(() => window.close(), 100);
   }, [searchParams]);

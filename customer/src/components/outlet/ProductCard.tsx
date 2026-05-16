@@ -323,12 +323,12 @@ export default function ProductCard({
 
           <div className="flex justify-between items-end mt-2 gap-2">
             <div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <p className="font-bold text-base text-primary tabular-nums">
                   {formatCurrency(productData.price)}
                 </p>
                 {product.taxPercentage ? (
-                  <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30 px-1 py-0.5 rounded border border-amber-500/20">
+                  <span className="text-[9px] font-semibold w-fit text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30 px-1 py-0.5 rounded border border-amber-500/20">
                     +PPN {product.taxPercentage}%
                   </span>
                 ) : null}

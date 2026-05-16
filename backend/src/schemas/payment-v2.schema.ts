@@ -23,6 +23,8 @@ export const CreatePaymentSchema = z.object({
   bookingSlotId: z.string().optional(),
   staffId: z.string().uuid().optional(),
   outletId: z.string(),
+  tableId: z.string().uuid().optional(),
+  tableNumber: z.string().optional(),
 });
 
 export type CreatePaymentPayload = z.infer<typeof CreatePaymentSchema>;

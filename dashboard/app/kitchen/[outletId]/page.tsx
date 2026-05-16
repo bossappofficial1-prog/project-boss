@@ -6,11 +6,145 @@ import { useOrdersV2Board } from "@/hooks/api/use-orders-v2";
 import { KitchenTicket } from "@/components/kitchen/KitchenTicket";
 import { getSocket } from "@/lib/socket-v2";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, UtensilsCrossed, Monitor, AlertCircle, ArrowLeft } from "lucide-react";
+import { Loader2, UtensilsCrossed, Monitor, AlertCircle, ArrowLeft, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { outletManagementApi } from "@/lib/apis/outletManagement";
 import { useQuery } from "@tanstack/react-query";
 import { Clocks } from "@/components/shared/Clock";
+import { cn } from "@/lib/utils";
+
+const LANES = [
+    {
+        key: "pending",
+        label: "Antrian",
+        sublabel: "Menunggu diproses",
+        dotClass: "bg-chart-4",
+        headerClass: "border-chart-4/30 bg-chart-4/5",
+        labelClass: "text-chart-4",
+        countClass: "bg-chart-4/10 text-chart-4 border border-chart-4/20",
+        emptyClass: "text-chart-4/20",
+    },
+    {
+        key: "processing",
+        label: "Dimasak",
+        sublabel: "Sedang disiapkan",
+        dotClass: "bg-chart-1",
+        headerClass: "border-chart-1/30 bg-chart-1/5",
+        labelClass: "text-chart-1",
+        countClass: "bg-chart-1/10 text-chart-1 border border-chart-1/20",
+        emptyClass: "text-chart-1/20",
+    },
+    {
+        key: "ready",
+        label: "Siap",
+        sublabel: "Siap disajikan",
+        dotClass: "bg-chart-3",
+        headerClass: "border-chart-3/30 bg-chart-3/5",
+        labelClass: "text-chart-3",
+        countClass: "bg-chart-3/10 text-chart-3 border border-chart-3/20",
+        emptyClass: "text-chart-3/20",
+    },
+] as const;
+
+function KdsLoader() {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-5">
+            <div className="relative">
+                <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center">
+                    <ChefHat className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-background flex items-center justify-center">
+                    <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+                </div>
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-muted-foreground">
+                Menghubungkan ke Dapur
+            </p>
+        </div>
+    );
+}
+
+function KdsError({ onBack }: { onBack: () => void }) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 text-center gap-6">
+            <div className="w-16 h-16 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-destructive" />
+            </div>
+            <div className="space-y-1.5">
+                <h1 className="text-xl font-semibold text-foreground tracking-tight">Outlet Tidak Ditemukan</h1>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                    ID outlet tidak valid atau Anda tidak memiliki akses ke outlet ini.
+                </p>
+            </div>
+            <Button onClick={onBack} variant="outline" size="sm" className="gap-2">
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Kembali
+            </Button>
+        </div>
+    );
+}
+
+function LiveDot({ connected }: { connected: boolean }) {
+    return (
+        <span className="relative flex h-2 w-2">
+            {connected ? (
+                <>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-chart-3 opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-chart-3" />
+                </>
+            ) : (
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-muted-foreground/30" />
+            )}
+        </span>
+    );
+}
+
+function LaneColumn({
+    lane,
+    orders,
+}: {
+    lane: (typeof LANES)[number];
+    orders: NonNullable<ReturnType<typeof useOrdersV2Board>["data"]>["board"]["pending"];
+}) {
+    const count = orders?.length ?? 0;
+
+    return (
+        <div className="flex flex-col min-h-0 h-full">
+            <div className={cn(
+                "flex items-center justify-between px-4 py-3 rounded-xl border mb-3 shrink-0",
+                lane.headerClass
+            )}>
+                <div className="flex items-center gap-2.5">
+                    <div className={cn("w-2 h-2 rounded-full", lane.dotClass)} />
+                    <div>
+                        <p className={cn("text-xs font-bold uppercase tracking-widest leading-none", lane.labelClass)}>
+                            {lane.label}
+                        </p>
+                        <p className="text-[9px] text-muted-foreground/50 mt-0.5 uppercase tracking-wider">
+                            {lane.sublabel}
+                        </p>
+                    </div>
+                </div>
+                <span className={cn("text-sm font-black tabular-nums px-2.5 py-0.5 rounded-md", lane.countClass)}>
+                    {count}
+                </span>
+            </div>
+
+            <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-0.5">
+                {count === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3 rounded-xl border border-dashed border-border">
+                        <UtensilsCrossed className={cn("w-8 h-8", lane.emptyClass)} />
+                        <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-muted-foreground/30">Kosong</p>
+                    </div>
+                ) : (
+                    orders?.map((order) => (
+                        <KitchenTicket key={order.id} entry={order} />
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default function KitchenPage() {
     const params = useParams();
@@ -18,43 +152,44 @@ export default function KitchenPage() {
     const outletId = params.outletId as string;
     const queryClient = useQueryClient();
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [isConnected, setIsConnected] = useState(true);
+    const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-    // Validate Outlet Existence
     const { data: outlet, isLoading: isOutletLoading, isError: isOutletError } = useQuery({
         queryKey: ["outlet", outletId],
         queryFn: () => outletManagementApi.getById(outletId),
         enabled: !!outletId,
-        retry: 1
+        retry: 1,
     });
 
-    // Use Orders V2 Board (F&B focused)
     const { data, isLoading: isBoardLoading } = useOrdersV2Board(outletId);
 
-    // Socket implementation for real-time updates based on F&B Flow instructions
     useEffect(() => {
         if (!outletId) return;
 
         const socket = getSocket();
-
-        // Join the outlet room
         socket.emit("join:outlet", { outletId });
 
         const handleUpdate = () => {
-            console.log("KDS: Received F&B update event from socket");
             queryClient.invalidateQueries({ queryKey: ["orders-v2", "board", outletId] });
+            setLastUpdate(new Date());
         };
 
-        // Standard F&B Socket Events
+        const handleConnect = () => setIsConnected(true);
+        const handleDisconnect = () => setIsConnected(false);
+
+        socket.on("connect", handleConnect);
+        socket.on("disconnect", handleDisconnect);
         socket.on("order:new", handleUpdate);
         socket.on("order:itemsAdded", handleUpdate);
         socket.on("order:statusChanged", handleUpdate);
         socket.on("order:completed", handleUpdate);
-
-        // Fallback for legacy events
         socket.on("queue:updated", handleUpdate);
         socket.on("payment:new", handleUpdate);
 
         return () => {
+            socket.off("connect", handleConnect);
+            socket.off("disconnect", handleDisconnect);
             socket.off("order:new", handleUpdate);
             socket.off("order:itemsAdded", handleUpdate);
             socket.off("order:statusChanged", handleUpdate);
@@ -66,141 +201,121 @@ export default function KitchenPage() {
 
     const toggleFullScreen = () => {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-                console.error(`Error full-screen: ${err.message}`);
-            });
+            document.documentElement.requestFullscreen().catch(console.error);
             setIsFullScreen(true);
         } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-                setIsFullScreen(false);
-            }
+            document.exitFullscreen();
+            setIsFullScreen(false);
         }
     };
 
-    if (isOutletLoading || isBoardLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-                <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground animate-pulse">Menghubungkan ke Dapur...</p>
-            </div>
-        );
-    }
+    if (isOutletLoading || isBoardLoading) return <KdsLoader />;
+    if (isOutletError || !outlet) return <KdsError onBack={() => router.back()} />;
 
-    if (isOutletError || !outlet) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 text-center">
-                <div className="bg-destructive/10 p-6 rounded-full mb-6">
-                    <AlertCircle className="w-12 h-12 text-destructive" />
-                </div>
-                <h1 className="text-2xl font-black uppercase tracking-tighter mb-2">Outlet Tidak Ditemukan</h1>
-                <p className="text-muted-foreground text-sm max-w-md mb-8">
-                    ID Outlet yang Anda masukkan tidak valid atau Anda tidak memiliki akses ke outlet ini.
-                </p>
-                <Button onClick={() => router.back()} variant="outline" className="gap-2">
-                    <ArrowLeft className="w-4 h-4" />
-                    Kembali
-                </Button>
-            </div>
-        );
-    }
+    const board = data?.board;
+    const pending = board?.pending ?? [];
+    const processing = board?.processing ?? [];
+    const ready = board?.ready ?? [];
+    const totalActive = pending.length + processing.length + ready.length;
 
-    /**
-     * F&B KDS Rule: Only show orders with orderStatus = ON_GOING
-     * We also include READY status if they haven't been cleared yet, 
-     * but strictly following line 202: "Hanya tampilkan order dengan orderStatus = ON_GOING"
-     */
-    const activeOrders = [
-        ...(data?.board.processing || []),
-        ...(data?.board.pending || []),
-        ...(data?.board.ready || [])
-    ]
-    // .filter(order => {
-    //     // Strictly only show ON_GOING for kitchen prep
-    //     return order.orderStatus === "ON_GOING";
-    // }).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const laneData = { pending, processing, ready };
 
     return (
-        <div className="min-h-screen bg-muted/30 text-foreground overflow-x-hidden">
-            {/* KDS Header */}
-            <header className="bg-background border-b border-border/40 p-4 sticky top-0 z-50 shadow-sm backdrop-blur-xl">
-                <div className="flex items-center justify-between max-w-[1800px] mx-auto">
+        <div className="min-h-screen bg-background text-foreground flex flex-col overflow-hidden">
+            <header className="shrink-0 bg-card border-b border-border px-5 py-3">
+                <div className="flex items-center justify-between max-w-[1920px] mx-auto">
                     <div className="flex items-center gap-4">
-                        <div className="bg-foreground text-background p-2 rounded-lg">
-                            <UtensilsCrossed className="w-6 h-6" />
+                        <div className="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
+                            <ChefHat className="w-4.5 h-4.5 text-muted-foreground" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-xl font-black uppercase tracking-tighter leading-none">
-                                    Kitchen Monitor
-                                </h1>
-                                <span className="bg-primary/10 text-primary text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-sm font-bold text-foreground tracking-tight uppercase">
+                                    Kitchen Display
+                                </span>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground border border-border px-2 py-0.5 rounded">
                                     {outlet.name}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-3 mt-1.5">
-                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                                    POS Mode: F&B (Open Bill)
-                                </p>
-                                <div className="w-1 h-1 rounded-full bg-border" />
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                    <span className="text-[9px] font-black uppercase text-green-500 tracking-widest">Live Sync</span>
+                            <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-0.5">
+                                F&amp;B · Open Bill Mode
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="hidden md:flex items-center gap-1 bg-muted/50 border border-border rounded-xl px-4 py-2">
+                        {LANES.map((lane, i) => {
+                            const count = laneData[lane.key as keyof typeof laneData].length;
+                            return (
+                                <div key={lane.key} className="flex items-center gap-3">
+                                    {i > 0 && <div className="w-px h-5 bg-border" />}
+                                    <div className="flex items-center gap-2 px-2">
+                                        <div className={cn("w-1.5 h-1.5 rounded-full", lane.dotClass)} />
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                                            {lane.label}
+                                        </span>
+                                        <span className={cn("text-sm font-black tabular-nums", lane.labelClass)}>
+                                            {count}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
+                            );
+                        })}
+                        <div className="w-px h-5 bg-border mx-1" />
+                        <div className="px-2">
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mr-2">Total</span>
+                            <span className="text-sm font-black tabular-nums text-foreground">{totalActive}</span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="hidden lg:flex items-center gap-6 border-r border-border/40 pr-6 mr-2">
-                            <div className="text-right">
-                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Tickets</p>
-                                <p className="text-xl font-black leading-none tabular-nums text-primary">{activeOrders.length}</p>
-                            </div>
-                        </div>
-
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={toggleFullScreen}
-                            className="h-9 px-4 font-bold text-[10px] uppercase tracking-widest border-border/40 hover:bg-muted"
-                        >
-                            <Monitor className="w-3.5 h-3.5 mr-2" />
-                            {isFullScreen ? "Exit Full" : "Fullscreen"}
-                        </Button>
-                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleFullScreen}
+                        className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest gap-2"
+                    >
+                        <Monitor className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">
+                            {isFullScreen ? "Keluar" : "Layar Penuh"}
+                        </span>
+                    </Button>
                 </div>
             </header>
 
-            {/* Main Content: Tickets Grid */}
-            <main className="p-4 md:p-6">
-                <div className="max-w-[1800px] mx-auto">
-                    {activeOrders.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-40 opacity-20">
-                            <UtensilsCrossed className="w-24 h-24 mb-6" />
-                            <p className="text-sm font-black uppercase tracking-[0.4em]">Tidak Ada Pesanan Aktif</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 auto-rows-max">
-                            {activeOrders.map((order) => (
-                                <KitchenTicket key={order.id} entry={order} />
-                            ))}
-                        </div>
-                    )}
+            <main className="flex-1 overflow-hidden p-4 md:p-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full max-w-[1920px] mx-auto">
+                    {LANES.map((lane) => (
+                        <LaneColumn
+                            key={lane.key}
+                            lane={lane}
+                            orders={laneData[lane.key as keyof typeof laneData] as any}
+                        />
+                    ))}
                 </div>
             </main>
 
-            {/* Floating Status Bar / Clock */}
-            <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-                <div className="bg-background/90 backdrop-blur-xl border         border-border/40 px-8 py-3 rounded-full shadow-2xl flex items-center gap-8 pointer-events-auto">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60">KDS Connected</span>
+            <footer className="shrink-0 bg-card border-t border-border px-5 py-2.5">
+                <div className="flex items-center justify-between max-w-[1920px] mx-auto">
+                    <div className="flex items-center gap-2">
+                        <LiveDot connected={isConnected} />
+                        <span className={cn(
+                            "text-[9px] font-bold uppercase tracking-widest",
+                            isConnected ? "text-chart-3" : "text-muted-foreground/40"
+                        )}>
+                            {isConnected ? "Tersambung" : "Terputus"}
+                        </span>
+                        {lastUpdate && (
+                            <>
+                                <span className="text-border">·</span>
+                                <span className="text-[9px] text-muted-foreground/40 uppercase tracking-widest">
+                                    Update {lastUpdate.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                </span>
+                            </>
+                        )}
                     </div>
-
-                    <div className="w-px h-5 bg-border/60" />
-
-                    <Clocks />
+                    <div className="text-[10px] font-mono font-bold text-muted-foreground tabular-nums">
+                        <Clocks />
+                    </div>
                 </div>
             </footer>
         </div>

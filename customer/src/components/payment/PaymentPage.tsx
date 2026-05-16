@@ -414,6 +414,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ checkoutData, selectedPayment
         ...(selectedSlotId && { bookingSlotId: selectedSlotId }),
         ...(staffId && { staffId }),
         ...(useCart.getState().tableId && { tableId: useCart.getState().tableId }),
+        ...(useCart.getState().tableName && { tableNumber: useCart.getState().tableName }),
       };
 
       // Check if we have any items

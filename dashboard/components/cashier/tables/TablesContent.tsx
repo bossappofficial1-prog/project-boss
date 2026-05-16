@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { tableApi } from "@/lib/apis/table";
 import { billApi, Bill } from "@/lib/apis/bill";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type TablesContentProps = {
   outletId: string;
@@ -28,6 +29,7 @@ const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
 export function TablesContent({ outletId, outletName }: TablesContentProps) {
   const queryClient = useQueryClient();
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [billToPay, setBillToPay] = useState<string | null>(null);
 
   const tablesQuery = useQuery({
     queryKey: ["cashier-tables", outletId],
@@ -57,6 +59,7 @@ export function TablesContent({ outletId, outletName }: TablesContentProps) {
     mutationFn: (billId: string) => billApi.payBill(billId),
     onSuccess: () => {
       toast.success("Bill berhasil dibayar");
+      queryClient.invalidateQueries({ queryKey: ["tables"] });
       queryClient.invalidateQueries({ queryKey: ["cashier-tables", outletId] });
       queryClient.invalidateQueries({ queryKey: ["cashier-bills", outletId] });
     },
@@ -128,7 +131,7 @@ export function TablesContent({ outletId, outletName }: TablesContentProps) {
             return (
               <Card
                 key={table.id}
-                className={`cursor-pointer rounded-lg border bg-card shadow-md transition-colors ${isSelected ? "border-primary" : "hover:border-primary/40"}`}
+                className={`cursor-pointer py-0 rounded-lg border bg-card shadow-md transition-colors ${isSelected ? "border-primary" : "hover:border-primary/40"}`}
                 onClick={() => setSelectedTableId(table.id)}
               >
                 <CardHeader className="space-y-2 p-4">
@@ -186,7 +189,7 @@ export function TablesContent({ outletId, outletName }: TablesContentProps) {
                         variant="default"
                         onClick={(event) => {
                           event.stopPropagation();
-                          payBillMutation.mutate(bill.id);
+                          setBillToPay(bill.id);
                         }}
                         disabled={payBillMutation.isPending}
                       >
@@ -201,7 +204,7 @@ export function TablesContent({ outletId, outletName }: TablesContentProps) {
           })}
         </div>
 
-        <Card className="rounded-lg shadow-md">
+        <Card className="rounded-lg py-0 gap-0 shadow-md">
           <CardHeader className="space-y-2 border-b p-4">
             <CardTitle className="text-lg font-medium">Detail Bill</CardTitle>
             <CardDescription>
@@ -274,6 +277,20 @@ export function TablesContent({ outletId, outletName }: TablesContentProps) {
           </CardContent>
         </Card>
       </div>
+
+      <ConfirmDialog
+        open={!!billToPay}
+        onOpenChange={(v) => !v && setBillToPay(null)}
+        title="Konfirmasi Pembayaran"
+        description="Apakah Anda yakin ingin memproses pembayaran bill ini? Tindakan ini akan menutup bill dan mengosongkan meja."
+        confirmLabel="Ya, Bayar Sekarang"
+        onConfirm={() => {
+          if (billToPay) {
+            payBillMutation.mutate(billToPay);
+            setBillToPay(null);
+          }
+        }}
+      />
     </div>
   );
 }

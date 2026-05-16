@@ -130,12 +130,8 @@ export class PosV2Service {
       if (!table) {
         throw new AppError("Meja tidak ditemukan pada outlet aktif.", HttpStatus.BAD_REQUEST);
       }
-      if (table.status === "BILLED") {
-        throw new AppError(
-          "Meja sedang diproses bill dan tidak dapat menerima order baru.",
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+      // If table is BILLED, we still allow adding new orders to it (it will be linked to the same bill)
+
     }
 
     // Validate products exist and belong to outlet
