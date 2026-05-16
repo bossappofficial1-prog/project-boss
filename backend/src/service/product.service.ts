@@ -34,6 +34,7 @@ export async function createProductService(data: CreateProductInput) {
   }
 
   await PlanLimitService.assertCanCreateProduct(businessId);
+  await PlanLimitService.assertProductTypeAllowed(data.outletId, data.type);
   const createdProduct = await ProductRepository.create(data);
 
   // Sync media if type is SERVICE and media array provided
@@ -119,6 +120,9 @@ export async function getProductsByOutletIdService(
  */
 export async function updateProductService(id: string, data: UpdateProductInput) {
   const existingProduct = await getProductByIdService(id);
+  if (data.type) {
+    await PlanLimitService.assertProductTypeAllowed(existingProduct.outletId, data.type);
+  }
   const product = await ProductRepository.update(id, data);
 
   // Sync media if type is SERVICE and media array provided

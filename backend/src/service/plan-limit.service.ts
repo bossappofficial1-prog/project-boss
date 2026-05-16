@@ -5,6 +5,8 @@ import { AppError } from "../errors/app-error";
 import { BusinessUsageRepository } from "../repositories/business-usage.repository";
 import { SubscriptionRepository } from "../repositories/subscription.repository";
 import { PlanFeaturesInput } from "../schemas/subscription-plan.schema";
+import { db } from "../config/prisma";
+import { ProductType } from "@prisma/client";
 
 const USAGE_CACHE_TTL_SECONDS = 60;
 
@@ -44,6 +46,45 @@ export class PlanLimitService {
 
     static async assertCanCreateStaff(businessId: string) {
         await this.assertHasQuota(businessId, "staff");
+    }
+
+    static async assertProductTypeAllowed(outletId: string, productType: ProductType) {
+        const outlet = await db.outlet.findUnique({
+            where: { id: outletId },
+            include: {
+                business: {
+                    include: {
+                        currentSubscription: {
+                            include: { plan: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!outlet) throw new AppError("Outlet tidak ditemukan", HttpStatus.NOT_FOUND);
+
+        const plan = outlet.business.subscriptionPlan;
+        const isCustomAllowed = plan === 'TRIAL' || plan === 'PRO';
+
+        // Soft enforcement: if type is CUSTOM but plan is not PRO/TRIAL, treat as FNB
+        const effectiveType = (outlet.type === 'CUSTOM' && !isCustomAllowed) ? 'FNB' : outlet.type;
+
+        const allowedTypesMap: Record<string, ProductType[]> = {
+            'FNB': [ProductType.GOODS],
+            'RETAIL': [ProductType.GOODS],
+            'SERVICE': [ProductType.SERVICE],
+            'EVENT': [ProductType.TICKET],
+            'CUSTOM': [ProductType.GOODS, ProductType.SERVICE, ProductType.TICKET]
+        };
+
+        const allowed = allowedTypesMap[effectiveType] || [ProductType.GOODS];
+        if (!allowed.includes(productType)) {
+            throw new AppError(
+                `Tipe produk ${productType} tidak didukung oleh tipe outlet Anda pada paket langganan saat ini (${plan}).`,
+                HttpStatus.FORBIDDEN
+            );
+        }
     }
 
     static async assertSubscriptionActive(businessId: string) {

@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { useOutletsQuery } from '@/hooks/useOutlets';
 import { Outlet, OutletType, ProductType } from '@/types';
+import { useUserData } from '@/hooks/useUserData';
 
 interface OutletContextType {
     selectedOutlet: Outlet | null;
@@ -13,6 +14,7 @@ interface OutletContextType {
     error: string | null;
     refetch: () => void;
     allowedProductTypes: string[];
+    isPlanMismatch: boolean;
 }
 
 const OutletContext = createContext<OutletContextType | null>(null);
@@ -68,6 +70,7 @@ function getInitialSelectedOutlet(outlets: Outlet[]): Outlet | null {
 }
 
 export function OutletProvider({ children }: OutletProviderProps) {
+    const { data: userData } = useUserData();
     const { data, isLoading, error, refetch } = useOutletsQuery();
     const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null);
     const outlets = (data?.outlets || []) as Outlet[];
@@ -123,10 +126,23 @@ export function OutletProvider({ children }: OutletProviderProps) {
         }
     };
 
+    const isPlanMismatch = useMemo(() => {
+        if (!selectedOutlet || !userData?.business) return false;
+        if (selectedOutlet.type === OutletType.CUSTOM) {
+            const plan = userData.business.subscriptionPlan;
+            return plan !== 'TRIAL' && plan !== 'PRO';
+        }
+        return false;
+    }, [selectedOutlet, userData]);
+
     const allowedProductTypes = useMemo(() => {
         if (!selectedOutlet) return [ProductType.GOODS, ProductType.SERVICE, ProductType.TICKET];
         
-        switch (selectedOutlet.type) {
+        const type = (selectedOutlet.type === OutletType.CUSTOM && isPlanMismatch) 
+            ? OutletType.FNB 
+            : selectedOutlet.type;
+
+        switch (type) {
             case OutletType.FNB:
             case OutletType.RETAIL:
                 return [ProductType.GOODS];
@@ -138,7 +154,7 @@ export function OutletProvider({ children }: OutletProviderProps) {
             default:
                 return [ProductType.GOODS, ProductType.SERVICE, ProductType.TICKET];
         }
-    }, [selectedOutlet]);
+    }, [selectedOutlet, isPlanMismatch]);
 
     const contextValue: OutletContextType = {
         selectedOutlet,
@@ -148,7 +164,8 @@ export function OutletProvider({ children }: OutletProviderProps) {
         isLoading,
         error: error?.message || null,
         refetch,
-        allowedProductTypes
+        allowedProductTypes,
+        isPlanMismatch
     };
 
     return (

@@ -13,9 +13,11 @@ import {
   Zap,
   ArrowRightLeft,
   Save,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -120,6 +122,7 @@ export default function ManageOutletContent() {
     selectedOutlet,
     setSelectedOutlet,
     isLoading: outletLoading,
+    isPlanMismatch,
   } = useOutletContext();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -367,6 +370,31 @@ export default function ManageOutletContent() {
 
   return (
     <div className="space-y-4">
+      {isPlanMismatch && (
+        <Alert variant="destructive" className="border-rose-500/50 bg-rose-500/5 py-4">
+          <AlertTriangle className="h-5 w-5 text-rose-500" />
+          <div className="ml-3">
+            <AlertTitle className="text-sm font-black uppercase tracking-widest text-rose-600">
+              Limitasi Paket Terdeteksi
+            </AlertTitle>
+            <AlertDescription className="mt-1 text-xs font-medium text-rose-500/80 leading-relaxed">
+              Outlet ini bertipe <strong>CUSTOM</strong>, namun paket langganan Anda saat ini tidak mendukung tipe tersebut.
+              Beberapa fitur akan dibatasi dan outlet akan beroperasi dengan mode standar <strong>(F&B)</strong> sampai Anda melakukan upgrade ke paket <strong>PRO</strong> atau mengubah tipe outlet.
+            </AlertDescription>
+          </div>
+          <div className="ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 font-bold text-[10px] uppercase tracking-widest"
+              onClick={() => setIsEditing(true)}
+            >
+              Ubah Tipe Outlet
+            </Button>
+          </div>
+        </Alert>
+      )}
+
       <SectionHeader
         title="Profil Outlet"
         description="Kelola identitas visual dan informasi operasional outlet Anda."
