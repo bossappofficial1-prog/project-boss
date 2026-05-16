@@ -87,7 +87,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                             </div>
 
                             {/* Content - positioned at bottom-left */}
-                            <div className="relative flex h-full flex-col justify-end px-5 pb-12 sm:px-8 sm:pb-14 md:px-10">
+                            <div className="relative flex h-full flex-col justify-end px-3 pb-4 sm:px-8 sm:pb-14 md:px-10">
                                 {index === active && (
                                     <div
                                         key={active}
@@ -103,7 +103,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
                                             <Link
                                                 href={banner.cta.payload || "/promos"}
                                                 target="_blank"
-                                                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-semibold text-gray-900 shadow-md transition-all duration-200 hover:gap-2.5 hover:bg-white/90 hover:shadow-lg active:scale-95 sm:text-xs"
+                                                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-[11px] font-semibold text-gray-900 shadow-md transition-all duration-200 hover:gap-2.5 hover:bg-white/90 hover:shadow-lg active:scale-95 sm:text-xs"
                                                 tabIndex={index !== active ? -1 : 0}
                                                 onTouchStart={(e) => e.stopPropagation()}
                                                 onMouseDown={(e) => e.stopPropagation()}
