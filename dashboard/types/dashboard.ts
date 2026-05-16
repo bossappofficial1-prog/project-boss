@@ -27,6 +27,7 @@ export interface Outlet {
   name: string;
   address: string;
   phone?: string;
+  instagramUrl?: string;
   email?: string;
   image?: string;
   latitude?: number;

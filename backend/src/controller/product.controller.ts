@@ -87,6 +87,7 @@ export const getProductsByOutletIdController = asyncHandler(async (req: Request,
 export const updateProductController = asyncHandler(async (req: Request, res: Response) => {
     const id = ensureString(req.params?.id, 'id');
     const payload = req.body;
+    console.log(payload)
     const product = await updateProductService(id, payload);
     return ResponseUtil.success(res, product);
 });

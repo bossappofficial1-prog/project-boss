@@ -329,7 +329,7 @@ export default function ProductCard({
                 </p>
                 {product.taxPercentage ? (
                   <span className="text-[9px] font-semibold w-fit text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30 px-1 py-0.5 rounded border border-amber-500/20">
-                    +PPN {product.taxPercentage}%
+                    +{product.taxName || "Pajak"} {product.taxPercentage}%
                   </span>
                 ) : null}
               </div>

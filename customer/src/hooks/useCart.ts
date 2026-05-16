@@ -14,6 +14,7 @@ export interface CartItem {
     name: string;
     price: number;
     taxPercentage?: number | null;
+    taxName?: string | null;
     quantity: number;
     type: 'GOODS' | 'SERVICE' | 'TICKET';
     image?: string;
@@ -187,6 +188,7 @@ export const useCart = create<CartState>()(
                                 ? product.ticket?.sellingPrice || 0
                                 : product.service?.sellingPrice || 0,
                         taxPercentage: product.taxPercentage,
+                        taxName: product.taxName,
                         quantity,
                         type: product.type,
                         image: product.image,

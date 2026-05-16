@@ -101,7 +101,7 @@ const OrderSummary: React.FC<
                     {item.quantity}x {item.name}
                     {item.taxPercentage ? (
                       <span className="text-blue-500 text-[11px] ml-1">
-                        +PPN {item.taxPercentage}%
+                        +{item.taxName || "Pajak"} {item.taxPercentage}%
                       </span>
                     ) : null}
                   </p>
@@ -140,7 +140,9 @@ const OrderSummary: React.FC<
 
           {(tax ?? 0) > 0 && (
             <div className="flex justify-between text-[13px]">
-              <span className="text-muted-foreground">PPN</span>
+              <span className="text-muted-foreground">
+                {outlets.flatMap(o => o.items).find(it => it.taxName)?.taxName || "Pajak"}
+              </span>
               <span>{formatCurrency(tax ?? 0)}</span>
             </div>
           )}

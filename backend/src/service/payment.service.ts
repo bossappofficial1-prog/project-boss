@@ -897,11 +897,14 @@ export class PaymentService {
       isWithinOperatingHours = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
     }
 
+    const mainTaxName = items.find(it => it.product.taxName)?.product.taxName || "Pajak";
+
     return {
       id: transaction.orderId,
       status: order.orderStatus,
       totalAmount: transaction.amount,
       taxAmount: order.taxAmount ?? 0,
+      taxName: mainTaxName,
       outletInfo: {
         name: outlet.name,
         isWithinOperatingHours,
@@ -981,6 +984,7 @@ export class PaymentService {
           quantity: item.quantity,
           subtotal: productPrice * item.quantity,
           taxPercentage: item.product.taxPercentage ?? null,
+          taxName: item.product.taxName ?? null,
         };
       }),
     };

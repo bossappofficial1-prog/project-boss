@@ -387,7 +387,7 @@ export default function TransactionsPage() {
           },
           {
             id: "tax",
-            header: "PPN",
+            header: "Pajak",
             cell: ({ row }) => {
               const tax = row.original.order?.taxAmount ?? 0;
               return tax > 0 ? (
@@ -433,7 +433,7 @@ export default function TransactionsPage() {
               Deskripsi: row.description,
               Metode: row.manualMethod || row.paymentMethod || "-",
               Jumlah: row.amount,
-              PPN: row.order?.taxAmount ?? 0,
+              Pajak: row.order?.taxAmount ?? 0,
               Status: row.status
             }),
           },

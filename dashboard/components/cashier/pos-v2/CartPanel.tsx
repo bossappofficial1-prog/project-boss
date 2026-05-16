@@ -233,7 +233,7 @@ export function CartPanel({
             {/* Tax */}
             {taxAmount > 0 && (
                 <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">PPN</span>
+                    <span className="text-sm text-muted-foreground">{items.find(it => it.product.taxName)?.product.taxName || "Pajak"}</span>
                     <span className="text-sm font-medium text-foreground tabular-nums">
                         Rp {fmt.format(taxAmount)}
                     </span>

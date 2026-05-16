@@ -141,6 +141,7 @@ model Outlet {
   description         String?
   address             String?
   phone               String?
+  instagramUrl        String?
   email               String?                 @unique
   createdAt           DateTime                @default(now())
   image               String?                 @default("/defaults/default-outlet-image.webp")
@@ -253,6 +254,7 @@ model Product {
   outletId      String
   image         String?         @default("/defaults/default-product-image.png")
   taxPercentage Float?
+  taxName       String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   orderItems  OrderItem[]

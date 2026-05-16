@@ -23,6 +23,7 @@ export interface OrderV2Entry {
   orderStatus: GoodsOrderStatus;
   totalAmount: number;
   taxAmount: number;
+  taxName: string | null;
   discountAmount: number;
   customerName: string;
   customerPhone: string | null;

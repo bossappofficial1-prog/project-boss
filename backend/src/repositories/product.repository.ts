@@ -32,6 +32,7 @@ export class ProductRepository {
           outletId: data.outletId,
           image: data.image,
           taxPercentage: data.taxPercentage,
+          taxName: data.taxName,
           goods: {
             create: {
               barcode: data.goods.barcode,
@@ -258,6 +259,8 @@ export class ProductRepository {
       ...(data.status !== undefined && { status: data.status }),
       ...(data.image !== undefined && { image: data.image }),
       ...(data.taxPercentage !== undefined && { taxPercentage: data.taxPercentage }),
+      ...(data.taxName !== undefined && { taxName: data.taxName }),
+
     };
 
     if (goods) {

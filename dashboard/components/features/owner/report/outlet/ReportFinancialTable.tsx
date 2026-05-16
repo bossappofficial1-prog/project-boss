@@ -65,7 +65,7 @@ export function ReportFinancialTable({
         },
         {
           accessorKey: "totalPajak",
-          header: "(+) PPN",
+          header: "(+) Pajak",
           cell({ row }) {
             const p = row.original.totalPajak;
             return p ? (

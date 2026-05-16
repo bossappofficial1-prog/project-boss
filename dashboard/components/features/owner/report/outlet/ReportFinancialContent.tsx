@@ -287,7 +287,7 @@ export default function ReportFinancialContent() {
                 description="Total omset dari pesanan selesai"
               />
               <SummaryCard
-                title="(+) PPN"
+                title="(+) Pajak"
                 value={totals.totalPajak}
                 variant="info"
                 highlight={true}

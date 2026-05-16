@@ -115,6 +115,7 @@ const baseProductSchema = {
   outletId: z.string(),
   image: z.string().optional(),
   taxPercentage: z.number().min(0).nullable().optional(),
+  taxName: z.string().optional(),
 };
 
 export const createProductSchema = z.discriminatedUnion("type", [
@@ -167,6 +168,7 @@ export const updateProductSchema = z
       status: z.nativeEnum(ServiceStatus).optional(),
       image: z.string().optional(),
       taxPercentage: z.number().min(0).nullable().optional(),
+      taxName: z.string().optional(),
 
       goods: productGoodsSchema.partial().optional(),
       service: z.never().optional(),
@@ -182,6 +184,7 @@ export const updateProductSchema = z
       status: z.nativeEnum(ServiceStatus).optional(),
       image: z.string().optional(),
       taxPercentage: z.number().min(0).nullable().optional(),
+      taxName: z.string().optional(),
 
       // Use base schema without refinement for partial updates
       service: productServiceBaseSchema.partial().optional(),
@@ -199,6 +202,7 @@ export const updateProductSchema = z
       status: z.nativeEnum(ServiceStatus).optional(),
       image: z.string().optional(),
       taxPercentage: z.number().min(0).nullable().optional(),
+      taxName: z.string().optional(),
 
       ticket: productTicketSchema.partial().optional(),
       goods: z.never().optional(),

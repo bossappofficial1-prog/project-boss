@@ -11,6 +11,7 @@ export interface PaymentDetailData {
     status: string;
     totalAmount: number;
     taxAmount?: number;
+    taxName?: string | null;
     outletInfo?: PaymentDetailOutletInfo;
     payment: PaymentDetailPayment;
     customerDetails: PaymentDetailCustomer;
@@ -51,6 +52,7 @@ export interface PaymentDetailItem {
     quantity: number;
     subtotal?: number;
     taxPercentage?: number | null;
+    taxName?: string | null;
 }
 
 export interface PaymentDetailPayment {

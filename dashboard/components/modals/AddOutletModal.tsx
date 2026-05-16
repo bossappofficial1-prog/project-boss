@@ -5,7 +5,7 @@ import { useForm, type Path, type ControllerRenderProps } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building2, Clock, FileText, MapPin, Phone, Store, ToggleLeft, Mail } from 'lucide-react'
+import { Building2, Clock, FileText, MapPin, Phone, Store, ToggleLeft, Mail, Instagram } from 'lucide-react'
 import MapPicker from '@/components/ui/MapPicker'
 import OperatingHoursManager from '@/components/ui/OperatingHoursManager'
 import { toast } from 'sonner'
@@ -29,6 +29,7 @@ const outletSchema = z.object({
       const re = /^(?:\+62|62|0)8[1-9][0-9]{6,10}$/
       return re.test(v.replace(/\s|-/g, ''))
     }, { message: 'Masukkan nomor telepon yang valid (contoh: 081234567890 atau +6281234567890)' }),
+  instagramUrl: z.string().optional().or(z.literal('')),
   email: z.string().email('Format email tidak valid').optional().or(z.literal('')),
   description: z.string().optional(),
   type: z.nativeEnum(OutletType).default(OutletType.CUSTOM),
@@ -72,6 +73,7 @@ export default function AddOutletModal({
       status: 'ACTIVE',
       latitude: undefined,
       longitude: undefined,
+      instagramUrl: '',
     },
   })
 
@@ -104,6 +106,7 @@ export default function AddOutletModal({
       status: outletDetail.isOpen === true ? 'ACTIVE' : 'INACTIVE',
       latitude: outletDetail.latitude || undefined,
       longitude: outletDetail.longitude || undefined,
+      instagramUrl: (outletDetail as any).instagramUrl || '',
     })
 
     console.log(outletDetail.isOpen)
@@ -155,6 +158,7 @@ export default function AddOutletModal({
         longitude: lngValue && lngValue !== 'undefined' ? Number(lngValue) : undefined,
         isOpen: status === 'ACTIVE',
         image: undefined as string | undefined,
+        instagramUrl: (formData.get('instagramUrl') as string) || undefined,
       }
 
       let uploadedUrl: string | undefined = undefined;
@@ -219,6 +223,7 @@ export default function AddOutletModal({
         status: 'ACTIVE',
         latitude: undefined,
         longitude: undefined,
+        instagramUrl: '',
       })
       setOperatingHoursData({})
       onOpenChange(false)
@@ -292,7 +297,14 @@ export default function AddOutletModal({
       type: 'tel' as const,
       placeholder: '08xxxxxxxxxx',
       icon: Phone,
-      colSpan: 'full' as const,
+      colSpan: 1,
+    },
+    {
+      name: 'instagramUrl',
+      label: 'Link Instagram',
+      placeholder: 'https://instagram.com/username',
+      icon: Instagram,
+      colSpan: 2,
     },
     {
       name: 'latitude' as Path<OutletFormData>,
@@ -376,6 +388,7 @@ export default function AddOutletModal({
         status: 'ACTIVE',
         latitude: undefined,
         longitude: undefined,
+        instagramUrl: '',
       }}
       onSubmit={(values) => mutate(values)}
       isLoading={isSubmitting}

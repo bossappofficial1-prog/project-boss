@@ -356,7 +356,9 @@ export function CartDrawer({ children }: CartDrawerProps) {
                                     </div>
                                     {totalTax > 0 && (
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">PPN</span>
+                                            <span className="text-muted-foreground">
+                                                {items.find(it => it.taxName)?.taxName || "Pajak"}
+                                            </span>
                                             <span className="font-medium">Rp{totalTax.toLocaleString('id-ID')}</span>
                                         </div>
                                     )}

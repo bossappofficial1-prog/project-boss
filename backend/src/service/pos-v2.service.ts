@@ -59,6 +59,7 @@ export class PosV2Service {
         type: p.type,
         status: p.status,
         taxPercentage: p.taxPercentage ?? null,
+        taxName: p.taxName ?? null,
         price,
         stock: p.type === "GOODS" ? (p.goods?.currentStock ?? 0) : null,
         unit: p.type === "GOODS" ? (p.goods?.unit ?? "pcs") : null,
@@ -404,6 +405,7 @@ export class PosV2Service {
           product: {
             ...p,
             price,
+            taxName: p.taxName ?? null,
           },
         };
       }),

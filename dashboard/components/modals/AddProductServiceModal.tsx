@@ -18,7 +18,7 @@ type Props = {
   onSuccess?: () => void;
   action?: "add" | "edit";
   data?: ProductItem | null;
-  initialData?: Partial<ProductItem & { image: string }>;
+  initialData?: Partial<ProductItem & { image: string, taxName: string }>;
 };
 
 const ProductStatus = z.enum(["ACTIVE", "INACTIVE"]);
@@ -28,6 +28,7 @@ const baseSchema = z.object({
   description: z.string().optional(),
   status: ProductStatus,
   taxPercentage: z.coerce.number().min(0).nullable().optional(),
+  taxName: z.string().optional(),
   file: z
     .union([
       z.instanceof(File).refine((f) => f.size <= 3 * 1024 * 1024, "Maksimal 3MB"),
@@ -164,6 +165,7 @@ export default function AddOrEditProductServiceModal({
         description: initialData.description ?? "",
         status: initialData.status ?? ("ACTIVE" as const),
         taxPercentage: initialData.taxPercentage ?? null,
+        taxName: initialData.taxName ?? "",
         file: initialData.image,
       };
 
@@ -247,6 +249,8 @@ export default function AddOrEditProductServiceModal({
       name: "",
       description: "",
       status: "ACTIVE",
+      taxPercentage: null,
+      taxName: "",
       outletId: outletId!,
 
       goods: {
@@ -282,6 +286,7 @@ export default function AddOrEditProductServiceModal({
       type: formType,
       status: otherValues.get("status"),
       taxPercentage: taxPercentage,
+      taxName: otherValues.get("taxName") as string || undefined,
       outletId,
     };
 
@@ -486,6 +491,13 @@ export default function AddOrEditProductServiceModal({
       type: "number",
       colSpan: 3,
       placeholder: "Contoh: 11",
+    },
+    {
+      name: "taxName",
+      label: "Keterangan Pajak",
+      type: "text",
+      colSpan: 3,
+      placeholder: "Contoh: PPN, Service Charge, dll",
     },
     {
       name: "goods.currentStock",

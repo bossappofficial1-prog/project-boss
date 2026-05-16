@@ -3,7 +3,7 @@
 import { useFavorites } from "@/hooks/useFavorites";
 import { useTranslations } from "@/hooks/useI18n";
 import { Button } from "../ui/button";
-import { Heart, MapPin, Package, Phone, Share2, Store, Wrench, Clock, MessageCircle, Navigation, ChevronRight, Search, X, Ticket, UtensilsCrossed } from "lucide-react";
+import { Heart, MapPin, Package, Phone, Share2, Store, Wrench, Clock, MessageCircle, Navigation, ChevronRight, Search, X, Ticket, UtensilsCrossed, Instagram } from "lucide-react";
 import { ShareOutlet } from "../shared/ShareOutlet";
 import { ImageRender } from "../shared/Image";
 import { resolveCustomerImageUrl } from "@/lib/url";
@@ -540,6 +540,16 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
                 onClick={handleWhatsAppChat}>
                 <MessageCircle className="w-3.5 h-3.5" />
                 WhatsApp
+              </Button>
+            )}
+            {outlet.instagramUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 h-9 rounded-lg text-xs font-medium gap-1.5 border-pink-200 text-pink-700 hover:bg-pink-50 hover:text-pink-800"
+                onClick={() => window.open(outlet.instagramUrl, "_blank")}>
+                <Instagram className="w-3.5 h-3.5" />
+                Instagram
               </Button>
             )}
             <Button

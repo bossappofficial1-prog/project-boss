@@ -137,7 +137,7 @@ export default function OrdersTable({
       },
       {
         id: "tax",
-        header: "PPN",
+        header: "Pajak",
         cell: ({ row }) => {
           const tax = (row.original as any).taxAmount ?? 0;
           return tax > 0 ? (

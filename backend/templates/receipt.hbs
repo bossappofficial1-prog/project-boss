@@ -258,7 +258,7 @@
 
         {{#if taxAmount}}
         <div class="total-row">
-            <span>PPN (11%)</span>
+            <span>{{#if taxLabel}}{{taxLabel}}{{else}}Pajak{{/if}}</span>
             <span>{{formatRupiah taxAmount}}</span>
         </div>
         {{/if}}
@@ -274,6 +274,12 @@
             <span>TOTAL</span>
             <span>{{formatRupiah total}}</span>
         </div>
+
+        {{#if tableNote}}
+        <div style="font-size: 10px; margin-top: 10px; padding: 5px; border: 1px dashed #ccc; font-style: italic;">
+            Note: {{tableNote}}
+        </div>
+        {{/if}}
     </div>
 
     <div class="divider-dashed" style="margin-top: 15px;"></div>

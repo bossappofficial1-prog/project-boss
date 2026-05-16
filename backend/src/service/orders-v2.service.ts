@@ -19,6 +19,7 @@ interface OrderEntry {
   orderStatus: OrderStatus;
   totalAmount: number;
   taxAmount: number;
+  taxName: string | null;
   discountAmount: number;
   customerName: string;
   customerPhone: string | null;
@@ -69,6 +70,7 @@ function mapOrder(order: any): OrderEntry {
     discountAmount: Number(order.discountAmount ?? 0),
     customerName: order.guestCustomer?.name ?? "Customer",
     customerPhone: order.guestCustomer?.phone ?? null,
+    taxName: order.items?.find((it: any) => it.product?.taxName)?.product?.taxName || "Pajak",
     items: (order.items ?? []).map((item: any) => ({
       productName: item.product?.name ?? "Produk",
       quantity: item.quantity,

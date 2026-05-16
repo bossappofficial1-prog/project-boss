@@ -649,7 +649,7 @@ export function PaymentDetailClient({
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {item.quantity} x {formatCurrency(item.price)}
                   {item.taxPercentage ? (
-                    <span className="text-blue-500 ml-1">+PPN {item.taxPercentage}%</span>
+                    <span className="text-blue-500 ml-1">+{item.taxName || "Pajak"} {item.taxPercentage}%</span>
                   ) : null}
                 </p>
               </div>
@@ -669,7 +669,7 @@ export function PaymentDetailClient({
           {(paymentData.taxAmount ?? 0) > 0 && (
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">
-                PPN
+                {paymentData.taxName || "Pajak"}
               </span>
               <span>
                 {formatCurrency(paymentData.taxAmount!)}

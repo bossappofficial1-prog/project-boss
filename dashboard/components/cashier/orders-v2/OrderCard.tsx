@@ -168,7 +168,7 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                         </span>
                         {(entry.taxAmount ?? 0) > 0 && (
                             <span className="text-[10px] text-blue-500">
-                                Termasuk PPN {formatCurrency(entry.taxAmount)}
+                                Termasuk {entry.taxName || "Pajak"} {formatCurrency(entry.taxAmount)}
                             </span>
                         )}
                         {entry.discountAmount > 0 && (

@@ -185,7 +185,7 @@ export function OrderDetailSheet({
                             </div>
                             {(entry.taxAmount ?? 0) > 0 && (
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="text-muted-foreground">PPN</span>
+                                    <span className="text-muted-foreground">{entry.taxName || "Pajak"}</span>
                                     <span className="font-medium">{formatCurrency(entry.taxAmount)}</span>
                                 </div>
                             )}

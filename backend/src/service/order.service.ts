@@ -357,6 +357,8 @@ export async function getOrderReceiptService(id: string) {
     return prev + item.quantity;
   }, 0);
 
+  const mainTaxName = orderData.items.find(it => it.product.taxName)?.product.taxName || "Pajak";
+
   return {
     storeName: orderData.outlet.name,
     address: orderData.outlet.address,
@@ -368,10 +370,12 @@ export async function getOrderReceiptService(id: string) {
     cashier: orderData.handledByStaff?.name ?? "-",
     customerName: orderData.guestCustomer.name ?? "-",
     shippingAddress: null,
+    tableNote: (orderData as any).table?.note ?? null,
     items,
     totalQty,
     subTotal: (orderData.totalAmount ?? 0) + (orderData.discountAmount ?? 0) - (orderData.taxAmount ?? 0),
     taxAmount: orderData.taxAmount ?? 0,
+    taxLabel: mainTaxName,
     discountAmount: orderData.discountAmount ?? 0,
     total: orderData.totalAmount,
     printWidth: orderData.outlet.receiptSettings?.printWidth ?? 80,

@@ -70,12 +70,14 @@ export class CheckoutService {
       return total;
     }, 0);
 
+    const taxName = cartItems.find((item) => item.taxName)?.taxName || null;
     const grandTotal = subtotal + tax;
 
     return {
       outlets,
       subtotal,
       tax,
+      taxName,
       grandTotal,
     };
   }

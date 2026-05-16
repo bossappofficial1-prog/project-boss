@@ -16,6 +16,7 @@ export interface Product {
   image: string;
   type: "GOODS" | "SERVICE" | "TICKET";
   taxPercentage?: number | null;
+  taxName?: string | null;
   outletId: string;
   media?: ProductMediaItem[];
   createdAt: string;

@@ -8,6 +8,7 @@ export interface PosV2Product {
     type: "GOODS" | "SERVICE" | "TICKET";
     status: "ACTIVE";
     taxPercentage: number | null;
+    taxName: string | null;
     price: number;
     stock: number | null;
     unit: string | null;

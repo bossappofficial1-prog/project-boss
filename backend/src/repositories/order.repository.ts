@@ -23,21 +23,9 @@ export class OrderRepository {
             name: true,
           },
         },
-        items: {
+        table: {
           select: {
-            quantity: true,
-            priceAtTimeOfOrder: true,
-            product: {
-              select: {
-                name: true,
-                type: true,
-                goods: {
-                  select: {
-                    unit: true,
-                  },
-                },
-              },
-            },
+            note: true,
           },
         },
         outlet: {
@@ -46,6 +34,24 @@ export class OrderRepository {
             address: true,
             phone: true,
             receiptSettings: true,
+          },
+        },
+        items: {
+          select: {
+            quantity: true,
+            priceAtTimeOfOrder: true,
+            product: {
+              select: {
+                name: true,
+                type: true,
+                taxName: true,
+                goods: {
+                  select: {
+                    unit: true,
+                  },
+                },
+              },
+            },
           },
         },
       },

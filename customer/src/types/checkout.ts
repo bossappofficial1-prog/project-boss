@@ -13,6 +13,7 @@ export interface CheckoutData {
     outlets: OutletSummary[];
     subtotal: number;
     tax: number;
+    taxName?: string | null;
     grandTotal: number;
     selectedPaymentMethod?: PaymentMethod;
 }

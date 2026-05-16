@@ -10,6 +10,7 @@ export interface OutletType {
   slug?: string;
   address: string;
   phone: string;
+  instagramUrl?: string;
   email?: string;
   createdAt: string;
   image: string;

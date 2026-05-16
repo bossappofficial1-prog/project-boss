@@ -129,7 +129,7 @@ export default function OrderDetailDialog({ orderId, open, onOpenChange }: Order
                                 <p className="font-medium">{formatCurrency((order.totalAmount || 0) - (order.taxAmount ?? 0))}</p>
                             </div>
                             <div>
-                                <p className="text-muted-foreground">PPN</p>
+                                <p className="text-muted-foreground">{order.items?.find((it: any) => it.product?.taxName)?.product?.taxName || "Pajak"}</p>
                                 <p className="font-medium text-blue-600 dark:text-blue-400">{formatCurrency(order.taxAmount ?? 0)}</p>
                             </div>
                             <div>
