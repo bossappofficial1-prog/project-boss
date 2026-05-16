@@ -2,18 +2,14 @@
 
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { TableManagement } from "@/components/outlet/TableManagement";
-import { SectionHeader } from "@/components/ui/section-header";
-import { LayoutGrid, Plus, Users } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { LayoutGrid, Users } from "lucide-react";
 import { EmptyOutletState } from "@/components/ui/empty-outlet";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { OutletTable, tableApi } from "@/lib/apis/table";
+import { OutletTable } from "@/lib/apis/table";
 import { FormFieldConfig, ReusableForm } from "@/components/ui/reuseable-form";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { toast } from "sonner";
 import { TableFormValues, tableSchema, useTable } from "@/hooks/use-table";
 
 const formFields: FormFieldConfig<TableFormValues>[] = [

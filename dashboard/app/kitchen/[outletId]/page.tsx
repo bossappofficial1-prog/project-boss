@@ -192,7 +192,7 @@ export default function KitchenPage() {
 
             {/* Floating Status Bar / Clock */}
             <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-                <div className="bg-background/90 backdrop-blur-xl border border-border/40 px-8 py-3 rounded-full shadow-2xl flex items-center gap-8 pointer-events-auto">
+                <div className="bg-background/90 backdrop-blur-xl border         border-border/40 px-8 py-3 rounded-full shadow-2xl flex items-center gap-8 pointer-events-auto">
                     <div className="flex items-center gap-2.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60">KDS Connected</span>

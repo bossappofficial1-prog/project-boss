@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils";
 import { MENU_GROUPS } from "./sidebar/sidebar";
 import { OutletSelector } from "./sidebar/OutletSelector";
 import { ChevronDown, ChevronRight, Settings } from "lucide-react";
-import { InstantLink } from "../ui/instant-link";
+import { InstantLink } from "@/components/ui/instant-link";
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -157,7 +157,10 @@ export default function AppSidebar() {
   const filteredMenuGroups = useMemo(() => {
     if (!selectedOutlet) return MENU_GROUPS;
 
-    return MENU_GROUPS.map((group) => ({
+    return MENU_GROUPS.filter((group) => {
+      // Check if group itself is allowed for this outlet type
+      return !group.showOn || group.showOn.includes(selectedOutlet.type);
+    }).map((group) => ({
       ...group,
       items: group.items
         .map((item) => {
@@ -219,17 +222,34 @@ export default function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border bg-sidebar px-3 py-4">
         <div className="flex items-center justify-center">
           {isCollapsed ? (
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <span className="text-lg font-bold">B</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg text-primary-foreground">
+              <Image
+                src="/mstile-150x150.png"
+                alt="BOSS Logo"
+                width={144}
+                height={144}
+                sizes="60px"
+                unoptimized
+                priority
+              />
             </div>
           ) : (
             <div className="relative h-14 w-36">
               <Image
-                src="/Logo Boss.png"
+                src="/boss-icon-light.png"
                 alt="BOSS Logo"
                 fill
                 sizes="144px"
-                className="object-contain"
+                className="dark:hidden object-contain"
+                unoptimized
+                priority
+              />
+              <Image
+                src="/boss-icon-dark.png"
+                alt="BOSS Logo"
+                fill
+                sizes="144px"
+                className="dark:flex hidden object-contain"
                 unoptimized
                 priority
               />
@@ -323,21 +343,33 @@ export default function AppSidebar() {
                               {item.subItems.map((subItem) => {
                                 const isSubActive = isHrefActive(subItem.href);
                                 return (
-                                  <DropdownMenuItem key={subItem.href} asChild>
+                                  <DropdownMenuItem
+                                    key={subItem.href}
+                                    asChild
+                                    disabled={subItem.disabled}
+                                  >
                                     <InstantLink
-                                      href={subItem.href}
+                                      href={subItem.disabled ? "#" : subItem.href}
                                       onMouseEnter={() =>
-                                        handlePrefetch(subItem.href)
+                                        !subItem.disabled && handlePrefetch(subItem.href)
                                       }
                                       className={cn(
                                         "cursor-pointer flex items-center w-full px-2 py-1.5 text-sm rounded-md outline-none transition-colors",
                                         isSubActive
                                           ? "bg-primary/10 text-primary font-medium"
                                           : "hover:bg-sidebar-accent focus:bg-sidebar-accent",
+                                        subItem.disabled && "opacity-50 pointer-events-none"
                                       )}
                                     >
                                       <span>{subItem.name}</span>
-                                      {subItem.badge && (
+                                      {subItem.disabled ? (
+                                        <Badge
+                                          variant="outline"
+                                          className="ml-auto rounded-sm px-1 py-0 text-[8px] uppercase tracking-tighter border-muted-foreground/30 text-muted-foreground"
+                                        >
+                                          Soon
+                                        </Badge>
+                                      ) : subItem.badge && (
                                         <Badge
                                           variant="secondary"
                                           className="ml-auto rounded-sm px-1.5 py-0 text-[10px]"
@@ -355,7 +387,6 @@ export default function AppSidebar() {
                       );
                     }
 
-                    // --- JIKA TIDAK COLLAPSED: Render standard Collapsible ---
                     return (
                       <Collapsible
                         key={item.id}
@@ -395,21 +426,31 @@ export default function AppSidebar() {
                                     <SidebarMenuSubButton
                                       asChild
                                       isActive={isSubActive}
+                                      aria-disabled={subItem.disabled}
                                       className={cn(
                                         "h-9",
                                         isSubActive
                                           ? "bg-primary/10 text-primary hover:bg-primary/10"
                                           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                        subItem.disabled && "opacity-50"
                                       )}
                                     >
                                       <InstantLink
-                                        href={subItem.href}
+                                        href={subItem.disabled ? "#" : subItem.href}
                                         onMouseEnter={() =>
-                                          handlePrefetch(subItem.href)
+                                          !subItem.disabled && handlePrefetch(subItem.href)
                                         }
+                                        className={subItem.disabled ? "pointer-events-none" : ""}
                                       >
                                         <span>{subItem.name}</span>
-                                        {subItem.badge && (
+                                        {subItem.disabled ? (
+                                          <Badge
+                                            variant="outline"
+                                            className="ml-auto rounded-sm px-1 py-0 text-[8px] uppercase tracking-tighter border-muted-foreground/30 text-muted-foreground"
+                                          >
+                                            Soon
+                                          </Badge>
+                                        ) : subItem.badge && (
                                           <Badge
                                             variant="secondary"
                                             className="ml-auto text-xs"
@@ -438,23 +479,33 @@ export default function AppSidebar() {
                             <SidebarMenuButton
                               asChild
                               isActive={isActive}
+                              disabled={item.disabled}
                               className={cn(
                                 "group relative h-11 rounded-lg text-sidebar-foreground",
                                 isActive
                                   ? "bg-primary/10 text-primary shadow-sm hover:bg-primary/10"
                                   : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                item.disabled && "opacity-50"
                               )}
                             >
                               <InstantLink
-                                href={item.href!}
-                                onMouseEnter={() => handlePrefetch(item.href!)}
+                                href={item.disabled ? "#" : item.href!}
+                                onMouseEnter={() => !item.disabled && handlePrefetch(item.href!)}
+                                className={item.disabled ? "pointer-events-none" : ""}
                               >
                                 {isActive && (
                                   <span className="absolute left-0 top-2 h-7 w-1 rounded-r-full bg-primary" />
                                 )}
                                 <Icon className="h-5 w-5" />
                                 <span className="flex-1">{item.name}</span>
-                                {item.badge && !isCollapsed && (
+                                {item.disabled ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="rounded-sm px-1 py-0 text-[8px] uppercase tracking-tighter border-muted-foreground/30 text-muted-foreground"
+                                  >
+                                    Soon
+                                  </Badge>
+                                ) : item.badge && !isCollapsed && (
                                   <Badge
                                     variant="secondary"
                                     className="rounded-sm text-xs"

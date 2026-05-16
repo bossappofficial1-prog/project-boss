@@ -13,9 +13,11 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
-import { MENU_GROUPS } from "../layout/sidebar/sidebar";
 import { useRouter } from "next/navigation";
-import { CogIcon, User } from "lucide-react";
+import { CogIcon, Rocket, User } from "lucide-react";
+import { MENU_GROUPS, MenuGroup } from "../owner/layout/sidebar/sidebar";
+import { OutletType } from "@/types";
+import { useOutletContext } from "../providers/OutletProvider";
 
 export function CommandSearch({
   open,
@@ -26,6 +28,7 @@ export function CommandSearch({
 }) {
   const sections = MENU_GROUPS;
   const router = useRouter();
+  const { selectedOutlet: outlet } = useOutletContext();
 
   return (
     <div className="flex flex-col gap-4">
@@ -57,16 +60,20 @@ export function CommandSearch({
                     },
                   ],
                   label: "Akun",
+                  showOn: [OutletType.CUSTOM, OutletType.EVENT, OutletType.FNB, OutletType.RETAIL, OutletType.SERVICE]
                 },
-              ],
+              ] as MenuGroup[],
             ]
-
+              .filter((section) => {
+                return !section.showOn || section.showOn.includes(outlet?.type!)
+              })
               .sort((a, b) => a.label.localeCompare(b.label))
               .map((section) => (
                 <React.Fragment key={section.label}>
                   <CommandGroup heading={section.label}>
                     {section.items.map((item) => (
                       <CommandItem
+                        disabled={item.disabled}
                         onSelect={() => {
                           item.href ? router.push(item.href) : undefined;
                           setOpen(false);
@@ -84,11 +91,7 @@ export function CommandSearch({
                           </span>
                         )}
 
-                        {(item as any).shortcut && (
-                          <CommandShortcut>
-                            {(item as any).shortcut}
-                          </CommandShortcut>
-                        )}
+                        <RenderCommandShortCut item={item} />
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -101,3 +104,22 @@ export function CommandSearch({
     </div>
   );
 }
+
+function CommandShortCut({ item }: { item: MenuGroup['items'][0] }) {
+  if (item.disabled)
+    return (
+      <CommandShortcut>
+        <Rocket />
+      </CommandShortcut>
+    )
+  else if (item.shortcut)
+    return (
+      <CommandShortcut>
+        {item.shortcut}
+      </CommandShortcut>
+    )
+
+  return null
+}
+
+const RenderCommandShortCut = React.memo(CommandShortCut)

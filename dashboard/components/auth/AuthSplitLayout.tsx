@@ -43,7 +43,7 @@ export default function AuthSplitLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Right Side Content Container */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-12 relative bg-white overflow-y-auto">
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center  p-4 md:p-8 lg:p-12 relative bg-white overflow-y-auto">
         {children}
       </div>
     </div>

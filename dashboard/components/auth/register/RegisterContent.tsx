@@ -268,22 +268,37 @@ export default function RegistrationContent() {
                 </div>
 
                 {!showOtpInput && (
-                    <div className="flex items-center justify-between mb-8 px-2">
+                    <div className="flex items-center mb-8 px-2">
                         {[1, 2, 3].map((s) => (
-                            <div key={s} className="flex items-center">
-                                <div className={cn(
-                                    "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors",
-                                    step === s ? "border-red-600 bg-red-600 text-white" :
-                                        step > s ? "border-red-600 bg-white text-red-600" :
-                                            "border-slate-200 bg-white text-slate-400"
-                                )}>
+                            <div
+                                key={s}
+                                className={cn(
+                                    "flex items-center",
+                                    s < 3 && "flex-1"
+                                )}
+                            >
+                                {/* Circle */}
+                                <div
+                                    className={cn(
+                                        "h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium border-2 shrink-0",
+                                        step === s
+                                            ? "border-primary bg-primary text-primary-foreground"
+                                            : step > s
+                                                ? "border-primary bg-background text-primary"
+                                                : "border-border bg-background text-muted-foreground"
+                                    )}
+                                >
                                     {step > s ? <Check className="h-4 w-4" /> : s}
                                 </div>
+
+                                {/* Line */}
                                 {s < 3 && (
-                                    <div className={cn(
-                                        "w-12 h-0.5 mx-2 transition-colors",
-                                        step > s ? "bg-red-600" : "bg-slate-200"
-                                    )}></div>
+                                    <div
+                                        className={cn(
+                                            "flex-1 h-0.5",
+                                            step > s ? "bg-primary" : "bg-border"
+                                        )}
+                                    />
                                 )}
                             </div>
                         ))}

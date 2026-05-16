@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/components/layout/Sidebar";
-import Header from "@/components/layout/Header";
+import Sidebar from "@/components/owner/layout/Sidebar";
+import Header from "@/components/owner/layout/Header";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { OutletProvider } from "@/components/providers/OutletProvider";
 import { Toaster } from "sonner";
-import { SidebarInset, SidebarProvider } from "../ui/sidebar";
+import { SidebarInset, SidebarProvider } from "../../ui/sidebar";
 import { type UserRole } from "@/lib/auth";
-import Loading from "../ui/loading";
-import { CommandSearch } from "../ui/command-search";
+import Loading from "../../ui/loading";
+import { CommandSearch } from "../../ui/command-search";
 import { useRouter } from "next/navigation";
 
 interface LayoutProps {

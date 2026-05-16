@@ -6,8 +6,44 @@ import { CreateBookingSlotInput, UpdateBookingSlotInput } from "../schemas/booki
 import { getProductByIdService } from "./product.service";
 import { db } from "../config/prisma";
 import { Prisma, BookingSlot } from "@prisma/client";
-import { add, set } from "date-fns";
+import { add, format, set } from "date-fns";
 import { getStaffAvailabilityForWindow, StaffAvailabilityResult } from "./staff.service";
+
+export interface CalendarSlot {
+  id: string
+  date: string        // "2025-05-12"
+  startTime: string   // "09:00"
+  endTime: string     // "10:00"
+  status: "AVAILABLE" | "BOOKED" | "BLOCKED"
+  serviceName: string
+  providerName: string
+  durationMinutes: number
+  customer: {
+    name: string
+    phone: string
+  } | null
+}
+
+export interface CalendarServiceOption {
+  id: string
+  name: string
+  providerName: string
+  durationMinutes: number
+}
+
+export interface CalendarOperatingHour {
+  dayOfWeek: number
+  openTime: string    // "09:00"
+  closeTime: string   // "21:00"
+  isOpen: boolean
+}
+
+export interface BookingCalendarResult {
+  slots: CalendarSlot[]
+  services: CalendarServiceOption[]
+  providers: string[]
+  operatingHours: CalendarOperatingHour[]
+}
 
 /**
  * Creates a single booking slot after verifying the product is a SERVICE.
@@ -61,6 +97,61 @@ type BookingSlotWithStaff = Pick<
   availableStaffCount: number;
   totalStaffCount: number;
 };
+
+export async function getBookingCalendarService(
+  outletId: string,
+  startDate: Date,
+  endDate: Date,
+  productServiceId?: string,
+  providerName?: string
+): Promise<BookingCalendarResult> {
+  const [rawSlots, rawServices, rawOperatingHours] = await Promise.all([
+    BookingRepository.getSlotsCalendar(
+      outletId,
+      startDate,
+      endDate,
+      productServiceId,
+      providerName
+    ),
+    BookingRepository.getServiceOptions(outletId),
+    BookingRepository.getOperatingHours(outletId),
+  ])
+
+  const slots: CalendarSlot[] = rawSlots.map((slot) => ({
+    id: slot.id,
+    date: format(slot.date, "yyyy-MM-dd"),
+    startTime: format(slot.startTime, "HH:mm"),
+    endTime: format(slot.endTime, "HH:mm"),
+    status: slot.status as CalendarSlot["status"],
+    serviceName: slot.serviceName,
+    providerName: slot.providerName,
+    durationMinutes: slot.durationMinutes,
+    customer: slot.orderItem
+      ? {
+        name: slot.orderItem.guestCustomerName,
+        phone: slot.orderItem.guestCustomerPhone,
+      }
+      : null,
+  }))
+
+  const services: CalendarServiceOption[] = rawServices.map((s) => ({
+    id: s.id,
+    name: s.serviceName,
+    providerName: s.providerName,
+    durationMinutes: s.durationMinutes,
+  }))
+
+  const operatingHours: CalendarOperatingHour[] = rawOperatingHours.map((oh) => ({
+    dayOfWeek: oh.dayOfWeek,
+    openTime: format(oh.openTime, "HH:mm"),
+    closeTime: format(oh.closeTime, "HH:mm"),
+    isOpen: oh.isOpen,
+  }))
+
+  const providers = [...new Set(rawServices.map((s) => s.providerName))].sort()
+
+  return { slots, services, providers, operatingHours }
+}
 
 /**
  * Retrieves booking slots for a product on a specific date.

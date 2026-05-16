@@ -124,7 +124,7 @@ export async function getMeService(userId: string) {
     }
 
     const { outlets, ...businessWithoutOutlets } = business
-
+    const businessType = outlets.map(o => o.type).join("::")
     // Transform outlets to include full QRIS URL
     const baseUrl = process.env.BASE_URL || 'http://localhost:1234';
     const transformedOutlets = outlets?.map((outlet: any) => ({
@@ -134,7 +134,7 @@ export async function getMeService(userId: string) {
             : null,
     })) || [];
 
-    return { userWithoutBusiness, outlets: transformedOutlets, business: businessWithoutOutlets };
+    return { userWithoutBusiness, outlets: transformedOutlets, business: { ...businessWithoutOutlets, type: businessType } };
 }
 
 export async function resendVerificationService(email: string) {

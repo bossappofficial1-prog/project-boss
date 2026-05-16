@@ -1,6 +1,6 @@
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import DashboardLayout from '@/components/owner/layout/DashboardLayout';
 import { Metadata } from 'next';
-import OutletTypeChecker from '@/components/layout/OutletTypeChecker';
+import OutletTypeChecker from '@/components/owner/layout/OutletTypeChecker';
 
 export const metadata: Metadata = {
     title: "Owner Dashboard | BOSS",

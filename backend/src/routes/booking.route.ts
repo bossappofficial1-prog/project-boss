@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
     createBookingSlotController,
     deleteBookingSlotController,
+    getBookingCalendarController,
     getBookingSlotByIdController,
     getBookingSlotsByProductIdController,
     updateBookingSlotController
@@ -15,6 +16,7 @@ const bookingRouter = Router();
 
 // Rute Publik untuk melihat slot jadwal
 bookingRouter.get("/product/:productId", getBookingSlotsByProductIdController);
+bookingRouter.get("/calendar", getBookingCalendarController);
 
 bookingRouter.get("/:id", getBookingSlotByIdController);
 // Semua rute di bawah ini akan dilindungi dan hanya untuk Owner

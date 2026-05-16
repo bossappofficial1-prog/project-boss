@@ -65,8 +65,8 @@ export function CashierNavbar({ cashierName, outletName, outletType = OutletType
       { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
       { href: "/cashier/orders", badge: data?.orderBadgeCount, label: "Pesanan Barang", icon: ShoppingBag, requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM] },
       { href: "/cashier/tables", label: "Meja & Bill", icon: Table2, requiredTypes: [OutletType.FNB] },
-      { href: "/cashier/queue", badge: data?.serviceBadgeCount, label: "Antrian", icon: LayoutGrid, requiredTypes: [OutletType.SERVICE, OutletType.FNB, OutletType.CUSTOM] },
-      { href: "/cashier/pob", label: "POB", icon: Package, requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM] },
+      { href: "/cashier/queue", badge: data?.serviceBadgeCount, label: "Antrian", icon: LayoutGrid, requiredTypes: [OutletType.SERVICE, OutletType.CUSTOM] },
+      { href: "/cashier/pob", label: "POB", icon: Package, requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM] },
       { href: "/cashier/ticket-scan", label: "Scan Tiket", icon: Ticket, requiredTypes: [OutletType.EVENT, OutletType.CUSTOM] },
       { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
     ];

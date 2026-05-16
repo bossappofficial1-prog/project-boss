@@ -5,6 +5,7 @@ import {
   createBookingSlotService,
   deleteBookingSlotService,
   getAvailableStaffForProductSlotService,
+  getBookingCalendarService,
   getBookingSlotByIdService,
   getBookingSlotByProductService,
   getBookingSlotsByProductServiceIdService,
@@ -14,7 +15,7 @@ import { CreateBookingSlotInput, UpdateBookingSlotInput } from "../schemas/booki
 import { BookingRepository } from "../repositories/booking.repository";
 import { getProductByIdService } from "../service/product.service";
 import { AppError } from "../errors/app-error";
-import { isBefore, isValid, parseISO, startOfDay } from "date-fns";
+import { isBefore, isValid, startOfDay } from "date-fns";
 import { HttpStatus } from "../constants/http-status";
 import { ensureString } from "../utils/request";
 
@@ -150,6 +151,21 @@ export const updateBookingSlotController = asyncHandler(async (req: Request, res
   const bookingSlot = await updateBookingSlotService(id, payload);
   return ResponseUtil.success(res, bookingSlot);
 });
+
+export const getBookingCalendarController = asyncHandler(async (req: Request, res: Response) => {
+  const { outletId } = req.params
+  const { startDate, endDate, productServiceId, providerName } = req.query
+
+  const data = await getBookingCalendarService(
+    outletId as string,
+    startDate as unknown as Date,
+    endDate as unknown as Date,
+    productServiceId as string,
+    providerName as string
+  )
+
+  return ResponseUtil.success(res, data, HttpStatus.OK, "Kalender booking berhasil diambil")
+})
 
 export const deleteBookingSlotController = asyncHandler(async (req: Request, res: Response) => {
   const id = ensureString(req.params?.id, "id");

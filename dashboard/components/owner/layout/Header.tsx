@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import ThemeToggle from '../ThemeToggle';
+import ThemeToggle from '../../ThemeToggle';
 import ConfirmationModal from '@/components/ui/confirmation-modal';
 import { useUserData } from '@/hooks/useUserData';
 
@@ -27,7 +27,7 @@ import {
   LogOut,
   ChevronDown,
 } from 'lucide-react';
-import { useOutletContext } from '../providers/OutletProvider';
+import { useOutletContext } from '../../providers/OutletProvider';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 

@@ -16,8 +16,8 @@ export const EmptyOutletState = ({
     description = "Anda belum menambahkan outlet untuk bisnis Anda. Buat outlet pertama Anda sekarang untuk mulai mengelola produk, layanan, dan menerima pesanan.",
 }: EmptyOutletStateProps) => {
     return (
-        <div className="flex flex-col items-center min-h-[60vh]">
-            <Card className="max-w-lg w-full text-center border-dashed border-2 bg-card shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] w-full">
+            <Card className="w-full text-center border-dashed border-2 bg-card shadow-sm hover:shadow-md transition-shadow duration-300">
                 <CardContent className="pt-10 pb-10 px-6 sm:px-10 flex flex-col items-center">
                     {/* Ikon Ilustrasi */}
                     <div className="mx-auto bg-primary/10 w-24 h-24 rounded-full flex items-center justify-center mb-6">
@@ -25,12 +25,14 @@ export const EmptyOutletState = ({
                     </div>
 
                     {/* Teks Konten */}
-                    <h2 className="text-2xl font-bold text-foreground mb-3">
-                        {title}
-                    </h2>
-                    <p className="text-muted-foreground text-sm sm:text-base mb-8 max-w-sm mx-auto leading-relaxed">
-                        {description}
-                    </p>
+                    <div className="max-w-md mx-auto">
+                        <h2 className="text-2xl font-bold text-foreground mb-3">
+                            {title}
+                        </h2>
+                        <p className="text-muted-foreground text-sm sm:text-base mb-8 leading-relaxed">
+                            {description}
+                        </p>
+                    </div>
 
                     {/* Tombol Aksi */}
                     <Button

@@ -21,6 +21,8 @@ import {
   PieChart,
   Activity,
   Clock,
+  CalendarDays,
+  ClipboardList,
 } from "lucide-react";
 import { OutletType } from "@/types";
 
@@ -33,6 +35,8 @@ interface MenuItem {
   subItems?: SubMenuItem[];
   requiredTypes?: OutletType[];
   requirePro?: boolean;
+  disabled?: boolean;
+  shortcut?: string;
 }
 
 interface SubMenuItem {
@@ -41,10 +45,12 @@ interface SubMenuItem {
   badge?: string;
   requiredTypes?: OutletType[];
   requirePro?: boolean;
+  disabled?: boolean;
 }
 
-interface MenuGroup {
+export interface MenuGroup {
   label: string;
+  showOn?: OutletType[];
   items: MenuItem[];
 }
 
@@ -166,6 +172,27 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Daftar Pesanan",
         href: "/owner/orders",
         icon: ShoppingBag,
+      },
+    ],
+  },
+  {
+    label: "Manajemen Layanan",
+    showOn: [OutletType.SERVICE, OutletType.CUSTOM],
+    items: [
+      {
+        id: "booking-calendar",
+        icon: CalendarDays,
+        name: "Kalender Booking",
+        href: "/owner/booking-calendar",
+        requiredTypes: [OutletType.SERVICE, OutletType.CUSTOM],
+      },
+      {
+        id: "booking-list",
+        icon: ClipboardList,
+        name: "Daftar Booking",
+        href: "/owner/bookings",
+        requiredTypes: [OutletType.SERVICE, OutletType.CUSTOM],
+        disabled: true
       },
     ],
   },

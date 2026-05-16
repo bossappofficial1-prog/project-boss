@@ -1,4 +1,4 @@
-import { $Enums } from "@prisma/client";
+import { $Enums, OutletType } from "@prisma/client";
 
 export type UserMe = {
     name: string;
@@ -24,7 +24,8 @@ export type UserMe = {
 export type Outlet = {
     id: string;
     name: string;
-    businessId: string
+    businessId: string;
+    type: OutletType;
 }
 
 export type MidtransWebhookPayloadType = {

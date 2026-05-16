@@ -77,7 +77,7 @@ export async function proxy(req: NextRequest) {
 
     // 1. Check Outlet Type
     if (isFnbOnlyRoute && selectedOutletType && selectedOutletType !== "FNB") {
-      return NextResponse.redirect(new URL("/owner", req.url));
+      return NextResponse.redirect(new URL("/owner#add-outlet", req.url));
     }
 
     // 2. Check PRO Access

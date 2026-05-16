@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Business } from '@/types/dashboard';
@@ -11,10 +11,8 @@ import {
     Phone,
     MapPin,
     Globe,
-    User,
     ShieldCheck
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface BusinessProfileCardProps {
     business: Business | null;
@@ -67,7 +65,9 @@ export default function BusinessProfileCard({ business, onEditBusiness, onEditBa
                                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
                                         <Globe className="h-3 w-3" /> Tipe Bisnis
                                     </p>
-                                    <p className="text-sm font-semibold text-foreground leading-none">{business.type || 'Umum'}</p>
+                                    <div className='flex gap-2'>
+                                        {business.type?.split("::").map((type) => <Badge className='' variant={"outline"}>{type}</Badge>)}
+                                    </div>
                                 </div>
                             </div>
 
