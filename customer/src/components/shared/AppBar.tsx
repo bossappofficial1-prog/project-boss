@@ -2,6 +2,7 @@
 
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Menu, Search, MoreVertical, X, Sun, Moon, Laptop, LogIn, Building2 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Search as SearchComponent, SearchInput, SearchDropdown } from "./search";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -252,13 +253,36 @@ export default function AppBar({
             </div>
           ) : (
             <div className="flex flex-col">
-              {title && (
-                <h1 className="text-base font-medium truncate leading-tight text-foreground">
-                  {title}
-                </h1>
-              )}
-              {subtitle && (
-                <p className="text-xs text-muted-foreground truncate leading-tight">{subtitle}</p>
+              {title?.toLowerCase() === "beranda" ? (
+                <div className="flex items-center">
+                  <Image
+                    src="/boss-icon-light.png"
+                    alt="Logo"
+                    width={100}
+                    height={32}
+                    className="h-8 w-auto dark:hidden object-contain"
+                    priority
+                  />
+                  <Image
+                    src="/boss-icon-dark.png"
+                    alt="Logo"
+                    width={100}
+                    height={32}
+                    className="h-8 hidden dark:flex  w-auto object-contain"
+                    priority
+                  />
+                </div>
+              ) : (
+                <>
+                  {title && (
+                    <h1 className="text-base font-medium truncate leading-tight text-foreground">
+                      {title}
+                    </h1>
+                  )}
+                  {subtitle && (
+                    <p className="text-xs text-muted-foreground truncate leading-tight">{subtitle}</p>
+                  )}
+                </>
               )}
             </div>
           )}
