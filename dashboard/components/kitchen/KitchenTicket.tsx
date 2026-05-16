@@ -32,8 +32,6 @@ export function KitchenTicket({ entry }: KitchenTicketProps) {
     const isAlready = entry.orderStatus === "READY"
     const isWarning = elapsed >= 10 && elapsed < 15;
 
-    const { mutate: updateStatus, isPending: isUpdating } = useOrdersV2UpdateStatus();
-
     const isNewItem = (itemCreatedAt: string) => {
         // Highlight items added in the last 5 minutes
         return (now - new Date(itemCreatedAt).getTime()) < 300000;
@@ -41,27 +39,6 @@ export function KitchenTicket({ entry }: KitchenTicketProps) {
 
     const hasNewItems = entry.items.some(item => isNewItem(item.createdAt));
     const isAddition = hasNewItems && (entry.orderStatus !== "AWAITING_PAYMENT" && entry.orderStatus !== "CONFIRMED");
-
-    const getActionConfig = () => {
-        const s = entry.orderStatus;
-        if (s === "AWAITING_PAYMENT" || s === "CONFIRMED") {
-            return { label: "Mulai Masak", status: "PROCESSING" as GoodsOrderStatus, icon: Play, variant: "default" as const };
-        }
-        if (s === "PROCESSING" || s === "ON_GOING") {
-            return { label: "Selesai Masak", status: "READY" as GoodsOrderStatus, icon: Check, variant: "default" as const };
-        }
-        if (s === "READY") {
-            return { label: "Sajikan", status: "COMPLETED" as GoodsOrderStatus, icon: CheckCheck, variant: "outline" as const };
-        }
-        return null;
-    };
-
-    const action = getActionConfig();
-
-    const handleAction = () => {
-        if (!action || isUpdating) return;
-        updateStatus({ orderId: entry.id, status: action.status });
-    };
 
     return (
         <Card className={cn(
@@ -159,30 +136,6 @@ export function KitchenTicket({ entry }: KitchenTicketProps) {
                 </div>
             )}
 
-            {action && (
-                <div className="p-2 bg-background border-t border-border/40">
-                    <Button
-                        onClick={handleAction}
-                        disabled={isUpdating}
-                        variant={action.variant}
-                        size="sm"
-                        className={cn(
-                            "w-full h-10 font-black text-[10px] gap-2 rounded-lg",
-                            action.status === "READY" && "bg-chart-1 hover:bg-chart-1/90",
-                            action.status === "COMPLETED" && "border-chart-3 text-chart-3 hover:bg-chart-3/5"
-                        )}
-                    >
-                        {isUpdating ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                            <>
-                                <action.icon className="w-3.5 h-3.5" />
-                                {action.label}
-                            </>
-                        )}
-                    </Button>
-                </div>
-            )}
 
             {hasNewItems && (
                 <div className="absolute inset-0 pointer-events-none ring-1 ring-primary/20 ring-inset rounded-md" />

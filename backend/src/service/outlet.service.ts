@@ -17,6 +17,10 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
     if (business.id !== data.businessId) {
         throw new AppError("Anda tidak berhak menambahkan outlet ke bisnis ini.", HttpStatus.FORBIDDEN);
     }
+    
+    if (data.type === "CUSTOM" && business.subscriptionPlan !== "TRIAL" && business.subscriptionPlan !== "PRO") {
+        throw new AppError("Tipe outlet CUSTOM hanya tersedia untuk paket TRIAL atau PRO.", HttpStatus.BAD_REQUEST);
+    }
 
     if (data.email) {
         const existingEmail = await OutletRepository.findByEmail(data.email);
@@ -196,6 +200,10 @@ export async function updateOutletService(id: string, data: UpdateOutletInput, o
     const business = await getBusinessByOwnerIdService(ownerId);
     if (business.id !== outlet.businessId) {
         throw new AppError("Anda tidak berhak mengubah outlet ini.", HttpStatus.FORBIDDEN);
+    }
+
+    if (data.type === "CUSTOM" && business.subscriptionPlan !== "TRIAL" && business.subscriptionPlan !== "PRO") {
+        throw new AppError("Tipe outlet CUSTOM hanya tersedia untuk paket TRIAL atau PRO.", HttpStatus.BAD_REQUEST);
     }
 
     if (data.email) {

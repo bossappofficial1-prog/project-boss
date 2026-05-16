@@ -2,7 +2,7 @@
 
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import { TableManagement } from "@/components/outlet/TableManagement";
-import { LayoutGrid, Users } from "lucide-react";
+import { LayoutGrid, Users, FileText } from "lucide-react";
 import { EmptyOutletState } from "@/components/ui/empty-outlet";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +26,13 @@ const formFields: FormFieldConfig<TableFormValues>[] = [
         type: 'number',
         placeholder: 'Masukkan jumlah kursi',
         icon: Users
+    },
+    {
+        name: 'note',
+        label: 'Catatan / Instruksi',
+        type: 'textarea',
+        placeholder: 'Misal: pesan jemput ke kasir',
+        icon: FileText
     }
 ]
 
@@ -45,9 +52,10 @@ export default function OutletTablesPage() {
         return selectedTable ?
             {
                 name: selectedTable.name,
-                capacity: selectedTable.capacity
+                capacity: selectedTable.capacity,
+                note: selectedTable.note || ''
             }
-            : { name: '', capacity: 2 }
+            : { name: '', capacity: 2, note: '' }
     }, [selectedTable])
 
     const handleSubmit = async (values: TableFormValues) => {

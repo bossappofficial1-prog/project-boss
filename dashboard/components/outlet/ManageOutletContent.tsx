@@ -41,6 +41,7 @@ import {
   type FormFieldConfig,
 } from "@/components/ui/reuseable-form";
 import { z } from "zod";
+import { useUserData } from "@/hooks/useUserData";
 
 const outletSchema = z.object({
   name: z.string().min(1, "Nama outlet wajib diisi"),
@@ -122,6 +123,7 @@ export default function ManageOutletContent() {
   } = useOutletContext();
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { data: userData } = useUserData();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isOperatingHoursModalOpen, setIsOperatingHoursModalOpen] =
@@ -293,7 +295,13 @@ export default function ManageOutletContent() {
           { label: "Jasa (Layanan/Booking)", value: OutletType.SERVICE },
           { label: "Event (Tiket/Check-in)", value: OutletType.EVENT },
           { label: "Custom (Semua Fitur)", value: OutletType.CUSTOM },
-        ],
+        ].filter((opt) => {
+          if (opt.value === OutletType.CUSTOM) {
+            const plan = userData?.business?.subscriptionPlan;
+            return plan === "TRIAL" || plan === "PRO";
+          }
+          return true;
+        }),
       },
       {
         name: "description",
@@ -346,7 +354,7 @@ export default function ManageOutletContent() {
         ),
       },
     ],
-    [],
+    [userData],
   );
 
   if (!selectedOutlet?.id)

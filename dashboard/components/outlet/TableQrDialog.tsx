@@ -25,7 +25,7 @@ interface TableQrDialogProps {
 /**
  * Generates a PNG data URL from an SVG element, including the table name at the bottom center.
  */
-export async function generateQrImage(svgId: string, tableName: string): Promise<string> {
+export async function generateQrImage(svgId: string, tableName: string, note?: string): Promise<string> {
     return new Promise((resolve, reject) => {
         const svg = document.getElementById(svgId)
         if (!svg) {
@@ -40,7 +40,7 @@ export async function generateQrImage(svgId: string, tableName: string): Promise
 
         img.onload = () => {
             // Increase height to accommodate text at the bottom
-            const padding = 60
+            const padding = note ? 90 : 60
             canvas.width = img.width
             canvas.height = img.height + padding
 
@@ -52,12 +52,19 @@ export async function generateQrImage(svgId: string, tableName: string): Promise
                 // Draw QR Code
                 ctx.drawImage(img, 0, 0)
 
-                // Draw Text
+                // Draw Table Name
                 ctx.fillStyle = 'black'
                 ctx.font = 'bold 24px Inter, system-ui, sans-serif'
                 ctx.textAlign = 'center'
                 ctx.textBaseline = 'middle'
-                ctx.fillText(tableName, canvas.width / 2, img.height + (padding / 2))
+                ctx.fillText(tableName, canvas.width / 2, img.height + (note ? 35 : 30))
+
+                // Draw Note if exists
+                if (note) {
+                    ctx.fillStyle = '#666666'
+                    ctx.font = '500 16px Inter, system-ui, sans-serif'
+                    ctx.fillText(note, canvas.width / 2, img.height + 65)
+                }
                 
                 resolve(canvas.toDataURL('image/png'))
             } else {
@@ -97,7 +104,7 @@ export function TableQrDialog({ table, outletSlug, onOpenChange }: TableQrDialog
     const handleDownload = async () => {
         const id = `qr-table-code-${table.id}`
         try {
-            const pngFile = await generateQrImage(id, table.name)
+            const pngFile = await generateQrImage(id, table.name, table.note)
             const downloadLink = document.createElement('a')
             downloadLink.download = `QR-Table-${table.name}.png`
             downloadLink.href = pngFile
@@ -144,6 +151,14 @@ export function TableQrDialog({ table, outletSlug, onOpenChange }: TableQrDialog
                                 {table.name}
                             </span>
                         </div>
+
+                        {table.note && (
+                            <div className="bg-muted/50 px-4 py-2 rounded-lg border border-border/30 w-full text-center">
+                                <p className="text-[11px] font-medium text-muted-foreground leading-relaxed italic">
+                                    "{table.note}"
+                                </p>
+                            </div>
+                        )}
                     </div>
                     <p className="text-[10px] font-medium text-muted-foreground text-center uppercase tracking-widest bg-muted px-3 py-1 rounded-full">
                         {process.env.NEXT_PUBLIC_CUSTOMER_URL}/outlet/{outletSlug}?tableId={table.id.slice(0, 8)}...
@@ -207,7 +222,7 @@ export function BulkQrDownload({ tables, outletSlug, outletName, isLoading, onCo
             // Sequential generation to avoid browser hanging
             for (const table of tables) {
                 const svgId = `qr-bulk-${table.id}`
-                const pngData = await generateQrImage(svgId, table.name)
+                const pngData = await generateQrImage(svgId, table.name, table.note)
                 const base64Data = pngData.replace(/^data:image\/png;base64,/, "")
                 folder?.file(`QR-Meja-${table.name.replace(/\s+/g, '-')}.png`, base64Data, { base64: true })
             }

@@ -278,7 +278,13 @@ export default function AddOutletModal({
         { label: 'Jasa (Layanan/Booking)', value: OutletType.SERVICE },
         { label: 'Event (Tiket/Check-in)', value: OutletType.EVENT },
         { label: 'Custom (Semua Fitur)', value: OutletType.CUSTOM },
-      ],
+      ].filter(opt => {
+        if (opt.value === OutletType.CUSTOM) {
+          const plan = userData?.business?.subscriptionPlan;
+          return plan === 'TRIAL' || plan === 'PRO';
+        }
+        return true;
+      }),
     },
     {
       name: 'phone',
@@ -353,7 +359,7 @@ export default function AddOutletModal({
       maxSizes: 3 * 1024 * 1024,
       colSpan: 'full' as const,
     },
-  ], [mode, outletDetail, operatingHoursData, handleOperatingHoursChange, handleLocationSelect, form])
+  ], [mode, outletDetail, operatingHoursData, handleOperatingHoursChange, handleLocationSelect, form, userData])
 
   return (
     <ReusableForm<OutletFormData>

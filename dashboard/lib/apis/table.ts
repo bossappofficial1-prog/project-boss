@@ -10,6 +10,7 @@ export interface OutletTable {
   _count?: {
     orders: number;
   };
+  note?: string;
 }
 
 export const tableApi = {
@@ -21,7 +22,7 @@ export const tableApi = {
     const { data } = await apiClient.get(`/tables/${id}`);
     return data.data;
   },
-  createTable: async (payload: { name: string; capacity: number; outletId: string }): Promise<OutletTable> => {
+  createTable: async (payload: { name: string; capacity: number; outletId: string; note?: string }): Promise<OutletTable> => {
     const { data } = await apiClient.post('/tables', payload);
     return data.data;
   },

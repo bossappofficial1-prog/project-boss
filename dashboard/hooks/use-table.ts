@@ -5,7 +5,8 @@ import z from "zod"
 
 export const tableSchema = z.object({
     name: z.string().min(1, 'Nama meja wajib diisi'),
-    capacity: z.coerce.number().min(1, 'Kapasitas minimal 1 orang')
+    capacity: z.coerce.number().min(1, 'Kapasitas minimal 1 orang'),
+    note: z.string().optional()
 })
 
 export type TableFormValues = z.infer<typeof tableSchema>

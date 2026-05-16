@@ -180,6 +180,7 @@ model OutletTable {
   name      String
   capacity  Int         @default(2)
   status    TableStatus @default(AVAILABLE)
+  note      String?
   outletId  String
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
