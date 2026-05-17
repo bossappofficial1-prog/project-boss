@@ -24,6 +24,7 @@ import {
   CalendarDays,
   ClipboardList,
   CalendarCheck,
+  Truck,
 } from "lucide-react";
 import { OutletType } from "@/types";
 
@@ -122,8 +123,8 @@ export const MENU_GROUPS: MenuGroup[] = [
         href: "/owner/reservations",
         requiredTypes: [OutletType.FNB, OutletType.CUSTOM],
         requirePro: true,
-        disabled: true
-      }
+        disabled: true,
+      },
     ],
   },
   {
@@ -141,6 +142,13 @@ export const MENU_GROUPS: MenuGroup[] = [
         href: "/owner/stock",
         icon: Box,
         requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM],
+      },
+      {
+        id: "suppliers",
+        name: "Supplier",
+        href: "/owner/suppliers",
+        icon: Truck,
+        requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
       },
     ],
   },
@@ -202,7 +210,7 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Daftar Booking",
         href: "/owner/bookings",
         requiredTypes: [OutletType.SERVICE, OutletType.CUSTOM],
-        disabled: true
+        disabled: true,
       },
     ],
   },
@@ -214,6 +222,13 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Laporan Keuangan",
         href: "/owner/reports",
         icon: FileText,
+      },
+      {
+        id: "cashier-shifts",
+        name: "Shift Kasir",
+        href: "/owner/cashier-shifts",
+        icon: Clock,
+        requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
       },
       {
         id: "expenses",

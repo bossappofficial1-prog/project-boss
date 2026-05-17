@@ -163,7 +163,7 @@ export default function TransactionsPage() {
         actions={
           <Button
             onClick={() => setShowExportDialog(true)}
-            className="font-bold text-xs uppercase tracking-widest h-10 shadow-none"
+            className="font-bold text-xs h-10 shadow-none"
           >
             <FileDown className="w-4 h-4 mr-2" />
             Export PDF
@@ -253,7 +253,7 @@ export default function TransactionsPage() {
 
         <div className="flex items-center gap-3 w-full md:w-auto">
           <Select value={type} onValueChange={setType}>
-            <SelectTrigger className="h-10 w-[140px] text-[10px] font-bold uppercase tracking-widest bg-background/50 border-border/40">
+            <SelectTrigger className="h-10 w-[140px] text-[10px] font-bold bg-background/50 border-border/40">
               <SelectValue placeholder="Tipe" />
             </SelectTrigger>
             <SelectContent>
@@ -264,7 +264,7 @@ export default function TransactionsPage() {
           </Select>
 
           <Select value={outletId || "all"} onValueChange={(v) => setOutletId(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-10 w-[180px] text-[10px] font-bold uppercase tracking-widest bg-background/50 border-border/40">
+            <SelectTrigger className="h-10 w-[180px] text-[10px] font-bold bg-background/50 border-border/40">
               <SelectValue placeholder="Outlet" />
             </SelectTrigger>
             <SelectContent>
@@ -274,7 +274,7 @@ export default function TransactionsPage() {
           </Select>
 
           <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-10 w-[140px] text-[10px] font-bold uppercase tracking-widest bg-background/50 border-border/40">
+            <SelectTrigger className="h-10 w-[140px] text-[10px] font-bold bg-background/50 border-border/40">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -451,7 +451,7 @@ export default function TransactionsPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Rentang Tanggal</label>
+              <label className="text-[10px] font-bold text-muted-foreground">Rentang Tanggal</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -495,7 +495,7 @@ export default function TransactionsPage() {
                 <div className="flex items-center gap-3">
                   <FileText className="h-5 w-5 text-primary opacity-60" />
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Periode Laporan</p>
+                    <p className="text-[10px] font-bold text-muted-foreground">Periode Laporan</p>
                     <p className="text-xs font-bold text-foreground">
                       {format(exportDateRange.from, "dd MMMM yyyy", { locale: localeId })} — {format(exportDateRange.to, "dd MMMM yyyy", { locale: localeId })}
                     </p>
@@ -508,14 +508,14 @@ export default function TransactionsPage() {
             <Button
               variant="ghost"
               onClick={() => setShowExportDialog(false)}
-              className="font-bold text-[10px] uppercase tracking-widest"
+              className="font-bold text-[10px]"
             >
               Batal
             </Button>
             <Button
               onClick={handleExportPDF}
               disabled={!exportDateRange?.from || !exportDateRange?.to || exportReport.isPending}
-              className="font-bold text-[10px] uppercase tracking-widest min-w-[120px]"
+              className="font-bold text-[10px] min-w-[120px]"
             >
               {exportReport.isPending ? (
                 <>
@@ -545,7 +545,7 @@ export default function TransactionsPage() {
               </div>
               <div className="rounded-lg overflow-hidden bg-background shadow-2xl border border-border/40">
                 <div className="p-4 bg-muted/30 border-b border-border/40">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Bukti Pembayaran</p>
+                  <p className="text-[10px] font-bold text-muted-foreground mb-1">Bukti Pembayaran</p>
                   <p className="text-xs font-bold text-foreground truncate">{proofPreview.transaction?.description}</p>
                 </div>
                 <img
@@ -554,7 +554,7 @@ export default function TransactionsPage() {
                   className="w-full h-auto max-h-[70vh] object-contain"
                 />
                 <div className="p-4 flex justify-center">
-                  <Button asChild variant="outline" size="sm" className="font-bold text-[10px] uppercase tracking-widest">
+                  <Button asChild variant="outline" size="sm" className="font-bold text-[10px]">
                     <a href={proofPreview.url} target="_blank" rel="noreferrer">
                       Buka Gambar Penuh
                     </a>

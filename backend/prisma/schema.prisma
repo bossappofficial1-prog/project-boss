@@ -159,6 +159,7 @@ model Outlet {
   loyaltyConfig       LoyaltyConfig?
   pointHistories      LoyaltyPointHistory[]
   orders              Order[]
+  cashierShifts       CashierShift[]
   business            Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
   memberships         OutletMembership[]
   operatingHours      OutletOperatingHours[]
@@ -168,6 +169,7 @@ model Outlet {
   staff               Staff[]
   expenses            Expense[]
   receiptSettings     receiptSetting?
+  suppliers           Supplier[]
 
   @@index([businessId])
   @@index([slug])
@@ -238,6 +240,7 @@ model Staff {
   updatedAt           DateTime           @updatedAt
   ordersHandled       Order[]
   pushSubscriptions   PushSubscription[]
+  cashierShifts       CashierShift[]
   outlet              Outlet             @relation(fields: [outletId], references: [id], onDelete: Cascade)
   ticketCodesRedeemed TicketCode[]
 
@@ -257,12 +260,12 @@ model Product {
   taxName       String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-  orderItems  OrderItem[]
-  outlet      Outlet          @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  goods       ProductGoods?
-  media       ProductMedia[]
-  service     ProductService?
-  ticket      ProductTicket?
+  orderItems    OrderItem[]
+  outlet        Outlet          @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  goods         ProductGoods?
+  media         ProductMedia[]
+  service       ProductService?
+  ticket        ProductTicket?
 
   @@index([outletId])
   @@index([type])
@@ -286,24 +289,59 @@ model ProductMedia {
 }
 
 model ProductGoods {
-  id           String     @id @default(uuid())
-  productId    String     @unique
-  currentStock Int        @default(0)
+  id           String            @id @default(uuid())
+  productId    String            @unique
+  currentStock Int               @default(0)
   minStock     Int?
   maxStock     Int?
   unit         String
-  averageHpp   Float      @default(0)
+  averageHpp   Float             @default(0)
   sellingPrice Float
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  barcode      String?    @unique
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  barcode      String?           @unique
   sku          String?
-  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product      Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
   stockLogs    StockLog[]
+  suppliers    SupplierProduct[]
 
   @@index([barcode])
   @@index([productId])
   @@index([currentStock])
+}
+
+model Supplier {
+  id        String            @id @default(uuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  notes     String?
+  outletId  String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  outlet    Outlet            @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  products  SupplierProduct[]
+
+  @@index([outletId])
+  @@index([name])
+}
+
+model SupplierProduct {
+  id             String       @id @default(uuid())
+  supplierId     String
+  productGoodsId String
+  lastPrice      Float?
+  lastOrderDate  DateTime?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  supplier       Supplier     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  productGoods   ProductGoods @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, productGoodsId])
+  @@index([supplierId])
+  @@index([productGoodsId])
 }
 
 model ProductService {
@@ -407,7 +445,10 @@ model GuestCustomer {
   name              String
   email             String?
   phone             String                @unique
+  address           String?
+  notes             String?
   createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @default(now()) @updatedAt
   pointHistories    LoyaltyPointHistory[]
   memberships       Membership[]
   orders            Order[]
@@ -416,6 +457,42 @@ model GuestCustomer {
 
   @@index([email])
   @@index([phone])
+}
+
+model CashierShift {
+  id            String         @id @default(uuid())
+  status        ShiftStatus    @default(OPEN)
+  outletId      String
+  staffId       String
+  openedAt      DateTime       @default(now())
+  closedAt      DateTime?
+  openingCash   Float          @default(0)
+  closingCash   Float?
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  outlet        Outlet         @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  staff         Staff          @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  orders        Order[]
+  transactions  Transaction[]
+  cashMovements CashMovement[]
+
+  @@index([outletId, status])
+  @@index([staffId, status])
+  @@index([openedAt])
+}
+
+model CashMovement {
+  id        String           @id @default(uuid())
+  type      CashMovementType
+  amount    Float
+  note      String?
+  shiftId   String
+  createdAt DateTime         @default(now())
+  shift     CashierShift     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@index([shiftId, createdAt])
+  @@index([type])
 }
 
 model LoyaltyConfig {
@@ -484,6 +561,7 @@ model Order {
   guestCustomerId          String
   outletId                 String
   handledByStaffId         String?
+  cashierShiftId           String?
   createdAt                DateTime              @default(now())
   updatedAt                DateTime              @updatedAt
   tableNumber              String?
@@ -494,6 +572,7 @@ model Order {
   bill                     Bill?                 @relation(fields: [billId], references: [id])
   guestCustomer            GuestCustomer         @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
   handledByStaff           Staff?                @relation(fields: [handledByStaffId], references: [id])
+  cashierShift             CashierShift?         @relation(fields: [cashierShiftId], references: [id])
   outlet                   Outlet                @relation(fields: [outletId], references: [id], onDelete: Cascade)
   table                    OutletTable?          @relation(fields: [tableId], references: [id])
   items                    OrderItem[]
@@ -503,6 +582,7 @@ model Order {
   @@index([outletId])
   @@index([bookingDate])
   @@index([handledByStaffId])
+  @@index([cashierShiftId])
   @@index([orderStatus])
   @@index([paymentStatus])
   @@index([tableId])
@@ -580,6 +660,8 @@ model Transaction {
   status          PaymentStatus      @default(PENDING)
   isManual        Boolean            @default(false)
   manualMethod    ManualPaymentType?
+  cashReceived    Float?
+  cashChange      Float?
   paymentProofUrl String?
   proofUploadedAt DateTime?
   verifiedAt      DateTime?
@@ -590,12 +672,15 @@ model Transaction {
   paymentUrl      String?
   expiresAt       DateTime?
   orderId         String             @unique
+  cashierShiftId  String?
   createdAt       DateTime           @default(now())
   order           Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
   verifiedBy      User?              @relation("TransactionVerifiedBy", fields: [verifiedById], references: [id])
+  cashierShift    CashierShift?      @relation(fields: [cashierShiftId], references: [id])
 
   @@index([status])
   @@index([isManual, status])
+  @@index([cashierShiftId])
 }
 
 model Expense {
@@ -710,6 +795,20 @@ enum ManualPaymentType {
 
 enum CustomerType {
   GUEST
+  REGISTERED
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementType {
+  OPENING_CASH
+  CASH_DROP
+  PAID_OUT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
 }
 
 enum SubscriptionStatus {

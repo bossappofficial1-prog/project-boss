@@ -1,7 +1,7 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy, Profile } from 'passport-google-oauth20';
 import { config } from '../config';
-import { googleOAuthService } from '../service/auth.service';
+import { AuthService } from '../service/auth.service';
 
 passport.use(
     new GoogleStrategy(
@@ -19,7 +19,7 @@ passport.use(
                     avatar: profile.photos?.[0]?.value,
                 };
 
-                const result = await googleOAuthService(userProfile);
+                const result = await AuthService.googleOAuth(userProfile);
                 done(null, result);
             } catch (error) {
                 done(error, null);

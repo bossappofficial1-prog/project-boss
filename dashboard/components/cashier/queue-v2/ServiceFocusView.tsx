@@ -74,7 +74,7 @@ export function ServiceFocusView({
                         </h2>
                     </div>
                     {activeEntries.length > 0 && (
-                        <Badge variant="secondary" className="font-bold text-[9px] uppercase tracking-widest bg-muted/50 border-border/40">
+                        <Badge variant="secondary" className="font-bold text-[9px] bg-muted/50 border-border/40">
                             {activeEntries.length} LAYANAN PARALEL
                         </Badge>
                     )}
@@ -146,7 +146,7 @@ export function ServiceFocusView({
                                     <div key={time} className="space-y-3">
                                         <div className="flex items-center gap-2">
                                             <Clock className="w-3 h-3 text-muted-foreground/40" />
-                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{time}</span>
+                                            <span className="text-[10px] font-bold text-muted-foreground">{time}</span>
                                             <div className="flex-1 h-px bg-border/40" />
                                             {entries.length > 1 && (
                                                 <span className="text-[9px] font-bold text-emerald-600/60 uppercase">{entries.length} Layanan Paralel</span>

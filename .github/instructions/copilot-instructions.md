@@ -23,81 +23,141 @@ applyTo: "**"
 }
 ```
 
-## Separation of Concern
+## Separation of Concern (Class-Based Pattern)
 
-### Pisahkan antara route, controller, service, dan repository.
+### WAJIB: Semua controller dan service menggunakan class dengan base class inheritance.
 
-- Cara membuat router
+Referensi lengkap ada di: `.github/instructions/backend-coding-standards.md`
 
-```typescript
-import { Router } from "express";
-
-const testRouter = Router();
-
-testRouter("/", testController.getData);
-// Routing lainnya
-export default testRouter;
-```
-
-lalu daftarkan ke index.route.ts
+### Cara membuat Controller (extends BaseController)
 
 ```typescript
-import testRouter from "./test.route";
+import { Request, Response } from "express";
+import { BaseController } from "./base.controller";
+import { TestService } from "../service/test.service";
 
-router.use("/test", testRouter);
-```
+class TestController extends BaseController {
+  getAll = this.handler(async (req: Request, res: Response) => {
+    const data = await TestService.getAll();
+    return this.success(res, data);
+  });
 
-- Cara membuat controller
+  getById = this.handler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const data = await TestService.getById(id);
+    return this.success(res, data);
+  });
 
-```typescript
-import {Request, Response} from 'express';
+  create = this.handler(async (req: Request, res: Response) => {
+    const result = await TestService.create(req.body);
+    return this.success(res, result, 201);
+  });
 
-const testController = asyncHandler(async(req: Request, res: Response))=>{
-  const data = await TestService.test()
-  return ResponseUtil.success(res, data)
+  update = this.handler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await TestService.update(id, req.body);
+    return this.success(res, result);
+  });
+
+  delete = this.handler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    await TestService.delete(id);
+    return this.success(res, null);
+  });
 }
+
+export const testController = new TestController();
 ```
 
-atau
+### Cara membuat Service (extends BaseService)
 
 ```typescript
-import {Request, Response} from 'express';
+import { BaseService } from "./base.service";
+import { TestRepository } from "../repositories/test.repository";
+import { CreateTestInput } from "../schemas/test.schema";
 
-export class TestController {
-  public getData = asyncHandler(async(req: Request, res: Response))=>{
-    const data = await TestService.test()
-    return ResponseUtil.success(res, data)
+export class TestService extends BaseService {
+  static async getAll() {
+    return TestRepository.findAll();
+  }
+
+  static async getById(id: string) {
+    const data = await TestRepository.findById(id);
+    if (!data) this.notFound("Data tidak ditemukan");
+    return data;
+  }
+
+  static async create(input: CreateTestInput) {
+    return TestRepository.create(input);
+  }
+
+  static async update(id: string, input: any) {
+    await this.getById(id);
+    return TestRepository.update(id, input);
+  }
+
+  static async delete(id: string) {
+    await this.getById(id);
+    return TestRepository.delete(id);
   }
 }
-
-export const testRouter = new TestController()
 ```
 
-- Cara membuat service
-
-```typescript
-export class TestService {
-  static async getData() {
-    const rawData = await TestServiceRepository.get();
-
-    return rawData;
-  }
-}
-```
-
-- Cara membuat repository
+### Cara membuat Repository
 
 ```typescript
 import { db } from "../config/prisma";
 
 export class TestRepository {
-  static async get() {
+  static async findById(id: string) {
+    return db.test.findUnique({ where: { id } });
+  }
+
+  static async findAll() {
     return db.test.findMany();
+  }
+
+  static async create(data: any) {
+    return db.test.create({ data });
+  }
+
+  static async update(id: string, data: any) {
+    return db.test.update({ where: { id }, data });
+  }
+
+  static async delete(id: string) {
+    return db.test.delete({ where: { id } });
   }
 }
 ```
 
-- schema dibuat mengunakan zod dan di buat di dalam folder backend/src/schemas
+### Cara membuat Router
+
+```typescript
+import { Router } from "express";
+import { testController } from "../controller/test.controller";
+import { validateSchema } from "../middleware/zod.middleware";
+import { createTestSchema } from "../schemas/test.schema";
+
+const testRouter = Router();
+
+testRouter.get("/", testController.getAll);
+testRouter.get("/:id", testController.getById);
+testRouter.post("/", validateSchema(createTestSchema), testController.create);
+testRouter.patch("/:id", testController.update);
+testRouter.delete("/:id", testController.delete);
+
+export default testRouter;
+```
+
+Lalu daftarkan ke `index.route.ts`:
+
+```typescript
+import testRouter from "./test.route";
+router.use("/test", testRouter);
+```
+
+- Schema dibuat menggunakan Zod di folder `backend/src/schemas/`
 
 #### Penamaan file
 
@@ -106,16 +166,16 @@ export class TestRepository {
 - nama-file.controller.ts
 - nama-file.repository.ts
 
-ada juga utilis fungsi yang dapat kamu gunakan, dia ada di backend/src/utils/\*\*\*
+Ada juga utility functions di `backend/src/utils/**`
 
-- Service TIDAK BOLEH langsung mengakses Prisma
-- Semua query database WAJIB melalui repository
+### Aturan Ketat:
+
+- Service TIDAK BOLEH langsung mengakses Prisma — semua lewat Repository
+- Semua query database WAJIB melalui Repository
 - Semua request body, query, dan params WAJIB divalidasi menggunakan Zod
-- Validasi dilakukan di controller sebelum memanggil service
-- Jika validasi gagal, sudah ditangan oleh midleware errorHandler
-- Redis digunakan untuk:
-  - caching data read-heavy
-  - job scheduling / cronjob
+- Validasi dilakukan di middleware (bukan di controller/service)
+- Jika validasi gagal, sudah ditangani oleh middleware errorHandler
+- Redis digunakan untuk caching dan job scheduling
 - Logic redis ditempatkan di service atau util, bukan di controller
 
 ## Instruksi untuk Frontend dan dashboard (Next.js)

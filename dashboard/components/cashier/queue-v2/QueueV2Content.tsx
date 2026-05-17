@@ -185,7 +185,7 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
                 size="sm"
                 onClick={() => setViewMode("focus")}
                 className={cn(
-                  "h-8 px-3 text-[10px] font-bold uppercase tracking-widest transition-all",
+                  "h-8 px-3 text-[10px] font-bold transition-all",
                   viewMode === "focus" && "shadow-sm bg-red-500 text-red-50 hover:bg-red-600 hover:text-red-50"
                 )}
               >
@@ -197,7 +197,7 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
                 size="sm"
                 onClick={() => setViewMode("kanban")}
                 className={cn(
-                  "h-8 px-3 text-[10px] font-bold uppercase tracking-widest transition-all",
+                  "h-8 px-3 text-[10px] font-bold transition-all",
                   viewMode === "kanban" && "shadow-sm bg-red-500 text-red-50 hover:bg-red-600 hover:text-red-50"
                 )}
               >
@@ -206,11 +206,11 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
               </Button>
             </div>
 
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="h-9 font-bold text-[10px] uppercase tracking-widest">
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="h-9 font-bold text-[10px]">
               <RefreshCw className={cn("w-3.5 h-3.5 mr-2", isFetching && "animate-spin")} />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button size="sm" onClick={() => router.push("/cashier/pos")} className="h-9 font-bold text-[10px] uppercase tracking-widest px-4">
+            <Button size="sm" onClick={() => router.push("/cashier/pos")} className="h-9 font-bold text-[10px] px-4">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Antrian
             </Button>

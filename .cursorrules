@@ -1,0 +1,76 @@
+# Project Boss — Coding Standards
+
+## Backend (Express + TypeScript + Prisma)
+
+### Arsitektur WAJIB: Class-Based dengan Base Class Inheritance
+
+```
+routes → Controller (extends BaseController) → Service (extends BaseService) → Repository (class static)
+```
+
+### Aturan Utama:
+1. Controller WAJIB extends `BaseController` dari `src/controller/base.controller.ts`
+2. Service WAJIB extends `BaseService` dari `src/service/base.service.ts`
+3. Repository = satu-satunya layer yang boleh akses `db` (Prisma)
+4. Service TIDAK BOLEH langsung akses Prisma
+5. Controller TIDAK BOLEH punya business logic
+6. Response selalu pakai `ResponseUtil`
+7. Error handling pakai `AppError`
+8. Validasi input pakai Zod schema di middleware
+
+### Contoh Controller:
+```typescript
+import { Request, Response } from "express";
+import { BaseController } from "./base.controller";
+import { ProductService } from "../service/product.service";
+
+class ProductController extends BaseController {
+  getAll = this.handler(async (req: Request, res: Response) => {
+    const data = await ProductService.getAll(req.query);
+    return this.paginated(res, data.data, data.page, data.limit, data.total);
+  });
+
+  create = this.handler(async (req: Request, res: Response) => {
+    const result = await ProductService.create(req.body);
+    return this.success(res, result, 201);
+  });
+}
+export const productController = new ProductController();
+```
+
+### Contoh Service:
+```typescript
+import { BaseService } from "./base.service";
+import { ProductRepository } from "../repositories/product.repository";
+
+export class ProductService extends BaseService {
+  static async getById(id: string) {
+    const product = await ProductRepository.findById(id);
+    if (!product) this.notFound("Produk tidak ditemukan");
+    return product;
+  }
+
+  static async create(data: any) {
+    return ProductRepository.create(data);
+  }
+}
+```
+
+### Contoh Repository:
+```typescript
+import { db } from "../config/prisma";
+
+export class ProductRepository {
+  static async findById(id: string) {
+    return db.product.findUnique({ where: { id } });
+  }
+}
+```
+
+Referensi lengkap: `.github/instructions/backend-coding-standards.md`
+
+## Dashboard & Frontend (Next.js)
+- API calls lewat `lib/apis/` atau service class yang extends `BaseService`
+- Data fetching pakai React Query hooks di `hooks/api/`
+- UI pakai shadcn/ui components
+- Form pakai `reuseable-form.tsx` (react-hook-form + zod)

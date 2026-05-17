@@ -101,17 +101,17 @@ export function CustomerInfo({
     };
 
     return (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
                 <Label className="text-sm font-bold">Pelanggan</Label>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     {isTableFeatureEnabled && (
                         <div className="flex items-center gap-2">
-                            <Label htmlFor="table" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Meja</Label>
+                            <Label htmlFor="table" className="text-[10px] font-bold text-muted-foreground">Meja</Label>
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-7 gap-2 px-3 text-xs font-bold bg-background border-border/60 hover:border-primary/40"
+                                className="h-7 gap-2 px-2.5 text-xs font-bold bg-background border-border/60 hover:border-primary/40"
                                 onClick={() => setIsTableSelectorOpen(true)}
                             >
                                 <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground" />
@@ -140,8 +140,8 @@ export function CustomerInfo({
             </div>
 
             {!isWalkIn && (
-                <div className="space-y-3">
-                    <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2.5">
+                    <div className="grid gap-2.5 sm:grid-cols-2">
                         <div>
                             <Label htmlFor="customerName" className="text-xs text-muted-foreground">
                                 Nama
@@ -207,7 +207,7 @@ export function CustomerInfo({
                     )}
 
                     {isPhoneValid && member && subtotal > loyaltyConfig.pointValue && (
-                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5">
                             <div className="flex items-center justify-between mb-2">
                                 <Label className="text-xs font-semibold text-primary">Tukar Poin</Label>
                                 <span className="text-[10px] text-primary/80">1 Poin = Rp {loyaltyConfig?.pointValue.toLocaleString("id-ID")}</span>

@@ -3,12 +3,13 @@
 ## Services Overview
 
 | Service             | Port | Stack                | Deskripsi               |
-|---------------------|------|----------------------|-------------------------|
+| ------------------- | ---- | -------------------- | ----------------------- |
 | `backend`           | 1234 | Bun + Express + TS   | Core REST API           |
 | `dashboard`         | 3010 | Next.js (App Router) | Admin & Owner dashboard |
 | `frontend-customer` | 3000 | Next.js (App Router) | Customer-facing PWA     |
 
 ## Common Commands
+
 ```bash
 cd backend           && bun dev
 cd dashboard         && bun dev
@@ -20,7 +21,16 @@ cd frontend-customer && bun dev
 ## Backend (`/backend`)
 
 ### Architecture
-Layered: `routes` → `controller` → `service` → `repositories`
+
+Layered (class-based): `routes` → `Controller (class)` → `Service (class)` → `Repository (class)`
+
+**WAJIB:** Semua service dan controller harus menggunakan class yang extends dari base class.
+
+- Controller extends `BaseController` (di `src/controller/base.controller.ts`)
+- Service extends `BaseService` (di `src/service/base.service.ts`)
+- Repository tetap class dengan static methods
+
+Lihat detail lengkap di `.github/instructions/backend-coding-standards.md`
 
 ```
 src/
@@ -40,6 +50,7 @@ src/
 ```
 
 ### Integrations
+
 - **Database:** PostgreSQL via Prisma ORM
 - **Cache / Queue:** Redis + RabbitMQ
 - **Realtime:** Socket.IO
@@ -51,6 +62,7 @@ src/
 - **Notif:** Web Push
 
 ### Key Rules
+
 - Semua DB query lewat Prisma, jangan raw SQL
 - Validasi input pakai Zod schema di `schemas/`, apply via `zod.middleware.ts`
 - Response format pakai helper di `utils/response.ts`
@@ -63,6 +75,7 @@ src/
 ## Dashboard (`/dashboard`)
 
 ### Structure
+
 ```
 app/
 ├── admin/          # Admin role pages
@@ -90,6 +103,7 @@ hooks/
 ```
 
 ### Key Rules
+
 - API calls selalu lewat `lib/apis/`, jangan fetch langsung di komponen
 - Data fetching pakai React Query (hooks di `hooks/api/`)
 - Komponen reusable ada di `components/shared/` dan `components/ui/` — cek dulu sebelum buat yang baru
@@ -100,6 +114,7 @@ hooks/
 ## Frontend Customer (`/frontend-customer`)
 
 ### Structure
+
 ```
 src/
 ├── app/
@@ -118,7 +133,9 @@ src/
 ```
 
 ### Key Notes
+
 - PWA dengan Serwist service worker (`src/sw.ts`)
 - i18n support: Indonesia (`id`) dan English (`en`) via `next-intl`
 - API calls lewat `src/services/` atau `src/lib/api.ts`
 - Socket.IO context ada di `src/context/SocketContext.tsx`
+- Runtime menggunakan bun

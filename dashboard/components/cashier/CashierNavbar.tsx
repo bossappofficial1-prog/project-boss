@@ -15,6 +15,9 @@ import { PrinterSettings } from "../PrinterSettings";
 import { Badge } from "@/components/ui/badge";
 import { useOutletContext } from "../providers/CashierOutletProvider";
 import { OutletType } from "@/types";
+import { useActiveCashierShift, useCloseCashierShift } from "@/hooks/api/use-cashier-shifts";
+import { ReusableForm } from "@/components/ui/reuseable-form";
+import { closeShiftSchema, type CloseShiftValues } from "@/schema/cashier-shift.schema";
 
 interface CashierNavbarProps {
   cashierName: string;
@@ -27,6 +30,10 @@ export function CashierNavbar({ cashierName, outletName, outletType = OutletType
   const router = useRouter();
   const queryClient = useQueryClient();
   const { selectedOutletId } = useOutletContext();
+  const [shiftDialogOpen, setShiftDialogOpen] = React.useState(false);
+  const outletIdForShift = selectedOutletId ?? undefined;
+  const { data: activeShift } = useActiveCashierShift(outletIdForShift);
+  const closeShift = useCloseCashierShift(outletIdForShift);
 
   const handleLogout = async () => {
     try {
@@ -98,7 +105,7 @@ export function CashierNavbar({ cashierName, outletName, outletType = OutletType
               <h1 className="text-sm md:text-base font-bold leading-tight text-foreground truncate max-w-[140px] md:max-w-[250px]">
                 {outletName}
               </h1>
-              <Badge variant="secondary" className="h-5 px-2 text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border-none">
+              <Badge variant="secondary" className="h-5 px-2 text-[10px] font-black bg-primary/10 text-primary border-none">
                 {outletType}
               </Badge>
             </div>
@@ -143,6 +150,50 @@ export function CashierNavbar({ cashierName, outletName, outletType = OutletType
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          {outletType === OutletType.RETAIL && activeShift && (
+            <>
+              <Badge
+                variant="secondary"
+                className="hidden md:inline-flex h-8 px-3 text-[11px] font-black bg-primary/10 text-primary border-none"
+              >
+                Shift Open
+              </Badge>
+              <Button
+                onClick={() => setShiftDialogOpen(true)}
+                variant="outline"
+                size="sm"
+                className="rounded-full px-4"
+              >
+                Tutup Shift
+              </Button>
+              <ReusableForm<CloseShiftValues>
+                withDialog
+                isDialogOpen={shiftDialogOpen}
+                onDialogOpenChange={setShiftDialogOpen}
+                dialogTitle="Tutup Shift"
+                dialogDescription="Masukkan cash akhir untuk menutup shift."
+                schema={closeShiftSchema}
+                defaultValues={{ closingCash: 0, notes: "" }}
+                onSubmit={async (values) => {
+                  await closeShift.mutateAsync({
+                    shiftId: activeShift.id,
+                    closingCash: values.closingCash,
+                    notes: values.notes,
+                  });
+                  toast.success("Shift berhasil ditutup");
+                  setShiftDialogOpen(false);
+                }}
+                fields={[
+                  { name: "closingCash", label: "Closing Cash", type: "currency", colSpan: "full" },
+                  { name: "notes", label: "Catatan (opsional)", type: "textarea", colSpan: "full" },
+                ]}
+                submitText="Tutup Shift"
+                loadingText="Menutup..."
+                isLoading={closeShift.isPending}
+                errorSummary
+              />
+            </>
+          )}
           <PrinterSettings outletId={selectedOutletId!} />
           <ThemeToggle />
           <Button onClick={handleLogout} variant="outline" size="sm" className="hidden sm:flex rounded-full px-4">

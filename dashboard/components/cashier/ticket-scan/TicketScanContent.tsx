@@ -439,7 +439,7 @@ export default function TicketScanContent() {
                             <div className="p-5 space-y-6">
                                 {/* Pelanggan */}
                                 <section className="space-y-4">
-                                    <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Data Pelanggan</h5>
+                                    <h5 className="text-[10px] font-bold text-muted-foreground">Data Pelanggan</h5>
                                     <div className="space-y-3">
                                         <InfoRow icon={User} label="Nama Lengkap" value={ticketInfo.customerName || "-"} />
                                         <InfoRow icon={Phone} label="No. Telepon" value={ticketInfo.customerPhone || "-"} />
@@ -450,7 +450,7 @@ export default function TicketScanContent() {
 
                                 {/* Event */}
                                 <section className="space-y-4">
-                                    <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Informasi Penyelenggara</h5>
+                                    <h5 className="text-[10px] font-bold text-muted-foreground">Informasi Penyelenggara</h5>
                                     <div className="space-y-3">
                                         <InfoRow icon={Ticket} label="Produk/Layanan" value={ticketInfo.productName} />
                                         {ticketInfo.eventDate && (
@@ -470,7 +470,7 @@ export default function TicketScanContent() {
                                     <>
                                         <Separator />
                                         <section className="space-y-4">
-                                            <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Info Redeem</h5>
+                                            <h5 className="text-[10px] font-bold text-muted-foreground">Info Redeem</h5>
                                             <div className="space-y-3">
                                                 <InfoRow icon={Clock} label="Waktu Redeem" value={formatDate(ticketInfo.redeemedAt)} />
                                                 {ticketInfo.redeemedBy && (

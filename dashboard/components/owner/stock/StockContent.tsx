@@ -117,7 +117,7 @@ function OverviewCard({ icon, label, value, description, variant = "default" }: 
           {icon}
         </div>
         <div className="space-y-0.5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+          <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
           <p className="text-2xl font-bold tracking-tighter text-foreground/90 tabular-nums">{value}</p>
           {description && (
             <p className="text-[10px] font-semibold text-muted-foreground italic opacity-70">
@@ -331,7 +331,7 @@ export default function StockContent() {
       {/* Movement Summary Badges */}
       {overview?.recentMovements && Object.keys(overview.recentMovements).length > 0 && (
         <div className="flex flex-wrap items-center gap-2 p-3 rounded-md border border-border/60 bg-muted/5">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Pergerakan 30 hari:</span>
+          <span className="text-[10px] font-bold text-muted-foreground ml-1">Pergerakan 30 hari:</span>
           {overview.recentMovements.IN && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -372,16 +372,16 @@ export default function StockContent() {
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1">
-          <TabsTrigger value="overview" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
+          <TabsTrigger value="overview" className="gap-2 px-4 py-1.5 font-bold text-[10px]">
             <Package className="h-3.5 w-3.5" />
             Daftar Produk
           </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
+          <TabsTrigger value="history" className="gap-2 px-4 py-1.5 font-bold text-[10px]">
             <History className="h-3.5 w-3.5" />
             Riwayat Stok
           </TabsTrigger>
           {alertItems.length > 0 && (
-            <TabsTrigger value="alerts" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
+            <TabsTrigger value="alerts" className="gap-2 px-4 py-1.5 font-bold text-[10px]">
               <AlertTriangle className="h-3.5 w-3.5" />
               Peringatan
               <Badge variant="destructive" className="ml-0.5 text-[8px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">
@@ -397,7 +397,7 @@ export default function StockContent() {
             <CardHeader className="p-4 border-b border-border/40 bg-muted/30">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-foreground/90">Produk Barang</CardTitle>
+                  <CardTitle className="text-sm font-bold text-foreground/90">Produk Barang</CardTitle>
                   <CardDescription className="text-[10px] font-medium uppercase tracking-tighter opacity-70">Kelola kuota dan ketersediaan barang</CardDescription>
                 </div>
                 <div className="relative w-full sm:w-72">
@@ -417,7 +417,7 @@ export default function StockContent() {
                   <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
                     <Package className="h-8 w-8 text-muted-foreground/40" />
                   </div>
-                  <p className="text-sm font-bold text-foreground/70 uppercase tracking-widest">
+                  <p className="text-sm font-bold text-foreground/70">
                     {searchQuery ? "Produk tidak ditemukan" : "Belum ada produk barang"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
@@ -479,19 +479,19 @@ export default function StockContent() {
                           <div className="text-right flex flex-col items-end gap-1">
                             <div className="flex items-center gap-1.5">
                               {isEmpty ? (
-                                <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0 border-rose-500/20 bg-rose-500/5 text-rose-600 dark:text-rose-400">
+                                <Badge variant="outline" className="text-[9px] font-bold px-1.5 py-0 border-rose-500/20 bg-rose-500/5 text-rose-600 dark:text-rose-400">
                                   Habis
                                 </Badge>
                               ) : isLow ? (
-                                <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0 border-amber-500/20 bg-amber-500/5 text-amber-600 dark:text-amber-400">
+                                <Badge variant="outline" className="text-[9px] font-bold px-1.5 py-0 border-amber-500/20 bg-amber-500/5 text-amber-600 dark:text-amber-400">
                                   Rendah
                                 </Badge>
                               ) : isHigh ? (
-                                <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0 border-violet-500/20 bg-violet-500/5 text-violet-600 dark:text-violet-400">
+                                <Badge variant="outline" className="text-[9px] font-bold px-1.5 py-0 border-violet-500/20 bg-violet-500/5 text-violet-600 dark:text-violet-400">
                                   Berlebih
                                 </Badge>
                               ) : (
-                                <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0 border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400">
+                                <Badge variant="outline" className="text-[9px] font-bold px-1.5 py-0 border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400">
                                   Tersedia
                                 </Badge>
                               )}
@@ -530,7 +530,7 @@ export default function StockContent() {
           <Card className="rounded-md gap-0 py-0 border border-border/80 bg-background shadow-sm overflow-hidden">
             <CardContent className="p-4 bg-muted/30 border-b border-border/40">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground ml-1">
                   <Package className="h-3.5 w-3.5" />
                   Pilih Produk:
                 </div>
@@ -564,7 +564,7 @@ export default function StockContent() {
                   <div className="h-20 w-20 rounded-full bg-muted/50 flex items-center justify-center mb-6">
                     <History className="h-10 w-10 text-muted-foreground/30" />
                   </div>
-                  <h3 className="text-base font-bold text-foreground/80 uppercase tracking-widest">Pilih Produk Terlebih Dahulu</h3>
+                  <h3 className="text-base font-bold text-foreground/80">Pilih Produk Terlebih Dahulu</h3>
                   <p className="mx-auto mt-2 max-w-sm text-xs text-muted-foreground font-medium">
                     Gunakan dropdown di atas untuk melihat riwayat masuk, keluar, dan penyesuaian stok secara mendetail.
                   </p>
@@ -602,7 +602,7 @@ export default function StockContent() {
                       <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
                     </div>
                     <div>
-                      <CardTitle className="text-sm font-bold uppercase tracking-widest text-rose-700 dark:text-rose-400">Stok Rendah / Habis</CardTitle>
+                      <CardTitle className="text-sm font-bold text-rose-700 dark:text-rose-400">Stok Rendah / Habis</CardTitle>
                       <CardDescription className="text-[10px] font-medium uppercase tracking-tighter text-rose-600/70">Produk yang memerlukan perhatian segera</CardDescription>
                     </div>
                   </div>
@@ -632,7 +632,7 @@ export default function StockContent() {
                             <p className="text-sm font-bold tracking-tight text-foreground/90">{item.name}</p>
                             <div className="flex items-center gap-2">
                               <span className={cn(
-                                "text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border",
+                                "text-[10px] font-bold px-1.5 py-0.5 rounded border",
                                 isEmpty ? "bg-rose-500/10 border-rose-200 text-rose-600" : "bg-amber-500/10 border-amber-200 text-amber-600"
                               )}>
                                 {isEmpty ? "Habis" : "Rendah"}
@@ -668,7 +668,7 @@ export default function StockContent() {
                       <TrendingDown className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                     </div>
                     <div>
-                      <CardTitle className="text-sm font-bold uppercase tracking-widest text-violet-700 dark:text-violet-400">Stok Berlebih</CardTitle>
+                      <CardTitle className="text-sm font-bold text-violet-700 dark:text-violet-400">Stok Berlebih</CardTitle>
                       <CardDescription className="text-[10px] font-medium uppercase tracking-tighter text-violet-600/70">Produk yang melebihi batas inventaris</CardDescription>
                     </div>
                   </div>
@@ -688,7 +688,7 @@ export default function StockContent() {
                           <div className="space-y-1">
                             <p className="text-sm font-bold tracking-tight text-foreground/90">{item.name}</p>
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border bg-violet-500/10 border-violet-200 text-violet-600">
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-violet-500/10 border-violet-200 text-violet-600">
                                 Berlebih
                               </span>
                               <span className="text-[10px] font-bold text-muted-foreground tabular-nums">

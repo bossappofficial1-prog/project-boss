@@ -46,7 +46,7 @@ export function TableSelector({
               <LayoutGrid className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-sm font-black uppercase tracking-widest">
+              <DialogTitle className="text-sm font-black">
                 Pilih Meja
               </DialogTitle>
               <DialogDescription className="text-[10px] font-medium">
@@ -59,14 +59,14 @@ export function TableSelector({
         <div className="p-6">
           {isLoading ? (
             <div className="flex h-60 items-center justify-center">
-              <span className="text-sm text-muted-foreground animate-pulse font-bold uppercase tracking-widest">
+              <span className="text-sm text-muted-foreground animate-pulse font-bold">
                 Memuat Meja...
               </span>
             </div>
           ) : tables.length === 0 ? (
             <div className="flex h-60 flex-col items-center justify-center gap-2 text-muted-foreground border-2 border-dashed border-border rounded-xl">
               <LayoutGrid className="h-10 w-10 opacity-20" />
-              <p className="text-xs font-bold uppercase tracking-widest">
+              <p className="text-xs font-bold">
                 Belum ada data meja
               </p>
               <p className="text-[10px] font-medium opacity-60">
@@ -150,13 +150,13 @@ export function TableSelector({
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
               <div className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+              <span className="text-[9px] font-bold text-muted-foreground">
                 Tersedia
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="h-2 w-2 rounded-full bg-amber-500" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+              <span className="text-[9px] font-bold text-muted-foreground">
                 Terisi
               </span>
             </div>
@@ -164,7 +164,7 @@ export function TableSelector({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-4 text-[10px] font-black uppercase tracking-widest"
+            className="h-8 px-4 text-[10px] font-black"
             onClick={() => onOpenChange(false)}
           >
             Tutup

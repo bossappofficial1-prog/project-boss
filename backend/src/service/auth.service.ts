@@ -1,3 +1,4 @@
+import { BaseService } from "./base.service";
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
@@ -13,342 +14,351 @@ import { BusinessRepository } from "../repositories/business.repository";
 import { SubscriptionPlanRepository } from "../repositories/subscription-plan.repository";
 import { OnboardingRepository } from "../repositories/onboarding.repository";
 import { UpdatePasswordValues, UpdateProfileValues } from "../schemas/profile-setting.schema";
-import { deleteFile } from "../utils/file.utils";
 import { ImageService } from "./image.service";
 
-export async function loginService(data: LoginInput) {
-    const user = await getUserByEmailService(data.email);
+export class AuthService extends BaseService {
+    static async login(data: LoginInput) {
+        const user = await getUserByEmailService(data.email);
 
-    if (!user) {
-        throw new AppError(Messages.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
-    }
-
-    const isPasswordValid = await BcryptUtil.compare(data.password, user.password);
-
-    if (!isPasswordValid) {
-        throw new AppError(Messages.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
-    }
-
-    await redis.set(`session:${user.id}`, JSON.stringify({ ...user, businessId: user.business?.id }), 'EX', 60 * 60 * 24);
-
-    const token = JwtUtil.generate({
-        sessionId: user.id,
-        name: user.name,
-        role: user.role,
-        email: user.email,
-        isVerified: user.isVerified,
-        provider: user.provider === 'local' ? 'email' : user.provider,
-        businessId: user.business?.id,
-        subscriptionStatus: user.business?.subscriptionStatus,
-        subscriptionPlan: user.business?.subscriptionPlan
-    });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userWithoutPassword } = user;
-
-    return {
-        user: userWithoutPassword,
-        token,
-    };
-}
-
-export async function cashierLoginService(data: CashierLoginInput) {
-    const staff = await StaffRepository.findByEmail(data.email);
-
-    if (!staff) {
-        throw new AppError(Messages.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
-    }
-
-    // Pastikan staff memiliki password (sudah disetup sebagai kasir)
-    if (!staff.password) {
-        throw new AppError("Akun kasir belum diaktifkan. Hubungi owner untuk mengaktifkan akun.", HttpStatus.FORBIDDEN);
-    }
-
-    const isPasswordValid = await BcryptUtil.compare(data.password, staff.password);
-
-    if (!isPasswordValid) {
-        throw new AppError(Messages.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
-    }
-
-    // Simpan session kasir di Redis
-    const staffSession = {
-        id: staff.id,
-        email: staff.email,
-        name: staff.name,
-        outletId: staff.outletId,
-        businessId: staff.outlet?.businessId,
-        userType: 'CASHIER' // Penanda bahwa ini adalah kasir
-    };
-
-    await redis.set(`session:cashier:${staff.id}`, JSON.stringify(staffSession), 'EX', 60 * 60 * 24);
-
-    const token = JwtUtil.generate({
-        sessionId: staff.id,
-        role: 'CASHIER',
-        userType: 'CASHIER',
-        outletId: staff.outletId,
-        businessId: staff.outlet?.businessId
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...staffWithoutPassword } = staff;
-
-    return {
-        staff: staffWithoutPassword,
-        token,
-    };
-}
-
-export async function getCashierMeService(staffId: string) {
-    const staff = await StaffRepository.findById(staffId);
-
-    if (!staff) {
-        throw new AppError("Staff tidak ditemukan", HttpStatus.NOT_FOUND);
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...staffWithoutPassword } = staff;
-
-    return staffWithoutPassword;
-}
-
-export async function getMeService(userId: string) {
-    const user = await getUserByIdService(userId);
-    if (!user) {
-        throw new AppError("Pengguna tidak ditemukan.", HttpStatus.NOT_FOUND);
-    }
-
-    const { business, ...userWithoutBusiness } = user
-
-    if (!business) {
-        return { userWithoutBusiness, outlets: [], business: null }
-    }
-
-    const { outlets, ...businessWithoutOutlets } = business
-    const businessType = outlets.map(o => o.type).join("::")
-    // Transform outlets to include full QRIS URL
-    const baseUrl = process.env.BASE_URL || 'http://localhost:1234';
-    const transformedOutlets = outlets?.map((outlet: any) => ({
-        ...outlet,
-        qrisImage: outlet.qrisImage
-            ? `${baseUrl}/${outlet.qrisImage.replace(/\\/g, '/')}`
-            : null,
-    })) || [];
-
-    return { userWithoutBusiness, outlets: transformedOutlets, business: { ...businessWithoutOutlets, type: businessType } };
-}
-
-export async function resendVerificationService(email: string) {
-    const user = await getUserByEmailService(email);
-
-    if (!user) return;
-
-    if (user.isVerified) {
-        throw new AppError("Akun sudah diverifikasi", HttpStatus.BAD_REQUEST);
-    }
-
-    // Check resend rate limit (3 attempts per day)
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const rateLimitKey = `resend_attempts:${email}:${today}`;
-    const maxAttempts = 3;
-
-    const currentAttempts = await redis.get(rateLimitKey);
-    const attemptCount = currentAttempts ? parseInt(currentAttempts) : 0;
-
-    if (attemptCount >= maxAttempts) {
-        throw new AppError(`Anda telah mencapai batas maksimal ${maxAttempts} kali pengiriman ulang kode verifikasi dalam sehari. Silakan coba lagi besok.`, HttpStatus.TOO_MANY_REQUESTS);
-    }
-
-    // Increment attempt count (expires at end of day)
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    const ttlSeconds = Math.floor((tomorrow.getTime() - Date.now()) / 1000);
-
-    await redis.set(rateLimitKey, (attemptCount + 1).toString(), 'EX', ttlSeconds);
-
-    // Generate new verification code
-    const verificationCode = CodeGeneratorUtil.generate(6);
-    await redis.set(`verification:${email}`, verificationCode, 'EX', 60 * 10);
-    const expiryCode = new Date()
-    expiryCode.setMinutes(expiryCode.getMinutes() + 10)
-
-    await UserRepository.update(user.id, {
-        verificationCode,
-        verificationCodeExpires: expiryCode
-    })
-
-    // Send email via message queue
-    await messagePublisher.publishResendVerificationEmail(email, verificationCode);
-}
-
-export async function forgotPasswordService(email: string) {
-    const user = await getUserByEmailService(email);
-
-    if (!user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.BAD_REQUEST);
-
-    if (!user.isVerified) throw new AppError(Messages.ACCOUNT_INACTIVE, HttpStatus.FORBIDDEN);
-
-    // Check rate limit for forgot password (3 attempts per day)
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const rateLimitKey = `forgot_password_attempts:${email}:${today}`;
-    const maxAttempts = 3;
-
-    const currentAttempts = await redis.get(rateLimitKey);
-    const attemptCount = currentAttempts ? parseInt(currentAttempts) : 0;
-
-    if (attemptCount >= maxAttempts) {
-        throw new AppError(`Anda telah mencapai batas maksimal ${maxAttempts} kali permintaan reset password dalam sehari. Silakan coba lagi besok.`, HttpStatus.TOO_MANY_REQUESTS);
-    }
-
-    // Increment attempt count (expires at end of day)
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    const ttlSeconds = Math.floor((tomorrow.getTime() - Date.now()) / 1000);
-
-    await redis.set(rateLimitKey, (attemptCount + 1).toString(), 'EX', ttlSeconds);
-
-    // Generate reset token
-    const resetToken = randomUUID();
-    await redis.set(`reset:${resetToken}`, user.id, 'EX', 60 * 15); // 15 minutes
-
-    // Send email via message queue
-    await messagePublisher.publishForgotPasswordEmail(email, resetToken);
-}
-
-export async function resetPasswordService(token: string, newPassword: string) {
-    const userId = await redis.get(`reset:${token}`);
-
-    if (!userId) {
-        throw new AppError("Token tidak valid atau sudah expired", HttpStatus.BAD_REQUEST);
-    }
-
-    // Immediately delete the token to prevent reuse
-    await redis.del(`reset:${token}`);
-
-    // Now update the password
-    await updateUserPasswordService(userId, newPassword);
-}
-
-export async function changePasswordService(userId: string, currentPassword: string, newPassword: string) {
-    const user = await getUserByIdService(userId);
-
-    if (!user) {
-        throw new AppError("User tidak ditemukan", HttpStatus.NOT_FOUND);
-    }
-
-    const isCurrentPasswordValid = await BcryptUtil.compare(currentPassword, user.password);
-
-    if (!isCurrentPasswordValid) {
-        throw new AppError("Password saat ini salah", HttpStatus.BAD_REQUEST);
-    }
-
-    await updateUserPasswordService(userId, newPassword);
-}
-
-export async function googleOAuthService(profile: {
-    googleId: string;
-    email: string;
-    name: string;
-    avatar?: string;
-}) {
-    // Check if user already exists with this Google ID
-    let user = await UserRepository.findByGoogleId(profile.googleId);
-
-    if (!user) {
-        // Check if email already exists (no account linking allowed)
-        const existingUser = await getUserByEmailService(profile.email);
-        if (existingUser) {
-            throw new AppError("Email sudah terdaftar dengan akun lain.", HttpStatus.CONFLICT);
+        if (!user) {
+            this.unauthorized(Messages.INVALID_CREDENTIALS);
         }
 
-        // Create new user
-        user = await createUserWithGoogleService(profile);
-    }
+        const isPasswordValid = await BcryptUtil.compare(data.password, user.password);
 
-    // Create session and JWT token
-    await redis.set(`session:${user.id}`, JSON.stringify({ ...user, businessId: user.business?.id }), 'EX', 60 * 60 * 24);
-    const token = JwtUtil.generate({
-        sessionId: user.id,
-        role: user.role,
-        isVerified: user.isVerified,
-        email: user.email,
-        name: user.name,
-        provider: user.provider,
-        businessId: user.business?.id ?? null,
-        subscriptionStatus: user.business?.subscriptionStatus ?? null,
-        subscriptionPlan: user.business?.subscriptionPlan ?? null
-    });
-
-    return {
-        user,
-        token,
-    };
-}
-
-export async function completeOnboardingService(ownerId: string, data: CompleteRegisterValues) {
-    const owner = await UserRepository.findById(ownerId);
-    if (!owner) {
-        throw new AppError("User tidak ditemukan", HttpStatus.NOT_FOUND);
-    }
-
-    if (!owner.isVerified) {
-        throw new AppError("Akun belum terverifikasi", HttpStatus.BAD_REQUEST);
-    }
-
-    const existingBusiness = await BusinessRepository.findByOwnerId(ownerId);
-    if (existingBusiness) {
-        throw new AppError("Bisnis sudah terdaftar", HttpStatus.BAD_REQUEST);
-    }
-
-    if (await (SubscriptionPlanRepository.existingBusinessName(data.businessName.trim()))) {
-        throw new AppError(`Nama bisnis ${data.businessName.trim()}, sudah tersedia.`)
-    }
-
-    const planCode = data.selectedPlan.toUpperCase();
-    const plan = await SubscriptionPlanRepository.getByCode(planCode);
-
-    if (!plan) {
-        throw new AppError(`Paket langganan ${planCode} tidak ditemukan`, HttpStatus.NOT_FOUND);
-    }
-
-    return OnboardingRepository.completeOnboarding({
-        ownerId,
-        businessName: data.businessName,
-        description: data.description,
-        plan,
-    });
-}
-
-export async function updateProfileService(userId: string, data: UpdateProfileValues) {
-    const user = await UserRepository.findById(userId)
-
-    if (!user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
-    const updated = await UserRepository.updateProfile(userId, data);
-
-    if (data.avatar && user.avatar) {
-        try {
-            ImageService.deleteImageByUrl(user.avatar)
-        } catch (error) {
-            console.error(error)
+        if (!isPasswordValid) {
+            this.unauthorized(Messages.INVALID_CREDENTIALS);
         }
+
+        await redis.set(`session:${user.id}`, JSON.stringify({ ...user, businessId: user.business?.id }), 'EX', 60 * 60 * 24);
+
+        const token = JwtUtil.generate({
+            sessionId: user.id,
+            name: user.name,
+            role: user.role,
+            email: user.email,
+            isVerified: user.isVerified,
+            provider: user.provider === 'local' ? 'email' : user.provider,
+            businessId: user.business?.id,
+            subscriptionStatus: user.business?.subscriptionStatus,
+            subscriptionPlan: user.business?.subscriptionPlan
+        });
+        
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...userWithoutPassword } = user;
+
+        return {
+            user: userWithoutPassword,
+            token,
+        };
     }
-    redis.del(`user:${userId}`)
-    return updated
-}
 
+    static async cashierLogin(data: CashierLoginInput) {
+        const staff = await StaffRepository.findByEmail(data.email);
 
-export async function updatePasswordService(userId: string, data: UpdatePasswordValues) {
-    const user = await UserRepository.findById(userId)
+        if (!staff) {
+            this.unauthorized(Messages.INVALID_CREDENTIALS);
+        }
 
-    if (!user) throw new AppError(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+        // Pastikan staff memiliki password (sudah disetup sebagai kasir)
+        if (!staff.password) {
+            this.forbidden("Akun kasir belum diaktifkan. Hubungi owner untuk mengaktifkan akun.");
+        }
 
-    const isPasswordValid = await BcryptUtil.compare(data.currentPassword, user.password);
-    if (!isPasswordValid) throw new AppError(`Kata sandi saat ini salah.`, HttpStatus.BAD_REQUEST);
+        const isPasswordValid = await BcryptUtil.compare(data.password, staff.password);
 
-    const newPassword = await BcryptUtil.hash(data.newPassword)
-    const updated = await UserRepository.updatePassword(userId, newPassword);
+        if (!isPasswordValid) {
+            this.unauthorized(Messages.INVALID_CREDENTIALS);
+        }
 
-    redis.del(`user:${userId}`)
-    return updated
+        // Simpan session kasir di Redis
+        const staffSession = {
+            id: staff.id,
+            email: staff.email,
+            name: staff.name,
+            outletId: staff.outletId,
+            businessId: staff.outlet?.businessId,
+            userType: 'CASHIER' // Penanda bahwa ini adalah kasir
+        };
+
+        await redis.set(`session:cashier:${staff.id}`, JSON.stringify(staffSession), 'EX', 60 * 60 * 24);
+
+        const token = JwtUtil.generate({
+            sessionId: staff.id,
+            role: 'CASHIER',
+            userType: 'CASHIER',
+            outletId: staff.outletId,
+            businessId: staff.outlet?.businessId
+        });
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...staffWithoutPassword } = staff;
+
+        return {
+            staff: staffWithoutPassword,
+            token,
+        };
+    }
+
+    static async getCashierMe(staffId: string) {
+        const staff = await StaffRepository.findById(staffId);
+
+        if (!staff) {
+            this.notFound("Staff tidak ditemukan");
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...staffWithoutPassword } = staff;
+
+        return staffWithoutPassword;
+    }
+
+    static async getMe(userId: string) {
+        const user = await getUserByIdService(userId);
+        if (!user) {
+            this.notFound("Pengguna tidak ditemukan.");
+        }
+
+        const { business, ...userWithoutBusiness } = user;
+
+        if (!business) {
+            return { userWithoutBusiness, outlets: [], business: null };
+        }
+
+        const { outlets, ...businessWithoutOutlets } = business;
+        const businessType = outlets.map(o => o.type).join("::");
+        // Transform outlets to include full QRIS URL
+        const baseUrl = process.env.BASE_URL || 'http://localhost:1234';
+        const transformedOutlets = outlets?.map((outlet: any) => ({
+            ...outlet,
+            qrisImage: outlet.qrisImage
+                ? `${baseUrl}/${outlet.qrisImage.replace(/\\/g, '/')}`
+                : null,
+        })) || [];
+
+        return { userWithoutBusiness, outlets: transformedOutlets, business: { ...businessWithoutOutlets, type: businessType } };
+    }
+
+    static async resendVerification(email: string) {
+        const user = await getUserByEmailService(email);
+
+        if (!user) return;
+
+        if (user.isVerified) {
+            this.badRequest("Akun sudah diverifikasi");
+        }
+
+        // Check resend rate limit (3 attempts per day)
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const rateLimitKey = `resend_attempts:${email}:${today}`;
+        const maxAttempts = 3;
+
+        const currentAttempts = await redis.get(rateLimitKey);
+        const attemptCount = currentAttempts ? parseInt(currentAttempts) : 0;
+
+        if (attemptCount >= maxAttempts) {
+            throw new AppError(`Anda telah mencapai batas maksimal ${maxAttempts} kali pengiriman ulang kode verifikasi dalam sehari. Silakan coba lagi besok.`, HttpStatus.TOO_MANY_REQUESTS);
+        }
+
+        // Increment attempt count (expires at end of day)
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        const ttlSeconds = Math.floor((tomorrow.getTime() - Date.now()) / 1000);
+
+        await redis.set(rateLimitKey, (attemptCount + 1).toString(), 'EX', ttlSeconds);
+
+        // Generate new verification code
+        const verificationCode = CodeGeneratorUtil.generate(6);
+        await redis.set(`verification:${email}`, verificationCode, 'EX', 60 * 10);
+        const expiryCode = new Date();
+        expiryCode.setMinutes(expiryCode.getMinutes() + 10);
+
+        await UserRepository.update(user.id, {
+            verificationCode,
+            verificationCodeExpires: expiryCode
+        });
+
+        // Send email via message queue
+        await messagePublisher.publishResendVerificationEmail(email, verificationCode);
+    }
+
+    static async forgotPassword(email: string) {
+        const user = await getUserByEmailService(email);
+
+        if (!user) this.badRequest(Messages.USER_NOT_FOUND);
+
+        if (!user.isVerified) this.forbidden(Messages.ACCOUNT_INACTIVE);
+
+        // Check rate limit for forgot password (3 attempts per day)
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const rateLimitKey = `forgot_password_attempts:${email}:${today}`;
+        const maxAttempts = 3;
+
+        const currentAttempts = await redis.get(rateLimitKey);
+        const attemptCount = currentAttempts ? parseInt(currentAttempts) : 0;
+
+        if (attemptCount >= maxAttempts) {
+            throw new AppError(`Anda telah mencapai batas maksimal ${maxAttempts} kali permintaan reset password dalam sehari. Silakan coba lagi besok.`, HttpStatus.TOO_MANY_REQUESTS);
+        }
+
+        // Increment attempt count (expires at end of day)
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        const ttlSeconds = Math.floor((tomorrow.getTime() - Date.now()) / 1000);
+
+        await redis.set(rateLimitKey, (attemptCount + 1).toString(), 'EX', ttlSeconds);
+
+        // Generate reset token
+        const resetToken = randomUUID();
+        await redis.set(`reset:${resetToken}`, user.id, 'EX', 60 * 15); // 15 minutes
+
+        // Send email via message queue
+        await messagePublisher.publishForgotPasswordEmail(email, resetToken);
+    }
+
+    static async resetPassword(token: string, newPassword: string) {
+        const userId = await redis.get(`reset:${token}`);
+
+        if (!userId) {
+            this.badRequest("Token tidak valid atau sudah expired");
+        }
+
+        // Immediately delete the token to prevent reuse
+        await redis.del(`reset:${token}`);
+
+        // Now update the password
+        await updateUserPasswordService(userId, newPassword);
+    }
+
+    static async changePassword(userId: string, currentPassword: string, newPassword: string) {
+        const user = await getUserByIdService(userId);
+
+        if (!user) {
+            this.notFound("User tidak ditemukan");
+        }
+
+        const isCurrentPasswordValid = await BcryptUtil.compare(currentPassword, user.password);
+
+        if (!isCurrentPasswordValid) {
+            this.badRequest("Password saat ini salah");
+        }
+
+        await updateUserPasswordService(userId, newPassword);
+    }
+
+    static async googleOAuth(profile: {
+        googleId: string;
+        email: string;
+        name: string;
+        avatar?: string;
+    }) {
+        // Check if user already exists with this Google ID
+        let user = await UserRepository.findByGoogleId(profile.googleId);
+
+        if (!user) {
+            // Check if email already exists (no account linking allowed)
+            const existingUser = await getUserByEmailService(profile.email);
+            if (existingUser) {
+                this.conflict("Email sudah terdaftar dengan akun lain.");
+            }
+
+            // Create new user
+            user = await createUserWithGoogleService(profile);
+        }
+
+        // Create session and JWT token
+        await redis.set(`session:${user.id}`, JSON.stringify({ ...user, businessId: user.business?.id }), 'EX', 60 * 60 * 24);
+        const token = JwtUtil.generate({
+            sessionId: user.id,
+            role: user.role,
+            isVerified: user.isVerified,
+            email: user.email,
+            name: user.name,
+            provider: user.provider,
+            businessId: user.business?.id ?? null,
+            subscriptionStatus: user.business?.subscriptionStatus ?? null,
+            subscriptionPlan: user.business?.subscriptionPlan ?? null
+        });
+
+        return {
+            user,
+            token,
+        };
+    }
+
+    static async completeOnboarding(ownerId: string, data: CompleteRegisterValues) {
+        const owner = await UserRepository.findById(ownerId);
+        if (!owner) {
+            this.notFound("User tidak ditemukan");
+        }
+
+        if (!owner.isVerified) {
+            this.badRequest("Akun belum terverifikasi");
+        }
+
+        const existingBusiness = await BusinessRepository.findByOwnerId(ownerId);
+        if (existingBusiness) {
+            this.badRequest("Bisnis sudah terdaftar");
+        }
+
+        if (await (SubscriptionPlanRepository.existingBusinessName(data.businessName.trim()))) {
+            this.badRequest(`Nama bisnis ${data.businessName.trim()}, sudah tersedia.`);
+        }
+
+        const planCode = data.selectedPlan.toUpperCase();
+        const plan = await SubscriptionPlanRepository.getByCode(planCode);
+
+        if (!plan) {
+            this.notFound(`Paket langganan ${planCode} tidak ditemukan`);
+        }
+
+        return OnboardingRepository.completeOnboarding({
+            ownerId,
+            businessName: data.businessName,
+            description: data.description,
+            plan,
+        });
+    }
+
+    static async updateProfile(userId: string, data: UpdateProfileValues) {
+        const user = await UserRepository.findById(userId);
+
+        if (!user) this.notFound(Messages.USER_NOT_FOUND);
+        const updated = await UserRepository.updateProfile(userId, data);
+
+        if (data.avatar && user.avatar) {
+            try {
+                ImageService.deleteImageByUrl(user.avatar);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+        redis.del(`user:${userId}`);
+        return updated;
+    }
+
+    static async updatePassword(userId: string, data: UpdatePasswordValues) {
+        const user = await UserRepository.findById(userId);
+
+        if (!user) this.notFound(Messages.USER_NOT_FOUND);
+
+        const isPasswordValid = await BcryptUtil.compare(data.currentPassword, user.password);
+        if (!isPasswordValid) this.badRequest(`Kata sandi saat ini salah.`);
+
+        const newPassword = await BcryptUtil.hash(data.newPassword);
+        const updated = await UserRepository.updatePassword(userId, newPassword);
+
+        redis.del(`user:${userId}`);
+        return updated;
+    }
+
+    static async checkBusinessByOwnerId(ownerId: string) {
+        return BusinessRepository.findByOwnerId(ownerId);
+    }
+
+    static async getUserForSession(userId: string) {
+        return UserRepository.findById(userId);
+    }
 }

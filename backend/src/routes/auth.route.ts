@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getMeController, loginController, logoutController, registerController, verifyController, resendVerificationController, forgotPasswordController, resetPasswordController, googleOAuthCallbackController, cashierLoginController, getCashierMeController, completeOnboardingController, updateProfileController, updatePasswordController } from "../controller/auth.controller";
+import { authController } from "../controller/auth.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { loginSchema, verifySchema, resendVerificationSchema, forgotPasswordSchema, resetPasswordSchema, cashierLoginSchema, completeRegisterSchema } from "../schemas/auth.schema";
 import { createUserSchema } from "../schemas/user.schema";
@@ -11,60 +11,60 @@ import { config } from "../config";
 
 const authRouter = Router();
 
-authRouter.get("/me", protect, getMeController);
+authRouter.get("/me", protect, authController.getMe);
 
-authRouter.post("/logout", logoutController);
+authRouter.post("/logout", authController.logout);
 
 authRouter.post(
     "/login",
     validateSchema(loginSchema),
-    loginController
+    authController.login
 );
 
 authRouter.post(
     "/cashier/login",
     validateSchema(cashierLoginSchema),
-    cashierLoginController
+    authController.cashierLogin
 );
 
-authRouter.get("/cashier/me", protect, getCashierMeController);
+authRouter.get("/cashier/me", protect, authController.getCashierMe);
 
 authRouter.post(
     "/register",
     validateSchema(createUserSchema),
     checkEmailExists,
-    registerController
+    authController.register
 );
 
 authRouter.post(
     "/onboarding/complete",
     protect,
     validateSchema(completeRegisterSchema),
-    completeOnboardingController
+    authController.completeOnboarding
 );
 
 authRouter.post(
     "/verify",
     validateSchema(verifySchema),
-    verifyController
+    authController.verify
 );
 
 authRouter.post(
     "/resend-verification",
     validateSchema(resendVerificationSchema),
-    resendVerificationController
+    authController.resendVerification
 );
 
 authRouter.post(
     "/forgot-password",
     validateSchema(forgotPasswordSchema),
-    forgotPasswordController
+    authController.forgotPassword
 );
 
 authRouter.post(
     "/reset-password",
     validateSchema(resetPasswordSchema),
-    resetPasswordController
+    authController.resetPassword
 );
 
 authRouter.get("/google",
@@ -111,15 +111,17 @@ authRouter.get("/google/callback",
             next();
         })(req, res, next);
     },
-    googleOAuthCallbackController
+    authController.googleOAuthCallback
 );
 
 authRouter.patch("/update-profile/:userId",
     validateSchema(updateProfileSchema),
-    updateProfileController)
+    authController.updateProfile
+)
 
 authRouter.patch("/update-password/:userId",
     validateSchema(updatePasswordSchema),
-    updatePasswordController)
+    authController.updatePassword
+)
 
 export default authRouter;

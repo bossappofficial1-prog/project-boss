@@ -49,7 +49,7 @@ export default function OutletsDashboard() {
           </div>
           {dashboardData?.payments && (
             <div className="hidden sm:flex flex-col items-end">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Success Rate</p>
+              <p className="text-[10px] font-bold text-muted-foreground mb-1">Success Rate</p>
               <Badge variant="outline" className="rounded-md px-3 py-1.5 text-sm font-bold bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
                 {dashboardData.payments.successRate}%
               </Badge>
@@ -59,7 +59,7 @@ export default function OutletsDashboard() {
 
         <CardContent className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-3">
           <div className="space-y-2 group">
-            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
+            <p className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
               <MapPin className="h-3.5 w-3.5 text-primary" /> Alamat Outlet
             </p>
             <p className="text-sm font-semibold leading-relaxed">
@@ -67,7 +67,7 @@ export default function OutletsDashboard() {
             </p>
           </div>
           <div className="space-y-2 group">
-            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
+            <p className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
               <Phone className="h-3.5 w-3.5 text-primary" /> Kontak Bisnis
             </p>
             <p className="text-sm font-semibold">
@@ -75,7 +75,7 @@ export default function OutletsDashboard() {
             </p>
           </div>
           <div className="space-y-2 group">
-            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
+            <p className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
               Pesanan Hari Ini
             </p>
             <p className="text-2xl font-black tracking-tighter text-foreground">
@@ -185,7 +185,7 @@ export default function OutletsDashboard() {
               </CardHeader>
               <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl border border-border/50 bg-background/50 space-y-2">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Metode Terpopuler</p>
+                  <p className="text-[10px] font-bold text-muted-foreground">Metode Terpopuler</p>
                   <p className="text-lg font-bold text-primary truncate">
                     {topPaymentMethod?.method ?? 'Belum tersedia'}
                   </p>
@@ -196,7 +196,7 @@ export default function OutletsDashboard() {
                   )}
                 </div>
                 <div className="p-4 rounded-xl border border-border/50 bg-background/50 space-y-2">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Rasio Sukses</p>
+                  <p className="text-[10px] font-bold text-muted-foreground">Rasio Sukses</p>
                   <p className="text-2xl font-black text-emerald-600">
                     {dashboardData.payments.successRate}%
                   </p>

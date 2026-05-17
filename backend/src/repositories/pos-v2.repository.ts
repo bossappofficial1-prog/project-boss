@@ -137,9 +137,12 @@ export class PosV2Repository {
         pointsRedeemed: number;
         taxAmount: number;
         cashierId: string | null;
+        cashierShiftId: string | null;
         bookingDate: Date | null;
         hasService: boolean;
         paymentMethod: string;
+        cashReceived: number;
+        cashChange: number;
         items: Array<{
             productId: string;
             quantity: number;
@@ -162,8 +165,8 @@ export class PosV2Repository {
     }) {
         const {
             orderId, customerId, outletId, totalAmount, discountAmount,
-            pointsRedeemed, taxAmount, cashierId, bookingDate, hasService,
-            paymentMethod, items, stockUpdates, ticketUpdates,
+            pointsRedeemed, taxAmount, cashierId, cashierShiftId, bookingDate, hasService,
+            paymentMethod, cashReceived, cashChange, items, stockUpdates, ticketUpdates,
             bookingSlotId, tableId, tableNumber, isOpenBill
         } = params;
 
@@ -241,6 +244,7 @@ export class PosV2Repository {
                             ? (hasService ? OrderStatus.PROCESSING : OrderStatus.COMPLETED)
                             : OrderStatus.AWAITING_PAYMENT,
                         handledByStaffId: cashierId,
+                        cashierShiftId: cashierShiftId || null,
                         bookingDate,
                         tableId,
                         tableNumber: tableNumber || null,
@@ -264,6 +268,7 @@ export class PosV2Repository {
                             ? (hasService ? OrderStatus.PROCESSING : OrderStatus.COMPLETED)
                             : OrderStatus.AWAITING_PAYMENT,
                         handledByStaffId: cashierId,
+                        cashierShiftId: cashierShiftId || null,
                         bookingDate,
                         tableId,
                         tableNumber: tableNumber || null,
@@ -386,7 +391,10 @@ export class PosV2Repository {
                         status: PaymentStatus.SUCCESS,
                         isManual: true,
                         manualMethod: paymentMethod === "qris" ? ManualPaymentType.QRIS_OFFLINE : ManualPaymentType.CASH,
+                        cashReceived: paymentMethod === "cash" ? cashReceived : 0,
+                        cashChange: paymentMethod === "cash" ? cashChange : 0,
                         orderId: order.id,
+                        cashierShiftId: cashierShiftId || null,
                     },
                 });
             }

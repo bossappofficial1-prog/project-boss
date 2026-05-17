@@ -56,7 +56,7 @@ export function CartPanel({
 
     if (items.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border py-14 text-center">
+            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border py-10 text-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                     <ShoppingCart className="h-5 w-5 text-muted-foreground" />
                 </div>
@@ -71,7 +71,7 @@ export function CartPanel({
     }
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
             {/* Header row */}
             <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
@@ -96,7 +96,7 @@ export function CartPanel({
             )}
 
             {/* Item list */}
-            <div className="max-h-[360px] space-y-2 overflow-y-auto pr-0.5">
+            <div className="max-h-[300px] space-y-2 overflow-y-auto pr-0.5">
                 {items.map((line) => {
                     const isService = line.product.type === "SERVICE";
                     const isTicket = line.product.type === "TICKET";
@@ -107,12 +107,12 @@ export function CartPanel({
                     return (
                         <div
                             key={line.product.id}
-                            className="flex flex-col gap-2.5 rounded-lg border border-border bg-card p-3">
+                            className="flex flex-col gap-2 rounded-lg border border-border bg-card p-2.5">
                             {/* Product row */}
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-2.5">
                                 {/* Thumbnail */}
                                 {imageUrl && (
-                                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+                                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-muted">
                                         <img
                                             src={imageUrl}
                                             alt={line.product.name}

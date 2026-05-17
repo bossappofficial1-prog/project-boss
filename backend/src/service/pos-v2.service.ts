@@ -8,6 +8,7 @@ import { generateServiceOrderNotificationQueue } from "../queues/generate-servic
 import { RedisUtils } from "../utils/redis.utils";
 import { LoyaltyService } from "./loyalty.service";
 import { getOutletByIdService } from "./outlet.service";
+import { CashierShiftService } from "./cashier-shift.service";
 
 const TABLE_ENABLED_OUTLET_TYPES = new Set(["FNB", "CUSTOM"]);
 
@@ -118,6 +119,18 @@ export class PosV2Service {
 
     const outlet = await getOutletByIdService(outletId);
     const tableFeatureEnabled = TABLE_ENABLED_OUTLET_TYPES.has(outlet.type);
+
+    let cashierShiftId: string | null = null;
+    if (cashierId && outlet.type === "RETAIL") {
+      const activeShift = await CashierShiftService.getActiveShift({
+        outletId,
+        staffId: cashierId,
+      });
+      if (!activeShift) {
+        throw new AppError("Shift wajib dibuka sebelum melakukan transaksi.", HttpStatus.BAD_REQUEST);
+      }
+      cashierShiftId = activeShift.id;
+    }
 
     if (!tableFeatureEnabled && (tableId || tableNumber || isOpenBill)) {
       throw new AppError(
@@ -320,11 +333,14 @@ export class PosV2Service {
       pointsRedeemed,
       taxAmount: totalTax,
       cashierId: finalCashierId,
+      cashierShiftId,
       items: orderItems,
       stockUpdates,
       ticketUpdates,
       hasService,
       paymentMethod: paymentMethod || "none",
+      cashReceived: isOpenBill || paymentMethod === "qris" ? 0 : Math.max(0, cashReceived),
+      cashChange: isOpenBill || paymentMethod === "qris" ? 0 : Math.max(0, cashReceived - grandTotal),
       bookingSlotId,
       bookingDate: bookingDate ? new Date(bookingDate) : null,
       tableId,

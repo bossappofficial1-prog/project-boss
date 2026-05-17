@@ -79,7 +79,7 @@ export default function ExpensesPage() {
 				title="Pengeluaran Outlet"
 				description="Kelola biaya operasional harian, gaji staf, dan modal inventaris Anda."
 				actions={
-					<Button onClick={handleAdd} className="font-bold text-xs uppercase tracking-widest h-10 shadow-none">
+					<Button onClick={handleAdd} className="font-bold text-xs h-10 shadow-none">
 						<Plus className="w-4 h-4 mr-2" />
 						Tambah Pengeluaran
 					</Button>
@@ -129,8 +129,8 @@ export default function ExpensesPage() {
 			{error && (
 				<div className="bg-rose-500/10 border border-rose-500/20 rounded-md p-4 flex items-center gap-3 text-rose-600">
 					<Receipt className="w-4 h-4" />
-					<p className="text-xs font-bold uppercase tracking-widest">{error}</p>
-					<Button onClick={refetch} variant="ghost" size="sm" className="ml-auto h-7 text-[10px] font-bold uppercase tracking-widest hover:bg-rose-500/20 text-rose-600">
+					<p className="text-xs font-bold">{error}</p>
+					<Button onClick={refetch} variant="ghost" size="sm" className="ml-auto h-7 text-[10px] font-bold hover:bg-rose-500/20 text-rose-600">
 						Coba Lagi
 					</Button>
 				</div>

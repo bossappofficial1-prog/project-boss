@@ -112,7 +112,7 @@ function OverviewCard({
           {icon}
         </div>
         <div className="space-y-0.5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          <p className="text-[10px] font-bold text-muted-foreground">
             {label}
           </p>
           <p className="text-2xl font-bold tracking-tighter text-foreground/90 tabular-nums">
@@ -464,7 +464,7 @@ export default function ProductsContent() {
                             </p>
                             {p.type === "GOODS" && (
                               <div className="flex items-center gap-1.5">
-                                <div className="px-1 py-0 rounded bg-muted/50 border border-border/40 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                                <div className="px-1 py-0 rounded bg-muted/50 border border-border/40 text-[9px] font-bold text-muted-foreground">
                                   HPP
                                 </div>
                                 <p className="text-[10px] font-bold text-muted-foreground tabular-nums">
@@ -474,7 +474,7 @@ export default function ProductsContent() {
                             )}
                             {p.type === "SERVICE" && p.service && (
                               <div className="flex items-center gap-1.5">
-                                <div className="px-1 py-0 rounded bg-muted/50 border border-border/40 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                                <div className="px-1 py-0 rounded bg-muted/50 border border-border/40 text-[9px] font-bold text-muted-foreground">
                                   Komisi
                                 </div>
                                 <p className="text-[10px] font-bold text-muted-foreground tabular-nums">
@@ -546,7 +546,7 @@ export default function ProductsContent() {
                                 </p>
                               </div>
                               {p.goods?.minStock != null && (
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+                                <p className="text-[10px] font-bold text-muted-foreground opacity-60">
                                   Min Stock: {p.goods.minStock}
                                 </p>
                               )}
@@ -571,7 +571,7 @@ export default function ProductsContent() {
                                   ? "HABIS"
                                   : `${available} / ${p.ticket.totalQuota} TIKET`}
                               </p>
-                              <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground opacity-60">
                                 <Clock className="h-3 w-3" />
                                 {new Date(
                                   p.ticket.eventDate,

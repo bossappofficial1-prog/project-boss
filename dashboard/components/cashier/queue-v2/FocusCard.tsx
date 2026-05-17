@@ -171,7 +171,7 @@ export function FocusCard({
                             </div>
                             <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">ID:</span>
+                                    <span className="text-[10px] font-bold opacity-40">ID:</span>
                                     <span className="text-xs font-bold tabular-nums">#{entry.id.slice(-8).toUpperCase()}</span>
                                 </div>
                                 {entry.tableNumber && (
@@ -179,7 +179,7 @@ export function FocusCard({
                                         <div className="hidden sm:block h-3 w-px bg-border/40" />
                                         <div className="flex items-center gap-2">
                                             <LayoutGrid className="w-3.5 h-3.5 text-primary" />
-                                            <span className="text-xs font-black uppercase tracking-widest text-primary">Meja {entry.tableNumber}</span>
+                                            <span className="text-xs font-black text-primary">Meja {entry.tableNumber}</span>
                                         </div>
                                     </>
                                 )}
@@ -199,7 +199,7 @@ export function FocusCard({
 
                 {!isKitchenView && (
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="h-9 px-3 font-bold text-[10px] uppercase tracking-widest" onClick={() => onDetail?.(entry)}>
+                        <Button variant="outline" size="sm" className="h-9 px-3 font-bold text-[10px]" onClick={() => onDetail?.(entry)}>
                             <MessageSquare className="w-3.5 h-3.5 mr-2" />
                             Detail
                         </Button>
@@ -232,13 +232,13 @@ export function FocusCard({
                             <p className="text-sm font-bold text-foreground tabular-nums">
                                 {entry.scheduledStart ? formatTime(entry.scheduledStart) : "Sekarang"}
                             </p>
-                            <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest flex items-center gap-1">
+                            <p className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1">
                                 <Timer className="w-3 h-3" />
                                 {entry.productDuration || 0} Mnt
                             </p>
                         </div>
                         {isFuture && entry.scheduledStart && (
-                            <div className="ml-auto px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[9px] font-bold text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
+                            <div className="ml-auto px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[9px] font-bold text-amber-600 flex items-center gap-1.5">
                                 <CalendarClock className="w-3 h-3" />
                                 {formatShortDate(entry.scheduledStart)}
                             </div>
@@ -254,7 +254,7 @@ export function FocusCard({
                         </div>
                         <div>
                             <p className="text-sm font-bold text-foreground">{entry.staffName || "Belum Ditentukan"}</p>
-                            <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">Teknisi</p>
+                            <p className="text-[9px] font-bold text-muted-foreground/40">Teknisi</p>
                         </div>
                     </div>
                 </div>
@@ -276,7 +276,7 @@ export function FocusCard({
                             )}
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest h-5 bg-muted/30 border-border/40">
+                            <Badge variant="outline" className="text-[9px] font-bold h-5 bg-muted/30 border-border/40">
                                 <CreditCard className="w-3 h-3 mr-1 opacity-40" />
                                 {entry.paymentMethod || "Online"}
                             </Badge>
@@ -290,7 +290,7 @@ export function FocusCard({
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        className="h-11 px-4 font-bold text-[10px] uppercase tracking-widest"
+                                        className="h-11 px-4 font-bold text-[10px]"
                                         onClick={() => onViewProof?.(entry)}
                                     >
                                         <ImageIcon className="w-4 h-4 mr-2 opacity-60" />

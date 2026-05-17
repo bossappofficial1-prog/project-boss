@@ -58,7 +58,7 @@ export function PaymentSection({
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5">
       <Label className="text-sm font-medium">Metode Pembayaran</Label>
 
       <div className="grid grid-cols-2 gap-2">
@@ -66,7 +66,7 @@ export function PaymentSection({
           type="button"
           onClick={() => onMethodChange("cash")}
           className={cn(
-            "flex items-center gap-2 rounded-md border p-3 text-sm font-medium transition-all",
+            "flex items-center gap-2 rounded-md border p-2.5 text-sm font-medium transition-all",
             method === "cash"
               ? "border-primary bg-primary/10 text-primary"
               : "border-border text-muted-foreground",
@@ -78,7 +78,7 @@ export function PaymentSection({
           type="button"
           onClick={handleQrisMethodChange}
           className={cn(
-            "flex items-center gap-2 rounded-md border p-3 text-sm font-medium transition-all",
+            "flex items-center gap-2 rounded-md border p-2.5 text-sm font-medium transition-all",
             method === "qris"
               ? "border-primary bg-primary/10 text-primary"
               : "border-border text-muted-foreground",
@@ -91,14 +91,14 @@ export function PaymentSection({
         <button
           type="button"
           disabled
-          className="flex items-center gap-2 rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground/50">
+          className="flex items-center gap-2 rounded-md border border-dashed border-border p-2.5 text-sm text-muted-foreground/50">
           <CreditCard className="h-4 w-4" />
           Lainnya (segera)
         </button>
       </div>
 
       {method === "cash" && (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           <div>
             <Label htmlFor="cashReceived" className="text-xs text-muted-foreground">
               Nominal Diterima

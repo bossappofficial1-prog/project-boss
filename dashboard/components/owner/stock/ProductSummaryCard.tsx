@@ -30,7 +30,7 @@ export default function ProductSummaryCard({
               <Package className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-foreground/90">
+              <CardTitle className="text-sm font-bold text-foreground/90">
                 {productInfo.product.name}
               </CardTitle>
               <CardDescription className="text-[10px] font-medium uppercase tracking-tighter opacity-70">
@@ -39,7 +39,7 @@ export default function ProductSummaryCard({
             </div>
           </div>
           <Badge variant="outline" className={cn(
-            "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest shadow-none",
+            "px-2 py-0.5 rounded-md text-[10px] font-bold shadow-none",
             productInfo.product.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-muted text-muted-foreground border-border"
           )}>
             {productInfo.product.status === "ACTIVE" ? "Aktif" : "Nonaktif"}
@@ -51,7 +51,7 @@ export default function ProductSummaryCard({
           <div className="rounded-md border border-border/60 bg-muted/5 p-3 space-y-2">
             <div className="flex items-center gap-2 text-muted-foreground opacity-70">
               <Layers className="h-3.5 w-3.5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Stok Saat Ini</span>
+              <span className="text-[10px] font-bold">Stok Saat Ini</span>
             </div>
             <p className={cn(
               "text-xl font-bold tabular-nums tracking-tight",
@@ -68,7 +68,7 @@ export default function ProductSummaryCard({
           <div className="rounded-md border border-border/60 bg-muted/5 p-3 space-y-2">
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 opacity-70">
               <Scale className="h-3.5 w-3.5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">HPP Rata-rata</span>
+              <span className="text-[10px] font-bold">HPP Rata-rata</span>
             </div>
             <p className="text-xl font-bold tabular-nums text-foreground/90 tracking-tight">{formatCurrency(productInfo.averageHpp)}</p>
           </div>
@@ -76,7 +76,7 @@ export default function ProductSummaryCard({
           <div className="rounded-md border border-border/60 bg-muted/5 p-3 space-y-2">
             <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 opacity-70">
               <DollarSign className="h-3.5 w-3.5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Harga Jual</span>
+              <span className="text-[10px] font-bold">Harga Jual</span>
             </div>
             <p className="text-xl font-bold tabular-nums text-foreground/90 tracking-tight">{formatCurrency(productInfo.sellingPrice)}</p>
           </div>
@@ -84,7 +84,7 @@ export default function ProductSummaryCard({
           <div className="rounded-md border border-border/60 bg-muted/5 p-3 space-y-2">
             <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 opacity-70">
               <TrendingUp className="h-3.5 w-3.5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Margin</span>
+              <span className="text-[10px] font-bold">Margin</span>
             </div>
             <div className="space-y-0.5">
               <p className="text-xl font-bold tabular-nums text-foreground/90 tracking-tight">{formatCurrency(margin)}</p>
@@ -95,7 +95,7 @@ export default function ProductSummaryCard({
           <div className="rounded-md border border-border/60 bg-muted/5 p-3 space-y-2">
             <div className="flex items-center gap-2 text-muted-foreground opacity-70">
               <Package className="h-3.5 w-3.5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Satuan</span>
+              <span className="text-[10px] font-bold">Satuan</span>
             </div>
             <p className="text-xl font-bold text-foreground/90 tracking-tight uppercase">{productInfo.unit}</p>
           </div>

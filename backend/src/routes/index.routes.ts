@@ -22,6 +22,7 @@ import notificationRouter from "./notification.route";
 import adminRouter from "./admin.route";
 import transactionRouter from "./transaction.route";
 import stockRouter from "./stock.route";
+import supplierRouter from "./supplier.route";
 import { ResponseUtil } from "../utils";
 import { paymentMethod } from "../constants/payment-method";
 import { SocketEmitter } from "../socket/socket-emiiter";
@@ -40,6 +41,7 @@ import pushNotification from "./push-notification.routes";
 import tableRouter from "./table.route";
 import billRouter from "./bill.route";
 import toolsRouter from "./tools.routes";
+import cashierShiftRouter from "./cashier-shift.route";
 
 const apiRouter = Router();
 
@@ -71,12 +73,14 @@ apiRouter.use("/security", securityRouter);
 apiRouter.use("/server", serverRouter);
 apiRouter.use("/staff", staffRouter);
 apiRouter.use("/stock", stockRouter);
+apiRouter.use("/suppliers", supplierRouter);
 apiRouter.use("/subscription", subscriptionRouter);
 apiRouter.use("/subscription-plans", subscriptionPlanRouter);
 apiRouter.use("/tickets", ticketRouter);
 apiRouter.use("/transactions", transactionRouter);
 apiRouter.use("/tables", tableRouter);
 apiRouter.use("/tools", toolsRouter);
+apiRouter.use("/cashier-shifts", cashierShiftRouter);
 apiRouter.use("/upload", uploadRouter);
 apiRouter.use("/users", userRouter);
 
