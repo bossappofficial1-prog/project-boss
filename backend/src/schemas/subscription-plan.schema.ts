@@ -108,6 +108,29 @@ export const subscriptionPlanSchema = z.object({
         invalid_type_error: "Status populer harus berupa boolean",
     }).default(false),
 
+    yearlyPrice: z
+        .number({
+            required_error: "Harga yearly wajib diisi",
+            invalid_type_error: "Harga yearly harus berupa angka",
+        })
+        .min(0, {
+            message: "Harga yearly tidak boleh bernilai negatif",
+        })
+        .default(0),
+
+    yearlyDiscount: z
+        .number({
+            required_error: "Diskon yearly wajib diisi",
+            invalid_type_error: "Diskon yearly harus berupa angka",
+        })
+        .min(0, {
+            message: "Diskon minimal 0%",
+        })
+        .max(100, {
+            message: "Diskon maksimal 100%",
+        })
+        .default(0),
+
     features: planFeaturesSchema,
 });
 

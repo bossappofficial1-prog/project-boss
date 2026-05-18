@@ -10,7 +10,7 @@ import { SubscriptionService } from "../service/subscription.service";
 import { redis } from "../config/redis";
 import { JwtUtil } from "../utils";
 import { ensureString } from "../utils/request";
-import { RenewSubscriptionInput } from "../schemas/subscription.schema";
+import { RenewSubscriptionInput, SwitchBillingCycleInput } from "../schemas/subscription.schema";
 
 // Magic numbers for image file validation
 const IMAGE_MAGIC_NUMBERS = {
@@ -296,4 +296,24 @@ export const cancelSubscriptionInvoiceController = asyncHandler(async (req: Requ
     await SubscriptionService.cancelInvoice(businessId, invoiceId);
 
     return ResponseUtil.success(res, { message: 'Invoice berhasil dibatalkan' });
+});
+
+export const switchBillingCycleController = asyncHandler(async (req: Request, res: Response) => {
+    const storedUser = req.storedUser as typeof req.storedUser & {
+        businessId?: string;
+        business?: { id: string } | null;
+    };
+    const businessId = storedUser?.businessId ?? storedUser?.business?.id;
+
+    if (!businessId) {
+        throw new AppError('Business ID tidak ditemukan di token', HttpStatus.UNAUTHORIZED);
+    }
+
+    const payload = req.body as SwitchBillingCycleInput;
+    const result = await SubscriptionService.switchBillingCycle(businessId, payload);
+
+    return ResponseUtil.success(res, {
+        message: `Billing cycle berhasil diubah ke ${result.newBillingCycle === 365 ? 'Yearly' : 'Monthly'}`,
+        data: result,
+    }, HttpStatus.OK);
 });

@@ -49,6 +49,7 @@ export interface SubscriptionInvoiceRecord {
         status: string;
         startDate: string;
         endDate: string;
+        billingCycle: number;
         plan: SubscriptionPlanSummary;
     };
 }

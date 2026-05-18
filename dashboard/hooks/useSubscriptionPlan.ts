@@ -10,6 +10,8 @@ export interface SubcriptionPlan {
     price: number
     promo: number;
     durationDays: number
+    yearlyPrice: number
+    yearlyDiscount: number
     features: Features
     isActive: boolean
     isPopular: boolean

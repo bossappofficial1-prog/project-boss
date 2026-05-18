@@ -9,10 +9,13 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { SubscriptionPlanDetail } from "@/lib/apis/owner-subscription";
-import { Loader2, Crown, ShieldCheck } from "lucide-react";
-import { useMemo } from "react";
+import { Loader2, Crown, ShieldCheck, CalendarDays } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlanCard } from "@/components/auth/register/plan-card";
+import { formatCurrency } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface Props {
     open: boolean;
@@ -23,7 +26,7 @@ interface Props {
     isLoading: boolean;
     isConfirming: boolean;
     shouldForcePlanSelection: boolean;
-    onConfirm: () => void;
+    onConfirm: (billingCycle: number) => void;
 }
 
 export function PlanSelectorDialog({
@@ -37,19 +40,40 @@ export function PlanSelectorDialog({
     shouldForcePlanSelection = false,
     onConfirm,
 }: Props) {
+    const [billingCycle, setBillingCycle] = useState<number>(30);
+
     const selectedPlan = useMemo(
         () => planOptions.find((p) => p.code === selectedPlanCode) ?? null,
         [planOptions, selectedPlanCode]
     );
 
     const handleOpenChange = (open: boolean) => {
-        if (!isConfirming) onOpenChange(open);
+        if (!isConfirming) {
+            setBillingCycle(30);
+            onOpenChange(open);
+        }
     };
+
+    const handleConfirm = () => {
+        onConfirm(billingCycle);
+    };
+
+    const yearlySavings = useMemo(() => {
+        if (!selectedPlan || billingCycle !== 365 || !selectedPlan.yearlyPrice) return null;
+        const monthlyTotal = selectedPlan.price * 12;
+        const yearlyEffective = selectedPlan.yearlyPrice * (1 - selectedPlan.yearlyDiscount / 100);
+        const savings = monthlyTotal - yearlyEffective;
+        return {
+            monthlyTotal,
+            yearlyEffective,
+            savings,
+            savingsPercent: monthlyTotal > 0 ? Math.round((savings / monthlyTotal) * 100) : 0,
+        };
+    }, [selectedPlan, billingCycle]);
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-2xl p-0 overflow-hidden border border-border/50 shadow-none bg-background rounded-xl">
-                {/* Header */}
                 <DialogHeader className="p-6 border-b border-border/50 bg-muted">
                     <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-lg bg-background text-muted-foreground flex items-center justify-center border border-border/50 shadow-none shrink-0">
@@ -68,8 +92,7 @@ export function PlanSelectorDialog({
                     </div>
                 </DialogHeader>
 
-                {/* Content */}
-                <div className="max-h-[60vh] overflow-y-auto p-6 space-y-3 bg-background">
+                <div className="max-h-[60vh] overflow-y-auto px-4 space-y-4 bg-background">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
                             <Loader2 className="h-8 w-8 animate-spin" />
@@ -83,20 +106,71 @@ export function PlanSelectorDialog({
                             <p className="text-sm font-medium">Tidak ada paket tersedia</p>
                         </div>
                     ) : (
-                        <div className="grid gap-3">
-                            {planOptions.map((planOption) => (
-                                <PlanCard
-                                    key={planOption.code}
-                                    plan={planOption as any}
-                                    isSelected={selectedPlanCode === planOption.code}
-                                    onSelectedChange={onSelectPlan}
-                                />
-                            ))}
-                        </div>
+                        <>
+                            <div className="flex items-center gap-2 p-1 bg-muted/50 rounded-lg w-fit">
+                                <button
+                                    onClick={() => setBillingCycle(30)}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+                                        billingCycle === 30
+                                            ? "bg-background text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <CalendarDays className="h-4 w-4" />
+                                    Monthly
+                                </button>
+                                <button
+                                    onClick={() => setBillingCycle(365)}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+                                        billingCycle === 365
+                                            ? "bg-background text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <CalendarDays className="h-4 w-4" />
+                                    Yearly
+                                </button>
+                            </div>
+
+                            <div className="grid gap-3">
+                                {planOptions.map((planOption) => (
+                                    <PlanCard
+                                        key={planOption.code}
+                                        plan={planOption as any}
+                                        isSelected={selectedPlanCode === planOption.code}
+                                        onSelectedChange={onSelectPlan}
+                                        billingCycle={billingCycle}
+                                    />
+                                ))}
+                            </div>
+
+                            {yearlySavings && billingCycle === 365 && (
+                                <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-200 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                                            Hemat dengan Yearly
+                                        </span>
+                                        <Badge className="bg-emerald-500 text-white">
+                                            Hemat {yearlySavings.savingsPercent}%
+                                        </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm">
+                                        <span className="text-muted-foreground line-through">
+                                            {formatCurrency(yearlySavings.monthlyTotal)}
+                                        </span>
+                                        <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                                            {formatCurrency(yearlySavings.yearlyEffective)}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">/tahun</span>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 
-                {/* Footer */}
                 <DialogFooter className="p-6 border-t border-border/50 bg-muted gap-2 sm:justify-end">
                     <Button
                         variant="outline"
@@ -106,7 +180,7 @@ export function PlanSelectorDialog({
                         Nanti Saja
                     </Button>
                     <Button
-                        onClick={onConfirm}
+                        onClick={handleConfirm}
                         disabled={!selectedPlan || isConfirming || planOptions.length === 0}
                         className="gap-2"
                     >

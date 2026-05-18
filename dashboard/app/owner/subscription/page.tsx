@@ -8,6 +8,7 @@ import {
   useOwnerSubscriptionOverview,
   useRenewSubscription,
   useCancelSubscriptionInvoice,
+  useSwitchBillingCycle,
 } from '@/hooks/api/use-owner-subscription';
 import { InvoiceHistorySection } from '@/components/features/owner/subscription/InvoiceHistorySection';
 import { SubscriptionSkeleton } from '../../../components/features/owner/subscription/SubscriptionSkeleton';
@@ -36,6 +37,7 @@ export default function OwnerSubscriptionPage() {
   const invoicesQuery = useOwnerSubscriptionInvoices({ page, limit });
   const renewMutation = useRenewSubscription();
   const cancelMutation = useCancelSubscriptionInvoice();
+  const switchBillingCycleMutation = useSwitchBillingCycle();
   const plansQuery = useSubscriptionPlans();
 
   const overview = overviewQuery.data;
@@ -68,13 +70,13 @@ export default function OwnerSubscriptionPage() {
     }
   }, [planModalOpen, planOptions]);
 
-  const startRenew = async (planCodeOverride?: string | null) => {
+  const startRenew = async (planCodeOverride?: string | null, billingCycle?: number) => {
     if (renewMutation.isPending) return;
     const targetPlanCode = planCodeOverride ?? plan?.code;
     if (!targetPlanCode) return;
 
     try {
-      const result = await renewMutation.mutateAsync({ planCode: targetPlanCode });
+      const result = await renewMutation.mutateAsync({ planCode: targetPlanCode, billingCycle });
       if (result?.invoice?.id) {
         router.push(`/subscription/payment/${result.invoice.id}`);
       }
@@ -95,12 +97,12 @@ export default function OwnerSubscriptionPage() {
       return;
     }
 
-    await startRenew(plan.code);
+    await startRenew(plan.code, 30);
   };
 
-  const handleConfirmPlan = async () => {
+  const handleConfirmPlan = async (billingCycle: number) => {
     if (!selectedPlanCode) return;
-    await startRenew(selectedPlanCode);
+    await startRenew(selectedPlanCode, billingCycle);
     setPlanModalOpen(false);
   };
 
@@ -120,6 +122,15 @@ export default function OwnerSubscriptionPage() {
       await cancelMutation.mutateAsync(invoiceIdToCancel);
       setCancelModalOpen(false);
       setInvoiceIdToCancel(null);
+    } catch {
+      // Error handled in hook
+    }
+  };
+
+  const handleSwitchBillingCycle = async (newCycle: number) => {
+    if (!overview?.business?.id) return;
+    try {
+      await switchBillingCycleMutation.mutateAsync({ billingCycle: newCycle });
     } catch {
       // Error handled in hook
     }
@@ -157,6 +168,8 @@ export default function OwnerSubscriptionPage() {
             handleRenew={handleRenew}
             isRenewLoading={renewMutation.isPending}
             data={overviewQuery.data}
+            onSwitchBillingCycle={handleSwitchBillingCycle}
+            isSwitchingBillingCycle={switchBillingCycleMutation.isPending}
           />
 
           {usage && <UsageGrid usage={usage} />}

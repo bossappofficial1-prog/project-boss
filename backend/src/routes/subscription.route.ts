@@ -8,13 +8,14 @@ import {
     listOwnerInvoicesController,
     renewSubscriptionController,
     cancelSubscriptionInvoiceController,
+    switchBillingCycleController,
 } from "../controller/subscription.controller";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { UserRole } from "@prisma/client";
 import { validateSchema } from "../middleware/zod.middleware";
-import { renewSubscriptionSchema } from "../schemas/subscription.schema";
+import { renewSubscriptionSchema, switchBillingCycleSchema } from "../schemas/subscription.schema";
 
 const subscriptionRouter = Router();
 
@@ -103,6 +104,14 @@ subscriptionRouter.post(
     protect,
     authorize(UserRole.OWNER),
     cancelSubscriptionInvoiceController
+);
+
+subscriptionRouter.post(
+    '/switch-billing-cycle',
+    protect,
+    authorize(UserRole.OWNER),
+    validateSchema(switchBillingCycleSchema),
+    switchBillingCycleController
 );
 
 export default subscriptionRouter;

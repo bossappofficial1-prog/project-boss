@@ -150,8 +150,10 @@ export class SubscriptionRepository {
         price: number;
         startDate: Date;
         endDate: Date;
+        billingCycle?: number;
+        pricePerCycle?: number;
     }) {
-        const { businessId, planId, price, startDate, endDate } = params;
+        const { businessId, planId, price, startDate, endDate, billingCycle = 30, pricePerCycle = price } = params;
 
         return db.$transaction(async (tx) => {
             const subscription = await tx.businessSubscription.create({
@@ -161,6 +163,9 @@ export class SubscriptionRepository {
                     status: SubscriptionStatus.AWAITING_PAYMENT,
                     startDate,
                     endDate,
+                    billingCycle,
+                    pricePerCycle,
+                    nextBillingDate: endDate,
                 },
                 include: {
                     plan: true,
@@ -170,7 +175,7 @@ export class SubscriptionRepository {
             const invoice = await tx.subscriptionInvoice.create({
                 data: {
                     invoiceNumber: this.generateInvoiceNumber(businessId),
-                    amount: price,
+                    amount: pricePerCycle,
                     status: PaymentStatus.PENDING,
                     businessId,
                     subscriptionId: subscription.id,
@@ -185,6 +190,67 @@ export class SubscriptionRepository {
             });
 
             return { subscription, invoice };
+        });
+    }
+
+    static async getExpiringSubscriptions(days: number) {
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + days);
+        const today = new Date();
+
+        return db.businessSubscription.findMany({
+            where: {
+                status: 'ACTIVE',
+                nextBillingDate: {
+                    gte: today,
+                    lte: futureDate,
+                },
+            },
+            include: {
+                business: {
+                    include: {
+                        owner: true,
+                    },
+                },
+                plan: true,
+            },
+        });
+    }
+
+    static async getExpiredSubscriptions() {
+        return db.businessSubscription.findMany({
+            where: {
+                status: 'ACTIVE',
+                endDate: { lt: new Date() },
+            },
+            include: {
+                business: {
+                    include: {
+                        owner: true,
+                    },
+                },
+                plan: true,
+            },
+        });
+    }
+
+    static async switchBillingCycle(subscriptionId: string, billingCycle: number, pricePerCycle: number, endDate: Date) {
+        return db.businessSubscription.update({
+            where: { id: subscriptionId },
+            data: {
+                billingCycle,
+                pricePerCycle,
+                endDate,
+                nextBillingDate: endDate,
+            },
+            include: {
+                plan: true,
+                business: {
+                    include: {
+                        owner: true,
+                    },
+                },
+            },
         });
     }
 

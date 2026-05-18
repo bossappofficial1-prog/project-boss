@@ -9,6 +9,8 @@ import {
   type OwnerSubscriptionOverviewResponse,
   type RenewSubscriptionPayload,
   type RenewSubscriptionResponse,
+  type SwitchBillingCyclePayload,
+  type SwitchBillingCycleResponse,
 } from '@/lib/apis/owner-subscription';
 
 const OVERVIEW_QUERY_KEY = ['owner-subscription', 'overview'] as const;
@@ -67,7 +69,24 @@ export function useCancelSubscriptionInvoice() {
       ]);
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data.message ?? 'Gagal membatalkan invoice');
+      toast.error(error?.response?.data?.message ?? 'Gagal membatalkan invoice');
+    },
+  });
+}
+
+export function useSwitchBillingCycle() {
+  const queryClient = useQueryClient();
+
+  return useMutation<SwitchBillingCycleResponse, Error, SwitchBillingCyclePayload>({
+    mutationFn: (payload) => ownerSubscriptionApi.switchBillingCycle(payload),
+    onSuccess: async (data) => {
+      toast.success(data?.message ?? 'Billing cycle berhasil diubah');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: OVERVIEW_QUERY_KEY }),
+      ]);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message ?? 'Gagal mengubah billing cycle');
     },
   });
 }

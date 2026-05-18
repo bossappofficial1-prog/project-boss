@@ -4,6 +4,8 @@ import { processPaymentProofCleanup } from "./paymentProofCleanup.job"
 import { cleanupScheduler } from "./cleanup.job";
 import { checkSubscriptionExpireJob } from "./check-subscription-expire.job";
 import { deletePaymentExpiryScheduler } from "./payment-expire-delete.job";
+import { subscriptionExpiryNotificationJob } from "./subscription-expiry-notification.job";
+import { subscriptionAutoSuspendJob } from "./subscription-auto-suspend.job";
 
 declare global {
     var __jobsInitialized: boolean | undefined;
@@ -30,4 +32,6 @@ export const setUpJobs = () => {
     cleanupScheduler.register()
     checkSubscriptionExpireJob.register()
     deletePaymentExpiryScheduler.register()
+    subscriptionExpiryNotificationJob.register()
+    subscriptionAutoSuspendJob.register()
 }

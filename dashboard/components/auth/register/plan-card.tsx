@@ -8,15 +8,33 @@ type PlanCardProps = {
     plan: SubcriptionPlan | SubscriptionPlanDetail
     isSelected: boolean
     onSelectedChange: (selected: string) => void
+    billingCycle?: number
 }
 
-export function PlanCard({ plan, isSelected, onSelectedChange }: PlanCardProps) {
+export function PlanCard({ plan, isSelected, onSelectedChange, billingCycle = 30 }: PlanCardProps) {
     const visualFeatures = transformFeaturesToDisplay((plan.features || {}) as any)
-    const hasPromo = plan.promo && plan.promo > 0
-    const finalPrice = hasPromo ? plan.promo : plan.price
-    const discount = hasPromo
-        ? Math.round(((plan.price - plan.promo) / plan.price) * 100)
-        : 0
+    
+    const isYearly = billingCycle === 365
+    const hasYearlyPrice = plan.yearlyPrice && plan.yearlyPrice > 0
+    
+    let displayPrice: number
+    let priceLabel: string
+    let hasPromo = false
+    let discount = 0
+
+    if (isYearly && hasYearlyPrice) {
+        displayPrice = plan.yearlyPrice * (1 - (plan.yearlyDiscount || 0) / 100)
+        priceLabel = "/tahun"
+        hasPromo = plan.yearlyDiscount > 0
+        discount = plan.yearlyDiscount || 0
+    } else {
+        hasPromo = !!(plan.promo && plan.promo > 0)
+        displayPrice = hasPromo ? plan.promo : plan.price
+        priceLabel = `/${plan.durationDays} hari`
+        discount = hasPromo
+            ? Math.round(((plan.price - plan.promo!) / plan.price) * 100)
+            : 0
+    }
 
     return (
         <div
@@ -28,7 +46,6 @@ export function PlanCard({ plan, isSelected, onSelectedChange }: PlanCardProps) 
                     : "border-border/50 bg-card hover:border-border"
             )}
         >
-            {/* Badge Popular */}
             {plan.isPopular && (
                 <Badge
                     className={cn(
@@ -42,25 +59,23 @@ export function PlanCard({ plan, isSelected, onSelectedChange }: PlanCardProps) 
                 </Badge>
             )}
 
-            {/* Header */}
             <div className="flex justify-between items-start">
                 <div className="space-y-1">
                     <h3 className="text-sm font-medium text-foreground">
                         {plan.name}
                     </h3>
 
-                    {/* Price */}
                     <div className="flex items-end gap-2 flex-wrap">
                         {hasPromo && (
                             <span className="text-xs line-through text-muted-foreground">
-                                {formatCurrency(plan.price)}
+                                {formatCurrency(isYearly ? plan.yearlyPrice : plan.price)}
                             </span>
                         )}
                         <span className="text-xl font-semibold text-foreground tabular-nums">
-                            {formatCurrency(finalPrice)}
+                            {formatCurrency(displayPrice)}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                            / {plan.durationDays} hari
+                            {priceLabel}
                         </span>
                         {hasPromo && (
                             <Badge variant="outline" className="text-xs rounded-sm text-chart-3 border-chart-3/30 bg-chart-3/10">
@@ -68,9 +83,14 @@ export function PlanCard({ plan, isSelected, onSelectedChange }: PlanCardProps) 
                             </Badge>
                         )}
                     </div>
+
+                    {isYearly && hasYearlyPrice && (
+                        <p className="text-xs text-muted-foreground">
+                            Setara {formatCurrency(displayPrice / 12)}/bulan
+                        </p>
+                    )}
                 </div>
 
-                {/* Radio Indicator */}
                 <div
                     className={cn(
                         "h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0",
@@ -83,7 +103,6 @@ export function PlanCard({ plan, isSelected, onSelectedChange }: PlanCardProps) 
                 </div>
             </div>
 
-            {/* Features */}
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 pt-3 border-t border-border/50">
                 {visualFeatures.slice(0, 4).map((feat, idx) => (
                     <div key={idx} className="flex items-center gap-1.5 text-xs">

@@ -37,6 +37,7 @@ interface SubscriptionPlan {
 
 interface InvoiceDetail extends Invoice {
     plan: SubscriptionPlan
+    billingCycle: number
 }
 
 export const useInvoice = (invoiceId: string) => {

@@ -79,18 +79,20 @@ model Business {
 }
 
 model SubscriptionPlan {
-  id            String                 @id @default(uuid())
-  name          String
-  code          String                 @unique
-  promo         String?
-  price         Float
-  durationDays  Int
-  features      Json
-  isActive      Boolean                @default(true)
-  isPopular     Boolean                @default(false)
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  subscriptions BusinessSubscription[]
+  id             String                 @id @default(uuid())
+  name           String
+  code           String                 @unique
+  promo          String?
+  price          Float
+  durationDays   Int
+  yearlyPrice    Float                  @default(0)
+  yearlyDiscount Int                    @default(0)
+  features       Json
+  isActive       Boolean                @default(true)
+  isPopular      Boolean                @default(false)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  subscriptions  BusinessSubscription[]
 }
 
 model BusinessSubscription {
@@ -98,6 +100,9 @@ model BusinessSubscription {
   status            SubscriptionStatus
   startDate         DateTime              @default(now())
   endDate           DateTime
+  billingCycle      Int                   @default(30)
+  pricePerCycle     Float                 @default(0)
+  nextBillingDate   DateTime?
   businessId        String
   planId            String
   autoRenew         Boolean               @default(true)
@@ -110,6 +115,7 @@ model BusinessSubscription {
 
   @@index([businessId])
   @@index([endDate])
+  @@index([nextBillingDate])
 }
 
 model SubscriptionInvoice {

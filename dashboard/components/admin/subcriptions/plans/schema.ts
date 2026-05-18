@@ -75,6 +75,23 @@ export const subscriptionPlanSchema = z.object({
 
     isPopular: z.boolean("Status populer harus berupa boolean").default(false),
 
+    yearlyPrice: z
+        .number("Harga yearly wajib diisi")
+        .min(0, {
+            message: "Harga yearly tidak boleh bernilai negatif",
+        })
+        .default(0),
+
+    yearlyDiscount: z
+        .number("Diskon yearly wajib diisi")
+        .min(0, {
+            message: "Diskon minimal 0%",
+        })
+        .max(100, {
+            message: "Diskon maksimal 100%",
+        })
+        .default(0),
+
     features: planFeaturesSchema,
 });
 
@@ -124,7 +141,7 @@ export const subscriptionPlanField: FormFieldConfig<subscriptionPlanvalues>[] = 
         }
     },
     {
-        label: 'Tandai Populer',
+        label: 'Status Populer',
         name: 'isPopular',
         type: 'dual-option-switch',
         colSpan: 3,
@@ -132,6 +149,20 @@ export const subscriptionPlanField: FormFieldConfig<subscriptionPlanvalues>[] = 
             left: { label: 'Tidak', value: false },
             right: { label: 'Iya', value: true }
         }
+    },
+    {
+        label: 'Harga Yearly',
+        name: 'yearlyPrice',
+        type: 'currency',
+        colSpan: 3,
+        placeholder: 'Contoh: 1200000'
+    },
+    {
+        label: 'Diskon Yearly (%)',
+        name: 'yearlyDiscount',
+        type: 'percentage',
+        colSpan: 3,
+        placeholder: 'Contoh: 10 untuk diskon 10%'
     },
     {
         label: 'Max Outlets',

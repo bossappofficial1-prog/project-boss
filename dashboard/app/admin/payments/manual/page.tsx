@@ -158,7 +158,11 @@ const baseColumns: ColumnDef<SubscriptionInvoiceRecord>[] = [
             return (
                 <div className="space-y-1">
                     <p className="text-sm font-semibold text-foreground">{formatCurrency(invoice.amount)}</p>
-                    <p className="text-xs text-muted-foreground">{invoice.subscription?.plan ? invoice.subscription.plan.durationDays : 0} hari · {invoice.subscription?.plan ? invoice.subscription.plan.code : '-'}</p>
+                    <p className="text-xs text-muted-foreground">{(() => {
+                        const bc = invoice.subscription?.billingCycle ?? invoice.subscription?.plan.durationDays ?? 30
+                        const label = bc === 365 ? 'Yearly' : 'Monthly'
+                        return `${label} (${bc} hari) · ${invoice.subscription?.plan.code ?? '-'}`
+                    })()}</p>
                 </div>
             );
         },
@@ -461,7 +465,11 @@ export default function AdminSubscriptionInvoicesPage() {
                                     {selectedInvoice.business.name} · {formatCurrency(selectedInvoice.amount)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    Paket {selectedInvoice.subscription.plan.name} · {selectedInvoice.subscription.plan.durationDays} hari
+                                    Paket {selectedInvoice.subscription.plan.name} · {(() => {
+                                        const bc = selectedInvoice.subscription.billingCycle ?? selectedInvoice.subscription.plan.durationDays ?? 30
+                                        const label = bc === 365 ? 'Yearly' : 'Monthly'
+                                        return `${label} (${bc} hari)`
+                                    })()}
                                 </p>
                             </div>
                             {pendingAction?.type === 'reject' && (

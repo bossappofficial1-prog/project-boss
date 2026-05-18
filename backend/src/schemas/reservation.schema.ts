@@ -8,13 +8,13 @@ export const createReservationSchema = z.object({
   guestCount: z.number().min(1, "Minimal 1 tamu").max(20, "Maksimal 20 tamu"),
   tableId: z.string().min(1, "Meja wajib dipilih"),
   notes: z.string().optional(),
-  outletId: z.string().uuid("ID Outlet tidak valid"),
+  outletId: z.string(),
 });
 
 export type CreateReservationInput = z.infer<typeof createReservationSchema>;
 
 export const getReservationsQuerySchema = z.object({
-  outletId: z.string().uuid("ID Outlet tidak valid"),
+  outletId: z.string(),
   date: z.string().optional(), // YYYY-MM-DD
   status: z.enum(["RESERVED", "OCCUPIED", "COMPLETED", "CANCELLED"]).optional(),
 });

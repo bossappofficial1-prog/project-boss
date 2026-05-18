@@ -26,12 +26,16 @@ type Props = {
     data: OwnerSubscriptionOverviewResponse
     handleRenew: () => void
     isRenewLoading: boolean
+    onSwitchBillingCycle?: (newCycle: number) => void
+    isSwitchingBillingCycle?: boolean
 }
 
 export function SubscriptionDetailSection({
     data,
     handleRenew,
-    isRenewLoading
+    isRenewLoading,
+    onSwitchBillingCycle,
+    isSwitchingBillingCycle
 }: Props) {
     const overview = data;
     const plan = overview?.plan ?? null;
@@ -66,6 +70,14 @@ export function SubscriptionDetailSection({
                         <p className="text-3xl font-black tracking-tighter text-foreground">
                             {plan ? formatCurrency(plan.price) : '-'}
                         </p>
+                        {plan?.yearlyPrice && plan.yearlyPrice > 0 && (
+                            <p className="text-xs font-medium text-muted-foreground mt-1">
+                                Yearly: {formatCurrency(plan.yearlyPrice * (1 - plan.yearlyDiscount / 100))}
+                                {plan.yearlyDiscount > 0 && (
+                                    <span className="ml-1 text-emerald-600">(-{plan.yearlyDiscount}%)</span>
+                                )}
+                            </p>
+                        )}
                     </div>
                 </CardHeader>
 

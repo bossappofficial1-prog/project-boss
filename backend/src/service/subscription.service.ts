@@ -4,9 +4,16 @@ import { SubscriptionRepository } from "../repositories/subscription.repository"
 import { PaymentStatus } from "@prisma/client";
 import { PlanLimitService } from "./plan-limit.service";
 import { SubscriptionPlanRepository } from "../repositories/subscription-plan.repository";
-import { RenewSubscriptionInput } from "../schemas/subscription.schema";
+import { RenewSubscriptionInput, SwitchBillingCycleInput } from "../schemas/subscription.schema";
+import { EmailService } from "./email.service";
+import { db } from "../config/prisma";
 
 export class SubscriptionService {
+    static calculateEffectiveYearlyPrice(plan: { yearlyPrice: number; yearlyDiscount: number }): number {
+        if (plan.yearlyDiscount <= 0) return plan.yearlyPrice;
+        return plan.yearlyPrice * (1 - plan.yearlyDiscount / 100);
+    }
+
     static async uploadPaymentProof(businessId: string, invoiceId: string, proofUrl: string) {
         const invoice = await SubscriptionRepository.getInvoiceWithPlan(invoiceId);
 
@@ -61,6 +68,7 @@ export class SubscriptionService {
             rejectionReason: invoice.rejectionReason,
             proofImage: invoice.proofImage,
             plan: invoice.subscription.plan,
+            billingCycle: invoice.subscription.billingCycle,
         };
     }
 
@@ -133,6 +141,9 @@ export class SubscriptionService {
             paidAt: invoice.paidAt,
             subscriptionId: invoice.subscriptionId,
             plan: invoice.subscription?.plan,
+            subscription: invoice.subscription ? {
+                billingCycle: invoice.subscription.billingCycle,
+            } : null,
         }));
 
         return {
@@ -184,23 +195,91 @@ export class SubscriptionService {
             throw new AppError('Paket langganan tidak tersedia untuk bisnis Anda', HttpStatus.BAD_REQUEST);
         }
 
+        const billingCycle = payload.billingCycle ?? 30;
         const now = new Date();
         const currentEnd = business.subscriptionEndDate ? new Date(business.subscriptionEndDate) : null;
         const startDate = currentEnd && currentEnd > now ? currentEnd : now;
         const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + targetPlan.durationDays);
+        endDate.setDate(endDate.getDate() + (billingCycle === 365 ? 365 : 30));
+
+        const pricePerCycle = billingCycle === 365
+            ? this.calculateEffectiveYearlyPrice(targetPlan)
+            : (targetPlan.promo ? Number(targetPlan.promo) : targetPlan.price);
 
         const renewal = await SubscriptionRepository.createRenewalSubscription({
             businessId,
             planId: targetPlan.id,
-            price: targetPlan.promo ? Number(targetPlan.promo) : targetPlan.price,
+            price: pricePerCycle,
             startDate,
             endDate,
+            billingCycle,
+            pricePerCycle,
         });
 
         return renewal;
     }
-    
+
+    static async switchBillingCycle(businessId: string, payload: SwitchBillingCycleInput) {
+        const business = await SubscriptionRepository.getBusinessWithCurrentSubscription(businessId);
+
+        if (!business) {
+            throw new AppError('Bisnis tidak ditemukan', HttpStatus.NOT_FOUND);
+        }
+
+        if (!business.currentSubscription) {
+            throw new AppError('Tidak ada subscription aktif', HttpStatus.BAD_REQUEST);
+        }
+
+        const currentSubscription = business.currentSubscription;
+
+        // Cannot switch mid-cycle - must wait until end date
+        const now = new Date();
+        if (currentSubscription.endDate > now) {
+            throw new AppError(
+                `Tidak dapat switch billing cycle sebelum periode berakhir (${currentSubscription.endDate.toLocaleDateString('id-ID')}).`,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (currentSubscription.billingCycle === payload.billingCycle) {
+            throw new AppError('Billing cycle sudah sama', HttpStatus.BAD_REQUEST);
+        }
+
+        const plan = currentSubscription.plan;
+        const pricePerCycle = payload.billingCycle === 365
+            ? this.calculateEffectiveYearlyPrice(plan)
+            : (plan.promo ? Number(plan.promo) : plan.price);
+
+        const startDate = now;
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + payload.billingCycle);
+
+        const result = await SubscriptionRepository.switchBillingCycle(
+            currentSubscription.id,
+            payload.billingCycle,
+            pricePerCycle,
+            endDate
+        );
+
+        // Update business subscription end date
+        await db.business.update({
+            where: { id: businessId },
+            data: {
+                subscriptionEndDate: endDate,
+            },
+        });
+
+        return {
+            subscriptionId: result.id,
+            previousBillingCycle: currentSubscription.billingCycle,
+            newBillingCycle: result.billingCycle,
+            pricePerCycle: result.pricePerCycle,
+            startDate,
+            endDate: result.endDate,
+            nextBillingDate: result.nextBillingDate,
+        };
+    }
+
     static async cancelInvoice(businessId: string, invoiceId: string) {
         try {
             return await SubscriptionRepository.cancelInvoice(invoiceId, businessId);

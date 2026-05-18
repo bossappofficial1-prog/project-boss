@@ -33,11 +33,13 @@ export function InvoiceHistorySection({ query, page, limit, onPageChange, onCanc
                     accessorKey: 'plan',
                     cell(props) {
                         const invoice = props.row.original
+                        const billingCycle = invoice.subscription?.billingCycle ?? invoice.plan?.durationDays ?? 30
+                        const cycleLabel = billingCycle === 365 ? 'Yearly' : 'Monthly'
 
                         return (
                             <div className="flex flex-col">
                                 <span>{invoice.plan?.name ?? '-'}</span>
-                                <span className="text-xs text-muted-foreground">{invoice.plan?.durationDays ?? '-'} hari</span>
+                                <span className="text-xs text-muted-foreground">{cycleLabel} ({billingCycle} hari)</span>
                             </div>
                         )
                     },

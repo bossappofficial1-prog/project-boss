@@ -58,17 +58,10 @@ export default function OutletManagement() {
     const [isSheetOpen, setIsSheetOpen] = React.useState(false)
     const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
 
-    // Debounce search
-    const [debouncedSearch, setDebouncedSearch] = React.useState(searchQuery)
-    React.useEffect(() => {
-        const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500)
-        return () => clearTimeout(timer)
-    }, [searchQuery])
-
-    const { data, isLoading } = useGetAdminOutlets({
+    const { data, isLoading, refetch } = useGetAdminOutlets({
         page: 1,
         limit: 100,
-        search: debouncedSearch,
+        search: searchQuery || undefined,
         status: statusFilter === "ALL" ? undefined : statusFilter
     });
 
@@ -187,52 +180,40 @@ export default function OutletManagement() {
                 </div>
             </div>
 
-            {/* FILTERS */}
-            <Card className="rounded-md shadow-md border-border/50 bg-card">
-                <CardContent className="p-3">
-                    <div className="flex flex-col md:flex-row gap-3">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Cari nama outlet atau bisnis..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 bg-muted/30 border-border/50"
-                            />
-                        </div>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[180px] bg-muted/30 border-border/50">
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Filter className="h-3.5 w-3.5" />
-                                    <span className="truncate text-xs font-medium">
-                                        {statusFilter === 'ALL' ? 'Semua Status' : statusFilter}
-                                    </span>
-                                </div>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="ALL">Semua Status</SelectItem>
-                                <SelectItem value="OPEN">Buka (Open)</SelectItem>
-                                <SelectItem value="CLOSED">Tutup (Closed)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
-
             {/* TABLE */}
-            <Card className="rounded-md shadow-md border-border/50 flex-1 overflow-hidden p-3 bg-card">
-                <DataTable
-                    columns={columns}
-                    data={outlets}
-                    isLoading={isLoading}
-                    pagination={true}
-                    showColumnVisibility={false}
-                    showTableInfo={false}
-                    emptyMessage="Tidak ada outlet ditemukan."
-                    tableId="admin-outlets-table"
-                    onRowClick={handleRowClick}
-                />
-            </Card>
+            <DataTable
+                columns={columns}
+                data={outlets}
+                isLoading={isLoading}
+                pagination={true}
+                showColumnVisibility={false}
+                showTableInfo={false}
+                emptyMessage="Tidak ada outlet ditemukan."
+                tableId="admin-outlets-table"
+                onRowClick={handleRowClick}
+                serverSideSearch={true}
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Cari nama outlet atau bisnis..."
+                onRefresh={refetch}
+                titleActions={
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-[180px] bg-muted/30 border-border/50 h-9">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Filter className="h-3.5 w-3.5" />
+                                <span className="truncate text-xs font-medium">
+                                    {statusFilter === 'ALL' ? 'Semua Status' : statusFilter}
+                                </span>
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">Semua Status</SelectItem>
+                            <SelectItem value="OPEN">Buka (Open)</SelectItem>
+                            <SelectItem value="CLOSED">Tutup (Closed)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                }
+            />
 
             {/* SHEET DETAIL */}
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -260,18 +241,18 @@ export default function OutletManagement() {
                                 </div>
 
                                 <div className="flex gap-2">
-                                    <Button 
-                                        size="sm" 
-                                        variant="outline" 
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
                                         className="flex-1 text-xs h-8"
                                         onClick={handleForceClose}
                                         disabled={forceClose.isPending}
                                     >
                                         <Power className="h-3 w-3 mr-2" /> {selectedOutlet.isOpen ? 'Force Close' : 'Force Open'}
                                     </Button>
-                                    <Button 
-                                        size="sm" 
-                                        variant="destructive" 
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
                                         className="flex-1 text-xs h-8 bg-destructive hover:bg-destructive/90"
                                         onClick={() => setIsDeleteOpen(true)}
                                         disabled={deleteOutlet.isPending}
@@ -296,7 +277,7 @@ export default function OutletManagement() {
                                                 <div className="absolute bottom-2 left-2 z-10 rounded-md bg-background/90 backdrop-blur-sm border border-border/60 px-2.5 py-1 text-[10px] font-mono text-muted-foreground shadow-sm select-none transition-all duration-300 group-hover:border-primary/30 group-hover:text-foreground">
                                                     {selectedOutlet.latitude.toFixed(6)}, {selectedOutlet.longitude.toFixed(6)}
                                                 </div>
-                                                
+
                                                 <MapComponent
                                                     center={[selectedOutlet.longitude, selectedOutlet.latitude]}
                                                     zoom={14}
@@ -342,7 +323,7 @@ export default function OutletManagement() {
                                                 <span className="text-xs">Alamat outlet belum ditentukan</span>
                                             </div>
                                         )}
- 
+
                                         <div className="grid grid-cols-2 gap-4">
                                             <Card className="shadow-md border-border/40 bg-gradient-to-br from-card to-muted/20 hover:border-primary/20 transition-all duration-300">
                                                 <CardHeader className="p-4 pb-2">

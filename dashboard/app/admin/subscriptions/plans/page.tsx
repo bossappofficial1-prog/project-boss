@@ -1,10 +1,11 @@
-import SubscriptionPlansContent from "@/components/admin/subcriptions/plans/SubcriptionPlansContent"
-import { Metadata } from "next"
+import SubscriptionPlansContent from "@/components/admin/subcriptions/plans/subscription-plans-content";
+import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: 'Manajemen Paket Harga'
-}
+  title: "Manajemen Paket Langganan",
+  description: "Atur harga, durasi, dan batasan fitur untuk setiap paket langganan.",
+};
 
-export default function subscriptionPage() {
-    return (<SubscriptionPlansContent />)
+export default function SubscriptionPlansPage() {
+  return <SubscriptionPlansContent />;
 }

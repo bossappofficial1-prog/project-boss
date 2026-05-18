@@ -36,6 +36,8 @@ export interface SubscriptionPlanDetail {
   promo: number;
   price: number;
   durationDays: number;
+  yearlyPrice: number;
+  yearlyDiscount: number;
   isActive?: boolean;
   isPopular?: boolean;
   features?: SubscriptionPlanFeatures | null;
@@ -77,6 +79,9 @@ export interface OwnerSubscriptionInvoice {
   proofImage?: string | null;
   subscriptionId: string;
   plan: SubscriptionPlanDetail;
+  subscription?: {
+    billingCycle: number;
+  } | null;
 }
 
 export interface OwnerSubscriptionOverviewResponse {
@@ -101,6 +106,24 @@ export interface OwnerInvoiceListParams {
 
 export interface RenewSubscriptionPayload {
   planCode?: string;
+  billingCycle?: number;
+}
+
+export interface SwitchBillingCyclePayload {
+  billingCycle: number;
+}
+
+export interface SwitchBillingCycleResponse {
+  message: string;
+  data: {
+    subscriptionId: string;
+    previousBillingCycle: number;
+    newBillingCycle: number;
+    pricePerCycle: number;
+    startDate: string;
+    endDate: string;
+    nextBillingDate: string | null;
+  };
 }
 
 export interface RenewSubscriptionResponse {
@@ -192,5 +215,11 @@ export const ownerSubscriptionApi = {
   cancelInvoice: (invoiceId: string) =>
     apiCall<{ message: string }>(`/subscription/invoice/${invoiceId}/cancel`, {
       method: "POST",
+    }),
+
+  switchBillingCycle: (payload: SwitchBillingCyclePayload) =>
+    apiCall<SwitchBillingCycleResponse>("/subscription/switch-billing-cycle", {
+      method: "POST",
+      body: JSON.stringify(payload),
     }),
 };
