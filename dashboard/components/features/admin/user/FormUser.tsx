@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { FormFieldConfig, ReusableForm } from "@/components/ui/reuseable-form";
-import { User } from "@/types/user";
+import { User } from "@/types";
 import z from "zod";
 
 const RoleEnum = z.enum(['ADMIN', 'OWNER']).refine(

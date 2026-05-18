@@ -1,8 +1,9 @@
-import { HttpStatus } from "../constants/http-status";
-import { AppError } from "../errors/app-error";
+import { BaseService } from "./base.service";
 import { AdminRepository } from "../repositories/admin.repository";
+import { AppError } from "../errors/app-error";
+import { HttpStatus } from "../constants/http-status";
 
-export class AdminService {
+export class AdminService extends BaseService {
     // === DASHBOARD OVERVIEW ===
 
     static async getDashboardOverview() {
@@ -97,6 +98,72 @@ export class AdminService {
                 totalProducts: business.outlets.reduce((sum, outlet) => sum + (outlet._count?.products || 0), 0)
             }
         };
+    }
+
+    static async toggleBusinessSuspend(businessId: string, isSuspended: boolean) {
+        // Validate businessId
+        if (!businessId) {
+            throw new AppError('Business ID is required', HttpStatus.BAD_REQUEST);
+        }
+
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(businessId)) {
+            throw new AppError('Invalid business ID format', HttpStatus.BAD_REQUEST);
+        }
+
+        const business = await AdminRepository.getBusinessDetails(businessId);
+        if (!business) {
+            throw new AppError('Business not found', HttpStatus.NOT_FOUND);
+        }
+
+        return await AdminRepository.toggleBusinessSuspend(businessId, isSuspended);
+    }
+
+    // === OUTLET MANAGEMENT ===
+
+    static async getAllOutlets(options: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+    }) {
+        const {
+            page = 1,
+            limit = 10,
+            search = '',
+            status = ''
+        } = options;
+
+        const { outlets, total } = await AdminRepository.getAllOutlets({
+            page,
+            limit,
+            search,
+            status
+        });
+
+        return {
+            outlets,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    }
+
+    static async forceCloseOutlet(outletId: string, isClosed: boolean) {
+        if (!outletId) {
+            throw new AppError('Outlet ID is required', HttpStatus.BAD_REQUEST);
+        }
+
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(outletId)) {
+            throw new AppError('Invalid outlet ID format', HttpStatus.BAD_REQUEST);
+        }
+
+        return await AdminRepository.forceCloseOutlet(outletId, isClosed);
     }
 
     // === ANALYTICS & REPORTING ===
@@ -714,5 +781,27 @@ export class AdminService {
             period,
             status: 'processing'
         };
+    }
+
+    static async deleteBusiness(businessId: string) {
+        if (!businessId) {
+            throw new AppError('Business ID is required', HttpStatus.BAD_REQUEST);
+        }
+        const result = await AdminRepository.deleteBusiness(businessId);
+        if (!result) {
+            throw new AppError('Business not found', HttpStatus.NOT_FOUND);
+        }
+        return result;
+    }
+
+    static async deleteOutlet(outletId: string) {
+        if (!outletId) {
+            throw new AppError('Outlet ID is required', HttpStatus.BAD_REQUEST);
+        }
+        const result = await AdminRepository.deleteOutlet(outletId);
+        if (!result) {
+            throw new AppError('Outlet not found', HttpStatus.NOT_FOUND);
+        }
+        return result;
     }
 }

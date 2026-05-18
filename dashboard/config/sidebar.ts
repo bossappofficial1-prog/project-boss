@@ -10,6 +10,8 @@ import {
     Store,
     Users,
     Wallet,
+    MapPin,
+    Map,
     type LucideIcon
 } from "lucide-react"
 
@@ -81,14 +83,19 @@ export const sidebarData: {
                     title: "Bisnis Terdaftar",
                     id: "businesses",
                     icon: Store,
-                    url: ``,
-                    items: [
-                        {
-                            title: "Semua Merchant",
-                            id: "businesses-all",
-                            url: `/admin/businesses/all`
-                        },
-                    ],
+                    url: `/admin/businesses`
+                },
+                {
+                    title: "Manajemen Outlet",
+                    id: "outlets",
+                    icon: MapPin,
+                    url: `/admin/outlets`
+                },
+                {
+                    title: "Peta Sebaran",
+                    id: "outlets-map",
+                    icon: Map,
+                    url: `/admin/outlets/map`
                 },
                 {
                     title: "Database User",

@@ -241,7 +241,8 @@ export class AdminRepository {
                             id: true,
                             name: true,
                             email: true,
-                            phone: true
+                            phone: true,
+                            isVerified: true
                         }
                     },
                     outlets: {
@@ -341,6 +342,82 @@ export class AdminRepository {
             monthlyRevenue: monthlyRevenue._sum?.totalAmount || 0,
             monthlyOrders
         };
+    }
+
+    static async toggleBusinessSuspend(businessId: string, isSuspended: boolean) {
+        return await db.business.update({
+            where: { id: businessId },
+            data: {
+                subscriptionStatus: isSuspended ? 'SUSPENDED' : 'ACTIVE'
+            }
+        });
+    }
+
+    // === OUTLET MANAGEMENT ===
+
+    static async getAllOutlets(options: {
+        page: number;
+        limit: number;
+        search?: string;
+        status?: string;
+    }) {
+        const { page, limit, search, status } = options;
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+        
+        if (search) {
+            where.OR = [
+                { name: { contains: search, mode: 'insensitive' } },
+                { business: { name: { contains: search, mode: 'insensitive' } } }
+            ];
+        }
+
+        if (status === 'OPEN') {
+            where.isOpen = true;
+        } else if (status === 'CLOSED') {
+            where.isOpen = false;
+        }
+
+        const [outlets, total] = await Promise.all([
+            db.outlet.findMany({
+                where,
+                include: {
+                    business: {
+                        select: {
+                            id: true,
+                            name: true,
+                            owner: {
+                                select: {
+                                    name: true
+                                }
+                            }
+                        }
+                    },
+                    _count: {
+                        select: {
+                            products: true,
+                            staff: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit
+            }),
+            db.outlet.count({ where })
+        ]);
+
+        return { outlets, total };
+    }
+
+    static async forceCloseOutlet(outletId: string, isClosed: boolean) {
+        return await db.outlet.update({
+            where: { id: outletId },
+            data: {
+                isOpen: !isClosed
+            }
+        });
     }
 
     // === ANALYTICS & REPORTING ===
@@ -1546,13 +1623,25 @@ export class AdminRepository {
         return businessReports;
     }
 
-    // static async createAdminLog(data: {
-    //     action: string;
-    //     details: any;
-    //     adminId: string;
-    // }) {
-    //     return await db.adminLog.create({
-    //         data
-    //     });
-    // }
+    static async deleteBusiness(businessId: string) {
+        const business = await db.business.findUnique({
+            where: { id: businessId }
+        });
+        if (!business) return null;
+
+        return await db.business.delete({
+            where: { id: businessId }
+        });
+    }
+
+    static async deleteOutlet(outletId: string) {
+        const outlet = await db.outlet.findUnique({
+            where: { id: outletId }
+        });
+        if (!outlet) return null;
+
+        return await db.outlet.delete({
+            where: { id: outletId }
+        });
+    }
 }

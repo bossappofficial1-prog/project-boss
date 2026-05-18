@@ -1,28 +1,9 @@
 import { BaseService } from './BaseService';
 import { User, CreateUserDto, UpdateUserDto, UserFilters } from '@/types';
 
-/**
- * User Service menggunakan BaseService
- * Inherit semua CRUD operations dari BaseService
- * 
- * @example
- * ```typescript
- * // List users
- * const users = await userService.list({ page: 1, limit: 10 });
- * 
- * // Get user by ID
- * const user = await userService.getById('user-id');
- * 
- * // Create user
- * const newUser = await userService.create({ name: 'John', email: 'john@example.com' });
- * 
- * // Custom method
- * await userService.changeRole('user-id', 'ADMIN');
- * ```
- */
 class UserService extends BaseService<User> {
   constructor() {
-    super('/api/v1/users');
+    super('/users');
   }
 
   /**

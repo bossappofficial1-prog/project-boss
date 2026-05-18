@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { BaseService, BaseQueryParams } from '@/lib/services/BaseService';
+import { BaseService, BaseQueryParams, PaginatedResponse } from '@/lib/services/BaseService';
 
 /**
  * Options untuk customisasi factory behavior
@@ -75,6 +75,21 @@ export function createEntityFactory<TEntity = any>(
     return useQuery<TEntity[], any>({
       queryKey: [queryKey, 'list', params],
       queryFn: () => service.list(params),
+      staleTime: 30000, // 30 seconds
+      ...queryOptions,
+    });
+  };
+
+  /**
+   * Hook untuk mengambil list entities dengan pagination & filter dalam format PaginatedResponse
+   */
+  const useListPaginated = (
+    params?: BaseQueryParams,
+    queryOptions?: Omit<UseQueryOptions<PaginatedResponse<TEntity>, any>, 'queryKey' | 'queryFn'>
+  ) => {
+    return useQuery<PaginatedResponse<TEntity>, any>({
+      queryKey: [queryKey, 'list-paginated', params],
+      queryFn: () => service.listPaginated(params),
       staleTime: 30000, // 30 seconds
       ...queryOptions,
     });
@@ -265,6 +280,7 @@ export function createEntityFactory<TEntity = any>(
 
   return {
     useList,
+    useListPaginated,
     useById,
     useCreate,
     useUpdate,

@@ -1,35 +1,5 @@
 import { Router } from 'express';
-import {
-    getDashboardOverviewController,
-    getAllBusinessesController,
-    getBusinessDetailsController,
-    getRevenueAnalyticsController,
-    getTransactionAnalyticsController,
-    getRevenueInsightsController,
-    getSubscriptionIncomeController,
-    getAllUsersController,
-    updateUserStatusController,
-    getFinancialReportsController,
-    getSystemLogsController,
-    getSystemHealthController,
-    getRevenueChartController,
-    getSupportTicketsController,
-    updateTicketStatusController,
-    getPlatformSettingsController,
-    updatePlatformSettingsController,
-    getReportsListController,
-    getRevenueReportController,
-    getBusinessPerformanceReportController,
-    generateReportController,
-    downloadReportController,
-    getRecentActivitiesController,
-    getAllActivitiesController,
-    getMetricsKPIs,
-    revenueInRangeController,
-    getSubscriptionInvoiceValidationsController,
-    verifySubscriptionInvoiceController,
-    rejectSubscriptionInvoiceController
-} from '../controller/admin.controller';
+import { adminController } from '../controller/admin.controller';
 import {
     getAdminDashboardActivitiesController,
     getAdminDashboardInsightsController,
@@ -52,54 +22,61 @@ router.use(protect);
 router.use(authorize('ADMIN'));
 
 // Dashboard routes
-router.get('/dashboard/overview', getDashboardOverviewController);
-router.get('/dashboard/kpis-metrics', getMetricsKPIs);
-router.get('/dashboard/revenue', revenueInRangeController);
+router.get('/dashboard/overview', adminController.getDashboardOverview);
+router.get('/dashboard/kpis-metrics', adminController.getMetricsKPIs);
+router.get('/dashboard/revenue', adminController.revenueInRange);
 router.get('/dashboard/v3/insights', getAdminDashboardInsightsController);
 router.get('/dashboard/v3/risk-merchants', getAdminDashboardRiskController);
 router.get('/dashboard/v3/activities', getAdminDashboardActivitiesController);
 
 // Business management routes
-router.get('/businesses', getAllBusinessesController);
-router.get('/businesses/:businessId', getBusinessDetailsController);
+router.get('/businesses', adminController.getAllBusinesses);
+router.get('/businesses/:businessId', adminController.getBusinessDetails);
+router.put('/businesses/:businessId/suspend', adminController.toggleBusinessSuspend);
+router.delete('/businesses/:businessId', adminController.deleteBusiness);
+
+// Outlet management routes
+router.get('/outlets', adminController.getAllOutlets);
+router.patch('/outlets/:outletId/force-close', adminController.forceCloseOutlet);
+router.delete('/outlets/:outletId', adminController.deleteOutlet);
 
 // Analytics routes
-router.get('/analytics/revenue', getRevenueAnalyticsController);
-router.get('/analytics/revenue-chart', getRevenueChartController);
-router.get('/analytics/revenue/insights', getRevenueInsightsController);
-router.get('/analytics/transactions', getTransactionAnalyticsController);
-router.get('/platform-income/subscriptions', getSubscriptionIncomeController);
-router.get('/activities/recent', getRecentActivitiesController);
-router.get('/activities', getAllActivitiesController);
+router.get('/analytics/revenue', adminController.getRevenueAnalytics);
+router.get('/analytics/revenue-chart', adminController.getRevenueChart);
+router.get('/analytics/revenue/insights', adminController.getRevenueInsights);
+router.get('/analytics/transactions', adminController.getTransactionAnalytics);
+router.get('/platform-income/subscriptions', adminController.getSubscriptionIncome);
+router.get('/activities/recent', adminController.getRecentActivities);
+router.get('/activities', adminController.getAllActivities);
 
 // Subscription invoice validations
-router.get('/subscriptions/invoices', getSubscriptionInvoiceValidationsController);
-router.post('/subscriptions/invoices/:invoiceId/verify', verifySubscriptionInvoiceController);
-router.post('/subscriptions/invoices/:invoiceId/reject', rejectSubscriptionInvoiceController);
+router.get('/subscriptions/invoices', adminController.getSubscriptionInvoiceValidations);
+router.post('/subscriptions/invoices/:invoiceId/verify', adminController.verifySubscriptionInvoice);
+router.post('/subscriptions/invoices/:invoiceId/reject', adminController.rejectSubscriptionInvoice);
 
 // User management routes
-router.get('/users', getAllUsersController);
-router.put('/users/:userId/status', updateUserStatusController);
+router.get('/users', adminController.getAllUsers);
+router.put('/users/:userId/status', adminController.updateUserStatus);
 
 // Financial reports
-router.get('/reports/financial', getFinancialReportsController);
-router.get('/reports', getReportsListController);
-router.get('/reports/revenue', getRevenueReportController);
-router.get('/reports/business-performance', getBusinessPerformanceReportController);
-router.post('/reports/generate', generateReportController);
-router.get('/reports/:reportId/download', downloadReportController);
+router.get('/reports/financial', adminController.getFinancialReports);
+router.get('/reports', adminController.getReportsList);
+router.get('/reports/revenue', adminController.getRevenueReport);
+router.get('/reports/business-performance', adminController.getBusinessPerformanceReport);
+router.post('/reports/generate', adminController.generateReport);
+router.get('/reports/:reportId/download', adminController.downloadReport);
 
 // System management routes
-router.get('/system/logs', getSystemLogsController);
-router.get('/system/health', getSystemHealthController);
+router.get('/system/logs', adminController.getSystemLogs);
+router.get('/system/health', adminController.getSystemHealth);
 
 // Support tickets
-router.get('/support/tickets', getSupportTicketsController);
-router.put('/support/tickets/:ticketId/status', updateTicketStatusController);
+router.get('/support/tickets', adminController.getSupportTickets);
+router.put('/support/tickets/:ticketId/status', adminController.updateTicketStatus);
 
 // Platform settings
-router.get('/settings', getPlatformSettingsController);
-router.put('/settings', updatePlatformSettingsController);
+router.get('/settings', adminController.getPlatformSettings);
+router.put('/settings', adminController.updatePlatformSettings);
 
 // Banners management
 router.get('/banners', getBannersController);

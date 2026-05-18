@@ -234,214 +234,212 @@ export default function AdminSubscriptionInvoicesPage() {
         [invoices]
     );
 
-    const columns = useMemo<ColumnDef<SubscriptionInvoiceRecord>[]>(() => {
-        return [
-            ...baseColumns,
-            {
-                id: "actions",
-                header: "Aksi",
-                size: 160,
-                cell: ({ row }) => {
-                    const invoice = row.original;
-                    const actionable = ACTIONABLE_STATUSES.includes(invoice.status);
-                    const busy = isProcessing(invoice.id);
-
-                    if (!actionable) {
-                        return <span className="text-xs text-muted-foreground">Tidak ada aksi</span>;
-                    }
-
-                    return (
-                        <div className="flex flex-col gap-2">
-                            <Button
-                                size="sm"
-                                className="gap-2"
-                                disabled={busy}
-                                onClick={() => setPendingAction({ type: "verify", invoice })}
-                            >
-                                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                                Verifikasi
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-2"
-                                disabled={busy}
-                                onClick={() => setPendingAction({ type: "reject", invoice })}
-                            >
-                                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 text-destructive" />}
-                                Tolak
-                            </Button>
-                        </div>
-                    );
-                },
-            },
-        ];
-    }, [isProcessing]);
-
     const activeFilter = STATUS_FILTERS.find((item) => item.value === statusFilter);
-
-    const handleConfirm = async () => {
-        if (!pendingAction) return;
-        const { invoice, type } = pendingAction;
-
-        if (type === "verify") {
-            await verifyInvoice(invoice.id);
-        } else {
-            const trimmed = rejectReason.trim();
-            if (!trimmed) return;
-            await rejectInvoice({ invoiceId: invoice.id, reason: trimmed });
-            setRejectReason("");
-        }
-
-        setPendingAction(null);
-    };
-
-    const dialogTitle = pendingAction?.type === "reject" ? "Tolak invoice langganan" : "Verifikasi invoice langganan";
-    const dialogDescription = pendingAction?.type === "reject"
-        ? "Pastikan alasan penolakan jelas agar merchant memahami koreksi yang dibutuhkan."
-        : "Cek kembali nominal dan bukti transfer sebelum mengaktifkan paket langganan.";
-    const selectedInvoice = pendingAction?.invoice;
-
-    return (
-        <div className="space-y-6">
-            <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                        <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Subscription Risk Desk</p>
-                        <h1 className="mt-2 text-3xl font-semibold">Validasi Bukti Pembayaran Langganan</h1>
-                        <p className="mt-3 max-w-2xl text-sm text-slate-300">
-                            Review setiap bukti transfer yang dikirim merchant, aktifkan paket dengan satu klik, dan pastikan arus pendapatan SaaS tetap sehat.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                        <Button variant="secondary" size="sm" className="gap-2" onClick={() => refetch()} disabled={isRefetching}>
-                            <RefreshCcw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-                            Refresh data
-                        </Button>
-                    </div>
-                </div>
-                <div className="mt-6 grid gap-4 md:grid-cols-3">
-                    <Card className="border-none bg-white/10 text-white backdrop-blur">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-xs uppercase tracking-[0.2em] text-slate-200">Butuh Validasi</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex items-center justify-between">
-                            <div>
-                                <p className="text-3xl font-semibold">{actionableCount}</p>
-                                <p className="text-xs text-slate-200">Invoice menunggu keputusan admin</p>
-                            </div>
-                            <ShieldCheck className="h-10 w-10 text-emerald-300" />
-                        </CardContent>
-                    </Card>
-                    <Card className="border-none bg-white/10 text-white backdrop-blur">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-xs uppercase tracking-[0.2em] text-slate-200">Total Data</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-3xl font-semibold">{total.toLocaleString('id-ID')}</p>
-                            <p className="text-xs text-slate-200">Sesuai filter yang aktif</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-none bg-white/10 text-white backdrop-blur">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-xs uppercase tracking-[0.2em] text-slate-200">Status Filter</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-lg font-semibold">{activeFilter?.label}</p>
-                            <p className="text-xs text-slate-200">{activeFilter?.description}</p>
-                        </CardContent>
-                    </Card>
-                </div>
+ 
+     const handleConfirm = async () => {
+         if (!pendingAction) return;
+         const { invoice, type } = pendingAction;
+ 
+         if (type === "verify") {
+             await verifyInvoice(invoice.id);
+         } else {
+             const trimmed = rejectReason.trim();
+             if (!trimmed) return;
+             await rejectInvoice({ invoiceId: invoice.id, reason: trimmed });
+             setRejectReason("");
+         }
+ 
+         setPendingAction(null);
+     };
+ 
+     const dialogTitle = pendingAction?.type === "reject" ? "Tolak invoice langganan" : "Verifikasi invoice langganan";
+     const dialogDescription = pendingAction?.type === "reject"
+         ? "Pastikan alasan penolakan jelas agar merchant memahami koreksi yang dibutuhkan."
+         : "Cek kembali nominal dan bukti transfer sebelum mengaktifkan paket langganan.";
+     const selectedInvoice = pendingAction?.invoice;
+ 
+     return (
+         <div className="space-y-6">
+             <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl">
+                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                     <div>
+                         <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Subscription Risk Desk</p>
+                         <h1 className="mt-2 text-3xl font-semibold">Validasi Bukti Pembayaran Langganan</h1>
+                         <p className="mt-3 max-w-2xl text-sm text-slate-300">
+                             Review setiap bukti transfer yang dikirim merchant, aktifkan paket dengan satu klik, dan pastikan arus pendapatan SaaS tetap sehat.
+                         </p>
+                     </div>
+                     <div className="flex flex-wrap gap-3">
+                         <Button variant="secondary" size="sm" className="gap-2" onClick={() => refetch()} disabled={isRefetching}>
+                             <RefreshCcw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+                             Refresh data
+                         </Button>
+                     </div>
+                 </div>
+                 <div className="mt-6 grid gap-4 md:grid-cols-3">
+                     <Card className="border-none bg-white/10 text-white backdrop-blur">
+                         <CardHeader className="pb-2">
+                             <CardTitle className="text-xs uppercase tracking-[0.2em] text-slate-200">Butuh Validasi</CardTitle>
+                         </CardHeader>
+                         <CardContent className="flex items-center justify-between">
+                             <div>
+                                 <p className="text-3xl font-semibold">{actionableCount}</p>
+                                 <p className="text-xs text-slate-200">Invoice menunggu keputusan admin</p>
+                             </div>
+                             <ShieldCheck className="h-10 w-10 text-emerald-300" />
+                         </CardContent>
+                     </Card>
+                     <Card className="border-none bg-white/10 text-white backdrop-blur">
+                         <CardHeader className="pb-2">
+                             <CardTitle className="text-xs uppercase tracking-[0.2em] text-slate-200">Total Data</CardTitle>
+                         </CardHeader>
+                         <CardContent>
+                             <p className="text-3xl font-semibold">{total.toLocaleString('id-ID')}</p>
+                             <p className="text-xs text-slate-200">Sesuai filter yang aktif</p>
+                         </CardContent>
+                     </Card>
+                     <Card className="border-none bg-white/10 text-white backdrop-blur">
+                         <CardHeader className="pb-2">
+                             <CardTitle className="text-xs uppercase tracking-[0.2em] text-slate-200">Status Filter</CardTitle>
+                         </CardHeader>
+                         <CardContent>
+                             <p className="text-lg font-semibold">{activeFilter?.label}</p>
+                             <p className="text-xs text-slate-200">{activeFilter?.description}</p>
+                         </CardContent>
+                     </Card>
+                 </div>
+             </section>
+ 
+             <section className="rounded-2xl border border-border/80 bg-background p-5 shadow-sm">
+                 <div className="flex flex-col gap-4 md:flex-row md:items-end">
+                     <div className="flex-1 space-y-1">
+                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cari invoice</p>
+                         <div className="relative">
+                             <Input
+                                 value={search}
+                                 onChange={(event) => setSearch(event.target.value)}
+                                 placeholder="Nama bisnis, nomor invoice, nama owner"
+                                 className="pl-9"
+                             />
+                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                         </div>
+                     </div>
+                     <div className="space-y-1">
+                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tampilkan</p>
+                         <Select value={limit.toString()} onValueChange={(value) => setLimit(Number(value))}>
+                             <SelectTrigger className="w-[160px]">
+                                 <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                                 {[10, 20, 30, 50].map((item) => (
+                                     <SelectItem key={item} value={item.toString()}>
+                                         {item} baris
+                                     </SelectItem>
+                                 ))}
+                             </SelectContent>
+                         </Select>
+                     </div>
+                 </div>
+                 <div className="mt-4 flex flex-wrap gap-2">
+                     {STATUS_FILTERS.map((filter) => (
+                         <Button
+                             key={filter.value}
+                             variant={statusFilter === filter.value ? 'default' : 'outline'}
+                             className="rounded-full border-muted-foreground/20 px-4 font-medium"
+                             onClick={() => setStatusFilter(filter.value)}
+                         >
+                             {filter.label}
+                         </Button>
+                     ))}
+                 </div>
+             </section>
+ 
+             <section className="space-y-4 rounded-2xl border border-border/60 bg-background p-5 shadow-sm">
+                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                     <div>
+                         <h2 className="text-xl font-semibold text-foreground">Daftar Invoice Langganan</h2>
+                         {error ? (
+                             <p className="flex items-center gap-2 text-sm text-destructive">
+                                 <AlertCircle className="h-4 w-4" />
+                                 {error}
+                             </p>
+                         ) : (
+                             <p className="text-sm text-muted-foreground">{invoices.length} data pada halaman ini</p>
+                         )}
+                     </div>
+                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                         <span>
+                             Halaman {page} / {totalPages}
+                         </span>
+                         <div className="flex rounded-full border">
+                             <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                                 -
+                             </Button>
+                             <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 disabled={page >= totalPages}
+                                 onClick={() => setPage(page + 1)}
+                             >
+                                 +
+                             </Button>
+                         </div>
+                     </div>
+                 </div>
+ 
+                 <DataTable
+                     columns={baseColumns}
+                     data={invoices}
+                     isLoading={isLoading}
+                     pagination={false}
+                     showColumnVisibility={false}
+                     showTableInfo={false}
+                     emptyMessage="Tidak ada invoice langganan pada filter ini."
+                     labelAction="Aksi"
+                     rowActions={(row) => {
+                         const invoice = row;
+                         const actionable = ACTIONABLE_STATUSES.includes(invoice.status);
+                         const busy = isProcessing(invoice.id);
+ 
+                         if (!actionable) {
+                             return [
+                                 {
+                                     render: () => <span className="text-xs text-muted-foreground">Tidak ada aksi</span>
+                                 }
+                             ];
+                         }
+ 
+                         return [
+                             {
+                                 render: () => (
+                                     <div className="flex flex-col gap-2 w-full min-w-[120px]">
+                                         <Button
+                                             size="sm"
+                                             className="gap-2 w-full"
+                                             disabled={busy}
+                                             onClick={() => setPendingAction({ type: "verify", invoice })}
+                                         >
+                                             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                                             Verifikasi
+                                         </Button>
+                                         <Button
+                                             size="sm"
+                                             variant="outline"
+                                             className="gap-2 w-full"
+                                             disabled={busy}
+                                             onClick={() => setPendingAction({ type: "reject", invoice })}
+                                         >
+                                             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 text-destructive" />}
+                                             Tolak
+                                         </Button>
+                                     </div>
+                                 )
+                             }
+                         ];
+                     }}
+                 />
             </section>
-
-            <section className="rounded-2xl border border-border/80 bg-background p-5 shadow-sm">
-                <div className="flex flex-col gap-4 md:flex-row md:items-end">
-                    <div className="flex-1 space-y-1">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cari invoice</p>
-                        <div className="relative">
-                            <Input
-                                value={search}
-                                onChange={(event) => setSearch(event.target.value)}
-                                placeholder="Nama bisnis, nomor invoice, nama owner"
-                                className="pl-9"
-                            />
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        </div>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tampilkan</p>
-                        <Select value={limit.toString()} onValueChange={(value) => setLimit(Number(value))}>
-                            <SelectTrigger className="w-[160px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {[10, 20, 30, 50].map((item) => (
-                                    <SelectItem key={item} value={item.toString()}>
-                                        {item} baris
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                    {STATUS_FILTERS.map((filter) => (
-                        <Button
-                            key={filter.value}
-                            variant={statusFilter === filter.value ? 'default' : 'outline'}
-                            className="rounded-full border-muted-foreground/20 px-4 font-medium"
-                            onClick={() => setStatusFilter(filter.value)}
-                        >
-                            {filter.label}
-                        </Button>
-                    ))}
-                </div>
-            </section>
-
-            <section className="space-y-4 rounded-2xl border border-border/60 bg-background p-5 shadow-sm">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="text-xl font-semibold text-foreground">Daftar Invoice Langganan</h2>
-                        {error ? (
-                            <p className="flex items-center gap-2 text-sm text-destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                {error}
-                            </p>
-                        ) : (
-                            <p className="text-sm text-muted-foreground">{invoices.length} data pada halaman ini</p>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span>
-                            Halaman {page} / {totalPages}
-                        </span>
-                        <div className="flex rounded-full border">
-                            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                                -
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                disabled={page >= totalPages}
-                                onClick={() => setPage(page + 1)}
-                            >
-                                +
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-
-                <DataTable
-                    columns={columns}
-                    data={invoices}
-                    isLoading={isLoading}
-                    pagination={false}
-                    showColumnVisibility={false}
-                    showTableInfo={false}
-                    emptyMessage="Tidak ada invoice langganan pada filter ini."
-                />
-            </section>
-
+ 
             <Dialog open={Boolean(pendingAction)} onOpenChange={(open) => {
                 if (!open) {
                     setPendingAction(null);

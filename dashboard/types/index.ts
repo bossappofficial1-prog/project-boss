@@ -94,6 +94,7 @@ export interface User {
   email: string;
   phone: string | null;
   role: UserRole;
+  provider?: 'local' | 'google';
   isVerified: boolean;
   avatar: string | null;
   status?: UserStatus;

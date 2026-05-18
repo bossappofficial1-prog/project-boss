@@ -13,7 +13,7 @@ interface ApiResponse<T> {
 /**
  * Paginated response type
  */
-interface PaginatedResponse<T> {
+export interface PaginatedResponse<T> {
   success: boolean;
   data: T[];
   pagination: {
@@ -58,14 +58,14 @@ export interface BaseQueryParams {
  * ```
  */
 export class BaseService<T> {
-  constructor(protected readonly endpoint: string) {}
+  constructor(protected readonly endpoint: string) { }
 
   /**
    * Get list of entities dengan pagination & filters
    */
   async list(params?: BaseQueryParams): Promise<T[]> {
     const response = await apiClient.get<ApiResponse<T[]>>(
-      this.endpoint, 
+      this.endpoint,
       { params }
     );
     return response.data;
@@ -99,7 +99,7 @@ export class BaseService<T> {
    */
   async update(id: string, data: Partial<T>): Promise<T> {
     const response = await apiClient.put<ApiResponse<T>>(
-      `${this.endpoint}/${id}`, 
+      `${this.endpoint}/${id}`,
       data
     );
     return response.data;
@@ -110,7 +110,7 @@ export class BaseService<T> {
    */
   async patch(id: string, data: Partial<T>): Promise<T> {
     const response = await apiClient.patch<ApiResponse<T>>(
-      `${this.endpoint}/${id}`, 
+      `${this.endpoint}/${id}`,
       data
     );
     return response.data;
