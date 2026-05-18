@@ -22,7 +22,9 @@ import {
     ScanLine,
     RotateCcw,
     ChevronRight,
+    Camera,
 } from "lucide-react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 import { cn } from "@/lib/utils";
 import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
 
@@ -87,7 +89,10 @@ export default function TicketScanContent() {
     const [activeCode, setActiveCode] = useState("");
     const [recentScans, setRecentScans] = useState<TicketCodeInfo[]>([]);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [cameraOpen, setCameraOpen] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const readerRef = useRef<BrowserMultiFormatReader | null>(null);
 
     const { data: ticketInfo, isLoading, error, isFetching } = useVerifyTicket(activeCode);
     const redeemMutation = useRedeemTicket();
@@ -100,6 +105,46 @@ export default function TicketScanContent() {
             });
         }
     }, [ticketInfo]);
+
+    useEffect(() => {
+        if (!cameraOpen || !videoRef.current) return;
+
+        let cancelled = false;
+        const reader = new BrowserMultiFormatReader();
+        readerRef.current = reader;
+
+        reader
+            .decodeFromVideoDevice(
+                undefined,
+                videoRef.current,
+                (result, _err, controls) => {
+                    if (cancelled) {
+                        controls?.stop();
+                        return;
+                    }
+
+                    if (result?.getText()) {
+                        const scannedCode = result.getText();
+                        setSearchCode(scannedCode);
+                        setActiveCode(scannedCode);
+                        controls?.stop();
+                        setCameraOpen(false);
+                    }
+                },
+            )
+            .catch((e) => {
+                console.error(e);
+                setCameraOpen(false);
+                toast.error("Kamera tidak dapat diakses");
+            });
+
+        return () => {
+            cancelled = true;
+            if (readerRef.current) {
+                readerRef.current = null;
+            }
+        };
+    }, [cameraOpen]);
 
     const handleSearch = useCallback(() => {
         const code = searchCode.trim().toUpperCase();
@@ -179,6 +224,17 @@ export default function TicketScanContent() {
                     autoFocus
                 />
                 <Button
+                    type="button"
+                    variant={cameraOpen ? "secondary" : "outline"}
+                    onClick={() => {
+                        setCameraOpen(!cameraOpen);
+                    }}
+                    title="Scan Barcode/QR Kamera"
+                    className="shrink-0 rounded-lg px-3"
+                >
+                    <Camera className="w-5 h-5" />
+                </Button>
+                <Button
                     size="sm"
                     onClick={handleSearch}
                     disabled={!searchCode.trim() || isLoading}
@@ -194,6 +250,28 @@ export default function TicketScanContent() {
                     )}
                 </Button>
             </div>
+
+            {cameraOpen && (
+                <div className="relative aspect-video w-full max-w-lg mx-auto overflow-hidden rounded-xl border-2 border-primary bg-black shadow-lg">
+                    <video ref={videoRef} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 border-4 border-primary/40 m-8 rounded-2xl pointer-events-none animate-pulse" />
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-3 right-3 h-8 w-8 p-0 rounded-full opacity-80 hover:opacity-100 shadow-md"
+                        onClick={() => {
+                            setCameraOpen(false);
+                        }}
+                    >
+                        <XCircle className="h-5 w-5" />
+                    </Button>
+                    <div className="absolute bottom-3 inset-x-0 text-center pointer-events-none">
+                        <span className="bg-black/60 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
+                            Arahkan kamera ke QR Code atau Barcode
+                        </span>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Left: Ticket Result Card */}

@@ -5,6 +5,7 @@ import { Users, LayoutGrid, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { format, addMinutes, parse } from "date-fns";
+import { useGetTables } from "@/hooks/api/use-tables";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,74 +30,6 @@ interface TableAvailabilityPickerProps {
     value?: string;     // tableId yang dipilih
     onChange?: (tableId: string) => void;
 }
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-function getMockTables(time?: string, duration?: number): TableSlot[] {
-    return [
-        {
-            id: "t1",
-            name: "Meja 1",
-            capacity: 2,
-            availability: "available",
-        },
-        {
-            id: "t2",
-            name: "Meja 2",
-            capacity: 2,
-            availability: time === "19:00" || time === "19:30" ? "reserved" : "available",
-            reservation:
-                time === "19:00" || time === "19:30"
-                    ? { customerName: "Budi Santoso", time: "19:00 – 21:00" }
-                    : undefined,
-        },
-        {
-            id: "t3",
-            name: "Meja 3",
-            capacity: 4,
-            availability: "available",
-        },
-        {
-            id: "t4",
-            name: "Meja 4",
-            capacity: 2,
-            availability: "occupied",
-        },
-        {
-            id: "t5",
-            name: "Meja 5",
-            capacity: 4,
-            availability:
-                time === "18:00" || time === "18:30" || time === "19:00"
-                    ? "reserved"
-                    : "available",
-            reservation:
-                time === "18:00" || time === "18:30" || time === "19:00"
-                    ? { customerName: "Rina Marlina", time: "18:00 – 20:00" }
-                    : undefined,
-        },
-        {
-            id: "t6",
-            name: "Meja 6",
-            capacity: 4,
-            availability: "available",
-        },
-        {
-            id: "t7",
-            name: "Meja 7",
-            capacity: 2,
-            availability: "available",
-        },
-        {
-            id: "t8",
-            name: "Meja 8",
-            capacity: 4,
-            availability: "available",
-        },
-    ];
-}
-
-// ─── Status Config ────────────────────────────────────────────────────────────
 
 const AVAILABILITY_CONFIG: Record<
     TableAvailability,
@@ -127,8 +60,6 @@ const AVAILABILITY_CONFIG: Record<
         selectable: false,
     },
 };
-
-// ─── Table Card ───────────────────────────────────────────────────────────────
 
 function TableCard({
     table,
@@ -201,8 +132,6 @@ function TableCard({
     );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export function TableAvailabilityPicker({
     outletId,
     date,
@@ -211,10 +140,17 @@ export function TableAvailabilityPicker({
     value,
     onChange,
 }: TableAvailabilityPickerProps) {
-    const tables = useMemo(
-        () => getMockTables(time, duration),
-        [time, duration]
-    );
+    const { data: dbTables } = useGetTables(outletId);
+
+    const tables: TableSlot[] = useMemo(() => {
+        if (!dbTables) return [];
+        return dbTables.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            capacity: t.capacity || 4,
+            availability: t.status === "OCCUPIED" ? "occupied" : t.status === "RESERVED" ? "reserved" : "available",
+        }));
+    }, [dbTables, time, duration]);
 
     const availableCount = tables.filter(
         (t) => t.availability === "available"

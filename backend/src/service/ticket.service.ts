@@ -105,6 +105,13 @@ export class TicketService {
         venue: t.orderItem.product.ticket?.venue || "-",
         customerName: t.orderItem.order.guestCustomer?.name || "Customer",
         outletName: t.orderItem.order.outlet.name,
+        codeFormat: t.orderItem.product.ticket?.codeFormat,
+        primaryColor: (t.orderItem.product.ticket?.designConfig as any)?.primaryColor,
+        layoutType: (t.orderItem.product.ticket?.designConfig as any)?.layoutType,
+        isBarcode: t.orderItem.product.ticket?.codeFormat === "BARCODE_128",
+        codeImageUrl: t.orderItem.product.ticket?.codeFormat === "BARCODE_128" 
+          ? `https://bwipjs-api.metafloor.com/?bcid=code128&text=${t.code}&scale=3&height=10&includetext=false`
+          : `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${t.code}`,
       };
     });
   }

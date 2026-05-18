@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { format } from "date-fns";
 import { Clock, User, ArrowRight, LayoutGrid, ShoppingBag, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,7 +64,7 @@ export function OpenOrders({ orders, isLoading, onSelect }: OpenOrdersProps) {
                                             variant="secondary"
                                             className="h-5 gap-1 rounded-sm px-1.5 text-xs font-semibold uppercase tracking-tight">
                                             <LayoutGrid className="h-3 w-3" />
-                                            Meja {order.tableNumber}
+                                            {!order.tableNumber.toLocaleLowerCase().includes("meja") ? `Meja ${order.tableNumber}` : order.tableNumber}
                                         </Badge>
                                     )}
                                 </div>

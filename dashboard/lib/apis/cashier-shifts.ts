@@ -36,7 +36,7 @@ export interface OwnerShiftRow extends CashierShift {
 
 export async function getActiveCashierShift(outletId: string): Promise<CashierShift | null> {
   const res = await apiClient.get(`/cashier-shifts/active`, { params: { outletId } });
-  return res.data.data as CashierShift | null;
+  return (res.data.data as CashierShift) ?? null;
 }
 
 export async function openCashierShift(payload: {

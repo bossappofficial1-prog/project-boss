@@ -141,8 +141,25 @@ export default function ProductsContent() {
   const [action, setAction] = useState<"add" | "edit">("add");
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
-  const { allowedProductTypes } = useOutletContext();
+  const { allowedProductTypes, selectedOutlet: outletObj, isPlanMismatch } = useOutletContext();
   const router = useRouter();
+
+  const addButtonText = useMemo(() => {
+    if (!outletObj) return "Tambah Produk";
+
+    const type = (outletObj.type === "CUSTOM" && isPlanMismatch)
+      ? "FNB"
+      : outletObj.type;
+
+    switch (type) {
+      case "EVENT":
+        return "Tambah Tiket";
+      case "SERVICE":
+        return "Tambah Jasa";
+      default:
+        return "Tambah Produk";
+    }
+  }, [outletObj, isPlanMismatch]);
 
   const {
     products,
@@ -193,6 +210,68 @@ export default function ProductsContent() {
       lowStock: lowStock.length,
     };
   }, [filteredProducts]);
+
+  const cards = useMemo(() => {
+    const list = [];
+
+    // If multiple types are allowed, show the global "Total Produk" card first
+    if (allowedProductTypes.length > 1) {
+      list.push({
+        id: "total",
+        icon: <Boxes className="h-5 w-5" />,
+        label: "Total Produk",
+        value: filteredProducts.length,
+        description: `${overview.active} produk aktif`,
+        variant: "default" as const,
+      });
+    }
+
+    if (allowedProductTypes.includes("GOODS")) {
+      list.push({
+        id: "goods",
+        icon: <Package className="h-5 w-5" />,
+        label: allowedProductTypes.length === 1 ? "Total Barang" : "Barang",
+        value: overview.goods,
+        description: allowedProductTypes.length === 1 ? `${overview.active} aktif` : undefined,
+        variant: "default" as const,
+      });
+    }
+
+    if (allowedProductTypes.includes("SERVICE")) {
+      list.push({
+        id: "services",
+        icon: <Wrench className="h-5 w-5" />,
+        label: allowedProductTypes.length === 1 ? "Total Jasa" : "Jasa / Layanan",
+        value: overview.services,
+        description: allowedProductTypes.length === 1 ? `${overview.active} aktif` : undefined,
+        variant: "success" as const,
+      });
+    }
+
+    if (allowedProductTypes.includes("TICKET")) {
+      list.push({
+        id: "tickets",
+        icon: <Ticket className="h-5 w-5" />,
+        label: allowedProductTypes.length === 1 ? "Total Tiket Event" : "Tiket Event",
+        value: overview.tickets,
+        description: allowedProductTypes.length === 1 ? `${overview.active} aktif` : undefined,
+        variant: "default" as const,
+      });
+    }
+
+    if (allowedProductTypes.includes("GOODS")) {
+      list.push({
+        id: "lowStock",
+        icon: <AlertCircle className="h-5 w-5" />,
+        label: "Stok Rendah",
+        value: overview.lowStock,
+        variant: overview.lowStock > 0 ? ("danger" as const) : ("default" as const),
+        description: overview.lowStock > 0 ? "Perlu tindakan" : "Semua aman",
+      });
+    }
+
+    return list;
+  }, [allowedProductTypes, filteredProducts.length, overview]);
 
   const handleDelete = async (productId: string) => {
     try {
@@ -255,7 +334,7 @@ export default function ProductsContent() {
                 disabled={!hasOutlet}
                 className="h-9 px-4 gap-2 font-bold text-xs uppercase tracking-wider"
               >
-                <Plus className="h-4 w-4" /> Tambah Produk
+                <Plus className="h-4 w-4" /> {addButtonText}
               </Button>
               <Button
                 size="sm"
@@ -304,40 +383,24 @@ export default function ProductsContent() {
         )}
 
         {/* Overview Cards */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-          <OverviewCard
-            icon={<Boxes className="h-5 w-5" />}
-            label="Total Produk"
-            value={filteredProducts.length}
-            description={`${overview.active} produk aktif`}
-          />
-          <OverviewCard
-            icon={<Package className="h-5 w-5" />}
-            label="Barang"
-            value={overview.goods}
-            variant="default"
-          />
-          <OverviewCard
-            icon={<Wrench className="h-5 w-5" />}
-            label="Jasa"
-            value={overview.services}
-            variant="success"
-          />
-          <OverviewCard
-            icon={<Ticket className="h-5 w-5" />}
-            label="Tiket"
-            value={overview.tickets}
-            variant="default"
-          />
-          <OverviewCard
-            icon={<AlertCircle className="h-5 w-5" />}
-            label="Stok Rendah"
-            value={overview.lowStock}
-            variant={overview.lowStock > 0 ? "danger" : "default"}
-            description={
-              overview.lowStock > 0 ? "Perlu tindakan" : "Semua aman"
-            }
-          />
+        <div className={cn("grid gap-4",
+          cards.length === 1 ? "grid-cols-1" : "grid-cols-2",
+          cards.length === 1 ? "sm:grid-cols-1" :
+            cards.length === 2 ? "sm:grid-cols-2" :
+              cards.length === 3 ? "sm:grid-cols-3" :
+                cards.length === 4 ? "sm:grid-cols-4" :
+                  "sm:grid-cols-5"
+        )}>
+          {cards.map((card) => (
+            <OverviewCard
+              key={card.id}
+              icon={card.icon}
+              label={card.label}
+              value={card.value}
+              description={card.description}
+              variant={card.variant}
+            />
+          ))}
         </div>
 
         {/* Data Table */}

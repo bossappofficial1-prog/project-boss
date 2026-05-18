@@ -22,6 +22,8 @@ interface TicketCodesResponse {
     total: number;
     page: number;
     limit: number;
+    totalRedeemed: number;
+    totalValid: number;
 }
 
 export function useTicketCodesByProduct(productId: string | null, page = 1, limit = 50) {

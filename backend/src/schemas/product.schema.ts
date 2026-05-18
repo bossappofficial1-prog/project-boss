@@ -102,6 +102,8 @@ const productTicketSchema = z.object({
   saleStartDate: z.coerce.date().nullable().optional(),
   saleEndDate: z.coerce.date().nullable().optional(),
   terms: z.string().nullable().optional(),
+  codeFormat: z.enum(["QR_CODE", "BARCODE_128"]).default("QR_CODE").optional(),
+  designConfig: z.record(z.any()).nullable().optional(),
 });
 
 /* =====================================================
@@ -127,6 +129,7 @@ export const createProductSchema = z.discriminatedUnion("type", [
     goods: productGoodsSchema,
     service: z.never().optional(),
     ticket: z.never().optional(),
+    media: z.array(mediaItemSchema).max(5, { message: "Maksimal 5 media" }).optional(),
   }),
 
   // SERVICE
@@ -173,6 +176,7 @@ export const updateProductSchema = z
       goods: productGoodsSchema.partial().optional(),
       service: z.never().optional(),
       ticket: z.never().optional(),
+      media: z.array(mediaItemSchema).max(5, { message: "Maksimal 5 media" }).optional(),
     }),
 
     // SERVICE

@@ -214,7 +214,7 @@
         {{#each tickets}}
         <!-- WRAPPER GARIS BANTU POTONG -->
         <div class="ticket-wrapper">
-            <div class="ticket">
+            <div class="ticket" style="{{#if primaryColor}}border-top-color: {{primaryColor}};{{/if}}">
 
                 <!-- BAGIAN KIRI: INFORMASI UTAMA -->
                 <div class="ticket-main">
@@ -244,10 +244,13 @@
                 <!-- BAGIAN KANAN: STUB & QR CODE -->
                 <div class="ticket-stub">
                     <div class="qr-wrapper">
-                        <img class="qr-code"
-                            src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{code}}" alt="QR Code">
+                        {{#if isBarcode}}
+                        <img class="barcode" src="{{codeImageUrl}}" alt="Barcode" style="width: 100px; height: 35px; display: block; object-fit: contain;">
+                        {{else}}
+                        <img class="qr-code" src="{{codeImageUrl}}" alt="QR Code">
+                        {{/if}}
                     </div>
-                    <p class="ticket-code">{{code}}</p>
+                    <p class="ticket-code" style="{{#if primaryColor}}color: {{primaryColor}};{{/if}}">{{code}}</p>
                     <span class="stub-label">Scan to Enter</span>
                 </div>
 

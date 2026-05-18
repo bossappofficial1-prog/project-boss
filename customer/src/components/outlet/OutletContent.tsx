@@ -536,9 +536,15 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 h-9 rounded-lg text-xs font-medium gap-1.5 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                className="flex-1 h-9 rounded-lg text-xs font-medium gap-1.5 border-green-200 text-[#10b981] hover:bg-green-50 hover:text-green-800"
                 onClick={handleWhatsAppChat}>
-                <MessageCircle className="w-3.5 h-3.5" />
+                {/* <MessageCircle className="w-3.5 h-3.5" /> */}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="128" height="128">
+                  <rect x="2" y="2" width="96" height="96" rx="12" fill="#171717" />
+                  <svg x="0.0" y="0.0" width="100" height="100" viewBox="0 0 16 16" fill="#10b981">
+                    <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.601 2.326zM7.994 14.521a6.57 6.57 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.5c.003-3.613 2.941-6.55 6.557-6.55 1.753 0 3.4.683 4.634 1.917A6.54 6.54 0 0 1 14.5 7.93c-.004 3.615-2.942 6.55-6.555 6.55m3.544-4.8c-.194-.097-1.14-.563-1.317-.626-.176-.065-.304-.097-.43.097-.128.19-.495.626-.607.75-.113.127-.225.143-.419.046-.194-.097-.82-.303-1.562-.963-.577-.514-.967-1.149-1.08-1.343-.113-.194-.012-.299.085-.395.088-.087.195-.225.293-.338.097-.113.128-.19.194-.317.065-.13.033-.243-.016-.34-.049-.097-.43-1.036-.59-1.42-.156-.375-.312-.324-.43-.33-.11-.005-.238-.006-.366-.006a.71.71 0 0 0-.511.239c-.18.195-.684.668-.684 1.629s.7 1.912.8 2.046c.1.134 1.378 2.103 3.338 2.946.467.201.83.322 1.114.412.47.149.897.128 1.236.077.378-.057 1.14-.467 1.3-.918.162-.452.162-.84.113-.919-.049-.078-.176-.127-.37-.224z" />
+                  </svg>
+                </svg>
                 WhatsApp
               </Button>
             )}
@@ -546,10 +552,10 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 h-9 rounded-lg text-xs font-medium gap-1.5 border-pink-200 text-pink-700 hover:bg-pink-50 hover:text-pink-800"
+                className="h-9 rounded-lg text-xs font-medium gap-1.5 border-pink-200 text-pink-700 hover:bg-pink-50 hover:text-pink-800"
                 onClick={() => window.open(outlet.instagramUrl, "_blank")}>
                 <Instagram className="w-3.5 h-3.5" />
-                Instagram
+                <span className="hidden sm:inline">Instagram</span>
               </Button>
             )}
             <Button
@@ -558,7 +564,9 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
               className={`${outlet.phone ? '' : 'flex-1'} h-9 rounded-lg text-xs font-medium gap-1.5`}
               onClick={handleToggleFavorite}>
               <Heart className={`w-3.5 h-3.5 transition-colors ${isOutletFavorite ? "fill-red-500 text-red-500" : ""}`} />
-              {isOutletFavorite ? t("favorited") : t("favorite")}
+              <span className="hidden sm:inline">
+                {isOutletFavorite ? t("favorited") : t("favorite")}
+              </span>
             </Button>
             <ShareOutlet
               outlet={{

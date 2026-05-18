@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { productApi, uploadApi } from "@/lib/api";
-import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormFieldConfig, ReusableForm } from "../ui/reuseable-form";
@@ -10,6 +8,12 @@ import { ProductItem } from "@/hooks/useProductsData";
 import ServiceOperatingHoursSection from "./ServiceOperatingHoursSection";
 import ServiceMediaUploader, { MediaItem } from "./ServiceMediaUploader";
 import { useOutletContext } from "@/components/providers/OutletProvider";
+import {
+  productSchema,
+  type ProductFormValues,
+  useProductFormSubmit,
+} from "@/hooks/api/use-products";
+import { ProductType } from "@/types";
 
 type Props = {
   open: boolean;
@@ -21,113 +25,11 @@ type Props = {
   initialData?: Partial<ProductItem & { image: string, taxName: string }>;
 };
 
-const ProductStatus = z.enum(["ACTIVE", "INACTIVE"]);
-
-const baseSchema = z.object({
-  name: z.string().min(2, "Nama produk minimal 2 karakter"),
-  description: z.string().optional(),
-  status: ProductStatus,
-  taxPercentage: z.coerce.number().min(0).nullable().optional(),
-  taxName: z.string().optional(),
-  file: z
-    .union([
-      z.instanceof(File).refine((f) => f.size <= 3 * 1024 * 1024, "Maksimal 3MB"),
-      z.string(),
-    ])
-    .optional(),
-});
-
 const parseDate = (date: string | Date | null | undefined): Date | null => {
   if (!date) return null;
   if (date instanceof Date) return date;
   return new Date(date);
 };
-
-// 1. Definisikan Schema per bagian secara eksplisit
-const goodsSchema = z.object({
-  currentStock: z.coerce.number().min(0, "Stok minimal 0"),
-  minStock: z.coerce.number().min(0).nullable().optional(),
-  maxStock: z.coerce.number().min(0).nullable().optional(),
-  unit: z.string().min(1, "Unit wajib diisi"),
-  sellingPrice: z.coerce.number().min(1, "Harga jual harus > 0"),
-  averageHpp: z.coerce.number().min(1, "HPP harus > 0"),
-});
-
-export type GoodsSchemaType = z.infer<typeof goodsSchema>;
-
-const serviceSchema = z.object({
-  durationMinutes: z.coerce.number().min(1, "Durasi wajib diisi"),
-  sellingPrice: z.coerce.number().min(1, "Harga wajib diisi"),
-  providerName: z.string().min(1, "Nama provider wajib diisi"),
-  providerPhone: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
-  providerEmail: z.preprocess(
-    (val) => (val === "" ? undefined : val),
-    z.string().email().optional(),
-  ),
-  commissionType: z.enum(["PERCENTAGE", "FIXED"]),
-  commissionValue: z.coerce.number().min(0),
-  bookingInWorkHours: z.boolean().default(true),
-
-  // Operating hours (nullable)
-  mondayOpen: z.coerce.date().nullable().optional(),
-  mondayClose: z.coerce.date().nullable().optional(),
-  tuesdayOpen: z.coerce.date().nullable().optional(),
-  tuesdayClose: z.coerce.date().nullable().optional(),
-  wednesdayOpen: z.coerce.date().nullable().optional(),
-  wednesdayClose: z.coerce.date().nullable().optional(),
-  thursdayOpen: z.coerce.date().nullable().optional(),
-  thursdayClose: z.coerce.date().nullable().optional(),
-  fridayOpen: z.coerce.date().nullable().optional(),
-  fridayClose: z.coerce.date().nullable().optional(),
-  saturdayOpen: z.coerce.date().nullable().optional(),
-  saturdayClose: z.coerce.date().nullable().optional(),
-  sundayOpen: z.coerce.date().nullable().optional(),
-  sundayClose: z.coerce.date().nullable().optional(),
-});
-
-export type ServiceSchemaType = z.infer<typeof serviceSchema>;
-
-const ticketSchema = z.object({
-  sellingPrice: z.coerce.number().min(1, "Harga tiket harus > 0"),
-  eventDate: z.coerce.date("Tanggal event wajib diisi"),
-  eventEndDate: z.coerce.date().nullable().optional(),
-  venue: z.string().min(1, "Nama venue wajib diisi"),
-  venueAddress: z.string().nullable().optional(),
-  mapUrl: z.preprocess(
-    (val) => (val === "" ? undefined : val),
-    z.string().url().nullable().optional(),
-  ),
-  totalQuota: z.coerce.number().min(1, "Total kuota minimal 1"),
-  maxPerOrder: z.coerce.number().min(1).optional(),
-  saleStartDate: z.coerce.date().nullable().optional(),
-  saleEndDate: z.coerce.date().nullable().optional(),
-  terms: z.string().nullable().optional(),
-});
-
-export type TicketSchemaType = z.infer<typeof ticketSchema>;
-
-export const productSchema = z.discriminatedUnion("type", [
-  baseSchema.extend({
-    type: z.literal("GOODS"),
-    goods: goodsSchema,
-    service: z.preprocess(() => undefined, z.undefined().optional()),
-    ticket: z.preprocess(() => undefined, z.undefined().optional()),
-  }),
-  baseSchema.extend({
-    type: z.literal("SERVICE"),
-    service: serviceSchema,
-    goods: z.preprocess(() => undefined, z.undefined().optional()),
-    ticket: z.preprocess(() => undefined, z.undefined().optional()),
-  }),
-  baseSchema.extend({
-    type: z.literal("TICKET"),
-    ticket: ticketSchema,
-    goods: z.preprocess(() => undefined, z.undefined().optional()),
-    service: z.preprocess(() => undefined, z.undefined().optional()),
-  }),
-]);
-
-export type ProductFormValues = z.infer<typeof productSchema>;
 
 export default function AddOrEditProductServiceModal({
   open,
@@ -137,9 +39,13 @@ export default function AddOrEditProductServiceModal({
   onSuccess,
   action = "edit",
 }: Props) {
-  const { allowedProductTypes } = useOutletContext();
+  const { allowedProductTypes, selectedOutlet } = useOutletContext();
   const isEdit = action === "edit";
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const outletType = selectedOutlet?.type!;
+  const shouldProductType: `${ProductType}` =
+    (outletType == "RETAIL" || outletType == "FNB" || outletType == "CUSTOM")
+      ? "GOODS" : outletType === "EVENT" ? "TICKET" : "SERVICE"
 
   useEffect(() => {
     if (isEdit && initialData?.media) {
@@ -235,6 +141,8 @@ export default function AddOrEditProductServiceModal({
             saleStartDate: parseDate(initialData.ticket?.saleStartDate),
             saleEndDate: parseDate(initialData.ticket?.saleEndDate),
             terms: initialData.ticket?.terms ?? null,
+            codeFormat: (initialData.ticket?.codeFormat as any) ?? "QR_CODE",
+            designConfig: (initialData.ticket?.designConfig as any) ?? { primaryColor: "", backgroundColor: "", layoutType: "standard" },
           },
           goods: undefined,
           service: undefined,
@@ -245,7 +153,7 @@ export default function AddOrEditProductServiceModal({
     }
 
     return {
-      type: "GOODS",
+      type: shouldProductType,
       name: "",
       description: "",
       status: "ACTIVE",
@@ -264,160 +172,8 @@ export default function AddOrEditProductServiceModal({
 
       service: { commissionType: "FIXED" } as any,
       file: undefined,
-    };
-  }, [isEdit, initialData, outletId]);
-
-  const handleClose = (nextOpen: boolean) => {
-    onOpenChange(nextOpen);
-  };
-
-  const handleSubmit = async (values: ProductFormValues | FormData) => {
-    const fileEntry = (values as FormData).get("file");
-    const file = fileEntry instanceof File ? fileEntry : null;
-    const otherValues = values as FormData;
-    const formType = otherValues.get("type") as ProductFormValues["type"] | null;
-
-    const rawTax = otherValues.get("taxPercentage");
-    const taxPercentage = rawTax !== null && rawTax !== "" ? Number(rawTax) : null;
-
-    const payload: any = {
-      name: otherValues.get("name"),
-      description: otherValues.get("description") || undefined,
-      type: formType,
-      status: otherValues.get("status"),
-      taxPercentage: taxPercentage,
-      taxName: otherValues.get("taxName") as string || undefined,
-      outletId,
-    };
-
-    let uploadedImageUrl = undefined;
-    // Upload image and use returned URL
-    if (file) {
-      const uploaded = await uploadApi.uploadImage(file, { scope: "product" });
-      payload.image = uploaded.url;
-      uploadedImageUrl = uploaded.url;
-    }
-    if (formType === "GOODS") {
-      const minStockRaw = otherValues.get("goods[minStock]");
-      const maxStockRaw = otherValues.get("goods[maxStock]");
-      const goods = {
-        averageHpp: Number(otherValues.get("goods[averageHpp]")) || 0,
-        currentStock: Number(otherValues.get("goods[currentStock]")),
-        sellingPrice: Number(otherValues.get("goods[sellingPrice]")) || 0,
-        unit: (otherValues.get("goods[unit]") || "pcs") as string,
-        minStock: minStockRaw !== null && minStockRaw !== "" ? Number(minStockRaw) : null,
-        maxStock: maxStockRaw !== null && maxStockRaw !== "" ? Number(maxStockRaw) : null,
-      };
-
-      payload.goods = goods;
-    } else if (formType === "TICKET") {
-      const ticket: TicketSchemaType = {
-        sellingPrice: Number(otherValues.get("ticket[sellingPrice]")) || 0,
-        eventDate: new Date(otherValues.get("ticket[eventDate]") as string),
-        eventEndDate: otherValues.get("ticket[eventEndDate]")
-          ? new Date(otherValues.get("ticket[eventEndDate]") as string)
-          : null,
-        venue: (otherValues.get("ticket[venue]") || "") as string,
-        venueAddress: (otherValues.get("ticket[venueAddress]") as string) || null,
-        mapUrl: (otherValues.get("ticket[mapUrl]") as string) || null,
-        totalQuota: Number(otherValues.get("ticket[totalQuota]")) || 100,
-        maxPerOrder: Number(otherValues.get("ticket[maxPerOrder]")) || 5,
-        saleStartDate: otherValues.get("ticket[saleStartDate]")
-          ? new Date(otherValues.get("ticket[saleStartDate]") as string)
-          : null,
-        saleEndDate: otherValues.get("ticket[saleEndDate]")
-          ? new Date(otherValues.get("ticket[saleEndDate]") as string)
-          : null,
-        terms: (otherValues.get("ticket[terms]") as string) || null,
-      };
-      payload.ticket = ticket;
-    } else {
-      const providerEmail = otherValues.get("service[providerEmail]") as string;
-      const providerPhone = otherValues.get("service[providerPhone]") as string;
-
-      const service: ServiceSchemaType = {
-        commissionType: otherValues.get("service[commissionType]") as "PERCENTAGE" | "FIXED",
-        commissionValue: Number(otherValues.get("service[commissionValue]")),
-        durationMinutes: Number(otherValues.get("service[durationMinutes]")),
-        providerName: otherValues.get("service[providerName]") as string,
-        sellingPrice: Number(otherValues.get("service[sellingPrice]")),
-        providerEmail: providerEmail && providerEmail.trim() !== "" ? providerEmail : undefined,
-        providerPhone: providerPhone && providerPhone.trim() !== "" ? providerPhone : undefined,
-        bookingInWorkHours: otherValues.get("service[bookingInWorkHours]") === "true",
-        // Operating hours
-        mondayOpen: otherValues.get("service[mondayOpen]")
-          ? new Date(otherValues.get("service[mondayOpen]") as string)
-          : null,
-        mondayClose: otherValues.get("service[mondayClose]")
-          ? new Date(otherValues.get("service[mondayClose]") as string)
-          : null,
-        tuesdayOpen: otherValues.get("service[tuesdayOpen]")
-          ? new Date(otherValues.get("service[tuesdayOpen]") as string)
-          : null,
-        tuesdayClose: otherValues.get("service[tuesdayClose]")
-          ? new Date(otherValues.get("service[tuesdayClose]") as string)
-          : null,
-        wednesdayOpen: otherValues.get("service[wednesdayOpen]")
-          ? new Date(otherValues.get("service[wednesdayOpen]") as string)
-          : null,
-        wednesdayClose: otherValues.get("service[wednesdayClose]")
-          ? new Date(otherValues.get("service[wednesdayClose]") as string)
-          : null,
-        thursdayOpen: otherValues.get("service[thursdayOpen]")
-          ? new Date(otherValues.get("service[thursdayOpen]") as string)
-          : null,
-        thursdayClose: otherValues.get("service[thursdayClose]")
-          ? new Date(otherValues.get("service[thursdayClose]") as string)
-          : null,
-        fridayOpen: otherValues.get("service[fridayOpen]")
-          ? new Date(otherValues.get("service[fridayOpen]") as string)
-          : null,
-        fridayClose: otherValues.get("service[fridayClose]")
-          ? new Date(otherValues.get("service[fridayClose]") as string)
-          : null,
-        saturdayOpen: otherValues.get("service[saturdayOpen]")
-          ? new Date(otherValues.get("service[saturdayOpen]") as string)
-          : null,
-        saturdayClose: otherValues.get("service[saturdayClose]")
-          ? new Date(otherValues.get("service[saturdayClose]") as string)
-          : null,
-        sundayOpen: otherValues.get("service[sundayOpen]")
-          ? new Date(otherValues.get("service[sundayOpen]") as string)
-          : null,
-        sundayClose: otherValues.get("service[sundayClose]")
-          ? new Date(otherValues.get("service[sundayClose]") as string)
-          : null,
-      };
-      payload.service = service;
-
-      // Attach media gallery for SERVICE type
-      if (mediaItems.length > 0) {
-        payload.media = mediaItems;
-      } else {
-        payload.media = [];
-      }
-    }
-
-    try {
-      if (action === "add") {
-        await productApi.create(payload);
-      } else {
-        await productApi.update(initialData?.id!, payload);
-      }
-    } catch (error) {
-      // rollback image if create/update fails
-      if (uploadedImageUrl) {
-        try {
-          await uploadApi.deleteByUrl(uploadedImageUrl);
-        } catch (e) {
-          console.error("Failed to delete orphaned product image:", e);
-        }
-      }
-      throw error;
-    }
-    onSuccess?.();
-    handleClose(false);
-  };
+    } as unknown as ProductFormValues;
+  }, [isEdit, initialData, outletId, shouldProductType]);
 
   // Create explicit form instance
   const form = useForm<ProductFormValues>({
@@ -425,9 +181,16 @@ export default function AddOrEditProductServiceModal({
     defaultValues,
   });
 
-  const formType = form.watch("type");
+  const { handleSubmit, isPending } = useProductFormSubmit({
+    form,
+    outletId,
+    action,
+    productId: initialData?.id,
+    onSuccess,
+    onClose: () => onOpenChange(false),
+    mediaItems,
+  });
 
-  // mulai perubahan
   const fields: FormFieldConfig<ProductFormValues>[] = [
     {
       name: "type",
@@ -652,13 +415,13 @@ export default function AddOrEditProductServiceModal({
         />
       ),
     },
-    // Media gallery uploader for SERVICE
+    // Media gallery uploader for SERVICE / GOODS
     {
       name: "service.mediaGallery" as any,
       label: "",
       type: "custom",
       colSpan: "full",
-      condition: (values) => values.type === "SERVICE",
+      condition: (values) => values.type === "SERVICE" || values.type === "GOODS",
       renderCustom: () => (
         <ServiceMediaUploader
           value={mediaItems}
@@ -751,6 +514,26 @@ export default function AddOrEditProductServiceModal({
       condition: (values) => values.type === "TICKET",
     },
     {
+      name: "ticket.codeFormat" as any,
+      label: "Format Kode Scanner",
+      placeholder: "Pilih Tipe Scanner",
+      type: "select",
+      options: [
+        { label: "QR Code (Standar Kamera)", value: "QR_CODE" },
+        { label: "Barcode 128 (Laser Scanner)", value: "BARCODE_128" },
+      ],
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.designConfig.primaryColor" as any,
+      label: "Warna Tema Tiket (Hex)",
+      type: "text",
+      placeholder: "contoh: #2563EB",
+      colSpan: 3,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
       name: "file",
       label: "Gambar Produk",
       type: "file",
@@ -762,16 +545,18 @@ export default function AddOrEditProductServiceModal({
 
   return (
     <ReusableForm
+      className={'max-w-3xl'}
       form={form}
       withDialog
       gridCols={6}
       useFormData={false}
       isDialogOpen={open}
-      onDialogOpenChange={handleClose}
+      onDialogOpenChange={onOpenChange}
       fields={fields}
       onSubmit={handleSubmit}
       schema={productSchema}
       defaultValues={defaultValues}
+      isLoading={isPending}
     />
   );
 }

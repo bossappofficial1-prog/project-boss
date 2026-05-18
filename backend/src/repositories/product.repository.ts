@@ -116,6 +116,8 @@ export class ProductRepository {
               saleStartDate: data.ticket.saleStartDate,
               saleEndDate: data.ticket.saleEndDate,
               terms: data.ticket.terms,
+              codeFormat: data.ticket.codeFormat as any,
+              designConfig: data.ticket.designConfig ? data.ticket.designConfig as any : Prisma.JsonNull,
             },
           },
         },

@@ -3,16 +3,19 @@
 import React, { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, ShoppingBag, ShoppingCart, Package, Receipt, LayoutGrid, Ticket, Store, Table2, ChefHat } from "lucide-react";
+import {
+  LogOut, ShoppingBag, ShoppingCart, Package, Receipt,
+  LayoutGrid, Ticket, Store, Table2, ChefHat, CalendarClock,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import ThemeToggle from "@/components/ThemeToggle";
 import { apiClient } from "@/lib/apis/base";
 import { cn } from "@/lib/utils";
 import { PrinterSettings } from "../PrinterSettings";
-import { Badge } from "@/components/ui/badge";
 import { useOutletContext } from "../providers/CashierOutletProvider";
 import { OutletType } from "@/types";
 import { useActiveCashierShift, useCloseCashierShift } from "@/hooks/api/use-cashier-shifts";
@@ -25,15 +28,69 @@ interface CashierNavbarProps {
   outletType?: OutletType;
 }
 
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: number;
+  requiredTypes?: OutletType[];
+}
+
+function NavBadge({ count, active }: { count: number; active: boolean }) {
+  if (!count || count <= 0) return null;
+  return (
+    <span className={cn(
+      "flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none",
+      active ? "bg-primary-foreground text-primary" : "bg-destructive text-destructive-foreground"
+    )}>
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 export function CashierNavbar({ cashierName, outletName, outletType = OutletType.CUSTOM }: CashierNavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { selectedOutletId } = useOutletContext();
   const [shiftDialogOpen, setShiftDialogOpen] = React.useState(false);
+
   const outletIdForShift = selectedOutletId ?? undefined;
   const { data: activeShift } = useActiveCashierShift(outletIdForShift);
   const closeShift = useCloseCashierShift(outletIdForShift);
+
+  const { data: badgeData } = useQuery({
+    queryKey: ["badge-count", selectedOutletId],
+    queryFn: async () => {
+      const res = await apiClient.get(`/orders/v2/${selectedOutletId}/badge`);
+      return res.data.data as { orderBadgeCount: number; serviceBadgeCount: number };
+    },
+    enabled: !!selectedOutletId,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    placeholderData: (prev) => prev,
+  });
+
+  const navItems = useMemo<NavItem[]>(() => {
+    const items: NavItem[] = [
+      { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
+      { href: "/cashier/orders", label: "Pesanan", icon: ShoppingBag, badge: badgeData?.orderBadgeCount, requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM] },
+      { href: "/cashier/tables", label: "Meja", icon: Table2, requiredTypes: [OutletType.FNB] },
+      { href: "/cashier/reservations", label: "Reservasi", icon: CalendarClock, requiredTypes: [OutletType.FNB] },
+      { href: "/cashier/queue", label: "Antrian", icon: LayoutGrid, badge: badgeData?.serviceBadgeCount, requiredTypes: [OutletType.SERVICE, OutletType.CUSTOM] },
+      { href: `/kitchen/${selectedOutletId}`, label: "KDS", icon: ChefHat, requiredTypes: [OutletType.FNB, OutletType.CUSTOM] },
+      { href: "/cashier/pob", label: "POB", icon: Package, requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM] },
+      { href: "/cashier/ticket-scan", label: "Tiket", icon: Ticket, requiredTypes: [OutletType.EVENT, OutletType.CUSTOM] },
+      { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
+    ];
+    return items.filter((item) => !item.requiredTypes || item.requiredTypes.includes(outletType));
+  }, [badgeData, outletType, selectedOutletId]);
+
+  useEffect(() => {
+    navItems.forEach((item) => router.prefetch(item.href));
+  }, [router, navItems]);
 
   const handleLogout = async () => {
     try {
@@ -44,80 +101,133 @@ export function CashierNavbar({ cashierName, outletName, outletType = OutletType
       queryClient.removeQueries({ queryKey: ["cashier-auth"] });
       toast.success("Logout berhasil");
       router.push("/auth/login/cashier");
-    } catch (error) {
-      console.error("Logout error:", error);
+    } catch {
       toast.error("Gagal logout");
     }
   };
 
-  const { data } = useQuery({
-    queryKey: ['badge-count', selectedOutletId],
-    queryFn: async () => {
-      const res = await apiClient.get(`/orders/v2/${selectedOutletId}/badge`);
-      return res.data.data as {
-        orderBadgeCount: number,
-        serviceBadgeCount: number
-      };
-    },
-    enabled: !!selectedOutletId,
-    staleTime: 30_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    placeholderData: (previousData) => previousData,
-  });
-
-  const CASHIER_NAV_ITEMS = useMemo(() => {
-    const items = [
-      { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
-      { href: "/cashier/orders", badge: data?.orderBadgeCount, label: "Pesanan", icon: ShoppingBag, requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM] },
-      { href: "/cashier/tables", label: "Meja & Bill", icon: Table2, requiredTypes: [OutletType.FNB] },
-      { href: "/cashier/queue", badge: data?.serviceBadgeCount, label: "Antrian", icon: LayoutGrid, requiredTypes: [OutletType.SERVICE, OutletType.CUSTOM] },
-      { href: `/kitchen/${selectedOutletId}`, label: "Kitchen (KDS)", icon: ChefHat, requiredTypes: [OutletType.FNB, OutletType.CUSTOM] },
-      { href: "/cashier/pob", label: "POB", icon: Package, requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM] },
-      { href: "/cashier/ticket-scan", label: "Scan Tiket", icon: Ticket, requiredTypes: [OutletType.EVENT, OutletType.CUSTOM] },
-      { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
-    ];
-
-    return items.filter(item =>
-      !item.requiredTypes || item.requiredTypes.includes(outletType)
-    );
-  }, [data, outletType]);
-
-  useEffect(() => {
-    CASHIER_NAV_ITEMS.forEach((item) => {
-      router.prefetch(item.href);
-    });
-  }, [router]);
+  const isRetailWithShift = outletType === OutletType.RETAIL && activeShift;
 
   return (
-    <div className="sticky top-0 z-40 w-full flex flex-col bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b shadow-sm">
-      {/* Top Header Row: Logo, Outlet Info, and Actions */}
-      <div className="mx-auto flex w-full max-w-[1600px] h-16 items-center justify-between px-4 md:px-6">
+    <>
+      {/* ── Top Bar ── */}
+      <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center justify-between gap-4 px-4">
 
-        {/* Left: Brand / Info */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            <Store className="h-5 w-5" />
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm md:text-base font-bold leading-tight text-foreground truncate max-w-[140px] md:max-w-[250px]">
-                {outletName}
-              </h1>
-              <Badge variant="secondary" className="h-5 px-2 text-[10px] font-black bg-primary/10 text-primary border-none">
-                {outletType}
-              </Badge>
+          {/* Brand */}
+          <div className="flex items-center gap-2.5 shrink-0 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Store className="h-4 w-4" />
             </div>
-            <p className="text-[11px] md:text-xs font-medium text-muted-foreground truncate max-w-[140px] md:max-w-[250px]">
-              Kasir: {cashierName}
-            </p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-semibold tracking-tight text-foreground truncate max-w-[120px] sm:max-w-[200px]">
+                  {outletName}
+                </span>
+                <Badge variant="secondary" className="shrink-0 h-4 px-1.5 text-[9px] font-bold bg-primary/10 text-primary border-none rounded-sm">
+                  {outletType}
+                </Badge>
+              </div>
+              <p className="text-[10px] text-muted-foreground truncate max-w-[120px] sm:max-w-[200px]">
+                {cashierName}
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop Nav — center */}
+          <nav className="hidden lg:flex flex-1 items-center justify-center gap-0.5">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span>{item.label}</span>
+                  <NavBadge count={item.badge ?? 0} active={isActive} />
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {isRetailWithShift && (
+              <>
+                <Badge variant="secondary" className="hidden md:inline-flex h-6 px-2 text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border-none rounded-sm">
+                  Shift Open
+                </Badge>
+                <Button
+                  onClick={() => setShiftDialogOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="hidden sm:flex h-8 rounded-md text-xs"
+                >
+                  Tutup Shift
+                </Button>
+                <ReusableForm<CloseShiftValues>
+                  withDialog
+                  isDialogOpen={shiftDialogOpen}
+                  onDialogOpenChange={setShiftDialogOpen}
+                  dialogTitle="Tutup Shift"
+                  dialogDescription="Masukkan cash akhir untuk menutup shift."
+                  schema={closeShiftSchema}
+                  defaultValues={{ closingCash: 0, notes: "" }}
+                  onSubmit={async (values) => {
+                    await closeShift.mutateAsync({
+                      shiftId: activeShift.id,
+                      closingCash: values.closingCash,
+                      notes: values.notes,
+                    });
+                    toast.success("Shift berhasil ditutup");
+                    setShiftDialogOpen(false);
+                  }}
+                  fields={[
+                    { name: "closingCash", label: "Closing Cash", type: "currency", colSpan: "full" },
+                    { name: "notes", label: "Catatan (opsional)", type: "textarea", colSpan: "full" },
+                  ]}
+                  submitText="Tutup Shift"
+                  loadingText="Menutup..."
+                  isLoading={closeShift.isPending}
+                  errorSummary
+                />
+              </>
+            )}
+            <PrinterSettings outletId={selectedOutletId!} />
+            <ThemeToggle />
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              size="sm"
+              className="hidden sm:flex h-8 gap-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Logout
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              size="icon"
+              className="flex sm:hidden h-8 w-8 rounded-md text-muted-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
+      </header>
 
-        {/* Center: Desktop Navigation */}
-        <nav className="hidden lg:flex flex-1 items-center justify-center gap-1.5 px-6">
-          {CASHIER_NAV_ITEMS.map((item) => {
+      {/* ── Mobile Bottom Nav ── */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex items-center overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -125,120 +235,27 @@ export function CashierNavbar({ cashierName, outletName, outletType = OutletType
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "group relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  "relative flex flex-1 shrink-0 flex-col items-center justify-center gap-1 py-2.5 px-2 min-w-[64px] transition-colors",
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon className={cn("h-4 w-4", isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground")} />
-                <span>{item.label}</span>
-
-                {/* Dynamic Badge Desktop */}
-                {!!item.badge && item.badge > 0 && (
-                  <span className={cn(
-                    "ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold transition-colors",
-                    isActive ? "bg-primary-foreground text-primary" : "bg-destructive text-primary-foreground"
-                  )}>
-                    {item.badge > 99 ? '99+' : item.badge}
-                  </span>
+                <div className="relative">
+                  <Icon className="h-5 w-5" />
+                  {!!item.badge && item.badge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-medium leading-none">{item.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-6 rounded-full bg-primary" />
                 )}
               </Link>
             );
           })}
-        </nav>
-
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2 md:gap-3 shrink-0">
-          {outletType === OutletType.RETAIL && activeShift && (
-            <>
-              <Badge
-                variant="secondary"
-                className="hidden md:inline-flex h-8 px-3 text-[11px] font-black bg-primary/10 text-primary border-none"
-              >
-                Shift Open
-              </Badge>
-              <Button
-                onClick={() => setShiftDialogOpen(true)}
-                variant="outline"
-                size="sm"
-                className="rounded-full px-4"
-              >
-                Tutup Shift
-              </Button>
-              <ReusableForm<CloseShiftValues>
-                withDialog
-                isDialogOpen={shiftDialogOpen}
-                onDialogOpenChange={setShiftDialogOpen}
-                dialogTitle="Tutup Shift"
-                dialogDescription="Masukkan cash akhir untuk menutup shift."
-                schema={closeShiftSchema}
-                defaultValues={{ closingCash: 0, notes: "" }}
-                onSubmit={async (values) => {
-                  await closeShift.mutateAsync({
-                    shiftId: activeShift.id,
-                    closingCash: values.closingCash,
-                    notes: values.notes,
-                  });
-                  toast.success("Shift berhasil ditutup");
-                  setShiftDialogOpen(false);
-                }}
-                fields={[
-                  { name: "closingCash", label: "Closing Cash", type: "currency", colSpan: "full" },
-                  { name: "notes", label: "Catatan (opsional)", type: "textarea", colSpan: "full" },
-                ]}
-                submitText="Tutup Shift"
-                loadingText="Menutup..."
-                isLoading={closeShift.isPending}
-                errorSummary
-              />
-            </>
-          )}
-          <PrinterSettings outletId={selectedOutletId!} />
-          <ThemeToggle />
-          <Button onClick={handleLogout} variant="outline" size="sm" className="hidden sm:flex rounded-full px-4">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Logout</span>
-          </Button>
-          {/* Mobile Logout (Icon only) */}
-          <Button onClick={handleLogout} variant="outline" size="icon" className="flex sm:hidden rounded-full h-9 w-9">
-            <LogOut className="h-4 w-4" />
-          </Button>
         </div>
-      </div>
-
-      {/* Bottom Header Row: Mobile Navigation (Scrollable) */}
-      <nav className="lg:hidden flex items-center gap-2 overflow-x-auto px-4 py-2 border-t border-border/50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {CASHIER_NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "relative flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/20"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
-
-              {/* Dynamic Badge Mobile */}
-              {!!item.badge && item.badge > 0 && (
-                <span className={cn(
-                  "ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
-                  isActive ? "bg-primary-foreground text-primary" : "bg-destructive text-destructive-foreground"
-                )}>
-                  {item.badge > 99 ? '99+' : item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
       </nav>
-    </div>
+    </>
   );
 }

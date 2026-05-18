@@ -3,6 +3,9 @@
 import { z } from "zod";
 import { ReusableForm, FormFieldConfig } from "@/components/ui/reuseable-form";
 import { TableAvailabilityPicker } from "@/components/cashier/reservations/table-availability-picker";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { useCreateReservation } from "@/hooks/api/use-reservations";
 
 interface ReservationFormProps {
     outletId: string;
@@ -17,7 +20,9 @@ const schema = z.object({
         .string()
         .min(10, "Nomor telepon minimal 10 digit")
         .max(15, "Nomor telepon terlalu panjang"),
-    bookingDate: z.date("Tanggal reservasi wajib dipilih"),
+    bookingDate: z.coerce.date({
+        message: "Tanggal reservasi wajib dipilih",
+    }),
     bookingTime: z.string().min(1, "Jam reservasi wajib dipilih"),
     durationMinutes: z
         .number("Durasi wajib diisi")
@@ -122,10 +127,34 @@ export function ReservationForm({
         },
     ];
 
+    const createMutation = useCreateReservation();
+
     const handleSubmit = async (values: ReservationFormValues) => {
-        // TODO: replace dengan API call
-        console.log("Reservasi dibuat:", values);
-        onSuccess?.();
+        try {
+            // Combine date and time, handling both Date objects and strings
+            const dateObj = new Date(values.bookingDate);
+            const dateStr = format(dateObj, "yyyy-MM-dd");
+            const timeStr = values.bookingTime;
+            const bookingDateTime = new Date(`${dateStr}T${timeStr}:00`);
+
+            const payload = {
+                customerName: values.customerName,
+                customerPhone: values.customerPhone,
+                bookingDate: bookingDateTime.toISOString(),
+                durationMinutes: values.durationMinutes,
+                guestCount: values.guestCount,
+                tableId: values.tableId,
+                notes: values.notes || "",
+                outletId: outletId,
+            };
+
+            await createMutation.mutateAsync(payload);
+            toast.success("Reservasi berhasil dibuat");
+            onSuccess?.();
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Gagal membuat reservasi");
+            throw error;
+        }
     };
 
     return (

@@ -123,7 +123,6 @@ export const MENU_GROUPS: MenuGroup[] = [
         href: "/owner/reservations",
         requiredTypes: [OutletType.FNB, OutletType.CUSTOM],
         requirePro: true,
-        disabled: true,
       },
     ],
   },

@@ -42,6 +42,11 @@ export interface TicketPrintData {
     venue: string;
     customerName: string;
     outletName: string;
+    codeFormat?: string;
+    primaryColor?: string;
+    layoutType?: string;
+    isBarcode?: boolean;
+    codeImageUrl?: string;
 }
 
 export const generateTicketsPDF = async (tickets: TicketPrintData[]): Promise<Buffer> => {

@@ -91,6 +91,8 @@ export interface Ticket {
   saleStartDate?: string | null;
   saleEndDate?: string | null;
   terms?: string | null;
+  codeFormat?: string;
+  designConfig?: any
   createdAt: string;
   updatedAt: string;
 }

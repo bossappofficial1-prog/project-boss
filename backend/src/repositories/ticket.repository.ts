@@ -52,7 +52,9 @@ export class TicketRepository {
                     eventDate: true,
                     eventEndDate: true,
                     venue: true,
-                    venueAddress: true
+                    venueAddress: true,
+                    codeFormat: true,
+                    designConfig: true,
                   }
                 }
               } 
@@ -73,7 +75,7 @@ export class TicketRepository {
 
   static async findByProductId(productId: string, page = 1, limit = 50) {
     const skip = (page - 1) * limit;
-    const [codes, total] = await Promise.all([
+    const [codes, total, totalRedeemed, totalValid] = await Promise.all([
       db.ticketCode.findMany({
         where: { orderItem: { productId } },
         include: {
@@ -95,8 +97,10 @@ export class TicketRepository {
         take: limit,
       }),
       db.ticketCode.count({ where: { orderItem: { productId } } }),
+      db.ticketCode.count({ where: { orderItem: { productId }, status: "REDEEMED" } }),
+      db.ticketCode.count({ where: { orderItem: { productId }, status: "VALID" } }),
     ]);
-    return { codes, total, page, limit };
+    return { codes, total, page, limit, totalRedeemed, totalValid };
   }
 
   static async redeem(code: string, staffId?: string) {

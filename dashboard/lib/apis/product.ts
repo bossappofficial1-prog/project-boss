@@ -4,6 +4,67 @@ import { Product } from '@/hooks/useProducts';
 import { ProductItem } from '@/hooks/useProductsData';
 import type { PosV2Product } from './pos-v2';
 
+export type CreateProductPayload = {
+  name: string;
+  description?: string;
+  type: 'GOODS' | 'SERVICE' | 'TICKET';
+  status: 'ACTIVE' | 'INACTIVE';
+  taxPercentage?: number | null;
+  taxName?: string;
+  outletId: string;
+  image?: string;
+  goods?: {
+    averageHpp: number;
+    currentStock: number;
+    sellingPrice: number;
+    unit: string;
+    minStock?: number | null;
+    maxStock?: number | null;
+  };
+  service?: {
+    durationMinutes: number;
+    sellingPrice: number;
+    providerName: string;
+    providerPhone?: string;
+    providerEmail?: string;
+    commissionType: 'PERCENTAGE' | 'FIXED';
+    commissionValue: number;
+    bookingInWorkHours: boolean;
+    mondayOpen?: Date | string | null;
+    mondayClose?: Date | string | null;
+    tuesdayOpen?: Date | string | null;
+    tuesdayClose?: Date | string | null;
+    wednesdayOpen?: Date | string | null;
+    wednesdayClose?: Date | string | null;
+    thursdayOpen?: Date | string | null;
+    thursdayClose?: Date | string | null;
+    fridayOpen?: Date | string | null;
+    fridayClose?: Date | string | null;
+    saturdayOpen?: Date | string | null;
+    saturdayClose?: Date | string | null;
+    sundayOpen?: Date | string | null;
+    sundayClose?: Date | string | null;
+  };
+  ticket?: {
+    codeFormat?: string;
+    designConfig?: any;
+    sellingPrice: number;
+    eventDate: Date | string;
+    eventEndDate?: Date | string | null;
+    venue: string;
+    venueAddress?: string | null;
+    mapUrl?: string | null;
+    totalQuota: number;
+    maxPerOrder?: number;
+    saleStartDate?: Date | string | null;
+    saleEndDate?: Date | string | null;
+    terms?: string | null;
+  };
+  media?: any[];
+};
+
+export type UpdateProductPayload = Partial<Omit<CreateProductPayload, 'outletId'>>;
+
 export const productApi = {
   // File operations (using fetch for blob handling)
   bulkImport: async (outletId: string, file: File): Promise<any> => {
@@ -61,10 +122,10 @@ export const productApi = {
   getById: (productId: string) =>
     apiClient.get(`/products/${productId}`).then(res => res.data.data),
 
-  create: (productData: { name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status?: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; outletId: string; taxPercentage?: number | null; }) =>
+  create: (productData: CreateProductPayload) =>
     apiClient.post('/products', productData).then(res => res.data.data),
 
-  update: (productId: string, productData: Partial<{ name: string; description?: string; costPrice: number; price: number; type: 'GOODS' | 'SERVICE'; quantity?: number; unit?: string; status: 'ACTIVE' | 'INACTIVE'; serviceDurationMinutes?: number; image?: string; taxPercentage?: number | null; }>) =>
+  update: (productId: string, productData: UpdateProductPayload) =>
     apiClient.patch(`/products/${productId}`, productData).then(res => res.data.data),
 
   delete: (productId: string) =>

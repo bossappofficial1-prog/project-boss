@@ -37,8 +37,8 @@ export async function createProductService(data: CreateProductInput) {
   await PlanLimitService.assertProductTypeAllowed(data.outletId, data.type);
   const createdProduct = await ProductRepository.create(data);
 
-  // Sync media if type is SERVICE and media array provided
-  if (data.type === ProductType.SERVICE && (data as any).media?.length > 0) {
+  // Sync media if type is SERVICE or GOODS and media array provided
+  if ((data.type === ProductType.SERVICE || data.type === ProductType.GOODS) && (data as any).media?.length > 0) {
     await ProductMediaService.syncMedia(createdProduct.id, (data as any).media as MediaItemInput[]);
   }
 
@@ -125,8 +125,8 @@ export async function updateProductService(id: string, data: UpdateProductInput)
   }
   const product = await ProductRepository.update(id, data);
 
-  // Sync media if type is SERVICE and media array provided
-  if (product.type === "SERVICE" && (data as any).media !== undefined) {
+  // Sync media if type is SERVICE or GOODS and media array provided
+  if ((product.type === "SERVICE" || product.type === "GOODS") && (data as any).media !== undefined) {
     await ProductMediaService.syncMedia(id, ((data as any).media || []) as MediaItemInput[]);
   }
 

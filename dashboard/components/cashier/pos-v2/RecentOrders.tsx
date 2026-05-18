@@ -2,10 +2,8 @@
 
 import React from "react";
 import { Clock, Printer } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { posV2Api } from "@/lib/apis/pos-v2";
 import type { PosV2RecentOrder } from "@/lib/apis/pos-v2";
 import { usePrint } from "@/hooks/use-print";
 

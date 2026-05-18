@@ -379,6 +379,11 @@ model ProductService {
   @@index([providerName])
 }
 
+enum TicketCodeFormat {
+  QR_CODE
+  BARCODE_128
+}
+
 model ProductTicket {
   id            String    @id @default(uuid())
   productId     String    @unique
@@ -394,6 +399,8 @@ model ProductTicket {
   saleStartDate DateTime?
   saleEndDate   DateTime?
   terms         String?
+  codeFormat    TicketCodeFormat @default(QR_CODE)
+  designConfig  Json?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -549,10 +556,12 @@ model Order {
   discountAmount           Float                 @default(0)
   pointsRedeemed           Int                   @default(0)
   bookingDate              DateTime?
+  bookingDurationMinutes   Int?
   customerType             CustomerType          @default(GUEST)
   paymentStatus            PaymentStatus         @default(PENDING)
   paymentReminderSent      Boolean               @default(false)
   orderStatus              OrderStatus           @default(AWAITING_PAYMENT)
+  notes                    String?
   cancellationReason       String?
   midtransTransactionToken String?               @unique
   midtransRedirectUrl      String?
@@ -768,6 +777,7 @@ enum OrderStatus {
   ON_GOING
   COMPLETED
   CANCELLED
+  RESERVED
 }
 
 enum ServiceStatus {

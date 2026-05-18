@@ -46,12 +46,15 @@ export default function UpdateStockModal({ open, onOpenChange, product, onUpdate
     try {
       setLoading(true)
       setError(null)
-      const current = product.quantity ?? 0
-      const next = mode === 'set'
-        ? Math.max(0, qty)
-        : Math.max(0, mode === 'add' ? current + qty : current - qty)
 
-      await productApi.update(product.id, { quantity: next })
+      const type = mode === 'add' ? 'add' : mode === 'remove' ? 'subtract' : 'adjustment'
+
+      await productApi.updateStock(product.id, {
+        type,
+        quantity: qty,
+        reason: reason || (mode === 'add' ? 'Stock Addition' : mode === 'remove' ? 'Stock Reduction' : 'Stock Adjustment'),
+        notes: notes || undefined,
+      })
       onUpdated?.()
       onOpenChange(false)
     } catch (err: any) {
