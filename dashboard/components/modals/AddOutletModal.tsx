@@ -301,8 +301,8 @@ export default function AddOutletModal({
     },
     {
       name: 'instagramUrl',
-      label: 'Link Instagram',
-      placeholder: 'https://instagram.com/username',
+      label: 'Username Instagram',
+      placeholder: 'username',
       icon: Instagram,
       colSpan: 2,
     },
