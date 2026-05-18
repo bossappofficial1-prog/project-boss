@@ -4,7 +4,7 @@ import { useOutletContext } from "@/components/providers/CashierOutletProvider";
 import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Plus, CalendarCheck, Clock, Users, Phone, User } from "lucide-react";
+import { Plus, CalendarCheck } from "lucide-react";
 import { ReservationForm } from "@/components/cashier/reservations/reservation-form";
 import { useReservations } from "@/hooks/api/use-reservations";
 import { Button } from "@/components/ui/button";

@@ -1,12 +1,12 @@
 # Stage 1: Install dependencies only
-FROM node:20-alpine AS deps
+FROM oven/bun:1-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app/dashboard
-COPY package.json package-lock.json* ./
-RUN npm install
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile
 
 # Stage 2: Build the app
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app/dashboard
 COPY --from=deps /app/dashboard/node_modules ./node_modules
 COPY . .
@@ -25,7 +25,7 @@ ENV NEXT_PUBLIC_CUSTOMER_URL=${NEXT_PUBLIC_CUSTOMER_URL}
 ENV NEXT_PUBLIC_REMOTE_PATTERNS=${NEXT_PUBLIC_REMOTE_PATTERNS}
 ENV NODE_ENV=${NODE_ENV}
 
-RUN npm run build
+RUN bun run build
 
 # Stage 3: Production image
 FROM node:20-alpine AS runner
