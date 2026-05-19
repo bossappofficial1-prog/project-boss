@@ -1623,6 +1623,88 @@ export class AdminRepository {
         return businessReports;
     }
 
+    static async getAllOrders(options: {
+        page: number;
+        limit: number;
+        search?: string;
+        status?: string;
+        paymentStatus?: string;
+    }) {
+        const { page, limit, search, status, paymentStatus } = options;
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+
+        if (search) {
+            where.OR = [
+                { id: { contains: search } },
+                { guestCustomer: { name: { contains: search, mode: 'insensitive' } } },
+                { outlet: { business: { name: { contains: search, mode: 'insensitive' } } } },
+                { outlet: { name: { contains: search, mode: 'insensitive' } } },
+            ];
+        }
+
+        if (status) where.orderStatus = status;
+        if (paymentStatus) where.paymentStatus = paymentStatus;
+
+        const [orders, total] = await Promise.all([
+            db.order.findMany({
+                where,
+                include: {
+                    outlet: {
+                        select: {
+                            id: true,
+                            name: true,
+                            business: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                },
+                            },
+                        },
+                    },
+                    guestCustomer: {
+                        select: {
+                            name: true,
+                            email: true,
+                            phone: true,
+                        },
+                    },
+                    handledByStaff: {
+                        select: {
+                            name: true,
+                        },
+                    },
+                    items: {
+                        include: {
+                            product: {
+                                select: {
+                                    name: true,
+                                    type: true,
+                                },
+                            },
+                        },
+                    },
+                    transaction: {
+                        select: {
+                            id: true,
+                            paymentMethod: true,
+                            status: true,
+                            isManual: true,
+                            paymentProofUrl: true,
+                        },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            db.order.count({ where }),
+        ]);
+
+        return { orders, total };
+    }
+
     static async deleteBusiness(businessId: string) {
         const business = await db.business.findUnique({
             where: { id: businessId }

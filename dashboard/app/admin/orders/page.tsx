@@ -15,30 +15,22 @@ import {
     XCircle,
     Clock,
     ArrowUpRight,
-    ExternalLink,
     CornerUpLeft,
     ShieldAlert,
     UserPlus,
     FileText,
     Receipt,
-    Download
+    Download,
+    RefreshCcw,
+    Eye,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
 import {
     Sheet,
     SheetContent,
@@ -79,17 +71,11 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs"
-import { DatePickerWithRange } from "@/components/ui/DatePickerWithRange"
-
-// --- HELPER ---
-const formatIDR = (value: number) => {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(value)
-}
+import { DataTable } from "@/components/ui/data-table"
+import { ColumnDef } from "@tanstack/react-table"
+import { apiClient } from "@/lib/apis/base"
+import { useQuery } from "@tanstack/react-query"
+import { formatCurrency } from "@/lib/utils"
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("id-ID", {
@@ -101,151 +87,201 @@ const formatDate = (dateString: string) => {
     })
 }
 
-// --- TYPES ---
-type OrderStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "DISPUTED"
-type PaymentStatus = "PAID" | "UNPAID" | "REFUNDED" | "FAILED"
+type OrderStatus = "AWAITING_PAYMENT" | "PROCESSING" | "CONFIRMED" | "READY" | "ON_GOING" | "COMPLETED" | "CANCELLED" | "RESERVED"
+type PaymentStatus = "PENDING" | "PROOF_SUBMITTED" | "AWAITING_VERIFICATION" | "SUCCESS" | "FAILED" | "REFUNDED" | "EXPIRED" | "CANCELLED" | "REJECTED_MANUAL"
 
 interface OrderItem {
-    name: string
+    id: string
     quantity: number
-    price: number
-    variant?: string
+    priceAtTimeOfOrder: number
+    product: { name: string; type: string }
 }
 
 interface Order {
     id: string
-    date: string
-    businessName: string
-    outletName: string
-    customerName: string
-    customerEmail: string
-    status: OrderStatus
-    paymentStatus: PaymentStatus
-    paymentMethod: string
     totalAmount: number
-    items: OrderItem[]
-    bookingSlot?: string // e.g., "22 Nov 2023, 14:00 - 16:00"
-    manualProofUrl?: string // Link to uploaded proof
-    transactionId: string
+    taxAmount: number
+    discountAmount: number
+    orderStatus: OrderStatus
+    paymentStatus: PaymentStatus
     notes?: string
+    cancellationReason?: string
+    createdAt: string
+    updatedAt: string
+    outlet: {
+        id: string
+        name: string
+        business: { id: string; name: string }
+    }
+    guestCustomer: {
+        name: string
+        email?: string
+        phone: string
+    }
+    handledByStaff?: { name: string }
+    items: OrderItem[]
+    transaction?: {
+        id: string
+        paymentMethod?: string
+        status: string
+        isManual: boolean
+        paymentProofUrl?: string
+    }
 }
 
-// --- MOCK DATA ---
-const ORDERS: Order[] = [
-    {
-        id: "ORD-2023-8821",
-        date: "2023-11-22T14:30:00",
-        businessName: "Kopi Kenangan Senja",
-        outletName: "Senopati",
-        customerName: "Budi Santoso",
-        customerEmail: "budi@gmail.com",
-        status: "COMPLETED",
-        paymentStatus: "PAID",
-        paymentMethod: "QRIS",
-        totalAmount: 145000,
-        transactionId: "TRX-QRS-992811",
-        items: [
-            { name: "Kopi Kenangan Mantan", quantity: 2, price: 25000, variant: "Large" },
-            { name: "Roti Coklat", quantity: 2, price: 15000 },
-            { name: "Croissant Butter", quantity: 1, price: 20000 },
-            { name: "Hazelnut Latte", quantity: 1, price: 45000 },
-        ]
-    },
-    {
-        id: "ORD-2023-8822",
-        date: "2023-11-22T15:15:00",
-        businessName: "Martabak Sultan",
-        outletName: "Dago",
-        customerName: "Siti Aminah",
-        customerEmail: "siti.aminah@yahoo.com",
-        status: "PENDING",
-        paymentStatus: "UNPAID",
-        paymentMethod: "Bank Transfer (Manual)",
-        totalAmount: 85000,
-        transactionId: "TRX-MAN-112233",
-        manualProofUrl: "https://example.com/proof.jpg", // Simulasi link
-        items: [
-            { name: "Martabak Manis Coklat Keju", quantity: 1, price: 85000, variant: "Special" }
-        ],
-        notes: "Tolong jangan gosong ya kak"
-    },
-    {
-        id: "ORD-2023-8823",
-        date: "2023-11-21T19:00:00",
-        businessName: "Barber King",
-        outletName: "Tebet",
-        customerName: "Rian Pratama",
-        customerEmail: "rian.pratama@tech.id",
-        status: "DISPUTED",
-        paymentStatus: "PAID",
-        paymentMethod: "Credit Card",
-        totalAmount: 120000,
-        transactionId: "TRX-CC-554422",
-        bookingSlot: "21 Nov 2023, 19:00 - 20:00",
-        items: [
-            { name: "Gentleman Cut & Wash", quantity: 1, price: 120000 }
-        ]
-    },
-    {
-        id: "ORD-2023-8824",
-        date: "2023-11-20T10:00:00",
-        businessName: "Kopi Kenangan Senja",
-        outletName: "Senopati",
-        customerName: "Jessica W.",
-        customerEmail: "jessica@corp.com",
-        status: "CANCELLED",
-        paymentStatus: "REFUNDED",
-        paymentMethod: "E-Wallet",
-        totalAmount: 45000,
-        transactionId: "TRX-EWL-778899",
-        items: [
-            { name: "Americano Ice", quantity: 2, price: 22500 }
-        ]
-    },
-]
+function useAdminOrders(params: { page: number; limit: number; search?: string; status?: string; paymentStatus?: string }) {
+    return useQuery({
+        queryKey: ["admin-orders", params],
+        queryFn: async () => {
+            const queryParams = new URLSearchParams()
+            queryParams.set("page", params.page.toString())
+            queryParams.set("limit", params.limit.toString())
+            if (params.search) queryParams.set("search", params.search)
+            if (params.status) queryParams.set("status", params.status)
+            if (params.paymentStatus) queryParams.set("paymentStatus", params.paymentStatus)
+
+            const response = await apiClient.get(`/admin/orders?${queryParams}`)
+            return response.data.data
+        },
+    })
+}
+
+const getStatusColor = (status: OrderStatus) => {
+    switch (status) {
+        case "COMPLETED": return "bg-emerald-500/10 text-emerald-600 border-emerald-200"
+        case "PROCESSING": return "bg-blue-500/10 text-blue-600 border-blue-200"
+        case "CONFIRMED": return "bg-sky-500/10 text-sky-600 border-sky-200"
+        case "READY": return "bg-amber-500/10 text-amber-600 border-amber-200"
+        case "ON_GOING": return "bg-violet-500/10 text-violet-600 border-violet-200"
+        case "AWAITING_PAYMENT": return "bg-orange-500/10 text-orange-600 border-orange-200"
+        case "CANCELLED": return "bg-muted text-muted-foreground border-border"
+        case "RESERVED": return "bg-indigo-500/10 text-indigo-600 border-indigo-200"
+        default: return "bg-muted"
+    }
+}
+
+const getPaymentColor = (status: PaymentStatus) => {
+    switch (status) {
+        case "SUCCESS": return "text-emerald-600"
+        case "PENDING": return "text-amber-600"
+        case "REFUNDED": return "text-blue-600"
+        case "FAILED": return "text-destructive"
+        case "PROOF_SUBMITTED": return "text-sky-600"
+        case "AWAITING_VERIFICATION": return "text-orange-600"
+        default: return "text-muted-foreground"
+    }
+}
 
 export default function OrderManagement() {
     const [searchQuery, setSearchQuery] = React.useState("")
     const [statusFilter, setStatusFilter] = React.useState("ALL")
+    const [paymentFilter, setPaymentFilter] = React.useState("ALL")
     const [selectedOrder, setSelectedOrder] = React.useState<Order | null>(null)
     const [isSheetOpen, setIsSheetOpen] = React.useState(false)
+    const [page, setPage] = React.useState(1)
+    const [limit, setLimit] = React.useState(10)
 
-    // --- FILTER LOGIC ---
-    const filteredOrders = ORDERS.filter(order => {
-        const matchesSearch =
-            order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            order.businessName.toLowerCase().includes(searchQuery.toLowerCase())
-
-        const matchesStatus = statusFilter === "ALL" || order.status === statusFilter
-        return matchesSearch && matchesStatus
+    const { data, isLoading, refetch } = useAdminOrders({
+        page,
+        limit,
+        search: searchQuery || undefined,
+        status: statusFilter === "ALL" ? undefined : statusFilter,
+        paymentStatus: paymentFilter === "ALL" ? undefined : paymentFilter,
     })
+
+    const orders: Order[] = data?.orders || []
+    const pagination = data?.pagination
 
     const handleOrderClick = (order: Order) => {
         setSelectedOrder(order)
         setIsSheetOpen(true)
     }
 
-    const getStatusColor = (status: OrderStatus) => {
-        switch (status) {
-            case "COMPLETED": return "bg-emerald-500/10 text-emerald-600 border-emerald-200"
-            case "PENDING": return "bg-amber-500/10 text-amber-600 border-amber-200"
-            case "CONFIRMED": return "bg-blue-500/10 text-blue-600 border-blue-200"
-            case "CANCELLED": return "bg-muted text-muted-foreground border-border"
-            case "DISPUTED": return "bg-destructive/10 text-destructive border-destructive/20"
-            default: return "bg-muted"
-        }
-    }
-
-    const getPaymentColor = (status: PaymentStatus) => {
-        switch (status) {
-            case "PAID": return "text-emerald-600"
-            case "UNPAID": return "text-amber-600"
-            case "REFUNDED": return "text-blue-600"
-            case "FAILED": return "text-destructive"
-            default: return "text-muted-foreground"
-        }
-    }
+    const columns = React.useMemo<ColumnDef<Order>[]>(() => [
+        {
+            accessorKey: "id",
+            header: "Order ID",
+            cell: ({ row }) => {
+                const order = row.original
+                return (
+                    <span className="font-mono text-xs font-medium text-primary">
+                        {order.id.split("-")[0]}
+                    </span>
+                )
+            },
+        },
+        {
+            accessorKey: "createdAt",
+            header: "Tanggal",
+            cell: ({ row }) => (
+                <span className="text-xs text-muted-foreground">
+                    {formatDate(row.original.createdAt)}
+                </span>
+            ),
+        },
+        {
+            accessorKey: "outlet.business.name",
+            header: "Bisnis / Outlet",
+            cell: ({ row }) => {
+                const order = row.original
+                return (
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium">{order.outlet.business.name}</span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Store className="h-3 w-3" /> {order.outlet.name}
+                        </span>
+                    </div>
+                )
+            },
+        },
+        {
+            accessorKey: "guestCustomer.name",
+            header: "Pelanggan",
+            cell: ({ row }) => {
+                const order = row.original
+                return (
+                    <div className="flex flex-col">
+                        <span className="text-sm">{order.guestCustomer.name}</span>
+                        <span className="text-xs text-muted-foreground">{order.guestCustomer.phone}</span>
+                    </div>
+                )
+            },
+        },
+        {
+            accessorKey: "orderStatus",
+            header: "Status Order",
+            cell: ({ row }) => (
+                <Badge variant="outline" className={`text-[10px] h-5 border ${getStatusColor(row.original.orderStatus)}`}>
+                    {row.original.orderStatus.replace(/_/g, " ")}
+                </Badge>
+            ),
+        },
+        {
+            accessorKey: "paymentStatus",
+            header: "Pembayaran",
+            cell: ({ row }) => {
+                const status = row.original.paymentStatus
+                return (
+                    <div className={`flex items-center gap-1.5 text-xs font-medium ${getPaymentColor(status)}`}>
+                        {status === "SUCCESS" && <CheckCircle2 className="h-3.5 w-3.5" />}
+                        {status === "PENDING" && <Clock className="h-3.5 w-3.5" />}
+                        {status === "REFUNDED" && <CornerUpLeft className="h-3.5 w-3.5" />}
+                        {status === "FAILED" && <XCircle className="h-3.5 w-3.5" />}
+                        {status.replace(/_/g, " ")}
+                    </div>
+                )
+            },
+        },
+        {
+            accessorKey: "totalAmount",
+            header: "Total",
+            cell: ({ row }) => (
+                <span className="text-right font-medium text-sm">
+                    {formatCurrency(row.original.totalAmount)}
+                </span>
+            ),
+        },
+    ], [])
 
     return (
         <div className="flex flex-col space-y-3 p-3 h-full">
@@ -253,165 +289,90 @@ export default function OrderManagement() {
             {/* HEADER */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Order Management</h2>
+                    <h2 className="text-2xl font-semibold tracking-tight">Order Management</h2>
                     <p className="text-muted-foreground text-sm">
                         Monitor transaksi, pembayaran, dan proses pesanan.
                     </p>
                 </div>
-                <Button size="sm" className="shadow-sm">
-                    <Download className="mr-2 h-4 w-4" /> Export Laporan
+                <Button size="sm" variant="outline" className="gap-2" onClick={() => refetch()}>
+                    <RefreshCcw className="h-4 w-4" /> Refresh
                 </Button>
             </div>
 
-            {/* FILTERS & SEARCH BAR */}
-            <Card className="rounded-md shadow-md border-border/50 bg-card">
+            {/* FILTERS */}
+            <Card className="rounded-md border-border/50 bg-card">
                 <CardContent className="p-3">
                     <div className="flex flex-col lg:flex-row gap-3">
-
-                        {/* Search */}
                         <div className="relative flex-1 min-w-[200px]">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
+                            <input
+                                type="text"
                                 placeholder="Cari Order ID, Pelanggan, atau Bisnis..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 bg-muted/30 border-border/50 h-9 text-sm"
+                                className="w-full h-9 pl-9 pr-3 text-sm bg-muted/30 border border-border/50 rounded-md focus:outline-none focus:ring-2 focus:ring-ring/50"
                             />
                         </div>
-
-                        {/* Filter Group */}
                         <div className="flex flex-wrap gap-2">
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
                                 <SelectTrigger className="w-[140px] h-9 bg-muted/30 border-border/50 text-xs">
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <Filter className="h-3.5 w-3.5" />
-                                        <span className="truncate">{statusFilter === 'ALL' ? 'Semua Status' : statusFilter}</span>
+                                        <span className="truncate">{statusFilter === 'ALL' ? 'Semua Status' : statusFilter.replace(/_/g, ' ')}</span>
                                     </div>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="ALL">Semua Status</SelectItem>
-                                    <SelectItem value="PENDING">Pending</SelectItem>
+                                    <SelectItem value="AWAITING_PAYMENT">Awaiting Payment</SelectItem>
+                                    <SelectItem value="PROCESSING">Processing</SelectItem>
                                     <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                                    <SelectItem value="READY">Ready</SelectItem>
+                                    <SelectItem value="ON_GOING">On Going</SelectItem>
                                     <SelectItem value="COMPLETED">Completed</SelectItem>
-                                    <SelectItem value="DISPUTED">Disputed</SelectItem>
                                     <SelectItem value="CANCELLED">Cancelled</SelectItem>
                                 </SelectContent>
                             </Select>
-                            {/* DATE RANGE PICKER */}
-                            <DatePickerWithRange />
-
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" size="sm" className="h-9 border-border/50 bg-muted/30 text-muted-foreground text-xs font-normal">
-                                        <Calendar className="mr-2 h-3.5 w-3.5" /> Rentang Tanggal
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="end">
-                                    <div className="p-4 text-sm text-muted-foreground">
-                                        {/* Placeholder for Date Range Picker Component */}
-                                        [Date Range Picker Component]
+                            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                                <SelectTrigger className="w-[140px] h-9 bg-muted/30 border-border/50 text-xs">
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <CreditCard className="h-3.5 w-3.5" />
+                                        <span className="truncate">{paymentFilter === 'ALL' ? 'Semua Bayar' : paymentFilter.replace(/_/g, ' ')}</span>
                                     </div>
-                                </PopoverContent>
-                            </Popover>
-
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" size="sm" className="h-9 border-border/50 bg-muted/30 text-muted-foreground text-xs font-normal">
-                                        <CreditCard className="mr-2 h-3.5 w-3.5" /> Rentang Harga
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-80" align="end">
-                                    <div className="grid gap-4">
-                                        <div className="space-y-2">
-                                            <h4 className="font-medium leading-none">Filter Harga</h4>
-                                            <p className="text-sm text-muted-foreground">Tentukan rentang nominal transaksi.</p>
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <div className="grid grid-cols-3 items-center gap-4">
-                                                <span className="text-xs">Min</span>
-                                                <Input id="min" defaultValue="0" className="col-span-2 h-8" />
-                                            </div>
-                                            <div className="grid grid-cols-3 items-center gap-4">
-                                                <span className="text-xs">Max</span>
-                                                <Input id="max" defaultValue="1000000" className="col-span-2 h-8" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">Semua Bayar</SelectItem>
+                                    <SelectItem value="PENDING">Pending</SelectItem>
+                                    <SelectItem value="SUCCESS">Success</SelectItem>
+                                    <SelectItem value="FAILED">Failed</SelectItem>
+                                    <SelectItem value="REFUNDED">Refunded</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* ORDERS TABLE */}
-            <Card className="rounded-md shadow-md border-border/50 flex-1 overflow-hidden">
-                <Table>
-                    <TableHeader className="bg-muted/50">
-                        <TableRow>
-                            <TableHead className="w-[140px]">Order ID</TableHead>
-                            <TableHead>Tanggal</TableHead>
-                            <TableHead>Bisnis / Outlet</TableHead>
-                            <TableHead>Pelanggan</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Pembayaran</TableHead>
-                            <TableHead className="text-right">Total</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredOrders.map((order) => (
-                            <TableRow
-                                key={order.id}
-                                className="cursor-pointer hover:bg-muted/30 transition-colors group"
-                                onClick={() => handleOrderClick(order)}
-                            >
-                                <TableCell className="font-mono text-xs font-medium text-primary">
-                                    {order.id}
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground">
-                                    {formatDate(order.date)}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium">{order.businessName}</span>
-                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <Store className="h-3 w-3" /> {order.outletName}
-                                        </span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm">{order.customerName}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant="outline" className={`text-[10px] h-5 border ${getStatusColor(order.status)}`}>
-                                        {order.status}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <div className={`flex items-center gap-1.5 text-xs font-medium ${getPaymentColor(order.paymentStatus)}`}>
-                                        {order.paymentStatus === 'PAID' && <CheckCircle2 className="h-3.5 w-3.5" />}
-                                        {order.paymentStatus === 'UNPAID' && <Clock className="h-3.5 w-3.5" />}
-                                        {order.paymentStatus === 'REFUNDED' && <CornerUpLeft className="h-3.5 w-3.5" />}
-                                        {order.paymentStatus === 'FAILED' && <XCircle className="h-3.5 w-3.5" />}
-                                        {order.paymentStatus}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-right font-medium text-sm">
-                                    {formatIDR(order.totalAmount)}
-                                </TableCell>
-                                <TableCell>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </Card>
+            {/* TABLE */}
+            <DataTable
+                columns={columns}
+                data={orders}
+                isLoading={isLoading}
+                pagination={true}
+                showColumnVisibility={false}
+                showTableInfo={false}
+                emptyMessage="Tidak ada order ditemukan."
+                tableId="admin-orders-table"
+                onRowClick={handleOrderClick}
+                serverSideSearch={true}
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Cari order..."
+                onRefresh={refetch}
+                serverSidePagination
+                serverLimit={limit}
+                totalItems={pagination?.total || 0}
+                onPaginationChange={({ page: p, limit: l }) => { setPage(p); setLimit(l) }}
+            />
 
             {/* DETAIL SHEET */}
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -424,174 +385,162 @@ export default function OrderManagement() {
                                     <div>
                                         <div className="flex items-center gap-2 text-muted-foreground mb-1">
                                             <ShoppingCart className="h-4 w-4" />
-                                            <span className="text-xs font-mono">{selectedOrder.id}</span>
+                                            <span className="text-xs font-mono">{selectedOrder.id.split("-")[0]}</span>
                                         </div>
-                                        <SheetTitle className="text-xl font-bold">Order Detail</SheetTitle>
+                                        <SheetTitle className="text-xl font-semibold">Order Detail</SheetTitle>
                                         <SheetDescription className="text-xs mt-1">
-                                            {formatDate(selectedOrder.date)}
+                                            {formatDate(selectedOrder.createdAt)}
                                         </SheetDescription>
                                     </div>
                                     <div className="text-right">
-                                        <Badge className={`text-sm mb-1 ${getStatusColor(selectedOrder.status)}`}>
-                                            {selectedOrder.status}
+                                        <Badge className={`text-sm mb-1 ${getStatusColor(selectedOrder.orderStatus)}`}>
+                                            {selectedOrder.orderStatus.replace(/_/g, " ")}
                                         </Badge>
-                                        <div className="text-sm font-bold">{formatIDR(selectedOrder.totalAmount)}</div>
+                                        <div className="text-sm font-bold">{formatCurrency(selectedOrder.totalAmount)}</div>
                                     </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex gap-2">
-                                    <Button size="sm" variant="outline" className="flex-1 text-xs h-8 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10">
-                                        <ShieldAlert className="h-3 w-3 mr-2" /> Eskalasi Masalah
-                                    </Button>
-
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button size="sm" variant="outline" className="flex-1 text-xs h-8">
-                                                Force Status <ArrowUpRight className="h-3 w-3 ml-2" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Ubah Status Paksa</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem>Set to Confirmed</DropdownMenuItem>
-                                            <DropdownMenuItem>Set to Completed</DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem className="text-destructive">Set to Cancelled</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-
-                                    <Button size="sm" className="flex-1 text-xs h-8">
-                                        <UserPlus className="h-3 w-3 mr-2" /> Assign Staff
-                                    </Button>
                                 </div>
                             </div>
 
                             {/* Scrollable Content */}
                             <div className="p-6 space-y-6">
-
-                                {/* Tabs for Organization */}
                                 <Tabs defaultValue="details" className="w-full">
                                     <TabsList className="grid w-full grid-cols-3 mb-4">
                                         <TabsTrigger value="details">Rincian</TabsTrigger>
                                         <TabsTrigger value="items">Item ({selectedOrder.items.length})</TabsTrigger>
-                                        <TabsTrigger value="actions">Tindakan</TabsTrigger>
+                                        <TabsTrigger value="payment">Pembayaran</TabsTrigger>
                                     </TabsList>
 
                                     {/* TAB 1: DETAILS */}
                                     <TabsContent value="details" className="space-y-4">
-                                        {/* Booking Slot Info (Conditional) */}
-                                        {selectedOrder.bookingSlot && (
-                                            <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg flex gap-3 items-start">
-                                                <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                                                <div>
-                                                    <h4 className="text-sm font-bold text-primary">Jadwal Booking/Reservasi</h4>
-                                                    <p className="text-xs text-muted-foreground mt-1">{selectedOrder.bookingSlot}</p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Manual Proof (Conditional) */}
-                                        {selectedOrder.manualProofUrl && (
-                                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex gap-3 items-start">
-                                                <FileText className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                                                <div className="w-full">
-                                                    <h4 className="text-sm font-bold text-amber-600">Bukti Transfer Manual</h4>
-                                                    <p className="text-xs text-muted-foreground mt-1 mb-2">User mengunggah bukti pembayaran manual.</p>
-                                                    <Button variant="outline" size="sm" className="h-7 text-xs w-full border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100">
-                                                        <ExternalLink className="h-3 w-3 mr-2" /> Lihat Bukti (Read-Only)
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        )}
-
                                         <div className="grid grid-cols-1 gap-4">
                                             <Card className="shadow-sm border-border/50">
                                                 <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Informasi Pelanggan</CardTitle></CardHeader>
                                                 <CardContent className="p-4 pt-0 space-y-1">
-                                                    <div className="flex items-center gap-2"><User className="h-3 w-3 text-muted-foreground" /><span className="text-sm font-medium">{selectedOrder.customerName}</span></div>
-                                                    <div className="flex items-center gap-2 ml-5"><span className="text-xs text-muted-foreground">{selectedOrder.customerEmail}</span></div>
+                                                    <div className="flex items-center gap-2"><User className="h-3 w-3 text-muted-foreground" /><span className="text-sm font-medium">{selectedOrder.guestCustomer.name}</span></div>
+                                                    <div className="flex items-center gap-2 ml-5"><span className="text-xs text-muted-foreground">{selectedOrder.guestCustomer.phone}</span></div>
+                                                    {selectedOrder.guestCustomer.email && (
+                                                        <div className="flex items-center gap-2 ml-5"><span className="text-xs text-muted-foreground">{selectedOrder.guestCustomer.email}</span></div>
+                                                    )}
                                                 </CardContent>
                                             </Card>
 
                                             <Card className="shadow-sm border-border/50">
-                                                <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Informasi Transaksi</CardTitle></CardHeader>
+                                                <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Informasi Bisnis</CardTitle></CardHeader>
                                                 <CardContent className="p-4 pt-0 space-y-2">
                                                     <div className="flex justify-between text-sm">
-                                                        <span className="text-muted-foreground">Metode</span>
-                                                        <span className="font-medium">{selectedOrder.paymentMethod}</span>
+                                                        <span className="text-muted-foreground">Bisnis</span>
+                                                        <span className="font-medium">{selectedOrder.outlet.business.name}</span>
                                                     </div>
                                                     <div className="flex justify-between text-sm">
-                                                        <span className="text-muted-foreground">Ref ID</span>
-                                                        <span className="font-mono text-xs bg-muted px-1 rounded">{selectedOrder.transactionId}</span>
+                                                        <span className="text-muted-foreground">Outlet</span>
+                                                        <span className="font-medium">{selectedOrder.outlet.name}</span>
                                                     </div>
-                                                    {selectedOrder.notes && (
-                                                        <div className="pt-2 border-t border-border/50 mt-2">
-                                                            <p className="text-xs text-muted-foreground mb-1">Catatan User:</p>
-                                                            <p className="text-sm italic">"{selectedOrder.notes}"</p>
+                                                    {selectedOrder.handledByStaff && (
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-muted-foreground">Staff</span>
+                                                            <span className="font-medium">{selectedOrder.handledByStaff.name}</span>
                                                         </div>
                                                     )}
                                                 </CardContent>
                                             </Card>
+
+                                            {selectedOrder.notes && (
+                                                <Card className="shadow-sm border-border/50">
+                                                    <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Catatan</CardTitle></CardHeader>
+                                                    <CardContent className="p-4 pt-0">
+                                                        <p className="text-sm italic text-muted-foreground">"{selectedOrder.notes}"</p>
+                                                    </CardContent>
+                                                </Card>
+                                            )}
                                         </div>
                                     </TabsContent>
 
                                     {/* TAB 2: ITEMS */}
                                     <TabsContent value="items">
                                         <Card className="border border-border/50 shadow-none">
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow className="hover:bg-transparent">
-                                                        <TableHead className="h-9">Item</TableHead>
-                                                        <TableHead className="h-9 text-right">Qty</TableHead>
-                                                        <TableHead className="h-9 text-right">Harga</TableHead>
-                                                        <TableHead className="h-9 text-right">Total</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {selectedOrder.items.map((item, idx) => (
-                                                        <TableRow key={idx} className="hover:bg-muted/20">
-                                                            <TableCell className="py-3">
-                                                                <div className="font-medium text-sm">{item.name}</div>
-                                                                {item.variant && <div className="text-xs text-muted-foreground">Variant: {item.variant}</div>}
-                                                            </TableCell>
-                                                            <TableCell className="text-right py-3">{item.quantity}x</TableCell>
-                                                            <TableCell className="text-right py-3 text-xs text-muted-foreground">{formatIDR(item.price)}</TableCell>
-                                                            <TableCell className="text-right py-3 font-medium">{formatIDR(item.price * item.quantity)}</TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                    <TableRow className="hover:bg-transparent border-t-2 border-border/50">
-                                                        <TableCell colSpan={3} className="text-right font-bold">Grand Total</TableCell>
-                                                        <TableCell className="text-right font-bold text-primary">{formatIDR(selectedOrder.totalAmount)}</TableCell>
-                                                    </TableRow>
-                                                </TableBody>
-                                            </Table>
+                                            <div className="divide-y">
+                                                {selectedOrder.items.map((item) => (
+                                                    <div key={item.id} className="flex items-center justify-between p-3">
+                                                        <div>
+                                                            <p className="text-sm font-medium">{item.product.name}</p>
+                                                            <p className="text-xs text-muted-foreground">{item.product.type}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-xs text-muted-foreground">{item.quantity}x {formatCurrency(item.priceAtTimeOfOrder)}</p>
+                                                            <p className="text-sm font-medium">{formatCurrency(item.quantity * item.priceAtTimeOfOrder)}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <div className="flex items-center justify-between p-3 bg-muted/30">
+                                                    <span className="text-sm font-bold">Grand Total</span>
+                                                    <span className="text-sm font-bold text-primary">{formatCurrency(selectedOrder.totalAmount)}</span>
+                                                </div>
+                                            </div>
                                         </Card>
                                     </TabsContent>
 
-                                    {/* TAB 3: ACTIONS (REFUND, ETC) */}
-                                    <TabsContent value="actions" className="space-y-4">
-                                        <Card className="border-dashed border-destructive/30 bg-destructive/5">
-                                            <CardHeader className="pb-2">
-                                                <CardTitle className="text-sm flex items-center gap-2 text-destructive">
-                                                    <Receipt className="h-4 w-4" /> Proses Refund
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="space-y-3">
-                                                <p className="text-xs text-muted-foreground">
-                                                    Buat catatan refund internal. Aksi ini tidak otomatis mengembalikan dana ke user, namun mencatat status refund di sistem.
-                                                </p>
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-medium">Alasan Refund / Catatan</label>
-                                                    <Textarea placeholder="Contoh: Stok habis, user minta cancel..." className="bg-background text-xs h-20" />
+                                    {/* TAB 3: PAYMENT */}
+                                    <TabsContent value="payment" className="space-y-4">
+                                        <Card className="shadow-sm border-border/50">
+                                            <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Status Pembayaran</CardTitle></CardHeader>
+                                            <CardContent className="p-4 pt-0 space-y-2">
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-muted-foreground">Status</span>
+                                                    <Badge variant="outline" className={`${getPaymentColor(selectedOrder.paymentStatus)}`}>
+                                                        {selectedOrder.paymentStatus.replace(/_/g, " ")}
+                                                    </Badge>
                                                 </div>
-                                                <Button size="sm" variant="destructive" className="w-full">
-                                                    Buat Catatan Refund
-                                                </Button>
+                                                {selectedOrder.transaction && (
+                                                    <>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-muted-foreground">Metode</span>
+                                                            <span className="font-medium">{selectedOrder.transaction.paymentMethod || "-"}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-muted-foreground">Manual</span>
+                                                            <span className="font-medium">{selectedOrder.transaction.isManual ? "Ya" : "Tidak"}</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {selectedOrder.transaction?.paymentProofUrl && (
+                                                    <div className="pt-2">
+                                                        <Button variant="outline" size="sm" className="gap-2 w-full" asChild>
+                                                            <a href={selectedOrder.transaction.paymentProofUrl} target="_blank" rel="noreferrer">
+                                                                <FileText className="h-4 w-4" /> Lihat Bukti Bayar
+                                                            </a>
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card className="shadow-sm border-border/50">
+                                            <CardHeader className="p-4 pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Rincian Biaya</CardTitle></CardHeader>
+                                            <CardContent className="p-4 pt-0 space-y-2">
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-muted-foreground">Subtotal</span>
+                                                    <span>{formatCurrency(selectedOrder.totalAmount + selectedOrder.discountAmount)}</span>
+                                                </div>
+                                                {selectedOrder.discountAmount > 0 && (
+                                                    <div className="flex justify-between text-sm text-emerald-600">
+                                                        <span>Diskon</span>
+                                                        <span>-{formatCurrency(selectedOrder.discountAmount)}</span>
+                                                    </div>
+                                                )}
+                                                {selectedOrder.taxAmount > 0 && (
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-muted-foreground">Pajak</span>
+                                                        <span>{formatCurrency(selectedOrder.taxAmount)}</span>
+                                                    </div>
+                                                )}
+                                                <Separator />
+                                                <div className="flex justify-between text-sm font-bold">
+                                                    <span>Total</span>
+                                                    <span className="text-primary">{formatCurrency(selectedOrder.totalAmount)}</span>
+                                                </div>
                                             </CardContent>
                                         </Card>
                                     </TabsContent>
-
                                 </Tabs>
                             </div>
                         </>

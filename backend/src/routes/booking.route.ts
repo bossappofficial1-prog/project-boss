@@ -4,6 +4,7 @@ import {
     deleteBookingSlotController,
     getBookingCalendarController,
     getBookingSlotByIdController,
+    getBookingsListController,
     getBookingSlotsByProductIdController,
     updateBookingSlotController
 } from "../controller/booking.controller";
@@ -22,6 +23,7 @@ bookingRouter.get("/:id", getBookingSlotByIdController);
 // Semua rute di bawah ini akan dilindungi dan hanya untuk Owner
 bookingRouter.use(protect, authorize(UserRole.OWNER));
 
+bookingRouter.get("/", getBookingsListController);
 bookingRouter.post("/", validateSchema(createBookingSlotSchema), createBookingSlotController);
 bookingRouter.patch("/:id", validateSchema(updateBookingSlotSchema), updateBookingSlotController);
 bookingRouter.delete("/:id", deleteBookingSlotController);

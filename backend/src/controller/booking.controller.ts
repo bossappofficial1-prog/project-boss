@@ -10,6 +10,7 @@ import {
   getBookingSlotByProductService,
   getBookingSlotsByProductServiceIdService,
   updateBookingSlotService,
+  getBookingsListService,
 } from "../service/booking.service";
 import { CreateBookingSlotInput, UpdateBookingSlotInput } from "../schemas/booking.schema";
 import { BookingRepository } from "../repositories/booking.repository";
@@ -207,4 +208,29 @@ export const getBookingSlotByOutlet = asyncHandler(async (req: Request, res: Res
 
   const slots = await getBookingSlotByProductService(productId, parsedDate);
   return ResponseUtil.success(res, slots);
+});
+
+export const getBookingsListController = asyncHandler(async (req: Request, res: Response) => {
+  const { outletId } = req.query;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const search = req.query.search as string | undefined;
+  const status = req.query.status as string | undefined;
+  const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined;
+  const dateTo = req.query.dateTo ? new Date(req.query.dateTo as string) : undefined;
+
+  if (!outletId) {
+    return ResponseUtil.badRequest(res, "Parameter 'outletId' wajib diisi");
+  }
+
+  const result = await getBookingsListService(outletId as string, {
+    page,
+    limit,
+    search,
+    status,
+    dateFrom,
+    dateTo,
+  });
+
+  return ResponseUtil.paginated(res, result.data, page, limit, result.total);
 });

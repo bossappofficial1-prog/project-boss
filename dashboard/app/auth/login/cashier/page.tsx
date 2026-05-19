@@ -52,7 +52,7 @@ function CashierLoginForm() {
 
 				{/* Decorative circles */}
 				<div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
-				<div className="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-rose-500/5 rounded-full blur-3xl" />
+				<div className="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
 
 				<div className="relative z-10 max-w-lg text-center md:text-left space-y-8">
 					<div className="inline-flex items-center gap-3 bg-primary/5 border border-primary/10 px-4 py-2 rounded-full mb-4">
@@ -71,11 +71,11 @@ function CashierLoginForm() {
 					</div>
 
 					<div className="grid grid-cols-2 gap-4 pt-8">
-						<div className="p-4 rounded-2xl bg-muted/30 border border-border/40 backdrop-blur-sm transition-all hover:bg-muted/50">
+						<div className="p-4 rounded-lg bg-muted/30 border border-border/40 backdrop-blur-sm transition-all hover:bg-muted/50">
 							<p className="text-2xl font-bold text-foreground">Fast</p>
 							<p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Checkout Process</p>
 						</div>
-						<div className="p-4 rounded-2xl bg-muted/30 border border-border/40 backdrop-blur-sm transition-all hover:bg-muted/50">
+						<div className="p-4 rounded-lg bg-muted/30 border border-border/40 backdrop-blur-sm transition-all hover:bg-muted/50">
 							<p className="text-2xl font-bold text-foreground">Secure</p>
 							<p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Cloud Transactions</p>
 						</div>
@@ -105,7 +105,7 @@ function CashierLoginForm() {
 					/>
 				</div>
 
-				<Card className="w-full max-w-[440px] border-border/80 shadow-2xl rounded-3xl overflow-hidden bg-background/80 backdrop-blur-xl">
+				<Card className="w-full max-w-[440px] border-border/80 shadow-2xl rounded-xl overflow-hidden bg-background/80 backdrop-blur-xl">
 					<div className="p-8 sm:p-10">
 						<div className="space-y-2 mb-10 text-center sm:text-left">
 							<h2 className="text-3xl font-bold tracking-tight text-foreground">Selamat Datang</h2>
@@ -155,7 +155,7 @@ function CashierLoginForm() {
 function CashierLoginPageSkeleton() {
 	return (
 		<div className="min-h-screen bg-muted/30 flex items-center justify-center p-6">
-			<Card className="w-full max-w-[440px] h-[580px] rounded-3xl animate-pulse bg-background/50 border-border/40" />
+			<Card className="w-full max-w-[440px] h-[580px] rounded-xl animate-pulse bg-background/50 border-border/40" />
 		</div>
 	);
 }

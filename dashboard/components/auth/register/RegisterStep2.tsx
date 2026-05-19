@@ -1,6 +1,7 @@
 import { ReusableForm } from "@/components/ui/reuseable-form";
 import { fieldRegisterStep2, RegisterStep2Input, registerStep2Schema } from "./schema";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function RegisterStep2({
     name,
@@ -22,9 +23,9 @@ export function RegisterStep2({
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="space-y-2 text-center lg:text-left">
-                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Informasi Bisnis</h2>
-                <p className="text-slate-500">
-                    Halo <span className="font-semibold text-slate-900">{name}</span>, lengkapi data bisnis Anda.
+                <h2 className="text-2xl font-semibold tracking-tight">Informasi Bisnis</h2>
+                <p className="text-sm text-muted-foreground">
+                    Halo <span className="font-semibold text-foreground">{name}</span>, lengkapi data bisnis Anda.
                 </p>
             </div>
 
@@ -41,32 +42,33 @@ export function RegisterStep2({
 
                 {/* Bug 4 fix: tampilkan error nama bisnis sudah dipakai secara inline */}
                 {businessNameError && (
-                    <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                        <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-                        <p className="text-sm text-red-700 leading-snug">{businessNameError}</p>
+                    <div className="flex items-start gap-2.5 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
+                        <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-destructive leading-snug">{businessNameError}</p>
                     </div>
                 )}
 
                 <div className="pt-2 flex gap-3">
-                    <button
+                    <Button
                         type="button"
+                        variant="outline"
                         onClick={handleLogout}
                         disabled={logoutLoading || isSubmitting}
-                        className="px-6 h-12 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition-all duration-200 disabled:opacity-50"
+                        className="h-11"
                     >
                         {logoutLoading ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                         ) : 'Keluar'}
-                    </button>
-                    <button
-                        className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none"
+                    </Button>
+                    <Button
                         type='submit'
                         form='register-step-2'
                         disabled={isSubmitting}
+                        className="flex-1 h-11"
                     >
                         {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                         {isSubmitting ? 'Memproses...' : 'Lanjut Pilih Paket'}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

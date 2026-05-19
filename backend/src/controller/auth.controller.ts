@@ -8,11 +8,6 @@ import { JwtUtil } from "../utils";
 import { redis } from "../config/redis";
 import { SubscriptionStatus } from "@prisma/client";
 
-type GoogleOAuthState = {
-    redirect?: string;
-    popup?: boolean;
-};
-
 const DEFAULT_GOOGLE_REDIRECT = "/owner";
 
 const getPrimaryClientUrl = () => {
@@ -22,39 +17,10 @@ const getPrimaryClientUrl = () => {
 
 const getSafeRedirectPath = (value: unknown) => {
     if (typeof value !== "string") return DEFAULT_GOOGLE_REDIRECT;
-    if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/auth/oauth-popup")) {
+    if (!value.startsWith("/") || value.startsWith("//")) {
         return DEFAULT_GOOGLE_REDIRECT;
     }
     return value;
-};
-
-const parseGoogleOAuthState = (value: unknown): GoogleOAuthState => {
-    if (typeof value !== "string") return {};
-
-    try {
-        const parsed = JSON.parse(value) as GoogleOAuthState;
-        return {
-            redirect: getSafeRedirectPath(parsed.redirect),
-            popup: parsed.popup === true,
-        };
-    } catch {
-        return {
-            redirect: getSafeRedirectPath(value),
-            popup: false,
-        };
-    }
-};
-
-const buildOAuthPopupRedirect = (clientUrl: string, redirectPath: string, error?: string) => {
-    const params = new URLSearchParams({
-        redirect: redirectPath,
-    });
-
-    if (error) {
-        params.set("error", error);
-    }
-
-    return `${clientUrl}/auth/oauth-popup?${params.toString()}`;
 };
 
 class AuthController extends BaseController {
@@ -248,31 +214,27 @@ class AuthController extends BaseController {
 
     googleOAuthCallback = this.handler(async (req: any, res: Response) => {
         const clientUrl = getPrimaryClientUrl();
-        const oauthState = parseGoogleOAuthState(req.query.state);
-        const isPopupOAuth = oauthState.popup || req.cookies?.google_oauth_popup === "1";
-        const redirectPath = getSafeRedirectPath(oauthState.redirect || req.cookies?.google_oauth_redirect);
-        const errorMessage = req.authError?.message?.includes("Email sudah terdaftar")
-            ? "Email sudah terdaftar dengan akun lain."
-            : "Google authentication failed";
-        const clearPopupCookies = () => {
-            const cookiePath = req.baseUrl || "/api/v1/auth";
-            res.clearCookie("google_oauth_popup", { path: cookiePath });
-            res.clearCookie("google_oauth_redirect", { path: cookiePath });
-        };
+        const state = typeof req.query.state === "string" ? req.query.state : "{}";
+        let redirectPath = DEFAULT_GOOGLE_REDIRECT;
+        let from = "login";
+
+        try {
+            const parsed = JSON.parse(state);
+            redirectPath = getSafeRedirectPath(parsed.redirect);
+            from = typeof parsed.from === "string" ? parsed.from : "login";
+        } catch {}
+
+        const errorRedirect = from === "register"
+            ? `${clientUrl}/auth/register?error=google_failed`
+            : `${clientUrl}/auth/login?error=google_failed`;
 
         try {
             const user = req.user;
 
             if (!user) {
-                clearPopupCookies();
-                if (isPopupOAuth) {
-                    return res.redirect(buildOAuthPopupRedirect(clientUrl, redirectPath, errorMessage));
-                }
-                return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent(errorMessage)}`);
+                return res.redirect(errorRedirect);
             }
-            const checkBusinessUser = await AuthService.checkBusinessByOwnerId(user.user.id);
 
-            // Set JWT token as cookie
             const token = user.token;
 
             res.cookie("token", token, {
@@ -280,39 +242,74 @@ class AuthController extends BaseController {
                 secure: !!config.COOKIES_DOMAIN,
                 sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
                 domain: config.COOKIES_DOMAIN,
-                maxAge: 24 * 60 * 60 * 1000, // 1 day
+                maxAge: 24 * 60 * 60 * 1000,
                 path: '/'
             });
 
+            const checkBusinessUser = await AuthService.checkBusinessByOwnerId(user.user.id);
+
             if (checkBusinessUser) {
-                clearPopupCookies();
-                if (isPopupOAuth) {
-                    return res.redirect(buildOAuthPopupRedirect(clientUrl, redirectPath));
-                }
                 return res.redirect(`${clientUrl}${redirectPath}`);
             }
+
             const onboardingPath = `/auth/register?step=2&provider=google&name=${encodeURIComponent(user.user.name)}`;
-            clearPopupCookies();
-            if (isPopupOAuth) {
-                return res.redirect(buildOAuthPopupRedirect(clientUrl, onboardingPath));
-            }
             return res.redirect(`${clientUrl}${onboardingPath}`);
         } catch (error: any) {
             console.log(error);
-            if (error.message && error.message.includes("Email sudah terdaftar")) {
-                const errorMessage = encodeURIComponent("Email sudah terdaftar dengan akun lain.");
-                clearPopupCookies();
-                if (isPopupOAuth) {
-                    return res.redirect(buildOAuthPopupRedirect(clientUrl, redirectPath, "Email sudah terdaftar dengan akun lain."));
-                }
-                return res.redirect(`${clientUrl}/auth/login?error=${errorMessage}`);
+
+            const linkMatch = error.message?.match(/\|link:([a-f0-9-]+)/);
+            if (linkMatch) {
+                const linkToken = linkMatch[1];
+                return res.redirect(`${clientUrl}/auth/link-account?token=${linkToken}`);
             }
-            clearPopupCookies();
-            if (isPopupOAuth) {
-                return res.redirect(buildOAuthPopupRedirect(clientUrl, redirectPath, "Google authentication failed"));
-            }
-            return res.redirect(`${clientUrl}/auth/login?error=${encodeURIComponent("Google authentication failed")}`);
+
+            return res.redirect(errorRedirect);
         }
+    });
+
+    getLinkAccountInfo = this.handler(async (req: Request, res: Response) => {
+        const { token } = req.query;
+
+        if (!token || typeof token !== "string") {
+            return this.error(res, "Token tidak valid", undefined, HttpStatus.BAD_REQUEST);
+        }
+
+        const raw = await redis.get(`oauth:link:${token}`);
+        if (!raw) {
+            return this.error(res, "Token link sudah kadaluarsa", undefined, HttpStatus.GONE);
+        }
+
+        const linkData = JSON.parse(raw) as { email: string; name: string };
+        return this.success(res, { email: linkData.email, name: linkData.name });
+    });
+
+    linkAccount = this.handler(async (req: Request, res: Response) => {
+        const { token, password } = req.body;
+
+        if (!token || !password) {
+            return this.error(res, "Token dan password wajib diisi", undefined, HttpStatus.BAD_REQUEST);
+        }
+
+        const result = await AuthService.linkGoogleAccount(token, password);
+
+        const clientUrl = getPrimaryClientUrl();
+
+        res.cookie("token", result.token, {
+            httpOnly: true,
+            secure: !!config.COOKIES_DOMAIN,
+            sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+            domain: config.COOKIES_DOMAIN,
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/'
+        });
+
+        const checkBusinessUser = await AuthService.checkBusinessByOwnerId(result.user.id);
+
+        if (checkBusinessUser) {
+            return this.success(res, { redirect: `${clientUrl}/owner` });
+        }
+
+        return this.success(res, { redirect: `${clientUrl}/auth/register?step=2&provider=google&name=${encodeURIComponent(result.user.name)}` });
     });
 
     cashierLogin = this.handler(async (req: Request, res: Response) => {

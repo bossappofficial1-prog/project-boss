@@ -14,9 +14,12 @@ import {
     DollarSign,
     Calendar,
     Download,
-    Filter
+    Filter,
+    RefreshCcw,
+    ArrowUpRight,
+    ArrowDownRight,
 } from 'lucide-react';
-import { apiCall, apiClient } from '@/lib/apis/base';
+import { apiClient } from '@/lib/apis/base';
 import { formatCurrency } from '@/lib/utils';
 
 interface RevenueData {
@@ -43,9 +46,7 @@ export default function AdminAnalytics() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
-
-    // Fetch revenue analytics
-    const { data: revenueData, isLoading: revenueLoading } = useQuery({
+    const { data: revenueData, isLoading: revenueLoading, refetch: refetchRevenue } = useQuery({
         queryKey: ['revenue-analytics', period, startDate, endDate],
         queryFn: async () => {
             const params = new URLSearchParams({ period });
@@ -53,13 +54,11 @@ export default function AdminAnalytics() {
             if (endDate) params.append('endDate', endDate);
 
             const response = await apiClient.get(`/admin/analytics/revenue?${params}`);
-            if (response.status !== 200) throw new Error('Failed to fetch revenue analytics');
-            return response.data;
+            return response.data.data;
         },
     });
 
-    // Fetch transaction analytics
-    const { data: transactionData, isLoading: transactionLoading } = useQuery({
+    const { data: transactionData, isLoading: transactionLoading, refetch: refetchTransaction } = useQuery({
         queryKey: ['transaction-analytics', startDate, endDate],
         queryFn: async () => {
             const params = new URLSearchParams();
@@ -67,30 +66,34 @@ export default function AdminAnalytics() {
             if (endDate) params.append('endDate', endDate);
 
             const response = await apiClient.get(`/admin/analytics/transactions?${params}`);
-            if (response.status !== 200) throw new Error('Failed to fetch transaction analytics');
-            return response.data
+            return response.data.data;
         },
     });
 
-    const revenueStats = revenueData?.data;
-    const transactionStats = transactionData?.data;
+    const { data: insightsData, isLoading: insightsLoading, refetch: refetchInsights } = useQuery({
+        queryKey: ['revenue-insights'],
+        queryFn: async () => {
+            const response = await apiClient.get('/admin/analytics/revenue/insights');
+            return response.data.data;
+        },
+    });
+
+    const revenueStats = revenueData;
+    const transactionStats = transactionData;
+    const insights = insightsData;
 
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Analytics & Reports</h1>
-                    <p className="text-gray-600 mt-1">Comprehensive insights into your platform performance</p>
+                    <h1 className="text-2xl font-semibold tracking-tight">Analytics & Reports</h1>
+                    <p className="text-muted-foreground text-sm mt-1">Comprehensive insights into your platform performance</p>
                 </div>
                 <div className="flex space-x-3">
-                    <Button variant="secondary" className="flex items-center space-x-2">
-                        <Filter className="w-4 h-4" />
-                        <span>Filters</span>
-                    </Button>
-                    <Button variant="secondary" className="flex items-center space-x-2">
-                        <Download className="w-4 h-4" />
-                        <span>Export</span>
+                    <Button variant="outline" size="sm" className="flex items-center space-x-2" onClick={() => { refetchRevenue(); refetchTransaction(); refetchInsights(); }}>
+                        <RefreshCcw className="w-4 h-4" />
+                        <span>Refresh</span>
                     </Button>
                 </div>
             </div>
@@ -140,6 +143,66 @@ export default function AdminAnalytics() {
                 </CardContent>
             </Card>
 
+            {/* Summary Stats from Insights */}
+            {insights && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Revenue MTD</CardTitle>
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{formatCurrency(insights.summary.totalRevenue)}</div>
+                            <p className="text-xs text-muted-foreground">
+                                Net: {formatCurrency(insights.summary.netRevenue)}
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">MRR (Paid Subs)</CardTitle>
+                            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{formatCurrency(insights.summary.mrr)}</div>
+                            <p className="text-xs text-muted-foreground">
+                                ARR {formatCurrency(insights.summary.arr)}
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Growth vs Prev.</CardTitle>
+                            {insights.summary.revenueGrowth >= 0 ? (
+                                <ArrowUpRight className="h-4 w-4 text-emerald-600" />
+                            ) : (
+                                <ArrowDownRight className="h-4 w-4 text-destructive" />
+                            )}
+                        </CardHeader>
+                        <CardContent>
+                            <div className={`text-2xl font-bold ${insights.summary.revenueGrowth >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                                {insights.summary.revenueGrowth >= 0 ? '+' : ''}{insights.summary.revenueGrowth.toFixed(1)}%
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Churn {insights.summary.churnRate.toFixed(1)}%
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{insights.summary.activeSubscriptions}</div>
+                            <p className="text-xs text-muted-foreground">
+                                Avg order {formatCurrency(insights.summary.averageOrderValue)}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             {/* Revenue Analytics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
@@ -152,21 +215,24 @@ export default function AdminAnalytics() {
                     <CardContent>
                         {revenueLoading ? (
                             <div className="flex items-center justify-center h-64">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {revenueStats?.revenueByPeriod?.map((item: RevenueData) => (
-                                    <div key={item.period} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                {revenueStats?.chartData?.map((item: RevenueData) => (
+                                    <div key={item.period} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                                         <div>
                                             <p className="font-medium">{item.period}</p>
-                                            <p className="text-sm text-gray-600">{item.transactions} transactions</p>
+                                            <p className="text-sm text-muted-foreground">{item.transactions} transactions</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-green-600">{formatCurrency(item.revenue)}</p>
+                                            <p className="font-bold text-emerald-600">{formatCurrency(item.revenue)}</p>
                                         </div>
                                     </div>
                                 ))}
+                                {(!revenueStats?.chartData || revenueStats.chartData.length === 0) && (
+                                    <p className="text-sm text-muted-foreground text-center py-8">No revenue data for this period.</p>
+                                )}
                             </div>
                         )}
                     </CardContent>
@@ -182,21 +248,25 @@ export default function AdminAnalytics() {
                     <CardContent>
                         {revenueLoading ? (
                             <div className="flex items-center justify-center h-64">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {revenueStats?.revenueByPaymentMethod?.map((item: PaymentMethodData) => (
-                                    <div key={item.paymentMethod} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                {insights?.paymentMethods?.map((item: PaymentMethodData & { percentage: number; transactionCount: number }) => (
+                                    <div key={item.paymentMethod} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                                         <div>
                                             <p className="font-medium capitalize">{item.paymentMethod}</p>
-                                            <p className="text-sm text-gray-600">{item._count} transactions</p>
+                                            <p className="text-sm text-muted-foreground">{item.transactionCount} transactions</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-blue-600">{formatCurrency(item._sum.amount)}</p>
+                                            <p className="font-bold text-primary">{formatCurrency(item.totalAmount)}</p>
+                                            <p className="text-xs text-muted-foreground">{item.percentage.toFixed(1)}%</p>
                                         </div>
                                     </div>
                                 ))}
+                                {(!insights?.paymentMethods || insights.paymentMethods.length === 0) && (
+                                    <p className="text-sm text-muted-foreground text-center py-8">No payment data available.</p>
+                                )}
                             </div>
                         )}
                     </CardContent>
@@ -214,25 +284,25 @@ export default function AdminAnalytics() {
                 <CardContent>
                     {transactionLoading ? (
                         <div className="flex items-center justify-center h-32">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             <div className="text-center">
-                                <p className="text-2xl font-bold text-gray-900">{transactionStats?.summary?.totalTransactions || 0}</p>
-                                <p className="text-sm text-gray-600">Total Transactions</p>
+                                <p className="text-2xl font-bold">{transactionStats?.summary?.totalTransactions || 0}</p>
+                                <p className="text-sm text-muted-foreground">Total Transactions</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-2xl font-bold text-green-600">{transactionStats?.summary?.successfulTransactions || 0}</p>
-                                <p className="text-sm text-gray-600">Successful</p>
+                                <p className="text-2xl font-bold text-emerald-600">{transactionStats?.summary?.successfulTransactions || 0}</p>
+                                <p className="text-sm text-muted-foreground">Successful</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-2xl font-bold text-red-600">{transactionStats?.summary?.failedTransactions || 0}</p>
-                                <p className="text-sm text-gray-600">Failed</p>
+                                <p className="text-2xl font-bold text-destructive">{transactionStats?.summary?.failedTransactions || 0}</p>
+                                <p className="text-sm text-muted-foreground">Failed</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-2xl font-bold text-blue-600">{transactionStats?.summary?.successRate?.toFixed(1) || 0}%</p>
-                                <p className="text-sm text-gray-600">Success Rate</p>
+                                <p className="text-2xl font-bold text-primary">{transactionStats?.summary?.successRate?.toFixed(1) || 0}%</p>
+                                <p className="text-sm text-muted-foreground">Success Rate</p>
                             </div>
                         </div>
                     )}
@@ -250,26 +320,29 @@ export default function AdminAnalytics() {
                 <CardContent>
                     {revenueLoading ? (
                         <div className="flex items-center justify-center h-32">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {revenueStats?.topBusinesses?.slice(0, 5).map((business: TopBusiness, index: number) => (
-                                <div key={business.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            {insights?.topBusinesses?.slice(0, 5).map((business: TopBusiness, index: number) => (
+                                <div key={business.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                                     <div className="flex items-center space-x-4">
-                                        <div className="flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded-full font-bold">
+                                        <div className="flex items-center justify-center w-8 h-8 bg-primary/10 text-primary rounded-full font-bold">
                                             {index + 1}
                                         </div>
                                         <div>
                                             <p className="font-medium">{business.name}</p>
-                                            <p className="text-sm text-gray-600">{business.totalOrders} orders</p>
+                                            <p className="text-sm text-muted-foreground">{business.totalOrders} orders</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-green-600">{formatCurrency(business.totalRevenue)}</p>
+                                        <p className="font-bold text-emerald-600">{formatCurrency(business.totalRevenue)}</p>
                                     </div>
                                 </div>
                             ))}
+                            {(!insights?.topBusinesses || insights.topBusinesses.length === 0) && (
+                                <p className="text-sm text-muted-foreground text-center py-8">No business data available.</p>
+                            )}
                         </div>
                     )}
                 </CardContent>

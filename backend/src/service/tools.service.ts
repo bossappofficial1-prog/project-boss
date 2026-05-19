@@ -278,7 +278,7 @@ export class ToolsService {
       OutletRepository.getTotalOrders(outletId, startDate, endDate),
       OutletRepository.getTotalOrders(outletId, prevStart, prevEnd),
       OutletRepository.getExpenses(outletId, startDate, endDate),
-      OutletRepository.getGoodsProducts(outletId),
+      OutletRepository.getAllProducts(outletId),
       OutletRepository.getSoldProductIds(outletId, startDate, endDate),
     ]);
 

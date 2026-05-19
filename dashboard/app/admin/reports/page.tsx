@@ -15,11 +15,13 @@ import {
     TrendingUp,
     TrendingDown,
     Receipt,
-    RefreshCw
+    RefreshCw,
+    Loader2,
 } from 'lucide-react';
 import { apiClient } from '@/lib/apis/base';
 import { formatCurrency } from '@/lib/utils';
 import { formatDate } from '@/lib/withdrawals';
+import { toast } from 'sonner';
 
 interface FinancialReport {
     id: string;
@@ -49,56 +51,48 @@ export default function AdminReports() {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
 
-    // Fetch financial reports list
-    const { data: reportsData, isLoading: reportsLoading } = useQuery({
+    const { data: reportsData, isLoading: reportsLoading, refetch: refetchReports } = useQuery({
         queryKey: ['financial-reports', page, limit],
         queryFn: async () => {
             const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
             const response = await apiClient.get(`/admin/reports?${params}`);
-            if (response.status !== 200) throw new Error('Failed to fetch reports');
-            return response.data;
+            return response.data.data;
         },
     });
 
-    // Fetch revenue report data
-    const { data: revenueReport, isLoading: revenueLoading } = useQuery({
+    const { data: revenueReport, isLoading: revenueLoading, refetch: refetchRevenue } = useQuery({
         queryKey: ['revenue-report', period, startDate, endDate],
         queryFn: async () => {
             const params = new URLSearchParams({ period });
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
-
             const response = await apiClient.get(`/admin/reports/revenue?${params}`);
-            if (response.status !== 200) throw new Error('Failed to fetch revenue report');
-            return response.data;
+            return response.data.data;
         },
     });
 
-    // Fetch business performance report
-    const { data: businessReport, isLoading: businessLoading } = useQuery({
+    const { data: businessReport, isLoading: businessLoading, refetch: refetchBusiness } = useQuery({
         queryKey: ['business-report', period, startDate, endDate, businessFilter],
         queryFn: async () => {
             const params = new URLSearchParams({ period });
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
             if (businessFilter) params.append('businessId', businessFilter);
-
             const response = await apiClient.get(`/admin/reports/business-performance?${params}`);
-            if (response.status !== 200) throw new Error('Failed to fetch business report');
-            return response.data
+            return response.data.data;
         },
     });
 
-    const pagination = reportsData?.data?.pagination;
+    const pagination = reportsData?.pagination;
 
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'completed':
-                return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
+                return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Completed</Badge>;
             case 'processing':
-                return <Badge className="bg-yellow-100 text-yellow-800">Processing</Badge>;
+                return <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">Processing</Badge>;
             case 'failed':
-                return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
+                return <Badge variant="destructive">Failed</Badge>;
             default:
                 return <Badge variant="secondary">{status}</Badge>;
         }
@@ -106,18 +100,17 @@ export default function AdminReports() {
 
     const handleGenerateReport = async () => {
         try {
-            const response = await apiClient.post(`/admin/reports/generate`, {
+            await apiClient.post(`/admin/reports/generate`, {
                 type: reportType,
                 period,
                 startDate,
                 endDate,
                 businessId: businessFilter || undefined,
             });
-
-            // Refresh reports list
-            window.location.reload();
+            toast.success('Report generation started');
+            refetchReports();
         } catch (error) {
-            console.error('Failed to generate report:', error);
+            toast.error('Failed to generate report');
         }
     };
 
@@ -126,9 +119,6 @@ export default function AdminReports() {
             const response = await apiClient.get(`/admin/reports/${reportId}/download`, {
                 responseType: 'blob',
             });
-
-            if (response.status !== 200) throw new Error('Failed to download report');
-
             const blob = response.data;
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -139,7 +129,7 @@ export default function AdminReports() {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
         } catch (error) {
-            console.error('Failed to download report:', error);
+            toast.error('Failed to download report');
         }
     };
 
@@ -148,11 +138,11 @@ export default function AdminReports() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Financial Reports</h1>
-                    <p className="text-gray-600 mt-1">Comprehensive financial reporting and analytics</p>
+                    <h1 className="text-2xl font-semibold tracking-tight">Financial Reports</h1>
+                    <p className="text-muted-foreground text-sm mt-1">Comprehensive financial reporting and analytics</p>
                 </div>
                 <div className="flex space-x-3">
-                    <Button variant="outline" className="flex items-center space-x-2">
+                    <Button variant="outline" className="flex items-center space-x-2" onClick={() => { refetchReports(); refetchRevenue(); refetchBusiness(); }}>
                         <RefreshCw className="w-4 h-4" />
                         <span>Refresh</span>
                     </Button>
@@ -170,8 +160,8 @@ export default function AdminReports() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Report Type</label>
                             <Select value={reportType} onValueChange={setReportType}>
                                 <SelectTrigger>
                                     <SelectValue />
@@ -184,8 +174,8 @@ export default function AdminReports() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Period</label>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Period</label>
                             <Select value={period} onValueChange={setPeriod}>
                                 <SelectTrigger>
                                     <SelectValue />
@@ -199,21 +189,13 @@ export default function AdminReports() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                            <Input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                            />
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Start Date</label>
+                            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                            <Input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                            />
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">End Date</label>
+                            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                         </div>
                     </div>
                 </CardContent>
@@ -229,10 +211,10 @@ export default function AdminReports() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {revenueLoading ? '...' : formatCurrency(revenueReport?.data?.totalRevenue || 0)}
+                                {revenueLoading ? '...' : formatCurrency(revenueReport?.totalRevenue || 0)}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                {revenueReport?.data?.growth >= 0 ? '+' : ''}{revenueReport?.data?.growth || 0}% from last period
+                                {revenueReport?.growth >= 0 ? '+' : ''}{revenueReport?.growth || 0}% from last period
                             </p>
                         </CardContent>
                     </Card>
@@ -244,11 +226,9 @@ export default function AdminReports() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {revenueLoading ? '...' : revenueReport?.data?.totalTransactions || 0}
+                                {revenueLoading ? '...' : revenueReport?.totalTransactions || 0}
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                                Transactions processed
-                            </p>
+                            <p className="text-xs text-muted-foreground">Transactions processed</p>
                         </CardContent>
                     </Card>
 
@@ -259,30 +239,26 @@ export default function AdminReports() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {revenueLoading ? '...' : formatCurrency(revenueReport?.data?.averageTransaction || 0)}
+                                {revenueLoading ? '...' : formatCurrency(revenueReport?.averageTransaction || 0)}
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                                Per transaction
-                            </p>
+                            <p className="text-xs text-muted-foreground">Per transaction</p>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
-                            {revenueReport?.data?.growth >= 0 ? (
-                                <TrendingUp className="h-4 w-4 text-green-600" />
+                            {(revenueReport?.growth || 0) >= 0 ? (
+                                <TrendingUp className="h-4 w-4 text-emerald-600" />
                             ) : (
-                                <TrendingDown className="h-4 w-4 text-red-600" />
+                                <TrendingDown className="h-4 w-4 text-destructive" />
                             )}
                         </CardHeader>
                         <CardContent>
-                            <div className={`text-2xl font-bold ${revenueReport?.data?.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {revenueLoading ? '...' : `${revenueReport?.data?.growth >= 0 ? '+' : ''}${revenueReport?.data?.growth || 0}%`}
+                            <div className={`text-2xl font-bold ${(revenueReport?.growth || 0) >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                                {revenueLoading ? '...' : `${(revenueReport?.growth || 0) >= 0 ? '+' : ''}${revenueReport?.growth || 0}%`}
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                                Month over month
-                            </p>
+                            <p className="text-xs text-muted-foreground">Month over month</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -297,7 +273,7 @@ export default function AdminReports() {
                     <CardContent>
                         {businessLoading ? (
                             <div className="flex items-center justify-center h-64">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
@@ -312,7 +288,7 @@ export default function AdminReports() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {businessReport?.data?.map((business: BusinessReport) => (
+                                        {businessReport?.map((business: BusinessReport) => (
                                             <TableRow key={business.businessId}>
                                                 <TableCell className="font-medium">{business.businessName}</TableCell>
                                                 <TableCell>{formatCurrency(business.totalRevenue)}</TableCell>
@@ -321,6 +297,13 @@ export default function AdminReports() {
                                                 <TableCell>{formatCurrency(business.commission)}</TableCell>
                                             </TableRow>
                                         ))}
+                                        {(!businessReport || businessReport.length === 0) && (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                                    No business data available.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
                             </div>
@@ -337,7 +320,7 @@ export default function AdminReports() {
                 <CardContent>
                     {reportsLoading ? (
                         <div className="flex items-center justify-center h-64">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -354,7 +337,7 @@ export default function AdminReports() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {reportsData?.data?.reports?.map((report: FinancialReport) => (
+                                    {reportsData?.reports?.map((report: FinancialReport) => (
                                         <TableRow key={report.id}>
                                             <TableCell className="font-medium capitalize">{report.type}</TableCell>
                                             <TableCell>{report.period}</TableCell>
@@ -374,6 +357,13 @@ export default function AdminReports() {
                                             </TableCell>
                                         </TableRow>
                                     ))}
+                                    {(!reportsData?.reports || reportsData.reports.length === 0) && (
+                                        <TableRow>
+                                            <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                                                No reports generated yet.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
@@ -382,7 +372,7 @@ export default function AdminReports() {
                     {/* Pagination */}
                     {pagination && pagination.totalPages > 1 && (
                         <div className="flex items-center justify-between mt-6">
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-muted-foreground">
                                 Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} reports
                             </div>
                             <div className="flex space-x-2">

@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Check,
     ShieldCheck,
+    AlertCircle,
+    Loader2,
 } from "lucide-react";
 import { cn } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -17,6 +19,7 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { PlanCard } from './plan-card';
+import { Button } from '@/components/ui/button';
 
 export default function RegistrationContent() {
     const searchParams = useSearchParams();
@@ -24,14 +27,12 @@ export default function RegistrationContent() {
     const queryClient = useQueryClient()
     const { data: subscriptionPlans, isLoading } = useSubscriptionPlans()
 
-    // Derive all params from URL on every render — no local state needed
     const stepParam = Number(searchParams.get('step'));
     const providerParam = searchParams.get('provider') as 'email' | 'google' | null;
     const nameParam = searchParams.get('name') ?? '';
     const isVerifiedParam = searchParams.get('isVerified');
     const emailParam = searchParams.get('email') ?? '';
 
-    // Bug 1 & 2 fix: derive step reactively from URL params
     const step = !isNaN(stepParam) && stepParam > 0 ? stepParam : providerParam ? 2 : 1;
 
     const [formData, setFormData] = useState({
@@ -44,106 +45,27 @@ export default function RegistrationContent() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [logoutLoading, setLogoutLoading] = useState(false);
 
-    // Bug 3 fix: Google users are pre-verified — never show OTP modal for them
     const [showOtpInput, setShowOtpInput] = useState(() => {
         if (providerParam === 'google') return false;
         if (isVerifiedParam) return isVerifiedParam === 'false';
         return false;
     });
 
-    // Bug 4 fix: surface business name error back to Step 2 form
     const [businessNameError, setBusinessNameError] = useState<string | null>(null);
+    const [oauthError, setOauthError] = useState<string | null>(null);
 
     const [timer, setTimer] = useState(0);
 
-    const handleOAuthResult = useCallback((payload: { redirect?: unknown; error?: unknown }) => {
-        setIsSubmitting(false);
-
-        if (typeof payload.error === 'string' && payload.error) {
-            toast.error(payload.error);
-            return;
-        }
-
-        queryClient.removeQueries({ queryKey: ['auth-me'] });
-        try { sessionStorage.removeItem('auth-me-cache-v2'); } catch { }
-
-        const nextPath = typeof payload.redirect === 'string' ? payload.redirect : '/auth/register?step=2&provider=google';
-        router.push(nextPath);
-    }, [queryClient, router]);
-
     useEffect(() => {
-        const handleOAuthMessage = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
-            if (event.data?.type !== 'google-oauth-callback') return;
-
-            handleOAuthResult(event.data);
-        };
-
-        const handleOAuthStorage = (event: StorageEvent) => {
-            if (event.key !== 'google-oauth-callback' || !event.newValue) return;
-
-            try {
-                handleOAuthResult(JSON.parse(event.newValue));
-                localStorage.removeItem('google-oauth-callback');
-            } catch { }
-        };
-
-        window.addEventListener('message', handleOAuthMessage);
-        window.addEventListener('storage', handleOAuthStorage);
-
-        const channel = 'BroadcastChannel' in window ? new BroadcastChannel('google-oauth') : null;
-        channel?.addEventListener('message', (event) => {
-            if (event.data?.type !== 'google-oauth-callback') return;
-            handleOAuthResult(event.data);
-        });
-
-        return () => {
-            window.removeEventListener('message', handleOAuthMessage);
-            window.removeEventListener('storage', handleOAuthStorage);
-            channel?.close();
-        };
-    }, [handleOAuthResult]);
+        const err = searchParams.get('error');
+        if (err === 'google_failed') {
+            setOauthError('Login Google gagal. Silakan coba lagi atau gunakan email dan password.');
+        }
+    }, [searchParams]);
 
     const handleGoogleLogin = () => {
         setIsSubmitting(true);
-        const googleLoginUrl = '/auth/google-popup-start';
-        const popupWidth = 480;
-        const popupHeight = 640;
-        const left = window.screenX + (window.outerWidth - popupWidth) / 2;
-        const top = window.screenY + (window.outerHeight - popupHeight) / 2;
-
-        const popup = window.open(
-            googleLoginUrl,
-            'google-oauth-login',
-            `width=${popupWidth},height=${popupHeight},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
-        );
-
-        if (!popup) {
-            window.location.href = googleLoginUrl;
-            return;
-        }
-
-        popup.focus();
-
-        const popupClosedCheck = window.setInterval(() => {
-            if (popup.closed) {
-                window.clearInterval(popupClosedCheck);
-                setIsSubmitting(false);
-                return;
-            }
-
-            try {
-                const popupUrl = new URL(popup.location.href);
-                if (popupUrl.origin !== window.location.origin) return;
-
-                if (popupUrl.pathname === '/auth/oauth-popup' || popupUrl.pathname === '/auth/google-popup-start') return;
-
-                const fallbackRedirect = `${popupUrl.pathname}${popupUrl.search}${popupUrl.hash}`;
-                popup.close();
-                window.clearInterval(popupClosedCheck);
-                handleOAuthResult({ redirect: fallbackRedirect });
-            } catch { }
-        }, 500);
+        window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/google?redirect=${encodeURIComponent('/owner')}&from=register`;
     };
 
     const handleRegister = async (formData: any) => {
@@ -186,7 +108,6 @@ export default function RegistrationContent() {
         }
     };
 
-    // Timer logic
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (timer > 0) {
@@ -204,7 +125,6 @@ export default function RegistrationContent() {
     const handleNext = () => navigateToStep(step + 1);
     const handleBack = () => navigateToStep(step - 1);
 
-    // 4. Final Submit (Create Business & Plan)
     const handleSubmit = async () => {
         try {
             setIsSubmitting(true);
@@ -232,13 +152,11 @@ export default function RegistrationContent() {
         } catch (error: any) {
             const msg: string = error?.response?.data?.message || error?.message || '';
 
-            // Bug 6 fix: jika bisnis sudah ada (misal double submit), langsung redirect ke dashboard
             if (msg.includes('Bisnis sudah terdaftar')) {
                 router.push('/owner');
                 return;
             }
 
-            // Bug 4 fix: nama bisnis sudah dipakai → kembali ke step 2 dengan error inline
             if (msg.includes('sudah tersedia') || msg.toLowerCase().includes('businessname')) {
                 setBusinessNameError(msg);
                 navigateToStep(2);
@@ -255,7 +173,6 @@ export default function RegistrationContent() {
         <AuthSplitLayout>
             <div className="w-full max-w-[440px] space-y-6">
 
-                {/* Logo View */}
                 <div className="flex justify-center mb-6">
                     <Image
                         src="/Logo Boss.png"
@@ -267,6 +184,13 @@ export default function RegistrationContent() {
                     />
                 </div>
 
+                {oauthError && (
+                    <div className="flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>{oauthError}</span>
+                    </div>
+                )}
+
                 {!showOtpInput && (
                     <div className="flex items-center mb-8 px-2">
                         {[1, 2, 3].map((s) => (
@@ -277,7 +201,6 @@ export default function RegistrationContent() {
                                     s < 3 && "flex-1"
                                 )}
                             >
-                                {/* Circle */}
                                 <div
                                     className={cn(
                                         "h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium border-2 shrink-0",
@@ -291,7 +214,6 @@ export default function RegistrationContent() {
                                     {step > s ? <Check className="h-4 w-4" /> : s}
                                 </div>
 
-                                {/* Line */}
                                 {s < 3 && (
                                     <div
                                         className={cn(
@@ -305,7 +227,6 @@ export default function RegistrationContent() {
                     </div>
                 )}
 
-                {/* FORM CONTENT */}
                 <div className="space-y-6">
 
                     {step === 1 && showOtpInput && (
@@ -343,15 +264,14 @@ export default function RegistrationContent() {
                         />
                     )}
 
-                    {/* --- STEP 3: PILIH PLAN --- */}
                     {step === 3 && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="text-center md:text-left">
-                                <h2 className="text-2xl font-bold text-slate-900">Pilih Paket Langganan</h2>
-                                <p className="text-slate-500 text-sm">Sesuaikan dengan skala bisnis Anda saat ini.</p>
+                                <h2 className="text-2xl font-semibold tracking-tight text-foreground">Pilih Paket Langganan</h2>
+                                <p className="text-sm text-muted-foreground mt-1">Sesuaikan dengan skala bisnis Anda saat ini.</p>
                             </div>
 
-                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300/60 scrollbar-track-transparent">
+                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                                 {isLoading ? (
                                     <p className="text-sm text-muted-foreground">Memuat data...</p>
                                 ) : (
@@ -360,28 +280,23 @@ export default function RegistrationContent() {
                             </div>
 
                             <div className="pt-2 flex gap-3">
-                                <button
+                                <Button
                                     type="button"
                                     onClick={handleBack}
                                     disabled={isSubmitting}
-                                    className="px-6 h-12 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition-all duration-200 disabled:opacity-50"
+                                    variant="outline"
                                 >
                                     Kembali
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
-                                    className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-2"
+                                    className="flex-1"
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
                                 >
-                                    {isSubmitting && (
-                                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                        </svg>
-                                    )}
+                                    {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                                     {isSubmitting ? 'Memproses...' : formData.selectedPlan === 'TRIAL' ? 'Mulai Gratis Sekarang' : 'Lanjut ke Pembayaran'}
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     )}

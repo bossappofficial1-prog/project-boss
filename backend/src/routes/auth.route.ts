@@ -70,30 +70,9 @@ authRouter.post(
 authRouter.get("/google",
     (req, res, next) => {
         const redirectPath = typeof req.query.redirect === "string" ? req.query.redirect : "/owner";
-        const isPopup = req.query.popup === "1";
-        const state = JSON.stringify({
-            redirect: redirectPath,
-            popup: isPopup,
-        });
+        const from = typeof req.query.from === "string" ? req.query.from : "login";
 
-        if (isPopup) {
-            const cookiePath = req.baseUrl || "/api/v1/auth";
-
-            res.cookie("google_oauth_popup", "1", {
-                httpOnly: true,
-                sameSite: "lax",
-                secure: config.NODE_ENV === "production",
-                maxAge: 10 * 60 * 1000,
-                path: cookiePath,
-            });
-            res.cookie("google_oauth_redirect", redirectPath, {
-                httpOnly: true,
-                sameSite: "lax",
-                secure: config.NODE_ENV === "production",
-                maxAge: 10 * 60 * 1000,
-                path: cookiePath,
-            });
-        }
+        const state = JSON.stringify({ redirect: redirectPath, from });
 
         passport.authenticate("google", {
             scope: ["profile", "email"],
@@ -123,5 +102,9 @@ authRouter.patch("/update-password/:userId",
     validateSchema(updatePasswordSchema),
     authController.updatePassword
 )
+
+authRouter.post("/link-account", authController.linkAccount)
+
+authRouter.get("/link-account", authController.getLinkAccountInfo)
 
 export default authRouter;

@@ -80,22 +80,22 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 text-center">
             <div className="flex justify-center mb-4">
-                <div className="h-16 w-16 bg-red-50 rounded-full flex items-center justify-center">
-                    <Smartphone className="h-8 w-8 text-red-600" />
+                <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Smartphone className="h-8 w-8 text-primary" />
                 </div>
             </div>
             <div>
-                <h2 className="text-2xl font-bold text-slate-900">Verifikasi Email</h2>
-                <p className="text-slate-500 text-sm mt-2">
+                <h2 className="text-2xl font-semibold tracking-tight">Verifikasi Email</h2>
+                <p className="text-sm text-muted-foreground mt-2">
                     Masukkan 6 digit kode yang telah kami kirimkan ke <strong>{email}</strong>
                 </p>
             </div>
 
-            {errorMessage && <Alert className="border-red-500 bg-red-500/20 text-red-700">
+            {errorMessage && <Alert variant="destructive">
                 <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>}
 
-            {successMessage && <Alert className="border-green-500 bg-green-500/20 text-green-700">
+            {successMessage && <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
                 <AlertDescription>{successMessage}</AlertDescription>
             </Alert>}
 
@@ -116,16 +116,16 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
                 </InputOTP>
             </div>
 
-            <div className="text-sm text-slate-600">
+            <div className="text-sm text-muted-foreground">
                 Belum terima kode?{' '}
                 {timer > 0 ? (
-                    <span className="text-slate-400 font-medium">Kirim ulang dalam {timer}s</span>
+                    <span className="text-muted-foreground/60 font-medium">Kirim ulang dalam {timer}s</span>
                 ) : (
                     <button
                         onClick={() => {
                             handleResendVerificationCode()
                         }}
-                        className="text-red-600 font-bold hover:text-red-700 hover:underline"
+                        className="text-primary font-medium hover:underline"
                     >
                         Kirim Ulang
                     </button>
@@ -133,13 +133,13 @@ export function OtpInputVerification({ email, setStep }: { email: string, setSte
             </div>
 
             <div className="flex flex-col gap-3 pt-2">
-                <button
+                <Button
                     onClick={handleVerifyOtp}
                     disabled={verificationCode?.length! < 6 || isLoading}
-                    className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none"
+                    className="w-full h-11"
                 >
                     {isLoading ? 'Memproses...' : 'Verifikasi & Lanjut'}
-                </button>
+                </Button>
             </div>
         </div>
     )

@@ -1,4 +1,4 @@
-import { OrderStatus, PaymentStatus, ProductType } from "@prisma/client";
+import { OrderStatus, PaymentStatus } from "@prisma/client";
 import { db } from "..//config/prisma";
 
 export interface RawOrderTimestamp {
@@ -55,7 +55,6 @@ export class ToolsRepository {
           ...COMPLETED_FILTER,
           createdAt: { gte: startDate, lte: endDate },
         },
-        product: { type: ProductType.GOODS },
       },
       select: {
         priceAtTimeOfOrder: true,

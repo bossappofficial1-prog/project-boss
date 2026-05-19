@@ -48,7 +48,6 @@ interface SystemLog {
 }
 
 export default function AdminSystem() {
-    // Fetch system health
     const { data: healthData, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
         queryKey: ['system-health'],
         queryFn: async () => {
@@ -56,10 +55,9 @@ export default function AdminSystem() {
             if (response.status !== 200) throw new Error('Failed to fetch system health');
             return response.data;
         },
-        refetchInterval: 30000, // Refetch every 30 seconds
+        refetchInterval: 30000,
     });
 
-    // Fetch system logs
     const { data: logsData, isLoading: logsLoading } = useQuery({
         queryKey: ['system-logs'],
         queryFn: async () => {
@@ -77,24 +75,24 @@ export default function AdminSystem() {
     const getStatusIcon = (status: string) => {
         switch (status) {
             case 'healthy':
-                return <CheckCircle className="w-5 h-5 text-green-500" />;
+                return <CheckCircle className="w-5 h-5 text-emerald-600" />;
             case 'warning':
-                return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+                return <AlertTriangle className="w-5 h-5 text-amber-600" />;
             case 'unhealthy':
-                return <AlertTriangle className="w-5 h-5 text-red-500" />;
+                return <AlertTriangle className="w-5 h-5 text-destructive" />;
             default:
-                return <Activity className="w-5 h-5 text-gray-500" />;
+                return <Activity className="w-5 h-5 text-muted-foreground" />;
         }
     };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'healthy':
-                return <Badge className="bg-green-100 text-green-800">Healthy</Badge>;
+                return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Healthy</Badge>;
             case 'warning':
-                return <Badge className="bg-yellow-100 text-yellow-800">Warning</Badge>;
+                return <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">Warning</Badge>;
             case 'unhealthy':
-                return <Badge className="bg-red-100 text-red-800">Unhealthy</Badge>;
+                return <Badge variant="destructive">Unhealthy</Badge>;
             default:
                 return <Badge variant="secondary">Unknown</Badge>;
         }
@@ -103,11 +101,11 @@ export default function AdminSystem() {
     const getLogLevelBadge = (level: string) => {
         switch (level) {
             case 'error':
-                return <Badge className="bg-red-100 text-red-800">Error</Badge>;
+                return <Badge variant="destructive">Error</Badge>;
             case 'warning':
-                return <Badge className="bg-yellow-100 text-yellow-800">Warning</Badge>;
+                return <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">Warning</Badge>;
             case 'info':
-                return <Badge className="bg-blue-100 text-blue-800">Info</Badge>;
+                return <Badge className="bg-blue-500/10 text-blue-700 border-blue-200">Info</Badge>;
             default:
                 return <Badge variant="secondary">{level}</Badge>;
         }
@@ -157,7 +155,7 @@ export default function AdminSystem() {
         },
         {
             name: 'Network',
-            status: 'healthy', // This would come from actual monitoring
+            status: 'healthy',
             icon: <Wifi className="w-5 h-5" />,
             description: 'Network connectivity'
         }
@@ -165,18 +163,13 @@ export default function AdminSystem() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">System Management</h1>
-                    <p className="text-gray-600 mt-1">Monitor system health and performance</p>
+                    <h1 className="text-2xl font-semibold tracking-tight">System Management</h1>
+                    <p className="text-muted-foreground text-sm mt-1">Monitor system health and performance</p>
                 </div>
                 <div className="flex space-x-3">
-                    <Button
-                        variant="outline"
-                        onClick={() => refetchHealth()}
-                        className="flex items-center space-x-2"
-                    >
+                    <Button variant="outline" onClick={() => refetchHealth()} className="flex items-center space-x-2">
                         <RefreshCw className="w-4 h-4" />
                         <span>Refresh</span>
                     </Button>
@@ -187,13 +180,12 @@ export default function AdminSystem() {
                 </div>
             </div>
 
-            {/* System Health Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Overall Status</CardTitle>
                         {healthLoading ? (
-                            <Activity className="h-4 w-4 text-gray-400 animate-pulse" />
+                            <Activity className="h-4 w-4 text-muted-foreground animate-pulse" />
                         ) : (
                             getStatusIcon(health?.status || 'unknown')
                         )}
@@ -217,9 +209,7 @@ export default function AdminSystem() {
                         <div className="text-2xl font-bold">
                             {healthLoading ? '...' : formatUptime(health?.uptime || 0)}
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Since last restart
-                        </p>
+                        <p className="text-xs text-muted-foreground">Since last restart</p>
                     </CardContent>
                 </Card>
 
@@ -232,29 +222,24 @@ export default function AdminSystem() {
                         <div className="text-2xl font-bold">
                             {healthLoading ? '...' : metrics?.totalUsers || 0}
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Registered users
-                        </p>
+                        <p className="text-xs text-muted-foreground">Registered users</p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                        <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
                             {healthLoading ? '...' : metrics?.todayOrders || 0}
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Orders placed today
-                        </p>
+                        <p className="text-xs text-muted-foreground">Orders placed today</p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* System Components */}
             <Card>
                 <CardHeader>
                     <CardTitle>System Components</CardTitle>
@@ -262,13 +247,13 @@ export default function AdminSystem() {
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {systemComponents.map((component, index) => (
-                            <div key={index} className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg">
-                                <div className={`p-2 rounded-full ${component.status === 'healthy' ? 'bg-green-100' : 'bg-red-100'}`}>
+                            <div key={index} className="flex items-center space-x-3 p-4 border border-border rounded-lg">
+                                <div className={`p-2 rounded-full ${component.status === 'healthy' ? 'bg-emerald-500/10' : 'bg-destructive/10'}`}>
                                     {component.icon}
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-medium text-gray-900">{component.name}</p>
-                                    <p className="text-sm text-gray-600">{component.description}</p>
+                                    <p className="font-medium text-foreground">{component.name}</p>
+                                    <p className="text-sm text-muted-foreground">{component.description}</p>
                                     <div className="mt-1">
                                         {getStatusBadge(component.status)}
                                     </div>
@@ -279,7 +264,6 @@ export default function AdminSystem() {
                 </CardContent>
             </Card>
 
-            {/* System Logs */}
             <Card>
                 <CardHeader>
                     <CardTitle>Recent System Logs</CardTitle>
@@ -287,19 +271,19 @@ export default function AdminSystem() {
                 <CardContent>
                     {logsLoading ? (
                         <div className="flex items-center justify-center h-32">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                         </div>
                     ) : logs.length > 0 ? (
                         <div className="space-y-4">
                             {logs.map((log: SystemLog) => (
-                                <div key={log.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                                <div key={log.id} className="flex items-start space-x-3 p-3 bg-muted rounded-lg">
                                     <div className="flex-shrink-0">
                                         {getLogLevelBadge(log.level)}
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-900">{log.action}</p>
-                                        <p className="text-sm text-gray-600">{log.details}</p>
-                                        <p className="text-xs text-gray-500 mt-1">
+                                        <p className="text-sm font-medium text-foreground">{log.action}</p>
+                                        <p className="text-sm text-muted-foreground">{log.details}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">
                                             {formatTimestamp(log.timestamp)} • Admin ID: {log.adminId}
                                         </p>
                                     </div>
@@ -308,9 +292,9 @@ export default function AdminSystem() {
                         </div>
                     ) : (
                         <div className="text-center py-8">
-                            <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-600">No system logs available</p>
-                            <p className="text-sm text-gray-500 mt-1">
+                            <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                            <p className="text-muted-foreground">No system logs available</p>
+                            <p className="text-sm text-muted-foreground mt-1">
                                 System logs will appear here when actions are performed
                             </p>
                         </div>
@@ -318,7 +302,6 @@ export default function AdminSystem() {
                 </CardContent>
             </Card>
 
-            {/* Quick Actions */}
             <Card>
                 <CardHeader>
                     <CardTitle>Quick Actions</CardTitle>

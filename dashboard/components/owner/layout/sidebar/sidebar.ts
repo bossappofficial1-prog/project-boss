@@ -209,7 +209,6 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Daftar Booking",
         href: "/owner/bookings",
         requiredTypes: [OutletType.SERVICE, OutletType.CUSTOM],
-        disabled: true,
       },
     ],
   },

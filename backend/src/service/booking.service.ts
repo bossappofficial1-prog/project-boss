@@ -8,6 +8,7 @@ import { db } from "../config/prisma";
 import { Prisma, BookingSlot } from "@prisma/client";
 import { add, format, set } from "date-fns";
 import { getStaffAvailabilityForWindow, StaffAvailabilityResult } from "./staff.service";
+import { getOutletByIdService } from "./outlet.service";
 
 export interface CalendarSlot {
   id: string
@@ -418,4 +419,19 @@ export async function generateDefaultBookingSlots({
   if (slotsToCreate.length > 0) {
     await BookingRepository.createMany(slotsToCreate as any);
   }
+}
+
+export async function getBookingsListService(
+  outletId: string,
+  options: {
+    page: number
+    limit: number
+    search?: string
+    status?: string
+    dateFrom?: Date
+    dateTo?: Date
+  }
+) {
+  await getOutletByIdService(outletId);
+  return BookingRepository.getBookingsList(outletId, options);
 }

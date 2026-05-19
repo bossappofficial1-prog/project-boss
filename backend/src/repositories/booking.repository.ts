@@ -26,6 +26,24 @@ export interface RawServiceOption {
   durationMinutes: number
 }
 
+export interface BookingListItem {
+  id: string
+  date: Date
+  startTime: Date
+  endTime: Date
+  status: BookingSlotStatus
+  serviceName: string
+  providerName: string
+  durationMinutes: number
+  customerName: string | null
+  customerPhone: string | null
+  orderId: string | null
+  orderStatus: string | null
+  paymentStatus: string | null
+  totalAmount: number | null
+  createdAt: Date
+}
+
 export class BookingRepository {
   static async create(
     data: Omit<CreateBookingSlotInput, "productId"> & { productServiceId: string },
@@ -244,5 +262,106 @@ export class BookingRepository {
     return db.bookingSlot.deleteMany({
       where: { productServiceId },
     });
+  }
+
+  static async getBookingsList(
+    outletId: string,
+    options: {
+      page: number
+      limit: number
+      search?: string
+      status?: string
+      dateFrom?: Date
+      dateTo?: Date
+    }
+  ): Promise<{ data: BookingListItem[]; total: number }> {
+    const { page, limit, search, status, dateFrom, dateTo } = options
+
+    const where: any = {
+      status: { not: "AVAILABLE" },
+      productService: {
+        product: { outletId },
+      },
+    }
+
+    if (status && status !== "ALL") {
+      where.status = status
+    }
+
+    if (dateFrom || dateTo) {
+      where.date = {}
+      if (dateFrom) where.date.gte = dateFrom
+      if (dateTo) where.date.lte = dateTo
+    }
+
+    if (search) {
+      where.OR = [
+        { order: { order: { guestCustomer: { name: { contains: search, mode: "insensitive" } } } } },
+        { order: { order: { guestCustomer: { phone: { contains: search, mode: "insensitive" } } } } },
+        { productService: { product: { name: { contains: search, mode: "insensitive" } } } },
+        { productService: { providerName: { contains: search, mode: "insensitive" } } },
+      ]
+    }
+
+    const [slots, total] = await Promise.all([
+      db.bookingSlot.findMany({
+        where,
+        select: {
+          id: true,
+          date: true,
+          startTime: true,
+          endTime: true,
+          status: true,
+          createdAt: true,
+          productService: {
+            select: {
+              durationMinutes: true,
+              providerName: true,
+              product: { select: { name: true } },
+            },
+          },
+          order: {
+            select: {
+              orderId: true,
+              order: {
+                select: {
+                  id: true,
+                  orderStatus: true,
+                  paymentStatus: true,
+                  totalAmount: true,
+                  guestCustomer: {
+                    select: { name: true, phone: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ date: "desc" }, { startTime: "desc" }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.bookingSlot.count({ where }),
+    ])
+
+    const data: BookingListItem[] = slots.map((slot) => ({
+      id: slot.id,
+      date: slot.date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      status: slot.status,
+      serviceName: slot.productService.product.name,
+      providerName: slot.productService.providerName,
+      durationMinutes: slot.productService.durationMinutes,
+      customerName: slot.order?.order.guestCustomer.name ?? null,
+      customerPhone: slot.order?.order.guestCustomer.phone ?? null,
+      orderId: slot.order?.order.id ?? null,
+      orderStatus: slot.order?.order.orderStatus ?? null,
+      paymentStatus: slot.order?.order.paymentStatus ?? null,
+      totalAmount: slot.order?.order.totalAmount ?? null,
+      createdAt: slot.createdAt,
+    }))
+
+    return { data, total }
   }
 }

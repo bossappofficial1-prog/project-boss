@@ -386,6 +386,26 @@ class AdminController extends BaseController {
         return this.success(res, result);
     });
 
+    getAllOrders = this.handler(async (req: Request, res: Response) => {
+        const {
+            page = 1,
+            limit = 10,
+            search,
+            status,
+            paymentStatus
+        } = req.query;
+
+        const data = await AdminService.getAllOrders({
+            page: parseInt(page as string),
+            limit: parseInt(limit as string),
+            search: search as string,
+            status: status as string,
+            paymentStatus: paymentStatus as string
+        });
+
+        return this.success(res, data);
+    });
+
     deleteBusiness = this.handler(async (req: Request, res: Response) => {
         const { businessId } = req.params;
         const data = await AdminService.deleteBusiness(businessId as string);

@@ -40,6 +40,9 @@ router.get('/outlets', adminController.getAllOutlets);
 router.patch('/outlets/:outletId/force-close', adminController.forceCloseOutlet);
 router.delete('/outlets/:outletId', adminController.deleteOutlet);
 
+// Order management routes
+router.get('/orders', adminController.getAllOrders);
+
 // Analytics routes
 router.get('/analytics/revenue', adminController.getRevenueAnalytics);
 router.get('/analytics/revenue-chart', adminController.getRevenueChart);

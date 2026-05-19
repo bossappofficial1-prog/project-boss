@@ -54,9 +54,6 @@ export class OutletRepository {
             lte: endDate,
           },
         },
-        product: {
-          type: ProductType.GOODS,
-        },
       },
       select: {
         quantity: true,
@@ -73,24 +70,26 @@ export class OutletRepository {
                 averageHpp: true,
               },
             },
+            service: {
+              select: {
+                sellingPrice: true,
+              },
+            },
           },
         },
       },
     });
 
-    // mapping value
-    return items
-      .filter((item) => item.product.goods !== null)
-      .map((item) => ({
-        productId: item.product.id,
-        productName: item.product.name,
-        productImage: item.product.image,
-        unit: item.product.goods!.unit,
-        averageHpp: item.product.goods!.averageHpp,
-        quantity: item.quantity,
-        priceAtTimeOfOrder: item.priceAtTimeOfOrder,
-        hppAtTimeOfOrder: item.hppAtTimeOfOrder,
-      }));
+    return items.map((item) => ({
+      productId: item.product.id,
+      productName: item.product.name,
+      productImage: item.product.image,
+      unit: item.product.goods?.unit ?? "unit",
+      averageHpp: item.product.goods?.averageHpp ?? 0,
+      quantity: item.quantity,
+      priceAtTimeOfOrder: item.priceAtTimeOfOrder,
+      hppAtTimeOfOrder: item.hppAtTimeOfOrder,
+    }));
   }
 
   static async getTotalOrders(
@@ -125,11 +124,10 @@ export class OutletRepository {
     });
   }
 
-  static async getGoodsProducts(outletId: string): Promise<RawProductGoods[]> {
+  static async getAllProducts(outletId: string): Promise<RawProductGoods[]> {
     const products = await db.product.findMany({
       where: {
         outletId,
-        type: ProductType.GOODS,
       },
       select: {
         id: true,
@@ -157,7 +155,6 @@ export class OutletRepository {
           ...COMPLETED_FILTER,
           createdAt: { gte: startDate, lte: endDate },
         },
-        product: { type: ProductType.GOODS },
       },
       select: { productId: true },
       distinct: ["productId"],

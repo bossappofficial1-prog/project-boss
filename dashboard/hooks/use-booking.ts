@@ -44,6 +44,74 @@ interface BookingCalendarQuery {
     providerName?: string
 }
 
+export interface BookingListItem {
+    id: string
+    date: string
+    startTime: string
+    endTime: string
+    status: SlotStatus
+    serviceName: string
+    providerName: string
+    durationMinutes: number
+    customerName: string | null
+    customerPhone: string | null
+    orderId: string | null
+    orderStatus: string | null
+    paymentStatus: string | null
+    totalAmount: number | null
+    createdAt: string
+}
+
+interface UseBookingsListParams {
+    outletId: string
+    page: number
+    limit: number
+    search?: string
+    status?: string
+    dateFrom?: string
+    dateTo?: string
+}
+
+interface PaginatedBookingsResponse {
+    data: BookingListItem[]
+    meta: {
+        total: number
+        page: number
+        limit: number
+        totalPages: number
+    }
+}
+
+export function useBookingsList(params: UseBookingsListParams) {
+    return useQuery({
+        queryKey: [
+            "bookings-list",
+            params.outletId,
+            params.page,
+            params.limit,
+            params.search,
+            params.status,
+            params.dateFrom,
+            params.dateTo,
+        ],
+        queryFn: async () => {
+            const queryParams = new URLSearchParams({
+                outletId: params.outletId,
+                page: params.page.toString(),
+                limit: params.limit.toString(),
+            })
+            if (params.search) queryParams.append("search", params.search)
+            if (params.status && params.status !== "ALL") queryParams.append("status", params.status)
+            if (params.dateFrom) queryParams.append("dateFrom", params.dateFrom)
+            if (params.dateTo) queryParams.append("dateTo", params.dateTo)
+
+            const res = await apiClient.get(`/bookings?${queryParams.toString()}`)
+            return res.data as PaginatedBookingsResponse
+        },
+        enabled: !!params.outletId,
+    })
+}
+
 
 export function useBookingCalendar(
     query: BookingCalendarQuery

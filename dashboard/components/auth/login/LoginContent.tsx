@@ -1,128 +1,90 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { PasswordInput } from '@/components/ui/password-input';
-import { Input } from '@/components/ui/input';
-import { apiClient } from '@/lib/apis/base';
-import { Loader2 } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
-import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { apiClient } from "@/lib/apis/base";
+import { Loader2, AlertCircle } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import AuthSplitLayout from "@/components/auth/AuthSplitLayout";
 
 export default function LoginContent() {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const router = useRouter();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams?.get('redirect');
-  const reason = searchParams?.get('reason');
-  const oauthError = searchParams?.get('error');
-
-  const handleOAuthResult = useCallback((payload: { redirect?: unknown; error?: unknown }) => {
-    setIsGoogleLoading(false);
-
-    if (typeof payload.error === 'string' && payload.error) {
-      setError(payload.error);
-      return;
-    }
-
-    queryClient.removeQueries({ queryKey: ['auth-me'] });
-    try { sessionStorage.removeItem('auth-me-cache-v2'); } catch { }
-
-    const nextPath = typeof payload.redirect === 'string' ? payload.redirect : '/owner';
-    router.push(nextPath);
-  }, [queryClient, router]);
+  const redirectUrl = searchParams?.get("redirect");
+  const reason = searchParams?.get("reason");
+  const oauthError = searchParams?.get("error");
 
   useEffect(() => {
     if (oauthError) {
-      setError(decodeURIComponent(oauthError));
+      const decoded = decodeURIComponent(oauthError);
+      const messages: Record<string, string> = {
+        google_failed:
+          "Login Google gagal. Silakan coba lagi atau gunakan email dan password.",
+      };
+      setError(
+        messages[oauthError] || decoded || "Login gagal. Silakan coba lagi.",
+      );
     } else if (reason) {
       const errorMessages: Record<string, string> = {
-        token_expired: 'Sesi Anda telah berakhir. Silakan masuk kembali.',
-        invalid_token: 'Token autentikasi tidak valid. Silakan masuk kembali.',
-        invalid_role: 'Peran pengguna tidak valid. Silakan hubungi tim dukungan.',
-        insufficient_permissions: 'Anda tidak memiliki izin untuk mengakses halaman tersebut.',
-        validation_error: 'Validasi autentikasi gagal. Silakan coba lagi.',
-        session_timeout: 'Sesi Anda berakhir karena tidak ada aktivitas.',
+        token_expired: "Sesi Anda telah berakhir. Silakan masuk kembali.",
+        invalid_token: "Token autentikasi tidak valid. Silakan masuk kembali.",
+        invalid_role:
+          "Peran pengguna tidak valid. Silakan hubungi tim dukungan.",
+        insufficient_permissions:
+          "Anda tidak memiliki izin untuk mengakses halaman tersebut.",
+        validation_error: "Validasi autentikasi gagal. Silakan coba lagi.",
+        session_timeout: "Sesi Anda berakhir karena tidak ada aktivitas.",
       };
 
-      setError(errorMessages[reason] || 'Silakan masuk untuk melanjutkan.');
+      setError(errorMessages[reason] || "Silakan masuk untuk melanjutkan.");
     }
   }, [reason, oauthError]);
 
-  useEffect(() => {
-    const handleOAuthMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== 'google-oauth-callback') return;
-
-      handleOAuthResult(event.data);
-    };
-
-    const handleOAuthStorage = (event: StorageEvent) => {
-      if (event.key !== 'google-oauth-callback' || !event.newValue) return;
-
-      try {
-        handleOAuthResult(JSON.parse(event.newValue));
-        localStorage.removeItem('google-oauth-callback');
-      } catch { }
-    };
-
-    window.addEventListener('message', handleOAuthMessage);
-    window.addEventListener('storage', handleOAuthStorage);
-
-    const channel = 'BroadcastChannel' in window ? new BroadcastChannel('google-oauth') : null;
-    channel?.addEventListener('message', (event) => {
-      if (event.data?.type !== 'google-oauth-callback') return;
-      handleOAuthResult(event.data);
-    });
-
-    return () => {
-      window.removeEventListener('message', handleOAuthMessage);
-      window.removeEventListener('storage', handleOAuthStorage);
-      channel?.close();
-    };
-  }, [handleOAuthResult]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (error) setError('');
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (error) setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
-      await apiClient.post('/auth/login', formData);
+      await apiClient.post("/auth/login", formData);
 
-      // Clear stale auth data from previous session
-      queryClient.removeQueries({ queryKey: ['auth-me'] });
-      try { sessionStorage.removeItem('auth-me-cache-v2'); } catch { }
+      queryClient.removeQueries({ queryKey: ["auth-me"] });
+      try {
+        sessionStorage.removeItem("auth-me-cache-v2");
+      } catch {}
 
-      const meResponse = await apiClient.get('/auth/me');
+      const meResponse = await apiClient.get("/auth/me");
       const userRole = meResponse.data.data.user.role;
 
       if (
         redirectUrl &&
-        redirectUrl.startsWith('/') &&
-        !redirectUrl.startsWith('/auth/')
+        redirectUrl.startsWith("/") &&
+        !redirectUrl.startsWith("/auth/")
       ) {
-        const isTryingToAccessOwner = redirectUrl.startsWith('/owner/');
-        const isTryingToAccessAdmin = redirectUrl.startsWith('/admin/');
+        const isTryingToAccessOwner = redirectUrl.startsWith("/owner/");
+        const isTryingToAccessAdmin = redirectUrl.startsWith("/admin/");
 
         const isRoleMismatch =
-          (isTryingToAccessOwner && userRole !== 'OWNER') ||
-          (isTryingToAccessAdmin && userRole !== 'ADMIN');
+          (isTryingToAccessOwner && userRole !== "OWNER") ||
+          (isTryingToAccessAdmin && userRole !== "ADMIN");
 
         if (!isRoleMismatch) {
           router.push(redirectUrl);
@@ -130,177 +92,157 @@ export default function LoginContent() {
         }
       }
 
-      if (userRole === 'OWNER') {
-        router.push('/owner');
-      } else if (userRole === 'ADMIN') {
-        router.push('/admin/dashboard');
+      if (userRole === "OWNER") {
+        router.push("/owner");
+      } else if (userRole === "ADMIN") {
+        router.push("/admin/dashboard");
       } else {
-        router.push('/owner');
+        router.push("/owner");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Terjadi kesalahan saat masuk.');
+      setError(err.response?.data?.message || "Terjadi kesalahan saat masuk.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
-    setError('');
-    setIsGoogleLoading(true);
-
-    const redirectParam = redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : '';
-    const googleLoginUrl = `/auth/google-popup-start${redirectParam}`;
-    const popupWidth = 480;
-    const popupHeight = 640;
-    const left = window.screenX + (window.outerWidth - popupWidth) / 2;
-    const top = window.screenY + (window.outerHeight - popupHeight) / 2;
-
-    const popup = window.open(
-      googleLoginUrl,
-      'google-oauth-login',
-      `width=${popupWidth},height=${popupHeight},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
-    );
-
-    if (!popup) {
-      window.location.href = googleLoginUrl;
-      return;
-    }
-
-    popup.focus();
-
-    const popupClosedCheck = window.setInterval(() => {
-      if (popup.closed) {
-        window.clearInterval(popupClosedCheck);
-        setIsGoogleLoading(false);
-        return;
-      }
-
-      try {
-        const popupUrl = new URL(popup.location.href);
-        if (popupUrl.origin !== window.location.origin) return;
-
-        if (popupUrl.pathname === '/auth/oauth-popup') return;
-
-        const fallbackRedirect = `${popupUrl.pathname}${popupUrl.search}${popupUrl.hash}`;
-        popup.close();
-        window.clearInterval(popupClosedCheck);
-        handleOAuthResult({ redirect: fallbackRedirect });
-      } catch { }
-    }, 500);
+    setError("");
+    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/google?redirect=${encodeURIComponent(redirectUrl || "/owner")}`;
   };
 
   return (
     <AuthSplitLayout>
-      <div className="w-full max-w-[420px] space-y-8">
-        {/* Logo View */}
-        <div className="flex justify-center mb-8 text-center">
-          <div className="flex flex-col items-center">
-            <Image
-              src="/Logo Boss.png"
-              alt="Logo BOSS"
-              width={140}
-              height={50}
-              className="h-18 w-auto object-contain"
-              priority
-            />
-          </div>
+      <div className="w-full max-w-md space-y-6">
+        <div className="flex justify-center">
+          <Image
+            src="/Logo Boss.png"
+            alt="Logo BOSS"
+            width={140}
+            height={50}
+            className="h-12 w-auto object-contain"
+            priority
+          />
         </div>
 
         <div className="space-y-2 text-center">
-          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Selamat Datang</h2>
-          <p className="text-slate-500">Masuk untuk mengelola bisnis Anda.</p>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Selamat Datang
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Masuk untuk mengelola bisnis Anda.
+          </p>
         </div>
 
         {error && (
-          <div className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0"><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></svg>
+          <div className="flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 ml-1">Email</label>
-              <Input
-                name="email"
-                type="email"
-                placeholder="nama@perusahaan.com"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="rounded-xl border-slate-200 h-12 px-4 focus-visible:ring-2 focus-visible:ring-red-500/20 focus-visible:border-red-500 transition-all font-medium placeholder:text-slate-400 bg-white"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between ml-1">
-                <label className="text-sm font-semibold text-slate-700">Kata Sandi</label>
-                <Link href="/auth/forgot-password" disable-theme-forcing="true" className="text-xs font-semibold text-red-600 hover:text-red-700 hover:underline transition-colors">
-                  Lupa sandi?
-                </Link>
-              </div>
-              <PasswordInput
-                name="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="rounded-xl border-slate-200 h-12 px-4 focus-visible:ring-2 focus-visible:ring-red-500/20 focus-visible:border-red-500 transition-all bg-white"
-                required
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Email
+            </label>
+            <Input
+              name="email"
+              type="email"
+              placeholder="nama@perusahaan.com"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="h-11"
+              required
+            />
           </div>
 
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-600/30 hover:-translate-y-[1px] transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-2"
-            >
-              {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-              {isLoading ? 'Sedang Masuk...' : 'Masuk'}
-            </button>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                Kata Sandi
+              </label>
+              <Link
+                href="/auth/forgot-password"
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Lupa sandi?
+              </Link>
+            </div>
+            <PasswordInput
+              name="password"
+              placeholder="Masukkan kata sandi"
+              value={formData.password}
+              onChange={handleInputChange}
+              className="h-11"
+              required
+            />
           </div>
+
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full h-11"
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? "Sedang Masuk..." : "Masuk"}
+          </Button>
 
           <div className="relative py-2">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-slate-100" />
+              <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-3 text-slate-400 font-bold tracking-wider">Atau</span>
+              <span className="bg-background px-2 text-muted-foreground font-medium">
+                Atau
+              </span>
             </div>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={handleGoogleLogin}
-            disabled={isGoogleLoading}
-            className="w-full h-12 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98]"
+            className="w-full h-11 gap-3"
           >
-            {isGoogleLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-              </svg>
-            )}
-            {isGoogleLoading ? 'Membuka Google...' : 'Masuk dengan Google'}
-          </button>
+            <svg className="h-5 w-5" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            Masuk dengan Google
+          </Button>
         </form>
 
-        <p className="text-center text-sm text-slate-500">
-          Belum punya akun?{' '}
-          <Link href="/auth/register" className="font-bold text-red-600 hover:text-red-700 hover:underline">
+        <p className="text-center text-sm text-muted-foreground">
+          Belum punya akun?{" "}
+          <Link
+            href="/auth/register"
+            className="font-medium text-primary hover:underline"
+          >
             Daftar Sekarang
           </Link>
         </p>
       </div>
 
-      <div className="absolute top-6 right-6 lg:top-10 lg:right-10">
-        <Link href="/auth/login/cashier" className="text-sm font-medium text-slate-400 hover:text-slate-800 transition-colors">
+      <div className="absolute top-4 right-4 lg:top-6 lg:right-6">
+        <Link
+          href="/auth/login/cashier"
+          className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
           Masuk sebagai Kasir
         </Link>
       </div>
