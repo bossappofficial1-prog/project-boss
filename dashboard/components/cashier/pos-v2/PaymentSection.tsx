@@ -70,7 +70,8 @@ export function PaymentSection({
             method === "cash"
               ? "border-primary bg-primary/10 text-primary"
               : "border-border text-muted-foreground",
-          )}>
+          )}
+        >
           <Banknote className="h-4 w-4" />
           Cash
         </button>
@@ -82,7 +83,8 @@ export function PaymentSection({
             method === "qris"
               ? "border-primary bg-primary/10 text-primary"
               : "border-border text-muted-foreground",
-          )}>
+          )}
+        >
           <QrCode className="h-4 w-4" />
           QRIS
         </button>
@@ -91,7 +93,8 @@ export function PaymentSection({
         <button
           type="button"
           disabled
-          className="flex items-center gap-2 rounded-md border border-dashed border-border p-2.5 text-sm text-muted-foreground/50">
+          className="flex items-center gap-2 rounded-md border border-dashed border-border p-2.5 text-sm text-muted-foreground/50"
+        >
           <CreditCard className="h-4 w-4" />
           Lainnya (segera)
         </button>
@@ -100,7 +103,10 @@ export function PaymentSection({
       {method === "cash" && (
         <div className="space-y-2.5">
           <div>
-            <Label htmlFor="cashReceived" className="text-xs text-muted-foreground">
+            <Label
+              htmlFor="cashReceived"
+              className="text-xs text-muted-foreground"
+            >
               Nominal Diterima
             </Label>
             <Input
@@ -118,7 +124,8 @@ export function PaymentSection({
             <button
               type="button"
               onClick={handleExactAmount}
-              className="rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20">
+              className="rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+            >
               Uang Pas
             </button>
             {QUICK_AMOUNTS.map((amount) => (
@@ -126,7 +133,8 @@ export function PaymentSection({
                 key={amount}
                 type="button"
                 onClick={() => handleQuickAmount(amount)}
-                className="rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted">
+                className="rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+              >
                 {fmt.format(amount)}
               </button>
             ))}
@@ -139,7 +147,8 @@ export function PaymentSection({
                 change >= 0
                   ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                   : "bg-destructive/10 text-destructive",
-              )}>
+              )}
+            >
               <span>{change >= 0 ? "Kembalian" : "Kurang"}</span>
               <span>Rp {fmt.format(Math.abs(change))}</span>
             </div>
@@ -157,7 +166,8 @@ export function PaymentSection({
           {!isLoadingQris && qrisImageUrl && (
             <div
               className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-border bg-card p-4 transition-colors hover:border-primary/50"
-              onClick={() => setShowQrisModal(true)}>
+              onClick={() => setShowQrisModal(true)}
+            >
               <p className="text-xs text-muted-foreground">
                 Tap untuk perbesar · Scan QR berikut untuk pembayaran
               </p>
@@ -191,15 +201,28 @@ export function PaymentSection({
 
       {/* QRIS Popup Modal */}
       <Dialog open={showQrisModal} onOpenChange={setShowQrisModal}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Pembayaran QRIS</DialogTitle>
-            <DialogDescription>Scan QR code berikut untuk melakukan pembayaran</DialogDescription>
+            <DialogTitle className="text-xl font-bold">
+              Pembayaran QRIS
+            </DialogTitle>
+            <DialogDescription>
+              Scan QR code berikut untuk melakukan pembayaran
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            {qrisImageUrl && (
-              <img src={qrisImageUrl} alt="QRIS" className="w-full h-full object-contain" />
-            )}
+          <div className="space-y-4 flex flex-col justify-center w-full items-center py-2">
+            <div className="relative items-center border-2 rounded-lg h-80 w-80">
+              <Image
+                src={qrisImageUrl!}
+                alt="QR Code Outlet"
+                fill
+                className="object-contain"
+                unoptimized
+              />
+            </div>
+            <p className="text-center text-xl font-semibold text-foreground">
+              Total: Rp {fmt.format(total)}
+            </p>
           </div>
         </DialogContent>
       </Dialog>

@@ -74,6 +74,9 @@ export class PosV2Repository {
                 skip: (page - 1) * limit,
                 take: limit,
                 include: {
+                    category: {
+                        select: { id: true, name: true },
+                    },
                     goods: {
                         select: {
                             id: true,

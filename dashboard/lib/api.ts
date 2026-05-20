@@ -16,3 +16,5 @@ export { transactionApi } from './apis/transaction';
 export { staffApi } from './apis/staff';
 export { outletTransferApi } from './apis/outletTransfer';
 export { tableApi } from './apis/table';
+export { productCategoryApi } from './apis/product-category';
+export type { ProductCategory } from './apis/product-category';

@@ -115,6 +115,7 @@ const baseProductSchema = {
   description: z.string().optional(),
   status: z.nativeEnum(ServiceStatus).optional(),
   outletId: z.string(),
+  categoryId: z.string().nullable().optional(),
   image: z.string().optional(),
   taxPercentage: z.number().min(0).nullable().optional(),
   taxName: z.string().optional(),

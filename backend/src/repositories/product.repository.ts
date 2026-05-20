@@ -347,7 +347,11 @@ export class ProductRepository {
     return db.product.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      include: { goods: true, service: true, ticket: true },
+              include: {
+          category: {
+            select: { id: true, name: true },
+          },
+          goods: true, service: true, ticket: true },
     });
   }
 }

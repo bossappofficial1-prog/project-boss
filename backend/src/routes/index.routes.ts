@@ -44,6 +44,7 @@ import toolsRouter from "./tools.routes";
 import cashierShiftRouter from "./cashier-shift.route";
 import reservationRouter from "./reservation.route";
 import transactionDeleteRouter from "./transaction-delete.route";
+import productCategoryRouter from "./product-category.route";
 
 const apiRouter = Router();
 
@@ -87,6 +88,7 @@ apiRouter.use("/upload", uploadRouter);
 apiRouter.use("/users", userRouter);
 apiRouter.use("/reservations", reservationRouter);
 apiRouter.use("/transaction-deletes", transactionDeleteRouter);
+apiRouter.use("/product-categories", productCategoryRouter);
 
 apiRouter.get("/payment-methods", async (req, res) => {
   ResponseUtil.success(res, paymentMethod);

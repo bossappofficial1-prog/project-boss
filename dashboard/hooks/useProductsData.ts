@@ -22,6 +22,8 @@ export interface ProductItem {
   image?: string;
   type: "SERVICE" | "GOODS" | "TICKET";
   status: "ACTIVE" | "INACTIVE";
+  categoryId?: string | null;
+  category?: { id: string; name: string } | null;
   taxPercentage?: number | null;
   createdAt: string;
   updatedAt: string;

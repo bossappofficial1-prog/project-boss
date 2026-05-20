@@ -37,6 +37,7 @@ import {
 import { EmptyOutletState } from "@/components/ui/empty-outlet";
 import { useRouter } from "next/navigation";
 import { SectionHeader } from "@/components/ui/section-header";
+import { CategoryManager } from "./CategoryManager";
 
 function PageSkeleton() {
   return (
@@ -420,6 +421,7 @@ export default function ProductsContent() {
             {allowedProductTypes.includes("TICKET") && (
               <TabsTrigger value="ticket">Tiket</TabsTrigger>
             )}
+            <TabsTrigger value="categories">Kategori</TabsTrigger>
           </TabsList>
 
           {["all", "goods", "service", "ticket"]
@@ -714,6 +716,15 @@ export default function ProductsContent() {
                 />
               </TabsContent>
             ))}
+          <TabsContent value="categories" className="mt-3">
+            {selectedOutlet ? (
+              <CategoryManager outletId={selectedOutlet} />
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Pilih outlet terlebih dahulu
+              </p>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
 

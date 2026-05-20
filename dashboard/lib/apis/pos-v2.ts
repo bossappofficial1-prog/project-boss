@@ -24,6 +24,7 @@ export interface PosV2Product {
     eventDate: string | null;
     eventEndDate: string | null;
     venue: string | null;
+    category?: { id: string; name: string } | null;
 }
 
 export interface PosV2OutletQris {

@@ -14,6 +14,8 @@ import {
   useProductFormSubmit,
 } from "@/hooks/api/use-products";
 import { ProductType } from "@/types";
+import { productCategoryApi } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 
 type Props = {
   open: boolean;
@@ -47,6 +49,13 @@ export default function AddOrEditProductServiceModal({
     (outletType == "RETAIL" || outletType == "FNB" || outletType == "CUSTOM")
       ? "GOODS" : outletType === "EVENT" ? "TICKET" : "SERVICE"
 
+  const { data: categories } = useQuery({
+    queryKey: ["product-categories", selectedOutlet?.id],
+    queryFn: () => productCategoryApi.listByOutlet(selectedOutlet!.id),
+    enabled: !!selectedOutlet?.id,
+    staleTime: 5 * 60_000,
+  });
+
   useEffect(() => {
     if (isEdit && initialData?.media) {
       setMediaItems(
@@ -70,6 +79,7 @@ export default function AddOrEditProductServiceModal({
         name: initialData.name ?? "",
         description: initialData.description ?? "",
         status: initialData.status ?? ("ACTIVE" as const),
+        categoryId: initialData.categoryId ?? null,
         taxPercentage: initialData.taxPercentage ?? null,
         taxName: initialData.taxName ?? "",
         file: initialData.image,
@@ -157,6 +167,7 @@ export default function AddOrEditProductServiceModal({
       name: "",
       description: "",
       status: "ACTIVE",
+      categoryId: null,
       taxPercentage: null,
       taxName: "",
       outletId: outletId!,
@@ -237,6 +248,17 @@ export default function AddOrEditProductServiceModal({
       type: "textarea",
       colSpan: "full",
       placeholder: "Deskripsikan produk anda",
+    },
+    {
+      name: "categoryId",
+      label: "Kategori",
+      type: "select",
+      colSpan: "full",
+      placeholder: "Pilih kategori (opsional)",
+      options: (categories ?? []).map((c) => ({
+        label: c.name,
+        value: c.id,
+      })),
     },
 
     // product === goods

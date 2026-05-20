@@ -141,42 +141,43 @@ model SubscriptionInvoice {
 }
 
 model Outlet {
-  id                  String                  @id @default(uuid())
-  name                String
-  slug                String                  @unique
-  description         String?
-  address             String?
-  phone               String?
-  instagramUrl        String?
-  email               String?                 @unique
-  createdAt           DateTime                @default(now())
-  image               String?                 @default("/defaults/default-outlet-image.webp")
-  updatedAt           DateTime                @updatedAt
-  latitude            Float?
-  longitude           Float?
-  isOpen              Boolean                 @default(false)
-  businessId          String
-  manualBankName      String?
-  manualBankAccount   String?
-  manualAccountHolder String?
-  manualPaymentNote   String?
-  manualQrImageUrl    String?
-  type                OutletType              @default(CUSTOM)
-  loyaltyConfig       LoyaltyConfig?
-  pointHistories      LoyaltyPointHistory[]
-  orders              Order[]
-  cashierShifts       CashierShift[]
-  business            Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  memberships         OutletMembership[]
-  operatingHours      OutletOperatingHours[]
-  tables              OutletTable[]
-  transferRequests    OutletTransferRequest[]
-  products            Product[]
-  staff               Staff[]
-  expenses            Expense[]
-  receiptSettings     receiptSetting?
-  suppliers           Supplier[]
+  id                        String                     @id @default(uuid())
+  name                      String
+  slug                      String                     @unique
+  description               String?
+  address                   String?
+  phone                     String?
+  instagramUrl              String?
+  email                     String?                    @unique
+  createdAt                 DateTime                   @default(now())
+  image                     String?                    @default("/defaults/default-outlet-image.webp")
+  updatedAt                 DateTime                   @updatedAt
+  latitude                  Float?
+  longitude                 Float?
+  isOpen                    Boolean                    @default(false)
+  businessId                String
+  manualBankName            String?
+  manualBankAccount         String?
+  manualAccountHolder       String?
+  manualPaymentNote         String?
+  manualQrImageUrl          String?
+  type                      OutletType                 @default(CUSTOM)
+  loyaltyConfig             LoyaltyConfig?
+  pointHistories            LoyaltyPointHistory[]
+  orders                    Order[]
+  cashierShifts             CashierShift[]
+  business                  Business                   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  memberships               OutletMembership[]
+  operatingHours            OutletOperatingHours[]
+  tables                    OutletTable[]
+  transferRequests          OutletTransferRequest[]
+  products                  Product[]
+  staff                     Staff[]
+  expenses                  Expense[]
+  receiptSettings           receiptSetting?
+  suppliers                 Supplier[]
   transactionDeleteRequests TransactionDeleteRequest[]
+  productCategories         ProductCategory[]
 
   @@index([businessId])
   @@index([slug])
@@ -236,20 +237,20 @@ model OutletOperatingHours {
 }
 
 model Staff {
-  id                  String             @id @default(uuid())
-  name                String
-  phone               String?
-  username            String?            @unique
-  password            String
-  status              StaffStatus        @default(ACTIVE)
-  outletId            String
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  ordersHandled       Order[]
-  pushSubscriptions   PushSubscription[]
-  cashierShifts       CashierShift[]
-  outlet              Outlet             @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  ticketCodesRedeemed TicketCode[]
+  id                        String                     @id @default(uuid())
+  name                      String
+  phone                     String?
+  username                  String?                    @unique
+  password                  String
+  status                    StaffStatus                @default(ACTIVE)
+  outletId                  String
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  ordersHandled             Order[]
+  pushSubscriptions         PushSubscription[]
+  cashierShifts             CashierShift[]
+  outlet                    Outlet                     @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  ticketCodesRedeemed       TicketCode[]
   transactionDeleteRequests TransactionDeleteRequest[]
 
   @@index([outletId])
@@ -257,19 +258,21 @@ model Staff {
 }
 
 model Product {
-  id            String          @id @default(uuid())
+  id            String           @id @default(uuid())
   name          String
   description   String?
   type          ProductType
-  status        ServiceStatus   @default(ACTIVE)
+  status        ServiceStatus    @default(ACTIVE)
   outletId      String
-  image         String?         @default("/defaults/default-product-image.png")
+  categoryId    String?
+  image         String?          @default("/defaults/default-product-image.png")
   taxPercentage Float?
   taxName       String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   orderItems    OrderItem[]
-  outlet        Outlet          @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  outlet        Outlet           @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  category      ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   goods         ProductGoods?
   media         ProductMedia[]
   service       ProductService?
@@ -278,6 +281,20 @@ model Product {
   @@index([outletId])
   @@index([type])
   @@index([status])
+  @@index([categoryId])
+}
+
+model ProductCategory {
+  id        String    @id @default(uuid())
+  name      String
+  outletId  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  outlet    Outlet    @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  products  Product[]
+
+  @@unique([name, outletId])
+  @@index([outletId])
 }
 
 model ProductMedia {
@@ -393,8 +410,8 @@ enum TicketCodeFormat {
 }
 
 model ProductTicket {
-  id            String    @id @default(uuid())
-  productId     String    @unique
+  id            String           @id @default(uuid())
+  productId     String           @unique
   sellingPrice  Float
   eventDate     DateTime
   eventEndDate  DateTime?
@@ -402,16 +419,16 @@ model ProductTicket {
   venueAddress  String?
   mapUrl        String?
   totalQuota    Int
-  soldCount     Int       @default(0)
-  maxPerOrder   Int       @default(5)
+  soldCount     Int              @default(0)
+  maxPerOrder   Int              @default(5)
   saleStartDate DateTime?
   saleEndDate   DateTime?
   terms         String?
   codeFormat    TicketCodeFormat @default(QR_CODE)
   designConfig  Json?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  product       Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
   @@index([eventDate])
@@ -558,40 +575,40 @@ model LoyaltyPointHistory {
 }
 
 model Order {
-  id                       String                @id @default(uuid())
+  id                       String                    @id @default(uuid())
   totalAmount              Float
-  taxAmount                Float                 @default(0)
-  discountAmount           Float                 @default(0)
-  pointsRedeemed           Int                   @default(0)
+  taxAmount                Float                     @default(0)
+  discountAmount           Float                     @default(0)
+  pointsRedeemed           Int                       @default(0)
   bookingDate              DateTime?
   bookingDurationMinutes   Int?
-  customerType             CustomerType          @default(GUEST)
-  paymentStatus            PaymentStatus         @default(PENDING)
-  paymentReminderSent      Boolean               @default(false)
-  orderStatus              OrderStatus           @default(AWAITING_PAYMENT)
+  customerType             CustomerType              @default(GUEST)
+  paymentStatus            PaymentStatus             @default(PENDING)
+  paymentReminderSent      Boolean                   @default(false)
+  orderStatus              OrderStatus               @default(AWAITING_PAYMENT)
   notes                    String?
   cancellationReason       String?
-  midtransTransactionToken String?               @unique
+  midtransTransactionToken String?                   @unique
   midtransRedirectUrl      String?
-  midtransFee              Float                 @default(0)
-  appFee                   Float                 @default(0)
+  midtransFee              Float                     @default(0)
+  appFee                   Float                     @default(0)
   guestCustomerId          String
   outletId                 String
   handledByStaffId         String?
   cashierShiftId           String?
-  createdAt                DateTime              @default(now())
-  updatedAt                DateTime              @updatedAt
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
   tableNumber              String?
   tableId                  String?
   billId                   String?
   pointHistories           LoyaltyPointHistory[]
   memberships              Membership[]
-  bill                     Bill?                 @relation(fields: [billId], references: [id])
-  guestCustomer            GuestCustomer         @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
-  handledByStaff           Staff?                @relation(fields: [handledByStaffId], references: [id])
-  cashierShift             CashierShift?         @relation(fields: [cashierShiftId], references: [id])
-  outlet                   Outlet                @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  table                    OutletTable?          @relation(fields: [tableId], references: [id])
+  bill                     Bill?                     @relation(fields: [billId], references: [id])
+  guestCustomer            GuestCustomer             @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+  handledByStaff           Staff?                    @relation(fields: [handledByStaffId], references: [id])
+  cashierShift             CashierShift?             @relation(fields: [cashierShiftId], references: [id])
+  outlet                   Outlet                    @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  table                    OutletTable?              @relation(fields: [tableId], references: [id])
   items                    OrderItem[]
   transaction              Transaction?
   deleteRequest            TransactionDeleteRequest?
@@ -672,11 +689,11 @@ model TicketCode {
 }
 
 model Transaction {
-  id              String             @id @default(uuid())
+  id              String                    @id @default(uuid())
   amount          Float
   paymentMethod   String?
-  status          PaymentStatus      @default(PENDING)
-  isManual        Boolean            @default(false)
+  status          PaymentStatus             @default(PENDING)
+  isManual        Boolean                   @default(false)
   manualMethod    ManualPaymentType?
   cashReceived    Float?
   cashChange      Float?
@@ -686,15 +703,15 @@ model Transaction {
   verifiedById    String?
   rejectionNote   String?
   rawMidtrans     Json?
-  externalId      String?            @unique
+  externalId      String?                   @unique
   paymentUrl      String?
   expiresAt       DateTime?
-  orderId         String             @unique
+  orderId         String                    @unique
   cashierShiftId  String?
-  createdAt       DateTime           @default(now())
-  order           Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  verifiedBy      User?              @relation("TransactionVerifiedBy", fields: [verifiedById], references: [id])
-  cashierShift    CashierShift?      @relation(fields: [cashierShiftId], references: [id])
+  createdAt       DateTime                  @default(now())
+  order           Order                     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  verifiedBy      User?                     @relation("TransactionVerifiedBy", fields: [verifiedById], references: [id])
+  cashierShift    CashierShift?             @relation(fields: [cashierShiftId], references: [id])
   deleteRequest   TransactionDeleteRequest?
 
   @@index([status])
@@ -703,25 +720,25 @@ model Transaction {
 }
 
 model TransactionDeleteRequest {
-  id            String               @id @default(uuid())
-  transactionId String?              @unique
-  orderId       String               @unique
-  outletId      String
-  requestedBy   String
-  reason        String?
-  status        DeleteRequestStatus  @default(PENDING)
-  approvedBy    String?
-  approvedAt    DateTime?
-  rejectionNote String?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  customerName  String
-  customerPhone String
-  items         Json
-  totalAmount   Float
-  transaction   Transaction?         @relation(fields: [transactionId], references: [id], onDelete: SetNull)
-  order         Order?               @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  outlet        Outlet               @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  id             String              @id @default(uuid())
+  transactionId  String?             @unique
+  orderId        String              @unique
+  outletId       String
+  requestedBy    String
+  reason         String?
+  status         DeleteRequestStatus @default(PENDING)
+  approvedBy     String?
+  approvedAt     DateTime?
+  rejectionNote  String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  customerName   String
+  customerPhone  String
+  items          Json
+  totalAmount    Float
+  transaction    Transaction?        @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  order          Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  outlet         Outlet              @relation(fields: [outletId], references: [id], onDelete: Cascade)
   requestedStaff Staff?              @relation(fields: [requestedBy], references: [id], onDelete: SetNull)
 
   @@index([outletId])

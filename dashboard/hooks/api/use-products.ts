@@ -16,6 +16,7 @@ const baseSchema = z.object({
   name: z.string().min(2, "Nama produk minimal 2 karakter"),
   description: z.string().optional(),
   status: ProductStatus,
+  categoryId: z.string().nullable().optional(),
   taxPercentage: z.coerce.number().min(0).nullable().optional(),
   taxName: z.string().optional(),
   file: z
