@@ -83,6 +83,7 @@ export interface PosV2RecentOrder {
     itemsSummary: string;
     cashier: string;
     createdAt: string;
+    transactionId: string | null;
 }
 
 export interface PosV2OpenOrder {
@@ -183,5 +184,12 @@ export const posV2Api = {
             responseType: "blob",
         });
         return response.data;
+    },
+
+    async requestDeleteTransaction(transactionId: string, reason?: string): Promise<any> {
+        return apiCall<any>("/transaction-deletes/request", {
+            method: "POST",
+            body: JSON.stringify({ transactionId, reason }),
+        });
     },
 };

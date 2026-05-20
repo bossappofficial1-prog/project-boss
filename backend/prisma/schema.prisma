@@ -176,6 +176,7 @@ model Outlet {
   expenses            Expense[]
   receiptSettings     receiptSetting?
   suppliers           Supplier[]
+  transactionDeleteRequests TransactionDeleteRequest[]
 
   @@index([businessId])
   @@index([slug])
@@ -249,6 +250,7 @@ model Staff {
   cashierShifts       CashierShift[]
   outlet              Outlet             @relation(fields: [outletId], references: [id], onDelete: Cascade)
   ticketCodesRedeemed TicketCode[]
+  transactionDeleteRequests TransactionDeleteRequest[]
 
   @@index([outletId])
   @@index([username])
@@ -592,6 +594,7 @@ model Order {
   table                    OutletTable?          @relation(fields: [tableId], references: [id])
   items                    OrderItem[]
   transaction              Transaction?
+  deleteRequest            TransactionDeleteRequest?
 
   @@index([guestCustomerId])
   @@index([outletId])
@@ -692,10 +695,40 @@ model Transaction {
   order           Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
   verifiedBy      User?              @relation("TransactionVerifiedBy", fields: [verifiedById], references: [id])
   cashierShift    CashierShift?      @relation(fields: [cashierShiftId], references: [id])
+  deleteRequest   TransactionDeleteRequest?
 
   @@index([status])
   @@index([isManual, status])
   @@index([cashierShiftId])
+}
+
+model TransactionDeleteRequest {
+  id            String               @id @default(uuid())
+  transactionId String?              @unique
+  orderId       String               @unique
+  outletId      String
+  requestedBy   String
+  reason        String?
+  status        DeleteRequestStatus  @default(PENDING)
+  approvedBy    String?
+  approvedAt    DateTime?
+  rejectionNote String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  customerName  String
+  customerPhone String
+  items         Json
+  totalAmount   Float
+  transaction   Transaction?         @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  order         Order?               @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  outlet        Outlet               @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  requestedStaff Staff?              @relation(fields: [requestedBy], references: [id], onDelete: SetNull)
+
+  @@index([outletId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([transactionId])
+  @@index([orderId])
 }
 
 model Expense {
@@ -887,6 +920,12 @@ enum TransferStatus {
   ACCEPTED
   REJECTED
   CANCELLED
+}
+
+enum DeleteRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum OutletType {

@@ -444,6 +444,7 @@ export class PosV2Service {
         .join(", "),
       cashier: o.handledByStaff?.name ?? "-",
       createdAt: o.createdAt.toISOString(),
+      transactionId: o.transaction?.id ?? null,
     }));
   }
 }

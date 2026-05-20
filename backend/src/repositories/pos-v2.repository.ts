@@ -511,6 +511,7 @@ export class PosV2Repository {
                     },
                 },
                 handledByStaff: { select: { name: true } },
+                transaction: { select: { id: true } },
             },
             orderBy: { createdAt: "desc" },
             take: limit,
