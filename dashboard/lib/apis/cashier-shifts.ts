@@ -24,7 +24,7 @@ export interface CashierShift {
 }
 
 export interface OwnerShiftRow extends CashierShift {
-  staff?: { id: string; name: string; email?: string | null };
+  staff?: { id: string; name: string; username?: string | null };
   totals?: {
     transactionCount: number;
     salesTotal: number;

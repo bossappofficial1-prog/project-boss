@@ -1,42 +1,92 @@
 "use client";
 
-import { useState, Suspense, useCallback } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import ThemeToggle from "@/components/ThemeToggle";
 import { authApi } from "@/lib/api";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
-import { Loader2, Lock, Mail, Store } from "lucide-react";
+import { Lock, User, Store, X, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReusableForm } from "@/components/ui/reuseable-form";
 import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const HISTORY_KEY = "cashier_login_history";
 
 const loginSchema = z.object({
-	email: z.string().email("Email tidak valid").min(1, "Email wajib diisi"),
+	username: z.string().min(1, "Username wajib diisi"),
 	password: z.string().min(1, "Password wajib diisi"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+function getHistory(): string[] {
+	if (typeof window === "undefined") return [];
+	try {
+		const raw = localStorage.getItem(HISTORY_KEY);
+		return raw ? JSON.parse(raw) : [];
+	} catch {
+		return [];
+	}
+}
+
+function saveToHistory(username: string) {
+	const list = getHistory().filter((u) => u !== username);
+	list.unshift(username);
+	localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 5)));
+}
+
+function removeFromHistory(username: string) {
+	const list = getHistory().filter((u) => u !== username);
+	localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+}
+
 function CashierLoginForm() {
 	const [isLoading, setIsLoading] = useState(false);
+	const [history, setHistory] = useState<string[]>([]);
 	const router = useRouter();
+
+	const form = useForm<LoginFormValues>({
+		resolver: zodResolver(loginSchema),
+		defaultValues: { username: "", password: "" },
+	});
+
+	useEffect(() => {
+		setHistory(getHistory());
+	}, []);
+
+	const refreshHistory = () => setHistory(getHistory());
 
 	const handleSubmit = async (values: LoginFormValues) => {
 		setIsLoading(true);
 		try {
-			const response = await authApi.cashierLogin(values.email, values.password);
+			const response = await authApi.cashierLogin(values.username, values.password);
+			saveToHistory(values.username);
+			refreshHistory();
 			toast.success(response.message || "Login berhasil");
 			await new Promise((resolve) => setTimeout(resolve, 300));
 			router.push("/cashier/pos");
 		} catch (err: any) {
-			const msg = err.response?.data?.message || err.message || "Gagal login, periksa email dan password Anda";
+			const msg = err.response?.data?.message || err.message || "Gagal login, periksa username dan password Anda";
 			toast.error(msg);
-			throw err; // Propagate to ReusableForm for root error handling
+			throw err;
 		} finally {
 			setIsLoading(false);
 		}
+	};
+
+	const handleSelectUser = (username: string) => {
+		form.setValue("username", username);
+		setTimeout(() => form.setFocus("password"), 50);
+	};
+
+	const handleRemoveUser = (e: React.MouseEvent, username: string) => {
+		e.stopPropagation();
+		removeFromHistory(username);
+		refreshHistory();
 	};
 
 	return (
@@ -107,12 +157,48 @@ function CashierLoginForm() {
 
 				<Card className="w-full max-w-[440px] border-border/80 shadow-2xl rounded-xl overflow-hidden bg-background/80 backdrop-blur-xl">
 					<div className="p-8 sm:p-10">
-						<div className="space-y-2 mb-10 text-center sm:text-left">
+						<div className="space-y-2 mb-8 text-center sm:text-left">
 							<h2 className="text-3xl font-bold tracking-tight text-foreground">Selamat Datang</h2>
 							<p className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-60">Silakan login untuk memulai shift.</p>
 						</div>
 
+						{history.length > 0 && (
+							<div className="mb-6">
+								<div className="flex items-center gap-1.5 mb-3">
+									<History className="h-3 w-3 text-muted-foreground/60" />
+									<span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60">Login terakhir</span>
+								</div>
+								<div className="flex flex-wrap gap-2">
+									{history.map((u) => (
+										<button
+											key={u}
+											type="button"
+											onClick={() => handleSelectUser(u)}
+											className={cn(
+												"group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium",
+												"bg-muted/50 border border-border/40 hover:bg-primary/10 hover:border-primary/30",
+												"transition-all duration-150"
+											)}
+										>
+											<User className="h-3 w-3 text-muted-foreground group-hover:text-primary" />
+											<span className="text-foreground/80 group-hover:text-foreground">{u}</span>
+											<span
+												role="button"
+												tabIndex={0}
+												onClick={(e) => handleRemoveUser(e, u)}
+												onKeyDown={(e) => e.key === "Enter" && handleRemoveUser(e as unknown as React.MouseEvent, u)}
+												className="ml-0.5 p-0.5 rounded-full text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
+											>
+												<X className="h-3 w-3" />
+											</span>
+										</button>
+									))}
+								</div>
+							</div>
+						)}
+
 						<ReusableForm<LoginFormValues>
+							form={form}
 							schema={loginSchema}
 							onSubmit={handleSubmit}
 							isLoading={isLoading}
@@ -120,11 +206,11 @@ function CashierLoginForm() {
 							loadingText="MEMPROSES..."
 							fields={[
 								{
-									name: "email",
-									label: "Email Pegawai",
-									type: "email",
-									placeholder: "nama@outlet.com",
-									icon: Mail,
+									name: "username",
+									label: "Username",
+									type: "text",
+									placeholder: "Masukkan username",
+									icon: User,
 								},
 								{
 									name: "password",
@@ -134,17 +220,7 @@ function CashierLoginForm() {
 									icon: Lock,
 								},
 							]}
-						>
-							{/* ReusableForm handles the children if we don't provide them, 
-							    but we can also use children for custom layout. 
-							    However, passing fields is cleaner for simple forms. */}
-						</ReusableForm>
-
-						<div className="mt-10 pt-10 border-t border-border/40 text-center">
-							<p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-40 leading-relaxed">
-								Butuh bantuan? Hubungi Manager atau Owner outlet Anda.
-							</p>
-						</div>
+						/>
 					</div>
 				</Card>
 			</div>

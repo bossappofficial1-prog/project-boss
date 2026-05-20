@@ -238,7 +238,7 @@ model Staff {
   id                  String             @id @default(uuid())
   name                String
   phone               String?
-  email               String?            @unique
+  username            String?            @unique
   password            String
   status              StaffStatus        @default(ACTIVE)
   outletId            String
@@ -251,7 +251,7 @@ model Staff {
   ticketCodesRedeemed TicketCode[]
 
   @@index([outletId])
-  @@index([email])
+  @@index([username])
 }
 
 model Product {

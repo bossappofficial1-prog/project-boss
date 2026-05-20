@@ -16,11 +16,11 @@ export class StaffRepository {
 
     const existingStaff = await db.staff.findFirst({
       where: {
-        email: staffData.email,
+        username: staffData.username,
       },
     });
     if (existingStaff) {
-      throw new AppError("Email sudah terdaftar dengan akun lain.", HttpStatus.CONFLICT);
+      throw new AppError("Username sudah terdaftar dengan akun lain.", HttpStatus.CONFLICT);
     }
 
     return db.staff.create({
@@ -64,9 +64,9 @@ export class StaffRepository {
     });
   }
 
-  static async findByEmail(email: string) {
+  static async findByUsername(username: string) {
     return db.staff.findUnique({
-      where: { email },
+      where: { username },
       include: {
         outlet: {
           include: {

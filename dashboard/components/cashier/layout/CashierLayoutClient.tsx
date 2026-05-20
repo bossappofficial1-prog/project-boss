@@ -173,6 +173,7 @@ export default function CashierLayoutClient({ children }: { children: React.Reac
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
               <CashierNavbar 
                 cashierName={cashierData.name} 
+                cashierUsername={cashierData.username}
                 outletName={outletData.name} 
                 outletType={outletData.type} 
               />

@@ -78,7 +78,7 @@ export class CashierShiftRepository {
       },
       orderBy: { openedAt: "desc" },
       include: {
-        staff: { select: { id: true, name: true, email: true } },
+        staff: { select: { id: true, name: true, username: true } },
         cashMovements: true,
       },
       take: 200,

@@ -80,9 +80,7 @@ export default function StaffManagementPage() {
 
       const finalPayload = {
         ...payload,
-        email: payload.email
-          ? `${payload.email}${payload.domain || "@bossapp.id"}`
-          : payload.email,
+        username: payload.username ? `${payload.username}` : payload.username,
       };
 
       if (modalMode === "create") {
@@ -139,22 +137,16 @@ export default function StaffManagementPage() {
 
   if (!selectedOutlet)
     return (
-      <EmptyOutletState
-        onAddOutlet={() => router.push("/owner#add-outlet")}
-      />
+      <EmptyOutletState onAddOutlet={() => router.push("/owner#add-outlet")} />
     );
 
   return (
     <div className="space-y-4 pb-12 animate-fade-in">
-
       <SectionHeader
         title="Kelola Kasir"
         description={`Atur petugas kasir untuk ${outletName}. Kelola akses masuk mereka ke sistem Point of Sale (POS).`}
         actions={
-          <Button
-            type="button"
-            onClick={handleOpenCreate}
-          >
+          <Button type="button" onClick={handleOpenCreate}>
             <UserPlus className="h-4 w-4" /> Tambah Kasir Baru
           </Button>
         }

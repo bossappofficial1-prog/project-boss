@@ -61,11 +61,9 @@ export const resetPasswordSchema = z.object({
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export const cashierLoginSchema = z.object({
-    email: z
+    username: z
         .string()
-        .nonempty({ message: "Email tidak boleh kosong" })
-        .email({ message: "Email tidak valid" })
-        .transform(str => str.toLowerCase()),
+        .nonempty({ message: "Username tidak boleh kosong" }),
     password: z
         .string()
         .nonempty({ message: "Password tidak boleh kosong" }),

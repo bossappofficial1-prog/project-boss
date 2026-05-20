@@ -7,7 +7,7 @@ export interface StaffMember {
     id: string;
     name: string;
     phone?: string | null;
-    email?: string | null;
+    username?: string | null;
     address?: string | null;
     notes?: string | null;
     status: StaffStatus;
@@ -20,7 +20,7 @@ export interface StaffMember {
 export interface CreateStaffPayload {
     name: string;
     phone?: string | null;
-    email?: string | null;
+    username?: string | null;
     address?: string | null;
     notes?: string | null;
     role: StaffRole;
@@ -32,7 +32,7 @@ export interface CreateStaffPayload {
 export interface UpdateStaffPayload {
     name?: string;
     phone?: string | null;
-    email?: string | null;
+    username?: string | null;
     address?: string | null;
     notes?: string | null;
     role?: StaffRole;
@@ -44,7 +44,7 @@ export interface StaffAvailability {
     id: string;
     name: string;
     phone?: string | null;
-    email?: string | null;
+    username?: string | null;
     status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
     role: string;
     isAvailable: boolean;

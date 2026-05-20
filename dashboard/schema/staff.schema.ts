@@ -16,9 +16,8 @@ export const staffSchema = z
                 'Nomor telepon tidak valid'
             ),
 
-        email: z
+        username: z
             .string()
-            .email('Email tidak valid')
             .optional(),
 
         role: StaffRoleEnum,
@@ -41,12 +40,12 @@ export const staffSchema = z
         const isCashier = data.role === 'CASHIER';
 
         // =====================
-        // EMAIL VALIDATION
+        // USERNAME VALIDATION
         // =====================
-        if (isCashier && !data.email) {
+        if (isCashier && !data.username) {
             ctx.addIssue({
-                path: ['email'],
-                message: 'Email wajib diisi untuk kasir',
+                path: ['username'],
+                message: 'Username wajib diisi untuk kasir',
                 code: z.ZodIssueCode.custom,
             });
         }

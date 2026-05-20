@@ -82,8 +82,7 @@ export class AuthService extends BaseService {
   }
 
   static async cashierLogin(data: CashierLoginInput) {
-    const staff = await StaffRepository.findByEmail(data.email);
-
+    const staff = await StaffRepository.findByUsername(data.username);
     if (!staff) {
       this.unauthorized(Messages.INVALID_CREDENTIALS);
     }
@@ -107,7 +106,7 @@ export class AuthService extends BaseService {
     // Simpan session kasir di Redis
     const staffSession = {
       id: staff.id,
-      email: staff.email,
+      username: staff.username,
       name: staff.name,
       outletId: staff.outletId,
       businessId: staff.outlet?.businessId,

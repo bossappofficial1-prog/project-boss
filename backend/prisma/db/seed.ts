@@ -295,7 +295,7 @@ async function main() {
     db.staff.create({
       data: {
         name: "Siti Rahayu",
-        email: "siti@warung.id",
+        username: "siti@warung.id",
         password: await hash("staff123", 10),
         phone: "08112345001",
         outletId: outletFnb.id,
@@ -305,7 +305,7 @@ async function main() {
     db.staff.create({
       data: {
         name: "Andi Pratama",
-        email: "andi@warung.id",
+        username: "andi@warung.id",
         password: await hash("staff123", 10),
         phone: "08112345002",
         outletId: outletFnb.id,
@@ -318,7 +318,7 @@ async function main() {
     db.staff.create({
       data: {
         name: "Dewi Lestari",
-        email: "dewi@toko.id",
+        username: "dewi@toko.id",
         password: await hash("staff123", 10),
         phone: "08112345003",
         outletId: outletRetail.id,
@@ -328,7 +328,7 @@ async function main() {
     db.staff.create({
       data: {
         name: "Roni Susanto",
-        email: "roni@toko.id",
+        username: "roni@toko.id",
         password: await hash("staff123", 10),
         phone: "08112345004",
         outletId: outletRetail.id,

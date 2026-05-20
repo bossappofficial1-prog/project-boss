@@ -101,7 +101,7 @@ export default function OwnerCashierShiftsPage() {
                   {row.original.staff?.name ?? "-"}
                 </span>
                 <span className="text-[10px] text-muted-foreground/60 truncate max-w-[220px]">
-                  {row.original.staff?.email ?? ""}
+                  {row.original.staff?.username ?? ""}
                 </span>
               </div>
             ),

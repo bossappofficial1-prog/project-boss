@@ -18,9 +18,8 @@ export const staffSchema = z.object({
     .nullable()
     .or(z.literal("")), // Menangani string kosong dari form
 
-  email: z
+  username: z
     .string()
-    .email("Format email tidak valid")
     .optional()
     .nullable()
     .or(z.literal("")),

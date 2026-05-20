@@ -38,7 +38,7 @@ export async function getStaffAvailabilityForWindow({
       id: true,
       name: true,
       phone: true,
-      email: true,
+      username: true,
       status: true,
     },
     orderBy: { name: "asc" },
@@ -67,7 +67,7 @@ export async function getStaffAvailabilityForWindow({
     id: staff.id,
     name: staff.name,
     phone: staff.phone,
-    email: staff.email,
+    username: staff.username,
     status: staff.status,
     conflicts: [], // No longer tracking individual conflicts, just availability
     isAvailable: !busyStaffIds.has(staff.id),

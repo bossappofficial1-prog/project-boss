@@ -5,15 +5,15 @@ export const authApi = {
     '/auth/me'
   ),
   
-  cashierLogin: (email: string, password: string) => apiCall<{ staff: { id: string; email: string; name: string; role: string; outletId: string; }; message: string; }>(
+  cashierLogin: (username: string, password: string) => apiCall<{ staff: { id: string; username: string; name: string; role: string; outletId: string; }; message: string; }>(
     '/auth/cashier/login',
     {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, password }),
     }
   ),
   
-  cashierMe: () => apiCall<{ id: string; email: string; name: string; role: string; outletId: string; outlet?: { id: string; name: string; address?: string; phone?: string; }; }>(
+  cashierMe: () => apiCall<{ id: string; username: string; name: string; role: string; outletId: string; outlet?: { id: string; name: string; address?: string; phone?: string; }; }>(
     '/auth/cashier/me'
   ),
 };
