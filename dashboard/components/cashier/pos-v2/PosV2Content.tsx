@@ -388,7 +388,7 @@ export function PosV2Content() {
             className={`flex flex-col rounded-md border border-border/60 overflow-hidden bg-card lg:sticky lg:top-3 ${mobileView === "catalog" ? "flex" : "hidden lg:flex"}`}
             style={{ height: "calc(100svh - 6.25rem)" }}
           >
-            <div className="flex shrink-0 border-b border-border/40 bg-muted/20">
+            <div className="flex shrink-0 border-b border-border/40 bg-muted/20" data-guide="pos-left-tabs">
               <button
                 onClick={() => setLeftTab("catalog")}
                 className={`flex flex-1 items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold transition-colors ${leftTab === "catalog" ? "border-b-2 border-primary bg-background text-primary" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"}`}
@@ -438,7 +438,7 @@ export function PosV2Content() {
           </div>
 
           {/* RIGHT: Cart panel */}
-          <div
+          <div data-guide="pos-cart"
             className={`flex flex-col rounded-md border border-border/60 overflow-hidden bg-card lg:sticky lg:top-3 ${mobileView === "cart" ? "flex" : "hidden lg:flex"}`}
             style={{ height: "calc(100svh - 6.25rem)" }}
           >
@@ -476,6 +476,7 @@ export function PosV2Content() {
                         <ReceiptText className="h-4 w-4 text-primary" />
                         Pelanggan & Pembayaran
                       </p>
+                      <div data-guide="pos-customer">
                       <CustomerInfo
                         outletId={outletId} isWalkIn={isWalkIn} onWalkInChange={setIsWalkIn}
                         name={customerName} onNameChange={setCustomerName}
@@ -487,13 +488,16 @@ export function PosV2Content() {
                         onTableNumberChange={setTableNumber} tableId={tableId}
                         onTableIdChange={setTableId}
                       />
+                      </div>
                       <Separator className="bg-border/60" />
+                      <div data-guide="pos-payment">
                       <PaymentSection
                         method={paymentMethod} onMethodChange={setPaymentMethod}
                         total={grandTotal} cashReceived={cashReceived}
                         onCashReceivedChange={setCashReceived}
                         qrisImageUrl={outletQris?.qrisImageUrl} isLoadingQris={qrisLoading}
                       />
+                      </div>
                     </div>
                   </>
                 )}
@@ -501,7 +505,7 @@ export function PosV2Content() {
             </div>
 
             {/* Pinned bottom — desktop only */}
-            <div className="hidden lg:block shrink-0 space-y-2 border-t border-border/60 bg-background p-3">
+            <div className="hidden lg:block shrink-0 space-y-2 border-t border-border/60 bg-background p-3" data-guide="pos-submit">
               {showValidationHint && (
                 <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />

@@ -1,5 +1,6 @@
 import CashierLayoutClient from "@/components/cashier/layout/CashierLayoutClient";
 import { Metadata } from "next";
+import { FeatureGuideProvider } from "@/components/guides/FeatureGuideProvider";
 
 export const metadata: Metadata = {
   title: "Sistem Kasir | BOSS",
@@ -16,5 +17,9 @@ export const metadata: Metadata = {
 };
 
 export default function CashierLayout({ children }: { children: React.ReactNode }) {
-  return <CashierLayoutClient>{children}</CashierLayoutClient>;
+  return (
+    <FeatureGuideProvider>
+      <CashierLayoutClient>{children}</CashierLayoutClient>
+    </FeatureGuideProvider>
+  );
 }

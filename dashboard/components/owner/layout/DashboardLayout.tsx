@@ -11,6 +11,7 @@ import { type UserRole } from "@/lib/auth";
 import Loading from "../../ui/loading";
 import { CommandSearch } from "../../ui/command-search";
 import { useRouter } from "next/navigation";
+import { FeatureGuideOverlay } from "@/components/guides/FeatureGuideOverlay";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -77,29 +78,32 @@ export default function DashboardLayout({
   if (!mounted || isLoading) return <Loading />;
 
   return (
-    <OutletProvider>
-      <SidebarProvider defaultOpen={true}>
-        <Sidebar />
-        <SidebarInset className="flex flex-col flex-1">
-          <Header />
+    <>
+      <FeatureGuideOverlay />
+      <OutletProvider>
+        <SidebarProvider defaultOpen={true}>
+          <Sidebar />
+          <SidebarInset className="flex flex-col flex-1">
+            <Header />
 
-          {/* Main Content with Responsive Padding */}
-          <main className="flex-1 overflow-auto bg-muted/50">
-            <div className="w-full mx-auto max-w-400 p-4 md:p-6">
-              {children}
-            </div>
-          </main>
-        </SidebarInset>
+            {/* Main Content with Responsive Padding */}
+            <main className="flex-1 overflow-auto bg-muted/50">
+              <div className="w-full mx-auto max-w-400 p-4 md:p-6">
+                {children}
+              </div>
+            </main>
+          </SidebarInset>
 
-        <Toaster
-          position="top-right"
-          richColors
-          toastOptions={{
-            duration: 5000,
-          }}
-        />
-        <CommandSearch open={commandOpen} setOpen={setCommandOpen} />
-      </SidebarProvider>
-    </OutletProvider>
+          <Toaster
+            position="top-right"
+            richColors
+            toastOptions={{
+              duration: 5000,
+            }}
+          />
+          <CommandSearch open={commandOpen} setOpen={setCommandOpen} />
+        </SidebarProvider>
+      </OutletProvider>
+    </>
   );
 }

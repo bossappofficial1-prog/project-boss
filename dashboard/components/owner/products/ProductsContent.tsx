@@ -321,6 +321,7 @@ export default function ProductsContent() {
     <>
       <div className="space-y-6">
         {/* Header */}
+        <div data-guide="products-header">
         <SectionHeader
           title="Produk & Jasa"
           description={`Kelola inventaris barang, layanan jasa, dan tiket event untuk ${currentOutletName}`}
@@ -359,6 +360,7 @@ export default function ProductsContent() {
             </div>
           }
         />
+        </div>
 
         {/* Error */}
         {error && (
@@ -384,7 +386,7 @@ export default function ProductsContent() {
         )}
 
         {/* Overview Cards */}
-        <div className={cn("grid gap-4",
+        <div data-guide="products-overview" className={cn("grid gap-4",
           cards.length === 1 ? "grid-cols-1" : "grid-cols-2",
           cards.length === 1 ? "sm:grid-cols-1" :
             cards.length === 2 ? "sm:grid-cols-2" :
@@ -409,6 +411,7 @@ export default function ProductsContent() {
           value={activeTab}
           onValueChange={setActiveTab}
           className="space-y-4"
+          data-guide="products-tabs"
         >
           <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1">
             <TabsTrigger value="all">Semua</TabsTrigger>
@@ -716,7 +719,7 @@ export default function ProductsContent() {
                 />
               </TabsContent>
             ))}
-          <TabsContent value="categories" className="mt-3">
+          <TabsContent value="categories" className="mt-3" data-guide="products-categories">
             {selectedOutlet ? (
               <CategoryManager outletId={selectedOutlet} />
             ) : (

@@ -1,26 +1,28 @@
-import DashboardLayout from '@/components/owner/layout/DashboardLayout';
-import { Metadata } from 'next';
-import OutletTypeChecker from '@/components/owner/layout/OutletTypeChecker';
+import DashboardLayout from "@/components/owner/layout/DashboardLayout";
+import { Metadata } from "next";
+import OutletTypeChecker from "@/components/owner/layout/OutletTypeChecker";
+import { FeatureGuideProvider } from "@/components/guides/FeatureGuideProvider";
 
 export const metadata: Metadata = {
-    title: "Owner Dashboard | BOSS",
-    description: "Pantau performa bisnis, outlet, dan transaksi Anda secara real-time.",
-    robots: {
-        index: true,
-        follow: true,
-    },
+  title: "Owner Dashboard | BOSS",
+  description:
+    "Pantau performa bisnis, outlet, dan transaksi Anda secara real-time.",
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function OwnerLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return (
-        <DashboardLayout requiredRole="OWNER">
-            <OutletTypeChecker>
-                {children}
-            </OutletTypeChecker>
-        </DashboardLayout>
-    );
+  return (
+    <FeatureGuideProvider>
+      <DashboardLayout requiredRole="OWNER">
+        <OutletTypeChecker>{children}</OutletTypeChecker>
+      </DashboardLayout>
+    </FeatureGuideProvider>
+  );
 }

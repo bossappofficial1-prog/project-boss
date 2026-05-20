@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { SocketCashierProvider } from "@/contexts/SocketCashierContext";
 import { PrinterProvider } from "@/contexts/PrinterContext";
+import { FeatureGuideOverlay } from "@/components/guides/FeatureGuideOverlay";
 
 const CASHIER_SESSION_CACHE_KEY = "cashier-auth-cache-v1";
 
@@ -34,7 +35,11 @@ export function useCashierContext() {
   return context;
 }
 
-export default function CashierLayoutClient({ children }: { children: React.ReactNode }) {
+export default function CashierLayoutClient({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -90,7 +95,10 @@ export default function CashierLayoutClient({ children }: { children: React.Reac
     if (!cashierData || typeof window === "undefined") return;
 
     try {
-      sessionStorage.setItem(CASHIER_SESSION_CACHE_KEY, JSON.stringify(cashierData));
+      sessionStorage.setItem(
+        CASHIER_SESSION_CACHE_KEY,
+        JSON.stringify(cashierData),
+      );
     } catch {
       // ignore session storage failures
     }
@@ -120,15 +128,23 @@ export default function CashierLayoutClient({ children }: { children: React.Reac
         </div>
 
         <div className="flex flex-col items-center gap-1">
-          <span className="text-lg font-semibold tracking-tight text-foreground">Sistem Kasir</span>
-          <span className="text-sm text-muted-foreground">Memuat data kasir...</span>
+          <span className="text-lg font-semibold tracking-tight text-foreground">
+            Sistem Kasir
+          </span>
+          <span className="text-sm text-muted-foreground">
+            Memuat data kasir...
+          </span>
         </div>
 
         <div className="h-1 w-40 overflow-hidden rounded-full bg-muted">
           <div className="h-full w-full animate-[loading_1.5s_ease-in-out_infinite] rounded-full bg-primary" />
         </div>
 
-        <Toaster position="top-right" richColors toastOptions={{ duration: 5000 }} />
+        <Toaster
+          position="top-right"
+          richColors
+          toastOptions={{ duration: 5000 }}
+        />
       </div>
     );
   }
@@ -166,23 +182,26 @@ export default function CashierLayoutClient({ children }: { children: React.Reac
   }
 
   return (
-    <SocketCashierProvider outletId={outletData.id}>
-      <CashierOutletProvider outlet={outletData}>
-        <CashierContext.Provider value={{ cashierData, outletData }}>
-          <PrinterProvider>
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-              <CashierNavbar 
-                cashierName={cashierData.name} 
-                cashierUsername={cashierData.username}
-                outletName={outletData.name} 
-                outletType={outletData.type} 
-              />
-              <main>{children}</main>
-            </div>
-            <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
-          </PrinterProvider>
-        </CashierContext.Provider>
-      </CashierOutletProvider>
-    </SocketCashierProvider>
+    <>
+      <FeatureGuideOverlay />
+      <SocketCashierProvider outletId={outletData.id}>
+        <CashierOutletProvider outlet={outletData}>
+          <CashierContext.Provider value={{ cashierData, outletData }}>
+            <PrinterProvider>
+              <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+                <CashierNavbar
+                  cashierName={cashierData.name}
+                  cashierUsername={cashierData.username}
+                  outletName={outletData.name}
+                  outletType={outletData.type}
+                />
+                <main>{children}</main>
+              </div>
+              <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
+            </PrinterProvider>
+          </CashierContext.Provider>
+        </CashierOutletProvider>
+      </SocketCashierProvider>
+    </>
   );
 }

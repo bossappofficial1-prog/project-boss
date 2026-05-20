@@ -178,6 +178,7 @@ model Outlet {
   suppliers                 Supplier[]
   transactionDeleteRequests TransactionDeleteRequest[]
   productCategories         ProductCategory[]
+  attendances               Attendance[]
 
   @@index([businessId])
   @@index([slug])
@@ -252,6 +253,7 @@ model Staff {
   outlet                    Outlet                     @relation(fields: [outletId], references: [id], onDelete: Cascade)
   ticketCodesRedeemed       TicketCode[]
   transactionDeleteRequests TransactionDeleteRequest[]
+  attendances               Attendance[]
 
   @@index([outletId])
   @@index([username])
@@ -937,6 +939,27 @@ enum TransferStatus {
   ACCEPTED
   REJECTED
   CANCELLED
+}
+
+model Attendance {
+  id        String    @id @default(uuid())
+  staffId   String
+  outletId  String
+  clockIn   DateTime  @default(now())
+  clockOut  DateTime?
+  date      DateTime
+  notes     String?
+  clockInLat    Float?
+  clockInLng    Float?
+  clockOutLat   Float?
+  clockOutLng   Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  outlet    Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date])
+  @@index([outletId, date])
 }
 
 enum DeleteRequestStatus {

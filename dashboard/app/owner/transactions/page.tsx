@@ -23,6 +23,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useExportTransactionReport } from "@/hooks/use-export-transaction-report";
 import { SectionHeader } from "@/components/ui/section-header";
+import { PageGuide } from "@/components/guides/PageGuide";
 import { ExpensesControls } from "@/components/owner/expenses/Controls";
 import {
   Dialog,
@@ -157,6 +158,60 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
+      <PageGuide
+        id="owner-transactions"
+        runOnceKey="owner-transactions-guide"
+        steps={[
+          {
+            id: "welcome",
+            title: "Riwayat Transaksi",
+            description: "Pantau arus kas bisnis Anda. Lihat pemasukan, pengeluaran, filter data, dan ekspor laporan.",
+            target: "body",
+            placement: "bottom",
+          },
+          {
+            id: "export",
+            title: "Export Laporan",
+            description: "Klik Export PDF untuk mengunduh laporan transaksi dalam rentang tanggal tertentu.",
+            target: "[data-guide='transactions-header']",
+            placement: "bottom",
+            offset: 12,
+          },
+          {
+            id: "summary",
+            title: "Ringkasan Keuangan",
+            description: "Total pemasukan (hijau), pengeluaran (merah), dan saldo bersih — plus filter rentang tanggal.",
+            target: "[data-guide='transactions-summary']",
+            placement: "bottom",
+            offset: 8,
+          },
+          {
+            id: "search",
+            title: "Cari & Filter",
+            description: "Cari transaksi berdasarkan ID atau deskripsi. Filter berdasarkan tipe, outlet, atau status.",
+            target: "input[placeholder='Cari transaksi (ID, Deskripsi)...']",
+            placement: "bottom",
+            offset: 8,
+          },
+          {
+            id: "table",
+            title: "Tabel Transaksi",
+            description: "Kolom: tanggal, tipe, deskripsi, outlet, metode bayar, jumlah, pajak, dan status. Klik header untuk urutkan.",
+            target: "[data-guide='transactions-table']",
+            placement: "top",
+            offset: 8,
+          },
+          {
+            id: "export-csv",
+            title: "Export & Paginasi",
+            description: "Export data ke CSV, atur jumlah baris per halaman, atau navigasi halaman transaksi.",
+            target: "[data-guide='transactions-table'] [role='region']",
+            placement: "top",
+            offset: 4,
+          },
+        ]}
+      />
+      <div data-guide="transactions-header">
       <SectionHeader
         title="Riwayat Transaksi"
         description="Pantau arus kas masuk dan keluar bisnis Anda secara real-time."
@@ -170,8 +225,9 @@ export default function TransactionsPage() {
           </Button>
         }
       />
+      </div>
 
-      <Card className="rounded-md border-border/80 bg-background shadow-sm p-1 pl-4 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+      <Card data-guide="transactions-summary" className="rounded-md border-border/80 bg-background shadow-sm p-1 pl-4 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-8 py-2 overflow-x-auto no-scrollbar">
           {/* Pemasukan */}
           <div className="flex items-center gap-3 shrink-0">
@@ -294,6 +350,7 @@ export default function TransactionsPage() {
         </div>
       </div>
 
+      <div data-guide="transactions-table">
       <DataTable
         isLoading={isLoading}
         isRefreshing={isFetching && !isLoading}
@@ -439,6 +496,7 @@ export default function TransactionsPage() {
           },
         ]}
       />
+      </div>
 
       {/* ══════════ Export PDF Dialog ══════════ */}
       <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>

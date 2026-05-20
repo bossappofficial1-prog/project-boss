@@ -8,7 +8,7 @@ import {
     hasGuideBeenSeen,
     StartGuidePayload,
     useFeatureGuideContext,
-} from "@/providers/FeatureGuideProvider";
+} from "@/components/guides/FeatureGuideProvider";
 
 export type UseFeatureGuideConfig = {
     id: string;

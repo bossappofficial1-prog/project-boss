@@ -229,6 +229,13 @@ export const MENU_GROUPS: MenuGroup[] = [
         requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
       },
       {
+        id: "laporan-absensi",
+        name: "Laporan Absensi",
+        href: "/owner/laporan-absensi",
+        icon: ClipboardList,
+        requiredTypes: [OutletType.FNB, OutletType.RETAIL, OutletType.SERVICE],
+      },
+      {
         id: "expenses",
         name: "Pengeluaran",
         href: "/owner/expenses",

@@ -14,8 +14,7 @@ import OutletsSection from "@/components/owner/dashboard/OutletsSection";
 import { PageSkeleton } from "@/components/owner/dashboard/Skeletons";
 import { useAutlet } from "@/hooks/use-outlet";
 import { Card } from "@/components/ui/card";
-
-
+import { PageGuide } from "@/components/guides/PageGuide";
 
 export default function DashboardPage() {
   const { stats, business, outlets, selectedOutlet, isLoading, globalError, refetch } =
@@ -74,6 +73,44 @@ export default function DashboardPage() {
 
   return (
     <>
+      <PageGuide
+        id="owner-dashboard"
+        runOnceKey="owner-guide-seen"
+        steps={[
+          {
+            id: "welcome",
+            title: "Dashboard Owner",
+            description: "Pusat kendali bisnis Anda. Pantau metrik utama, kelola outlet, dan akses fitur bisnis dengan cepat.",
+            target: "body",
+            placement: "bottom",
+          },
+          {
+            id: "business",
+            title: "Profil Bisnis",
+            description: "Edit nama, deskripsi bisnis, dan atur rekening bank untuk pencairan dana penjualan.",
+            target: "[data-guide='dashboard-business']",
+            placement: "bottom",
+            offset: 8,
+          },
+          {
+            id: "stats",
+            title: "Ringkasan Metrik",
+            description: "Total produk, pendapatan hari ini, pesanan aktif — lihat kesehatan bisnis Anda sekilas.",
+            target: "[data-guide='dashboard-stats']",
+            placement: "top",
+            offset: 8,
+          },
+          {
+            id: "outlets",
+            title: "Manajemen Outlet",
+            description: "Daftar semua outlet: toggle buka/tutup, edit data, tambah outlet baru, atau hapus.",
+            target: "[data-guide='dashboard-outlets']",
+            placement: "top",
+            offset: 8,
+          },
+        ]}
+      />
+
       <div className="space-y-3 animate-fade-in-up">
         {globalError && (
           <div className="flex items-center gap-3 rounded-md border border-red-200 bg-red-500/5 p-4 text-red-700 shadow-sm animate-shake">
@@ -88,11 +125,13 @@ export default function DashboardPage() {
 
         {/* Business Profile Section */}
         {business ? (
+          <div data-guide="dashboard-business">
           <BusinessProfileCard
             business={business}
             onEditBusiness={() => setShowBusinessModal(true)}
             onEditBank={() => setShowBankModal(true)}
           />
+          </div>
         ) : (
           <Card className="rounded-md overflow-hidden border-2 border-dashed border-red-200 bg-red-500/5 p-6 sm:p-8 animate-fade-in group hover:bg-red-500/10 transition-colors">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -117,9 +156,12 @@ export default function DashboardPage() {
         )}
 
         {/* Main Stats Cards */}
-        <StatsCards stats={stats} />
+        <div data-guide="dashboard-stats">
+          <StatsCards stats={stats} />
+        </div>
 
         {/* Outlets Section */}
+        <div data-guide="dashboard-outlets">
         <OutletsSection
           onToggleOutletActive={async (outlet) => {
             await updateStatusOutletMutate({ outletId: outlet.id, status: !outlet.isOpen })
@@ -131,6 +173,7 @@ export default function DashboardPage() {
           onDeleteOutlet={handleDeleteOutlet}
           isLoading={isLoading}
         />
+        </div>
 
         {/* Bank owner info empty card if business exists but no bank */}
         {business && !(business.bankName && business.bankAccount) && (

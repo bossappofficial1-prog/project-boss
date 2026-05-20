@@ -177,7 +177,7 @@ export function ProductCatalog({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" data-guide="product-catalog">
       {/* Search + Filter */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">

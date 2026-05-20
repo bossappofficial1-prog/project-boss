@@ -68,7 +68,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-300 dark:border-gray-600 bg-background/60 backdrop-blur-lg px-4 lg:px-6">
+    <header data-guide="owner-header" className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-300 dark:border-gray-600 bg-background/60 backdrop-blur-lg px-4 lg:px-6">
       {/* Left Section - Sidebar Toggle */}
       <div className="flex items-center gap-2">
         {/* Mobile Toggle */}
