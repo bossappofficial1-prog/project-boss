@@ -29,7 +29,6 @@ export function CategoryManager({ outletId }: { outletId: string }) {
     queryKey: ["product-categories", outletId],
     queryFn: () => productCategoryApi.listByOutlet(outletId),
     enabled: !!outletId,
-    staleTime: 5 * 60_000,
   });
 
   const createMutation = useMutation({
@@ -174,9 +173,10 @@ export function CategoryManager({ outletId }: { outletId: string }) {
         onOpenChange={(o) => !o && setDeleteTarget(null)}
         title="Hapus Kategori"
         description={`Yakin ingin menghapus kategori "${deleteTarget?.name}"? Produk dalam kategori ini tidak akan terhapus.`}
-        confirmText="Hapus"
+        confirmLabel="Hapus"
+        confirmVariant="destructive"
         onConfirm={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget.id); }}
-        isLoading={deleteMutation.isPending}
+        confirmLoading={deleteMutation.isPending}
       />
     </div>
   );
