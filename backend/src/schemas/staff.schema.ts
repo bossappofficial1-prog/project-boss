@@ -20,6 +20,9 @@ export const staffSchema = z.object({
 
   username: z
     .string()
+    .min(3, "Username minimal 3 karakter")
+    .max(30, "Username maksimal 30 karakter")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username hanya boleh huruf, angka, dan underscore")
     .optional()
     .nullable()
     .or(z.literal("")),

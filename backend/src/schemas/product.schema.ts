@@ -171,6 +171,7 @@ export const updateProductSchema = z
       description: z.string().optional(),
       status: z.nativeEnum(ServiceStatus).optional(),
       image: z.string().optional(),
+      categoryId: z.string().nullable().optional(),
       taxPercentage: z.number().min(0).nullable().optional(),
       taxName: z.string().optional(),
 
@@ -188,6 +189,7 @@ export const updateProductSchema = z
       description: z.string().optional(),
       status: z.nativeEnum(ServiceStatus).optional(),
       image: z.string().optional(),
+      categoryId: z.string().nullable().optional(),
       taxPercentage: z.number().min(0).nullable().optional(),
       taxName: z.string().optional(),
 
@@ -206,6 +208,7 @@ export const updateProductSchema = z
       description: z.string().optional(),
       status: z.nativeEnum(ServiceStatus).optional(),
       image: z.string().optional(),
+      categoryId: z.string().nullable().optional(),
       taxPercentage: z.number().min(0).nullable().optional(),
       taxName: z.string().optional(),
 

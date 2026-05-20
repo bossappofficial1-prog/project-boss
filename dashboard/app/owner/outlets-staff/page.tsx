@@ -80,7 +80,6 @@ export default function StaffManagementPage() {
 
       const finalPayload = {
         ...payload,
-        username: payload.username ? `${payload.username}` : payload.username,
       };
 
       if (modalMode === "create") {
@@ -98,8 +97,7 @@ export default function StaffManagementPage() {
       resetForm();
       await loadStaff();
     } catch (error) {
-      console.error("Failed to submit staff form", error);
-      toast.error((error as Error).message ?? "Gagal menyimpan data staff");
+      throw error;
     } finally {
       setIsSubmitting(false);
     }

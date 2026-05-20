@@ -30,6 +30,7 @@ export class ProductRepository {
           type: data.type,
           status: data.status,
           outletId: data.outletId,
+          categoryId: data.categoryId ?? null,
           image: data.image,
           taxPercentage: data.taxPercentage,
           taxName: data.taxName,
@@ -262,6 +263,7 @@ export class ProductRepository {
       ...(data.image !== undefined && { image: data.image }),
       ...(data.taxPercentage !== undefined && { taxPercentage: data.taxPercentage }),
       ...(data.taxName !== undefined && { taxName: data.taxName }),
+      ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
 
     };
 

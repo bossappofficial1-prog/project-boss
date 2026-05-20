@@ -118,18 +118,18 @@ export function StaffDialog({
       colSpan: "full",
     },
     {
-      name: "phone",
-      label: "Nomor Telepon",
-      type: `tel`,
-      placeholder: "08xx-xxxx-xxxx",
-      colSpan: 3,
-    },
-    {
       name: "username",
       label: "Username",
       type: `text`,
       placeholder: "eg: jono_backrie",
-      colSpan: 3,
+      colSpan: 4,
+    },
+    {
+      name: "phone",
+      label: "Nomor Telepon",
+      type: `tel`,
+      placeholder: "08xx-xxxx-xxxx",
+      colSpan: 2,
     },
     {
       name: "status",

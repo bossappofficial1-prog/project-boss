@@ -22,6 +22,11 @@ import { OutletType } from "@/types";
 
 type FilterType = "ALL" | "GOODS" | "SERVICE" | "TICKET";
 
+type CategoryOption = {
+  id: string;
+  name: string;
+};
+
 interface ProductCatalogProps {
   products: PosV2Product[];
   isLoading: boolean;
@@ -51,6 +56,7 @@ export function ProductCatalog({
   outletType = OutletType.CUSTOM,
 }: ProductCatalogProps) {
   const [filter, setFilter] = useState<FilterType>("ALL");
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [keyboardScanActive, setKeyboardScanActive] = useState(false);
   const [barcodeBuffer, setBarcodeBuffer] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -58,8 +64,20 @@ export function ProductCatalog({
   const videoRef = useRef<HTMLVideoElement>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
 
-  const filtered =
+  const byType =
     filter === "ALL" ? products : products.filter((p) => p.type === filter);
+
+  const filtered = categoryFilter
+    ? byType.filter((p) => p.category?.id === categoryFilter)
+    : byType;
+
+  const categories = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of products) {
+      if (p.category) map.set(p.category.id, p.category.name);
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [products]);
 
   const availableFilters = useMemo((): FilterType[] => {
     if (outletType === OutletType.RETAIL || outletType === OutletType.FNB)
@@ -68,6 +86,11 @@ export function ProductCatalog({
     if (outletType === OutletType.EVENT) return ["ALL", "TICKET"];
     return ["ALL", "GOODS", "SERVICE", "TICKET"];
   }, [outletType]);
+
+  const handleFilterChange = (f: FilterType) => {
+    setFilter(f);
+    setCategoryFilter(null);
+  };
 
   const canScanGoods = availableFilters.includes("GOODS");
 
@@ -169,7 +192,7 @@ export function ProductCatalog({
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5 sm:pb-0">
           {canScanGoods && (
             <>
-              <Button
+              {/* <Button
                 type="button"
                 size="sm"
                 variant={keyboardScanActive ? "default" : "outline"}
@@ -188,7 +211,7 @@ export function ProductCatalog({
               >
                 <Camera className="h-4 w-4" />
                 Scan Kamera
-              </Button>
+              </Button> */}
             </>
           )}
           {availableFilters.map((f) => (
@@ -196,7 +219,7 @@ export function ProductCatalog({
               key={f}
               size="sm"
               variant={filter === f ? "default" : "outline"}
-              onClick={() => setFilter(f)}
+              onClick={() => handleFilterChange(f)}
               className="shrink-0 font-semibold uppercase tracking-tight text-xs"
             >
               {FILTER_LABELS[f]}
@@ -204,6 +227,37 @@ export function ProductCatalog({
           ))}
         </div>
       </div>
+
+      {/* Category filter */}
+      {categories.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setCategoryFilter(null)}
+            className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              !categoryFilter
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            Semua
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setCategoryFilter(cat.id)}
+              className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                categoryFilter === cat.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Grid */}
       {isLoading ? (

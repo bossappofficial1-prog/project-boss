@@ -9,6 +9,7 @@ export type CreateProductPayload = {
   description?: string;
   type: 'GOODS' | 'SERVICE' | 'TICKET';
   status: 'ACTIVE' | 'INACTIVE';
+  categoryId?: string | null;
   taxPercentage?: number | null;
   taxName?: string;
   outletId: string;

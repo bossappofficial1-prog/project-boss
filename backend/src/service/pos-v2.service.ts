@@ -59,6 +59,7 @@ export class PosV2Service {
         image: p.image,
         type: p.type,
         status: p.status,
+        category: p.category ? { id: p.category.id, name: p.category.name } : null,
         taxPercentage: p.taxPercentage ?? null,
         taxName: p.taxName ?? null,
         price,

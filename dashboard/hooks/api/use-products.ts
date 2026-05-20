@@ -198,6 +198,7 @@ export function useProductFormSubmit({
         name: values.name,
         description: values.description || undefined,
         status: values.status,
+        categoryId: values.categoryId || null,
         taxPercentage: values.taxPercentage,
         taxName: values.taxName || undefined,
         image: uploadedImageUrl || (typeof values.file === "string" ? values.file : undefined),
