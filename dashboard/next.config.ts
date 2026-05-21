@@ -33,12 +33,12 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/owner/dashboard/outlets/manage',
-        destination: '/owner/outlets/manage',
+        destination: '/owner/outlets-manage',
         permanent: false,
       },
       {
         source: '/owner/dashboard/outlets/staff',
-        destination: '/owner/outlets/staff',
+        destination: '/owner/outlets-staff',
         permanent: false,
       },
       {

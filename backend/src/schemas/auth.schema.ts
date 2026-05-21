@@ -104,3 +104,15 @@ export const completeRegisterSchema = z.object({
 });
 
 export type CompleteRegisterValues = z.infer<typeof completeRegisterSchema>
+
+export const managerLoginSchema = z.object({
+    name: z
+        .string()
+        .nonempty({ message: "Nama tidak boleh kosong" }),
+    pin: z
+        .string()
+        .nonempty({ message: "PIN tidak boleh kosong" })
+        .min(4, { message: "PIN minimal 4 karakter" }),
+});
+
+export type ManagerLoginInput = z.infer<typeof managerLoginSchema>;

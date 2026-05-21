@@ -97,9 +97,9 @@ export const MENU_GROUPS: MenuGroup[] = [
         href: "/owner/outlets-manage",
       },
       {
-        id: "kelola-kasir",
+        id: "kelola-staff",
         icon: UsersIcon,
-        name: "Kelola Kasir",
+        name: "Kelola Staff",
         href: "/owner/outlets-staff",
       },
       {

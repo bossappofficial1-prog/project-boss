@@ -6,6 +6,7 @@ import {
   LoginInput,
   CashierLoginInput,
   CompleteRegisterValues,
+  ManagerLoginInput,
 } from "../schemas/auth.schema";
 import { BcryptUtil, CodeGeneratorUtil, JwtUtil } from "../utils";
 import {
@@ -133,6 +134,66 @@ export class AuthService extends BaseService {
 
     return {
       staff: staffWithoutPassword,
+      token,
+    };
+  }
+
+  static async managerLogin(data: ManagerLoginInput) {
+    const staff = await StaffRepository.findManagerByName(data.name);
+    if (!staff) {
+      this.unauthorized(Messages.INVALID_CREDENTIALS);
+    }
+
+    if (staff.role !== "MANAGER") {
+      this.unauthorized("Akun ini bukan akun Manager");
+    }
+
+    if (!staff.pin) {
+      this.forbidden("Akun manager belum diaktifkan. Hubungi owner untuk mengatur PIN.");
+    }
+
+    const isPinValid = await BcryptUtil.compare(data.pin, staff.pin);
+    if (!isPinValid) {
+      this.unauthorized(Messages.INVALID_CREDENTIALS);
+    }
+
+    const privileges = staff.privileges.map((p) => p.privilege);
+
+    const managerSession = {
+      id: staff.id,
+      name: staff.name,
+      email: staff.email,
+      outletId: staff.outletId,
+      businessId: staff.outlet?.businessId,
+      userType: "MANAGER",
+      role: "MANAGER",
+      privileges,
+    };
+
+    await redis.set(
+      `session:cashier:${staff.id}`,
+      JSON.stringify(managerSession),
+      "EX",
+      60 * 60 * 24,
+    );
+
+    const token = JwtUtil.generate({
+      sessionId: staff.id,
+      role: "MANAGER",
+      userType: "MANAGER",
+      outletId: staff.outletId,
+      businessId: staff.outlet?.businessId,
+      privileges,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, pin, ...staffWithoutSensitive } = staff;
+
+    return {
+      staff: {
+        ...staffWithoutSensitive,
+        privileges,
+      },
       token,
     };
   }

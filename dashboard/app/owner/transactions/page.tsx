@@ -38,14 +38,60 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ShieldAlert, Trash2 } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { authApi } from "@/lib/api";
+import { useDirectDeleteTransaction } from "@/hooks/api/use-transaction-delete";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 export default function TransactionsPage() {
-  const { outlets } = useOutletContext();
+  const pathname = usePathname();
+  const isManagerView = pathname?.startsWith("/manager") ?? false;
+
+  const { outlets, selectedOutletId } = useOutletContext();
   const { useTransactionList } = useTransactions();
 
+  // Query cashier auth to check privileges
+  const { data: cashierData } = useQuery({
+    queryKey: ["cashier-auth"],
+    queryFn: () => authApi.cashierMe(),
+    enabled: isManagerView,
+    staleTime: 5 * 60_000,
+  });
+
+  const hasDeletePrivilege = cashierData?.privileges?.some((p: any) => {
+    const privName = typeof p === "string" ? p : (p?.privilege || p);
+    return privName === "TRANSACTION_DELETE";
+  }) ?? false;
+
+  // Direct delete mutation & states
+  const [transactionToDelete, setTransactionToDelete] = useState<any | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const directDeleteMutation = useDirectDeleteTransaction();
+
+  const confirmDirectDelete = () => {
+    if (!transactionToDelete) return;
+    directDeleteMutation.mutate(
+      { transactionId: transactionToDelete.id, reason: deleteReason.trim() || undefined },
+      {
+        onSuccess: () => {
+          toast.success("Transaksi berhasil dihapus secara langsung.");
+          setTransactionToDelete(null);
+          setDeleteReason("");
+          refetch();
+        },
+        onError: (err: any) => {
+          toast.error(err?.response?.data?.message || err?.message || "Gagal menghapus transaksi");
+        },
+      }
+    );
+  };
+
   // Filter states
-  const [outletId, setOutletId] = useState<string>("");
+  const [outletId, setOutletId] = useState<string>(isManagerView ? selectedOutletId || "" : "");
   const [status, setStatus] = useState<string>("");
   const [type, setType] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>(subMonths(new Date(), 1).toISOString());
@@ -101,7 +147,7 @@ export default function TransactionsPage() {
   }, []);
 
   const handleResetFilters = () => {
-    setOutletId("");
+    setOutletId(isManagerView ? selectedOutletId || "" : "");
     setStatus("");
     setType("ALL");
     setStartDate(subMonths(new Date(), 1).toISOString());
@@ -319,15 +365,17 @@ export default function TransactionsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={outletId || "all"} onValueChange={(v) => setOutletId(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-10 w-[180px] text-[10px] font-bold bg-background/50 border-border/40">
-              <SelectValue placeholder="Outlet" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Outlet</SelectItem>
-              {outlets.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          {!isManagerView && (
+            <Select value={outletId || "all"} onValueChange={(v) => setOutletId(v === "all" ? "" : v)}>
+              <SelectTrigger className="h-10 w-[180px] text-[10px] font-bold bg-background/50 border-border/40">
+                <SelectValue placeholder="Outlet" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Outlet</SelectItem>
+                {outlets.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
 
           <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
             <SelectTrigger className="h-10 w-[140px] text-[10px] font-bold bg-background/50 border-border/40">
@@ -495,8 +543,73 @@ export default function TransactionsPage() {
             }),
           },
         ]}
+        rowActions={
+          isManagerView && hasDeletePrivilege
+            ? (row) => [
+                {
+                  label: "Hapus Transaksi",
+                  icon: Trash2,
+                  variant: "destructive" as const,
+                  onClick: (row: any) => {
+                    setTransactionToDelete(row);
+                    setDeleteReason("");
+                  },
+                },
+              ]
+            : undefined
+        }
+        actionViewType="dropdown"
       />
       </div>
+
+      {/* ══════════ Direct Delete Confirm Dialog ══════════ */}
+      <ConfirmDialog
+        open={Boolean(transactionToDelete)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTransactionToDelete(null);
+            setDeleteReason("");
+          }
+        }}
+        title="Hapus Transaksi Secara Langsung?"
+        description="Aksi ini akan menghapus transaksi secara permanen, mengembalikan stok produk, membatalkan loyalty point, dan mencatat riwayat penghapusan langsung untuk audit trail Owner. Tindakan tidak dapat dibatalkan."
+        confirmLabel="Ya, Hapus Langsung"
+        cancelLabel="Batal"
+        onConfirm={confirmDirectDelete}
+        confirmDisabled={directDeleteMutation.isPending}
+        confirmVariant="destructive"
+      >
+        {transactionToDelete && (
+          <div className="space-y-3 mt-2">
+            <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-1.5 font-sans">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground font-medium">Deskripsi</span>
+                <span className="font-semibold text-foreground truncate max-w-[200px]">{transactionToDelete.description}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground font-medium">Total Pembayaran</span>
+                <span className="font-bold text-foreground">Rp {new Intl.NumberFormat("id-ID").format(transactionToDelete.amount)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground font-medium">Metode</span>
+                <span className="font-semibold text-foreground uppercase text-[10px]">{transactionToDelete.manualMethod || transactionToDelete.paymentMethod || "Online"}</span>
+              </div>
+            </div>
+            <div className="space-y-1.5 font-sans">
+              <label className="text-xs font-semibold text-foreground">
+                Alasan Penghapusan <span className="text-destructive">*</span>
+              </label>
+              <Textarea
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="Masukkan alasan penghapusan transaksi ini..."
+                className="text-sm resize-none border-border/60 focus:border-primary/40 focus:ring-primary/10 rounded-md"
+                rows={3}
+              />
+            </div>
+          </div>
+        )}
+      </ConfirmDialog>
 
       {/* ══════════ Export PDF Dialog ══════════ */}
       <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>

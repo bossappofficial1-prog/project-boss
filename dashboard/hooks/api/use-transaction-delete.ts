@@ -54,3 +54,19 @@ export function useRejectDeleteRequest() {
     },
   });
 }
+
+export function useDirectDeleteTransaction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ transactionId, reason }: { transactionId: string; reason?: string }) =>
+      transactionDeleteApi.directDelete(transactionId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEYS.deleteRequests() });
+      queryClient.invalidateQueries({ queryKey: ["pos-v2", "recent-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-v2", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-v2", "cash-summary"] });
+    },
+  });
+}
+

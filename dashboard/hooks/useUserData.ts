@@ -55,12 +55,36 @@ function readCachedUserData(): UserData | undefined {
 
 // Query function for fetching user data
 const fetchUserData = async (): Promise<UserData> => {
-    const response = await apiClient.get('/auth/me');
-    const data = response.data.data as UserData;
     try {
-        sessionStorage.setItem(USER_DATA_SESSION_CACHE_KEY, JSON.stringify(data));
-    } catch { }
-    return data;
+        const response = await apiClient.get('/auth/me');
+        const data = response.data.data as UserData;
+        try {
+            sessionStorage.setItem(USER_DATA_SESSION_CACHE_KEY, JSON.stringify(data));
+        } catch { }
+        return data;
+    } catch (err) {
+        if (typeof window !== 'undefined') {
+            const cashierRaw = sessionStorage.getItem('cashier-auth-cache-v1');
+            if (cashierRaw) {
+                const cashierData = JSON.parse(cashierRaw);
+                return {
+                    user: {
+                        id: cashierData.id,
+                        name: cashierData.name,
+                        email: cashierData.email || '',
+                        role: cashierData.role,
+                    },
+                    outlets: cashierData.outlet ? [cashierData.outlet] : [],
+                    business: {
+                        id: cashierData.businessId || 'manager-business',
+                        name: 'BOSS Business',
+                        subscriptionPlan: 'PRO',
+                    }
+                };
+            }
+        }
+        throw err;
+    }
 };
 
 export function useUserData() {

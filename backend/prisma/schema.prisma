@@ -243,6 +243,9 @@ model Staff {
   phone                     String?
   username                  String?                    @unique
   password                  String
+  email                     String?
+  pin                       String?
+  role                      StaffRole                  @default(CASHIER)
   status                    StaffStatus                @default(ACTIVE)
   outletId                  String
   createdAt                 DateTime                   @default(now())
@@ -254,9 +257,23 @@ model Staff {
   ticketCodesRedeemed       TicketCode[]
   transactionDeleteRequests TransactionDeleteRequest[]
   attendances               Attendance[]
+  privileges                StaffPrivilege[]
 
   @@index([outletId])
   @@index([username])
+  @@index([role])
+  @@index([name])
+}
+
+model StaffPrivilege {
+  id        String             @id @default(uuid())
+  staffId   String
+  privilege StaffPrivilegeType
+  createdAt DateTime           @default(now())
+  staff     Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, privilege])
+  @@index([staffId])
 }
 
 model Product {
@@ -730,6 +747,8 @@ model TransactionDeleteRequest {
   reason         String?
   status         DeleteRequestStatus @default(PENDING)
   approvedBy     String?
+  approvedByRole String?
+  approvedById   String?
   approvedAt     DateTime?
   rejectionNote  String?
   createdAt      DateTime            @default(now())
@@ -855,6 +874,25 @@ enum StaffStatus {
   ON_LEAVE
 }
 
+enum StaffRole {
+  CASHIER
+  MANAGER
+}
+
+enum StaffPrivilegeType {
+  OUTLET_MANAGEMENT
+  PRODUCT_MANAGEMENT
+  STOCK_MANAGEMENT
+  CUSTOMER_MANAGEMENT
+  ORDER_MANAGEMENT
+  SERVICE_MANAGEMENT
+  FINANCE_REPORTS
+  TRANSACTION_VIEW
+  TRANSACTION_DELETE
+  ANALYTICS
+  TOOLS_CALCULATOR
+}
+
 enum ManualPaymentType {
   QRIS_OFFLINE
   OWNER_TRANSFER
@@ -942,21 +980,21 @@ enum TransferStatus {
 }
 
 model Attendance {
-  id        String    @id @default(uuid())
-  staffId   String
-  outletId  String
-  clockIn   DateTime  @default(now())
-  clockOut  DateTime?
-  date      DateTime
-  notes     String?
-  clockInLat    Float?
-  clockInLng    Float?
-  clockOutLat   Float?
-  clockOutLng   Float?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  outlet    Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  staffId     String
+  outletId    String
+  clockIn     DateTime  @default(now())
+  clockOut    DateTime?
+  date        DateTime
+  notes       String?
+  clockInLat  Float?
+  clockInLng  Float?
+  clockOutLat Float?
+  clockOutLng Float?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  staff       Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  outlet      Outlet    @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
   @@unique([staffId, date])
   @@index([outletId, date])

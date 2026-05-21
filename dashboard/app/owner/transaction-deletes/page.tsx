@@ -31,6 +31,8 @@ import {
 } from "@/hooks/api/use-transaction-delete";
 import type { TransactionDeleteRequest } from "@/lib/apis/transaction-delete";
 import { toast } from "sonner";
+import { usePathname } from "next/navigation";
+import { useOutletContext } from "@/components/providers/OutletProvider";
 
 const STATUS_META: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
   PENDING: {
@@ -60,6 +62,10 @@ const dateFmt = new Intl.DateTimeFormat("id-ID", {
 });
 
 export default function TransactionDeletesPage() {
+  const pathname = usePathname();
+  const isManagerView = pathname?.startsWith("/manager") ?? false;
+  const { selectedOutletId } = useOutletContext();
+
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<TransactionDeleteRequest | null>(null);
@@ -67,7 +73,10 @@ export default function TransactionDeletesPage() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectionNote, setRejectionNote] = useState("");
 
-  const { data: requests = [], isLoading, refetch } = useTransactionDeleteRequests(undefined, statusFilter === "all" ? undefined : statusFilter);
+  const { data: requests = [], isLoading, refetch } = useTransactionDeleteRequests(
+    isManagerView ? selectedOutletId || "" : undefined,
+    statusFilter === "all" ? undefined : statusFilter
+  );
   const approveMutation = useApproveDeleteRequest();
   const rejectMutation = useRejectDeleteRequest();
 

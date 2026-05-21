@@ -78,8 +78,19 @@ export default function StaffManagementPage() {
     try {
       setIsSubmitting(true);
 
+      // Strip frontend-only fields that backend schema doesn't accept
+      const { address, notes, ...cleanPayload } = payload;
+
       const finalPayload = {
-        ...payload,
+        ...cleanPayload,
+        username: cleanPayload.username
+          ? `${cleanPayload.username}`
+          : cleanPayload.username,
+        // Strip empty strings for optional fields to avoid validation issues
+        ...(cleanPayload.password === "" && { password: undefined }),
+        ...(cleanPayload.pin === "" && { pin: undefined }),
+        ...(cleanPayload.email === "" && { email: undefined }),
+        ...(cleanPayload.phone === "" && { phone: undefined }),
       };
 
       if (modalMode === "create") {
@@ -141,11 +152,11 @@ export default function StaffManagementPage() {
   return (
     <div className="space-y-4 pb-12 animate-fade-in">
       <SectionHeader
-        title="Kelola Kasir"
+        title="Kelola Staff"
         description={`Atur petugas kasir untuk ${outletName}. Kelola akses masuk mereka ke sistem Point of Sale (POS).`}
         actions={
           <Button type="button" onClick={handleOpenCreate}>
-            <UserPlus className="h-4 w-4" /> Tambah Kasir Baru
+            <UserPlus className="h-4 w-4" /> Tambah Staff Baru
           </Button>
         }
       />

@@ -42,7 +42,42 @@ export async function proxy(req: NextRequest) {
   }
 
   const token = req.cookies.get("token")?.value;
-  if (!token) return NextResponse.next();
+  const cashierToken = req.cookies.get("cashier_token")?.value;
+
+  const isManagerOrCashierRoute = pathname.startsWith("/manager") || pathname.startsWith("/cashier");
+
+  /**
+   * 1. ROUTE PROTECTION FOR CASHIER & MANAGER
+   */
+  if (isManagerOrCashierRoute) {
+    if (!cashierToken) {
+      return NextResponse.redirect(new URL("/auth/login/cashier", req.url));
+    }
+
+    const cashierPayload = await verify(cashierToken);
+    if (!cashierPayload) {
+      const response = NextResponse.redirect(new URL("/auth/login/cashier", req.url));
+      response.cookies.delete("cashier_token");
+      return response;
+    }
+
+    const cashierRole = cashierPayload.role as string;
+
+    if (pathname.startsWith("/manager") && cashierRole !== "MANAGER") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+
+    if (pathname.startsWith("/cashier") && cashierRole !== "CASHIER") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  // If not visiting owner/admin/auth/root, and no owner token, we just proceed
+  if (!token) {
+    return NextResponse.next();
+  }
 
   // 2. Heavy verification only if token exists and it's not a prefetch
   const payload = await verify(token);
@@ -113,6 +148,11 @@ export async function proxy(req: NextRequest) {
    * USER SUDAH LOGIN TAPI MASUK AUTH PAGE
    */
   if (pathname.startsWith("/auth") && token) {
+    // Allow cashier login page even if logged in as owner
+    if (pathname === "/auth/login/cashier") {
+      return NextResponse.next();
+    }
+
     if (pathname.startsWith("/auth/register") && searchParams.get("step")) {
       return NextResponse.next();
     }
@@ -125,5 +165,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/auth/:path*", "/owner/:path*"],
+  matcher: ["/", "/auth/:path*", "/owner/:path*", "/manager/:path*", "/cashier/:path*"],
 };

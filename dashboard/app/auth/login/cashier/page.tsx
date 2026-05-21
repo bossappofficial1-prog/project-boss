@@ -7,7 +7,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { authApi } from "@/lib/api";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
-import { Lock, User, Store, X, History } from "lucide-react";
+import { Lock, User, Store, X, History, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReusableForm } from "@/components/ui/reuseable-form";
 import { z } from "zod";
@@ -16,12 +16,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 const HISTORY_KEY = "cashier_login_history";
 
-const loginSchema = z.object({
+const cashierLoginSchema = z.object({
   username: z.string().min(1, "Username wajib diisi"),
   password: z.string().min(1, "Password wajib diisi"),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+const managerLoginSchema = z.object({
+  name: z.string().min(1, "Nama wajib diisi"),
+  pin: z.string().min(4, "PIN minimal 4 karakter"),
+});
+
+type CashierLoginValues = z.infer<typeof cashierLoginSchema>;
+type ManagerLoginValues = z.infer<typeof managerLoginSchema>;
 
 function getHistory(): string[] {
   if (typeof window === "undefined") return [];
@@ -47,11 +53,17 @@ function removeFromHistory(username: string) {
 function CashierLoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<"cashier" | "manager">("cashier");
   const router = useRouter();
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const cashierForm = useForm<CashierLoginValues>({
+    resolver: zodResolver(cashierLoginSchema),
     defaultValues: { username: "", password: "" },
+  });
+
+  const managerForm = useForm<ManagerLoginValues>({
+    resolver: zodResolver(managerLoginSchema),
+    defaultValues: { name: "", pin: "" },
   });
 
   useEffect(() => {
@@ -60,7 +72,7 @@ function CashierLoginForm() {
 
   const refreshHistory = () => setHistory(getHistory());
 
-  const handleSubmit = async (values: LoginFormValues) => {
+  const handleCashierSubmit = async (values: CashierLoginValues) => {
     setIsLoading(true);
     try {
       const response = await authApi.cashierLogin(
@@ -84,9 +96,28 @@ function CashierLoginForm() {
     }
   };
 
+  const handleManagerSubmit = async (values: ManagerLoginValues) => {
+    setIsLoading(true);
+    try {
+      const response = await authApi.managerLogin(values.name, values.pin);
+      toast.success(response.message || "Login manager berhasil");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      router.push("/manager/outlets");
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        "Gagal login, periksa nama dan PIN Anda";
+      toast.error(msg);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSelectUser = (username: string) => {
-    form.setValue("username", username);
-    setTimeout(() => form.setFocus("password"), 50);
+    cashierForm.setValue("username", username);
+    setTimeout(() => cashierForm.setFocus("password"), 50);
   };
 
   const handleRemoveUser = (e: React.MouseEvent, username: string) => {
@@ -171,7 +202,7 @@ function CashierLoginForm() {
 
         <Card className="w-full max-w-110 border-border/80 shadow-2xl rounded-xl overflow-hidden bg-background/80 backdrop-blur-xl">
           <div className="p-8 sm:p-10">
-            <div className="space-y-2 mb-8 text-center sm:text-left">
+            <div className="space-y-2 mb-6 text-center sm:text-left">
               <h2 className="text-3xl font-bold tracking-tight text-foreground">
                 Selamat Datang
               </h2>
@@ -180,72 +211,150 @@ function CashierLoginForm() {
               </p>
             </div>
 
-            {history.length > 0 && (
-              <div className="mb-6">
-                <div className="flex items-center gap-1.5 mb-3">
-                  <History className="h-3 w-3 text-muted-foreground/60" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60">
-                    Login terakhir
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {history.map((u) => (
-                    <button
-                      key={u}
-                      type="button"
-                      onClick={() => handleSelectUser(u)}
-                      className={cn(
-                        "group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium",
-                        "bg-muted/50 border border-border/40 hover:bg-primary/10 hover:border-primary/30",
-                        "transition-all duration-150",
-                      )}
-                    >
-                      <User className="h-3 w-3 text-muted-foreground group-hover:text-primary" />
-                      <span className="text-foreground/80 group-hover:text-foreground">
-                        {u}
+            {/* Tab Toggle */}
+            <div className="flex rounded-lg bg-muted/50 p-1 mb-6 gap-1">
+              <button
+                id="tab-cashier"
+                type="button"
+                onClick={() => setActiveTab("cashier")}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-bold uppercase tracking-widest transition-all duration-200",
+                  activeTab === "cashier"
+                    ? "bg-background text-foreground shadow-sm border border-border/40"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <User className="h-3.5 w-3.5" />
+                Kasir
+              </button>
+              <button
+                id="tab-manager"
+                type="button"
+                onClick={() => setActiveTab("manager")}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-bold uppercase tracking-widest transition-all duration-200",
+                  activeTab === "manager"
+                    ? "bg-background text-primary shadow-sm border border-primary/20"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Manager
+              </button>
+            </div>
+
+            {/* Cashier Login */}
+            {activeTab === "cashier" && (
+              <div className="animate-fade-in">
+                {history.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <History className="h-3 w-3 text-muted-foreground/60" />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60">
+                        Login terakhir
                       </span>
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={(e) => handleRemoveUser(e, u)}
-                        onKeyDown={(e) =>
-                          e.key === "Enter" &&
-                          handleRemoveUser(e as unknown as React.MouseEvent, u)
-                        }
-                        className="ml-0.5 p-0.5 rounded-full text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      >
-                        <X className="h-3 w-3" />
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {history.map((u) => (
+                        <button
+                          key={u}
+                          type="button"
+                          onClick={() => handleSelectUser(u)}
+                          className={cn(
+                            "group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium",
+                            "bg-muted/50 border border-border/40 hover:bg-primary/10 hover:border-primary/30",
+                            "transition-all duration-150",
+                          )}
+                        >
+                          <User className="h-3 w-3 text-muted-foreground group-hover:text-primary" />
+                          <span className="text-foreground/80 group-hover:text-foreground">
+                            {u}
+                          </span>
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => handleRemoveUser(e, u)}
+                            onKeyDown={(e) =>
+                              e.key === "Enter" &&
+                              handleRemoveUser(
+                                e as unknown as React.MouseEvent,
+                                u,
+                              )
+                            }
+                            className="ml-0.5 p-0.5 rounded-full text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <ReusableForm<CashierLoginValues>
+                  form={cashierForm}
+                  schema={cashierLoginSchema}
+                  onSubmit={handleCashierSubmit}
+                  isLoading={isLoading}
+                  submitText="Masuk Shift"
+                  loadingText="MEMPROSES..."
+                  fields={[
+                    {
+                      name: "username",
+                      label: "Username",
+                      type: "text",
+                      placeholder: "Masukkan username",
+                      icon: User,
+                    },
+                    {
+                      name: "password",
+                      label: "Password",
+                      type: "password",
+                      placeholder: "••••••••",
+                      icon: Lock,
+                    },
+                  ]}
+                />
               </div>
             )}
 
-            <ReusableForm<LoginFormValues>
-              form={form}
-              schema={loginSchema}
-              onSubmit={handleSubmit}
-              isLoading={isLoading}
-              submitText="Masuk Shift"
-              loadingText="MEMPROSES..."
-              fields={[
-                {
-                  name: "username",
-                  label: "Username",
-                  type: "text",
-                  placeholder: "Masukkan username",
-                  icon: User,
-                },
-                {
-                  name: "password",
-                  label: "Password",
-                  type: "password",
-                  placeholder: "••••••••",
-                  icon: Lock,
-                },
-              ]}
-            />
+            {/* Manager Login */}
+            {activeTab === "manager" && (
+              <div className="animate-fade-in">
+                <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                  <p className="text-[11px] text-primary/80 font-medium flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                    Akses Manager menggunakan nama lengkap dan PIN yang
+                    ditetapkan oleh Owner.
+                  </p>
+                </div>
+
+                <ReusableForm<ManagerLoginValues>
+                  form={managerForm}
+                  schema={managerLoginSchema}
+                  onSubmit={handleManagerSubmit}
+                  isLoading={isLoading}
+                  submitText="Masuk sebagai Manager"
+                  loadingText="MEMPROSES..."
+                  fields={[
+                    {
+                      name: "name",
+                      label: "Nama Manager",
+                      type: "text",
+                      placeholder: "Masukkan nama lengkap",
+                      icon: ShieldCheck,
+                    },
+                    {
+                      name: "pin",
+                      label: "PIN",
+                      type: "password",
+                      placeholder: "Masukkan PIN",
+                      icon: Lock,
+                    },
+                  ]}
+                />
+              </div>
+            )}
           </div>
         </Card>
       </div>
@@ -256,7 +365,7 @@ function CashierLoginForm() {
 function CashierLoginPageSkeleton() {
   return (
     <div className="min-h-screen bg-muted/30 flex items-center justify-center p-6">
-      <Card className="w-full max-w-110 h-145 rounded-xl animate-pulse bg-background/50 border-border/40" />
+      <Card className="w-full max-w-110 h-137.5 rounded-xl animate-pulse bg-background/50 border-border/40" />
     </div>
   );
 }

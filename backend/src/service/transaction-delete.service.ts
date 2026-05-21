@@ -51,10 +51,14 @@ export class TransactionDeleteService {
 
     try {
       const outlet = order.outlet;
-      const ownerId = outlet.business.owner.id;
-      const owner = await getUserByIdService(ownerId);
+      // outlet.businessId has the business ID
+      const business = await db.business.findUnique({
+        where: { id: outlet.businessId },
+        include: { owner: { select: { id: true } } },
+      });
 
-      if (owner) {
+      if (business?.owner) {
+        const ownerId = business.owner.id;
         const ownerSubscriptions = await db.pushSubscription.findMany({
           where: { userId: ownerId },
         });
@@ -69,33 +73,31 @@ export class TransactionDeleteService {
 
           for (const sub of ownerSubscriptions) {
             try {
-              const pushSubFormat = {
-                endpoint: sub.endpoint,
-                keys: { p256dh: sub.p256dh, auth: sub.auth },
-              };
               await (pushService as any).sendNotificationToCustomer("", {
                 id: "",
                 totalAmount: 0,
                 guestCustomer: { pushSubscriptions: [sub] },
               }, JSON.parse(payload));
             } catch {
-              // Silent fail for individual push
+              // Silent fail
             }
           }
         }
       }
     } catch {
-      // Non-blocking: push notification failure should not fail the request
+      // Non-blocking
     }
+
 
     return deleteRequest;
   }
 
   static async approveDeleteRequest(params: {
     requestId: string;
-    ownerId: string;
+    approverId: string;
+    approverRole: "owner" | "manager";
   }) {
-    const { requestId, ownerId } = params;
+    const { requestId, approverId, approverRole } = params;
 
     const request = await TransactionDeleteRepository.findRequestById(requestId);
     if (!request) {
@@ -106,9 +108,12 @@ export class TransactionDeleteService {
       throw new AppError("Permintaan ini sudah diproses sebelumnya", HttpStatus.BAD_REQUEST);
     }
 
-    const outlet = request.outlet;
-    if (outlet.business.ownerId !== ownerId) {
-      throw new AppError("Anda tidak memiliki akses untuk menyetujui permintaan ini", HttpStatus.FORBIDDEN);
+    // Untuk owner: validasi kepemilikan bisnis
+    if (approverRole === "owner") {
+      const outlet = request.outlet;
+      if (outlet.business.ownerId !== approverId) {
+        throw new AppError("Anda tidak memiliki akses untuk menyetujui permintaan ini", HttpStatus.FORBIDDEN);
+      }
     }
 
     if (!request.transactionId || !request.orderId) {
@@ -130,7 +135,6 @@ export class TransactionDeleteService {
           order.id,
           item.hppAtTimeOfOrder,
         );
-
         await TransactionDeleteRepository.createStockLog({
           productGoodsId: item.product.goods.id,
           type: StockMovementType.RETURN,
@@ -145,7 +149,6 @@ export class TransactionDeleteService {
           item.product.ticket.id,
           item.quantity,
         );
-
         await TransactionDeleteRepository.cancelTicketCodes(item.id);
       }
     }
@@ -159,7 +162,7 @@ export class TransactionDeleteService {
           order.pointsRedeemed,
         );
       } catch {
-        // Non-blocking: loyalty refund failure should not fail the deletion
+        // Non-blocking
       }
     }
 
@@ -170,7 +173,9 @@ export class TransactionDeleteService {
 
     await TransactionDeleteRepository.updateRequestStatus(requestId, {
       status: DeleteRequestStatus.APPROVED,
-      approvedBy: "owner",
+      approvedBy: approverRole,
+      approvedByRole: approverRole,
+      approvedById: approverId,
       approvedAt: new Date(),
     });
 
@@ -201,11 +206,110 @@ export class TransactionDeleteService {
     await TransactionDeleteRepository.updateRequestStatus(requestId, {
       status: DeleteRequestStatus.REJECTED,
       approvedBy: "owner",
+      approvedByRole: "owner",
+      approvedById: ownerId,
       approvedAt: new Date(),
       rejectionNote,
     });
 
     return { success: true, message: "Permintaan penghapusan ditolak." };
+  }
+
+  /**
+   * Manager langsung hapus transaksi — bypass approval, buat audit trail otomatis
+   */
+  static async directDeleteTransaction(params: {
+    transactionId: string;
+    managerId: string;
+    reason?: string;
+  }) {
+    const { transactionId, managerId, reason } = params;
+
+    const transaction = await TransactionDeleteRepository.findTransactionWithDetails(transactionId);
+    if (!transaction) {
+      throw new AppError("Transaksi tidak ditemukan", HttpStatus.NOT_FOUND);
+    }
+
+    if (transaction.status !== "SUCCESS") {
+      throw new AppError("Hanya transaksi berhasil yang dapat dihapus", HttpStatus.BAD_REQUEST);
+    }
+
+    const order = transaction.order!;
+
+    for (const item of order.items) {
+      if (item.product.type === "GOODS" && item.product.goods) {
+        await TransactionDeleteRepository.restoreGoodsStock(
+          item.product.goods.id,
+          item.quantity,
+          order.id,
+          item.hppAtTimeOfOrder,
+        );
+        await TransactionDeleteRepository.createStockLog({
+          productGoodsId: item.product.goods.id,
+          type: StockMovementType.RETURN,
+          quantity: item.quantity,
+          hppPerUnit: item.hppAtTimeOfOrder,
+          referenceType: "TRANSACTION_DELETE",
+          referenceId: transactionId,
+          notes: `Restock dari direct delete oleh manager ${managerId}`,
+        });
+      } else if (item.product.type === "TICKET" && item.product.ticket) {
+        await TransactionDeleteRepository.restoreTicketQuota(
+          item.product.ticket.id,
+          item.quantity,
+        );
+        await TransactionDeleteRepository.cancelTicketCodes(item.id);
+      }
+    }
+
+    if (order.pointsRedeemed > 0) {
+      try {
+        await TransactionDeleteRepository.refundLoyaltyPoints(
+          order.outletId,
+          order.guestCustomerId,
+          order.id,
+          order.pointsRedeemed,
+        );
+      } catch {
+        // Non-blocking
+      }
+    }
+
+    const itemsSnapshot = order.items.map((item) => ({
+      name: item.product.name,
+      quantity: item.quantity,
+      price: item.priceAtTimeOfOrder,
+      type: item.product.type,
+    }));
+
+    // Buat audit trail
+    const auditRecord = await db.transactionDeleteRequest.create({
+      data: {
+        transactionId,
+        orderId: order.id,
+        outletId: order.outletId,
+        requestedBy: managerId,
+        reason: reason || "Direct delete oleh Manager",
+        status: DeleteRequestStatus.APPROVED,
+        approvedBy: "manager",
+        approvedByRole: "manager",
+        approvedById: managerId,
+        approvedAt: new Date(),
+        customerName: order.guestCustomer.name,
+        customerPhone: order.guestCustomer.phone,
+        items: itemsSnapshot,
+        totalAmount: order.totalAmount,
+      },
+    });
+
+    // Hapus transaksi + order
+    await TransactionDeleteRepository.deleteTransactionAndOrder(transactionId, order.id);
+
+    return {
+      success: true,
+      auditId: auditRecord.id,
+      message: "Transaksi berhasil dihapus. Stok telah dikembalikan.",
+    };
   }
 
   static async getDeleteRequestsByOutlet(outletId: string, status?: string) {

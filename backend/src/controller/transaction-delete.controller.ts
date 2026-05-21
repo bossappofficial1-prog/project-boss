@@ -26,28 +26,29 @@ export const requestDeleteTransactionController = asyncHandler(async (req: Reque
     reason: validated.reason,
   });
 
-  return ResponseUtil.created(
-    res,
-    result,
-    "Permintaan penghapusan berhasil dikirim ke Owner",
-  );
+  return ResponseUtil.success(res, result, HttpStatus.CREATED, "Permintaan penghapusan berhasil dikirim ke Owner");
 });
 
 export const approveDeleteRequestController = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as any).storedUser?.id;
-  if (!userId) {
+  const user = (req as any).storedUser;
+  if (!user) {
     return ResponseUtil.unauthorized(res, "Unauthorized");
   }
 
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
   const validated = approveDeleteRequestSchema.parse({ requestId: id });
+
+  const isManager = user.userType === "MANAGER" || user.role === "MANAGER";
+  const approverId: string = user.id;
+  const approverRole: "owner" | "manager" = isManager ? "manager" : "owner";
 
   const result = await TransactionDeleteService.approveDeleteRequest({
     requestId: validated.requestId,
-    ownerId: userId,
+    approverId,
+    approverRole,
   });
 
-  return ResponseUtil.success(res, result, "Permintaan penghapusan disetujui");
+  return ResponseUtil.success(res, result, HttpStatus.OK, "Permintaan penghapusan disetujui");
 });
 
 export const rejectDeleteRequestController = asyncHandler(async (req: Request, res: Response) => {
@@ -56,7 +57,7 @@ export const rejectDeleteRequestController = asyncHandler(async (req: Request, r
     return ResponseUtil.unauthorized(res, "Unauthorized");
   }
 
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
   const validated = rejectDeleteRequestSchema.parse({
     requestId: id,
     rejectionNote: req.body.rejectionNote,
@@ -68,27 +69,43 @@ export const rejectDeleteRequestController = asyncHandler(async (req: Request, r
     rejectionNote: validated.rejectionNote,
   });
 
-  return ResponseUtil.success(res, result, "Permintaan penghapusan ditolak");
+  return ResponseUtil.success(res, result, HttpStatus.OK, "Permintaan penghapusan ditolak");
 });
 
 export const getDeleteRequestsController = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as any).storedUser?.id;
-  if (!userId) {
+  const user = (req as any).storedUser;
+  if (!user) {
     return ResponseUtil.unauthorized(res, "Unauthorized");
   }
 
-  const { outletId, status } = req.query;
+  const outletId = req.query.outletId as string | undefined;
+  const status = req.query.status as string | undefined;
 
   let requests: any[] = [];
 
   if (outletId) {
-    requests = await TransactionDeleteService.getDeleteRequestsByOutlet(
-      outletId as string,
-      status as string | undefined,
-    );
+    requests = await TransactionDeleteService.getDeleteRequestsByOutlet(outletId, status);
   } else {
-    requests = await TransactionDeleteService.getOwnerPendingRequests(userId);
+    requests = await TransactionDeleteService.getOwnerPendingRequests(user.id);
   }
 
-  return ResponseUtil.success(res, requests, "Berhasil mengambil daftar permintaan penghapusan");
+  return ResponseUtil.success(res, requests, HttpStatus.OK, "Berhasil mengambil daftar permintaan penghapusan");
+});
+
+export const directDeleteTransactionController = asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as any).storedUser;
+  if (!user) {
+    return ResponseUtil.unauthorized(res, "Unauthorized");
+  }
+
+  const { id } = req.params as { id: string };
+  const reason = req.body.reason as string | undefined;
+
+  const result = await TransactionDeleteService.directDeleteTransaction({
+    transactionId: id,
+    managerId: user.id,
+    reason,
+  });
+
+  return ResponseUtil.success(res, result, HttpStatus.OK, result.message);
 });

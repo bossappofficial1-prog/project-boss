@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { authController } from "../controller/auth.controller";
 import { validateSchema } from "../middleware/zod.middleware";
-import { loginSchema, verifySchema, resendVerificationSchema, forgotPasswordSchema, resetPasswordSchema, cashierLoginSchema, completeRegisterSchema } from "../schemas/auth.schema";
+import { loginSchema, verifySchema, resendVerificationSchema, forgotPasswordSchema, resetPasswordSchema, cashierLoginSchema, completeRegisterSchema, managerLoginSchema } from "../schemas/auth.schema";
+
 import { createUserSchema } from "../schemas/user.schema";
 import { checkEmailExists } from "../validators/user.validator";
 import { protect } from "../middleware/auth.middleware";
@@ -25,6 +26,12 @@ authRouter.post(
     "/cashier/login",
     validateSchema(cashierLoginSchema),
     authController.cashierLogin
+);
+
+authRouter.post(
+    "/manager/login",
+    validateSchema(managerLoginSchema),
+    authController.managerLogin
 );
 
 authRouter.get("/cashier/me", protect, authController.getCashierMe);
