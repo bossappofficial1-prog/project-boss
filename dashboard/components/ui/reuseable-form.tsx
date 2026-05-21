@@ -360,6 +360,7 @@ export function ReusableForm<T extends FieldValues>({
 
   const [submitting, setSubmitting] = useState(false);
   const wasOpenRef = useRef(false);
+  const prevDefaultValuesStrRef = useRef<string>("");
   const [currentStep, setCurrentStep] = useState(0);
 
   const internalForm = useForm<T>({
@@ -373,15 +374,21 @@ export function ReusableForm<T extends FieldValues>({
   // Reset when defaultValues change (covers async-loaded data for non-dialog forms)
   // and reset on dialog re-open
   useEffect(() => {
+    if (defaultValues === undefined) return;
+    const defaultValuesStr = JSON.stringify(defaultValues);
+    const hasChanged = defaultValuesStr !== prevDefaultValuesStrRef.current;
+
     if (dialogProps) {
-      if (dialogProps.isDialogOpen && !wasOpenRef.current) {
+      if (dialogProps.isDialogOpen && (!wasOpenRef.current || hasChanged)) {
         form.reset(defaultValues);
       }
       wasOpenRef.current = dialogProps.isDialogOpen;
-    } else {
+    } else if (hasChanged) {
       form.reset(defaultValues);
     }
-  }, [dialogProps?.isDialogOpen, defaultValues]); // eslint-disable-line react-hooks/exhaustive-deps
+    
+    prevDefaultValuesStrRef.current = defaultValuesStr;
+  }, [dialogProps?.isDialogOpen, defaultValues, form]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const watchedValues = useWatch({ control: form.control });
 

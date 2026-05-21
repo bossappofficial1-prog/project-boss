@@ -17,7 +17,7 @@ interface OutletContextType {
     isPlanMismatch: boolean;
 }
 
-const OutletContext = createContext<OutletContextType | null>(null);
+export const OutletContext = createContext<OutletContextType | null>(null);
 
 interface OutletProviderProps {
     children: React.ReactNode;

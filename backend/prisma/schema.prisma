@@ -242,6 +242,9 @@ model Staff {
   phone                     String?
   username                  String?                    @unique
   password                  String
+  email                     String?
+  pin                       String?
+  role                      StaffRole                  @default(CASHIER)
   status                    StaffStatus                @default(ACTIVE)
   outletId                  String
   createdAt                 DateTime                   @default(now())
@@ -252,9 +255,23 @@ model Staff {
   outlet                    Outlet                     @relation(fields: [outletId], references: [id], onDelete: Cascade)
   ticketCodesRedeemed       TicketCode[]
   transactionDeleteRequests TransactionDeleteRequest[]
+  privileges                StaffPrivilege[]
 
   @@index([outletId])
   @@index([username])
+  @@index([role])
+  @@index([name])
+}
+
+model StaffPrivilege {
+  id        String             @id @default(uuid())
+  staffId   String
+  privilege StaffPrivilegeType
+  createdAt DateTime           @default(now())
+  staff     Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, privilege])
+  @@index([staffId])
 }
 
 model Product {
@@ -720,26 +737,28 @@ model Transaction {
 }
 
 model TransactionDeleteRequest {
-  id             String              @id @default(uuid())
-  transactionId  String?             @unique
-  orderId        String              @unique
-  outletId       String
-  requestedBy    String
-  reason         String?
-  status         DeleteRequestStatus @default(PENDING)
-  approvedBy     String?
-  approvedAt     DateTime?
-  rejectionNote  String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  customerName   String
-  customerPhone  String
-  items          Json
-  totalAmount    Float
-  transaction    Transaction?        @relation(fields: [transactionId], references: [id], onDelete: SetNull)
-  order          Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  outlet         Outlet              @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  requestedStaff Staff?              @relation(fields: [requestedBy], references: [id], onDelete: SetNull)
+  id              String              @id @default(uuid())
+  transactionId   String?             @unique
+  orderId         String              @unique
+  outletId        String
+  requestedBy     String
+  reason          String?
+  status          DeleteRequestStatus @default(PENDING)
+  approvedBy      String?
+  approvedByRole  String?
+  approvedById    String?
+  approvedAt      DateTime?
+  rejectionNote   String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  customerName    String
+  customerPhone   String
+  items           Json
+  totalAmount     Float
+  transaction     Transaction?        @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  order           Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  outlet          Outlet              @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  requestedStaff  Staff?              @relation(fields: [requestedBy], references: [id], onDelete: SetNull)
 
   @@index([outletId])
   @@index([status])
@@ -851,6 +870,25 @@ enum StaffStatus {
   ACTIVE
   INACTIVE
   ON_LEAVE
+}
+
+enum StaffRole {
+  CASHIER
+  MANAGER
+}
+
+enum StaffPrivilegeType {
+  OUTLET_MANAGEMENT
+  PRODUCT_MANAGEMENT
+  STOCK_MANAGEMENT
+  CUSTOMER_MANAGEMENT
+  ORDER_MANAGEMENT
+  SERVICE_MANAGEMENT
+  FINANCE_REPORTS
+  TRANSACTION_VIEW
+  TRANSACTION_DELETE
+  ANALYTICS
+  TOOLS_CALCULATOR
 }
 
 enum ManualPaymentType {

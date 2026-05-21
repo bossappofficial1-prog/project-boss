@@ -11,6 +11,7 @@ import {
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
 import { requireActiveSubscription } from "../middleware/subscription.middleware";
+import staffPrivilegeRouter from "./staff-privilege.route";
 
 const staffRouter = Router();
 
@@ -23,4 +24,8 @@ staffRouter.get("/:id", requireActiveSubscription, getStaffByIdController);
 staffRouter.patch("/:id", requireActiveSubscription, validateSchema(updateStaffSchema), updateStaffController);
 staffRouter.delete("/:id", requireActiveSubscription, deleteStaffController);
 
+// Privilege routes — nested: /staff/:id/privileges
+staffRouter.use("/:id/privileges", staffPrivilegeRouter);
+
 export default staffRouter;
+

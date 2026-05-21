@@ -331,6 +331,25 @@ class AuthController extends BaseController {
         });
     });
 
+    managerLogin = this.handler(async (req: Request, res: Response) => {
+        const payload = req.body;
+        const result = await AuthService.managerLogin(payload);
+
+        res.cookie("cashier_token", result.token, {
+            httpOnly: true,
+            secure: !!config.COOKIES_DOMAIN,
+            sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
+            domain: config.COOKIES_DOMAIN,
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
+            path: '/'
+        });
+
+        return this.success(res, {
+            staff: result.staff,
+            message: "Login manager berhasil"
+        });
+    });
+
     getCashierMe = this.handler(async (req: Request, res: Response) => {
         const staff = await AuthService.getCashierMe(req.storedUser!.id);
 

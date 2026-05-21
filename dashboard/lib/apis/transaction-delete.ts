@@ -51,4 +51,11 @@ export const transactionDeleteApi = {
       body: JSON.stringify({ rejectionNote }),
     });
   },
+
+  async directDelete(transactionId: string, reason?: string): Promise<{ success: boolean; auditId: string; message: string }> {
+    return apiCall<{ success: boolean; auditId: string; message: string }>(`/transaction-deletes/${transactionId}/direct-delete`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  },
 };

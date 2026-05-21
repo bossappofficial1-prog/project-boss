@@ -92,6 +92,8 @@ export class TransactionDeleteRepository {
   static async updateRequestStatus(requestId: string, data: {
     status: DeleteRequestStatus;
     approvedBy?: string;
+    approvedByRole?: string;
+    approvedById?: string;
     approvedAt?: Date;
     rejectionNote?: string;
   }) {

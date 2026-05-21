@@ -4,7 +4,6 @@ import { StaffMember, StaffRole, StaffStatus } from "@/types/staff";
 import {
   Edit2,
   Mail,
-  MapPin,
   NotebookPen,
   Phone,
   Trash2,
@@ -12,11 +11,6 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-
-const ROLE_OPTIONS: Array<{ value: StaffRole; label: string }> = [
-  { value: "CASHIER", label: "Kasir" },
-  { value: "ADMIN", label: "Admin Outlet" },
-];
 
 const STATUS_BADGE_CLASS: Record<StaffStatus, string> = {
   ACTIVE:
@@ -46,12 +40,12 @@ type StaffTableProps = {
 export function StaffTable({ data, onDelete, onEdit }: StaffTableProps) {
   return (
     <DataTable
-      title="Database Petugas Kasir"
+      title="Database Petugas Kasir & Manager"
       data={data}
       columns={[
         {
           accessorKey: "name",
-          header: "Informasi Kasir",
+          header: "Informasi Staff",
           cell(props) {
             const member = props.row.original;
             const initials = member.name
@@ -78,10 +72,60 @@ export function StaffTable({ data, onDelete, onEdit }: StaffTableProps) {
                     </p>
                   ) : (
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                      Petugas Kasir
+                      {member.role === "MANAGER" ? "Manager Outlet" : "Petugas Kasir"}
                     </p>
                   )}
                 </div>
+              </div>
+            );
+          },
+        },
+        {
+          accessorKey: "role",
+          header: "Peran / Hak Akses",
+          cell(props) {
+            const member = props.row.original;
+            const isManager = member.role === "MANAGER";
+            return (
+              <div className="space-y-1">
+                <Badge
+                  className={cn(
+                    "px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-widest transition-all shadow-none",
+                    isManager
+                      ? "bg-primary/10 text-primary border-primary/20"
+                      : "bg-muted text-muted-foreground border-border"
+                  )}
+                >
+                  {isManager ? "Manager" : "Kasir"}
+                </Badge>
+                {isManager && member.privileges && member.privileges.length > 0 && (
+                  <div className="flex flex-wrap gap-1 max-w-[200px] mt-1">
+                    {member.privileges.map((p: any) => {
+                      const privLabel: Record<string, string> = {
+                        OUTLET_MANAGEMENT: "Outlet",
+                        PRODUCT_MANAGEMENT: "Produk",
+                        STOCK_MANAGEMENT: "Stok",
+                        CUSTOMER_MANAGEMENT: "Pelanggan",
+                        ORDER_MANAGEMENT: "Pesanan",
+                        SERVICE_MANAGEMENT: "Booking",
+                        FINANCE_REPORTS: "Keuangan",
+                        TRANSACTION_VIEW: "Riwayat Transaksi",
+                        TRANSACTION_DELETE: "Hapus Transaksi",
+                        ANALYTICS: "Analitik",
+                        TOOLS_CALCULATOR: "Tools",
+                      };
+                      const privName = p.privilege || p;
+                      return (
+                        <span
+                          key={privName}
+                          className="px-1.5 py-0.2 rounded bg-muted text-[8px] font-black uppercase tracking-wider text-muted-foreground border border-border/50"
+                        >
+                          {privLabel[privName] || privName}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           },
@@ -106,7 +150,7 @@ export function StaffTable({ data, onDelete, onEdit }: StaffTableProps) {
                     <Mail className="h-3 w-3 text-muted-foreground group-hover:text-primary" />
                   </div>
                   <span className="text-xs font-medium text-foreground/70 truncate max-w-37.5">
-                    {member.username || "-"}
+                    {member.role === "MANAGER" ? (member.email || "-") : (member.username || "-")}
                   </span>
                 </div>
               </div>
@@ -154,3 +198,4 @@ export function StaffTable({ data, onDelete, onEdit }: StaffTableProps) {
     />
   );
 }
+
