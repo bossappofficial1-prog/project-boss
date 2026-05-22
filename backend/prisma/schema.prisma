@@ -141,27 +141,28 @@ model SubscriptionInvoice {
 }
 
 model Outlet {
-  id                        String                     @id @default(uuid())
-  name                      String
-  slug                      String                     @unique
-  description               String?
-  address                   String?
-  phone                     String?
-  instagramUrl              String?
-  email                     String?                    @unique
-  createdAt                 DateTime                   @default(now())
-  image                     String?                    @default("/defaults/default-outlet-image.webp")
-  updatedAt                 DateTime                   @updatedAt
-  latitude                  Float?
-  longitude                 Float?
-  isOpen                    Boolean                    @default(false)
-  businessId                String
-  manualBankName            String?
-  manualBankAccount         String?
-  manualAccountHolder       String?
-  manualPaymentNote         String?
-  manualQrImageUrl          String?
-  type                      OutletType                 @default(CUSTOM)
+  id                  String     @id @default(uuid())
+  name                String
+  slug                String     @unique
+  description         String?
+  address             String?
+  phone               String?
+  instagramUrl        String?
+  email               String?    @unique
+  createdAt           DateTime   @default(now())
+  image               String?    @default("/defaults/default-outlet-image.webp")
+  updatedAt           DateTime   @updatedAt
+  latitude            Float?
+  longitude           Float?
+  isOpen              Boolean    @default(false)
+  businessId          String
+  manualBankName      String?
+  manualBankAccount   String?
+  manualAccountHolder String?
+  manualPaymentNote   String?
+  manualQrImageUrl    String?
+  type                OutletType @default(CUSTOM)
+
   loyaltyConfig             LoyaltyConfig?
   pointHistories            LoyaltyPointHistory[]
   orders                    Order[]
