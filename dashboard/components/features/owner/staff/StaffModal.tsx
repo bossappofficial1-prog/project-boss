@@ -187,6 +187,7 @@ export function StaffDialog({
       name: "role",
       label: "Peran Staff",
       type: "select",
+      placeholder: "Pilih Peran Staff",
       colSpan: "full",
       options: [
         { label: "Kasir (Login via Username + Password)", value: "CASHIER" },
@@ -230,7 +231,7 @@ export function StaffDialog({
       label: "Username Kasir",
       type: "text",
       placeholder: "Contoh: budi_kasir",
-      colSpan: "full",
+      colSpan: 3,
       condition: (values) => !values.role || values.role === "CASHIER",
     },
     {
@@ -251,13 +252,14 @@ export function StaffDialog({
       label: "Email Manager (Opsional)",
       type: "email",
       placeholder: "Contoh: manager@outlet.com",
-      colSpan: "full",
+      colSpan: 3,
       condition: (values) => values.role === "MANAGER",
     },
     {
       name: "pin",
       label: "PIN Manager (6 Digit Angka)",
       type: "password",
+      colSpan: 3,
       placeholder: isEditMode
         ? "Biarkan kosong jika tidak ingin mengubah"
         : "Masukkan 6 digit angka PIN",
@@ -734,7 +736,7 @@ export function StaffDialog({
                               )}
                             >
                               {isChecked && (
-                                <Check className="h-3 w-3 stroke-[3]" />
+                                <Check className="h-3 w-3 stroke-3" />
                               )}
                             </div>
 
