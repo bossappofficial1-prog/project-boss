@@ -36,8 +36,29 @@ const FNB_ONLY_ROUTES_PREFIXES = ["/owner/outlets-manage-tables"];
 
 export async function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
+  const host = req.headers.get("host") || "";
 
   if (req.headers.get("x-middleware-prefetch")) {
+    return NextResponse.next();
+  }
+
+  // cashier.bossapp.id → rewrite path ke /cashier/*
+  if (host.startsWith("cashier.") && !pathname.startsWith("/_next")) {
+    const cashierToken = req.cookies.get("cashier_token")?.value;
+    if (!cashierToken) {
+      return NextResponse.redirect(new URL("/auth/login/cashier", req.url));
+    }
+    const cashierPayload = await verify(cashierToken);
+    if (!cashierPayload) {
+      const response = NextResponse.redirect(new URL("/auth/login/cashier", req.url));
+      response.cookies.delete("cashier_token");
+      return response;
+    }
+    if (pathname !== "/cashier" && !pathname.startsWith("/cashier/")) {
+      const url = new URL(`/cashier${pathname}`, req.url);
+      url.search = req.nextUrl.search;
+      return NextResponse.rewrite(url);
+    }
     return NextResponse.next();
   }
 
@@ -165,5 +186,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/auth/:path*", "/owner/:path*", "/manager/:path*", "/cashier/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.).*)"],
 };
