@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { protect, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
+import { protect, authorize } from "../middleware/auth.middleware";
+import { UserRole, StaffRole } from "@prisma/client";
 import {
   verifyTicketController,
   redeemTicketController,
@@ -20,9 +21,9 @@ ticketRouter.get("/order/:orderId", getTicketsByOrderController);
 ticketRouter.get("/order/:orderId/print", printOrderTicketsController);
 
 // Protected: get ticket codes by product (owner/cashier view)
-ticketRouter.get("/product/:productId/codes", protect, authorizeOwnerOrCashier, getTicketCodesByProductController);
+ticketRouter.get("/product/:productId/codes", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), getTicketCodesByProductController);
 
 // Protected: redeem ticket (owner/cashier only)
-ticketRouter.post("/redeem/:code", protect, authorizeOwnerOrCashier, redeemTicketController);
+ticketRouter.post("/redeem/:code", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), redeemTicketController);
 
 export default ticketRouter;

@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import { ResponseUtil } from "../utils/response";
 import { logger } from "../utils/pino.logger";
 import { AppError } from "../errors/app-error";
-// import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { ZodError } from "zod";
 import { MulterError } from "multer";
@@ -14,12 +13,16 @@ export const notFound = (req: Request, res: Response): void => {
   ResponseUtil.notFound(res, `Route ${req.originalUrl} not found`);
 };
 
-export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction): void => {
+export const errorHandler = (
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
   let statusCode: number = HttpStatus.INTERNAL_SERVER_ERROR;
   let message: string = Messages.INTERNAL_ERROR;
   let errors: any[] | undefined;
 
-  // ─── Handle Zod Validation Error ─────────────────────────────────
   if (err instanceof ZodError) {
     statusCode = HttpStatus.BAD_REQUEST;
     message = "Invalid input data.";
@@ -27,19 +30,13 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
       path: e.path.join("."),
       message: e.message,
     }));
-  }
-
-  // ─── JWT Errors ─────────────────────────────────────────────────
-  else if (err.name === "JsonWebTokenError") {
+  } else if (err.name === "JsonWebTokenError") {
     statusCode = HttpStatus.UNAUTHORIZED;
     message = "Invalid token";
   } else if (err.name === "TokenExpiredError") {
     statusCode = HttpStatus.UNAUTHORIZED;
     message = "Token expired";
-  }
-
-  // ─── Multer Error (File Upload) ─────────────────────────────────
-  else if (err instanceof MulterError) {
+  } else if (err instanceof MulterError) {
     statusCode = HttpStatus.BAD_REQUEST;
     message = err.message || "File upload failed";
   } else if (err.message?.startsWith("File type")) {
@@ -58,22 +55,15 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
       default:
         message = `Database error: ${err.message}`;
     }
-  }
-
-  // ─── AppError (Custom Error) ────────────────────────────────────
-  else if (err instanceof AppError) {
+  } else if (err instanceof AppError) {
     statusCode = err.statusCode ?? HttpStatus.INTERNAL_SERVER_ERROR;
     message = err.message;
     errors = err.errors;
-  }
-
-  // ─── Body Parser JSON Syntax Error ──────────────────────────────
-  else if (err instanceof SyntaxError && "body" in err) {
+  } else if (err instanceof SyntaxError && "body" in err) {
     statusCode = HttpStatus.BAD_REQUEST;
     message = "Invalid JSON in request body";
   }
 
-  // ─── Log Error ──────────────────────────────────────────────────
   logger.error(
     {
       message: err.message || "Unknown error",
@@ -107,7 +97,6 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
     });
   }
 
-  // ─── Send Error Response ────────────────────────────────────────
   ResponseUtil.error(res, message, errors, statusCode);
 };
 

@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { supplierController } from "../controller/supplier.controller";
+import { authorize } from "../middleware/auth.middleware";
 
 const router = Router();
 
+router.use(authorize("OWNER", "ADMIN", "CASHIER", "MANAGER"));
 // Get suppliers for a specific product (before /:id to avoid conflict)
 router.get("/by-product/:productGoodsId", supplierController.getByProduct);
 

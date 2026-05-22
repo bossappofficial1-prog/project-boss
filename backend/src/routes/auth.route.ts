@@ -14,7 +14,8 @@ import {
 
 import { createUserSchema } from "../schemas/user.schema";
 import { checkEmailExists } from "../validators/user.validator";
-import { protect } from "../middleware/auth.middleware";
+import { protect, authorize } from "../middleware/auth.middleware";
+import { StaffRole } from "@prisma/client";
 import passport from "../config/passport";
 import {
   updatePasswordSchema,
@@ -41,7 +42,7 @@ authRouter.post(
   authController.managerLogin,
 );
 
-authRouter.get("/cashier/me", protect, authController.getCashierMe);
+authRouter.get("/cashier/me", protect, authorize(StaffRole.CASHIER, StaffRole.MANAGER), authController.getCashierMe);
 
 authRouter.post(
   "/register",

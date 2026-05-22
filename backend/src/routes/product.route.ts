@@ -13,7 +13,7 @@ import {
 } from "../controller/product.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createProductSchema, updateProductSchema } from "../schemas/product.schema";
-import { authorize, protect, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
+import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
 import { importUpload } from "../middleware/upload.middleware";
 import { getAvailableStaffForProductController, getBookingSlotByOutlet } from "../controller/booking.controller";

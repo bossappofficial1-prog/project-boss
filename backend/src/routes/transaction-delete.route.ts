@@ -6,9 +6,9 @@ import {
   getDeleteRequestsController,
   directDeleteTransactionController,
 } from "../controller/transaction-delete.controller";
-import { authorize, protect, authorizeOwnerOrManager } from "../middleware/auth.middleware";
+import { authorize, protect } from "../middleware/auth.middleware";
 import { authorizePrivilege } from "../middleware/privilege.middleware";
-import { UserRole, StaffPrivilegeType } from "@prisma/client";
+import { UserRole, StaffRole, StaffPrivilegeType } from "@prisma/client";
 
 const transactionDeleteRouter = Router();
 
@@ -24,7 +24,7 @@ transactionDeleteRouter.post(
 transactionDeleteRouter.get(
   "/",
   protect,
-  authorizeOwnerOrManager,
+  authorize(UserRole.OWNER, UserRole.ADMIN, StaffRole.MANAGER),
   getDeleteRequestsController,
 );
 
@@ -32,7 +32,7 @@ transactionDeleteRouter.get(
 transactionDeleteRouter.post(
   "/:id/approve",
   protect,
-  authorizeOwnerOrManager,
+  authorize(UserRole.OWNER, UserRole.ADMIN, StaffRole.MANAGER),
   approveDeleteRequestController,
 );
 

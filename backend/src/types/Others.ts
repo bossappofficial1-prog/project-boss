@@ -6,7 +6,7 @@ export type UserMe = {
     email: string;
     avatar: string | null;
     password: string;
-    role: $Enums.UserRole;
+    role: $Enums.UserRole | $Enums.StaffRole;
     isVerified: boolean;
     verificationCode: string | null;
     verificationCodeExpires: Date | null;

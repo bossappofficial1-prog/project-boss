@@ -111,7 +111,8 @@ export class AuthService extends BaseService {
       name: staff.name,
       outletId: staff.outletId,
       businessId: staff.outlet?.businessId,
-      userType: "CASHIER", // Penanda bahwa ini adalah kasir
+      userType: "CASHIER",
+      role: staff.role,
     };
 
     await redis.set(

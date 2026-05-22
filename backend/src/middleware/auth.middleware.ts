@@ -8,15 +8,46 @@ import { StaffRole, UserRole } from "@prisma/client";
 import { redis } from "../config/redis";
 import { config } from "../config";
 
+type StaffSession = {
+  id: string;
+  name: string;
+  outletId: string;
+  businessId: string;
+  userType: "CASHIER" | "MANAGER";
+  role: "CASHIER" | "MANAGER";
+  username?: string;
+  privileges?: string[];
+};
+
+type OwnerSession = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  businessId?: string;
+  userType?: string;
+  [key: string]: unknown;
+};
+
+export function getAuthUser(
+  req: Request,
+  roles?: (UserRole | StaffRole)[],
+): OwnerSession | StaffSession | undefined {
+  if (roles) {
+    if (req.storedUser && roles.includes(req.storedUser.role as UserRole | StaffRole)) {
+      return req.storedUser;
+    }
+    if (req.storedCashier && roles.includes(req.storedCashier.role as UserRole | StaffRole)) {
+      return req.storedCashier;
+    }
+    return undefined;
+  }
+  return req.storedUser || req.storedCashier;
+}
+
 export const protect = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    let token: string | undefined;
-    let decoded: {
-      sessionId: string;
-      userType?: string;
-      role?: string;
-    } | null = null;
-    let session: string | null = null;
+    let hasValidSession = false;
 
     const tryToken = async (t: string) => {
       try {
@@ -41,53 +72,43 @@ export const protect = asyncHandler(
       }
     };
 
-    // 1. Determine token priority based on request path
-    const isCashierRequest =
-      req.path.includes("/cashier") ||
-      req.path.includes("/manager") ||
-      req.path.includes("/staff");
+    // Try owner token → storedUser
+    const ownerToken = req.cookies.token;
+    if (ownerToken) {
+      const result = await tryToken(ownerToken);
+      if (result) {
+        req.storedUser = JSON.parse(result.session);
+        hasValidSession = true;
+      }
+    }
 
-    // Check Authorization header first as fallback if cookies aren't used or as custom headers
-    let headerToken: string | undefined;
+    // Try cashier token → storedCashier
+    const cashierToken = req.cookies.cashier_token;
+    if (cashierToken) {
+      const result = await tryToken(cashierToken);
+      if (result) {
+        req.storedCashier = JSON.parse(result.session);
+        hasValidSession = true;
+      }
+    }
+
+    // Also check Authorization header (overrides cookie-based auth)
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
-      headerToken = authHeader.substring(7);
-    }
-
-    const firstToken = headerToken
-      ? headerToken
-      : isCashierRequest && req.cookies.cashier_token
-        ? req.cookies.cashier_token
-        : req.cookies.token || req.cookies.cashier_token;
-
-    const secondToken = headerToken
-      ? undefined
-      : firstToken === req.cookies.token
-        ? req.cookies.cashier_token
-        : req.cookies.token;
-
-    // 2. Try first token
-    if (firstToken) {
-      const result = await tryToken(firstToken);
+      const headerToken = authHeader.substring(7);
+      const result = await tryToken(headerToken);
       if (result) {
-        decoded = result.decoded;
-        session = result.session;
-        token = firstToken;
+        const user = JSON.parse(result.session);
+        if (user.userType === "CASHIER" || user.userType === "MANAGER") {
+          req.storedCashier = user;
+        } else {
+          req.storedUser = user;
+        }
+        hasValidSession = true;
       }
     }
 
-    // 3. Fallback to second token if first failed
-    if (!session && secondToken) {
-      const result = await tryToken(secondToken);
-      if (result) {
-        decoded = result.decoded;
-        session = result.session;
-        token = secondToken;
-      }
-    }
-
-    // 4. If still no session, clear all cookies and throw NOT_LOGGED_IN
-    if (!session) {
+    if (!hasValidSession) {
       res.clearCookie("token", {
         httpOnly: true,
         secure: !!config.COOKIES_DOMAIN,
@@ -107,62 +128,20 @@ export const protect = asyncHandler(
       );
     }
 
-    const user = JSON.parse(session);
-    req.storedUser = user;
     next();
   },
 );
 
 export const authorize = (...roles: (UserRole | StaffRole)[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.storedUser || !roles.includes(req.storedUser.role)) {
+    const user = getAuthUser(req, roles);
+    if (!user) {
       return next(new AppError(Messages.UNAUTHORIZED, HttpStatus.FORBIDDEN));
+    }
+    // Promote matched staff session to storedUser so downstream controllers work
+    if (user === req.storedCashier) {
+      req.storedUser = user as any;
     }
     next();
   };
-};
-
-// Middleware untuk mengizinkan Owner atau Kasir
-export const authorizeOwnerOrCashier = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  if (!req.storedUser) {
-    return next(new AppError(Messages.UNAUTHORIZED, HttpStatus.FORBIDDEN));
-  }
-
-  const userType = (req.storedUser as any).userType;
-  const role = req.storedUser.role;
-
-  // Izinkan jika Owner atau Kasir
-  if (role === UserRole.OWNER || userType === "CASHIER") {
-    return next();
-  }
-
-  return next(new AppError(Messages.UNAUTHORIZED, HttpStatus.FORBIDDEN));
-};
-
-// Middleware untuk mengizinkan Owner atau Manager
-export const authorizeOwnerOrManager = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  if (!req.storedUser) {
-    return next(new AppError(Messages.UNAUTHORIZED, HttpStatus.FORBIDDEN));
-  }
-
-  const userType = (req.storedUser as any).userType;
-  const role = req.storedUser.role;
-
-  if (
-    role === UserRole.OWNER ||
-    role === UserRole.ADMIN ||
-    userType === "MANAGER"
-  ) {
-    return next();
-  }
-
-  return next(new AppError(Messages.UNAUTHORIZED, HttpStatus.FORBIDDEN));
 };

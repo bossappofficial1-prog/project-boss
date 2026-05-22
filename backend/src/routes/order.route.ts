@@ -2,8 +2,8 @@ import { Router } from "express";
 import { createOrderController, getOrderByIdController, getOrderReceiptController, getOrderReceiptPrintController, refundOrderController, updateOrderStatusController, updateServiceOrderStatusController, completeOrderController, listGoodsOrdersByOutletController, listServiceQueueByOutletController, getOrderByCustomerPhoneController, getOrderNotificationDataController, cancelOrderByCustomerController, confirmOrderByCustomerController, getOrdersListController } from "../controller/order.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createOrderSchema, updateOrderStatusSchema, updateServiceQueueStatusSchema, customerCancelOrderSchema, customerConfirmOrderSchema } from "../schemas/order.schema";
-import { authorize, protect, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
-import { UserRole } from "@prisma/client";
+import { authorize, protect } from "../middleware/auth.middleware";
+import { UserRole, StaffRole } from "@prisma/client";
 import { orderCreationLimiter } from "../middleware/order-rate-limit.middleware";
 import { validateGuestCustomer, validateBusinessHours, validateOrderFrequency } from "../middleware/guest-validation.middleware";
 import { PaymentService } from "../service/payment.service";
@@ -43,7 +43,7 @@ orderRouter.post("/customer/:id/confirm", validateSchema(customerConfirmOrderSch
 // orderRouter.use(orderManagementLimiter);
 
 // Rute yang dilindungi untuk melihat semua pesanan
-orderRouter.get("/", protect, authorizeOwnerOrCashier, getOrdersListController);
+orderRouter.get("/", protect,   authorize(UserRole.OWNER, StaffRole.CASHIER), getOrdersListController);
 
 // Rute yang dilindungi untuk melihat detail pesanan
 orderRouter.get("/:id", getOrderByIdController);
@@ -52,21 +52,21 @@ orderRouter.get("/:id", getOrderByIdController);
 orderRouter.post("/:id/refund", protect, authorize(UserRole.OWNER), refundOrderController);
 
 // Rute yang dilindungi untuk mencetak struk (Owner atau Kasir)
-orderRouter.get("/:id/receipt", protect, authorizeOwnerOrCashier, getOrderReceiptController);
-orderRouter.get("/:id/receipt/print", protect, authorizeOwnerOrCashier, getOrderReceiptPrintController);
+orderRouter.get("/:id/receipt", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), getOrderReceiptController);
+orderRouter.get("/:id/receipt/print", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), getOrderReceiptPrintController);
 
 // Rute yang dilindungi untuk memperbarui status pesanan (Owner atau Kasir)
-orderRouter.patch("/:id/status", protect, authorizeOwnerOrCashier, validateSchema(updateOrderStatusSchema), updateOrderStatusController);
-orderRouter.patch("/:id/service-status", protect, authorizeOwnerOrCashier, validateSchema(updateServiceQueueStatusSchema), updateServiceOrderStatusController);
+orderRouter.patch("/:id/status", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), validateSchema(updateOrderStatusSchema), updateOrderStatusController);
+orderRouter.patch("/:id/service-status", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), validateSchema(updateServiceQueueStatusSchema), updateServiceOrderStatusController);
 
 // Rute yang dilindungi untuk menyelesaikan pesanan (Owner atau Kasir)
-orderRouter.post("/:id/complete", protect, authorizeOwnerOrCashier, completeOrderController);
+orderRouter.post("/:id/complete", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), completeOrderController);
 
 // List pesanan barang berdasarkan outlet (Owner atau Kasir)
-orderRouter.get("/:outletId/goods", protect, authorizeOwnerOrCashier, listGoodsOrdersByOutletController);
+orderRouter.get("/:outletId/goods", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), listGoodsOrdersByOutletController);
 
 // List antrian layanan berdasarkan outlet (Owner atau Kasir)
-orderRouter.get("/:outletId/queue", protect, authorizeOwnerOrCashier, listServiceQueueByOutletController);
+orderRouter.get("/:outletId/queue", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), listServiceQueueByOutletController);
 
 // Endpoint internal untuk consumer mendapatkan data order untuk notifikasi
 orderRouter.get("/:id/notification-data", getOrderNotificationDataController);

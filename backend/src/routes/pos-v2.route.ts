@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { protect, authorizeOwnerOrCashier } from "../middleware/auth.middleware";
+import { protect, authorize } from "../middleware/auth.middleware";
 import { validateSchema } from "../middleware/zod.middleware";
 import { createPosV2OrderSchema } from "../schemas/pos-v2.schema";
+import { UserRole, StaffRole } from "@prisma/client";
 import {
     posV2GetProducts,
     posV2CreateOrder,
@@ -14,7 +15,7 @@ import {
 
 const posV2Router = Router();
 
-posV2Router.use(protect, authorizeOwnerOrCashier);
+posV2Router.use(protect, authorize(UserRole.OWNER, StaffRole.CASHIER));
 
 posV2Router.get("/products", posV2GetProducts);
 posV2Router.post("/orders", validateSchema(createPosV2OrderSchema), posV2CreateOrder);

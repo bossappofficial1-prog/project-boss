@@ -7,18 +7,19 @@ import {
   createCashMovementSchema,
   openCashierShiftSchema,
 } from "../schemas/cashier-shift.schema";
-import { UserRole } from "@prisma/client";
+import { UserRole, StaffRole } from "@prisma/client";
 
 const cashierShiftRouter = Router();
 
 cashierShiftRouter.use(protect);
 
 // Cashier-only endpoints (enforced in controller via storedUser.userType === "CASHIER")
-cashierShiftRouter.get("/active", cashierShiftController.getActive);
-cashierShiftRouter.post("/open", validateSchema(openCashierShiftSchema), cashierShiftController.open);
-cashierShiftRouter.post("/:shiftId/close", validateSchema(closeCashierShiftSchema), cashierShiftController.close);
+cashierShiftRouter.get("/active", authorize(StaffRole.CASHIER, StaffRole.MANAGER), cashierShiftController.getActive);
+cashierShiftRouter.post("/open", authorize(StaffRole.CASHIER, StaffRole.MANAGER), validateSchema(openCashierShiftSchema), cashierShiftController.open);
+cashierShiftRouter.post("/:shiftId/close", authorize(StaffRole.CASHIER, StaffRole.MANAGER), validateSchema(closeCashierShiftSchema), cashierShiftController.close);
 cashierShiftRouter.post(
   "/:shiftId/movements",
+  authorize(StaffRole.CASHIER, StaffRole.MANAGER),
   validateSchema(createCashMovementSchema),
   cashierShiftController.createMovement,
 );
