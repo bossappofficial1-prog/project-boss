@@ -56,7 +56,9 @@ export default function ManagerSidebar() {
   const isCollapsed = state === "collapsed";
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const { data: cashierData } = useQuery({
     queryKey: ["cashier-auth"],
@@ -69,38 +71,41 @@ export default function ManagerSidebar() {
 
   const subscriptionPlan = outletData?.business?.subscriptionPlan || "BASIC";
   const hasProAccess = ["TRIAL", "PRO", "ENTERPRISE"].includes(
-    subscriptionPlan.toUpperCase()
+    subscriptionPlan.toUpperCase(),
   );
 
   // Mapping menu item ID to backend privilege names
-  const privilegeMap = useMemo<Record<string, string>>(() => ({
-    "business-analytics": "ANALYTICS",
-    "dashboard-outlet": "OUTLET_MANAGEMENT",
-    "kelola-outlet": "OUTLET_MANAGEMENT",
-    "kelola-staff": "OUTLET_MANAGEMENT",
-    "transfer-outlet": "OUTLET_MANAGEMENT",
-    "kelola-meja": "OUTLET_MANAGEMENT",
-    "reservations": "OUTLET_MANAGEMENT",
-    "products": "PRODUCT_MANAGEMENT",
-    "stock": "STOCK_MANAGEMENT",
-    "suppliers": "STOCK_MANAGEMENT",
-    "customers": "CUSTOMER_MANAGEMENT",
-    "loyalty": "CUSTOMER_MANAGEMENT",
-    "orders": "ORDER_MANAGEMENT",
-    "booking-calendar": "SERVICE_MANAGEMENT",
-    "booking-list": "SERVICE_MANAGEMENT",
-    "reports": "FINANCE_REPORTS",
-    "cashier-shifts": "FINANCE_REPORTS",
-    "expenses": "FINANCE_REPORTS",
-    "transactions": "TRANSACTION_VIEW",
-    "profit-per-product": "ANALYTICS",
-    "business-health": "ANALYTICS",
-    "jam-ramai": "ANALYTICS",
-    "laporan-laba-rugi": "ANALYTICS",
-    "calculator-hpp": "TOOLS_CALCULATOR",
-    "calculator-bep": "TOOLS_CALCULATOR",
-    "sales-target-breakdown": "TOOLS_CALCULATOR",
-  }), []);
+  const privilegeMap = useMemo<Record<string, string>>(
+    () => ({
+      "business-analytics": "ANALYTICS",
+      "dashboard-outlet": "OUTLET_MANAGEMENT",
+      "kelola-outlet": "OUTLET_MANAGEMENT",
+      "kelola-staff": "OUTLET_MANAGEMENT",
+      "transfer-outlet": "OUTLET_MANAGEMENT",
+      "kelola-meja": "OUTLET_MANAGEMENT",
+      reservations: "OUTLET_MANAGEMENT",
+      products: "PRODUCT_MANAGEMENT",
+      stock: "STOCK_MANAGEMENT",
+      suppliers: "STOCK_MANAGEMENT",
+      customers: "CUSTOMER_MANAGEMENT",
+      loyalty: "CUSTOMER_MANAGEMENT",
+      orders: "ORDER_MANAGEMENT",
+      "booking-calendar": "SERVICE_MANAGEMENT",
+      "booking-list": "SERVICE_MANAGEMENT",
+      reports: "FINANCE_REPORTS",
+      "cashier-shifts": "FINANCE_REPORTS",
+      expenses: "FINANCE_REPORTS",
+      transactions: "TRANSACTION_VIEW",
+      "profit-per-product": "ANALYTICS",
+      "business-health": "ANALYTICS",
+      "jam-ramai": "ANALYTICS",
+      "laporan-laba-rugi": "ANALYTICS",
+      "calculator-hpp": "TOOLS_CALCULATOR",
+      "calculator-bep": "TOOLS_CALCULATOR",
+      "sales-target-breakdown": "TOOLS_CALCULATOR",
+    }),
+    [],
+  );
 
   const mapHref = useCallback((href?: string) => {
     if (!href) return undefined;
@@ -108,15 +113,18 @@ export default function ManagerSidebar() {
     return href.replace(/^\/owner\//, "/manager/");
   }, []);
 
-  const isAllowed = useCallback((itemId: string) => {
-    if (itemId === "overview" || itemId === "dashboard-outlet") return true; // Overview & Dashboard Outlet are always allowed as landing page
-    const requiredPriv = privilegeMap[itemId];
-    if (!requiredPriv) return false;
-    return privileges.some((p: any) => {
-      const privName = p.privilege || p;
-      return privName === requiredPriv;
-    });
-  }, [privileges, privilegeMap]);
+  const isAllowed = useCallback(
+    (itemId: string) => {
+      if (itemId === "overview" || itemId === "dashboard-outlet") return true; // Overview & Dashboard Outlet are always allowed as landing page
+      const requiredPriv = privilegeMap[itemId];
+      if (!requiredPriv) return false;
+      return privileges.some((p: any) => {
+        const privName = p.privilege || p;
+        return privName === requiredPriv;
+      });
+    },
+    [privileges, privilegeMap],
+  );
 
   // Auto-expand menu if a sub-item is active
   useEffect(() => {
@@ -128,7 +136,7 @@ export default function ManagerSidebar() {
       group.items.forEach((item) => {
         if (item.subItems) {
           const hasActiveSubItem = item.subItems.some(
-            (subItem) => pathname === mapHref(subItem.href)
+            (subItem) => pathname === mapHref(subItem.href),
           );
           if (hasActiveSubItem) {
             newExpandedMenus[item.id] = true;
@@ -140,12 +148,15 @@ export default function ManagerSidebar() {
     setExpandedMenus((prev) => ({ ...prev, ...newExpandedMenus }));
   }, [pathname, isCollapsed, outletData, mapHref]);
 
-  const handlePrefetch = useCallback((href: string) => {
-    if (!href || typeof window === "undefined") return;
-    try {
-      router.prefetch(href);
-    } catch {}
-  }, [router]);
+  const handlePrefetch = useCallback(
+    (href: string) => {
+      if (!href || typeof window === "undefined") return;
+      try {
+        router.prefetch(href);
+      } catch {}
+    },
+    [router],
+  );
 
   const toggleMenu = useCallback((menuId: string) => {
     setExpandedMenus((prev) => ({
@@ -189,7 +200,9 @@ export default function ManagerSidebar() {
             if (item.id === "overview") return false;
 
             // Check if item type is supported by this outlet
-            const itemAllowed = !item.requiredTypes || item.requiredTypes.includes(outletData.type);
+            const itemAllowed =
+              !item.requiredTypes ||
+              item.requiredTypes.includes(outletData.type);
             if (!itemAllowed) return false;
 
             // Check manager privileges
@@ -205,7 +218,11 @@ export default function ManagerSidebar() {
 
             if (item.subItems) {
               clonedItem.subItems = item.subItems
-                .filter((sub) => !sub.requiredTypes || sub.requiredTypes.includes(outletData.type))
+                .filter(
+                  (sub) =>
+                    !sub.requiredTypes ||
+                    sub.requiredTypes.includes(outletData.type),
+                )
                 .map((sub) => {
                   const clonedSub = { ...sub };
                   clonedSub.href = mapHref(sub.href) || "";
@@ -235,7 +252,7 @@ export default function ManagerSidebar() {
       }
       return pathname === href || pathname.startsWith(`${href}/`);
     },
-    [pathname]
+    [pathname],
   );
 
   return (
@@ -296,7 +313,7 @@ export default function ManagerSidebar() {
                   const Icon = item.icon;
                   const isActive = isHrefActive(item.href);
                   const hasActiveSubItem = item.subItems?.some((subItem) =>
-                    isHrefActive(subItem.href)
+                    isHrefActive(subItem.href),
                   );
 
                   // Dropdown/Collapsible menu item for items with subItems
@@ -316,7 +333,7 @@ export default function ManagerSidebar() {
                                         "group relative h-11 rounded-lg text-sidebar-foreground",
                                         hasActiveSubItem
                                           ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                                          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                                       )}
                                     >
                                       <Icon className="h-5 w-5" />
@@ -336,7 +353,7 @@ export default function ManagerSidebar() {
                               side="right"
                               align="start"
                               sideOffset={16}
-                              className="z-[100] w-56 rounded-lg border-sidebar-border bg-popover p-1 text-popover-foreground shadow-xl"
+                              className="z-100 w-56 rounded-lg border-sidebar-border bg-popover p-1 text-popover-foreground shadow-xl"
                             >
                               <DropdownMenuLabel className="px-2 py-1.5 text-sm font-semibold">
                                 {item.name}
@@ -351,16 +368,20 @@ export default function ManagerSidebar() {
                                     disabled={subItem.disabled}
                                   >
                                     <InstantLink
-                                      href={subItem.disabled ? "#" : subItem.href}
+                                      href={
+                                        subItem.disabled ? "#" : subItem.href
+                                      }
                                       onMouseEnter={() =>
-                                        !subItem.disabled && handlePrefetch(subItem.href)
+                                        !subItem.disabled &&
+                                        handlePrefetch(subItem.href)
                                       }
                                       className={cn(
                                         "cursor-pointer flex items-center w-full px-2 py-1.5 text-sm rounded-md outline-none transition-colors",
                                         isSubActive
                                           ? "bg-primary/10 text-primary font-medium"
                                           : "hover:bg-sidebar-accent focus:bg-sidebar-accent",
-                                        subItem.disabled && "opacity-50 pointer-events-none"
+                                        subItem.disabled &&
+                                          "opacity-50 pointer-events-none",
                                       )}
                                     >
                                       <span>{subItem.name}</span>
@@ -371,13 +392,15 @@ export default function ManagerSidebar() {
                                         >
                                           Soon
                                         </Badge>
-                                      ) : subItem.badge && (
-                                        <Badge
-                                          variant="secondary"
-                                          className="ml-auto rounded-sm px-1.5 py-0 text-[10px]"
-                                        >
-                                          {subItem.badge}
-                                        </Badge>
+                                      ) : (
+                                        subItem.badge && (
+                                          <Badge
+                                            variant="secondary"
+                                            className="ml-auto rounded-sm px-1.5 py-0 text-[10px]"
+                                          >
+                                            {subItem.badge}
+                                          </Badge>
+                                        )
                                       )}
                                     </InstantLink>
                                   </DropdownMenuItem>
@@ -402,7 +425,7 @@ export default function ManagerSidebar() {
                                 "group relative h-11 rounded-lg text-sidebar-foreground",
                                 hasActiveSubItem || isExpanded
                                   ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                               )}
                             >
                               {hasActiveSubItem && (
@@ -413,7 +436,7 @@ export default function ManagerSidebar() {
                               <ChevronDown
                                 className={cn(
                                   "w-4 h-4 transition-transform",
-                                  isExpanded && "rotate-180"
+                                  isExpanded && "rotate-180",
                                 )}
                               />
                             </SidebarMenuButton>
@@ -434,15 +457,22 @@ export default function ManagerSidebar() {
                                         isSubActive
                                           ? "bg-primary/10 text-primary hover:bg-primary/10"
                                           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                        subItem.disabled && "opacity-50"
+                                        subItem.disabled && "opacity-50",
                                       )}
                                     >
                                       <InstantLink
-                                        href={subItem.disabled ? "#" : subItem.href}
-                                        onMouseEnter={() =>
-                                          !subItem.disabled && handlePrefetch(subItem.href)
+                                        href={
+                                          subItem.disabled ? "#" : subItem.href
                                         }
-                                        className={subItem.disabled ? "pointer-events-none" : ""}
+                                        onMouseEnter={() =>
+                                          !subItem.disabled &&
+                                          handlePrefetch(subItem.href)
+                                        }
+                                        className={
+                                          subItem.disabled
+                                            ? "pointer-events-none"
+                                            : ""
+                                        }
                                       >
                                         <span>{subItem.name}</span>
                                         {subItem.disabled ? (
@@ -452,13 +482,15 @@ export default function ManagerSidebar() {
                                           >
                                             Soon
                                           </Badge>
-                                        ) : subItem.badge && (
-                                          <Badge
-                                            variant="secondary"
-                                            className="ml-auto rounded-sm px-1.5 py-0 text-[10px]"
-                                          >
-                                            {subItem.badge}
-                                          </Badge>
+                                        ) : (
+                                          subItem.badge && (
+                                            <Badge
+                                              variant="secondary"
+                                              className="ml-auto rounded-sm px-1.5 py-0 text-[10px]"
+                                            >
+                                              {subItem.badge}
+                                            </Badge>
+                                          )
                                         )}
                                       </InstantLink>
                                     </SidebarMenuSubButton>
@@ -485,18 +517,22 @@ export default function ManagerSidebar() {
                                 "group relative h-11 rounded-lg text-sidebar-foreground",
                                 isActive
                                   ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                               )}
                             >
                               <InstantLink
                                 href={item.href || "#"}
-                                onMouseEnter={() => item.href && handlePrefetch(item.href)}
+                                onMouseEnter={() =>
+                                  item.href && handlePrefetch(item.href)
+                                }
                               >
                                 {isActive && (
                                   <span className="absolute left-0 top-2 h-7 w-1 rounded-r-full bg-primary" />
                                 )}
                                 <Icon className="h-5 w-5" />
-                                {!isCollapsed && <span className="flex-1">{item.name}</span>}
+                                {!isCollapsed && (
+                                  <span className="flex-1">{item.name}</span>
+                                )}
                                 {!isCollapsed && item.badge && (
                                   <Badge
                                     variant="secondary"

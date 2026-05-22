@@ -134,7 +134,7 @@ export default function ManagerHeader() {
               variant="ghost"
               className="relative h-10 gap-2 rounded-xl px-2 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              <Avatar className="h-8 w-8 bg-gradient-to-br from-primary to-primary/80 shadow-md">
+              <Avatar className="h-8 w-8 bg-linear-to-br from-primary to-primary/80 shadow-md">
                 <AvatarFallback className="bg-transparent text-white text-sm font-black">
                   {isAuthLoading ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -147,7 +147,9 @@ export default function ManagerHeader() {
               {/* User Info - Hidden on mobile */}
               <div className="hidden sm:flex flex-col items-start text-left">
                 <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
-                  {isAuthLoading ? "Loading..." : cashierData?.name || "Manager"}
+                  {isAuthLoading
+                    ? "Loading..."
+                    : cashierData?.name || "Manager"}
                 </span>
                 <span className="text-xs text-primary font-medium">
                   Manager Outlet
@@ -166,7 +168,9 @@ export default function ManagerHeader() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                  {isAuthLoading ? "Loading..." : cashierData?.name || "Manager"}
+                  {isAuthLoading
+                    ? "Loading..."
+                    : cashierData?.name || "Manager"}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                   {isAuthLoading ? "..." : cashierData?.email || "No email"}
