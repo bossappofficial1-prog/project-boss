@@ -202,17 +202,18 @@ export function StaffDialog({
     },
     {
       name: "username",
-      label: "Username",
-      type: `text`,
-      placeholder: "eg: jono_backrie",
-      colSpan: 4,
+      label: "Username Kasir",
+      type: "text",
+      placeholder: "Contoh: budi_kasir",
+      colSpan: 3,
+      condition: (values) => !values.role || values.role === "CASHIER",
     },
     {
       name: "phone",
       label: "Nomor Telepon",
       type: `tel`,
       placeholder: "08xx-xxxx-xxxx",
-      colSpan: 2,
+      colSpan: 3,
     },
     {
       name: "status",
@@ -226,19 +227,12 @@ export function StaffDialog({
       ],
     },
     // Cashier specific fields
-    {
-      name: "username",
-      label: "Username Kasir",
-      type: "text",
-      placeholder: "Contoh: budi_kasir",
-      colSpan: 3,
-      condition: (values) => !values.role || values.role === "CASHIER",
-    },
+
     {
       name: "password",
       label: "Kata Sandi Kasir/PIN",
       type: "password",
-      colSpan: "full",
+      colSpan: 3,
       placeholder: isEditMode
         ? "Biarkan kosong jika tidak ingin mengubah"
         : "Minimal 6 karakter",

@@ -49,13 +49,19 @@ export async function proxy(req: NextRequest) {
       return NextResponse.next();
     }
 
+    if (pathname.startsWith("/kitchen/")) {
+      return NextResponse.next();
+    }
+
     const cashierToken = req.cookies.get("cashier_token")?.value;
     if (!cashierToken) {
       return NextResponse.redirect(new URL("/auth/login/cashier", req.url));
     }
     const cashierPayload = await verify(cashierToken);
     if (!cashierPayload) {
-      const response = NextResponse.redirect(new URL("/auth/login/cashier", req.url));
+      const response = NextResponse.redirect(
+        new URL("/auth/login/cashier", req.url),
+      );
       response.cookies.delete("cashier_token");
       return response;
     }
@@ -70,7 +76,8 @@ export async function proxy(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
   const cashierToken = req.cookies.get("cashier_token")?.value;
 
-  const isManagerOrCashierRoute = pathname.startsWith("/manager") || pathname.startsWith("/cashier");
+  const isManagerOrCashierRoute =
+    pathname.startsWith("/manager") || pathname.startsWith("/cashier");
 
   /**
    * 1. ROUTE PROTECTION FOR CASHIER & MANAGER
@@ -82,7 +89,9 @@ export async function proxy(req: NextRequest) {
 
     const cashierPayload = await verify(cashierToken);
     if (!cashierPayload) {
-      const response = NextResponse.redirect(new URL("/auth/login/cashier", req.url));
+      const response = NextResponse.redirect(
+        new URL("/auth/login/cashier", req.url),
+      );
       response.cookies.delete("cashier_token");
       return response;
     }
@@ -127,13 +136,13 @@ export async function proxy(req: NextRequest) {
    */
   if (role === "OWNER") {
     const isProRoute = PRO_ROUTES_PREFIXES.some(
-      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
     );
     const isFnbOnlyRoute = FNB_ONLY_ROUTES_PREFIXES.some(
-      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
     );
     const hasProAccess = ["TRIAL", "PRO", "ENTERPRISE"].includes(
-      subscriptionPlan
+      subscriptionPlan,
     );
 
     // 1. Check Outlet Type

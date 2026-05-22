@@ -85,7 +85,7 @@ export class AuthService extends BaseService {
   static async cashierLogin(data: CashierLoginInput) {
     const staff = await StaffRepository.findByUsername(data.username);
     if (!staff) {
-      this.unauthorized(Messages.INVALID_CREDENTIALS);
+      this.unauthorized("Username atau Password/PIN salah");
     }
 
     // Pastikan staff memiliki password (sudah disetup sebagai kasir)
@@ -101,7 +101,7 @@ export class AuthService extends BaseService {
     );
 
     if (!isPasswordValid) {
-      this.unauthorized(Messages.INVALID_CREDENTIALS);
+      this.unauthorized("Username atau Password/PIN salah");
     }
 
     // Simpan session kasir di Redis
@@ -149,7 +149,9 @@ export class AuthService extends BaseService {
     }
 
     if (!staff.pin) {
-      this.forbidden("Akun manager belum diaktifkan. Hubungi owner untuk mengatur PIN.");
+      this.forbidden(
+        "Akun manager belum diaktifkan. Hubungi owner untuk mengatur PIN.",
+      );
     }
 
     const isPinValid = await BcryptUtil.compare(data.pin, staff.pin);
