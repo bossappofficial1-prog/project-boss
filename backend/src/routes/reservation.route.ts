@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { protect } from "../middleware/auth.middleware";
+import { protect, authorize } from "../middleware/auth.middleware";
 import { validateSchema } from "../middleware/zod.middleware";
 import { reservationController } from "../controller/reservation.controller";
 import {
@@ -7,10 +7,11 @@ import {
   getReservationsQuerySchema,
   updateReservationStatusSchema,
 } from "../schemas/reservation.schema";
+import { UserRole, StaffRole } from "@prisma/client";
 
 const router = Router();
 
-router.use(protect);
+router.use(protect, authorize(UserRole.OWNER, StaffRole.CASHIER, StaffRole.MANAGER));
 
 router.post(
   "/",

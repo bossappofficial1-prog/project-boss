@@ -15,7 +15,7 @@ export type CreateReservationInput = z.infer<typeof createReservationSchema>;
 
 export const getReservationsQuerySchema = z.object({
   outletId: z.string(),
-  date: z.string().optional(), // YYYY-MM-DD
+  date: z.string().optional(),
   status: z.enum(["RESERVED", "OCCUPIED", "COMPLETED", "CANCELLED"]).optional(),
 });
 

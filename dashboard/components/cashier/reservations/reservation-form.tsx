@@ -4,8 +4,9 @@ import { z } from "zod";
 import { ReusableForm, FormFieldConfig } from "@/components/ui/reuseable-form";
 import { TableAvailabilityPicker } from "@/components/cashier/reservations/table-availability-picker";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, getDay } from "date-fns";
 import { useCreateReservation } from "@/hooks/api/use-reservations";
+import { useOperatingHours } from "@/hooks/useOperatingHours";
 
 interface ReservationFormProps {
     outletId: string;
@@ -38,14 +39,14 @@ const schema = z.object({
 
 type ReservationFormValues = z.infer<typeof schema>;
 
-const TIME_OPTIONS = Array.from({ length: 26 }, (_, i) => {
-    const totalMinutes = 8 * 60 + i * 30; // mulai 08:00, interval 30 menit
-    const h = Math.floor(totalMinutes / 60)
-        .toString()
-        .padStart(2, "0");
+const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+const TIME_SLOTS = Array.from({ length: 47 }, (_, i) => {
+    const totalMinutes = 30 + i * 30;
+    const h = Math.floor(totalMinutes / 60).toString().padStart(2, "0");
     const m = (totalMinutes % 60).toString().padStart(2, "0");
     return { label: `${h}:${m}`, value: `${h}:${m}` };
-}); // 08:00 – 21:00
+});
 
 export function ReservationForm({
     outletId,
@@ -53,6 +54,8 @@ export function ReservationForm({
     onOpenChange,
     onSuccess,
 }: ReservationFormProps) {
+    const { data: operatingHours = [] } = useOperatingHours(outletId);
+
     const fields: FormFieldConfig<ReservationFormValues>[] = [
         {
             name: "customerName",
@@ -79,7 +82,7 @@ export function ReservationForm({
             label: "Jam Mulai",
             type: "select",
             placeholder: "Pilih jam",
-            options: TIME_OPTIONS,
+            options: TIME_SLOTS,
             colSpan: 1,
         },
         {
@@ -106,15 +109,35 @@ export function ReservationForm({
                 const time = form.watch("bookingTime");
                 const duration = form.watch("durationMinutes");
 
+                const day = date ? getDay(new Date(date)) : -1;
+                const hours = operatingHours.find((h: any) => h.dayOfWeek === day);
+
                 return (
-                    <TableAvailabilityPicker
-                        outletId={outletId}
-                        date={date}
-                        time={time}
-                        duration={duration}
-                        value={field.value as string}
-                        onChange={field.onChange}
-                    />
+                    <div className="space-y-2">
+                        {date && hours && !hours.isOpen && (
+                            <p className="text-xs text-destructive">{DAY_NAMES[day]}: Outlet tutup</p>
+                        )}
+                        {date && hours?.isOpen && (
+                            <p className="text-xs text-muted-foreground">
+                                Jam operasional {DAY_NAMES[day]}:{" "}
+                                {format(new Date(hours.openTime), "HH:mm")} –{" "}
+                                {format(new Date(hours.closeTime), "HH:mm")}
+                            </p>
+                        )}
+                        {date && !hours && operatingHours.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                                {DAY_NAMES[day]}: Tidak ada jam operasional
+                            </p>
+                        )}
+                        <TableAvailabilityPicker
+                            outletId={outletId}
+                            date={date}
+                            time={time}
+                            duration={duration}
+                            value={field.value as string}
+                            onChange={field.onChange}
+                        />
+                    </div>
                 );
             },
         },
@@ -131,7 +154,6 @@ export function ReservationForm({
 
     const handleSubmit = async (values: ReservationFormValues) => {
         try {
-            // Combine date and time, handling both Date objects and strings
             const dateObj = new Date(values.bookingDate);
             const dateStr = format(dateObj, "yyyy-MM-dd");
             const timeStr = values.bookingTime;

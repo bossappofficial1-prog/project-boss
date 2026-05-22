@@ -26,7 +26,7 @@ export default function ReservationsPageClient() {
     <div className="p-6 space-y-6 max-w-6xl mx-auto animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Reservasi Meja</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Reservasi Meja</h1>
           <p className="text-muted-foreground text-sm">
             Kelola reservasi meja untuk{" "}
             {format(new Date(), "dd MMMM yyyy", { locale: id })}
@@ -61,7 +61,7 @@ export default function ReservationsPageClient() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {reservations.map((res) => (
-            <ReservationCard key={res.id} reservation={res} />
+            <ReservationCard key={res.id} reservation={res} outletId={outletId!} />
           ))}
         </div>
       )}

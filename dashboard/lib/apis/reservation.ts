@@ -5,6 +5,7 @@ export interface Reservation {
     id: string;
     bookingDate: string;
     bookingDurationMinutes: number;
+    guestCount?: number;
     orderStatus: string;
     guestCustomer: {
         name: string;

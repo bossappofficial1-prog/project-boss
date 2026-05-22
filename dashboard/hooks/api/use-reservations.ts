@@ -26,3 +26,17 @@ export function useCreateReservation() {
     },
   });
 }
+
+export function useUpdateReservationStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, status, outletId }: { id: string; status: string; outletId: string }) =>
+      reservationApi.updateStatus(id, status, outletId),
+    onSuccess: (_, { outletId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["reservations", outletId],
+      });
+    },
+  });
+}

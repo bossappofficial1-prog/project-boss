@@ -602,6 +602,7 @@ model Order {
   pointsRedeemed           Int                       @default(0)
   bookingDate              DateTime?
   bookingDurationMinutes   Int?
+  guestCount               Int?
   customerType             CustomerType              @default(GUEST)
   paymentStatus            PaymentStatus             @default(PENDING)
   paymentReminderSent      Boolean                   @default(false)

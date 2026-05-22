@@ -6,7 +6,7 @@ import { AppError } from "../errors/app-error";
 class ReservationController extends BaseController {
   createReservation = this.handler(async (req: Request, res: Response) => {
     const data = req.body;
-    const staffId = (req as any).user?.id; // Assuming staff is logged in
+    const staffId = req.storedCashier?.id;
     const result = await ReservationService.createReservation(data, staffId);
     return this.success(res, result, 201, "Reservasi berhasil dibuat");
   });

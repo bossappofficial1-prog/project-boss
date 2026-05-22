@@ -1,25 +1,16 @@
 import { db } from "../config/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, TableStatus } from "@prisma/client";
 
 export class ReservationRepository {
-  static async findConflictingReservations(tableId: string) {
-    return db.order.findMany({
-      where: {
-        tableId,
-        orderStatus: {
-          in: ["RESERVED", "ON_GOING", "PROCESSING", "CONFIRMED"],
-        },
-        bookingDate: {
-          not: null,
-        },
-        bookingDurationMinutes: {
-          not: null,
-        },
-      },
-      select: {
-        bookingDate: true,
-        bookingDurationMinutes: true,
-      },
+  static async findTableById(tableId: string) {
+    return db.outletTable.findUnique({
+      where: { id: tableId },
+    });
+  }
+
+  static async findOutletHours(outletId: string) {
+    return db.outletOperatingHours.findMany({
+      where: { outletId },
     });
   }
 
@@ -35,25 +26,15 @@ export class ReservationRepository {
     });
   }
 
-  static async createReservation(data: Prisma.OrderUncheckedCreateInput) {
-    return db.order.create({
-      data,
-      include: {
-        guestCustomer: true,
-        table: true,
-      },
-    });
-  }
-
   static async createReservationTransaction(
     tableId: string,
     bookingStart: Date,
     bookingEnd: Date,
+    guestCount: number,
     customerData: { name: string; phone: string },
     reservationData: Omit<Prisma.OrderUncheckedCreateInput, "guestCustomerId">,
   ) {
     return db.$transaction(async (tx) => {
-      // 1. Check for conflicts
       const conflictingReservations = await tx.order.findMany({
         where: {
           tableId,
@@ -80,7 +61,6 @@ export class ReservationRepository {
         throw new Error("CONFLICT");
       }
 
-      // 2. Find or create customer
       let customer = await tx.guestCustomer.findUnique({
         where: { phone: customerData.phone },
       });
@@ -91,7 +71,6 @@ export class ReservationRepository {
         });
       }
 
-      // 3. Create order
       return tx.order.create({
         data: {
           ...reservationData,
@@ -135,10 +114,22 @@ export class ReservationRepository {
     });
   }
 
-  static async updateTableStatus(tableId: string, status: any) {
+  static async updateTableStatus(tableId: string, status: TableStatus) {
     return db.outletTable.update({
       where: { id: tableId },
       data: { status },
     });
+  }
+
+  static async hasActiveReservations(tableId: string, excludeOrderId: string) {
+    const count = await db.order.count({
+      where: {
+        tableId,
+        id: { not: excludeOrderId },
+        orderStatus: { in: ["RESERVED", "ON_GOING"] },
+        bookingDate: { not: null },
+      },
+    });
+    return count > 0;
   }
 }
