@@ -44,6 +44,11 @@ export async function proxy(req: NextRequest) {
 
   // cashier.bossapp.id → rewrite path ke /cashier/*
   if (host.startsWith("cashier.") && !pathname.startsWith("/_next")) {
+    // Auth pages bypass untuk hindari redirect loop
+    if (pathname.startsWith("/auth/")) {
+      return NextResponse.next();
+    }
+
     const cashierToken = req.cookies.get("cashier_token")?.value;
     if (!cashierToken) {
       return NextResponse.redirect(new URL("/auth/login/cashier", req.url));
