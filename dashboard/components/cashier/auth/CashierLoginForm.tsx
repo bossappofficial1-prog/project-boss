@@ -8,7 +8,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Loader2, AlertCircle, User, ShieldCheck, X, History } from "lucide-react";
+import {
+  Loader2,
+  AlertCircle,
+  User,
+  ShieldCheck,
+  X,
+  History,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import AuthSplitLayout from "@/components/auth/AuthSplitLayout";
 
@@ -41,6 +48,9 @@ function CashierLoginFormInner() {
   const [error, setError] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const router = useRouter();
+  const hostname =
+    typeof window !== "undefined" ? window.location.hostname : "";
+  const isCashierDomain = hostname.startsWith("cashier");
 
   const [cashierValues, setCashierValues] = useState({
     username: "",
@@ -169,7 +179,10 @@ function CashierLoginFormInner() {
         <div className="flex rounded-lg bg-muted p-1">
           <button
             type="button"
-            onClick={() => { setActiveTab("cashier"); setError(""); }}
+            onClick={() => {
+              setActiveTab("cashier");
+              setError("");
+            }}
             className={cn(
               "flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all",
               activeTab === "cashier"
@@ -181,7 +194,10 @@ function CashierLoginFormInner() {
           </button>
           <button
             type="button"
-            onClick={() => { setActiveTab("manager"); setError(""); }}
+            onClick={() => {
+              setActiveTab("manager");
+              setError("");
+            }}
             className={cn(
               "flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all",
               activeTab === "manager"
@@ -216,13 +232,16 @@ function CashierLoginFormInner() {
                       )}
                     >
                       <User className="h-3 w-3 text-muted-foreground group-hover:text-primary" />
-                      <span className="text-foreground/80 group-hover:text-foreground">{u}</span>
+                      <span className="text-foreground/80 group-hover:text-foreground">
+                        {u}
+                      </span>
                       <span
                         role="button"
                         tabIndex={0}
                         onClick={(e) => handleRemoveUser(e, u)}
                         onKeyDown={(e) =>
-                          e.key === "Enter" && handleRemoveUser(e as unknown as React.MouseEvent, u)
+                          e.key === "Enter" &&
+                          handleRemoveUser(e as unknown as React.MouseEvent, u)
                         }
                         className="p-0.5 rounded-full text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
                       >
@@ -268,7 +287,8 @@ function CashierLoginFormInner() {
             <div className="rounded-md bg-primary/5 border border-primary/10 p-3">
               <p className="text-xs text-primary/80 flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-                Akses Manager menggunakan nama lengkap dan PIN yang ditetapkan oleh Owner.
+                Akses Manager menggunakan nama lengkap dan PIN yang ditetapkan
+                oleh Owner.
               </p>
             </div>
 
@@ -304,7 +324,10 @@ function CashierLoginFormInner() {
         <p className="text-center text-sm text-muted-foreground">
           Login sebagai Pemilik?{" "}
           <a
-            href="/auth/login"
+            {...(isCashierDomain && { target: "_blank" })}
+            href={
+              isCashierDomain ? "https://dashboard.bossapp.id" : "/auth/login"
+            }
             className="font-medium text-primary hover:underline"
           >
             Masuk di sini
