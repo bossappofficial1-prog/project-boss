@@ -28,6 +28,8 @@ export default function LoginContent() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname : "";
 
+  const isDashboardDomain = hostname.startsWith("dashboard");
+
   useEffect(() => {
     if (oauthError) {
       const decoded = decodeURIComponent(oauthError);
@@ -234,8 +236,12 @@ export default function LoginContent() {
 
       <div className="absolute top-4 right-4 lg:top-6 lg:right-6">
         <Link
+          {...(isDashboardDomain && {
+            target: "_blank",
+            rel: "noopener noreferrer",
+          })}
           href={
-            hostname.startsWith("bossapp")
+            isDashboardDomain
               ? "https://cashier.bossapp.id/auth/login/cashier"
               : "/auth/login/cashier"
           }
