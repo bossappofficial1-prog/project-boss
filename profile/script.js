@@ -1,4 +1,3 @@
-// --- HELPER UNTUK DOM MANIPULATION ---
 function el(tag, className = "", textContent = "") {
   const element = document.createElement(tag);
   if (className) element.className = className;
@@ -14,12 +13,13 @@ function svgEl(tag, attributes) {
   return element;
 }
 
-// --- THEME TOGGLE (PURE DOM) ---
 const themeToggles = [
   document.getElementById("theme-toggle"),
   document.getElementById("theme-toggle-mobile"),
 ];
+
 const root = document.documentElement;
+
 const themeIcons = [
   document.getElementById("theme-icon"),
   document.getElementById("theme-icon-mobile"),
@@ -93,7 +93,6 @@ themeToggles.forEach((toggle) => {
   if (toggle) toggle.addEventListener("click", handleThemeToggle);
 });
 
-// --- NAVIGATION & INTERACTION LOGIC ---
 const nav = document.getElementById("nav");
 window.addEventListener(
   "scroll",
@@ -126,19 +125,6 @@ document.querySelectorAll(".mobile-link").forEach((a) => {
   });
 });
 
-// Observer untuk Animasi Scroll (Reveal)
-const obs = new IntersectionObserver(
-  (entries) =>
-    entries.forEach((e) => {
-      if (e.isIntersecting) {
-        e.target.classList.add("visible");
-        obs.unobserve(e.target);
-      }
-    }),
-  { threshold: 0.07, rootMargin: "0px 0px -40px 0px" },
-);
-document.querySelectorAll(".reveal").forEach((el) => obs.observe(el));
-
 // Mockup Tabs
 window.showMock = function (id, btn) {
   document.querySelectorAll(".mock-tab").forEach((t) => {
@@ -156,15 +142,6 @@ window.showMock = function (id, btn) {
   const target = document.getElementById("mock-" + id);
   target.classList.remove("hidden");
   target.classList.add("block");
-};
-
-// FAQ Toggle
-window.toggleFaq = function (el) {
-  const isOpen = el.classList.contains("open");
-  document
-    .querySelectorAll(".faq-item.open")
-    .forEach((f) => f.classList.remove("open"));
-  if (!isOpen) el.classList.add("open");
 };
 
 // --- PRICING LOGIC (PURE DOM) ---
@@ -369,7 +346,7 @@ function renderPricing(plans) {
     card.appendChild(ctaContainer);
 
     grid.appendChild(card);
-    obs.observe(card); // Animasikan saat masuk viewport
+    obs.observe(card);
   });
 }
 
