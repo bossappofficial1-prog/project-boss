@@ -25,6 +25,8 @@ export default function LoginContent() {
   const redirectUrl = searchParams?.get("redirect");
   const reason = searchParams?.get("reason");
   const oauthError = searchParams?.get("error");
+  const hostname =
+    typeof window !== "undefined" ? window.location.hostname : "";
 
   useEffect(() => {
     if (oauthError) {
@@ -143,9 +145,7 @@ export default function LoginContent() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Email
-            </label>
+            <label className="text-sm font-medium">Email</label>
             <Input
               name="email"
               type="email"
@@ -159,9 +159,7 @@ export default function LoginContent() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">
-                Kata Sandi
-              </label>
+              <label className="text-sm font-medium">Kata Sandi</label>
               <Link
                 href="/auth/forgot-password"
                 className="text-xs font-medium text-primary hover:underline"
@@ -179,11 +177,7 @@ export default function LoginContent() {
             />
           </div>
 
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-11"
-          >
+          <Button type="submit" disabled={isLoading} className="w-full h-11">
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isLoading ? "Sedang Masuk..." : "Masuk"}
           </Button>
@@ -240,7 +234,11 @@ export default function LoginContent() {
 
       <div className="absolute top-4 right-4 lg:top-6 lg:right-6">
         <Link
-          href="/auth/login/cashier"
+          href={
+            hostname.startsWith("bossapp")
+              ? "https://cashier.bossapp.id/auth/login/cashier"
+              : "/auth/login/cashier"
+          }
           className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           Masuk sebagai Kasir

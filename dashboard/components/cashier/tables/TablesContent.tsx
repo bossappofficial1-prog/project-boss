@@ -3,33 +3,93 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Building2, CircleDollarSign, Clock3, Hash, ReceiptText, RefreshCw, Table2 } from "lucide-react";
+import {
+  Building2,
+  LayoutGrid,
+  List,
+  RefreshCw,
+  Search,
+  Table2,
+  X,
+  Users,
+  ReceiptText,
+  CircleDollarSign,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { tableApi } from "@/lib/apis/table";
-import { billApi, Bill } from "@/lib/apis/bill";
+import { DataTable } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TableCard } from "./table-card";
+import { TableDetailSheet } from "./table-detail-sheet";
+import { tableApi, type OutletTable } from "@/lib/apis/table";
+import { billApi, type Bill } from "@/lib/apis/bill";
+import { type ColumnDef } from "@tanstack/react-table";
+import { cn } from "@/lib/utils";
 
 type TablesContentProps = {
   outletId: string;
   outletName: string;
 };
 
-const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
-  AVAILABLE: "default",
-  OCCUPIED: "secondary",
-  RESERVED: "outline",
-  BILLED: "secondary",
+type ViewMode = "grid" | "list";
+type StatusFilter =
+  | "ALL"
+  | "AVAILABLE"
+  | "OCCUPIED"
+  | "RESERVED"
+  | "BILLED";
+
+const statusBadgeClass: Record<
+  string,
+  { label: string; className: string }
+> = {
+  AVAILABLE: {
+    label: "Available",
+    className:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  },
+  OCCUPIED: {
+    label: "Occupied",
+    className:
+      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  },
+  RESERVED: {
+    label: "Reserved",
+    className:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  },
+  BILLED: {
+    label: "Billed",
+    className:
+      "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+  },
 };
 
-export function TablesContent({ outletId, outletName }: TablesContentProps) {
+const FILTER_OPTIONS: { key: StatusFilter; label: string }[] = [
+  { key: "ALL", label: "Semua" },
+  { key: "AVAILABLE", label: "Available" },
+  { key: "OCCUPIED", label: "Occupied" },
+  { key: "RESERVED", label: "Reserved" },
+  { key: "BILLED", label: "Billed" },
+];
+
+export function TablesContent({
+  outletId,
+  outletName,
+}: TablesContentProps) {
   const queryClient = useQueryClient();
-  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(
+    null,
+  );
   const [billToPay, setBillToPay] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const tablesQuery = useQuery({
     queryKey: ["cashier-tables", outletId],
@@ -44,11 +104,16 @@ export function TablesContent({ outletId, outletName }: TablesContentProps) {
   });
 
   const createBillMutation = useMutation({
-    mutationFn: (tableId: string) => billApi.createBill({ outletId, tableId }),
+    mutationFn: (tableId: string) =>
+      billApi.createBill({ outletId, tableId }),
     onSuccess: () => {
       toast.success("Bill berhasil dibuat");
-      queryClient.invalidateQueries({ queryKey: ["cashier-tables", outletId] });
-      queryClient.invalidateQueries({ queryKey: ["cashier-bills", outletId] });
+      queryClient.invalidateQueries({
+        queryKey: ["cashier-tables", outletId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["cashier-bills", outletId],
+      });
     },
     onError: (error: any) => {
       toast.error(error?.message ?? "Gagal membuat bill");
@@ -59,29 +124,186 @@ export function TablesContent({ outletId, outletName }: TablesContentProps) {
     mutationFn: (billId: string) => billApi.payBill(billId),
     onSuccess: () => {
       toast.success("Bill berhasil dibayar");
-      queryClient.invalidateQueries({ queryKey: ["tables"] });
-      queryClient.invalidateQueries({ queryKey: ["cashier-tables", outletId] });
-      queryClient.invalidateQueries({ queryKey: ["cashier-bills", outletId] });
+      setDetailOpen(false);
+      setSelectedTableId(null);
+      queryClient.invalidateQueries({
+        queryKey: ["cashier-tables", outletId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["cashier-bills", outletId],
+      });
     },
     onError: (error: any) => {
       toast.error(error?.message ?? "Gagal memproses pembayaran");
     },
   });
 
-  const tables = tablesQuery.data ?? [];
-  const bills = billsQuery.data ?? [];
+  const tables = (tablesQuery.data ?? []) as OutletTable[];
+  const bills = (billsQuery.data ?? []) as Bill[];
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: tables.length };
+    for (const t of tables) {
+      counts[t.status] = (counts[t.status] ?? 0) + 1;
+    }
+    return counts;
+  }, [tables]);
+
+  const filteredTables = useMemo(() => {
+    let result = tables;
+    if (statusFilter !== "ALL") {
+      result = result.filter((t) => t.status === statusFilter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((t) =>
+        t.name.toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [tables, statusFilter, searchQuery]);
 
   const selectedTable = useMemo(
-    () => tables.find((table) => table.id === selectedTableId) ?? null,
+    () => tables.find((t) => t.id === selectedTableId) ?? null,
     [selectedTableId, tables],
   );
 
   const selectedBill = useMemo(() => {
     if (!selectedTableId) return null;
-    return bills.find((bill) => bill.tableId === selectedTableId && bill.status !== "PAID") ?? null;
+    return (
+      bills.find(
+        (b) =>
+          b.tableId === selectedTableId && b.status !== "PAID",
+      ) ?? null
+    );
   }, [bills, selectedTableId]);
 
-  const activeOrders = selectedBill?.orders ?? [];
+  const handleSelectTable = (tableId: string) => {
+    setSelectedTableId(tableId);
+    setDetailOpen(true);
+  };
+
+  const handleGenerateBill = (tableId: string) => {
+    createBillMutation.mutate(tableId);
+  };
+
+  const handlePayBill = (billId: string) => {
+    setBillToPay(billId);
+  };
+
+  const columns: ColumnDef<OutletTable>[] = useMemo(
+    () => [
+      {
+        accessorKey: "name",
+        header: "Meja",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        accessorKey: "capacity",
+        header: "Kapasitas",
+        cell: ({ row }) => (
+          <span className="flex items-center gap-1 text-sm">
+            <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            {row.original.capacity}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const s =
+            statusBadgeClass[row.original.status] ??
+            statusBadgeClass.AVAILABLE;
+          return (
+            <Badge
+              className={cn("rounded-md border-0 text-xs", s.className)}
+            >
+              {s.label}
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: "_count.orders",
+        header: "Orders",
+        cell: ({ row }) => (
+          <span>{row.original._count?.orders ?? 0}</span>
+        ),
+      },
+      {
+        id: "bill",
+        header: "Bill",
+        cell: ({ row }) => {
+          const bill = bills.find(
+            (b) =>
+              b.tableId === row.original.id && b.status !== "PAID",
+          );
+          if (!bill)
+            return (
+              <span className="text-xs text-muted-foreground">
+                &mdash;
+              </span>
+            );
+          return (
+            <span className="font-mono text-xs">
+              Rp {bill.total.toLocaleString("id-ID")}
+            </span>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const bill = bills.find(
+            (b) =>
+              b.tableId === row.original.id && b.status !== "PAID",
+          );
+          return (
+            <div className="flex gap-1">
+              {row.original.status === "OCCUPIED" && !bill && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs rounded-md"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleGenerateBill(row.original.id);
+                  }}
+                  disabled={createBillMutation.isPending}
+                >
+                  <ReceiptText className="h-3 w-3 mr-1" />
+                  Bill
+                </Button>
+              )}
+              {bill && bill.status !== "PAID" && (
+                <Button
+                  size="sm"
+                  className="h-7 text-xs rounded-md"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePayBill(bill.id);
+                  }}
+                  disabled={payBillMutation.isPending}
+                >
+                  <CircleDollarSign className="h-3 w-3 mr-1" />
+                  Bayar
+                </Button>
+              )}
+            </div>
+          );
+        },
+      },
+    ],
+    [
+      bills,
+      createBillMutation.isPending,
+      payBillMutation.isPending,
+    ],
+  );
 
   if (tablesQuery.isLoading || billsQuery.isLoading) {
     return <LoadingState message="Memuat data meja..." />;
@@ -98,23 +320,34 @@ export function TablesContent({ outletId, outletName }: TablesContentProps) {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <div className="flex flex-col gap-2">
+    <div className="space-y-4 p-4 md:p-6">
+      {/* Header */}
+      <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Building2 className="h-4 w-4" />
           <span>{outletName}</span>
         </div>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Meja & Bill</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Meja & Bill
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Pantau meja aktif, buat bill, lalu proses pembayaran dari satu layar.
+              Pantau meja aktif, buat bill, dan proses pembayaran.
             </p>
           </div>
           <Button
             variant="outline"
-            className="rounded-md"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["cashier-tables", outletId] })}
+            size="sm"
+            className="rounded-md shrink-0"
+            onClick={() => {
+              queryClient.invalidateQueries({
+                queryKey: ["cashier-tables", outletId],
+              });
+              queryClient.invalidateQueries({
+                queryKey: ["cashier-bills", outletId],
+              });
+            }}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
@@ -122,162 +355,145 @@ export function TablesContent({ outletId, outletName }: TablesContentProps) {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {tables.map((table) => {
-            const isSelected = table.id === selectedTableId;
-            const bill = bills.find((item) => item.tableId === table.id && item.status !== "PAID");
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="flex items-center gap-1 flex-wrap">
+          {FILTER_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setStatusFilter(opt.key)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                statusFilter === opt.key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80",
+              )}
+            >
+              {opt.label}
+              <span className="ml-1.5 opacity-70">
+                ({filterCounts[opt.key] ?? 0})
+              </span>
+            </button>
+          ))}
+        </div>
 
-            return (
-              <Card
-                key={table.id}
-                className={`cursor-pointer py-0 rounded-lg border bg-card shadow-md transition-colors ${isSelected ? "border-primary" : "hover:border-primary/40"}`}
-                onClick={() => setSelectedTableId(table.id)}
+        <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-48">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari meja..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-9 text-sm rounded-md"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                <CardHeader className="space-y-2 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <CardTitle className="text-lg font-medium">{table.name}</CardTitle>
-                      <CardDescription className="mt-1 flex items-center gap-1 text-xs">
-                        <Hash className="h-3.5 w-3.5" />
-                        Kapasitas {table.capacity} orang
-                      </CardDescription>
-                    </div>
-                    <Badge variant={statusVariant[table.status] ?? "outline"} className="rounded-md">
-                      {table.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 px-4 pb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Pesanan aktif</span>
-                    <span className="font-medium">{table._count?.orders ?? 0}</span>
-                  </div>
-                  {bill ? (
-                    <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">Bill aktif</span>
-                        <Badge variant="secondary" className="rounded-md">{bill.status}</Badge>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><CircleDollarSign className="h-3.5 w-3.5" /> Total</span>
-                        <span className="font-mono">Rp {bill.total.toLocaleString("id-ID")}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-md border border-dashed border-border/60 bg-muted/20 p-3 text-xs text-muted-foreground">
-                      Belum ada bill aktif untuk meja ini.
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    {table.status === "OCCUPIED" && !bill && (
-                      <Button
-                        className="flex-1 rounded-md"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          createBillMutation.mutate(table.id);
-                        }}
-                        disabled={createBillMutation.isPending}
-                      >
-                        <ReceiptText className="mr-2 h-4 w-4" />
-                        Generate Bill
-                      </Button>
-                    )}
-                    {bill && bill.status !== "PAID" && (
-                      <Button
-                        className="flex-1 rounded-md"
-                        variant="default"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setBillToPay(bill.id);
-                        }}
-                        disabled={payBillMutation.isPending}
-                      >
-                        <CircleDollarSign className="mr-2 h-4 w-4" />
-                        Proses Pembayaran
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center border rounded-md overflow-hidden shrink-0">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={cn(
+                "p-2 transition-colors",
+                viewMode === "grid"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+              aria-label="Tampilan grid"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "p-2 transition-colors",
+                viewMode === "list"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+              aria-label="Tampilan daftar"
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      {filteredTables.length === 0 ? (
+        <EmptyState
+          title={
+            searchQuery
+              ? "Meja tidak ditemukan"
+              : "Belum ada meja"
+          }
+          description={
+            searchQuery
+              ? `Tidak ada meja dengan nama "${searchQuery}"`
+              : "Outlet ini belum memiliki meja terdaftar."
+          }
+          icon={
+            <Table2 className="w-8 h-8 text-muted-foreground" />
+          }
+        />
+      ) : viewMode === "grid" ? (
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredTables.map((table) => {
+            const bill = bills.find(
+              (b) =>
+                b.tableId === table.id && b.status !== "PAID",
+            );
+            return (
+              <TableCard
+                key={table.id}
+                table={table}
+                bill={bill ?? null}
+                onSelect={handleSelectTable}
+                onGenerateBill={handleGenerateBill}
+                onPayBill={(billId) => setBillToPay(billId)}
+                isCreatingBill={createBillMutation.isPending}
+                isPayingBill={payBillMutation.isPending}
+              />
             );
           })}
         </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={filteredTables}
+          tableId="cashier-tables-list"
+          emptyMessage="Tidak ada meja untuk filter ini."
+          pagination
+          pageSize={20}
+          density="compact"
+          onRowClick={(row) =>
+            handleSelectTable(row.id)
+          }
+        />
+      )}
 
-        <Card className="rounded-lg py-0 gap-0 shadow-md">
-          <CardHeader className="space-y-2 border-b p-4">
-            <CardTitle className="text-lg font-medium">Detail Bill</CardTitle>
-            <CardDescription>
-              {selectedTable ? `Meja ${selectedTable.name}` : "Pilih meja untuk melihat detail bill."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 p-4">
-            {!selectedTable ? (
-              <EmptyState
-                title="Belum ada meja dipilih"
-                description="Klik salah satu kartu meja untuk melihat ringkasan order dan total bill."
-                icon={<Table2 className="w-8 h-8 text-muted-foreground" />}
-              />
-            ) : (
-              <>
-                <div className="grid gap-3 rounded-md border border-border/60 bg-muted/20 p-4 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">Status meja</span>
-                    <Badge variant={statusVariant[selectedTable.status] ?? "outline"} className="rounded-md">
-                      {selectedTable.status}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">Pesanan aktif</span>
-                    <span className="font-medium">{selectedTable._count?.orders ?? 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">Total bill</span>
-                    <span className="font-mono font-medium">
-                      Rp {(selectedBill?.total ?? 0).toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                </div>
+      {/* Detail Sheet */}
+      <TableDetailSheet
+        table={selectedTable}
+        bill={selectedBill}
+        open={detailOpen}
+        onOpenChange={(v) => {
+          setDetailOpen(v);
+          if (!v) setSelectedTableId(null);
+        }}
+        onGenerateBill={handleGenerateBill}
+        onPayBill={(billId) => setBillToPay(billId)}
+        isCreatingBill={createBillMutation.isPending}
+        isPayingBill={payBillMutation.isPending}
+      />
 
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium">Order Aktif</h3>
-                  {activeOrders.length === 0 ? (
-                    <EmptyState
-                      title="Belum ada order aktif"
-                      description="Table ini belum memiliki order yang bisa dimasukkan ke bill."
-                      icon={<ReceiptText className="w-8 h-8 text-muted-foreground" />}
-                    />
-                  ) : (
-                    activeOrders.map((order) => (
-                      <div key={order.id} className="rounded-md border border-border/60 p-3 text-sm">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-medium">{order.guestCustomer?.name ?? "Customer"}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(order.createdAt).toLocaleString("id-ID")}
-                            </p>
-                          </div>
-                          <span className="font-mono text-sm">
-                            Rp {Number(order.totalAmount).toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                          <span>Status: {order.orderStatus}</span>
-                          <span>•</span>
-                          <span>Payment: {order.paymentStatus}</span>
-                          <span>•</span>
-                          <span>{order.items?.length ?? 0} item</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
+      {/* Payment Confirm Dialog */}
       <ConfirmDialog
         open={!!billToPay}
         onOpenChange={(v) => !v && setBillToPay(null)}

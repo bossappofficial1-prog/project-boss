@@ -1,19 +1,11 @@
-"use client";
+import { Metadata } from "next";
+import QueuePageClient from "./queue-page-client";
 
-import { QueueV2Content } from "@/components/cashier/queue-v2/QueueV2Content";
-import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
+export const metadata: Metadata = {
+  title: "Antrian",
+  description: "Atur dan pantau antrian pelanggan secara real-time — panggil, layani, dan selesaikan antrian.",
+};
 
 export default function CashierQueueV2Page() {
-  const { outletData } = useCashierContext();
-  const outletId = outletData?.id;
-
-  if (!outletId) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-500 dark:text-slate-400">Outlet tidak ditemukan</p>
-      </div>
-    );
-  }
-
-  return <QueueV2Content outletId={outletId} />;
+  return <QueuePageClient />;
 }

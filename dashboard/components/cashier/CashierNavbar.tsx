@@ -196,7 +196,7 @@ export function CashierNavbar({
   return (
     <>
       {/* ── Top Bar ── */}
-      <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
         <div className="mx-auto flex h-14 w-full max-w-400 items-center justify-between gap-4 px-4">
           {/* Brand */}
           <div className="flex items-center gap-2.5 shrink-0 min-w-0">
@@ -205,7 +205,7 @@ export function CashierNavbar({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-semibold tracking-tight text-foreground truncate max-w-[120px] sm:max-w-[200px]">
+                <span className="text-sm font-semibold tracking-tight text-foreground truncate max-w-30 sm:max-w-50">
                   {outletName}
                 </span>
                 <Badge
@@ -215,7 +215,7 @@ export function CashierNavbar({
                   {outletType}
                 </Badge>
               </div>
-              <p className="text-[10px] text-muted-foreground truncate max-w-[120px] sm:max-w-[200px]">
+              <p className="text-[10px] text-muted-foreground truncate max-w-30 sm:max-w-50">
                 {cashierName}
               </p>
             </div>
@@ -321,9 +321,13 @@ export function CashierNavbar({
                         if (navigator.geolocation) {
                           const pos = await new Promise<GeolocationPosition>(
                             (resolve, reject) =>
-                              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                                timeout: 5000,
-                              }),
+                              navigator.geolocation.getCurrentPosition(
+                                resolve,
+                                reject,
+                                {
+                                  timeout: 5000,
+                                },
+                              ),
                           ).catch(() => undefined);
                           lat = pos?.coords?.latitude;
                           lng = pos?.coords?.longitude;
@@ -335,7 +339,11 @@ export function CashierNavbar({
                         });
                         toast.success("Absen pulang berhasil");
                       } catch (e: any) {
-                        toast.error(e?.message || "Gagal absen pulang");
+                        toast.error(
+                          e.response.data.message ||
+                            e?.message ||
+                            "Gagal absen pulang",
+                        );
                       } finally {
                         setAttendanceLoading(false);
                       }
@@ -363,9 +371,13 @@ export function CashierNavbar({
                       if (navigator.geolocation) {
                         const pos = await new Promise<GeolocationPosition>(
                           (resolve, reject) =>
-                            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                              timeout: 5000,
-                            }),
+                            navigator.geolocation.getCurrentPosition(
+                              resolve,
+                              reject,
+                              {
+                                timeout: 5000,
+                              },
+                            ),
                         ).catch(() => undefined);
                         lat = pos?.coords?.latitude;
                         lng = pos?.coords?.longitude;
@@ -377,7 +389,11 @@ export function CashierNavbar({
                       });
                       toast.success("Absen masuk berhasil");
                     } catch (e: any) {
-                      toast.error(e?.message || "Gagal absen masuk");
+                      toast.error(
+                        e.response.data.message ||
+                          e?.message ||
+                          "Gagal absen pulang",
+                      );
                     } finally {
                       setAttendanceLoading(false);
                     }
@@ -431,7 +447,7 @@ export function CashierNavbar({
       />
 
       {/* ── Mobile Bottom Nav ── */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
         <div className="flex items-center overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -441,7 +457,7 @@ export function CashierNavbar({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex flex-1 shrink-0 flex-col items-center justify-center gap-1 py-2.5 px-2 min-w-[64px] transition-colors",
+                  "relative flex flex-1 shrink-0 flex-col items-center justify-center gap-1 py-2.5 px-2 min-w-16 transition-colors",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
@@ -450,7 +466,7 @@ export function CashierNavbar({
                 <div className="relative">
                   <Icon className="h-5 w-5" />
                   {!!item.badge && item.badge > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                    <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
                       {item.badge > 99 ? "99+" : item.badge}
                     </span>
                   )}

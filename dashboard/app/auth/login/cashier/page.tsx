@@ -308,7 +308,7 @@ function CashierLoginForm() {
                     },
                     {
                       name: "password",
-                      label: "Password",
+                      label: "Password/PIN",
                       type: "password",
                       placeholder: "••••••••",
                       icon: Lock,

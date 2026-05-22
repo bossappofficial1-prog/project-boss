@@ -1,19 +1,11 @@
-"use client";
+import { Metadata } from "next";
+import TicketScanPageClient from "./ticket-scan-page-client";
 
-import TicketScanContent from "@/components/cashier/ticket-scan/TicketScanContent";
-import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
+export const metadata: Metadata = {
+  title: "Scan Tiket",
+  description: "Scan dan validasi tiket pelanggan — verifikasi tiket masuk secara cepat.",
+};
 
 export default function CashierTicketScanPage() {
-    const { outletData } = useCashierContext();
-    const outletId = outletData?.id;
-
-    if (!outletId) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <p className="text-slate-500 dark:text-slate-400">Outlet tidak ditemukan</p>
-            </div>
-        );
-    }
-
-    return <TicketScanContent />;
+  return <TicketScanPageClient />;
 }

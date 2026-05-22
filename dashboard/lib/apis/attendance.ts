@@ -45,12 +45,12 @@ export const attendanceApi = {
     const res = await apiClient.get("/attendance/me", {
       params: { page, limit },
     });
-    return res.data.data as PaginatedAttendance;
+    return (res.data?.data as PaginatedAttendance) ?? { data: [], total: 0 };
   },
 
   async getToday() {
     const res = await apiClient.get("/attendance/today");
-    return res.data.data as AttendanceRecord | null;
+    return (res.data?.data as AttendanceRecord | undefined) ?? null;
   },
 
   async listForOwner(params: {
@@ -62,6 +62,6 @@ export const attendanceApi = {
     limit?: number;
   }) {
     const res = await apiClient.get("/attendance", { params });
-    return res.data.data as PaginatedAttendance;
+    return (res.data?.data as PaginatedAttendance) ?? { data: [], total: 0 };
   },
 };

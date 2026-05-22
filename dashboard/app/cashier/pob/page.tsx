@@ -1,7 +1,11 @@
-"use client";
+import { Metadata } from "next";
+import PobPageClient from "./pob-page-client";
 
-import { PobV2Content } from "@/components/cashier/pob-v2/PobV2Content";
+export const metadata: Metadata = {
+  title: "POB",
+  description: "Purchase Order Bahan — kelola pembelian stok dan bahan baku untuk outlet.",
+};
 
 export default function PobV2Page() {
-  return <PobV2Content />;
+  return <PobPageClient />;
 }

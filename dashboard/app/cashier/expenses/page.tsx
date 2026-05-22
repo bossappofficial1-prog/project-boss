@@ -1,17 +1,11 @@
-"use client";
+import { Metadata } from "next";
+import ExpensesPageClient from "./expenses-page-client";
 
-import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
-import { ExpensesContent } from "@/components/cashier/expenses/ExpensesContent";
+export const metadata: Metadata = {
+  title: "Pengeluaran",
+  description: "Catat pengeluaran harian outlet — operasional, stok, dan biaya lain-lain.",
+};
 
 export default function CashierExpensesPage() {
-  const { outletData, cashierData } = useCashierContext();
-
-  if (!outletData?.id) return null;
-
-  return (
-    <ExpensesContent
-      outletId={outletData.id}
-      cashierName={cashierData?.name ?? "Cashier"}
-    />
-  );
+  return <ExpensesPageClient />;
 }

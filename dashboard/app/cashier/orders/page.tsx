@@ -1,19 +1,11 @@
-"use client";
+import { Metadata } from "next";
+import OrdersPageClient from "./orders-page-client";
 
-import { OrdersV2Content } from "@/components/cashier/orders-v2/OrdersV2Content";
-import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
+export const metadata: Metadata = {
+  title: "Pesanan",
+  description: "Kelola pesanan pelanggan — lihat status, proses, dan selesaikan pesanan dari POS.",
+};
 
 export default function CashierOrdersV2Page() {
-  const { outletData } = useCashierContext();
-  const outletId = outletData?.id;
-
-  if (!outletId) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-500 dark:text-slate-400">Outlet tidak ditemukan</p>
-      </div>
-    );
-  }
-
-  return <OrdersV2Content outletId={outletId} />;
+  return <OrdersPageClient />;
 }
