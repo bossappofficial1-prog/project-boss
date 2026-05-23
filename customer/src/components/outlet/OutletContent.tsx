@@ -3,7 +3,22 @@
 import { useFavorites } from "@/hooks/useFavorites";
 import { useTranslations } from "@/hooks/useI18n";
 import { Button } from "../ui/button";
-import { Heart, MapPin, Package, Phone, Share2, Store, Wrench, Clock, Navigation, ChevronRight, Search, X, Ticket, UtensilsCrossed, Instagram } from "lucide-react";
+import {
+  Heart,
+  MapPin,
+  Package,
+  Phone,
+  Share2,
+  Store,
+  Wrench,
+  Clock,
+  Navigation,
+  ChevronRight,
+  Search,
+  X,
+  Ticket,
+  UtensilsCrossed,
+} from "lucide-react";
 import { ShareOutlet } from "../shared/ShareOutlet";
 import { resolveCustomerImageUrl } from "@/lib/url";
 import { Badge } from "../ui/badge";
@@ -27,11 +42,35 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchProductsByOutlet } from "@/hooks/useSearchProductsByOutlet";
 import { useLocale, useLocalizedPath } from "@/hooks/useI18n";
 
-const formatOperatingHours = (operatingHours: OperatingHourType[], locale: LanguageType) => {
+const Instagram = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+);
+
+const formatOperatingHours = (
+  operatingHours: OperatingHourType[],
+  locale: LanguageType,
+) => {
   if (typeof window === "undefined") return;
   const dayNames = DAY_NAMES[locale];
 
-  const sortedHours = [...operatingHours].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+  const sortedHours = [...operatingHours].sort(
+    (a, b) => a.dayOfWeek - b.dayOfWeek,
+  );
 
   return sortedHours.map((hour) => ({
     ...hour,
@@ -42,7 +81,10 @@ const formatOperatingHours = (operatingHours: OperatingHourType[], locale: Langu
 };
 
 // Helper function to get current day status
-const getCurrentDayStatus = (operatingHours: OperatingHourType[], outletIsOpen: boolean) => {
+const getCurrentDayStatus = (
+  operatingHours: OperatingHourType[],
+  outletIsOpen: boolean,
+) => {
   if (typeof window === "undefined") return;
   const today = new Date().getDay();
   const todayHours = operatingHours.find((hour) => hour.dayOfWeek === today);
@@ -95,17 +137,22 @@ const OperatingHoursTab = ({
       <div className="rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 p-4 border border-primary/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isOpen ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}>
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${isOpen ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}
+            >
               <Clock className="w-5 h-5" />
             </div>
             <div>
               <p className="text-sm font-semibold">{t("currentStatus")}</p>
-              <p className="text-xs text-muted-foreground">{currentStatus?.message}</p>
+              <p className="text-xs text-muted-foreground">
+                {currentStatus?.message}
+              </p>
             </div>
           </div>
           <Badge
             variant={isOpen ? "default" : "secondary"}
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${isOpen ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-200 text-gray-600"}`}>
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${isOpen ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-200 text-gray-600"}`}
+          >
             {isOpen ? t("open") : t("closed")}
           </Badge>
         </div>
@@ -116,13 +163,19 @@ const OperatingHoursTab = ({
         {formattedHours?.map((hour) => (
           <div
             key={hour.id}
-            className={`flex justify-between items-center px-4 py-3 rounded-lg transition-colors ${hour.dayOfWeek === today
-              ? "bg-primary/5 border border-primary/15 shadow-sm"
-              : "hover:bg-muted/50"
-              }`}>
+            className={`flex justify-between items-center px-4 py-3 rounded-lg transition-colors ${
+              hour.dayOfWeek === today
+                ? "bg-primary/5 border border-primary/15 shadow-sm"
+                : "hover:bg-muted/50"
+            }`}
+          >
             <div className="flex items-center gap-2.5">
-              <div className={`h-1.5 w-1.5 rounded-full ${hour.dayOfWeek === today ? "bg-primary" : "bg-muted-foreground/30"}`} />
-              <span className={`text-sm ${hour.dayOfWeek === today ? "font-semibold text-primary" : "font-medium"}`}>
+              <div
+                className={`h-1.5 w-1.5 rounded-full ${hour.dayOfWeek === today ? "bg-primary" : "bg-muted-foreground/30"}`}
+              />
+              <span
+                className={`text-sm ${hour.dayOfWeek === today ? "font-semibold text-primary" : "font-medium"}`}
+              >
                 {hour.dayName}
               </span>
               {hour.dayOfWeek === today && (
@@ -133,11 +186,15 @@ const OperatingHoursTab = ({
             </div>
             <div className="text-right">
               {hour.isOpen ? (
-                <span className={`text-sm tabular-nums ${hour.dayOfWeek === today ? "font-semibold" : ""}`}>
+                <span
+                  className={`text-sm tabular-nums ${hour.dayOfWeek === today ? "font-semibold" : ""}`}
+                >
                   {hour.formattedOpenTime} — {hour.formattedCloseTime}
                 </span>
               ) : (
-                <span className="text-sm text-muted-foreground italic">{t("closed")}</span>
+                <span className="text-sm text-muted-foreground italic">
+                  {t("closed")}
+                </span>
               )}
             </div>
           </div>
@@ -162,7 +219,8 @@ export function LeftContentAppBarOutlet({
         variant="secondary"
         size="sm"
         className="rounded-full backdrop-blur-sm"
-        onClick={handleToggleFavorite}>
+        onClick={handleToggleFavorite}
+      >
         <Heart
           className={`w-4 h-4 ${isOutletFavorite ? "fill-red-500 text-red-500" : "text-gray-600"}`}
         />
@@ -173,8 +231,13 @@ export function LeftContentAppBarOutlet({
           name: outlet.name,
           address: outlet.address,
           image: outlet.image || undefined,
-        }}>
-        <Button variant="ghost" size="sm" className="p-0 backdrop-blur-sm rounded-full">
+        }}
+      >
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-0 backdrop-blur-sm rounded-full"
+        >
           <Share2 className="w-4 h-4" />
         </Button>
       </ShareOutlet>
@@ -190,7 +253,11 @@ interface OutletContentProps {
   initialProductsData?: import("@/types/product").Product[];
 }
 
-export function OutletContent({ slug, initialOutletData, initialProductsData }: OutletContentProps) {
+export function OutletContent({
+  slug,
+  initialOutletData,
+  initialProductsData,
+}: OutletContentProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { setAppBar, resetAppBar } = useAppBarV2();
   const [prevPage] = useState(() => {
@@ -218,7 +285,12 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
   const withLocalizedPath = useLocalizedPath();
 
   const router = useRouter();
-  const { setTableId, tableId: storedTableId, tableName: storedTableName, tableOutletId: storedTableOutletId } = useCart();
+  const {
+    setTableId,
+    tableId: storedTableId,
+    tableName: storedTableName,
+    tableOutletId: storedTableOutletId,
+  } = useCart();
 
   const tableIdFromUrl = searchParams.get("tableId");
   const tableNameFromUrl = searchParams.get("tableName");
@@ -241,9 +313,9 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
         initialData: initialOutletData,
         staleTime: 1000 * 30,
         gcTime: 1000 * 60 * 10,
-        refetchOnMount: 'always',
-        refetchOnReconnect: 'always',
-        refetchOnWindowFocus: 'always',
+        refetchOnMount: "always",
+        refetchOnReconnect: "always",
+        refetchOnWindowFocus: "always",
         refetchInterval: 1000 * 60,
       },
       {
@@ -253,9 +325,9 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
         initialData: initialProductsData,
         staleTime: 1000 * 30,
         gcTime: 1000 * 60 * 10,
-        refetchOnMount: 'always',
-        refetchOnReconnect: 'always',
-        refetchOnWindowFocus: 'always',
+        refetchOnMount: "always",
+        refetchOnReconnect: "always",
+        refetchOnWindowFocus: "always",
         refetchInterval: 1000 * 60,
       },
     ],
@@ -295,31 +367,55 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
     () => displayedProducts?.filter((p) => p.type === "TICKET") ?? [],
     [displayedProducts],
   );
-  const isOutletFavorite = outletQuery.data ? isFavorite(outletQuery.data.id) : false;
+  const isOutletFavorite = outletQuery.data
+    ? isFavorite(outletQuery.data.id)
+    : false;
 
   const isLoadingSearch = trimmedSearch && searchResult.isLoading;
 
   // Tab visibility depends on outlet.type (backend enum: FNB | RETAIL | EVENT | SERVICE | CUSTOM)
   const tabDefinitions = useMemo(() => {
     const all = [
-      { value: "products", icon: Package, label: t("products"), count: goods.length },
-      { value: "services", icon: Wrench, label: t("services"), count: services.length },
+      {
+        value: "products",
+        icon: Package,
+        label: t("products"),
+        count: goods.length,
+      },
+      {
+        value: "services",
+        icon: Wrench,
+        label: t("services"),
+        count: services.length,
+      },
       { value: "tickets", icon: Ticket, label: "Tiket", count: tickets.length },
       { value: "hours", icon: Clock, label: t("openingHours") },
     ];
 
     switch (outletQuery.data?.type) {
       case "RETAIL":
-        return all.filter((td) => td.value === "products" || td.value === "hours");
+        return all.filter(
+          (td) => td.value === "products" || td.value === "hours",
+        );
       case "SERVICE":
-        return all.filter((td) => td.value === "services" || td.value === "hours");
+        return all.filter(
+          (td) => td.value === "services" || td.value === "hours",
+        );
       case "EVENT":
-        return all.filter((td) => td.value === "tickets" || td.value === "hours");
+        return all.filter(
+          (td) => td.value === "tickets" || td.value === "hours",
+        );
       default:
         // FNB, CUSTOM and others: show all
         return all;
     }
-  }, [outletQuery.data?.type, goods.length, services.length, tickets.length, t]);
+  }, [
+    outletQuery.data?.type,
+    goods.length,
+    services.length,
+    tickets.length,
+    t,
+  ]);
 
   const availableTabValues = useMemo(
     () => tabDefinitions.map((tab) => tab.value),
@@ -354,7 +450,11 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
         onLeftClickHandler = () => router.push(withLocalizedPath("/nearby"));
       } else if (from === "product" || from === "share") {
         onLeftClickHandler = () => router.push(withLocalizedPath("/"));
-      } else if (from === "search" || from === "favorites" || from == "nearby") {
+      } else if (
+        from === "search" ||
+        from === "favorites" ||
+        from == "nearby"
+      ) {
         onLeftClickHandler = () => router.back();
       } else {
         onLeftClickHandler = () => router.back();
@@ -374,7 +474,15 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
     return () => {
       resetAppBar();
     };
-  }, [setAppBar, resetAppBar, outletQuery.data?.name, prevPage, from, router, withLocalizedPath]);
+  }, [
+    setAppBar,
+    resetAppBar,
+    outletQuery.data?.name,
+    prevPage,
+    from,
+    router,
+    withLocalizedPath,
+  ]);
 
   const handleToggleFavorite = useCallback(() => {
     if (!outletQuery.data) return;
@@ -414,7 +522,9 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
   const handleWhatsAppChat = useCallback(() => {
     if (!outletQuery.data?.phone) return;
     const outlet = outletQuery.data;
-    const message = encodeURIComponent(`${t("whatsappMessage", { name: outlet.name })}`);
+    const message = encodeURIComponent(
+      `${t("whatsappMessage", { name: outlet.name })}`,
+    );
     const whatsappUrl = `https://wa.me/${(outlet.phone?.startsWith("+62") ? outlet.phone : "+62" + outlet.phone.slice(1)).replace(/\D/g, "")}?text=${message}`;
     window.open(whatsappUrl, "_blank");
   }, [outletQuery.data?.phone, outletQuery.data?.name]);
@@ -442,7 +552,7 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
     return <ErrorState />;
   }
 
-  if (!outletQuery.data) return null
+  if (!outletQuery.data) return null;
 
   const outlet = outletQuery.data!;
 
@@ -477,7 +587,9 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
                   {t("tableOrderingActive")}
                 </p>
                 <p className="text-sm font-extrabold leading-none">
-                  {t("tableIndicator", { tableId: storedTableName || storedTableId })}
+                  {t("tableIndicator", {
+                    tableId: storedTableName || storedTableId,
+                  })}
                 </p>
               </div>
             </div>
@@ -486,7 +598,9 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider">{t("active")}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">
+                {t("active")}
+              </span>
             </div>
           </div>
         </div>
@@ -501,11 +615,14 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
               <div className="flex items-center gap-2 mb-1.5">
                 <Badge
                   variant={outlet.status ? "default" : "secondary"}
-                  className={`rounded-full text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-wider ${outlet.status ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-200 text-gray-600"}`}>
+                  className={`rounded-full text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-wider ${outlet.status ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-200 text-gray-600"}`}
+                >
                   {outlet.status ? t("open") : t("closed")}
                 </Badge>
               </div>
-              <h1 className="text-xl font-extrabold leading-tight tracking-tight line-clamp-2 text-foreground/90">{outlet.name}</h1>
+              <h1 className="text-xl font-extrabold leading-tight tracking-tight line-clamp-2 text-foreground/90">
+                {outlet.name}
+              </h1>
             </div>
           </div>
 
@@ -513,7 +630,8 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
           <button
             type="button"
             onClick={() => toMapDestination(outlet.latitude, outlet.longitude)}
-            className="flex items-start gap-3 text-left w-full group pt-1">
+            className="flex items-start gap-3 text-left w-full group pt-1"
+          >
             <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-all duration-300">
               <MapPin className="w-4 h-4" />
             </div>
@@ -536,15 +654,41 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
                 variant="outline"
                 size="sm"
                 className="flex-1 h-9 rounded-lg text-xs font-medium gap-1.5 border-green-200 text-[#10b981] hover:bg-green-50 hover:text-green-800"
-                onClick={handleWhatsAppChat}>
+                onClick={handleWhatsAppChat}
+              >
                 {/* <MessageCircle className="w-3.5 h-3.5" /> */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="128" height="128">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 100 100"
+                  width="128"
+                  height="128"
+                >
                   <defs>
-                    <filter id="svg-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.25" />
+                    <filter
+                      id="svg-shadow"
+                      x="-20%"
+                      y="-20%"
+                      width="140%"
+                      height="140%"
+                    >
+                      <feDropShadow
+                        dx="0"
+                        dy="4"
+                        stdDeviation="4"
+                        floodColor="#000000"
+                        flood-opacity="0.25"
+                      />
                     </filter>
                   </defs>
-                  <svg x="0.0" y="0.0" width="100" height="100" viewBox="0 0 16 16" fill="#10b981" filter="url(#svg-shadow)">
+                  <svg
+                    x="0.0"
+                    y="0.0"
+                    width="100"
+                    height="100"
+                    viewBox="0 0 16 16"
+                    fill="#10b981"
+                    filter="url(#svg-shadow)"
+                  >
                     <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.601 2.326zM7.994 14.521a6.57 6.57 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.5c.003-3.613 2.941-6.55 6.557-6.55 1.753 0 3.4.683 4.634 1.917A6.54 6.54 0 0 1 14.5 7.93c-.004 3.615-2.942 6.55-6.555 6.55m3.544-4.8c-.194-.097-1.14-.563-1.317-.626-.176-.065-.304-.097-.43.097-.128.19-.495.626-.607.75-.113.127-.225.143-.419.046-.194-.097-.82-.303-1.562-.963-.577-.514-.967-1.149-1.08-1.343-.113-.194-.012-.299.085-.395.088-.087.195-.225.293-.338.097-.113.128-.19.194-.317.065-.13.033-.243-.016-.34-.049-.097-.43-1.036-.59-1.42-.156-.375-.312-.324-.43-.33-.11-.005-.238-.006-.366-.006a.71.71 0 0 0-.511.239c-.18.195-.684.668-.684 1.629s.7 1.912.8 2.046c.1.134 1.378 2.103 3.338 2.946.467.201.83.322 1.114.412.47.149.897.128 1.236.077.378-.057 1.14-.467 1.3-.918.162-.452.162-.84.113-.919-.049-.078-.176-.127-.37-.224z" />
                   </svg>
                 </svg>
@@ -556,8 +700,15 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
                 variant="outline"
                 size="sm"
                 className="h-9 rounded-lg text-xs font-medium gap-1.5 border-pink-200 text-pink-700 hover:bg-pink-50 hover:text-pink-800"
-                onClick={() => window.open(outlet.instagramUrl?.startsWith("https://")
-                  ? outlet.instagramUrl : `https://www.instagram.com/${outlet.instagramUrl}`, "_blank")}>
+                onClick={() =>
+                  window.open(
+                    outlet.instagramUrl?.startsWith("https://")
+                      ? outlet.instagramUrl
+                      : `https://www.instagram.com/${outlet.instagramUrl}`,
+                    "_blank",
+                  )
+                }
+              >
                 <Instagram className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Instagram</span>
               </Button>
@@ -565,9 +716,12 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
             <Button
               variant="outline"
               size="sm"
-              className={`${outlet.phone ? '' : 'flex-1'} h-9 rounded-lg text-xs font-medium gap-1.5`}
-              onClick={handleToggleFavorite}>
-              <Heart className={`w-3.5 h-3.5 transition-colors ${isOutletFavorite ? "fill-red-500 text-red-500" : ""}`} />
+              className={`${outlet.phone ? "" : "flex-1"} h-9 rounded-lg text-xs font-medium gap-1.5`}
+              onClick={handleToggleFavorite}
+            >
+              <Heart
+                className={`w-3.5 h-3.5 transition-colors ${isOutletFavorite ? "fill-red-500 text-red-500" : ""}`}
+              />
               <span className="hidden sm:inline">
                 {isOutletFavorite ? t("favorited") : t("favorite")}
               </span>
@@ -578,8 +732,13 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
                 name: outlet.name,
                 address: outlet.address,
                 image: outlet.image || undefined,
-              }}>
-              <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg flex-shrink-0">
+              }}
+            >
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-lg flex-shrink-0"
+              >
                 <Share2 className="w-3.5 h-3.5" />
               </Button>
             </ShareOutlet>
@@ -595,26 +754,35 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
             setSelectedTabs(value);
             localStorage.setItem("selectedTabs", value);
           }}
-          className="w-full">
+          className="w-full"
+        >
           <TabsList
             className="grid w-full h-11 rounded-lg bg-muted/60 p-1"
-            style={{ gridTemplateColumns: `repeat(${Math.max(1, tabDefinitions.length)}, minmax(0, 1fr))` }}>
+            style={{
+              gridTemplateColumns: `repeat(${Math.max(1, tabDefinitions.length)}, minmax(0, 1fr))`,
+            }}
+          >
             {tabDefinitions.map(({ value, icon: Icon, label, count }) => (
               <TabsTrigger
                 key={value}
                 value={value}
-                className="flex items-center gap-1.5 rounded-md text-xs font-medium data-[state=active]:shadow-sm">
+                className="flex items-center gap-1.5 rounded-md text-xs font-medium data-[state=active]:shadow-sm"
+              >
                 <Icon className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{label}</span>
                 {count !== undefined && (
-                  <span className="text-[10px] tabular-nums opacity-70">({count})</span>
+                  <span className="text-[10px] tabular-nums opacity-70">
+                    ({count})
+                  </span>
                 )}
               </TabsTrigger>
             ))}
           </TabsList>
 
           {/* Search Input - only show in products and services tabs */}
-          {(selectedTabs === "products" || selectedTabs === "services" || selectedTabs === "tickets") && (
+          {(selectedTabs === "products" ||
+            selectedTabs === "services" ||
+            selectedTabs === "tickets") && (
             <div className="relative mt-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -628,7 +796,8 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -636,13 +805,17 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
           )}
 
           {/* Search Results Count */}
-          {trimmedSearch && !isLoadingSearch && (selectedTabs === "products" || selectedTabs === "services" || selectedTabs === "tickets") && (
-            <div className="mt-2 px-1">
-              <p className="text-xs text-muted-foreground">
-                {t("searchResults", { count: displayedProducts.length })}
-              </p>
-            </div>
-          )}
+          {trimmedSearch &&
+            !isLoadingSearch &&
+            (selectedTabs === "products" ||
+              selectedTabs === "services" ||
+              selectedTabs === "tickets") && (
+              <div className="mt-2 px-1">
+                <p className="text-xs text-muted-foreground">
+                  {t("searchResults", { count: displayedProducts.length })}
+                </p>
+              </div>
+            )}
 
           <TabsContent value="products" className="mt-3 space-y-2">
             {isLoadingSearch ? (
@@ -650,7 +823,12 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
             ) : goods.length ? (
               <div className="grid gap-2">
                 {goods.map((p) => (
-                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale} />
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    outlet={outlet}
+                    locale={locale}
+                  />
                 ))}
               </div>
             ) : trimmedSearch ? (
@@ -659,7 +837,10 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
                 description={t("noSearchResultsDescription")}
               />
             ) : (
-              <EmptyState title={t("noProducts")} description={t("noProductsDescription")} />
+              <EmptyState
+                title={t("noProducts")}
+                description={t("noProductsDescription")}
+              />
             )}
           </TabsContent>
 
@@ -669,7 +850,12 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
             ) : services.length ? (
               <div className="grid gap-2">
                 {services.map((p) => (
-                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale} />
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    outlet={outlet}
+                    locale={locale}
+                  />
                 ))}
               </div>
             ) : trimmedSearch ? (
@@ -693,7 +879,12 @@ export function OutletContent({ slug, initialOutletData, initialProductsData }: 
             ) : tickets.length ? (
               <div className="grid gap-2">
                 {tickets.map((p) => (
-                  <ProductCard key={p.id} product={p} outlet={outlet} locale={locale} />
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    outlet={outlet}
+                    locale={locale}
+                  />
                 ))}
               </div>
             ) : trimmedSearch ? (

@@ -36,6 +36,7 @@ export async function createOutletService(data: CreateOutletInput, ownerId: stri
         const outlet = await OutletRepository.create(data);
         await EventPublisher.publishOutletCreated(outlet);
         await PlanLimitService.invalidateUsageCache(business.id);
+        await invalidateMapCache();
         return outlet;
     } catch (error: any) {
         if (error.code == 'P2002') {
@@ -113,6 +114,82 @@ export async function findNearbyOutletsService(
     };
 }
 
+/**
+ * Helper function untuk menghapus cache Redis menggunakan pattern dengan metode SCAN.
+ * SCAN aman untuk production karena memproses secara bertahap tanpa memblokir server Redis.
+ */
+async function deleteKeysByPattern(pattern: string) {
+    try {
+        let cursor = '0';
+        do {
+            const reply = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+            cursor = reply[0];
+            const keys = reply[1];
+            if (keys && keys.length > 0) {
+                await redis.del(...keys);
+            }
+        } while (cursor !== '0');
+    } catch (error) {
+        console.error("Gagal menghapus cache dengan pattern:", error);
+    }
+}
+
+/**
+ * Hapus seluruh cache yang berkaitan dengan map outlet.
+ */
+export async function invalidateMapCache() {
+    await deleteKeysByPattern('outlets:map:*');
+}
+
+/**
+ * Cari outlet berdasarkan bounding box viewport peta.
+ * Menggunakan Redis cache dengan TTL 24 jam (86400 detik) untuk efisiensi maksimal.
+ * Cache akan di-invalidate secara aktif melalui service saat ada penambahan/perubahan data outlet.
+ */
+export async function findOutletsInViewportService(
+    latMin: number,
+    latMax: number,
+    lngMin: number,
+    lngMax: number,
+    search?: string,
+) {
+    // Validasi bounding box
+    if (latMin >= latMax || lngMin >= lngMax) {
+        throw new AppError('Invalid bounding box: min harus lebih kecil dari max', HttpStatus.BAD_REQUEST);
+    }
+    if (latMin < -90 || latMax > 90 || lngMin < -180 || lngMax > 180) {
+        throw new AppError('Bounding box di luar range koordinat yang valid', HttpStatus.BAD_REQUEST);
+    }
+
+    // Bangun cache key dengan rounding 4 desimal untuk cache hit yang lebih optimal
+    const r = (n: number) => Math.round(n * 10000) / 10000;
+    const cacheKey = `outlets:map:${r(latMin)}:${r(latMax)}:${r(lngMin)}:${r(lngMax)}${search ? `:${search.trim().toLowerCase()}` : ''}`;
+
+    // Cek Redis cache dulu
+    try {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+            return { outlets: JSON.parse(cached), fromCache: true };
+        }
+    } catch {
+        // Kalau Redis error, lanjut ke DB tanpa crash
+    }
+
+    // Cache MISS — query database
+    const outletsRaw = await OutletRepository.findByBoundingBox(latMin, latMax, lngMin, lngMax, search);
+    const outletsWithStatus = mapOutletsWithOpenStatus(outletsRaw);
+    const outlets = removeOperatingHoursFromOutlets(outletsWithStatus);
+
+    // Simpan ke Redis (TTL 24 jam)
+    try {
+        await redis.set(cacheKey, JSON.stringify(outlets), 'EX', 86400);
+    } catch {
+        // Kalau Redis error saat set, tetap return data tanpa crash
+    }
+
+    return { outlets, fromCache: false };
+}
+
 export async function updateOutletLocationService(outletId: string, ownerId: string, latitude: number, longitude: number) {
     // Check ownership
     const outlet = await OutletRepository.findById(outletId);
@@ -132,7 +209,9 @@ export async function updateOutletLocationService(outletId: string, ownerId: str
         throw new AppError(error instanceof Error ? error.message : 'Invalid coordinates', HttpStatus.BAD_REQUEST);
     }
 
-    return OutletRepository.update(outletId, { latitude, longitude });
+    const updated = await OutletRepository.update(outletId, { latitude, longitude });
+    await invalidateMapCache();
+    return updated;
 }
 
 export async function getOutletByIdService(id: string, date?: Date) {
@@ -226,6 +305,7 @@ export async function updateOutletService(id: string, data: UpdateOutletInput, o
     }
     redis.del(`user:${ownerId}`)
     if (data.manualQrImageUrl && outlet.manualQrImageUrl) ImageService.deleteImageByUrl(outlet.manualQrImageUrl);
+    await invalidateMapCache();
     return updatedOutlet;
 }
 
@@ -239,6 +319,7 @@ export async function deleteOutletService(id: string, ownerId: string) {
     redis.del(`user:${ownerId}`)
     if (outlet.image) ImageService.deleteImageByUrl(outlet.image);
     await PlanLimitService.invalidateUsageCache(business.id);
+    await invalidateMapCache();
     return deletedOutlet;
 }
 

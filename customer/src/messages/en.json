@@ -152,7 +152,9 @@
         "noOutletsWithinRange": "There are no outlets within the selected distance of your location.",
         "distanceLabel": "Search radius",
         "distanceUnit": "km",
-        "selectDistance": "Select distance"
+        "selectDistance": "Select distance",
+        "viewMap": "View Map",
+        "viewList": "View List"
     },
     "searchPage": {
         "title": "Search Outlets",

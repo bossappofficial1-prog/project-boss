@@ -152,7 +152,9 @@
         "noOutletsWithinRange": "Tidak ada outlet dalam jarak yang dipilih dari lokasi Anda.",
         "distanceLabel": "Radius pencarian",
         "distanceUnit": "km",
-        "selectDistance": "Pilih jarak"
+        "selectDistance": "Pilih jarak",
+        "viewMap": "Lihat Peta",
+        "viewList": "Lihat Daftar"
     },
     "searchPage": {
         "title": "Pencarian Outlet",

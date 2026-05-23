@@ -130,3 +130,28 @@ export async function searchOutlets(params: SearchOutletsParams) {
     };
 }
 
+export interface ViewportOutletsParams {
+    latMin: number;
+    latMax: number;
+    lngMin: number;
+    lngMax: number;
+    search?: string;
+}
+
+/**
+ * Ambil outlet yang berada dalam bounding box viewport peta.
+ * Dipanggil saat user zoom/pan peta (moveend event).
+ * Backend menggunakan Redis cache TTL 60 detik.
+ */
+export async function getOutletsInViewport(params: ViewportOutletsParams): Promise<OutletDetails[]> {
+    const searchParams = new URLSearchParams({
+        latMin: params.latMin.toString(),
+        latMax: params.latMax.toString(),
+        lngMin: params.lngMin.toString(),
+        lngMax: params.lngMax.toString(),
+    });
+    if (params.search) searchParams.append('search', params.search);
+
+    const res = await api.get<{ data: OutletDetails[] }>(`/outlets/map?${searchParams.toString()}`);
+    return res.data.data;
+}

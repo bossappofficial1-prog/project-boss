@@ -128,7 +128,8 @@ export default function BottomNav() {
         if (!isMainRoute || !containerRef.current) return;
 
         const updateHeight = () => {
-            const h = Math.ceil(containerRef.current!.getBoundingClientRect().height);
+            // Add 16px to account for the bottom-4 (16px) floating offset
+            const h = Math.ceil(containerRef.current!.getBoundingClientRect().height) + 16;
             document.documentElement.style.setProperty("--bottomnav-height", `${h}px`);
         };
 
@@ -146,14 +147,14 @@ export default function BottomNav() {
 
     return (
         <div
-            className="fixed bottom-0 left-0 right-0 z-[50] px-4 py-2 bg-background/80 backdrop-blur-lg border-t"
+            className="fixed bottom-4 left-4 right-4 z-[50] max-w-md mx-auto bg-background/90 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl px-2 py-1 flex items-center justify-center animate-in slide-in-from-bottom-5 duration-300"
             data-guide-target="bottom-nav-container"
             ref={containerRef}
         >
             <nav
                 role="navigation"
                 aria-label="Bottom Navigation"
-                className="mx-auto flex max-w-lg items-center justify-between"
+                className="w-full flex items-center justify-around"
             >
                 {menus.map((menu) => {
                     const isActive =

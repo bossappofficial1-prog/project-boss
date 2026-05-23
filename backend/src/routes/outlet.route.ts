@@ -11,6 +11,7 @@ import {
     getFeaturedOutletsController,
     updateOutletController,
     findNearbyOutletsController,
+    findOutletsInViewportController,
     updateOutletLocationController,
     uploadQRISController,
     getQRISController,
@@ -39,6 +40,7 @@ const outletRouter = Router();
 outletRouter.get("/", getAllOutletsController);
 outletRouter.get("/featured", getFeaturedOutletsController);
 outletRouter.get("/nearby", findNearbyOutletsController);
+outletRouter.get("/map", findOutletsInViewportController);
 outletRouter.get("/slugs", getOutletSlugsController);
 
 // Transfer Routes (Must be before /:id)

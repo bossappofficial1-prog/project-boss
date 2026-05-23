@@ -24,17 +24,20 @@ export function NavItem({
             aria-label={ariaLabel ?? label}
             data-guide-target={guideTarget}
             className={`
-                flex flex-col items-center justify-center gap-1.5 
-                p-2 rounded-xl text-xs font-medium
-                transition-all duration-200 ease-in-out
+                relative flex flex-col items-center justify-center gap-1
+                px-3 py-2.5 rounded-xl text-xs font-semibold
+                transition-all duration-300 ease-in-out select-none
                 ${highlight
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-primary scale-105"
+                    : "text-muted-foreground hover:text-foreground active:scale-95"
                 }
             `}
         >
-            <span className="inline-flex">{children}</span>
-            <span className="hidden md:block">{label}</span>
+            <span className="inline-flex relative z-10 transition-transform duration-300">{children}</span>
+            <span className="hidden md:block relative z-10">{label}</span>
+            {highlight && (
+                <span className="absolute bottom-1 w-1.5 h-1.5 bg-primary rounded-full animate-in zoom-in-50 duration-300" />
+            )}
         </Link>
     )
 }

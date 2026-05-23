@@ -11,6 +11,7 @@ import {
     getFeaturedOutletsService,
     updateOutletService,
     findNearbyOutletsService,
+    findOutletsInViewportService,
     updateOutletLocationService,
     uploadQRISService,
     getQRISService,
@@ -48,6 +49,38 @@ export const findNearbyOutletsController = asyncHandler(async (req: Request, res
     );
 
     return ResponseUtil.paginated(res, outlets.outlets, outlets.page, outlets.limit, outlets.totalPages, HttpStatus.OK);
+});
+
+/**
+ * GET /outlets/map?latMin=...&latMax=...&lngMin=...&lngMax=...&search=...
+ * Mengembalikan outlet yang berada dalam viewport bounding box peta.
+ * Redis-cached per bounding box dengan TTL 60 detik.
+ */
+export const findOutletsInViewportController = asyncHandler(async (req: Request, res: Response) => {
+    const { latMin, latMax, lngMin, lngMax, search } = req.query;
+
+    if (!latMin || !latMax || !lngMin || !lngMax) {
+        return ResponseUtil.badRequest(res, 'latMin, latMax, lngMin, lngMax are required');
+    }
+
+    const parsedLatMin = parseFloat(latMin as string);
+    const parsedLatMax = parseFloat(latMax as string);
+    const parsedLngMin = parseFloat(lngMin as string);
+    const parsedLngMax = parseFloat(lngMax as string);
+
+    if ([parsedLatMin, parsedLatMax, parsedLngMin, parsedLngMax].some(isNaN)) {
+        return ResponseUtil.badRequest(res, 'Semua parameter bounding box harus berupa angka');
+    }
+
+    const result = await findOutletsInViewportService(
+        parsedLatMin,
+        parsedLatMax,
+        parsedLngMin,
+        parsedLngMax,
+        search as string | undefined,
+    );
+
+    return ResponseUtil.success(res, result.outlets, HttpStatus.OK);
 });
 
 export const updateOutletLocationController = asyncHandler(async (req: Request, res: Response) => {

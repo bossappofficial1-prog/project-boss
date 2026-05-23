@@ -377,6 +377,65 @@ export class OutletRepository {
     });
   }
 
+  /**
+   * Query outlets yang berada dalam bounding box viewport peta.
+   * Digunakan untuk mode map discovery — bukan radius-based.
+   * Max 200 outlet per request untuk menjaga performa.
+   */
+  static async findByBoundingBox(
+    latMin: number,
+    latMax: number,
+    lngMin: number,
+    lngMax: number,
+    search?: string,
+  ) {
+    const where: any = {
+      AND: [
+        { latitude: { gte: latMin } },
+        { latitude: { lte: latMax } },
+        { longitude: { gte: lngMin } },
+        { longitude: { lte: lngMax } },
+        { latitude: { not: null } },
+        { longitude: { not: null } },
+      ],
+    };
+
+    if (search && search.trim() !== "") {
+      where.AND.push({
+        name: { contains: search.trim(), mode: "insensitive" },
+      });
+    }
+
+    return db.outlet.findMany({
+      where,
+      include: {
+        business: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        operatingHours: true,
+        _count: {
+          select: {
+            orders: {
+              where: {
+                OR: [{ orderStatus: "COMPLETED" }],
+              },
+            },
+            products: true,
+          },
+        },
+      },
+      orderBy: {
+        orders: {
+          _count: "desc",
+        },
+      },
+      take: 200, // limit per viewport
+    });
+  }
+
   static async findFeaturedOutlets() {
     return db.outlet.findMany({
       include: {
