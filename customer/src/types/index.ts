@@ -246,6 +246,7 @@ export interface OrderDetail {
   orderStatus: OrderStatusType;
   midtransFee: number;
   appFee: number;
+  taxAmount?: number;
   outletId: string;
   createdAt: string;
   updatedAt: string;

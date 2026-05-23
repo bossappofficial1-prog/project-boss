@@ -198,7 +198,7 @@ export function NearbyOutletContent() {
 
   // 7. Viewport-based outlet fetching (Map Mode)
   const fetchViewportOutlets = useCallback(async () => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || activeRouteOutlet) return;
     const bounds = mapRef.current.getBounds();
     if (!bounds) return;
 
@@ -217,7 +217,7 @@ export function NearbyOutletContent() {
     } finally {
       setMapLoading(false);
     }
-  }, []);
+  }, [activeRouteOutlet]);
 
   // 7.5. Fetch and show route coordinates to outlet
   const handleShowRoute = useCallback(
@@ -569,7 +569,7 @@ export function NearbyOutletContent() {
           </MapMarker>
 
           {/* Outlet Markers */}
-          {mapOutlets.map((outlet) => {
+          {(activeRouteOutlet ? [activeRouteOutlet] : mapOutlets).map((outlet) => {
             const isActive = activeOutletId === outlet.id;
             return (
               <MapMarker

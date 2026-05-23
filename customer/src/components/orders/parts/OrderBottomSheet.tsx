@@ -240,7 +240,7 @@ export default function OrderBottomSheet({
     const status = STATUS_MAP[order.orderStatus] ?? STATUS_MAP[OrderStatus.PROCESSING];
     const StatusIcon = status.icon;
 
-    const subtotal = order.totalAmount - order.midtransFee - order.appFee;
+    const subtotal = order.totalAmount - order.midtransFee - order.appFee - (order.taxAmount ?? 0);
     const showTransactionFee =
         order.midtransFee > 0 &&
         order.transaction?.paymentMethod !== "QRIS_OFFLINE" &&
@@ -472,6 +472,14 @@ export default function OrderBottomSheet({
                                             {formatCurrency(order.appFee)}
                                         </span>
                                     </div>
+                                    {order.taxAmount && order.taxAmount > 0 ? (
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-muted-foreground">{t("detail.tax")}</span>
+                                            <span className="font-medium text-foreground tabular-nums">
+                                                {formatCurrency(order.taxAmount)}
+                                            </span>
+                                        </div>
+                                    ) : null}
                                     {showTransactionFee && (
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-muted-foreground">{t("detail.transactionFee")}</span>

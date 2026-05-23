@@ -193,12 +193,18 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
           <div className="space-y-2">
             <div className="flex justify-between items-center text-sm">
               <p className="text-muted-foreground">Subtotal</p>
-              <p>{formatCurrency(order.totalAmount - order.midtransFee - order.appFee)}</p>
+              <p>{formatCurrency(order.totalAmount - order.midtransFee - order.appFee - (order.taxAmount ?? 0))}</p>
             </div>
             <div className="flex justify-between items-center text-sm">
               <p className="text-muted-foreground">Biaya Layanan</p>
               <p>{formatCurrency(order.appFee)}</p>
             </div>
+            {order.taxAmount !== undefined && order.taxAmount > 0 && (
+              <div className="flex justify-between items-center text-sm">
+                <p className="text-muted-foreground">Pajak</p>
+                <p>{formatCurrency(order.taxAmount)}</p>
+              </div>
+            )}
             {/* Hide transaction fee for manual payment methods */}
             {order.midtransFee > 0 &&
               order.transaction?.paymentMethod !== "QRIS_OFFLINE" &&

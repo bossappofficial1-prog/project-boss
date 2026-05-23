@@ -689,6 +689,7 @@
             "subtotal": "Subtotal",
             "serviceFee": "Service Fee",
             "transactionFee": "Transaction Fee",
+            "tax": "Tax",
             "totalPayment": "Total Payment",
             "quantity": "Quantity"
         },
