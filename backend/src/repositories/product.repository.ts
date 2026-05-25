@@ -147,6 +147,15 @@ export class ProductRepository {
           },
         },
         ticket: true,
+        recipe: {
+          include: {
+            ingredients: {
+              include: {
+                ingredient: true,
+              },
+            },
+          },
+        },
         media: {
           orderBy: { order: "asc" },
         },
@@ -180,6 +189,15 @@ export class ProductRepository {
         goods: true,
         service: true,
         ticket: true,
+        recipe: {
+          include: {
+            ingredients: {
+              include: {
+                ingredient: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -234,6 +252,15 @@ export class ProductRepository {
           goods: true,
           service: true,
           ticket: true,
+          recipe: {
+            include: {
+              ingredients: {
+                include: {
+                  ingredient: true,
+                },
+              },
+            },
+          },
           media: {
             orderBy: { order: "asc" },
           },

@@ -25,6 +25,8 @@ import {
   ClipboardList,
   CalendarCheck,
   Truck,
+  ChefHat,
+  Salad,
 } from "lucide-react";
 import { OutletType } from "@/types";
 
@@ -140,7 +142,21 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Stok Produk",
         href: "/owner/stock",
         icon: Box,
-        requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM],
+        requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
+      },
+      {
+        id: "ingredients",
+        name: "Bahan Baku",
+        href: "/owner/ingredients",
+        icon: Salad,
+        requiredTypes: [OutletType.FNB],
+      },
+      {
+        id: "recipes",
+        name: "Resep Menu",
+        href: "/owner/recipes",
+        icon: ChefHat,
+        requiredTypes: [OutletType.FNB],
       },
       {
         id: "suppliers",

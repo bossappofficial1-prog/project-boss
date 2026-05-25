@@ -144,7 +144,7 @@ export function PosV2Content() {
     }
     setCart((prev) => {
       const current = prev[product.id]?.quantity ?? 0;
-      if (product.type === "GOODS" && (product.stock ?? 0) > 0 && current + 1 > (product.stock ?? 0)) { toast.error(`Stok "${product.name}" tidak cukup`); return prev; }
+      if (product.type === "GOODS" && !product.hasRecipe && (product.stock ?? 0) > 0 && current + 1 > (product.stock ?? 0)) { toast.error(`Stok "${product.name}" tidak cukup`); return prev; }
       if (product.type === "TICKET") {
         const available = (product.totalQuota ?? 0) - (product.soldCount ?? 0);
         if (available > 0 && current + 1 > available) { toast.error(`Kuota tiket "${product.name}" tidak cukup`); return prev; }
@@ -185,7 +185,7 @@ export function PosV2Content() {
     setCart((prev) => {
       const line = prev[productId];
       if (!line || line.product.type === "SERVICE") return prev;
-      if (line.product.type === "GOODS" && (line.product.stock ?? 0) > 0 && line.quantity + 1 > (line.product.stock ?? 0)) { toast.error(`Stok "${line.product.name}" tidak cukup`); return prev; }
+      if (line.product.type === "GOODS" && !line.product.hasRecipe && (line.product.stock ?? 0) > 0 && line.quantity + 1 > (line.product.stock ?? 0)) { toast.error(`Stok "${line.product.name}" tidak cukup`); return prev; }
       if (line.product.type === "TICKET") {
         const available = (line.product.totalQuota ?? 0) - (line.product.soldCount ?? 0);
         if (available > 0 && line.quantity + 1 > available) { toast.error(`Kuota tiket "${line.product.name}" tidak cukup`); return prev; }

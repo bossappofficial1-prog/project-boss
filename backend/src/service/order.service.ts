@@ -18,6 +18,7 @@ import { orderExpiryJob } from "../jobs/payment-expiry.job";
 import { formatDateTime, generateTicketCode } from "../utils";
 import { LoyaltyService } from "./loyalty.service";
 import { RedisUtils } from "../utils/redis.utils";
+import { IngredientRepository } from "../repositories/ingredient.repository";
 
 type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> &
   Record<string, any>;
@@ -700,6 +701,9 @@ export async function updateOrderStatusService(
     } catch (loyaltyError) {
       console.error(`[LOYALTY] Error processing points:`, loyaltyError);
     }
+
+    // FIFO Stock Deduction for FnB Ingredients (FnB HPP)
+    await deductStockForCompletedOrder(orderId);
   }
 
   // // Kirim notifikasi status update melalui message publisher
@@ -809,6 +813,9 @@ export async function completeServiceOrderService(orderId: string) {
       outlet: true,
     },
   });
+
+  // FIFO Stock Deduction for FnB Ingredients (FnB HPP)
+  await deductStockForCompletedOrder(orderId);
 
   // 2. Periksa apakah pesanan yang selesai adalah pesanan layanan
   const hasServiceProduct = completedOrder.items.some((item) => item.product.type === "SERVICE");
@@ -1369,4 +1376,58 @@ export async function getOrdersListService(
     limit,
     total,
   };
+}
+
+/**
+ * Pengurangan stok FIFO bahan baku untuk pesanan yang selesai (FnB HPP)
+ */
+export async function deductStockForCompletedOrder(orderId: string) {
+  try {
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            product: true
+          }
+        }
+      }
+    });
+    if (!order) return;
+
+    for (const item of order.items) {
+      const recipe = await db.recipe.findUnique({
+        where: { productId: item.productId },
+        include: { ingredients: true }
+      });
+
+      if (recipe && recipe.ingredients.length > 0) {
+        let itemTotalHpp = 0;
+
+        for (const recipeIngredient of recipe.ingredients) {
+          const qtyToDeduct = recipeIngredient.quantity * item.quantity;
+          
+          const deductResult = await IngredientRepository.deductStockFIFO(
+            recipeIngredient.ingredientId,
+            qtyToDeduct,
+            orderId,
+            `POS Order Item: ${item.product.name} x${item.quantity}`
+          );
+
+          itemTotalHpp += deductResult.actualHppCost;
+        }
+
+        const roundedHpp = Math.round(itemTotalHpp * 100) / 100;
+
+        await db.orderItem.update({
+          where: { id: item.id },
+          data: { hppAtTimeOfOrder: roundedHpp }
+        });
+        
+        console.log(`[HPP] Deducted FIFO stock for ${item.product.name} x${item.quantity}, total HPP: ${roundedHpp}`);
+      }
+    }
+  } catch (error) {
+    console.error("[HPP] Error processing FnB stock deduction & HPP:", error);
+  }
 }

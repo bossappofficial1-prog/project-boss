@@ -9,6 +9,7 @@ import { RedisUtils } from "../utils/redis.utils";
 import { LoyaltyService } from "./loyalty.service";
 import { getOutletByIdService } from "./outlet.service";
 import { CashierShiftService } from "./cashier-shift.service";
+import { deductStockForCompletedOrder } from "./order.service";
 
 const TABLE_ENABLED_OUTLET_TYPES = new Set(["FNB", "CUSTOM"]);
 
@@ -63,6 +64,7 @@ export class PosV2Service {
         taxPercentage: p.taxPercentage ?? null,
         taxName: p.taxName ?? null,
         price,
+        hasRecipe: p.type === "GOODS" ? !!p.recipe : false,
         stock: p.type === "GOODS" ? (p.goods?.currentStock ?? 0) : null,
         unit: p.type === "GOODS" ? (p.goods?.unit ?? "pcs") : null,
         barcode: p.type === "GOODS" ? (p.goods?.barcode ?? null) : null,
@@ -196,7 +198,8 @@ export class PosV2Service {
         if (!product.goods) {
           throw new AppError(`Data barang "${product.name}" tidak lengkap`, HttpStatus.BAD_REQUEST);
         }
-        if (product.goods.currentStock < item.quantity) {
+        // Skip stock validation for recipe-based products (FnB — stock tracked via ingredients)
+        if (!product.recipe && product.goods.currentStock < item.quantity) {
           throw new AppError(
             `Stok "${product.name}" tidak cukup. Tersedia: ${product.goods.currentStock}`,
             HttpStatus.BAD_REQUEST,
@@ -348,6 +351,15 @@ export class PosV2Service {
       tableNumber,
       isOpenBill,
     });
+
+    // Deduct stock for completed FnB orders (HPP FIFO)
+    if (order.orderStatus === "COMPLETED") {
+      try {
+        await deductStockForCompletedOrder(order.id);
+      } catch (stockDeductErr) {
+        console.error("[HPP] Error triggering stock deduction in POS v2:", stockDeductErr);
+      }
+    }
 
     // Trigger Loyalty (Non-blocking)
     LoyaltyService.processOrderLoyalty(order.id).catch((err) => {

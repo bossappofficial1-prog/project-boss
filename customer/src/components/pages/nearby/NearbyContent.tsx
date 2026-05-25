@@ -38,7 +38,6 @@ import {
   getNearbyOutlets,
 } from "@/lib/api";
 import { useStoreState } from "@/stores/use-store-state";
-import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const LAST_POSITION_KEY = "lastPosition";
@@ -368,7 +367,13 @@ export function NearbyOutletContent() {
       }
       prevActiveRouteOutletRef.current = activeRouteOutlet;
     }
-  }, [viewMode, mapReady, activeRouteOutlet, effectivePosition, fetchViewportOutlets]);
+  }, [
+    viewMode,
+    mapReady,
+    activeRouteOutlet,
+    effectivePosition,
+    fetchViewportOutlets,
+  ]);
 
   // 7.5. Fetch and show route coordinates to outlet
   const handleShowRoute = useCallback(
@@ -737,15 +742,7 @@ export function NearbyOutletContent() {
                   <MarkerContent>
                     <div className="relative group">
                       <div className="w-9 h-9 bg-linear-to-tr from-orange-500 to-rose-600 hover:from-orange-600 hover:to-rose-700 border-2 border-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 active:scale-95">
-                        {outlet.image ? (
-                          <Image
-                            alt={`${outlet.name}-image`}
-                            fill
-                            src={outlet.image}
-                          />
-                        ) : (
-                          <Store className="w-4 h-4 text-white shrink-0" />
-                        )}
+                        <Store className="w-4 h-4 text-white shrink-0" />
                       </div>
                       <div className="absolute group-hover:-bottom-1 transition-all -bottom-0.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-rose-600" />
                     </div>

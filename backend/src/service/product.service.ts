@@ -23,6 +23,39 @@ import { ProductMediaService, MediaItemInput } from "./product-media.service";
 import { RedisUtils } from "../utils/redis.utils";
 
 /**
+ * Calculates and overrides the virtual current stock for a product if it has a recipe.
+ */
+export function calculateVirtualStock(product: any): any {
+  if (!product || product.type !== "GOODS" || !product.goods) {
+    return product;
+  }
+
+  // If the product has a recipe with ingredients, calculate available portions based on raw stocks
+  if (product.recipe && product.recipe.ingredients && product.recipe.ingredients.length > 0) {
+    let minPortions = Infinity;
+
+    for (const ri of product.recipe.ingredients) {
+      const ingredient = ri.ingredient;
+      if (!ingredient) continue;
+
+      const neededQty = ri.quantity;
+      if (neededQty <= 0) continue;
+
+      // Available portions for this ingredient = currentStock / needed recipe quantity
+      const portions = Math.max(0, Math.floor(ingredient.currentStock / neededQty));
+      if (portions < minPortions) {
+        minPortions = portions;
+      }
+    }
+
+    // Set virtual current stock to the minimum possible portions we can make
+    product.goods.currentStock = minPortions === Infinity ? 0 : minPortions;
+  }
+
+  return product;
+}
+
+/**
  * Creates a single product and associated records.
  */
 export async function createProductService(data: CreateProductInput) {
@@ -56,7 +89,9 @@ export async function getProductByIdService(id: string) {
     throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
   }
 
-  const { outlet, ...productData } = product as any;
+  const virtualProduct = calculateVirtualStock(product);
+
+  const { outlet, ...productData } = virtualProduct as any;
 
   // Map media from ProductMedia relation
   const media =
@@ -86,20 +121,22 @@ export async function getProductByBarcodeService(barcode: string, outletId: stri
     throw new AppError(Messages.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND);
   }
 
+  const virtualProduct = calculateVirtualStock(product);
+
   return {
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    image: product.image,
-    type: product.type,
-    status: product.status,
-    outletId: product.outletId,
-    price: product.goods.sellingPrice,
-    stock: product.goods.currentStock,
-    unit: product.goods.unit,
-    goodsId: product.goods.id,
-    barcode: product.goods.barcode,
-    sku: product.goods.sku,
+    id: virtualProduct.id,
+    name: virtualProduct.name,
+    description: virtualProduct.description,
+    image: virtualProduct.image,
+    type: virtualProduct.type,
+    status: virtualProduct.status,
+    outletId: virtualProduct.outletId,
+    price: virtualProduct.goods.sellingPrice,
+    stock: virtualProduct.goods.currentStock,
+    unit: virtualProduct.goods.unit,
+    goodsId: virtualProduct.goods.id,
+    barcode: virtualProduct.goods.barcode,
+    sku: virtualProduct.goods.sku,
   };
 }
 
@@ -112,7 +149,12 @@ export async function getProductsByOutletIdService(
   params: { q?: string; accessed?: string; page: number; limit: number },
 ): Promise<{ data: Product[]; total: number }> {
   const { q, accessed, page, limit } = params;
-  return ProductRepository.findByOutletId({ outletId, productType, q, accessed, page, limit });
+  const result = await ProductRepository.findByOutletId({ outletId, productType, q, accessed, page, limit });
+
+  // Dynamically calculate and override virtual stock for each product that has a recipe
+  const mappedData = result.data.map((p) => calculateVirtualStock(p));
+
+  return { data: mappedData, total: result.total };
 }
 
 /**

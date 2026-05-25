@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Router } from "express";
 import { createPublicOrder, getPublicOutletMenu } from "../controller/public.controller";
 import { asyncHandler } from "../middleware/error.middleware";

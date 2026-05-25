@@ -46,6 +46,8 @@ import reservationRouter from "./reservation.route";
 import transactionDeleteRouter from "./transaction-delete.route";
 import productCategoryRouter from "./product-category.route";
 import attendanceRouter from "./attendance.route";
+import ingredientRouter from "./ingredient.route";
+import recipeRouter from "./recipe.route";
 
 const apiRouter = Router();
 
@@ -91,6 +93,8 @@ apiRouter.use("/reservations", reservationRouter);
 apiRouter.use("/transaction-deletes", transactionDeleteRouter);
 apiRouter.use("/product-categories", productCategoryRouter);
 apiRouter.use("/attendance", attendanceRouter);
+apiRouter.use("/ingredients", ingredientRouter);
+apiRouter.use("/recipes", recipeRouter);
 
 apiRouter.get("/payment-methods", async (req, res) => {
   ResponseUtil.success(res, paymentMethod);

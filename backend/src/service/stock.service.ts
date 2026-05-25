@@ -23,7 +23,7 @@ export async function recordStockIn(data: StockInInput) {
   // Verify ProductGoods exists
   const productGoods = await db.productGoods.findUnique({
     where: { id: data.productGoodsId },
-    include: { product: true },
+    include: { product: { include: { recipe: true } } },
   });
 
   if (!productGoods) {
@@ -31,6 +31,7 @@ export async function recordStockIn(data: StockInInput) {
   }
 
   const outletId = productGoods.product.outletId;
+  const hasRecipe = !!productGoods.product.recipe;
 
   const result = await db.$transaction(async (tx) => {
     // Create stock log
@@ -57,14 +58,17 @@ export async function recordStockIn(data: StockInInput) {
       },
     });
 
-    // Recalculate average HPP
-    const newAverageHpp = await StockLogRepository.calculateAverageHpp(data.productGoodsId);
-    await tx.productGoods.update({
-      where: { id: data.productGoodsId },
-      data: {
-        averageHpp: newAverageHpp,
-      },
-    });
+    // Recalculate average HPP (skip for recipe-based products — FnB HPP via ingredients)
+    const newAverageHpp = hasRecipe
+      ? productGoods.averageHpp
+      : await StockLogRepository.calculateAverageHpp(data.productGoodsId);
+
+    if (!hasRecipe) {
+      await tx.productGoods.update({
+        where: { id: data.productGoodsId },
+        data: { averageHpp: newAverageHpp },
+      });
+    }
 
     return {
       stockLog,
@@ -87,9 +91,10 @@ export async function recordStockInBulk(data: StockInInput[]) {
 
   const goods = await db.productGoods.findMany({
     where: { id: { in: data.map((d) => d.productGoodsId) } },
-    include: { product: { select: { outletId: true } } },
+    include: { product: { select: { outletId: true, recipe: true } } },
   });
   const outletIds = [...new Set(goods.map((g) => g.product.outletId).filter(Boolean))];
+  const goodsRecipeMap = new Map(goods.map((g) => [g.id, !!g.product.recipe]));
 
   // Use a transaction to ensure all stock movements succeed or fail together
   const result = await db.$transaction(
@@ -133,48 +138,40 @@ export async function recordStockInBulk(data: StockInInput[]) {
           },
         });
 
-        // Recalculate average HPP
-        // Note: We need to use StockLogRepository logic but adapted for transaction context
-        // OR we can rely on eventual consistency if heavy, but here we want immediate correct HPP.
-        // Since StockLogRepository might use 'db' instance directly, we should ideally duplicate the logic
-        // or ensure repository accepts transaction client.
-        // For simplicity and correctness in this codebase, let's recalculate manually within TX or assume
-        // StockLogRepository uses global db but we just wrote to it in TX... actually if we use global db
-        // inside TX for reading logs it might not see the new log yet if isolation level is high,
-        // but Prisma usually handles this if we pass tx.
-        // Let's reimplement simple Weighted Average logic here using tx to be safe.
+        // Recalculate average HPP (skip for recipe-based products — FnB HPP via ingredients)
+        const hasRecipe = goodsRecipeMap.get(item.productGoodsId) ?? false;
+        let finalHpp = productGoods.averageHpp;
 
-        // Get all IN logs (including this new one) to calculate weighted average
-        const allInLogs = await tx.stockLog.findMany({
-          where: {
-            productGoodsId: item.productGoodsId,
-            type: "IN",
-          },
-        });
+        if (!hasRecipe) {
+          const allInLogs = await tx.stockLog.findMany({
+            where: {
+              productGoodsId: item.productGoodsId,
+              type: "IN",
+            },
+          });
 
-        let totalValue = 0;
-        let totalQty = 0;
+          let totalValue = 0;
+          let totalQty = 0;
 
-        for (const log of allInLogs) {
-          const qty = log.quantity;
-          const price = log.hppPerUnit || 0;
-          totalValue += qty * price;
-          totalQty += qty;
+          for (const log of allInLogs) {
+            const qty = log.quantity;
+            const price = log.hppPerUnit || 0;
+            totalValue += qty * price;
+            totalQty += qty;
+          }
+
+          finalHpp = totalQty > 0 ? totalValue / totalQty : 0;
+
+          await tx.productGoods.update({
+            where: { id: item.productGoodsId },
+            data: { averageHpp: finalHpp },
+          });
         }
-
-        const newAverageHpp = totalQty > 0 ? totalValue / totalQty : 0;
-
-        await tx.productGoods.update({
-          where: { id: item.productGoodsId },
-          data: {
-            averageHpp: newAverageHpp,
-          },
-        });
 
         results.push({
           stockLog,
           productGoods: updatedGoods,
-          newAverageHpp,
+          newAverageHpp: finalHpp,
         });
       }
 
@@ -541,11 +538,21 @@ export async function recalculateHpp(productGoodsId: string) {
   // Verify ProductGoods exists
   const productGoods = await db.productGoods.findUnique({
     where: { id: productGoodsId },
-    include: { product: true },
+    include: { product: { include: { recipe: true } } },
   });
 
   if (!productGoods) {
     throw new AppError("Product Goods tidak ditemukan", HttpStatus.NOT_FOUND);
+  }
+
+  // Skip for recipe-based products — FnB HPP managed via ingredients
+  if (productGoods.product.recipe) {
+    return {
+      productGoods,
+      previousHpp: productGoods.averageHpp,
+      newHpp: productGoods.averageHpp,
+      skipped: true,
+    };
   }
 
   const newAverageHpp = await StockLogRepository.calculateAverageHpp(productGoodsId);
@@ -561,6 +568,7 @@ export async function recalculateHpp(productGoodsId: string) {
     productGoods: updated,
     previousHpp: productGoods.averageHpp,
     newHpp: newAverageHpp,
+    skipped: false,
   };
 }
 

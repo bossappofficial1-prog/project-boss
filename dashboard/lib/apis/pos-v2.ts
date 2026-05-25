@@ -10,6 +10,7 @@ export interface PosV2Product {
     taxPercentage: number | null;
     taxName: string | null;
     price: number;
+    hasRecipe: boolean;
     stock: number | null;
     unit: string | null;
     barcode: string | null;

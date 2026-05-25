@@ -292,7 +292,7 @@ export function ProductCatalog({
             const qty = cartQuantities[product.id] ?? 0;
             const isGoods = product.type === "GOODS";
             const isTicket = product.type === "TICKET";
-            const outOfStock = isGoods && (product.stock ?? 0) <= 0;
+            const outOfStock = isGoods && !product.hasRecipe && (product.stock ?? 0) <= 0;
             const ticketSoldOut =
               isTicket &&
               (product.totalQuota ?? 0) > 0 &&
@@ -385,7 +385,7 @@ export function ProductCatalog({
                   </div>
 
                   {/* Meta info */}
-                  {isGoods && !outOfStock && (
+                  {isGoods && !product.hasRecipe && !outOfStock && (
                     <p className="text-xs text-muted-foreground">
                       Stok:{" "}
                       <span className="font-medium text-foreground">

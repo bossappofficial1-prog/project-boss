@@ -77,6 +77,9 @@ export class PosV2Repository {
                     category: {
                         select: { id: true, name: true },
                     },
+                    recipe: {
+                        select: { id: true },
+                    },
                     goods: {
                         select: {
                             id: true,
@@ -127,6 +130,7 @@ export class PosV2Repository {
                 goods: true,
                 service: true,
                 ticket: true,
+                recipe: true,
             },
         });
     }

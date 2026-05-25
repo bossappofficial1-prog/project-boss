@@ -18,6 +18,7 @@ import { ManualPaymentRepository } from "../repositories/manual-payment.reposito
 import { socketUtils } from "../utils/socket.utils";
 import { schedulePaymentExpiration } from "../queues/payment.queue";
 import { SocketEmitter } from "../socket/socket-emiiter";
+import { deductStockForCompletedOrder } from "./order.service";
 
 // Tipe utilitas internal
 
@@ -193,6 +194,11 @@ async function handleCashOrder(orderPayload: CreateOrderInput): Promise<CreatePo
     },
   });
 
+  const isCompleted = !orderPayload.bookingSlotId;
+  if (isCompleted) {
+    await deductStockForCompletedOrder(order.id);
+  }
+
   const orderWithRelations = await fetchOrder(order.id);
   const now = new Date();
 
@@ -239,6 +245,26 @@ async function handleManualQrisOrder(
   orderPayload: CreateOrderInput,
 ): Promise<CreatePosOrderResult> {
   const { order, totalAmount } = await createOrderRecord(orderPayload);
+
+  // Update order status to paid and completed/processing
+  await db.order.update({
+    where: { id: order.id },
+    data: {
+      paymentStatus: PaymentStatus.SUCCESS,
+      ...(orderPayload.bookingSlotId
+        ? {
+          orderStatus: OrderStatus.PROCESSING,
+        }
+        : {
+          orderStatus: OrderStatus.COMPLETED,
+        }),
+    },
+  });
+
+  const isCompleted = !orderPayload.bookingSlotId;
+  if (isCompleted) {
+    await deductStockForCompletedOrder(order.id);
+  }
 
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
