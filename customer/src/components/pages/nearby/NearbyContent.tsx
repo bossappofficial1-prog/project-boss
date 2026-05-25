@@ -32,8 +32,14 @@ import {
   MapControls,
   MapRoute,
 } from "@/components/ui/map";
-import { getOutletsInViewport, searchOutlets } from "@/lib/api";
+import {
+  getOutletsInViewport,
+  searchOutlets,
+  getNearbyOutlets,
+} from "@/lib/api";
 import { useStoreState } from "@/stores/use-store-state";
+import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const LAST_POSITION_KEY = "lastPosition";
 const LAST_POSITION_TTL_MS = 3 * 60 * 1000;
@@ -89,6 +95,10 @@ export function NearbyOutletContent() {
   const t = useTranslations("nearbyPage");
   const { position, loading: positionLoading } = useUserPosition();
   const { setAppBar } = useAppBarV2();
+  const searchParams = useSearchParams();
+  const paramsDestination = searchParams.get("destination");
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [search, setSearch] = useState("");
   const [mapSearch, setMapSearch] = useState("");
@@ -166,6 +176,125 @@ export function NearbyOutletContent() {
     return null;
   }, [position, hasLastPosition]);
 
+  const lastFittedOutletId = useRef<string | null>(null);
+
+  // Parse destination search param coords
+  const destinationCoords = useMemo(() => {
+    if (!paramsDestination) return null;
+    const parts = paramsDestination.split(",");
+    if (parts.length !== 2) return null;
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    return { latitude: lat, longitude: lng };
+  }, [paramsDestination]);
+
+  // Automatically switch to map mode if destination param is present
+  useEffect(() => {
+    if (destinationCoords && viewMode !== "map") {
+      setViewMode("map");
+    }
+  }, [destinationCoords, viewMode, setViewMode]);
+
+  // Fetch outlet metadata and route for destination parameter
+  useEffect(() => {
+    if (!destinationCoords || !effectivePosition) return;
+
+    let active = true;
+    const fetchDestinationOutletAndRoute = async () => {
+      setMapLoading(true);
+      try {
+        // Fetch nearby outlet at destination coordinates to get its full metadata
+        const response = await getNearbyOutlets({
+          latitude: destinationCoords.latitude,
+          longitude: destinationCoords.longitude,
+          radius: 1, // 1 km radius to search
+          take: 1,
+        });
+
+        if (!active) return;
+
+        let targetOutlet = response.data?.[0];
+
+        // If not found, create a placeholder outlet object
+        if (!targetOutlet) {
+          targetOutlet = {
+            id: `dest-${destinationCoords.latitude}-${destinationCoords.longitude}`,
+            name: "Destinasi",
+            address: `${destinationCoords.latitude.toFixed(5)}, ${destinationCoords.longitude.toFixed(5)}`,
+            latitude: destinationCoords.latitude,
+            longitude: destinationCoords.longitude,
+            isOpen: true,
+            slug: "",
+            image: "",
+            operatingHours: [],
+          } as any;
+        }
+
+        // Fetch route from effectivePosition to destinationCoords
+        const routeResponse = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${effectivePosition[1]},${effectivePosition[0]};${destinationCoords.longitude},${destinationCoords.latitude}?overview=full&geometries=geojson`,
+        );
+        const routeData = await routeResponse.json();
+
+        if (!active) return;
+
+        if (routeData.routes && routeData.routes.length > 0) {
+          const routeGeojson = routeData.routes[0].geometry;
+          const coords = routeGeojson.coordinates as [number, number][];
+
+          setActiveRoute(coords, targetOutlet, {
+            distance: routeData.routes[0].distance,
+            duration: routeData.routes[0].duration,
+          });
+        }
+      } catch (error) {
+        console.error("Gagal memuat rute tujuan:", error);
+      } finally {
+        if (active) {
+          setMapLoading(false);
+        }
+      }
+    };
+
+    fetchDestinationOutletAndRoute();
+
+    return () => {
+      active = false;
+    };
+  }, [destinationCoords, effectivePosition, setActiveRoute]);
+
+  // Fit map bounds to active route when map is ready and route is set
+  useEffect(() => {
+    if (
+      viewMode === "map" &&
+      mapReady &&
+      activeRouteCoords &&
+      activeRouteOutlet &&
+      mapRef.current
+    ) {
+      if (lastFittedOutletId.current !== activeRouteOutlet.id) {
+        lastFittedOutletId.current = activeRouteOutlet.id;
+        const lngs = activeRouteCoords.map((c) => c[0]);
+        const lats = activeRouteCoords.map((c) => c[1]);
+        const lngMin = Math.min(...lngs);
+        const lngMax = Math.max(...lngs);
+        const latMin = Math.min(...lats);
+        const latMax = Math.max(...lats);
+
+        mapRef.current.fitBounds(
+          [
+            [lngMin, latMin],
+            [lngMax, latMax],
+          ],
+          { padding: 80, duration: 1200 },
+        );
+      }
+    } else if (!activeRouteOutlet) {
+      lastFittedOutletId.current = null;
+    }
+  }, [viewMode, mapReady, activeRouteCoords, activeRouteOutlet]);
+
   // 4. Optimized Debounce Search (untuk mode list)
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -218,6 +347,28 @@ export function NearbyOutletContent() {
       setMapLoading(false);
     }
   }, [activeRouteOutlet]);
+
+  const prevActiveRouteOutletRef = useRef<any>(null);
+
+  // Smoothly fly back to user location and refresh viewport outlets when active route is cleared (canceled)
+  useEffect(() => {
+    if (viewMode === "map" && mapReady && effectivePosition && mapRef.current) {
+      if (prevActiveRouteOutletRef.current && !activeRouteOutlet) {
+        mapRef.current.flyTo({
+          center: [effectivePosition[1], effectivePosition[0]],
+          zoom: 13,
+          duration: 1200,
+        });
+
+        const timer = setTimeout(() => {
+          fetchViewportOutlets();
+        }, 1200);
+
+        return () => clearTimeout(timer);
+      }
+      prevActiveRouteOutletRef.current = activeRouteOutlet;
+    }
+  }, [viewMode, mapReady, activeRouteOutlet, effectivePosition, fetchViewportOutlets]);
 
   // 7.5. Fetch and show route coordinates to outlet
   const handleShowRoute = useCallback(
@@ -387,7 +538,7 @@ export function NearbyOutletContent() {
             {
               distance: data.routes[0].distance,
               duration: data.routes[0].duration,
-            }
+            },
           );
         }
       } catch (error) {
@@ -424,10 +575,7 @@ export function NearbyOutletContent() {
           const permissionState =
             await DeviceOrientationEventClass.requestPermission();
           if (permissionState === "granted") {
-            (window as any).addEventListener(
-              "deviceorientation",
-              handleOrientation,
-            );
+            window.addEventListener("deviceorientation", handleOrientation);
           }
         } catch (error) {
           console.error(
@@ -437,7 +585,7 @@ export function NearbyOutletContent() {
         }
       } else {
         if ("ondeviceorientationabsolute" in window) {
-          (window as any).addEventListener(
+          window.addEventListener(
             "deviceorientationabsolute",
             handleOrientation,
           );
@@ -525,7 +673,7 @@ export function NearbyOutletContent() {
             showLocate={true}
             showCompass={true}
             showFullscreen={true}
-            className="!bottom-28 md:!bottom-10"
+            className="bottom-28! md:bottom-10!"
           />
 
           {/* Active Route Path */}
@@ -569,85 +717,97 @@ export function NearbyOutletContent() {
           </MapMarker>
 
           {/* Outlet Markers */}
-          {(activeRouteOutlet ? [activeRouteOutlet] : mapOutlets).map((outlet) => {
-            const isActive = activeOutletId === outlet.id;
-            return (
-              <MapMarker
-                key={outlet.id}
-                longitude={outlet.longitude}
-                latitude={outlet.latitude}
-                onClick={() => {
-                  setActiveOutletId(outlet.id);
-                  mapRef.current?.flyTo({
-                    center: [outlet.longitude, outlet.latitude],
-                    zoom: 15,
-                    duration: 1200,
-                  });
-                }}
-              >
-                <MarkerContent>
-                  <div className="relative group">
-                    <div className="w-9 h-9 bg-linear-to-tr from-orange-500 to-rose-600 hover:from-orange-600 hover:to-rose-700 border-2 border-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 active:scale-95">
-                      <Store className="w-4 h-4 text-white shrink-0" />
-                    </div>
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-rose-600 transition-colors" />
-                  </div>
-                </MarkerContent>
-
-                {isActive && (
-                  <MarkerPopup
-                    closeButton={true}
-                    onClose={() => setActiveOutletId(null)}
-                    className="min-w-55 p-0! overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200"
-                  >
-                    <div className="flex flex-col">
-                      {outlet.image && (
-                        <div className="w-full h-28 relative bg-muted">
-                          <img
+          {(activeRouteOutlet ? [activeRouteOutlet] : mapOutlets).map(
+            (outlet) => {
+              const isActive = activeOutletId === outlet.id;
+              return (
+                <MapMarker
+                  key={outlet.id}
+                  longitude={outlet.longitude}
+                  latitude={outlet.latitude}
+                  onClick={() => {
+                    setActiveOutletId(outlet.id);
+                    mapRef.current?.flyTo({
+                      center: [outlet.longitude, outlet.latitude],
+                      zoom: 15,
+                      duration: 1200,
+                    });
+                  }}
+                >
+                  <MarkerContent>
+                    <div className="relative group">
+                      <div className="w-9 h-9 bg-linear-to-tr from-orange-500 to-rose-600 hover:from-orange-600 hover:to-rose-700 border-2 border-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 active:scale-95">
+                        {outlet.image ? (
+                          <Image
+                            alt={`${outlet.name}-image`}
+                            fill
                             src={outlet.image}
-                            alt={outlet.name}
-                            className="w-full h-full object-cover"
                           />
-                          <span
-                            className={`absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-sm ${
-                              outlet.isOpen
-                                ? "bg-green-500 text-white"
-                                : "bg-gray-700 text-white"
-                            }`}
-                          >
-                            {outlet.isOpen ? "Buka" : "Tutup"}
-                          </span>
-                        </div>
-                      )}
-                      <div className="p-3">
-                        <h4 className="font-bold text-sm text-foreground mb-0.5 leading-tight line-clamp-1">
-                          {outlet.name}
-                        </h4>
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-snug mb-3">
-                          {outlet.address || ""}
-                        </p>
-                        <div className="flex gap-2">
-                          <a
-                            href={`/outlet/${outlet.slug}?from=nearby`}
-                            className="flex-1 text-center text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 rounded-md transition-colors flex items-center justify-center"
-                          >
-                            Pesan
-                          </a>
-                          <button
-                            onClick={() => handleShowRoute(outlet)}
-                            className="flex items-center justify-center gap-1.5 text-xs font-semibold border border-input bg-background hover:bg-accent hover:text-accent-foreground px-3 py-2 rounded-md transition-all duration-200 text-foreground shadow-sm active:scale-95 cursor-pointer"
-                          >
-                            <Navigation className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                            <span>Rute</span>
-                          </button>
+                        ) : (
+                          <Store className="w-4 h-4 text-white shrink-0" />
+                        )}
+                      </div>
+                      <div className="absolute group-hover:-bottom-1 transition-all -bottom-0.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-rose-600" />
+                    </div>
+                  </MarkerContent>
+
+                  {isActive && (
+                    <MarkerPopup
+                      closeButton={true}
+                      onClose={() => setActiveOutletId(null)}
+                      className="min-w-55 p-0! overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200"
+                    >
+                      <div className="flex flex-col">
+                        {outlet.image && (
+                          <div className="w-full h-28 relative bg-muted">
+                            <img
+                              src={outlet.image}
+                              alt={outlet.name}
+                              className="w-full h-full object-cover"
+                            />
+                            <span
+                              className={`absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-sm ${
+                                outlet.isOpen
+                                  ? "bg-green-500 text-white"
+                                  : "bg-gray-700 text-white"
+                              }`}
+                            >
+                              {outlet.isOpen ? "Buka" : "Tutup"}
+                            </span>
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <h4 className="font-bold text-sm text-foreground mb-0.5 leading-tight line-clamp-1">
+                            {outlet.name}
+                          </h4>
+                          <p className="text-xs text-muted-foreground line-clamp-2 leading-snug mb-3">
+                            {outlet.address || ""}
+                          </p>
+                          <div className="flex gap-2">
+                            <a
+                              href={`/outlet/${outlet.slug}?from=nearby`}
+                              className="flex-1 text-center text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 rounded-md transition-colors flex items-center justify-center"
+                            >
+                              Pesan
+                            </a>
+                            {(!activeRouteOutlet || !activeRouteCoords) && (
+                              <button
+                                onClick={() => handleShowRoute(outlet)}
+                                className="flex items-center justify-center gap-1.5 text-xs font-semibold border border-input bg-background hover:bg-accent hover:text-accent-foreground px-3 py-2 rounded-md transition-all duration-200 text-foreground shadow-sm active:scale-95 cursor-pointer"
+                              >
+                                <Navigation className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span>Rute</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </MarkerPopup>
-                )}
-              </MapMarker>
-            );
-          })}
+                    </MarkerPopup>
+                  )}
+                </MapMarker>
+              );
+            },
+          )}
         </Map>
 
         <div
@@ -773,8 +933,12 @@ export function NearbyOutletContent() {
                   <span className="shrink-0">Peta</span>
                   <div className="w-px h-3 bg-primary-foreground/30 mx-0.5" />
                   <Navigation className="w-3.5 h-3.5 text-primary-foreground rotate-45 animate-pulse shrink-0" />
-                  <span className="shrink-0">{formatDurationCompact(routeInfo.duration)}</span>
-                  <span className="text-primary-foreground/60 text-[10px] font-normal">•</span>
+                  <span className="shrink-0">
+                    {formatDurationCompact(routeInfo.duration)}
+                  </span>
+                  <span className="text-primary-foreground/60 text-[10px] font-normal">
+                    •
+                  </span>
                   <span className="shrink-0 text-[10px] font-semibold text-primary-foreground/90">
                     {formatDistance(routeInfo.distance)}
                   </span>
@@ -783,6 +947,7 @@ export function NearbyOutletContent() {
                 <button
                   onClick={() => {
                     clearActiveRoute();
+                    router.replace(pathname);
                   }}
                   className="w-6 h-6 rounded-full bg-muted/80 hover:bg-muted border border-border/50 flex items-center justify-center transition-all duration-150 active:scale-95 cursor-pointer shrink-0"
                   title="Hapus Rute"
