@@ -20,6 +20,8 @@ import {
   AlertTriangle,
   Sparkles,
   Zap,
+  Salad,
+  ChefHat,
 } from "lucide-react";
 
 export const StaffStatusEnum = z.enum(["ACTIVE", "INACTIVE"]);
@@ -335,6 +337,20 @@ export function StaffDialog({
                 description:
                   "Mengelola penyesuaian stok, logistik pengadaan, dan kontak supplier/distributor.",
                 icon: Truck,
+              },
+              {
+                value: "INGREDIENT_MANAGEMENT",
+                label: "Bahan Baku",
+                description:
+                  "Mengelola stok bahan baku FnB, penyesuaian stok bahan, dan logistik bahan baku.",
+                icon: Salad,
+              },
+              {
+                value: "RECIPE_MANAGEMENT",
+                label: "Resep Menu",
+                description:
+                  "Mengelola formula resep makanan/minuman dan estimasi perhitungan HPP otomatis.",
+                icon: ChefHat,
               },
               {
                 value: "CUSTOMER_MANAGEMENT",

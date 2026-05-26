@@ -113,6 +113,8 @@ export function StaffTable({ data, onDelete, onEdit }: StaffTableProps) {
                         TRANSACTION_DELETE: "Hapus Transaksi",
                         ANALYTICS: "Analitik",
                         TOOLS_CALCULATOR: "Tools",
+                        INGREDIENT_MANAGEMENT: "Bahan Baku",
+                        RECIPE_MANAGEMENT: "Resep",
                       };
                       const privName = p.privilege || p;
                       return (

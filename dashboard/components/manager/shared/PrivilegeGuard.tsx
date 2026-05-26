@@ -35,6 +35,8 @@ export default function PrivilegeGuard({
     TRANSACTION_DELETE: "Hapus Transaksi",
     ANALYTICS: "Analitik & Laporan Performa",
     TOOLS_CALCULATOR: "Alat Bantu & Kalkulator",
+    INGREDIENT_MANAGEMENT: "Manajemen Bahan Baku",
+    RECIPE_MANAGEMENT: "Manajemen Resep Menu",
   };
 
   if (!hasAccess) {

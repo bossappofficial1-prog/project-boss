@@ -13,7 +13,9 @@ export type StaffPrivilegeType =
   | 'TRANSACTION_VIEW'
   | 'TRANSACTION_DELETE'
   | 'ANALYTICS'
-  | 'TOOLS_CALCULATOR';
+  | 'TOOLS_CALCULATOR'
+  | 'INGREDIENT_MANAGEMENT'
+  | 'RECIPE_MANAGEMENT';
 
 export interface StaffPrivilege {
     id: string;

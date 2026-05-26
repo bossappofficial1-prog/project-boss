@@ -87,6 +87,8 @@ export default function ManagerSidebar() {
       products: "PRODUCT_MANAGEMENT",
       stock: "STOCK_MANAGEMENT",
       suppliers: "STOCK_MANAGEMENT",
+      ingredients: "INGREDIENT_MANAGEMENT",
+      recipes: "RECIPE_MANAGEMENT",
       customers: "CUSTOMER_MANAGEMENT",
       loyalty: "CUSTOMER_MANAGEMENT",
       orders: "ORDER_MANAGEMENT",
