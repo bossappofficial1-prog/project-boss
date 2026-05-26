@@ -137,7 +137,7 @@ export default function ManagerDashboardPage() {
   return (
     <div className="space-y-6 pb-8">
       {/* Welcome Card */}
-      <Card className="rounded-md py-0 overflow-hidden border-border/60 shadow-md bg-linear-to-br from-background to-primary/5">
+      <Card className="rounded-md py-0 gap-0 overflow-hidden border-border/60 shadow-md bg-linear-to-br from-background to-primary/5">
         <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative">
           <div className="absolute right-0 top-0 h-full w-1/3 bg-[radial-gradient(circle_at_70%_30%,rgba(var(--primary-rgb),0.03),transparent_70%)] pointer-events-none" />
 
@@ -215,7 +215,7 @@ export default function ManagerDashboardPage() {
       {/* Privileges & Quick Links Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Active Privileges */}
-        <Card className="lg:col-span-2 rounded-md border-border/60 shadow-sm bg-background">
+        <Card className="lg:col-span-2 gap-0 py-0 rounded-md border-border/60 shadow-sm bg-background">
           <CardHeader className="border-b border-border/40 p-5 bg-muted/10">
             <CardTitle className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-primary" />
@@ -265,7 +265,7 @@ export default function ManagerDashboardPage() {
         {/* Quick Info & Quick Links */}
         <div className="space-y-6">
           {/* Quick Links */}
-          <Card className="rounded-md border-border/60 shadow-sm bg-background">
+          <Card className="rounded-md gap-0 py-0 border-border/60 shadow-sm bg-background">
             <CardHeader className="border-b border-border/40 p-5 bg-muted/10">
               <CardTitle className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
                 <Store className="h-4 w-4 text-primary" />
