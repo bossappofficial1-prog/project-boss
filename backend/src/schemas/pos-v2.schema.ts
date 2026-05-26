@@ -40,6 +40,7 @@ export const createPosV2OrderSchema = z.object({
     bookingDate: z.string().datetime().optional(),
     staffId: z.string().uuid().optional(),
     pointsRedeemed: z.number().int().min(0).optional(),
+    loyaltyRewardId: z.string().uuid().optional(),
     existingOrderId: z.string().optional(),
 });
 

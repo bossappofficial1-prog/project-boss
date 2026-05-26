@@ -9,6 +9,8 @@ import { EmptyOutletState } from "@/components/ui/empty-outlet";
 import { useRouter } from "next/navigation";
 import { LoyaltySettings } from "./LoyaltySettings";
 import { LoyaltyMembersTable } from "./LoyaltyMembersTable";
+import { TierSettings } from "./tier-settings";
+import { RewardCatalog } from "./reward-catalog";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LoyaltyContent() {
@@ -56,12 +58,18 @@ export default function LoyaltyContent() {
             />
 
             <Tabs defaultValue="members" className="space-y-4">
-                <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1 w-full sm:w-auto">
+                <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1 w-full sm:w-auto flex-wrap">
                     <TabsTrigger value="members" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
                         Daftar Member
                     </TabsTrigger>
                     <TabsTrigger value="settings" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
                         Pengaturan Poin
+                    </TabsTrigger>
+                    <TabsTrigger value="tiers" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
+                        Tier Membership
+                    </TabsTrigger>
+                    <TabsTrigger value="rewards" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
+                        Katalog Reward
                     </TabsTrigger>
                 </TabsList>
 
@@ -71,6 +79,14 @@ export default function LoyaltyContent() {
 
                 <TabsContent value="settings" className="mt-6">
                     <LoyaltySettings outletId={outletId!} />
+                </TabsContent>
+
+                <TabsContent value="tiers" className="mt-6">
+                    <TierSettings outletId={outletId!} />
+                </TabsContent>
+
+                <TabsContent value="rewards" className="mt-6">
+                    <RewardCatalog outletId={outletId!} />
                 </TabsContent>
             </Tabs>
         </div >

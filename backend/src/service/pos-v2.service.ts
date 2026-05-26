@@ -10,6 +10,7 @@ import { LoyaltyService } from "./loyalty.service";
 import { getOutletByIdService } from "./outlet.service";
 import { CashierShiftService } from "./cashier-shift.service";
 import { deductStockForCompletedOrder } from "./order.service";
+import { db } from "../config/prisma";
 
 const TABLE_ENABLED_OUTLET_TYPES = new Set(["FNB", "CUSTOM"]);
 
@@ -110,6 +111,7 @@ export class PosV2Service {
       bookingDate,
       paymentMethod,
       pointsRedeemed = 0,
+      loyaltyRewardId,
       staffId: payloadStaffId,
       tableId,
       tableNumber,
@@ -287,7 +289,52 @@ export class PosV2Service {
 
     // Calculate Loyalty Discount
     let discountAmount = 0;
-    if (pointsRedeemed > 0) {
+    let finalPointsRedeemed = pointsRedeemed;
+    let loyaltyReward = null;
+
+    if (loyaltyRewardId) {
+      loyaltyReward = await db.loyaltyReward.findUnique({
+        where: { id: loyaltyRewardId },
+      });
+      if (!loyaltyReward || loyaltyReward.outletId !== outletId) {
+        throw new AppError("Reward tidak ditemukan.", HttpStatus.NOT_FOUND);
+      }
+      if (!loyaltyReward.isActive) {
+        throw new AppError("Reward tidak aktif.", HttpStatus.BAD_REQUEST);
+      }
+      // Check points
+      const membership = await LoyaltyService.getMembership(guestCustomer.id, outletId);
+      if (!membership || membership.totalPoints < loyaltyReward.pointsCost) {
+        throw new AppError(
+          `Poin member tidak mencukupi untuk reward ini. Dibutuhkan: ${loyaltyReward.pointsCost}`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Compute discount
+      finalPointsRedeemed = loyaltyReward.pointsCost;
+      const rewardType = loyaltyReward.type;
+      switch (rewardType) {
+        case "DISCOUNT_FLAT":
+          discountAmount = loyaltyReward.discountAmount ?? 0;
+          break;
+        case "DISCOUNT_PERCENT":
+          discountAmount = (subtotal * (loyaltyReward.discountPercent ?? 0)) / 100;
+          if (loyaltyReward.maxDiscount && discountAmount > loyaltyReward.maxDiscount) {
+            discountAmount = loyaltyReward.maxDiscount;
+          }
+          break;
+        case "VOUCHER":
+          discountAmount = loyaltyReward.voucherValue ?? 0;
+          break;
+        case "CASHBACK":
+          discountAmount = loyaltyReward.cashbackAmount ?? 0;
+          break;
+        case "FREE_ITEM":
+          discountAmount = 0; // Handled by free item inside cart
+          break;
+      }
+    } else if (pointsRedeemed > 0) {
       const loyaltyConfig = await LoyaltyService.getConfig(outletId);
       // @ts-ignore
       if (loyaltyConfig && loyaltyConfig.isActive && loyaltyConfig.pointValue > 0) {
@@ -334,7 +381,7 @@ export class PosV2Service {
       outletId,
       totalAmount: grandTotal,
       discountAmount,
-      pointsRedeemed,
+      pointsRedeemed: finalPointsRedeemed,
       taxAmount: totalTax,
       cashierId: finalCashierId,
       cashierShiftId,
@@ -351,6 +398,33 @@ export class PosV2Service {
       tableNumber,
       isOpenBill,
     });
+
+    // Create Reward Redemption & Update Stock if a catalog reward is selected
+    if (loyaltyReward) {
+      try {
+        await db.rewardRedemption.create({
+          data: {
+            outletId,
+            guestCustomerId: guestCustomer.id,
+            loyaltyRewardId: loyaltyReward.id,
+            orderId: order.id,
+            pointsUsed: loyaltyReward.pointsCost,
+            status: "USED",
+            note: `Reward ditukar saat checkout POS: ${loyaltyReward.name}`,
+          },
+        });
+
+        // Update Stock of the reward
+        if (loyaltyReward.stock !== -1) {
+          await db.loyaltyReward.update({
+            where: { id: loyaltyReward.id },
+            data: { stock: { decrement: 1 } },
+          });
+        }
+      } catch (redemptionErr) {
+        console.error("[LOYALTY] Error creating reward redemption in POS checkout:", redemptionErr);
+      }
+    }
 
     // Deduct stock for completed FnB orders (HPP FIFO)
     if (order.orderStatus === "COMPLETED") {

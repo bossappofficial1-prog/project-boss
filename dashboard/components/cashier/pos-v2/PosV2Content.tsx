@@ -6,18 +6,31 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
-  ShoppingCart, ReceiptText, Package, AlertCircle,
-  Loader2, Clock, ScanBarcode,
+  ShoppingCart,
+  ReceiptText,
+  Package,
+  AlertCircle,
+  Loader2,
+  Clock,
+  ScanBarcode,
 } from "lucide-react";
 import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  usePosV2Products, usePosV2CashSummary, usePosV2RecentOrders,
-  usePosV2OpenOrders, usePosV2CreateOrder, usePosV2OutletQris,
+  usePosV2Products,
+  usePosV2CashSummary,
+  usePosV2RecentOrders,
+  usePosV2OpenOrders,
+  usePosV2CreateOrder,
+  usePosV2OutletQris,
 } from "@/hooks/api/use-pos-v2";
 import { useProductBarcodeLookup } from "@/hooks/api/use-product-barcode";
-import { useLoyaltyConfig } from "@/hooks/api/use-loyalty";
-import type { PosV2Product, PosV2OrderResult, PosV2OpenOrder } from "@/lib/apis/pos-v2";
+import { useLoyaltyConfig, useLoyaltyRewards } from "@/hooks/api/use-loyalty";
+import type {
+  PosV2Product,
+  PosV2OrderResult,
+  PosV2OpenOrder,
+} from "@/lib/apis/pos-v2";
 import { ProductCatalog } from "./ProductCatalog";
 import { CartPanel, type CartLine } from "./CartPanel";
 import { CustomerInfo } from "./CustomerInfo";
@@ -26,7 +39,10 @@ import { CashSummaryBar } from "./CashSummaryBar";
 import { OrderSuccessDialog } from "./OrderSuccessDialog";
 import { RecentOrders } from "./RecentOrders";
 import { OpenOrders } from "./OpenOrders";
-import { ServiceScheduleDialog, type ScheduleSelection } from "./ServiceScheduleDialog";
+import {
+  ServiceScheduleDialog,
+  type ScheduleSelection,
+} from "./ServiceScheduleDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CashierShiftGate } from "@/components/cashier/shift/CashierShiftGate";
 import { beepSuccess, beepError } from "@/lib/beep";
@@ -52,20 +68,37 @@ export function PosV2Content() {
   const [isWalkIn, setIsWalkIn] = React.useState(false);
   const [customerName, setCustomerName] = React.useState("");
   const [customerPhone, setCustomerPhone] = React.useState("");
-  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethodType>("cash");
+  const [paymentMethod, setPaymentMethod] =
+    React.useState<PaymentMethodType>("cash");
   const [cashReceived, setCashReceived] = React.useState(0);
-  const [orderResult, setOrderResult] = React.useState<PosV2OrderResult | null>(null);
-  const [orderPrintContext, setOrderPrintContext] = React.useState<{ items: any[]; cashierName: string; outletName: string } | null>(null);
+  const [orderResult, setOrderResult] = React.useState<PosV2OrderResult | null>(
+    null,
+  );
+  const [orderPrintContext, setOrderPrintContext] = React.useState<{
+    items: any[];
+    cashierName: string;
+    outletName: string;
+  } | null>(null);
   const [showPayConfirm, setShowPayConfirm] = React.useState(false);
-  const [scheduleDialog, setScheduleDialog] = React.useState<ScheduleDialogState | null>(null);
-  const [pendingOpenOrder, setPendingOpenOrder] = React.useState<PosV2OpenOrder | null>(null);
+  const [scheduleDialog, setScheduleDialog] =
+    React.useState<ScheduleDialogState | null>(null);
+  const [pendingOpenOrder, setPendingOpenOrder] =
+    React.useState<PosV2OpenOrder | null>(null);
   const [member, setMember] = React.useState<any>(null);
   const [pointsRedeemed, setPointsRedeemed] = React.useState(0);
+  const [loyaltyRewardId, setLoyaltyRewardId] = React.useState<
+    string | undefined
+  >(undefined);
   const [tableNumber, setTableNumber] = React.useState("");
   const [tableId, setTableId] = React.useState("");
-  const [resumedOrderId, setResumedOrderId] = React.useState<string | null>(null);
-  const [lastScannedProduct, setLastScannedProduct] = React.useState<PosV2Product | null>(null);
-  const lastScannedTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [resumedOrderId, setResumedOrderId] = React.useState<string | null>(
+    null,
+  );
+  const [lastScannedProduct, setLastScannedProduct] =
+    React.useState<PosV2Product | null>(null);
+  const lastScannedTimerRef = React.useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const retailBarcodeRef = React.useRef<HTMLInputElement>(null);
   const [retailBarcodeBuffer, setRetailBarcodeBuffer] = React.useState("");
 
@@ -82,50 +115,137 @@ export function PosV2Content() {
     if (isRetail && retailBarcodeRef.current) retailBarcodeRef.current.focus();
   }, []);
 
-  const { data: productsData, isLoading: productsLoading } = usePosV2Products(outletId, debouncedSearch || undefined);
+  const { data: productsData, isLoading: productsLoading } = usePosV2Products(
+    outletId,
+    debouncedSearch || undefined,
+  );
   const products = productsData?.products || [];
-  const { data: cashSummary, isLoading: summaryLoading } = usePosV2CashSummary(outletId);
-  const { data: openOrders = [], isLoading: openLoading } = usePosV2OpenOrders(outletId);
-  const { data: recentOrders = [], isLoading: recentLoading } = usePosV2RecentOrders(outletId);
-  const { data: outletQris, isLoading: qrisLoading } = usePosV2OutletQris(outletId);
+  const { data: cashSummary, isLoading: summaryLoading } =
+    usePosV2CashSummary(outletId);
+  const { data: openOrders = [], isLoading: openLoading } =
+    usePosV2OpenOrders(outletId);
+  const { data: recentOrders = [], isLoading: recentLoading } =
+    usePosV2RecentOrders(outletId);
+  const { data: outletQris, isLoading: qrisLoading } =
+    usePosV2OutletQris(outletId);
   const { data: loyaltyConfig } = useLoyaltyConfig(outletId);
+  const { data: rewards = [] } = useLoyaltyRewards(outletId, false);
   const createOrder = usePosV2CreateOrder();
   const barcodeLookup = useProductBarcodeLookup();
 
   const isRetail = outletData?.type === "RETAIL";
-  const isFnbOrCustom = outletData?.type === "FNB" || outletData?.type === "CUSTOM";
+  const isFnbOrCustom =
+    outletData?.type === "FNB" || outletData?.type === "CUSTOM";
 
   const cartItems = React.useMemo(() => Object.values(cart), [cart]);
-  const subtotal = React.useMemo(() => cartItems.reduce((s, l) => s + l.product.price * l.quantity, 0), [cartItems]);
-  const taxAmount = React.useMemo(() => cartItems.reduce((s, l) => s + l.product.price * l.quantity * ((l.product.taxPercentage ?? 0) / 100), 0), [cartItems]);
+  const subtotal = React.useMemo(
+    () => cartItems.reduce((s, l) => s + l.product.price * l.quantity, 0),
+    [cartItems],
+  );
+  const taxAmount = React.useMemo(
+    () =>
+      cartItems.reduce(
+        (s, l) =>
+          s +
+          l.product.price * l.quantity * ((l.product.taxPercentage ?? 0) / 100),
+        0,
+      ),
+    [cartItems],
+  );
   const loyaltyDiscount = React.useMemo(() => {
+    if (loyaltyRewardId) {
+      const reward = rewards.find((r) => r.id === loyaltyRewardId);
+      if (!reward) return 0;
+      switch (reward.type) {
+        case "DISCOUNT_FLAT":
+          return reward.discountAmount ?? 0;
+        case "DISCOUNT_PERCENT": {
+          const pctAmt = (subtotal * (reward.discountPercent ?? 0)) / 100;
+          return reward.maxDiscount
+            ? Math.min(pctAmt, reward.maxDiscount)
+            : pctAmt;
+        }
+        case "VOUCHER":
+          return reward.voucherValue ?? 0;
+        case "CASHBACK":
+          return reward.cashbackAmount ?? 0;
+        case "FREE_ITEM":
+          return 0; // Free item handled by free item inside cart
+        default:
+          return 0;
+      }
+    }
     const cfg = loyaltyConfig as any;
     if (!cfg?.isActive || !cfg?.pointValue) return 0;
     return pointsRedeemed * cfg.pointValue;
-  }, [pointsRedeemed, loyaltyConfig]);
-  const grandTotal = React.useMemo(() => Math.max(0, subtotal + taxAmount - loyaltyDiscount), [subtotal, taxAmount, loyaltyDiscount]);
-  const cartQuantities = React.useMemo(() => Object.fromEntries(Object.entries(cart).map(([id, l]) => [id, l.quantity])), [cart]);
-  const totalCartItems = React.useMemo(() => cartItems.reduce((s, l) => s + l.quantity, 0), [cartItems]);
-  const hasUnscheduledService = React.useMemo(() => cartItems.some((l) => l.product.type === "SERVICE" && (!l.bookingSlotId || !l.bookingStart || !l.staffId)), [cartItems]);
+  }, [loyaltyRewardId, rewards, pointsRedeemed, loyaltyConfig, subtotal]);
+  const grandTotal = React.useMemo(
+    () => Math.max(0, subtotal + taxAmount - loyaltyDiscount),
+    [subtotal, taxAmount, loyaltyDiscount],
+  );
+  const cartQuantities = React.useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(cart).map(([id, l]) => [id, l.quantity]),
+      ),
+    [cart],
+  );
+  const totalCartItems = React.useMemo(
+    () => cartItems.reduce((s, l) => s + l.quantity, 0),
+    [cartItems],
+  );
+  const hasUnscheduledService = React.useMemo(
+    () =>
+      cartItems.some(
+        (l) =>
+          l.product.type === "SERVICE" &&
+          (!l.bookingSlotId || !l.bookingStart || !l.staffId),
+      ),
+    [cartItems],
+  );
   const canSubmit = React.useMemo(() => {
     if (!cartItems.length) return false;
-    if (!isWalkIn && (!customerName.trim() || !customerPhone.trim())) return false;
+    if (!isWalkIn && (!customerName.trim() || !customerPhone.trim()))
+      return false;
     if (paymentMethod === "cash" && cashReceived < grandTotal) return false;
     if (paymentMethod === "qris" && !outletQris?.qrisImageUrl) return false;
     if (hasUnscheduledService) return false;
     return true;
-  }, [cartItems.length, isWalkIn, customerName, customerPhone, paymentMethod, cashReceived, grandTotal, hasUnscheduledService, outletQris]);
+  }, [
+    cartItems.length,
+    isWalkIn,
+    customerName,
+    customerPhone,
+    paymentMethod,
+    cashReceived,
+    grandTotal,
+    hasUnscheduledService,
+    outletQris,
+  ]);
 
   React.useEffect(() => {
     if (!isRetail) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
-        case "F1": e.preventDefault(); retailBarcodeRef.current?.focus(); break;
-        case "F2": e.preventDefault(); setIsWalkIn((p) => !p); toast.info(isWalkIn ? "Mode: Input Pelanggan" : "Mode: Walk-in"); break;
-        case "F8": e.preventDefault(); if (canSubmit) setShowPayConfirm(true); break;
+        case "F1":
+          e.preventDefault();
+          retailBarcodeRef.current?.focus();
+          break;
+        case "F2":
+          e.preventDefault();
+          setIsWalkIn((p) => !p);
+          toast.info(isWalkIn ? "Mode: Input Pelanggan" : "Mode: Walk-in");
+          break;
+        case "F8":
+          e.preventDefault();
+          if (canSubmit) setShowPayConfirm(true);
+          break;
         case "Escape":
           e.preventDefault();
-          if (cartItems.length > 0) { handleClearCart(); toast.info("Keranjang dikosongkan"); }
+          if (cartItems.length > 0) {
+            handleClearCart();
+            toast.info("Keranjang dikosongkan");
+          }
           retailBarcodeRef.current?.focus();
           break;
       }
@@ -136,18 +256,48 @@ export function PosV2Content() {
 
   const handleAddToCart = (product: PosV2Product) => {
     if (product.type === "SERVICE") {
-      const existingService = cartItems.find((l) => l.product.type === "SERVICE" && l.product.id !== product.id);
-      if (existingService) { toast.error("Hanya satu layanan per transaksi"); return; }
+      const existingService = cartItems.find(
+        (l) => l.product.type === "SERVICE" && l.product.id !== product.id,
+      );
+      if (existingService) {
+        toast.error("Hanya satu layanan per transaksi");
+        return;
+      }
       const existing = cart[product.id];
-      setScheduleDialog({ product, selection: existing?.bookingSlotId && existing.bookingStart && existing.bookingEnd && existing.staffId ? { slotId: existing.bookingSlotId, startTimeIso: existing.bookingStart, endTimeIso: existing.bookingEnd, staffId: existing.staffId } : null });
+      setScheduleDialog({
+        product,
+        selection:
+          existing?.bookingSlotId &&
+          existing.bookingStart &&
+          existing.bookingEnd &&
+          existing.staffId
+            ? {
+                slotId: existing.bookingSlotId,
+                startTimeIso: existing.bookingStart,
+                endTimeIso: existing.bookingEnd,
+                staffId: existing.staffId,
+              }
+            : null,
+      });
       return;
     }
     setCart((prev) => {
       const current = prev[product.id]?.quantity ?? 0;
-      if (product.type === "GOODS" && !product.hasRecipe && (product.stock ?? 0) > 0 && current + 1 > (product.stock ?? 0)) { toast.error(`Stok "${product.name}" tidak cukup`); return prev; }
+      if (
+        product.type === "GOODS" &&
+        !product.hasRecipe &&
+        (product.stock ?? 0) > 0 &&
+        current + 1 > (product.stock ?? 0)
+      ) {
+        toast.error(`Stok "${product.name}" tidak cukup`);
+        return prev;
+      }
       if (product.type === "TICKET") {
         const available = (product.totalQuota ?? 0) - (product.soldCount ?? 0);
-        if (available > 0 && current + 1 > available) { toast.error(`Kuota tiket "${product.name}" tidak cukup`); return prev; }
+        if (available > 0 && current + 1 > available) {
+          toast.error(`Kuota tiket "${product.name}" tidak cukup`);
+          return prev;
+        }
       }
       return { ...prev, [product.id]: { product, quantity: current + 1 } };
     });
@@ -156,28 +306,44 @@ export function PosV2Content() {
   const handleScanBarcode = (code: string) => {
     const barcode = code.trim();
     if (!barcode) return;
-    barcodeLookup.mutate({ code: barcode, outletId }, {
-      onSuccess: (product) => {
-        handleAddToCart(product);
-        if (isRetail) {
-          beepSuccess();
-          setLastScannedProduct(product);
-          if (lastScannedTimerRef.current) clearTimeout(lastScannedTimerRef.current);
-          lastScannedTimerRef.current = setTimeout(() => setLastScannedProduct(null), 3000);
-        }
+    barcodeLookup.mutate(
+      { code: barcode, outletId },
+      {
+        onSuccess: (product) => {
+          handleAddToCart(product);
+          if (isRetail) {
+            beepSuccess();
+            setLastScannedProduct(product);
+            if (lastScannedTimerRef.current)
+              clearTimeout(lastScannedTimerRef.current);
+            lastScannedTimerRef.current = setTimeout(
+              () => setLastScannedProduct(null),
+              3000,
+            );
+          }
+        },
+        onError: (error: any) => {
+          if (isRetail) beepError();
+          toast.error(
+            error?.response?.data?.message ||
+              error?.message ||
+              "Barcode tidak ditemukan",
+          );
+        },
       },
-      onError: (error: any) => {
-        if (isRetail) beepError();
-        toast.error(error?.response?.data?.message || error?.message || "Barcode tidak ditemukan");
-      },
-    });
+    );
   };
 
-  const handleRetailBarcodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleRetailBarcodeKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
     if (e.key === "Enter") {
       e.preventDefault();
       const code = retailBarcodeBuffer.trim();
-      if (code) { handleScanBarcode(code); setRetailBarcodeBuffer(""); }
+      if (code) {
+        handleScanBarcode(code);
+        setRetailBarcodeBuffer("");
+      }
     }
   };
 
@@ -185,10 +351,22 @@ export function PosV2Content() {
     setCart((prev) => {
       const line = prev[productId];
       if (!line || line.product.type === "SERVICE") return prev;
-      if (line.product.type === "GOODS" && !line.product.hasRecipe && (line.product.stock ?? 0) > 0 && line.quantity + 1 > (line.product.stock ?? 0)) { toast.error(`Stok "${line.product.name}" tidak cukup`); return prev; }
+      if (
+        line.product.type === "GOODS" &&
+        !line.product.hasRecipe &&
+        (line.product.stock ?? 0) > 0 &&
+        line.quantity + 1 > (line.product.stock ?? 0)
+      ) {
+        toast.error(`Stok "${line.product.name}" tidak cukup`);
+        return prev;
+      }
       if (line.product.type === "TICKET") {
-        const available = (line.product.totalQuota ?? 0) - (line.product.soldCount ?? 0);
-        if (available > 0 && line.quantity + 1 > available) { toast.error(`Kuota tiket "${line.product.name}" tidak cukup`); return prev; }
+        const available =
+          (line.product.totalQuota ?? 0) - (line.product.soldCount ?? 0);
+        if (available > 0 && line.quantity + 1 > available) {
+          toast.error(`Kuota tiket "${line.product.name}" tidak cukup`);
+          return prev;
+        }
       }
       return { ...prev, [productId]: { ...line, quantity: line.quantity + 1 } };
     });
@@ -198,31 +376,67 @@ export function PosV2Content() {
     setCart((prev) => {
       const line = prev[productId];
       if (!line) return prev;
-      if (line.quantity <= 1) { const { [productId]: _, ...rest } = prev; return rest; }
+      if (line.quantity <= 1) {
+        const { [productId]: _, ...rest } = prev;
+        return rest;
+      }
       return { ...prev, [productId]: { ...line, quantity: line.quantity - 1 } };
     });
   };
 
-  const handleRemove = (productId: string) => setCart((prev) => { const { [productId]: _, ...rest } = prev; return rest; });
+  const handleRemove = (productId: string) =>
+    setCart((prev) => {
+      const { [productId]: _, ...rest } = prev;
+      return rest;
+    });
   const handleClearCart = () => setCart({});
 
   const handleScheduleService = (productId: string) => {
     const line = cart[productId];
     if (!line) return;
-    setScheduleDialog({ product: line.product, selection: line.bookingSlotId && line.bookingStart && line.bookingEnd && line.staffId ? { slotId: line.bookingSlotId, startTimeIso: line.bookingStart, endTimeIso: line.bookingEnd, staffId: line.staffId } : null });
+    setScheduleDialog({
+      product: line.product,
+      selection:
+        line.bookingSlotId &&
+        line.bookingStart &&
+        line.bookingEnd &&
+        line.staffId
+          ? {
+              slotId: line.bookingSlotId,
+              startTimeIso: line.bookingStart,
+              endTimeIso: line.bookingEnd,
+              staffId: line.staffId,
+            }
+          : null,
+    });
   };
 
   const handleScheduleConfirm = (selection: ScheduleSelection) => {
     const product = scheduleDialog?.product;
     if (!product) return;
-    setCart((prev) => ({ ...prev, [product.id]: { product, quantity: 1, bookingSlotId: selection.slotId, bookingStart: selection.startTimeIso, bookingEnd: selection.endTimeIso, staffId: selection.staffId } }));
+    setCart((prev) => ({
+      ...prev,
+      [product.id]: {
+        product,
+        quantity: 1,
+        bookingSlotId: selection.slotId,
+        bookingStart: selection.startTimeIso,
+        bookingEnd: selection.endTimeIso,
+        staffId: selection.staffId,
+      },
+    }));
     setScheduleDialog(null);
     toast.success("Jadwal layanan tersimpan");
   };
 
   const applyOpenOrder = (order: PosV2OpenOrder) => {
     const newCart: Record<string, CartLine> = {};
-    order.items.forEach((item) => { newCart[item.productId] = { product: item.product as any, quantity: item.quantity }; });
+    order.items.forEach((item) => {
+      newCart[item.productId] = {
+        product: item.product as any,
+        quantity: item.quantity,
+      };
+    });
     setCart(newCart);
     setCustomerName(order.customerName);
     setCustomerPhone(order.customerPhone);
@@ -236,7 +450,10 @@ export function PosV2Content() {
   };
 
   const handleSelectOpenOrder = (order: PosV2OpenOrder) => {
-    if (cartItems.length > 0) { setPendingOpenOrder(order); return; }
+    if (cartItems.length > 0) {
+      setPendingOpenOrder(order);
+      return;
+    }
     applyOpenOrder(order);
   };
 
@@ -247,6 +464,7 @@ export function PosV2Content() {
     setCashReceived(0);
     setIsWalkIn(isRetail);
     setPointsRedeemed(0);
+    setLoyaltyRewardId(undefined);
     setMember(null);
     setTableNumber("");
     setTableId("");
@@ -254,40 +472,74 @@ export function PosV2Content() {
     if (isRetail) setTimeout(() => retailBarcodeRef.current?.focus(), 100);
   };
 
-  React.useEffect(() => { setPointsRedeemed(0); }, [member, isWalkIn]);
+  React.useEffect(() => {
+    setPointsRedeemed(0);
+    setLoyaltyRewardId(undefined);
+  }, [member, isWalkIn]);
 
   const handleSubmitOrder = (isSaved: boolean = false) => {
     if (!canSubmit && !isSaved) return;
     if (isSaved && !cartItems.length) return;
-    const customer = isWalkIn ? { name: "Walk-in", phone: "0000000000" } : { name: customerName.trim(), phone: customerPhone.trim() };
+    const customer = isWalkIn
+      ? { name: "Walk-in", phone: "0000000000" }
+      : { name: customerName.trim(), phone: customerPhone.trim() };
     const serviceItem = cartItems.find((l) => l.product.type === "SERVICE");
-    createOrder.mutate({
-      customer, outletId,
-      items: cartItems.map((line) => ({ productId: line.product.id, quantity: line.product.type === "SERVICE" ? 1 : line.quantity })),
-      paymentMethod: isSaved ? "none" : paymentMethod,
-      cashReceived: isSaved ? 0 : cashReceived,
-      pointsRedeemed,
-      staffId: serviceItem?.staffId || (cashierData as any)?.id,
-      ...(serviceItem?.bookingSlotId && { bookingSlotId: serviceItem.bookingSlotId, bookingDate: serviceItem.bookingStart }),
-      tableId: tableId || undefined,
-      tableNumber: isFnbOrCustom ? tableNumber : undefined,
-      isOpenBill: isSaved,
-      existingOrderId: resumedOrderId || undefined,
-    }, {
-      onSuccess: (result) => {
-        setOrderPrintContext({ items: cartItems.map((l) => ({ name: l.product.name, price: l.product.price, qty: l.quantity })), cashierName: cashierData?.name || "Kasir", outletName: outletData?.name || "Outlet" });
-        setOrderResult(result);
-        resetForm();
-        queryClient.invalidateQueries({ queryKey: ["loyalty", "members", outletId] });
-        queryClient.invalidateQueries({ queryKey: ["tables"] });
-        queryClient.invalidateQueries({ queryKey: ["cashier-tables"] });
-        queryClient.invalidateQueries({ queryKey: ["cashier-bills"] });
-        toast.success(isSaved ? "Pesanan berhasil disimpan!" : "Pesanan berhasil dibayar!");
+    createOrder.mutate(
+      {
+        customer,
+        outletId,
+        items: cartItems.map((line) => ({
+          productId: line.product.id,
+          quantity: line.product.type === "SERVICE" ? 1 : line.quantity,
+        })),
+        paymentMethod: isSaved ? "none" : paymentMethod,
+        cashReceived: isSaved ? 0 : cashReceived,
+        pointsRedeemed: loyaltyRewardId ? 0 : pointsRedeemed,
+        loyaltyRewardId: loyaltyRewardId || undefined,
+        staffId: serviceItem?.staffId || (cashierData as any)?.id,
+        ...(serviceItem?.bookingSlotId && {
+          bookingSlotId: serviceItem.bookingSlotId,
+          bookingDate: serviceItem.bookingStart,
+        }),
+        tableId: tableId || undefined,
+        tableNumber: isFnbOrCustom ? tableNumber : undefined,
+        isOpenBill: isSaved,
+        existingOrderId: resumedOrderId || undefined,
       },
-      onError: (error: any) => {
-        toast.error(error?.response?.data?.message || error?.message || "Gagal membuat pesanan");
+      {
+        onSuccess: (result) => {
+          setOrderPrintContext({
+            items: cartItems.map((l) => ({
+              name: l.product.name,
+              price: l.product.price,
+              qty: l.quantity,
+            })),
+            cashierName: cashierData?.name || "Kasir",
+            outletName: outletData?.name || "Outlet",
+          });
+          setOrderResult(result);
+          resetForm();
+          queryClient.invalidateQueries({
+            queryKey: ["loyalty", "members", outletId],
+          });
+          queryClient.invalidateQueries({ queryKey: ["tables"] });
+          queryClient.invalidateQueries({ queryKey: ["cashier-tables"] });
+          queryClient.invalidateQueries({ queryKey: ["cashier-bills"] });
+          toast.success(
+            isSaved
+              ? "Pesanan berhasil disimpan!"
+              : "Pesanan berhasil dibayar!",
+          );
+        },
+        onError: (error: any) => {
+          toast.error(
+            error?.response?.data?.message ||
+              error?.message ||
+              "Gagal membuat pesanan",
+          );
+        },
       },
-    });
+    );
   };
 
   const validationHint = hasUnscheduledService
@@ -296,7 +548,8 @@ export function PosV2Content() {
       ? "Pilih meja untuk melanjutkan pesanan"
       : "Lengkapi data pelanggan dan nominal pembayaran";
 
-  const showValidationHint = !canSubmit && paymentMethod !== "none" && cartItems.length > 0;
+  const showValidationHint =
+    !canSubmit && paymentMethod !== "none" && cartItems.length > 0;
 
   // Tinggi fixed bar: action bar (~76px) + bottom nav (~60px) = 136px
   const MOBILE_BOTTOM_OFFSET = "bottom-[60px]";
@@ -304,8 +557,9 @@ export function PosV2Content() {
 
   return (
     <CashierShiftGate outletId={outletId} outletType={outletData?.type as any}>
-      <div className={`mx-auto flex w-full max-w-[1400px] flex-col gap-3 p-3 lg:pb-3 ${MOBILE_CONTENT_PB}`}>
-
+      <div
+        className={`mx-auto flex w-full max-w-[1400px] flex-col gap-3 p-3 lg:pb-3 ${MOBILE_CONTENT_PB}`}
+      >
         {/* Retail: Barcode Bar */}
         {isRetail && (
           <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
@@ -315,8 +569,12 @@ export function PosV2Content() {
                   <ScanBarcode className="h-4 w-4" />
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-xs font-bold text-foreground">Scan Barcode</p>
-                  <p className="text-[10px] text-muted-foreground">Enter untuk submit</p>
+                  <p className="text-xs font-bold text-foreground">
+                    Scan Barcode
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Enter untuk submit
+                  </p>
                 </div>
               </div>
               <input
@@ -331,27 +589,23 @@ export function PosV2Content() {
               />
               {lastScannedProduct && (
                 <div className="hidden sm:flex items-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 animate-in fade-in slide-in-from-right-2 duration-300">
-                  <span className="text-xs font-bold text-emerald-600 truncate max-w-[120px]">✓ {lastScannedProduct.name}</span>
+                  <span className="text-xs font-bold text-emerald-600 truncate max-w-[120px]">
+                    ✓ {lastScannedProduct.name}
+                  </span>
                 </div>
               )}
               <div className="hidden lg:flex items-center gap-1">
                 {["F1 Scan", "F2 Walk-in", "F8 Bayar", "Esc Clear"].map((k) => (
-                  <Badge key={k} variant="outline" className="text-[9px] font-bold px-1.5 py-0.5 bg-muted/50 border-border/60 rounded-sm">{k}</Badge>
+                  <Badge
+                    key={k}
+                    variant="outline"
+                    className="text-[9px] font-bold px-1.5 py-0.5 bg-muted/50 border-border/60 rounded-sm"
+                  >
+                    {k}
+                  </Badge>
                 ))}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Retail: Express total */}
-        {isRetail && cartItems.length > 0 && (
-          <div className="flex items-center justify-between rounded-md border border-border/60 bg-card px-4 py-2.5">
-            <Badge className="bg-primary/10 text-primary border-primary/20 font-bold text-xs px-2.5">
-              {totalCartItems} item
-            </Badge>
-            <p className="text-2xl font-black text-foreground tabular-nums tracking-tight">
-              Rp {grandTotal.toLocaleString("id-ID")}
-            </p>
           </div>
         )}
 
@@ -382,13 +636,15 @@ export function PosV2Content() {
 
         {/* Main Grid */}
         <div className="grid gap-3 lg:grid-cols-[1fr_380px] items-start">
-
           {/* LEFT: Catalog panel */}
           <div
             className={`flex flex-col rounded-md border border-border/60 overflow-hidden bg-card lg:sticky lg:top-3 ${mobileView === "catalog" ? "flex" : "hidden lg:flex"}`}
             style={{ height: "calc(100svh - 6.25rem)" }}
           >
-            <div className="flex shrink-0 border-b border-border/40 bg-muted/20" data-guide="pos-left-tabs">
+            <div
+              className="flex shrink-0 border-b border-border/40 bg-muted/20"
+              data-guide="pos-left-tabs"
+            >
               <button
                 onClick={() => setLeftTab("catalog")}
                 className={`flex flex-1 items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold transition-colors ${leftTab === "catalog" ? "border-b-2 border-primary bg-background text-primary" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"}`}
@@ -396,7 +652,12 @@ export function PosV2Content() {
                 <Package className="h-4 w-4" />
                 Katalog
                 {products.length > 0 && (
-                  <Badge variant="secondary" className="rounded-sm px-1.5 text-xs tabular-nums">{products.length}</Badge>
+                  <Badge
+                    variant="secondary"
+                    className="rounded-sm px-1.5 text-xs tabular-nums"
+                  >
+                    {products.length}
+                  </Badge>
                 )}
               </button>
               {isFnbOrCustom && (
@@ -425,20 +686,32 @@ export function PosV2Content() {
             <div className="flex-1 overflow-y-auto p-3">
               {leftTab === "catalog" && (
                 <ProductCatalog
-                  products={products} isLoading={productsLoading}
-                  searchQuery={searchQuery} onSearchChange={setSearchQuery}
+                  products={products}
+                  isLoading={productsLoading}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
                   onAddToCart={handleAddToCart}
                   onScanBarcode={handleScanBarcode}
-                  cartQuantities={cartQuantities} outletType={outletData?.type}
+                  cartQuantities={cartQuantities}
+                  outletType={outletData?.type}
                 />
               )}
-              {leftTab === "open" && <OpenOrders orders={openOrders} isLoading={openLoading} onSelect={handleSelectOpenOrder} />}
-              {leftTab === "recent" && <RecentOrders orders={recentOrders} isLoading={recentLoading} />}
+              {leftTab === "open" && (
+                <OpenOrders
+                  orders={openOrders}
+                  isLoading={openLoading}
+                  onSelect={handleSelectOpenOrder}
+                />
+              )}
+              {leftTab === "recent" && (
+                <RecentOrders orders={recentOrders} isLoading={recentLoading} />
+              )}
             </div>
           </div>
 
           {/* RIGHT: Cart panel */}
-          <div data-guide="pos-cart"
+          <div
+            data-guide="pos-cart"
             className={`flex flex-col rounded-md border border-border/60 overflow-hidden bg-card lg:sticky lg:top-3 ${mobileView === "cart" ? "flex" : "hidden lg:flex"}`}
             style={{ height: "calc(100svh - 6.25rem)" }}
           >
@@ -448,9 +721,13 @@ export function PosV2Content() {
                   <ShoppingCart className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-foreground leading-tight">Keranjang</p>
+                  <p className="text-sm font-bold text-foreground leading-tight">
+                    Keranjang
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {cartItems.length === 0 ? "Belum ada item" : `${cartItems.length} produk · ${totalCartItems} item`}
+                    {cartItems.length === 0
+                      ? "Belum ada item"
+                      : `${cartItems.length} produk · ${totalCartItems} item`}
                   </p>
                 </div>
               </div>
@@ -464,9 +741,12 @@ export function PosV2Content() {
             <div className="flex-1 overflow-y-auto">
               <div className="space-y-3 p-3">
                 <CartPanel
-                  items={cartItems} onIncrease={handleIncrease}
-                  onDecrease={handleDecrease} onRemove={handleRemove}
-                  onClear={handleClearCart} onScheduleService={handleScheduleService}
+                  items={cartItems}
+                  onIncrease={handleIncrease}
+                  onDecrease={handleDecrease}
+                  onRemove={handleRemove}
+                  onClear={handleClearCart}
+                  onScheduleService={handleScheduleService}
                 />
                 {cartItems.length > 0 && (
                   <>
@@ -477,26 +757,40 @@ export function PosV2Content() {
                         Pelanggan & Pembayaran
                       </p>
                       <div data-guide="pos-customer">
-                      <CustomerInfo
-                        outletId={outletId} isWalkIn={isWalkIn} onWalkInChange={setIsWalkIn}
-                        name={customerName} onNameChange={setCustomerName}
-                        phone={customerPhone} onPhoneChange={setCustomerPhone}
-                        onMemberChange={setMember} loyaltyConfig={loyaltyConfig}
-                        loyaltyDiscount={loyaltyDiscount} onPointsRedeemedChange={setPointsRedeemed}
-                        pointsRedeemed={pointsRedeemed} subtotal={subtotal}
-                        outletType={outletData?.type} tableNumber={tableNumber}
-                        onTableNumberChange={setTableNumber} tableId={tableId}
-                        onTableIdChange={setTableId}
-                      />
+                        <CustomerInfo
+                          outletId={outletId}
+                          isWalkIn={isWalkIn}
+                          onWalkInChange={setIsWalkIn}
+                          name={customerName}
+                          onNameChange={setCustomerName}
+                          phone={customerPhone}
+                          onPhoneChange={setCustomerPhone}
+                          onMemberChange={setMember}
+                          loyaltyConfig={loyaltyConfig}
+                          loyaltyDiscount={loyaltyDiscount}
+                          onPointsRedeemedChange={setPointsRedeemed}
+                          pointsRedeemed={pointsRedeemed}
+                          subtotal={subtotal}
+                          outletType={outletData?.type}
+                          tableNumber={tableNumber}
+                          onTableNumberChange={setTableNumber}
+                          tableId={tableId}
+                          onTableIdChange={setTableId}
+                          loyaltyRewardId={loyaltyRewardId}
+                          onLoyaltyRewardIdChange={setLoyaltyRewardId}
+                        />
                       </div>
                       <Separator className="bg-border/60" />
                       <div data-guide="pos-payment">
-                      <PaymentSection
-                        method={paymentMethod} onMethodChange={setPaymentMethod}
-                        total={grandTotal} cashReceived={cashReceived}
-                        onCashReceivedChange={setCashReceived}
-                        qrisImageUrl={outletQris?.qrisImageUrl} isLoadingQris={qrisLoading}
-                      />
+                        <PaymentSection
+                          method={paymentMethod}
+                          onMethodChange={setPaymentMethod}
+                          total={grandTotal}
+                          cashReceived={cashReceived}
+                          onCashReceivedChange={setCashReceived}
+                          qrisImageUrl={outletQris?.qrisImageUrl}
+                          isLoadingQris={qrisLoading}
+                        />
                       </div>
                     </div>
                   </>
@@ -505,7 +799,10 @@ export function PosV2Content() {
             </div>
 
             {/* Pinned bottom — desktop only */}
-            <div className="hidden lg:block shrink-0 space-y-2 border-t border-border/60 bg-background p-3" data-guide="pos-submit">
+            <div
+              className="hidden lg:block shrink-0 space-y-2 border-t border-border/60 bg-background p-3"
+              data-guide="pos-submit"
+            >
               {showValidationHint && (
                 <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
@@ -527,10 +824,13 @@ export function PosV2Content() {
                 disabled={!canSubmit || createOrder.isPending}
                 className="h-11 w-full text-sm font-bold tabular-nums"
               >
-                {createOrder.isPending
-                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Memproses...</>
-                  : `Bayar  Rp ${grandTotal.toLocaleString("id-ID")}`
-                }
+                {createOrder.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Memproses...
+                  </>
+                ) : (
+                  `Bayar  Rp ${grandTotal.toLocaleString("id-ID")}`
+                )}
               </Button>
             </div>
           </div>
@@ -538,7 +838,9 @@ export function PosV2Content() {
       </div>
 
       {/* Mobile: Fixed action bar — di atas bottom nav */}
-      <div className={`lg:hidden fixed ${MOBILE_BOTTOM_OFFSET} inset-x-0 z-30 border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 p-3 space-y-2`}>
+      <div
+        className={`lg:hidden fixed ${MOBILE_BOTTOM_OFFSET} inset-x-0 z-30 border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 p-3 space-y-2`}
+      >
         {showValidationHint && mobileView === "cart" && (
           <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
             <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
@@ -561,37 +863,54 @@ export function PosV2Content() {
             disabled={!canSubmit || createOrder.isPending}
             className="h-11 flex-1 text-sm font-bold tabular-nums"
           >
-            {createOrder.isPending
-              ? <><Loader2 className="h-4 w-4 animate-spin" /> Memproses...</>
-              : `Bayar  Rp ${grandTotal.toLocaleString("id-ID")}`
-            }
+            {createOrder.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Memproses...
+              </>
+            ) : (
+              `Bayar  Rp ${grandTotal.toLocaleString("id-ID")}`
+            )}
           </Button>
         </div>
       </div>
 
       {/* Dialogs */}
       <ConfirmDialog
-        open={!!pendingOpenOrder} onOpenChange={(v) => !v && setPendingOpenOrder(null)}
+        open={!!pendingOpenOrder}
+        onOpenChange={(v) => !v && setPendingOpenOrder(null)}
         title="Ganti keranjang?"
         description="Keranjang saat ini akan dihapus untuk memuat pesanan yang dipilih. Lanjutkan?"
         confirmLabel="Ya, lanjutkan"
-        onConfirm={() => { pendingOpenOrder && applyOpenOrder(pendingOpenOrder); }}
+        onConfirm={() => {
+          pendingOpenOrder && applyOpenOrder(pendingOpenOrder);
+        }}
       />
       <OrderSuccessDialog
-        open={!!orderResult} result={orderResult} printContext={orderPrintContext}
-        onClose={() => { setOrderResult(null); setOrderPrintContext(null); }}
+        open={!!orderResult}
+        result={orderResult}
+        printContext={orderPrintContext}
+        onClose={() => {
+          setOrderResult(null);
+          setOrderPrintContext(null);
+        }}
       />
       <ServiceScheduleDialog
-        open={!!scheduleDialog} product={scheduleDialog?.product ?? null}
+        open={!!scheduleDialog}
+        product={scheduleDialog?.product ?? null}
         existingSelection={scheduleDialog?.selection}
-        onClose={() => setScheduleDialog(null)} onConfirm={handleScheduleConfirm}
+        onClose={() => setScheduleDialog(null)}
+        onConfirm={handleScheduleConfirm}
       />
       <ConfirmDialog
-        open={showPayConfirm} onOpenChange={setShowPayConfirm}
+        open={showPayConfirm}
+        onOpenChange={setShowPayConfirm}
         title="Konfirmasi Pembayaran"
         description={`Apakah Anda yakin ingin memproses pembayaran sebesar Rp ${grandTotal.toLocaleString("id-ID")}?`}
         confirmLabel="Ya, Bayar Sekarang"
-        onConfirm={() => { setShowPayConfirm(false); handleSubmitOrder(false); }}
+        onConfirm={() => {
+          setShowPayConfirm(false);
+          handleSubmitOrder(false);
+        }}
       />
     </CashierShiftGate>
   );

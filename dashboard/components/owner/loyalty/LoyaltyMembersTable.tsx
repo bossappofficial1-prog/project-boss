@@ -29,6 +29,7 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
     // State for Adjust Points Dialog
     const [editingMember, setEditingMember] = React.useState<OutletMembership | null>(null);
     const [pointsToAdjust, setPointsToAdjust] = React.useState<string>("0");
+    const [adjustNote, setAdjustNote] = React.useState<string>("");
     const [historyMember, setHistoryMember] = React.useState<OutletMembership | null>(null);
     const [historyPage, setHistoryPage] = React.useState(1);
     const adjustPoints = useAdjustPoints();
@@ -65,10 +66,12 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
                 outletId,
                 guestCustomerId: editingMember.guestCustomerId,
                 points: pts,
+                note: adjustNote || undefined,
             });
             toast.success(`Berhasil ${pts > 0 ? "menambah" : "mengurangi"} ${Math.abs(pts)} poin`);
             setEditingMember(null);
             setPointsToAdjust("0");
+            setAdjustNote("");
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Gagal menyesuaikan poin");
         }
@@ -98,16 +101,35 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
         {
             accessorKey: "tier",
             header: "Tier",
+            cell: ({ row }) => {
+                const tier = row.original.tier;
+                if (!tier) {
+                    return <span className="text-xs text-muted-foreground italic">—</span>;
+                }
+                return (
+                    <Badge
+                        variant="outline"
+                        className="gap-1.5 font-bold text-[10px] uppercase tracking-wider px-2 py-0 shadow-none"
+                        style={{ borderColor: tier.color + "50", backgroundColor: tier.color + "15", color: tier.color }}
+                    >
+                        <Trophy className="h-3 w-3" />
+                        {tier.name}
+                    </Badge>
+                );
+            }
+        },
+        {
+            accessorKey: "lifetimePoints",
+            header: "Lifetime Poin",
             cell: ({ row }) => (
-                <Badge variant="outline" className="gap-1.5 font-bold text-[10px] uppercase tracking-wider px-2 py-0 border-primary/20 bg-primary/5 text-primary shadow-none">
-                    <Trophy className="h-3 w-3" />
-                    {row.getValue("tier")}
-                </Badge>
+                <div className="font-mono text-xs text-muted-foreground tabular-nums">
+                    {row.original.lifetimePoints.toLocaleString("id-ID")}
+                </div>
             )
         },
         {
             accessorKey: "points",
-            header: "Total Poin",
+            header: "Poin Aktif",
             cell: ({ row }) => (
                 <div className="font-bold text-primary tabular-nums">
                     {row.getValue<number>("points").toLocaleString("id-ID")}

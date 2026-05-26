@@ -56,6 +56,7 @@ export interface PosV2OrderRequest {
     tableId?: string;
     isOpenBill?: boolean;
     existingOrderId?: string;
+    loyaltyRewardId?: string;
 }
 
 export interface PosV2OrderResult {

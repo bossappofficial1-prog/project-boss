@@ -1,19 +1,23 @@
 import { db } from "../config/prisma";
-import { LoyaltyPointHistoryType } from "@prisma/client";
+import { LoyaltyPointHistoryType, RewardRedemptionStatus } from "@prisma/client";
 
 export class LoyaltyRepository {
+  // ─── Config ──────────────────────────────────────────────────────────────────
   static async getLoyaltyConfig(outletId: string) {
-    return db.loyaltyConfig.findUnique({
-      where: { outletId },
-    });
+    return db.loyaltyConfig.findUnique({ where: { outletId } });
   }
 
   static async upsertLoyaltyConfig(outletId: string, data: {
-    pointsEarned: number;
-    multiplierAmount: number;
-    minSpending: number;
-    pointValue: number;
-    isActive: boolean;
+    pointsEarned?: number;
+    multiplierAmount?: number;
+    minSpending?: number;
+    pointValue?: number;
+    isActive?: boolean;
+    autoEnroll?: boolean;
+    welcomeBonus?: number;
+    maxRedeemPercent?: number;
+    expiryDays?: number | null;
+    minRedeemPoints?: number;
   }) {
     return db.loyaltyConfig.upsert({
       where: { outletId },
@@ -22,87 +26,141 @@ export class LoyaltyRepository {
     });
   }
 
+  // ─── Tiers ───────────────────────────────────────────────────────────────────
+  static async getTiersByOutlet(outletId: string) {
+    return db.loyaltyTier.findMany({
+      where: { outletId },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  static async getTierById(id: string) {
+    return db.loyaltyTier.findUnique({ where: { id } });
+  }
+
+  static async createTier(outletId: string, data: {
+    name: string;
+    color?: string;
+    minLifetimePoints?: number;
+    earnMultiplier?: number;
+    sortOrder?: number;
+    benefits?: string;
+  }) {
+    return db.loyaltyTier.create({ data: { ...data, outletId } });
+  }
+
+  static async updateTier(id: string, data: Partial<{
+    name: string;
+    color: string;
+    minLifetimePoints: number;
+    earnMultiplier: number;
+    sortOrder: number;
+    benefits: string | null;
+  }>) {
+    return db.loyaltyTier.update({ where: { id }, data });
+  }
+
+  static async deleteTier(id: string) {
+    return db.loyaltyTier.delete({ where: { id } });
+  }
+
+  /** Cari tier yang tepat berdasarkan lifetimePoints */
+  static async resolveTierForPoints(outletId: string, lifetimePoints: number) {
+    return db.loyaltyTier.findFirst({
+      where: {
+        outletId,
+        minLifetimePoints: { lte: lifetimePoints },
+      },
+      orderBy: { minLifetimePoints: "desc" }, // ambil tier tertinggi yang memenuhi syarat
+    });
+  }
+
+  // ─── Rewards ─────────────────────────────────────────────────────────────────
+  static async getRewardsByOutlet(outletId: string, includeInactive = false) {
+    return db.loyaltyReward.findMany({
+      where: {
+        outletId,
+        ...(includeInactive ? {} : { isActive: true }),
+      },
+      orderBy: { pointsCost: "asc" },
+    });
+  }
+
+  static async getRewardById(id: string) {
+    return db.loyaltyReward.findUnique({
+      where: { id },
+      include: { redemptions: { where: { status: "USED" }, select: { id: true } } },
+    });
+  }
+
+  static async createReward(outletId: string, data: any) {
+    return db.loyaltyReward.create({ data: { ...data, outletId } });
+  }
+
+  static async updateReward(id: string, data: any) {
+    return db.loyaltyReward.update({ where: { id }, data });
+  }
+
+  static async deleteReward(id: string) {
+    return db.loyaltyReward.delete({ where: { id } });
+  }
+
+  // ─── Redemptions ──────────────────────────────────────────────────────────────
+  static async createRewardRedemption(data: {
+    outletId: string;
+    guestCustomerId: string;
+    loyaltyRewardId: string;
+    orderId?: string;
+    pointsUsed: number;
+    note?: string;
+  }) {
+    return db.rewardRedemption.create({ data: { ...data, status: RewardRedemptionStatus.PENDING } });
+  }
+
+  static async updateRedemptionStatus(id: string, status: RewardRedemptionStatus) {
+    return db.rewardRedemption.update({ where: { id }, data: { status } });
+  }
+
+  static async getRedemptionsByMember(outletId: string, guestCustomerId: string) {
+    return db.rewardRedemption.findMany({
+      where: { outletId, guestCustomerId },
+      include: { loyaltyReward: true },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  // ─── Membership ───────────────────────────────────────────────────────────────
   static async getMembership(guestCustomerId: string, outletId: string) {
     return db.outletMembership.findUnique({
-      where: {
-        guestCustomerId_outletId: {
-          guestCustomerId,
-          outletId,
-        },
-      },
-      include: {
-        guestCustomer: true,
-      },
+      where: { guestCustomerId_outletId: { guestCustomerId, outletId } },
+      include: { guestCustomer: true, tier: true },
     });
   }
 
   static async createMembership(guestCustomerId: string, outletId: string) {
     return db.outletMembership.create({
-      data: {
-        guestCustomerId,
-        outletId,
-        status: "ACTIVE",
-      },
+      data: { guestCustomerId, outletId, status: "ACTIVE" },
     });
   }
 
-  static async addPoints(guestCustomerId: string, outletId: string, points: number) {
-    return db.outletMembership.update({
-      where: {
-        guestCustomerId_outletId: {
-          guestCustomerId,
-          outletId,
-        },
-      },
-      data: {
-        totalPoints: {
-          increment: points,
-        },
-      },
-    });
-  }
-
-  static async addPointsAndSpending(guestCustomerId: string, outletId: string, points: number, spending: number) {
-    return db.outletMembership.update({
-      where: {
-        guestCustomerId_outletId: {
-          guestCustomerId,
-          outletId,
-        },
-      },
-      data: {
-        totalPoints: {
-          increment: points,
-        },
-        totalSpending: {
-          increment: spending,
-        },
-      },
-    });
-  }
-
+  /**
+   * Tambah poin + spending + lifetime points, dan update tier secara atomik
+   */
   static async addPointsAndSpendingWithHistory(
     guestCustomerId: string,
     outletId: string,
     points: number,
     spending: number,
-    options?: { orderId?: string; note?: string },
+    options?: { orderId?: string; note?: string; tierId?: string | null; historyType?: LoyaltyPointHistoryType },
   ) {
     return db.$transaction(async (tx) => {
       const membership = await tx.outletMembership.update({
-        where: {
-          guestCustomerId_outletId: {
-            guestCustomerId,
-            outletId,
-          },
-        },
+        where: { guestCustomerId_outletId: { guestCustomerId, outletId } },
         data: {
-          totalPoints: {
-            increment: points,
-          },
-          totalSpending: {
-            increment: spending,
-          },
+          totalPoints: { increment: points },
+          lifetimePoints: { increment: points },
+          totalSpending: { increment: spending },
+          ...(options?.tierId !== undefined ? { tierId: options.tierId } : {}),
         },
       });
 
@@ -112,30 +170,14 @@ export class LoyaltyRepository {
             outletId,
             guestCustomerId,
             orderId: options?.orderId,
-            type: LoyaltyPointHistoryType.EARN,
+            type: options?.historyType ?? LoyaltyPointHistoryType.EARN,
             points,
-            note: options?.note,
+            note: options?.note ?? "Poin didapat dari transaksi selesai",
           },
         });
       }
 
       return membership;
-    });
-  }
-
-  static async deductPoints(guestCustomerId: string, outletId: string, points: number) {
-    return db.outletMembership.update({
-      where: {
-        guestCustomerId_outletId: {
-          guestCustomerId,
-          outletId,
-        },
-      },
-      data: {
-        totalPoints: {
-          decrement: points,
-        },
-      },
     });
   }
 
@@ -147,16 +189,11 @@ export class LoyaltyRepository {
   ) {
     return db.$transaction(async (tx) => {
       const membership = await tx.outletMembership.update({
-        where: {
-          guestCustomerId_outletId: {
-            guestCustomerId,
-            outletId,
-          },
-        },
+        where: { guestCustomerId_outletId: { guestCustomerId, outletId } },
         data: {
-          totalPoints: {
-            increment: points,
-          },
+          totalPoints: { increment: points },
+          // lifetime hanya naik untuk poin positif
+          ...(points > 0 ? { lifetimePoints: { increment: points } } : {}),
         },
       });
 
@@ -164,9 +201,9 @@ export class LoyaltyRepository {
         data: {
           outletId,
           guestCustomerId,
-          type: points >= 0 ? LoyaltyPointHistoryType.ADJUSTMENT_IN : LoyaltyPointHistoryType.ADJUSTMENT_OUT,
+          type: points > 0 ? LoyaltyPointHistoryType.ADJUSTMENT_IN : LoyaltyPointHistoryType.ADJUSTMENT_OUT,
           points: Math.abs(points),
-          note,
+          note: note ?? (points > 0 ? "Penyesuaian poin oleh owner" : "Pengurangan poin oleh owner"),
         },
       });
 
@@ -178,21 +215,12 @@ export class LoyaltyRepository {
     guestCustomerId: string,
     outletId: string,
     points: number,
-    options?: { orderId?: string; note?: string },
+    options?: { orderId?: string; note?: string; historyType?: LoyaltyPointHistoryType },
   ) {
     return db.$transaction(async (tx) => {
       const membership = await tx.outletMembership.update({
-        where: {
-          guestCustomerId_outletId: {
-            guestCustomerId,
-            outletId,
-          },
-        },
-        data: {
-          totalPoints: {
-            decrement: points,
-          },
-        },
+        where: { guestCustomerId_outletId: { guestCustomerId, outletId } },
+        data: { totalPoints: { decrement: points } },
       });
 
       await tx.loyaltyPointHistory.create({
@@ -200,9 +228,9 @@ export class LoyaltyRepository {
           outletId,
           guestCustomerId,
           orderId: options?.orderId,
-          type: LoyaltyPointHistoryType.REDEEM,
+          type: options?.historyType ?? LoyaltyPointHistoryType.REDEEM,
           points,
-          note: options?.note,
+          note: options?.note ?? "Penukaran poin",
         },
       });
 
@@ -210,92 +238,115 @@ export class LoyaltyRepository {
     });
   }
 
-  static async findMembersByOutlet(outletId: string, search?: string, skip = 0, take = 20) {
+  static async refundLoyaltyPoints(
+    outletId: string,
+    guestCustomerId: string,
+    orderId: string,
+    points: number,
+  ) {
+    return db.$transaction([
+      db.outletMembership.update({
+        where: { guestCustomerId_outletId: { guestCustomerId, outletId } },
+        data: { totalPoints: { increment: points } },
+      }),
+      db.loyaltyPointHistory.create({
+        data: {
+          outletId,
+          guestCustomerId,
+          type: LoyaltyPointHistoryType.ADJUSTMENT_IN,
+          points,
+          note: "Refund poin akibat penghapusan transaksi",
+        },
+      }),
+    ]);
+  }
+
+  // ─── Members list ─────────────────────────────────────────────────────────────
+  static async findMembersByOutlet(
+    outletId: string,
+    search?: string,
+    skip = 0,
+    limit = 20,
+    sortBy = "joinedAt",
+    sortOrder: "asc" | "desc" = "desc",
+    tierId?: string,
+  ) {
+    const orderByMap: Record<string, any> = {
+      points: { totalPoints: sortOrder },
+      spending: { totalSpending: sortOrder },
+      joinedAt: { joinedAt: sortOrder },
+      lifetimePoints: { lifetimePoints: sortOrder },
+    };
+
     return db.outletMembership.findMany({
       where: {
         outletId,
-        guestCustomer: search ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search, mode: 'insensitive' } },
-          ]
-        } : undefined,
+        ...(tierId ? { tierId } : {}),
+        ...(search
+          ? {
+            guestCustomer: {
+              OR: [
+                { name: { contains: search, mode: "insensitive" } },
+                { phone: { contains: search } },
+              ],
+            },
+          }
+          : {}),
       },
       include: {
-        guestCustomer: true,
+        guestCustomer: { select: { name: true, phone: true, email: true } },
+        tier: { select: { id: true, name: true, color: true } },
       },
       skip,
-      take,
-      orderBy: {
-        joinedAt: 'desc',
+      take: limit,
+      orderBy: orderByMap[sortBy] ?? { joinedAt: "desc" },
+    });
+  }
+
+  static async countMembersByOutlet(outletId: string, search?: string, tierId?: string) {
+    return db.outletMembership.count({
+      where: {
+        outletId,
+        ...(tierId ? { tierId } : {}),
+        ...(search
+          ? {
+            guestCustomer: {
+              OR: [
+                { name: { contains: search, mode: "insensitive" } },
+                { phone: { contains: search } },
+              ],
+            },
+          }
+          : {}),
       },
     });
   }
 
-  static async countMembersByOutlet(outletId: string, search?: string) {
-    return db.outletMembership.count({
-      where: {
-        outletId,
-        guestCustomer: search ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search, mode: 'insensitive' } },
-          ]
-        } : undefined,
-      },
-    });
+  static async hasPointHistoryForOrder(orderId: string, type: LoyaltyPointHistoryType) {
+    const record = await db.loyaltyPointHistory.findFirst({ where: { orderId, type } });
+    return !!record;
   }
 
   static async findPointHistoryByMember(
     outletId: string,
     guestCustomerId: string,
     skip = 0,
-    take = 20,
+    limit = 20,
   ) {
     return db.loyaltyPointHistory.findMany({
-      where: {
-        outletId,
-        guestCustomerId,
-      },
+      where: { outletId, guestCustomerId },
       include: {
         order: {
-          select: {
-            id: true,
-            totalAmount: true,
-            discountAmount: true,
-            pointsRedeemed: true,
-            createdAt: true,
-          },
+          select: { id: true, totalAmount: true, discountAmount: true, pointsRedeemed: true, createdAt: true },
         },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
       skip,
-      take,
+      take: limit,
+      orderBy: { createdAt: "desc" },
     });
   }
 
   static async countPointHistoryByMember(outletId: string, guestCustomerId: string) {
-    return db.loyaltyPointHistory.count({
-      where: {
-        outletId,
-        guestCustomerId,
-      },
-    });
-  }
-
-  static async hasPointHistoryForOrder(orderId: string, type: LoyaltyPointHistoryType) {
-    const existing = await db.loyaltyPointHistory.findFirst({
-      where: {
-        orderId,
-        type,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    return !!existing;
+    return db.loyaltyPointHistory.count({ where: { outletId, guestCustomerId } });
   }
 }

@@ -165,6 +165,9 @@ model Outlet {
 
   loyaltyConfig             LoyaltyConfig?
   pointHistories            LoyaltyPointHistory[]
+  loyaltyTiers              LoyaltyTier[]
+  loyaltyRewards            LoyaltyReward[]
+  rewardRedemptions         RewardRedemption[]
   orders                    Order[]
   cashierShifts             CashierShift[]
   business                  Business                   @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -528,6 +531,7 @@ model GuestCustomer {
   memberships       Membership[]
   orders            Order[]
   outletMemberships OutletMembership[]
+  rewardRedemptions RewardRedemption[]
   pushSubscriptions PushSubscription[]
 
   @@index([email])
@@ -576,28 +580,105 @@ model LoyaltyConfig {
   pointsEarned     Int      @default(1)
   multiplierAmount Float    @default(10000)
   minSpending      Float    @default(0)
-  pointValue       Float    @default(0)
+  pointValue       Float    @default(0) // legacy: nilai 1 poin dalam Rp (jika tidak pakai reward catalog)
   isActive         Boolean  @default(true)
+  // Enhancement fields
+  autoEnroll       Boolean  @default(true)  // otomatis daftarkan pelanggan saat transaksi pertama
+  welcomeBonus     Int      @default(0)     // poin bonus untuk member baru
+  maxRedeemPercent Float    @default(100)   // maks % dari total belanja yang bisa dibayar pakai poin
+  expiryDays       Int?                     // hari sebelum poin hangus (null = tidak pernah)
+  minRedeemPoints  Int      @default(1)     // minimum poin untuk sekali penukaran
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   outlet           Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+}
+
+model LoyaltyTier {
+  id                String             @id @default(uuid())
+  outletId          String
+  name              String             // "Bronze", "Silver", "Gold", dll
+  color             String             @default("#CD7F32") // hex color
+  minLifetimePoints Int                @default(0)         // min lifetime points untuk tier ini
+  earnMultiplier    Float              @default(1.0)       // 2.0 = 2x poin
+  sortOrder         Int                @default(0)         // urutan tier (makin kecil = makin rendah)
+  benefits          String?            // deskripsi benefit tier (teks bebas)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  outlet            Outlet             @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  memberships       OutletMembership[]
+
+  @@unique([outletId, name])
+  @@index([outletId])
+}
+
+model LoyaltyReward {
+  id              String              @id @default(uuid())
+  outletId        String
+  name            String
+  description     String?
+  imageUrl        String?
+  type            LoyaltyRewardType
+  pointsCost      Int                 // poin yang dibutuhkan untuk redeem reward ini
+  // Tipe-spesifik
+  discountAmount  Float?              // untuk DISCOUNT_FLAT (Rp)
+  discountPercent Float?              // untuk DISCOUNT_PERCENT (%)
+  maxDiscount     Float?              // batas maksimum diskon untuk DISCOUNT_PERCENT
+  productId       String?             // untuk FREE_ITEM
+  voucherValue    Float?              // untuk VOUCHER
+  cashbackAmount  Float?              // untuk CASHBACK
+  // Ketersediaan
+  stock           Int                 @default(-1) // -1 = tidak terbatas
+  isActive        Boolean             @default(true)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  outlet          Outlet              @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  redemptions     RewardRedemption[]
+
+  @@index([outletId])
+  @@index([outletId, isActive])
+}
+
+model RewardRedemption {
+  id              String                  @id @default(uuid())
+  outletId        String
+  guestCustomerId String
+  loyaltyRewardId String
+  orderId         String?
+  pointsUsed      Int
+  status          RewardRedemptionStatus  @default(PENDING)
+  note            String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  outlet          Outlet                  @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  guestCustomer   GuestCustomer           @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+  loyaltyReward   LoyaltyReward           @relation(fields: [loyaltyRewardId], references: [id], onDelete: Cascade)
+
+  @@index([outletId])
+  @@index([guestCustomerId])
+  @@index([orderId])
 }
 
 model OutletMembership {
   id              String        @id @default(uuid())
   guestCustomerId String
   outletId        String
-  totalPoints     Int           @default(0)
+  totalPoints     Int           @default(0)   // poin aktif yang bisa dipakai
+  lifetimePoints  Int           @default(0)   // akumulasi poin sepanjang masa (untuk kalkulasi tier)
   totalSpending   Float         @default(0)
   status          String        @default("ACTIVE")
+  tierId          String?                     // cached current tier
   joinedAt        DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
   outlet          Outlet        @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  tier            LoyaltyTier?  @relation(fields: [tierId], references: [id])
 
   @@unique([guestCustomerId, outletId])
   @@index([guestCustomerId])
   @@index([outletId])
+  @@index([tierId])
 }
 
 model LoyaltyPointHistory {
@@ -997,6 +1078,25 @@ enum LoyaltyPointHistoryType {
   REDEEM
   ADJUSTMENT_IN
   ADJUSTMENT_OUT
+  WELCOME_BONUS
+  BIRTHDAY_BONUS
+  REWARD_REDEEM
+  EXPIRY
+}
+
+enum LoyaltyRewardType {
+  DISCOUNT_FLAT
+  DISCOUNT_PERCENT
+  FREE_ITEM
+  VOUCHER
+  CASHBACK
+}
+
+enum RewardRedemptionStatus {
+  PENDING
+  USED
+  EXPIRED
+  CANCELLED
 }
 
 enum TransferStatus {
