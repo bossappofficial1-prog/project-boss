@@ -3,13 +3,13 @@ name: "Deploy Backend"
 on:
   push:
     branches:
-      - develop
+      # - develop
       - main
     paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
-      - 'docker-compose.dev.yml'
-      - 'docker-compose.prod.yml'
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+      - "docker-compose.dev.yml"
+      - "docker-compose.prod.yml"
 
 jobs:
   deploy_dev:

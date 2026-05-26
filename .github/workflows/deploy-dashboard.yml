@@ -3,13 +3,13 @@ name: "Deploy Dashboard"
 on:
   push:
     branches:
-      - develop
+      # - develop
       - main
     paths:
-      - 'dashboard/**'
-      - '.github/workflows/deploy-dashboard.yml'
-      - 'docker-compose.dev.yml'
-      - 'docker-compose.prod.yml'
+      - "dashboard/**"
+      - ".github/workflows/deploy-dashboard.yml"
+      - "docker-compose.dev.yml"
+      - "docker-compose.prod.yml"
 
 jobs:
   deploy_dev:

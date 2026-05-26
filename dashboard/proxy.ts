@@ -65,6 +65,11 @@ export async function proxy(req: NextRequest) {
       response.cookies.delete("cashier_token");
       return response;
     }
+
+    if (pathname.startsWith("/manager/")) {
+      return NextResponse.next();
+    }
+
     if (pathname !== "/cashier" && !pathname.startsWith("/cashier/")) {
       const url = new URL(`/cashier${pathname}`, req.url);
       url.search = req.nextUrl.search;
