@@ -52,3 +52,44 @@ export const printOrderTicketsController = asyncHandler(async (req: Request, res
   res.contentType("application/pdf");
   res.send(pdfBuffer);
 });
+
+export const resendTicketEmailController = asyncHandler(async (req: Request, res: Response) => {
+  const code = req.params.code as string;
+  const result = await TicketService.resendTicketViaEmail(code);
+  return ResponseUtil.success(res, result, undefined, "Tiket berhasil dikirim ulang ke email pelanggan");
+});
+
+export const shareTicketInfoController = asyncHandler(async (req: Request, res: Response) => {
+  const code = req.params.code as string;
+  const ticket = await TicketService.verifyTicket(code);
+  
+  const customerName = ticket.customerName || "Pelanggan";
+  const productName = ticket.productName;
+  const eventDateStr = ticket.eventDate 
+    ? new Date(ticket.eventDate).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })
+    : "-";
+  const venue = ticket.venue || "-";
+  const customerAppUrl = process.env.CUSTOMER_APP_URL || "http://localhost:3000";
+  const ticketUrl = `${customerAppUrl}/ticket/verify/${code}`;
+  const textMessage = `Halo ${customerName}, berikut adalah link e-tiket Anda untuk event ${productName} pada tanggal ${eventDateStr} di ${venue}: ${ticketUrl}. Sampai jumpa di lokasi!`;
+  
+  return ResponseUtil.success(res, {
+    phone: ticket.customerPhone || "",
+    customerName,
+    productName,
+    eventDate: eventDateStr,
+    venue,
+    ticketUrl,
+    messageText: textMessage,
+    whatsappUrl: `https://api.whatsapp.com/send?phone=${ticket.customerPhone ? ticket.customerPhone.replace(/[^0-9]/g, '') : ''}&text=${encodeURIComponent(textMessage)}`
+  });
+});
+
+export const exportTicketsController = asyncHandler(async (req: Request, res: Response) => {
+  const productId = req.params.productId as string;
+  const csvData = await TicketService.exportTicketsToCSV(productId);
+  
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename=tickets-export-${productId}.csv`);
+  return res.send(csvData);
+});

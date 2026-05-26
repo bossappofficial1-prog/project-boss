@@ -438,6 +438,13 @@ export function ProductDetails({ slug, productId, initialProductData, initialOut
             />
           )}
 
+          {product.type === "SERVICE" && product.service && (
+            <ServiceInfoSection
+              service={product.service}
+              t={t}
+            />
+          )}
+
           {formattedDescription && (
             <DescriptionSection
               description={formattedDescription}
@@ -671,6 +678,29 @@ const TicketInfoSection: React.FC<TicketInfoSectionProps> = ({
 }) => {
   const availableQuota = Math.max(ticket.totalQuota - ticket.soldCount, 0);
 
+  const getEventDateValue = () => {
+    if (!ticket.eventEndDate) return formatDateTime(ticket.eventDate);
+    
+    const start = new Date(ticket.eventDate);
+    const end = new Date(ticket.eventEndDate);
+    
+    const isSameDay = start.toDateString() === end.toDateString();
+    
+    if (isSameDay) {
+      const dateStr = start.toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+      const startTimeStr = start.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      const endTimeStr = end.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      return `${dateStr} • ${startTimeStr} - ${endTimeStr} WIB`;
+    } else {
+      return `${formatDateTime(ticket.eventDate)} s/d ${formatDateTime(ticket.eventEndDate)}`;
+    }
+  };
+
   return (
     <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
       <h2 className="text-sm font-semibold text-muted-foreground">{t("labels.ticketInfo")}</h2>
@@ -679,7 +709,7 @@ const TicketInfoSection: React.FC<TicketInfoSectionProps> = ({
         <TicketInfoItem
           icon={CalendarDays}
           label={t("labels.eventDate")}
-          value={formatDateTime(ticket.eventDate)}
+          value={getEventDateValue()}
         />
         <TicketInfoItem icon={MapPin} label={t("labels.venue")} value={ticket.venue} />
         <TicketInfoItem
@@ -731,6 +761,52 @@ const TicketInfoSection: React.FC<TicketInfoSectionProps> = ({
         <div className="rounded-md border border-border/60 bg-background px-3 py-2 space-y-1">
           <p className="text-xs text-muted-foreground font-medium">{t("labels.ticketTerms")}</p>
           <p className="text-sm text-foreground/80 whitespace-pre-line">{ticket.terms}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+type ServiceInfoSectionProps = {
+  service: NonNullable<Product["service"]>;
+  t: (
+    key: NestedKeyOf<Messages["productDetails"]>,
+    values?: Record<string, string | number>,
+  ) => string;
+};
+const ServiceInfoSection: React.FC<ServiceInfoSectionProps> = ({ service, t }) => {
+  return (
+    <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
+      <h2 className="text-sm font-semibold text-muted-foreground">Informasi Layanan</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <TicketInfoItem
+          icon={Clock}
+          label="Durasi Layanan"
+          value={`${service.durationMinutes} Menit`}
+        />
+        {service.providerName && (
+          <TicketInfoItem
+            icon={Users}
+            label="Penyedia Layanan / Staff"
+            value={service.providerName}
+          />
+        )}
+      </div>
+
+      {service.bookingInWorkHours ? (
+        <div className="rounded-md border border-border/60 bg-background px-3 py-2 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-emerald-500 shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            Layanan reservasi ini tersedia mengikuti jam operasional outlet.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-md border border-border/60 bg-background px-3 py-2 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-primary shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            Jadwal reservasi khusus dapat Anda pilih saat mem-booking slot.
+          </p>
         </div>
       )}
     </div>

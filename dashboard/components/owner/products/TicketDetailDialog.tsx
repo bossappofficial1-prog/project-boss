@@ -13,12 +13,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-    Calendar, MapPin, Ticket, Users, ChevronLeft, ChevronRight, Boxes, ExternalLink,
+    Calendar, MapPin, Ticket, Users, ChevronLeft, ChevronRight, Boxes, ExternalLink, FileText
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { resolveUploadImageUrl } from "@/lib/url";
 import type { ProductItem } from "@/hooks/useProductsData";
 import { useTicketCodesByProduct, type TicketCodeItem } from "@/hooks/api/use-ticket-codes";
+import { toast } from "sonner";
 
 interface TicketDetailDialogProps {
     product: ProductItem | null;
@@ -86,6 +87,16 @@ export default function TicketDetailDialog({ product, open, onOpenChange }: Tick
         page,
         limit,
     );
+
+    const handleExportCsv = () => {
+        if (!product) return;
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1234/api/v1';
+        const exportUrl = `${apiBaseUrl}/tickets/product/${product.id}/export`;
+        
+        // Trigger download
+        window.open(exportUrl, "_blank");
+        toast.success("Mengekspor data tiket ke file CSV...");
+    };
 
     if (!product || product.type !== "TICKET" || !product.ticket) return null;
 
@@ -257,7 +268,7 @@ export default function TicketDetailDialog({ product, open, onOpenChange }: Tick
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="codes" className="mt-0">
+                         <TabsContent value="codes" className="mt-0">
                             {codesLoading ? (
                                 <div className="space-y-2">
                                     {Array.from({ length: 4 }).map((_, i) => (
@@ -271,7 +282,19 @@ export default function TicketDetailDialog({ product, open, onOpenChange }: Tick
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Daftar Tiket Terjual</span>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={handleExportCsv}
+                                            className="h-7 gap-1 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-border/80 shadow-xs"
+                                        >
+                                            <FileText className="h-3 w-3 text-primary" />
+                                            Ekspor CSV
+                                        </Button>
+                                    </div>
+                                    <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
                                         {ticketCodesData.codes.map((tc: TicketCodeItem) => (
                                             <div
                                                 key={tc.id}

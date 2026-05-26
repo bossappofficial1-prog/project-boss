@@ -7,6 +7,9 @@ import {
   getTicketsByOrderController,
   getTicketCodesByProductController,
   printOrderTicketsController,
+  resendTicketEmailController,
+  shareTicketInfoController,
+  exportTicketsController,
 } from "../controller/ticket.controller";
 
 const ticketRouter = Router();
@@ -25,5 +28,14 @@ ticketRouter.get("/product/:productId/codes", protect, authorize(UserRole.OWNER,
 
 // Protected: redeem ticket (owner/cashier only)
 ticketRouter.post("/redeem/:code", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), redeemTicketController);
+
+// Protected: get share info / WhatsApp Web pre-filled direct message
+ticketRouter.get("/share-info/:code", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), shareTicketInfoController);
+
+// Protected: resend ticket e-ticket via email
+ticketRouter.post("/resend-email/:code", protect, authorize(UserRole.OWNER, StaffRole.CASHIER), resendTicketEmailController);
+
+// Protected: export all tickets of a product to CSV
+ticketRouter.get("/product/:productId/export", protect, authorize(UserRole.OWNER), exportTicketsController);
 
 export default ticketRouter;

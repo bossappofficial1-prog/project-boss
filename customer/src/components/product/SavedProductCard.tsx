@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Product } from "@/types/product";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +7,11 @@ import { ImageRender } from "@/components/shared/Image";
 import { formatCurrency } from "@/lib/utils";
 import { Package, Wrench, Store } from "lucide-react";
 import { useTranslations } from "@/hooks/useI18n";
-import { getProductPrice, getProductUnit, getServiceDuration } from "@/lib/utils/product";
+import {
+  getProductPrice,
+  getProductUnit,
+  getServiceDuration,
+} from "@/lib/utils/product";
 
 interface SavedProductCardProps {
   product: Product;
@@ -21,11 +24,14 @@ export function SavedProductCard({ product, onClick }: SavedProductCardProps) {
   return (
     <Card
       className="overflow-hidden p-0 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] touch-manipulation select-none"
-      onClick={onClick}>
+      onClick={onClick}
+    >
       <div className="flex h-24 sm:h-28">
         {/* Product Image - Left Side */}
-        <div className="relative w-24 sm:w-28 h-full bg-muted flex-shrink-0">
-          {product.media && product.media.length > 0 && product.media[0].type === "IMAGE" ? (
+        <div className="relative w-24 sm:w-28 h-full bg-muted shrink-0">
+          {product.media &&
+          product.media.length > 0 &&
+          product.media[0].type === "IMAGE" ? (
             <ImageRender
               src={product.media[0].url}
               alt={product.name}
@@ -38,7 +44,7 @@ export function SavedProductCard({ product, onClick }: SavedProductCardProps) {
               className="object-cover w-full h-full"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/20">
+            <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary/10 to-primary/20">
               <Store className="w-6 h-6 text-primary/40" />
             </div>
           )}
@@ -46,7 +52,8 @@ export function SavedProductCard({ product, onClick }: SavedProductCardProps) {
           {/* Product Type Badge - Overlayed on image */}
           <Badge
             variant="secondary"
-            className="absolute top-1 left-1 text-xs rounded-full px-1.5 py-0.5 backdrop-blur-sm bg-background/90">
+            className="absolute top-1 left-1 text-xs rounded-full px-1.5 py-0.5 backdrop-blur-sm bg-background/90"
+          >
             {product.type === "GOODS" ? (
               <Package className="w-2.5 h-2.5" />
             ) : (
@@ -80,12 +87,14 @@ export function SavedProductCard({ product, onClick }: SavedProductCardProps) {
                 {formatCurrency(getProductPrice(product))}
               </span>
               {getProductUnit(product) && (
-                <span className="text-xs text-muted-foreground">/ {getProductUnit(product)}</span>
+                <span className="text-xs text-muted-foreground">
+                  / {getProductUnit(product)}
+                </span>
               )}
             </div>
 
             {getServiceDuration(product) && (
-              <div className="text-xs text-muted-foreground flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-full flex-shrink-0">
+              <div className="text-xs text-muted-foreground flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-full shrink-0">
                 <span>
                   {getServiceDuration(product)} {t("labels.minutes")}
                 </span>

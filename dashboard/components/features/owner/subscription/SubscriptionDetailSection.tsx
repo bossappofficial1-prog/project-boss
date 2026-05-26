@@ -1,5 +1,6 @@
 "use client";
 
+import { Store } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { formatLimitLabel, getDaysRemaining, parsePlanFeatures, SUBSCRIPTION_STATUS_LABELS, SUBSCRIPTION_STATUS_STYLES } from "./helper";
@@ -180,6 +181,3 @@ export function SubscriptionDetailSection({
         </section>
     )
 }
-
-// Fixed import for Store icon
-import { Store } from "lucide-react";

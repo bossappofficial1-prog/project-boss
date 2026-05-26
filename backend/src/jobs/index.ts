@@ -7,6 +7,7 @@ import { deletePaymentExpiryScheduler } from "./payment-expire-delete.job";
 import { subscriptionExpiryNotificationJob } from "./subscription-expiry-notification.job";
 import { subscriptionAutoSuspendJob } from "./subscription-auto-suspend.job";
 import { dailySalesReportJob } from "./daily-sales-report.job";
+import { bookingReminderJob } from "./booking-reminder.job";
 
 declare global {
     var __jobsInitialized: boolean | undefined;
@@ -36,4 +37,5 @@ export const setUpJobs = () => {
     subscriptionExpiryNotificationJob.register()
     subscriptionAutoSuspendJob.register()
     dailySalesReportJob.register()
+    bookingReminderJob.register()
 }

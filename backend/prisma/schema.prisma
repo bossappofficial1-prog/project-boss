@@ -340,22 +340,22 @@ model ProductMedia {
 }
 
 model ProductGoods {
-  id           String            @id @default(uuid())
-  productId    String            @unique
-  currentStock Int               @default(0)
-  minStock     Int?
-  maxStock     Int?
-  unit         String
-  averageHpp   Float             @default(0)
-  sellingPrice Float
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  barcode      String?           @unique
-  sku          String?
-  product      Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
-  stockLogs    StockLog[]
-  suppliers    SupplierProduct[]
-  batches      GoodsStockBatch[]
+  id                 String              @id @default(uuid())
+  productId          String              @unique
+  currentStock       Int                 @default(0)
+  minStock           Int?
+  maxStock           Int?
+  unit               String
+  averageHpp         Float               @default(0)
+  sellingPrice       Float
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  barcode            String?             @unique
+  sku                String?
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockLogs          StockLog[]
+  suppliers          SupplierProduct[]
+  batches            GoodsStockBatch[]
   purchaseOrderItems PurchaseOrderItem[]
 
   @@index([barcode])
@@ -381,17 +381,17 @@ model GoodsStockBatch {
 }
 
 model Supplier {
-  id        String            @id @default(uuid())
-  name      String
-  phone     String?
-  email     String?
-  address   String?
-  notes     String?
-  outletId  String
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  outlet    Outlet            @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  products  SupplierProduct[]
+  id             String            @id @default(uuid())
+  name           String
+  phone          String?
+  email          String?
+  address        String?
+  notes          String?
+  outletId       String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  outlet         Outlet            @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  products       SupplierProduct[]
   purchaseOrders PurchaseOrder[]
 
   @@index([outletId])
@@ -506,6 +506,7 @@ model BookingSlot {
   startTime        DateTime
   endTime          DateTime
   status           BookingSlotStatus @default(AVAILABLE)
+  reminderSent     Boolean           @default(false)
   productServiceId String
   orderItemId      String?           @unique
   createdAt        DateTime          @default(now())
@@ -583,11 +584,11 @@ model LoyaltyConfig {
   pointValue       Float    @default(0) // legacy: nilai 1 poin dalam Rp (jika tidak pakai reward catalog)
   isActive         Boolean  @default(true)
   // Enhancement fields
-  autoEnroll       Boolean  @default(true)  // otomatis daftarkan pelanggan saat transaksi pertama
-  welcomeBonus     Int      @default(0)     // poin bonus untuk member baru
-  maxRedeemPercent Float    @default(100)   // maks % dari total belanja yang bisa dibayar pakai poin
-  expiryDays       Int?                     // hari sebelum poin hangus (null = tidak pernah)
-  minRedeemPoints  Int      @default(1)     // minimum poin untuk sekali penukaran
+  autoEnroll       Boolean  @default(true) // otomatis daftarkan pelanggan saat transaksi pertama
+  welcomeBonus     Int      @default(0) // poin bonus untuk member baru
+  maxRedeemPercent Float    @default(100) // maks % dari total belanja yang bisa dibayar pakai poin
+  expiryDays       Int? // hari sebelum poin hangus (null = tidak pernah)
+  minRedeemPoints  Int      @default(1) // minimum poin untuk sekali penukaran
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   outlet           Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
@@ -596,12 +597,12 @@ model LoyaltyConfig {
 model LoyaltyTier {
   id                String             @id @default(uuid())
   outletId          String
-  name              String             // "Bronze", "Silver", "Gold", dll
+  name              String // "Bronze", "Silver", "Gold", dll
   color             String             @default("#CD7F32") // hex color
-  minLifetimePoints Int                @default(0)         // min lifetime points untuk tier ini
-  earnMultiplier    Float              @default(1.0)       // 2.0 = 2x poin
-  sortOrder         Int                @default(0)         // urutan tier (makin kecil = makin rendah)
-  benefits          String?            // deskripsi benefit tier (teks bebas)
+  minLifetimePoints Int                @default(0) // min lifetime points untuk tier ini
+  earnMultiplier    Float              @default(1.0) // 2.0 = 2x poin
+  sortOrder         Int                @default(0) // urutan tier (makin kecil = makin rendah)
+  benefits          String? // deskripsi benefit tier (teks bebas)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   outlet            Outlet             @relation(fields: [outletId], references: [id], onDelete: Cascade)
@@ -612,28 +613,28 @@ model LoyaltyTier {
 }
 
 model LoyaltyReward {
-  id              String              @id @default(uuid())
+  id              String             @id @default(uuid())
   outletId        String
   name            String
   description     String?
   imageUrl        String?
   type            LoyaltyRewardType
-  pointsCost      Int                 // poin yang dibutuhkan untuk redeem reward ini
+  pointsCost      Int // poin yang dibutuhkan untuk redeem reward ini
   // Tipe-spesifik
-  discountAmount  Float?              // untuk DISCOUNT_FLAT (Rp)
-  discountPercent Float?              // untuk DISCOUNT_PERCENT (%)
-  maxDiscount     Float?              // batas maksimum diskon untuk DISCOUNT_PERCENT
-  productId       String?             // untuk FREE_ITEM
-  voucherValue    Float?              // untuk VOUCHER
-  cashbackAmount  Float?              // untuk CASHBACK
+  discountAmount  Float? // untuk DISCOUNT_FLAT (Rp)
+  discountPercent Float? // untuk DISCOUNT_PERCENT (%)
+  maxDiscount     Float? // batas maksimum diskon untuk DISCOUNT_PERCENT
+  productId       String? // untuk FREE_ITEM
+  voucherValue    Float? // untuk VOUCHER
+  cashbackAmount  Float? // untuk CASHBACK
   // Ketersediaan
-  stock           Int                 @default(-1) // -1 = tidak terbatas
-  isActive        Boolean             @default(true)
+  stock           Int                @default(-1) // -1 = tidak terbatas
+  isActive        Boolean            @default(true)
   validFrom       DateTime?
   validUntil      DateTime?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  outlet          Outlet              @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  outlet          Outlet             @relation(fields: [outletId], references: [id], onDelete: Cascade)
   redemptions     RewardRedemption[]
 
   @@index([outletId])
@@ -641,19 +642,19 @@ model LoyaltyReward {
 }
 
 model RewardRedemption {
-  id              String                  @id @default(uuid())
+  id              String                 @id @default(uuid())
   outletId        String
   guestCustomerId String
   loyaltyRewardId String
   orderId         String?
   pointsUsed      Int
-  status          RewardRedemptionStatus  @default(PENDING)
+  status          RewardRedemptionStatus @default(PENDING)
   note            String?
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-  outlet          Outlet                  @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  guestCustomer   GuestCustomer           @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
-  loyaltyReward   LoyaltyReward           @relation(fields: [loyaltyRewardId], references: [id], onDelete: Cascade)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  outlet          Outlet                 @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  guestCustomer   GuestCustomer          @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
+  loyaltyReward   LoyaltyReward          @relation(fields: [loyaltyRewardId], references: [id], onDelete: Cascade)
 
   @@index([outletId])
   @@index([guestCustomerId])
@@ -664,11 +665,11 @@ model OutletMembership {
   id              String        @id @default(uuid())
   guestCustomerId String
   outletId        String
-  totalPoints     Int           @default(0)   // poin aktif yang bisa dipakai
-  lifetimePoints  Int           @default(0)   // akumulasi poin sepanjang masa (untuk kalkulasi tier)
+  totalPoints     Int           @default(0) // poin aktif yang bisa dipakai
+  lifetimePoints  Int           @default(0) // akumulasi poin sepanjang masa (untuk kalkulasi tier)
   totalSpending   Float         @default(0)
   status          String        @default("ACTIVE")
-  tierId          String?                     // cached current tier
+  tierId          String? // cached current tier
   joinedAt        DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   guestCustomer   GuestCustomer @relation(fields: [guestCustomerId], references: [id], onDelete: Cascade)
@@ -1164,10 +1165,10 @@ model Ingredient {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  outlet    Outlet                 @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  batches   IngredientStockBatch[]
-  recipes   RecipeIngredient[]
-  stockLogs IngredientStockLog[]
+  outlet             Outlet                 @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  batches            IngredientStockBatch[]
+  recipes            RecipeIngredient[]
+  stockLogs          IngredientStockLog[]
   purchaseOrderItems PurchaseOrderItem[]
 
   @@index([outletId])
@@ -1251,9 +1252,9 @@ model PurchaseOrder {
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 
-  supplier      Supplier            @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  outlet        Outlet              @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  items         PurchaseOrderItem[]
+  supplier Supplier            @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  outlet   Outlet              @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  items    PurchaseOrderItem[]
 
   @@index([supplierId])
   @@index([outletId])
@@ -1261,19 +1262,18 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id              String        @id @default(uuid())
+  id              String  @id @default(uuid())
   purchaseOrderId String
   productGoodsId  String?
   ingredientId    String?
-  quantity        Float         // Mendukung berat bahan baku desimal (contoh: 2.5 kg)
-  priceAtOrder    Float         @default(0)
+  quantity        Float // Mendukung berat bahan baku desimal (contoh: 2.5 kg)
+  priceAtOrder    Float   @default(0)
 
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  productGoods    ProductGoods? @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
-  ingredient      Ingredient?   @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productGoods  ProductGoods? @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
+  ingredient    Ingredient?   @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
 
   @@index([purchaseOrderId])
   @@index([productGoodsId])
   @@index([ingredientId])
 }
-
