@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/command";
 import { useRouter } from "next/navigation";
 import { CogIcon, Rocket, User } from "lucide-react";
-import { MENU_GROUPS, MenuGroup } from "../owner/layout/sidebar/sidebar";
+import { MENU_GROUPS, MenuGroup, getDynamicMenuName } from "../owner/layout/sidebar/sidebar";
 import { OutletType } from "@/types";
 import { useOutletContext } from "../providers/OutletProvider";
 
@@ -68,6 +68,16 @@ export function CommandSearch({
                 return !section.showOn || section.showOn.includes(outlet?.type!)
               })
               .sort((a, b) => a.label.localeCompare(b.label))
+              .map((section) => {
+                const clonedItems = section.items.map((item) => {
+                  const clonedItem = { ...item };
+                  if (clonedItem.id === "products" && outlet) {
+                    clonedItem.name = getDynamicMenuName(outlet.type);
+                  }
+                  return clonedItem;
+                });
+                return { ...section, items: clonedItems };
+              })
               .map((section) => (
                 <React.Fragment key={section.label}>
                   <CommandGroup heading={section.label}>

@@ -18,6 +18,8 @@ export interface POBProduct {
         unit: string;
         averageHpp: number;
         sellingPrice: number;
+        barcode?: string | null;
+        sku?: string | null;
     } | null;
 }
 
@@ -25,6 +27,7 @@ export interface POBCartItem {
     product: POBProduct;
     quantity: number;
     hppPerUnit: number;
+    expiryDate?: string;
 }
 
 export interface StockInPayload {
@@ -35,6 +38,7 @@ export interface StockInPayload {
     referenceType?: string;
     referenceId?: string;
     faktur?: string;
+    expiryDate?: string;
 }
 
 export interface StockReturnPayload {
@@ -44,6 +48,7 @@ export interface StockReturnPayload {
     referenceType?: string;
     referenceId?: string;
     faktur?: string;
+    expiryDate?: string;
 }
 
 export interface StockHistoryLog {

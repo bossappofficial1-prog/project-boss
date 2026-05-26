@@ -196,7 +196,7 @@ export class ToolsService {
         0,
       );
       const totalHppCost = productItems.reduce(
-        (s, i) => s + i.hppAtTimeOfOrder * i.quantity,
+        (s, i) => s + i.hppAtTimeOfOrder,
         0,
       );
       const totalProfit = totalRevenue - totalHppCost;
@@ -219,7 +219,7 @@ export class ToolsService {
         totalProfit,
         marginPercentage,
         avgSellingPrice,
-        avgHpp: first.averageHpp,
+        avgHpp: totalQty > 0 ? totalHppCost / totalQty : 0,
       });
     }
 
@@ -301,7 +301,7 @@ export class ToolsService {
 
     // Gross profit logic
     const totalHpp = currentItems.reduce(
-      (s, i) => s + i.hppAtTimeOfOrder * i.quantity,
+      (s, i) => s + i.hppAtTimeOfOrder,
       0,
     );
     const grossProfit = currentRevenue - totalHpp;
@@ -602,7 +602,7 @@ export class ToolsService {
     for (const item of items) {
       const existing = productRevMap.get(item.productId);
       const revenue = item.priceAtTimeOfOrder * item.quantity;
-      const hpp = item.hppAtTimeOfOrder * item.quantity;
+      const hpp = item.hppAtTimeOfOrder;
       if (existing) {
         existing.revenue += revenue;
         existing.hpp += hpp;
@@ -741,7 +741,7 @@ export class ToolsService {
   }
 
   private calcHpp(items: RawPLOrderItem[]): number {
-    return items.reduce((s, i) => s + i.hppAtTimeOfOrder * i.quantity, 0);
+    return items.reduce((s, i) => s + i.hppAtTimeOfOrder, 0);
   }
 
   private calcTotalExpenses(expenses: RawPLExpense[]): number {

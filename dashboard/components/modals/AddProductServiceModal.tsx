@@ -24,7 +24,7 @@ type Props = {
   onSuccess?: () => void;
   action?: "add" | "edit";
   data?: ProductItem | null;
-  initialData?: Partial<ProductItem & { image: string, taxName: string }>;
+  initialData?: Partial<ProductItem & { image: string; taxName: string }>;
 };
 
 const parseDate = (date: string | Date | null | undefined): Date | null => {
@@ -46,8 +46,11 @@ export default function AddOrEditProductServiceModal({
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const outletType = selectedOutlet?.type!;
   const shouldProductType: `${ProductType}` =
-    (outletType == "RETAIL" || outletType == "FNB" || outletType == "CUSTOM")
-      ? "GOODS" : outletType === "EVENT" ? "TICKET" : "SERVICE"
+    outletType == "RETAIL" || outletType == "FNB" || outletType == "CUSTOM"
+      ? "GOODS"
+      : outletType === "EVENT"
+        ? "TICKET"
+        : "SERVICE";
 
   const { data: categories } = useQuery({
     queryKey: ["product-categories", selectedOutlet?.id],
@@ -96,6 +99,8 @@ export default function AddOrEditProductServiceModal({
             sellingPrice: initialData.goods?.sellingPrice ?? 0,
             minStock: initialData.goods?.minStock ?? null,
             maxStock: initialData.goods?.maxStock ?? null,
+            barcode: (initialData.goods as any)?.barcode ?? "",
+            sku: (initialData.goods as any)?.sku ?? "",
           },
           service: undefined,
         } satisfies ProductFormValues;
@@ -152,7 +157,11 @@ export default function AddOrEditProductServiceModal({
             saleEndDate: parseDate(initialData.ticket?.saleEndDate),
             terms: initialData.ticket?.terms ?? null,
             codeFormat: (initialData.ticket?.codeFormat as any) ?? "QR_CODE",
-            designConfig: (initialData.ticket?.designConfig as any) ?? { primaryColor: "", backgroundColor: "", layoutType: "standard" },
+            designConfig: (initialData.ticket?.designConfig as any) ?? {
+              primaryColor: "",
+              backgroundColor: "",
+              layoutType: "standard",
+            },
           },
           goods: undefined,
           service: undefined,
@@ -179,6 +188,8 @@ export default function AddOrEditProductServiceModal({
         sellingPrice: 0,
         minStock: null,
         maxStock: null,
+        barcode: "",
+        sku: "",
       },
 
       service: { commissionType: "FIXED" } as any,
@@ -223,7 +234,7 @@ export default function AddOrEditProductServiceModal({
           label: "Tiket (Event)",
           value: "TICKET",
         },
-      ].filter(opt => allowedProductTypes.includes(opt.value)),
+      ].filter((opt) => allowedProductTypes.includes(opt.value)),
     },
     {
       name: "status",
@@ -267,50 +278,70 @@ export default function AddOrEditProductServiceModal({
       name: "goods.averageHpp",
       label: "Harga Modal (HPP) *",
       type: "currency",
-      colSpan: 3,
+      colSpan: 2,
       condition: (values) => values.type === "GOODS",
     },
     {
       name: "taxPercentage",
       label: "Pajak (%)",
       type: "number",
-      colSpan: 3,
+      colSpan: 2,
       placeholder: "Contoh: 11",
     },
     {
       name: "taxName",
       label: "Keterangan Pajak",
       type: "text",
-      colSpan: 3,
+      colSpan: 2,
       placeholder: "Contoh: PPN, Service Charge, dll",
     },
     {
       name: "goods.currentStock",
       label: "Stok Sekarang *",
       type: "number",
-      colSpan: 3,
+      colSpan: 2,
       condition: (values) => values.type === "GOODS",
     },
     {
       name: "goods.unit",
       label: "Satuan *",
       type: "text",
-      colSpan: 3,
+      colSpan: 2,
       placeholder: "pcs, kg, box...",
       condition: (values) => values.type === "GOODS",
+    },
+    {
+      name: "goods.barcode",
+      label: "Barcode",
+      type: "text",
+      colSpan: 2,
+      placeholder: "Scan atau ketik barcode",
+      condition: (values) =>
+        values.type === "GOODS" &&
+        (outletType === "RETAIL" || outletType === "CUSTOM"),
+    },
+    {
+      name: "goods.sku",
+      label: "SKU (opsional)",
+      type: "text",
+      colSpan: 2,
+      placeholder: "Kode SKU internal",
+      condition: (values) =>
+        values.type === "GOODS" &&
+        (outletType === "RETAIL" || outletType === "CUSTOM"),
     },
     {
       name: "goods.minStock",
       label: "Stok Minimum (opsional)",
       type: "number",
-      colSpan: 3,
+      colSpan: 2,
       condition: (values) => values.type === "GOODS",
     },
     {
       name: "goods.maxStock",
       label: "Stok Maksimum (opsional)",
       type: "number",
-      colSpan: 3,
+      colSpan: 2,
       condition: (values) => values.type === "GOODS",
     },
     {
@@ -326,24 +357,26 @@ export default function AddOrEditProductServiceModal({
       name: "service.sellingPrice",
       label: "Harga",
       type: "currency",
-      colSpan: 3,
+      colSpan: 2,
       condition: (values) => values.type === "SERVICE",
     },
     {
       name: "service.durationMinutes",
       label: "Durasi Layanan (menit) *",
       type: "number",
-      colSpan: 3,
+      colSpan: 2,
       condition: (values) => values.type === "SERVICE",
     },
     {
-      name: "service.commissionValue",
-      label: "Harga Komisi",
-      colSpan: 3,
-      condition: (values) => values.type === "SERVICE",
-      typeResolver(values) {
-        return values.service?.commissionType == "FIXED" ? "currency" : "percentage";
+      name: "service.bookingInWorkHours",
+      label: "Booking di jam kerja",
+      colSpan: 2,
+      type: "dual-option-switch",
+      switchOptions: {
+        left: { label: "Tidak", value: false },
+        right: { label: "Ya", value: true },
       },
+      condition: (values) => values.type === "SERVICE",
     },
     {
       name: "service.commissionType",
@@ -358,29 +391,29 @@ export default function AddOrEditProductServiceModal({
       condition: (values) => values.type === "SERVICE",
     },
     {
+      name: "service.commissionValue",
+      label: "Harga Komisi",
+      colSpan: 3,
+      condition: (values) => values.type === "SERVICE",
+      typeResolver(values) {
+        return values.service?.commissionType == "FIXED"
+          ? "currency"
+          : "percentage";
+      },
+    },
+    {
       name: "service.providerName",
       label: "Nama Penyedia",
       type: "text",
-      colSpan: 3,
+      colSpan: 2,
       placeholder: "contoh: jono",
-      condition: (values) => values.type === "SERVICE",
-    },
-    {
-      name: "service.bookingInWorkHours",
-      label: "Booking di jam kerja",
-      colSpan: 3,
-      type: "dual-option-switch",
-      switchOptions: {
-        left: { label: "Tidak", value: false },
-        right: { label: "Ya", value: true },
-      },
       condition: (values) => values.type === "SERVICE",
     },
     {
       name: "service.providerEmail",
       label: "Email Penyedia (opsional)",
       type: "email",
-      colSpan: 3,
+      colSpan: 2,
       placeholder: "contoh: jono@gmail.com",
       condition: (values) => values.type === "SERVICE",
     },
@@ -388,7 +421,7 @@ export default function AddOrEditProductServiceModal({
       name: "service.providerPhone",
       label: "Nomor Penyedia (opsional)",
       type: "tel",
-      colSpan: 3,
+      colSpan: 2,
       placeholder: "contoh: 081234567890",
       condition: (values) => values.type === "SERVICE",
     },
@@ -443,7 +476,8 @@ export default function AddOrEditProductServiceModal({
       label: "",
       type: "custom",
       colSpan: "full",
-      condition: (values) => values.type === "SERVICE" || values.type === "GOODS",
+      condition: (values) =>
+        values.type === "SERVICE" || values.type === "GOODS",
       renderCustom: () => (
         <ServiceMediaUploader
           value={mediaItems}
@@ -458,28 +492,69 @@ export default function AddOrEditProductServiceModal({
       name: "ticket.sellingPrice" as any,
       label: "Harga Tiket *",
       type: "currency",
-      colSpan: 3,
+      colSpan: 2,
       condition: (values) => values.type === "TICKET",
     },
     {
       name: "ticket.totalQuota" as any,
       label: "Total Kuota *",
       type: "number",
-      colSpan: 3,
+      colSpan: 2,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.maxPerOrder" as any,
+      label: "Maks per Order",
+      type: "number",
+      colSpan: 2,
       condition: (values) => values.type === "TICKET",
     },
     {
       name: "ticket.eventDate" as any,
       label: "Tanggal Event *",
       type: "datetime-local",
-      colSpan: 3,
+      colSpan: 2,
       condition: (values) => values.type === "TICKET",
     },
     {
       name: "ticket.eventEndDate" as any,
       label: "Tanggal Selesai (opsional)",
       type: "datetime-local",
-      colSpan: 3,
+      colSpan: 2,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.codeFormat" as any,
+      label: "Format Kode Scanner",
+      placeholder: "Pilih Tipe Scanner",
+      type: "select",
+      options: [
+        { label: "QR Code (Standar Kamera)", value: "QR_CODE" },
+        { label: "Barcode 128 (Laser Scanner)", value: "BARCODE_128" },
+      ],
+      colSpan: 2,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.saleStartDate" as any,
+      label: "Mulai Penjualan (opsional)",
+      type: "datetime-local",
+      colSpan: 2,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.saleEndDate" as any,
+      label: "Tutup Penjualan (opsional)",
+      type: "datetime-local",
+      colSpan: 2,
+      condition: (values) => values.type === "TICKET",
+    },
+    {
+      name: "ticket.designConfig.primaryColor" as any,
+      label: "Warna Tema Tiket (Hex)",
+      type: "text",
+      placeholder: "contoh: #2563EB",
+      colSpan: 2,
       condition: (values) => values.type === "TICKET",
     },
     {
@@ -507,52 +582,11 @@ export default function AddOrEditProductServiceModal({
       condition: (values) => values.type === "TICKET",
     },
     {
-      name: "ticket.maxPerOrder" as any,
-      label: "Maks per Order",
-      type: "number",
-      colSpan: 3,
-      condition: (values) => values.type === "TICKET",
-    },
-    {
-      name: "ticket.saleStartDate" as any,
-      label: "Mulai Penjualan (opsional)",
-      type: "datetime-local",
-      colSpan: 3,
-      condition: (values) => values.type === "TICKET",
-    },
-    {
-      name: "ticket.saleEndDate" as any,
-      label: "Tutup Penjualan (opsional)",
-      type: "datetime-local",
-      colSpan: 3,
-      condition: (values) => values.type === "TICKET",
-    },
-    {
       name: "ticket.terms" as any,
       label: "Syarat & Ketentuan (opsional)",
       type: "textarea",
       colSpan: "full",
       placeholder: "Syarat dan ketentuan tiket",
-      condition: (values) => values.type === "TICKET",
-    },
-    {
-      name: "ticket.codeFormat" as any,
-      label: "Format Kode Scanner",
-      placeholder: "Pilih Tipe Scanner",
-      type: "select",
-      options: [
-        { label: "QR Code (Standar Kamera)", value: "QR_CODE" },
-        { label: "Barcode 128 (Laser Scanner)", value: "BARCODE_128" },
-      ],
-      colSpan: 3,
-      condition: (values) => values.type === "TICKET",
-    },
-    {
-      name: "ticket.designConfig.primaryColor" as any,
-      label: "Warna Tema Tiket (Hex)",
-      type: "text",
-      placeholder: "contoh: #2563EB",
-      colSpan: 3,
       condition: (values) => values.type === "TICKET",
     },
     {
@@ -567,7 +601,7 @@ export default function AddOrEditProductServiceModal({
 
   return (
     <ReusableForm
-      className={'max-w-3xl'}
+      className="md:max-w-4xl"
       form={form}
       withDialog
       gridCols={6}

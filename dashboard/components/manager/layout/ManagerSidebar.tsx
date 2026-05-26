@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { cn } from "@/lib/utils";
-import { MENU_GROUPS } from "@/components/owner/layout/sidebar/sidebar";
+import { MENU_GROUPS, getDynamicMenuName } from "@/components/owner/layout/sidebar/sidebar";
 import { ChevronDown, LogOut } from "lucide-react";
 import { InstantLink } from "@/components/ui/instant-link";
 import ConfirmationModal from "@/components/ui/confirmation-modal";
@@ -211,6 +211,9 @@ export default function ManagerSidebar() {
           .map((item) => {
             const clonedItem = { ...item };
             clonedItem.href = mapHref(item.href) || "";
+            if (clonedItem.id === "products") {
+              clonedItem.name = getDynamicMenuName(outletData.type);
+            }
 
             if (clonedItem.requirePro && !hasProAccess) {
               clonedItem.badge = "PRO";

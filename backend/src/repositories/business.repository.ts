@@ -66,6 +66,25 @@ export class BusinessRepository {
         return db.business.findMany();
     }
 
+    static async findAllActiveWithOwnerAndOutlets() {
+        return db.business.findMany({
+            where: {
+                subscriptionStatus: {
+                    not: 'SUSPENDED'
+                }
+            },
+            include: {
+                owner: {
+                    select: {
+                        name: true,
+                        email: true
+                    }
+                },
+                outlets: true
+            }
+        });
+    }
+
     static async findByName(name: string, excludeId?: string): Promise<Business | null> {
         return db.business.findFirst({
             where: {

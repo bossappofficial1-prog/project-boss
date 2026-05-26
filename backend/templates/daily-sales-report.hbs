@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Laporan Penjualan Harian - {{businessName}}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: white;
+            color: #0f172a;
+            font-size: 11px;
+            line-height: 1.5;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 16mm 14mm;
+            }
+        }
+
+        .report-wrapper {
+            width: 100%;
+            padding: 4px;
+        }
+
+        /* HEADER / KOP SURAT */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 18px;
+            margin-bottom: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-box {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border-radius: 10px; /* rounded-lg */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-text {
+            color: #ef4444; /* Warm Coral-Red primary brand */
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .header-info h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 18px;
+            font-weight: 700; /* Page title font-semibold tracking-tight */
+            color: #0f172a;
+            letter-spacing: -0.3px;
+            margin-bottom: 2px;
+        }
+
+        .header-info p {
+            font-size: 10px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .doc-badge {
+            display: inline-block;
+            background-color: #fff5f5; /* Coral background shade */
+            border: 1px solid #fed7d7;
+            border-radius: 4px; /* rounded-sm */
+            padding: 4px 10px;
+            font-size: 9px;
+            font-weight: 700;
+            color: #ef4444; /* Warm Coral-Red primary brand */
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .doc-number {
+            font-family: 'Fira Code', monospace; /* Mono for tech values */
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* METADATA BOX */
+        .meta-container {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px; /* rounded-lg */
+            padding: 12px 16px;
+            margin-bottom: 22px;
+        }
+
+        .meta-grid {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #64748b;
+        }
+
+        .meta-item strong {
+            color: #334155;
+            font-weight: 600;
+        }
+
+        /* SECTION TITLE */
+        .section-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            font-weight: 700; /* Section title: font-semibold */
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 3px;
+            height: 12px;
+            background-color: #ef4444; /* Warm Coral-Red primary brand accent */
+            border-radius: 2px;
+        }
+
+        /* OVERVIEW DASHBOARD CARDS */
+        .overview-cards {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            flex: 1;
+            border-radius: 10px; /* rounded-lg */
+            padding: 14px 12px;
+            border: 1px solid;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .card-value {
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Fira Code', monospace; /* Mono for currency/tech values */
+            letter-spacing: -0.3px;
+        }
+
+        /* CARD COLOR THEMES */
+        .card.revenue-card {
+            background-color: #ecfdf5;
+            border-color: #a7f3d0;
+        }
+        .card.revenue-card .card-label {
+            color: #047857;
+        }
+        .card.revenue-card .card-value {
+            color: #10b981; /* positive/growth color */
+        }
+
+        .card.expense-card {
+            background-color: #fef2f2;
+            border-color: #fecaca;
+        }
+        .card.expense-card .card-label {
+            color: #b91c1c;
+        }
+        .card.expense-card .card-value {
+            color: #ef4444; /* destructive/negative color */
+        }
+
+        .card.profit-pos-card {
+            background-color: #ecfdf5;
+            border-color: #a7f3d0;
+        }
+        .card.profit-pos-card .card-label {
+            color: #047857;
+        }
+        .card.profit-pos-card .card-value {
+            color: #10b981;
+        }
+
+        .card.profit-neg-card {
+            background-color: #fef2f2;
+            border-color: #fecaca;
+        }
+        .card.profit-neg-card .card-label {
+            color: #b91c1c;
+        }
+        .card.profit-neg-card .card-value {
+            color: #ef4444;
+        }
+
+        .card.trx-card {
+            background-color: #f8fafc;
+            border-color: #e2e8f0;
+        }
+        .card.trx-card .card-label {
+            color: #475569;
+        }
+        .card.trx-card .card-value {
+            color: #0f172a;
+        }
+
+        /* DATA TABLE */
+        .table-container {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px; /* rounded-lg */
+            overflow: hidden;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px 14px;
+            border: none;
+        }
+
+        td {
+            padding: 12px 14px; /* py-3 px-4 */
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+            font-size: 10px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-semibold {
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .text-bold {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .text-success {
+            color: #10b981;
+            font-weight: 600;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .text-danger {
+            color: #ef4444;
+            font-weight: 600;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .text-profit-pos {
+            color: #10b981;
+            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .text-profit-neg {
+            color: #ef4444;
+            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .text-mono {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* SUMMARY ROW */
+        .summary-row td {
+            background-color: #f1f5f9 !important;
+            font-weight: 700;
+            color: #0f172a;
+            border-top: 2px solid #cbd5e1;
+            padding: 12px 14px;
+        }
+
+        /* SIGNATURE SECTION */
+        .signature-section {
+            margin-top: 36px;
+            display: flex;
+            justify-content: flex-end;
+            page-break-inside: avoid;
+        }
+
+        .signature-box {
+            text-align: center;
+            width: 180px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px; /* rounded-lg */
+            padding: 14px;
+        }
+
+        .signature-box .signer-title {
+            font-size: 8px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 24px;
+        }
+
+        .signature-box .signature-line {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 800;
+            color: #ef4444; /* Warm Coral-Red primary brand */
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 6px;
+        }
+
+        .signature-box .signer-sub {
+            font-size: 8px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-wrapper">
+        <!-- Kop Surat -->
+        <div class="header-container">
+            <div class="header-left">
+                <div class="logo-box">
+                    {{#if logoBase64}}
+                    <img class="logo-img" src="{{logoBase64}}" alt="Logo">
+                    {{else}}
+                    <div class="logo-text">BOSS</div>
+                    {{/if}}
+                </div>
+                <div class="header-info">
+                    <h1>Laporan Penjualan Harian</h1>
+                    <p>{{businessName}} &bull; Pemilik: {{ownerName}}</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="doc-badge">Dokumen Resmi</div>
+                <div class="doc-number">{{docNumber}}</div>
+            </div>
+        </div>
+
+        <!-- Metadata -->
+        <div class="meta-container">
+            <div class="meta-grid">
+                <div class="meta-item">Tanggal Laporan: <strong>{{date}}</strong></div>
+                <div class="meta-item">Metode Pengiriman: <strong>Email Otomatis (Cron)</strong></div>
+                <div class="meta-item">Dibuat Pada: <strong>{{generatedAt}}</strong></div>
+            </div>
+        </div>
+
+        <!-- Ringkasan Bisnis -->
+        <div class="section-title">Ringkasan Finansial Bisnis</div>
+        <div class="overview-cards">
+            <div class="card revenue-card">
+                <div class="card-label">Total Pendapatan</div>
+                <div class="card-value">{{formatRupiah totalRevenue}}</div>
+            </div>
+            <div class="card expense-card">
+                <div class="card-label">Total Pengeluaran</div>
+                <div class="card-value">{{formatRupiah totalExpense}}</div>
+            </div>
+            <div class="card {{#if isNetProfitPositive}}profit-pos-card{{else}}profit-neg-card{{/if}}">
+                <div class="card-label">Laba Bersih</div>
+                <div class="card-value">{{formatRupiah netProfit}}</div>
+            </div>
+            <div class="card trx-card">
+                <div class="card-label">Total Transaksi</div>
+                <div class="card-value">{{totalTransactions}} Trx</div>
+            </div>
+        </div>
+
+        <!-- Rincian Per Outlet -->
+        <div class="section-title">Rincian Performa Per Outlet</div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="text-center" style="width: 40px;">No</th>
+                        <th>Nama Outlet</th>
+                        <th class="text-center" style="width: 110px;">Jumlah Transaksi</th>
+                        <th class="text-right" style="width: 130px;">Pendapatan</th>
+                        <th class="text-right" style="width: 130px;">Pengeluaran</th>
+                        <th class="text-right" style="width: 130px;">Laba Bersih</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each outlets}}
+                    <tr>
+                        <td class="text-center text-semibold text-mono" style="color: #94a3b8;">{{rowNumber @index}}</td>
+                        <td class="text-semibold">{{name}}</td>
+                        <td class="text-center text-mono">{{transactionCount}} Trx</td>
+                        <td class="text-right text-success">{{formatRupiah revenue}}</td>
+                        <td class="text-right text-danger">{{formatRupiah expense}}</td>
+                        <td class="text-right {{#if isNetProfitPositive}}text-profit-pos{{else}}text-profit-neg{{/if}}">{{formatRupiah netProfit}}</td>
+                    </tr>
+                    {{/each}}
+                    <!-- Ringkasan Total -->
+                    <tr class="summary-row">
+                        <td class="text-center" colspan="2">TOTAL KESELURUHAN</td>
+                        <td class="text-center text-mono">{{totalTransactions}} Trx</td>
+                        <td class="text-right text-success">{{formatRupiah totalRevenue}}</td>
+                        <td class="text-right text-danger">{{formatRupiah totalExpense}}</td>
+                        <td class="text-right {{#if isNetProfitPositive}}text-profit-pos{{else}}text-profit-neg{{/if}}">{{formatRupiah netProfit}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Tanda Tangan -->
+        <div class="signature-section">
+            <div class="signature-box">
+                <div class="signer-title">Dokumen Dibuat Oleh</div>
+                <div class="signature-line">BOSS SYSTEM</div>
+                <div class="signer-sub">Asisten Keuangan Digital</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

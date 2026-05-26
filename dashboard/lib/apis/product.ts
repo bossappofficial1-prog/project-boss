@@ -21,6 +21,8 @@ export type CreateProductPayload = {
     unit: string;
     minStock?: number | null;
     maxStock?: number | null;
+    barcode?: string;
+    sku?: string;
   };
   service?: {
     durationMinutes: number;

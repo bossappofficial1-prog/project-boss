@@ -19,6 +19,8 @@ import { formatDateTime, generateTicketCode } from "../utils";
 import { LoyaltyService } from "./loyalty.service";
 import { RedisUtils } from "../utils/redis.utils";
 import { IngredientRepository } from "../repositories/ingredient.repository";
+import { ProductGoodsRepository } from "../repositories/product-goods.repository";
+import { PurchaseOrderService } from "./purchase-order.service";
 
 type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> &
   Record<string, any>;
@@ -1402,6 +1404,18 @@ export async function deductStockForCompletedOrder(orderId: string) {
       });
 
       if (recipe && recipe.ingredients.length > 0) {
+        // Idempotency: skip jika IngredientStockLog untuk ingredient pertama sudah ada dengan referenceId ini
+        const firstIngId = recipe.ingredients[0]?.ingredientId;
+        if (firstIngId) {
+          const existingIngLog = await db.ingredientStockLog.findFirst({
+            where: { ingredientId: firstIngId, referenceId: orderId },
+          });
+          if (existingIngLog) {
+            console.log(`[HPP] FnB stock for ${item.product.name} already deducted (IngredientStockLog exists), skipping.`);
+            continue;
+          }
+        }
+
         let itemTotalHpp = 0;
 
         for (const recipeIngredient of recipe.ingredients) {
@@ -1415,6 +1429,9 @@ export async function deductStockForCompletedOrder(orderId: string) {
           );
 
           itemTotalHpp += deductResult.actualHppCost;
+
+          // Pemicu Auto PO jika stok bahan baku menipis
+          await PurchaseOrderService.triggerLowStockAutoPO(order.outletId, "INGREDIENT", recipeIngredient.ingredientId);
         }
 
         const roundedHpp = Math.round(itemTotalHpp * 100) / 100;
@@ -1425,6 +1442,40 @@ export async function deductStockForCompletedOrder(orderId: string) {
         });
         
         console.log(`[HPP] Deducted FIFO stock for ${item.product.name} x${item.quantity}, total HPP: ${roundedHpp}`);
+      } else if (item.product.type === "GOODS") {
+        const productGoods = await db.productGoods.findUnique({
+          where: { productId: item.productId }
+        });
+
+        if (productGoods) {
+          // Idempotency: skip jika StockLog OUT sudah ada untuk productGoods ini di order ini
+          const existingStockLog = await db.stockLog.findFirst({
+            where: { productGoodsId: productGoods.id, referenceId: orderId, type: "OUT" },
+          });
+          if (existingStockLog) {
+            console.log(`[HPP] Retail stock for ${item.product.name} already deducted (StockLog exists), skipping.`);
+            continue;
+          }
+
+          const deductResult = await ProductGoodsRepository.deductStockFIFO(
+            productGoods.id,
+            item.quantity,
+            orderId,
+            `POS Order Item (Retail): ${item.product.name} x${item.quantity}`
+          );
+
+          const roundedHpp = Math.round(deductResult.actualHppCost * 100) / 100;
+
+          await db.orderItem.update({
+            where: { id: item.id },
+            data: { hppAtTimeOfOrder: roundedHpp }
+          });
+
+          console.log(`[HPP] Deducted FIFO retail stock for ${item.product.name} x${item.quantity}, total HPP: ${roundedHpp}`);
+
+          // Pemicu Auto PO jika stok barang retail menipis
+          await PurchaseOrderService.triggerLowStockAutoPO(order.outletId, "GOODS", productGoods.id);
+        }
       }
     }
   } catch (error) {

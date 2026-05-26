@@ -58,6 +58,22 @@ export interface MenuGroup {
   items: MenuItem[];
 }
 
+export function getDynamicMenuName(type?: OutletType): string {
+  if (!type) return "Produk & Layanan";
+  switch (type) {
+    case OutletType.FNB:
+      return "Daftar Menu";
+    case OutletType.RETAIL:
+      return "Produk Jualan";
+    case OutletType.SERVICE:
+      return "Layanan & Jasa";
+    case OutletType.EVENT:
+      return "Tiket & Event";
+    default:
+      return "Katalog Jualan";
+  }
+}
+
 export const MENU_GROUPS: MenuGroup[] = [
   {
     label: "Utama",
@@ -163,6 +179,13 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Supplier",
         href: "/owner/suppliers",
         icon: Truck,
+        requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
+      },
+      {
+        id: "purchase-orders",
+        name: "Pemesanan (PO)",
+        href: "/owner/purchase-orders",
+        icon: ClipboardList,
         requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
       },
     ],

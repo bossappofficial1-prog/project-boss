@@ -52,6 +52,7 @@ export const stockApi = {
       referenceType?: string;
       referenceId?: string;
       faktur?: string;
+      expiryDate?: string;
     }>,
   ) => {
     console.log("[Stock API] bulkIn Payload:", JSON.stringify(data, null, 2));
@@ -68,6 +69,7 @@ export const stockApi = {
       referenceType?: string;
       referenceId?: string;
       faktur?: string;
+      expiryDate?: string;
     }>,
   ) => {
     console.log("[Stock API] bulkReturn Payload:", JSON.stringify(data, null, 2));

@@ -30,13 +30,14 @@ class IngredientController extends BaseController {
 
   addStock = this.handler(async (req, res) => {
     const { id } = req.params;
-    const { quantity, totalCost, referenceId, notes } = req.body;
+    const { quantity, totalCost, referenceId, notes, expiryDate } = req.body;
     const data = await IngredientService.addStock(
       id as string,
       Number(quantity),
       Number(totalCost),
       referenceId,
       notes,
+      expiryDate,
     );
     return this.success(res, data, 200, "Stok bahan baku berhasil ditambahkan");
   });

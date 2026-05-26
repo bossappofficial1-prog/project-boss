@@ -4,24 +4,18 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { SelectOption } from "@/components/shared/SelectOption";
 import { FileUploader } from "@/components/ui/ImageUploader";
 import { useSuppliers } from "@/hooks/api/use-suppliers";
 import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
-import { Badge } from "@/components/ui/badge";
 import { Truck } from "lucide-react";
-
-const TRANSACTION_TYPE_OPTIONS = [
-  { label: "Pembelian (Stok Masuk)", value: "PURCHASE" },
-  { label: "Pengembalian (Stok Keluar)", value: "RETURN" },
-];
+import { cn } from "@/lib/utils";
 
 interface TransactionInfoFormProps {
-  referenceType: string;
+  referenceType?: string;
   referenceId: string;
   notes: string;
   fakturFile: File | null;
-  onReferenceTypeChange: (val: string) => void;
+  onReferenceTypeChange?: (val: string) => void;
   onReferenceIdChange: (val: string) => void;
   onNotesChange: (val: string) => void;
   onFakturChange: (file: File | null) => void;
@@ -29,11 +23,9 @@ interface TransactionInfoFormProps {
 }
 
 export function TransactionInfoForm({
-  referenceType,
   referenceId,
   notes,
   fakturFile,
-  onReferenceTypeChange,
   onReferenceIdChange,
   onNotesChange,
   onFakturChange,
@@ -56,30 +48,34 @@ export function TransactionInfoForm({
   }, [suppliers, referenceId]);
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-1.5">
-        <Label>Tipe Transaksi</Label>
-        <SelectOption
-          value={referenceType}
-          onValueChange={onReferenceTypeChange}
-          options={TRANSACTION_TYPE_OPTIONS}
-          placeholder="Pilih tipe"
-        />
-      </div>
-
+    <div className="space-y-4">
+      {/* Supplier Selection Field */}
       <div className="space-y-1.5 relative">
-        <Label>Supplier</Label>
-        <Input
-          ref={inputRef}
-          placeholder="Ketik atau pilih supplier..."
-          value={referenceId}
-          onChange={(e) => onReferenceIdChange(e.target.value)}
-          onFocus={() => setShowSuggestions(true)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-        />
+        <Label htmlFor="supplier-input" className="text-sm font-medium">
+          Supplier <span className="text-destructive">*</span>
+        </Label>
+        <div className="relative">
+          <Input
+            id="supplier-input"
+            ref={inputRef}
+            placeholder="Cari atau ketik nama supplier..."
+            value={referenceId}
+            onChange={(e) => onReferenceIdChange(e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            className={cn(
+              "h-10 rounded-md bg-background border-input text-sm focus:ring-1 focus:ring-ring focus:border-primary",
+              errors?.referenceId && "border-destructive",
+            )}
+          />
+          <Truck className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+        </div>
         {errors?.referenceId && (
-          <p className="text-xs text-destructive">{errors.referenceId}</p>
+          <p className="text-xs text-destructive pl-0.5">
+            {errors.referenceId}
+          </p>
         )}
+
         {/* Supplier suggestions dropdown */}
         {showSuggestions && filteredSuggestions.length > 0 && (
           <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-md border border-border bg-popover shadow-md overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
@@ -107,18 +103,26 @@ export function TransactionInfoForm({
         )}
       </div>
 
+      {/* Notes */}
       <div className="space-y-1.5">
-        <Label>Catatan</Label>
+        <Label htmlFor="notes-textarea" className="text-sm font-medium">
+          Catatan
+        </Label>
         <Textarea
+          id="notes-textarea"
           placeholder="Catatan tambahan (opsional)"
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           rows={2}
+          className="rounded-md text-sm bg-background border-input focus:ring-1 focus:ring-ring focus:border-primary"
         />
       </div>
 
+      {/* Invoice Attachment Upload */}
       <div className="space-y-1.5">
-        <Label>Faktur Pembelian</Label>
+        <Label className="text-sm font-medium">
+          Faktur Pembelian <span className="text-destructive">*</span>
+        </Label>
         <FileUploader
           value={fakturFile}
           onValueChange={onFakturChange}
@@ -128,7 +132,7 @@ export function TransactionInfoForm({
           helperText="Format: JPG, PNG, WEBP (Maks 5MB)"
         />
         {errors?.faktur && (
-          <p className="text-xs text-destructive">{errors.faktur}</p>
+          <p className="text-xs text-destructive pl-0.5">{errors.faktur}</p>
         )}
       </div>
     </div>

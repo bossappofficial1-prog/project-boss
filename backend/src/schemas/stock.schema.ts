@@ -10,6 +10,11 @@ export const stockInSchema = z.object({
   referenceId: z.string().optional(),
   notes: z.string().optional(),
   faktur: z.string().optional(), // URL gambar bukti pembelian (opsional)
+  expiryDate: z
+    .string()
+    .datetime()
+    .optional()
+    .transform((val) => (val ? new Date(val) : undefined)),
 });
 
 export type StockInInput = z.infer<typeof stockInSchema>;
@@ -46,6 +51,11 @@ export const stockReturnSchema = z.object({
   referenceId: z.string().optional(),
   notes: z.string().optional(),
   faktur: z.string().optional(), // URL gambar bukti pengembalian (opsional)
+  expiryDate: z
+    .string()
+    .datetime()
+    .optional()
+    .transform((val) => (val ? new Date(val) : undefined)),
 });
 
 export type StockReturnInput = z.infer<typeof stockReturnSchema>;

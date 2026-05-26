@@ -2,6 +2,7 @@ import { StockMovementType } from "@prisma/client";
 import { db } from "../config/prisma";
 import { StockLogRepository } from "../repositories/stock-log.repository";
 import { OutletRepository } from "../repositories/outlet.repository";
+import { ProductGoodsRepository } from "../repositories/product-goods.repository";
 import * as ExcelJS from "exceljs";
 import {
   StockInInput,
@@ -12,6 +13,7 @@ import {
 import { AppError } from "../errors/app-error";
 import { HttpStatus } from "../constants/http-status";
 import { RedisUtils } from "../utils/redis.utils";
+import { PurchaseOrderService } from "./purchase-order.service";
 
 /**
  * Record incoming stock (purchase/restock)
@@ -21,61 +23,26 @@ import { RedisUtils } from "../utils/redis.utils";
  */
 export async function recordStockIn(data: StockInInput) {
   // Verify ProductGoods exists
-  const productGoods = await db.productGoods.findUnique({
-    where: { id: data.productGoodsId },
-    include: { product: { include: { recipe: true } } },
-  });
+  const productGoods = await ProductGoodsRepository.findById(data.productGoodsId);
 
   if (!productGoods) {
     throw new AppError("Product Goods tidak ditemukan", HttpStatus.NOT_FOUND);
   }
 
   const outletId = productGoods.product.outletId;
-  const hasRecipe = !!productGoods.product.recipe;
 
-  const result = await db.$transaction(async (tx) => {
-    // Create stock log
-    const stockLog = await tx.stockLog.create({
-      data: {
-        productGoodsId: data.productGoodsId,
-        type: StockMovementType.IN,
-        quantity: data.quantity,
-        hppPerUnit: data.hppPerUnit,
-        referenceType: data.referenceType,
-        referenceId: data.referenceId,
-        notes: data.notes,
-        faktur: data.faktur,
-      },
-    });
-
-    // Update current stock
-    const updatedGoods = await tx.productGoods.update({
-      where: { id: data.productGoodsId },
-      data: {
-        currentStock: {
-          increment: data.quantity,
-        },
-      },
-    });
-
-    // Recalculate average HPP (skip for recipe-based products — FnB HPP via ingredients)
-    const newAverageHpp = hasRecipe
-      ? productGoods.averageHpp
-      : await StockLogRepository.calculateAverageHpp(data.productGoodsId);
-
-    if (!hasRecipe) {
-      await tx.productGoods.update({
-        where: { id: data.productGoodsId },
-        data: { averageHpp: newAverageHpp },
-      });
-    }
-
-    return {
-      stockLog,
-      productGoods: updatedGoods,
-      newAverageHpp,
-    };
-  });
+  // Delegate all DB operations to ProductGoodsRepository
+  const result = await ProductGoodsRepository.addStockBatch(
+    data.productGoodsId,
+    data.quantity,
+    data.quantity * data.hppPerUnit,
+    data.referenceId,
+    data.notes,
+    data.faktur,
+    undefined,
+    StockMovementType.IN,
+    data.expiryDate,
+  );
 
   await RedisUtils.deleteByPattern(`pos:products:${outletId}:*`);
   return result;
@@ -91,10 +58,9 @@ export async function recordStockInBulk(data: StockInInput[]) {
 
   const goods = await db.productGoods.findMany({
     where: { id: { in: data.map((d) => d.productGoodsId) } },
-    include: { product: { select: { outletId: true, recipe: true } } },
+    include: { product: { select: { outletId: true } } },
   });
   const outletIds = [...new Set(goods.map((g) => g.product.outletId).filter(Boolean))];
-  const goodsRecipeMap = new Map(goods.map((g) => [g.id, !!g.product.recipe]));
 
   // Use a transaction to ensure all stock movements succeed or fail together
   const result = await db.$transaction(
@@ -103,9 +69,7 @@ export async function recordStockInBulk(data: StockInInput[]) {
 
       for (const item of data) {
         // Verify ProductGoods exists
-        const productGoods = await tx.productGoods.findUnique({
-          where: { id: item.productGoodsId },
-        });
+        const productGoods = await ProductGoodsRepository.findById(item.productGoodsId, tx);
 
         if (!productGoods) {
           throw new AppError(
@@ -114,65 +78,20 @@ export async function recordStockInBulk(data: StockInInput[]) {
           );
         }
 
-        // Create stock log
-        const stockLog = await tx.stockLog.create({
-          data: {
-            productGoodsId: item.productGoodsId,
-            type: StockMovementType.IN,
-            quantity: item.quantity,
-            hppPerUnit: item.hppPerUnit,
-            referenceType: item.referenceType,
-            referenceId: item.referenceId,
-            notes: item.notes,
-            faktur: item.faktur,
-          },
-        });
+        // Call repository
+        const res = await ProductGoodsRepository.addStockBatch(
+          item.productGoodsId,
+          item.quantity,
+          item.quantity * item.hppPerUnit,
+          item.referenceId,
+          item.notes,
+          item.faktur,
+          tx,
+          StockMovementType.IN,
+          item.expiryDate,
+        );
 
-        // Update current stock
-        const updatedGoods = await tx.productGoods.update({
-          where: { id: item.productGoodsId },
-          data: {
-            currentStock: {
-              increment: item.quantity,
-            },
-          },
-        });
-
-        // Recalculate average HPP (skip for recipe-based products — FnB HPP via ingredients)
-        const hasRecipe = goodsRecipeMap.get(item.productGoodsId) ?? false;
-        let finalHpp = productGoods.averageHpp;
-
-        if (!hasRecipe) {
-          const allInLogs = await tx.stockLog.findMany({
-            where: {
-              productGoodsId: item.productGoodsId,
-              type: "IN",
-            },
-          });
-
-          let totalValue = 0;
-          let totalQty = 0;
-
-          for (const log of allInLogs) {
-            const qty = log.quantity;
-            const price = log.hppPerUnit || 0;
-            totalValue += qty * price;
-            totalQty += qty;
-          }
-
-          finalHpp = totalQty > 0 ? totalValue / totalQty : 0;
-
-          await tx.productGoods.update({
-            where: { id: item.productGoodsId },
-            data: { averageHpp: finalHpp },
-          });
-        }
-
-        results.push({
-          stockLog,
-          productGoods: updatedGoods,
-          newAverageHpp: finalHpp,
-        });
+        results.push(res);
       }
 
       return results;
@@ -196,10 +115,7 @@ export async function recordStockInBulk(data: StockInInput[]) {
  */
 export async function recordStockOut(data: StockOutInput) {
   // Verify ProductGoods exists and has sufficient stock
-  const productGoods = await db.productGoods.findUnique({
-    where: { id: data.productGoodsId },
-    include: { product: true },
-  });
+  const productGoods = await ProductGoodsRepository.findById(data.productGoodsId);
 
   if (!productGoods) {
     throw new AppError("Product Goods tidak ditemukan", HttpStatus.NOT_FOUND);
@@ -214,50 +130,24 @@ export async function recordStockOut(data: StockOutInput) {
 
   const outletId = productGoods.product.outletId;
 
-  const result = await db.$transaction(async (tx) => {
-    // Create stock log
-    const stockLog = await tx.stockLog.create({
-      data: {
-        productGoodsId: data.productGoodsId,
-        type: StockMovementType.OUT,
-        quantity: data.quantity,
-        referenceType: data.referenceType,
-        referenceId: data.referenceId,
-        notes: data.notes,
-      },
-    });
+  // Use repository to deduct FIFO
+  const result = await ProductGoodsRepository.deductStockFIFO(
+    data.productGoodsId,
+    data.quantity,
+    data.referenceId,
+    data.notes,
+  );
 
-    // Decrease current stock
-    const updatedGoods = await tx.productGoods.update({
-      where: { id: data.productGoodsId },
-      data: {
-        currentStock: {
-          decrement: data.quantity,
-        },
-      },
-    });
-
-    return {
-      stockLog,
-      productGoods: updatedGoods,
-    };
-  });
+  // Pemicu Auto PO jika stok menipis setelah manual stock out
+  await PurchaseOrderService.triggerLowStockAutoPO(outletId, "GOODS", data.productGoodsId);
 
   await RedisUtils.deleteByPattern(`pos:products:${outletId}:*`);
   return result;
 }
 
-/**
- * Manual stock adjustment (positive or negative)
- * - Creates stock log with type ADJUSTMENT
- * - Adjusts ProductGoods currentStock
- */
 export async function adjustStock(data: StockAdjustmentInput) {
   // Verify ProductGoods exists
-  const productGoods = await db.productGoods.findUnique({
-    where: { id: data.productGoodsId },
-    include: { product: true },
-  });
+  const productGoods = await ProductGoodsRepository.findById(data.productGoodsId);
 
   if (!productGoods) {
     throw new AppError("Product Goods tidak ditemukan", HttpStatus.NOT_FOUND);
@@ -273,30 +163,11 @@ export async function adjustStock(data: StockAdjustmentInput) {
 
   const outletId = productGoods.product.outletId;
 
-  const result = await db.$transaction(async (tx) => {
-    // Create stock log
-    const stockLog = await tx.stockLog.create({
-      data: {
-        productGoodsId: data.productGoodsId,
-        type: StockMovementType.ADJUSTMENT,
-        quantity: data.quantity,
-        notes: data.notes,
-      },
-    });
-
-    // Adjust current stock
-    const updatedGoods = await tx.productGoods.update({
-      where: { id: data.productGoodsId },
-      data: {
-        currentStock: newStock,
-      },
-    });
-
-    return {
-      stockLog,
-      productGoods: updatedGoods,
-    };
-  });
+  const result = await ProductGoodsRepository.adjustStock(
+    data.productGoodsId,
+    data.quantity,
+    data.notes,
+  );
 
   await RedisUtils.deleteByPattern(`pos:products:${outletId}:*`);
   return result;
@@ -309,10 +180,7 @@ export async function adjustStock(data: StockAdjustmentInput) {
  */
 export async function recordReturn(data: StockReturnInput) {
   // Verify ProductGoods exists
-  const productGoods = await db.productGoods.findUnique({
-    where: { id: data.productGoodsId },
-    include: { product: true },
-  });
+  const productGoods = await ProductGoodsRepository.findById(data.productGoodsId);
 
   if (!productGoods) {
     throw new AppError("Product Goods tidak ditemukan", HttpStatus.NOT_FOUND);
@@ -320,35 +188,21 @@ export async function recordReturn(data: StockReturnInput) {
 
   const outletId = productGoods.product.outletId;
 
-  const result = await db.$transaction(async (tx) => {
-    // Create stock log
-    const stockLog = await tx.stockLog.create({
-      data: {
-        productGoodsId: data.productGoodsId,
-        type: StockMovementType.RETURN,
-        quantity: data.quantity,
-        referenceType: data.referenceType,
-        referenceId: data.referenceId,
-        notes: data.notes,
-        faktur: data.faktur,
-      },
-    });
+  // For customer return, we put stock back into batch at current average HPP
+  const costPerUnit = productGoods.averageHpp || 0;
+  const totalCost = costPerUnit * data.quantity;
 
-    // Increase current stock
-    const updatedGoods = await tx.productGoods.update({
-      where: { id: data.productGoodsId },
-      data: {
-        currentStock: {
-          increment: data.quantity,
-        },
-      },
-    });
-
-    return {
-      stockLog,
-      productGoods: updatedGoods,
-    };
-  });
+  const result = await ProductGoodsRepository.addStockBatch(
+    data.productGoodsId,
+    data.quantity,
+    totalCost,
+    data.referenceId,
+    data.notes,
+    data.faktur,
+    undefined,
+    StockMovementType.RETURN,
+    data.expiryDate,
+  );
 
   await RedisUtils.deleteByPattern(`pos:products:${outletId}:*`);
   return result;
@@ -375,9 +229,7 @@ export async function recordReturnBulk(data: StockReturnInput[]) {
 
       for (const item of data) {
         // Verify ProductGoods exists
-        const productGoods = await tx.productGoods.findUnique({
-          where: { id: item.productGoodsId },
-        });
+        const productGoods = await ProductGoodsRepository.findById(item.productGoodsId, tx);
 
         if (!productGoods) {
           throw new AppError(
@@ -394,33 +246,34 @@ export async function recordReturnBulk(data: StockReturnInput[]) {
           );
         }
 
-        // Create stock log with type OUT (returning to supplier means stock goes out)
-        const stockLog = await tx.stockLog.create({
-          data: {
-            productGoodsId: item.productGoodsId,
-            type: StockMovementType.OUT,
-            quantity: item.quantity,
-            referenceType: item.referenceType || "RETURN",
-            referenceId: item.referenceId,
-            notes: item.notes,
-            faktur: item.faktur,
-          },
-        });
+        // Use repository to deduct FIFO
+        const res = await ProductGoodsRepository.deductStockFIFO(
+          item.productGoodsId,
+          item.quantity,
+          item.referenceId,
+          item.notes || "Supplier Return",
+          tx,
+        );
 
-        // Decrease current stock
-        const updatedGoods = await tx.productGoods.update({
-          where: { id: item.productGoodsId },
-          data: {
-            currentStock: {
-              decrement: item.quantity,
+        // Pemicu Auto PO jika stok menipis setelah retur supplier
+        const pgItem = goods.find((g) => g.id === item.productGoodsId);
+        const pgOutletId = pgItem?.product.outletId;
+        if (pgOutletId) {
+          await PurchaseOrderService.triggerLowStockAutoPO(pgOutletId, "GOODS", item.productGoodsId);
+        }
+
+        // Update log with correct referenceType and faktur
+        if (item.referenceType || item.faktur) {
+          await tx.stockLog.update({
+            where: { id: res.stockLog.id },
+            data: {
+              ...(item.referenceType && { referenceType: item.referenceType }),
+              ...(item.faktur && { faktur: item.faktur }),
             },
-          },
-        });
+          });
+        }
 
-        results.push({
-          stockLog,
-          productGoods: updatedGoods,
-        });
+        results.push(res);
       }
 
       return results;

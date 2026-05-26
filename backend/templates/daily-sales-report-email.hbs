@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Penjualan Harian - {{businessName}}</title>
+</head>
+<body style="font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+    <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 8px 10px -6px rgba(15, 23, 42, 0.04); border: 1px solid #e2e8f0;">
+        
+        <!-- Header Banner (Inlined background and styling) -->
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 32px 24px; text-align: center; border-bottom: 4px solid #ef4444;">
+            <div style="display: inline-block; background-color: rgba(239, 68, 68, 0.1); color: #f43f5e; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border: 1px solid rgba(244, 63, 94, 0.2);">
+                Laporan Resmi
+            </div>
+            <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2;">
+                LAPORAN PENJUALAN HARIAN
+            </h1>
+            <p style="color: #94a3b8; margin: 8px 0 0 0; font-size: 13px; font-weight: 500;">
+                {{businessName}} &bull; Periode: {{date}}
+            </p>
+        </div>
+        
+        <!-- Content Area -->
+        <div style="padding: 24px; color: #334155;">
+            <div style="font-size: 16px; font-weight: 600; color: #0f172a; margin-bottom: 12px;">
+                Halo {{ownerName}},
+            </div>
+            <div style="font-size: 14px; line-height: 1.5; color: #64748b; margin-bottom: 24px;">
+                Berikut adalah ringkasan performa finansial bisnis Anda untuk tanggal <strong>{{date}}</strong>. Laporan keuangan terperinci telah kami lampirkan dalam dokumen PDF resmi di email ini.
+            </div>
+            
+            <!-- Financial Metrics Grid (Using robust HTML Table for 100% Gmail Grid compatibility) -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                <tr>
+                    <td width="50%" style="padding-right: 8px; padding-bottom: 16px; vertical-align: top;">
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;">
+                            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                                Total Pendapatan
+                            </div>
+                            <div style="font-size: 16px; font-weight: 700; color: #10b981; font-family: 'Fira Code', monospace;">
+                                {{formatRupiah totalRevenue}}
+                            </div>
+                        </div>
+                    </td>
+                    <td width="50%" style="padding-left: 8px; padding-bottom: 16px; vertical-align: top;">
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;">
+                            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                                Total Pengeluaran
+                            </div>
+                            <div style="font-size: 16px; font-weight: 700; color: #ef4444; font-family: 'Fira Code', monospace;">
+                                {{formatRupiah totalExpense}}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50%" style="padding-right: 8px; vertical-align: top;">
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;">
+                            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                                Laba Bersih
+                            </div>
+                            <div style="font-size: 16px; font-weight: 700; color: {{#if isNetProfitPositive}}#10b981{{else}}#ef4444{{/if}}; font-family: 'Fira Code', monospace;">
+                                {{formatRupiah netProfit}}
+                            </div>
+                        </div>
+                    </td>
+                    <td width="50%" style="padding-left: 8px; vertical-align: top;">
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;">
+                            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                                Total Transaksi
+                            </div>
+                            <div style="font-size: 16px; font-weight: 700; color: #0f172a; font-family: 'Fira Code', monospace;">
+                                {{totalTransactions}} Trx
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            
+            <!-- Outlets Performance Summary -->
+            <div style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+                Ringkasan Per Outlet
+            </div>
+            <div style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 24px;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background-color: #f8fafc;">
+                            <th style="color: #64748b; font-weight: 600; text-align: left; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">Outlet</th>
+                            <th style="color: #64748b; font-weight: 600; text-align: center; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">Transaksi</th>
+                            <th style="color: #64748b; font-weight: 600; text-align: right; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">Laba Bersih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each outlets}}
+                        <tr>
+                            <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 600;">
+                                {{name}}
+                            </td>
+                            <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 500; text-align: center; font-family: 'Fira Code', monospace;">
+                                {{transactionCount}} Trx
+                            </td>
+                            <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-weight: 700; text-align: right; font-family: 'Fira Code', monospace; color: {{#if isNetProfitPositive}}#10b981{{else}}#ef4444{{/if}};">
+                                {{formatRupiah netProfit}}
+                            </td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Attachment Callout -->
+            <div style="background-color: #fff5f5; border: 1px solid #fed7d7; border-radius: 10px; padding: 16px 20px; margin-bottom: 28px; display: flex; align-items: flex-start; gap: 12px;">
+                <div style="font-size: 20px; line-height: 1; color: #ef4444;">📎</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 700; color: #9b2c2c; font-size: 14px; margin-bottom: 4px;">
+                        Laporan PDF Terlampir
+                    </div>
+                    <div style="font-size: 12px; color: #c53030; line-height: 1.5;">
+                        Silakan buka file PDF yang terlampir pada email ini untuk melihat rincian performa per outlet lengkap dengan nomor dokumen resmi dan pencatatan audit.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 24px; text-align: center;">
+            <div style="font-weight: 800; font-size: 14px; color: #ef4444; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;">
+                BOSS System
+            </div>
+            <p style="font-size: 11px; color: #94a3b8; line-height: 1.6; margin: 0;">
+                Asisten Keuangan & POS Terpercaya untuk Mengembangkan Bisnis Anda.<br>
+                &copy; 2026 BOSS App. Hak Cipta Dilindungi.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

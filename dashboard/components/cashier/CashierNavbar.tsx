@@ -18,6 +18,7 @@ import {
   UserPlus,
   Clock,
   CheckCircle2,
+  ScanLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,6 +42,7 @@ import {
   type CloseShiftValues,
 } from "@/schema/cashier-shift.schema";
 import { SwitchAccountDialog } from "./SwitchAccountDialog";
+import { QuickStockInDialog } from "./QuickStockInDialog";
 import {
   useTodayAttendance,
   useClockIn,
@@ -60,6 +62,8 @@ interface NavItem {
   icon: React.ElementType;
   badge?: number;
   requiredTypes?: OutletType[];
+  onClick?: () => void;
+  requirePro?: boolean;
 }
 
 function NavBadge({ count, active }: { count: number; active: boolean }) {
@@ -87,9 +91,10 @@ export function CashierNavbar({
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { selectedOutletId } = useOutletContext();
+  const { selectedOutletId, selectedOutlet } = useOutletContext();
   const [shiftDialogOpen, setShiftDialogOpen] = React.useState(false);
   const [switchDialogOpen, setSwitchDialogOpen] = React.useState(false);
+  const [stockInOpen, setStockInOpen] = React.useState(false);
   const [attendanceLoading, setAttendanceLoading] = React.useState(false);
 
   const { cashierData } = useCashierContext();
@@ -119,7 +124,11 @@ export function CashierNavbar({
     placeholderData: (prev) => prev,
   });
 
-  const navItems = useMemo<NavItem[]>(() => {
+  const hasProAccess = ["TRIAL", "PRO", "ENTERPRISE"].includes(
+    (selectedOutlet as any)?.business?.subscriptionPlan?.toUpperCase() || "BASIC"
+  );
+
+  const navItems = React.useMemo<NavItem[]>(() => {
     const items: NavItem[] = [
       { href: "/cashier/pos", label: "POS", icon: ShoppingCart },
       {
@@ -134,12 +143,14 @@ export function CashierNavbar({
         label: "Meja",
         icon: Table2,
         requiredTypes: [OutletType.FNB],
+        requirePro: true,
       },
       {
         href: "/cashier/reservations",
         label: "Reservasi",
         icon: CalendarClock,
         requiredTypes: [OutletType.FNB],
+        requirePro: true,
       },
       {
         href: "/cashier/queue",
@@ -161,6 +172,13 @@ export function CashierNavbar({
         requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
       },
       {
+        href: "#",
+        label: "Stok Masuk",
+        icon: ScanLine,
+        requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
+        onClick: () => setStockInOpen(true),
+      },
+      {
         href: "/cashier/ticket-scan",
         label: "Tiket",
         icon: Ticket,
@@ -169,9 +187,11 @@ export function CashierNavbar({
       { href: "/cashier/expenses", label: "Pengeluaran", icon: Receipt },
     ];
     return items.filter(
-      (item) => !item.requiredTypes || item.requiredTypes.includes(outletType),
+      (item) =>
+        (!item.requiredTypes || item.requiredTypes.includes(outletType)) &&
+        (!item.requirePro || hasProAccess),
     );
-  }, [badgeData, outletType, selectedOutletId]);
+  }, [badgeData, outletType, selectedOutletId, hasProAccess]);
 
   useEffect(() => {
     navItems.forEach((item) => router.prefetch(item.href));
@@ -226,6 +246,22 @@ export function CashierNavbar({
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
+              if (item.onClick) {
+                return (
+                  <button
+                    key={item.href}
+                    onClick={item.onClick}
+                    type="button"
+                    className={cn(
+                      "relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                      "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              }
               return (
                 <Link
                   key={item.href}
@@ -446,12 +482,36 @@ export function CashierNavbar({
         currentUsername={cashierUsername}
       />
 
+      <QuickStockInDialog
+        open={stockInOpen}
+        onOpenChange={setStockInOpen}
+        outletId={selectedOutletId || ""}
+      />
+
       {/* ── Mobile Bottom Nav ── */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
         <div className="flex items-center overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
+            if (item.onClick) {
+              return (
+                <button
+                  key={item.href}
+                  onClick={item.onClick}
+                  type="button"
+                  className={cn(
+                    "relative flex flex-1 shrink-0 flex-col items-center justify-center gap-1 py-2.5 px-2 min-w-16 transition-colors",
+                    "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="text-[10px] font-medium leading-none">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            }
             return (
               <Link
                 key={item.href}

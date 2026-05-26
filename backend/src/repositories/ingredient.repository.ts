@@ -75,6 +75,7 @@ export class IngredientRepository {
     totalCost: number, // Total biaya pembelian
     referenceId?: string,
     notes?: string,
+    expiryDate?: Date,
   ) {
     return db.$transaction(async (tx) => {
       const ingredient = await tx.ingredient.findUnique({
@@ -93,6 +94,7 @@ export class IngredientRepository {
           purchaseQuantity: qtyRecipe,
           remainingQuantity: qtyRecipe,
           costPerRecipeUnit,
+          expiryDate,
         },
       });
 
@@ -161,10 +163,13 @@ export class IngredientRepository {
       });
       if (!ingredient) throw new Error("Ingredient tidak ditemukan");
 
-      // Ambil batch stok aktif (sisa > 0) diurutkan dari yang paling lama (FIFO)
+      // Ambil batch stok aktif (sisa > 0) diurutkan dari yang paling cepat kedaluwarsa (FEFO)
       const activeBatches = await tx.ingredientStockBatch.findMany({
         where: { ingredientId, remainingQuantity: { gt: 0 } },
-        orderBy: { createdAt: "asc" },
+        orderBy: [
+          { expiryDate: { sort: "asc", nulls: "last" } },
+          { createdAt: "asc" },
+        ],
       });
 
       let remainingNeeded = qtyNeeded;

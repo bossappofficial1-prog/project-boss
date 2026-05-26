@@ -37,6 +37,7 @@ import { useGetTables } from "@/hooks/api/use-tables";
 import { LayoutGrid } from "lucide-react";
 import { TableSelector } from "./TableSelector";
 import { cn } from "@/lib/utils";
+import { useOutletContext } from "@/components/providers/CashierOutletProvider";
 
 export function CustomerInfo({
     outletId,
@@ -58,15 +59,20 @@ export function CustomerInfo({
     tableNumber,
     onTableNumberChange,
 }: CustomerInfoProps) {
+    const { selectedOutlet } = useOutletContext();
+    const hasProAccess = ["TRIAL", "PRO", "ENTERPRISE"].includes(
+        (selectedOutlet as any)?.business?.subscriptionPlan?.toUpperCase() || "BASIC"
+    );
     const registerMember = useRegisterLoyaltyMember();
-    const isTableFeatureEnabled = outletType === "FNB" || outletType === "CUSTOM";
+    const isTableFeatureEnabled =
+        (outletType === "FNB" || outletType === "CUSTOM") && hasProAccess;
 
     const [isTableSelectorOpen, setIsTableSelectorOpen] = React.useState(false);
 
     // Fetch tables for F&B
     const { data: tables = [], isLoading: isTablesLoading } = useGetTables(
         outletId,
-        outletType === "FNB" || outletType === "CUSTOM"
+        isTableFeatureEnabled
     );
 
     // Search for member if phone is valid (min 10 digits)

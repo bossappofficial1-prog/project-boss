@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { cn } from "@/lib/utils";
-import { MENU_GROUPS } from "./sidebar/sidebar";
+import { MENU_GROUPS, getDynamicMenuName } from "./sidebar/sidebar";
 import { OutletSelector } from "./sidebar/OutletSelector";
 import { ChevronDown, ChevronRight, Settings } from "lucide-react";
 import { InstantLink } from "@/components/ui/instant-link";
@@ -165,6 +165,9 @@ export default function AppSidebar() {
       items: group.items
         .map((item) => {
           const clonedItem = { ...item };
+          if (clonedItem.id === "products") {
+            clonedItem.name = getDynamicMenuName(selectedOutlet.type);
+          }
           if (clonedItem.requirePro && !hasProAccess) {
             clonedItem.badge = "PRO";
           }

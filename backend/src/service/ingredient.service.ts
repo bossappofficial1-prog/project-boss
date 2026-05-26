@@ -67,6 +67,7 @@ export class IngredientService extends BaseService {
     totalCost: number, // Total biaya pembelian
     referenceId?: string,
     notes?: string,
+    expiryDateInput?: string | Date,
   ) {
     const ingredient = await IngredientRepository.findById(ingredientId);
     if (!ingredient) this.notFound("Bahan baku tidak ditemukan");
@@ -74,12 +75,21 @@ export class IngredientService extends BaseService {
     if (quantity <= 0) this.badRequest("Jumlah stok harus lebih besar dari 0");
     if (totalCost < 0) this.badRequest("Biaya pembelian tidak boleh negatif");
 
+    let expiryDate: Date | undefined = undefined;
+    if (expiryDateInput) {
+      expiryDate = new Date(expiryDateInput);
+      if (isNaN(expiryDate.getTime())) {
+        this.badRequest("Format tanggal kedaluwarsa tidak valid");
+      }
+    }
+
     const result = await IngredientRepository.addStockBatch(
       ingredientId,
       quantity,
       totalCost,
       referenceId,
       notes,
+      expiryDate,
     );
 
     // Pemicu rekalkulasi otomatis HPP seluruh produk yang menggunakan bahan ini

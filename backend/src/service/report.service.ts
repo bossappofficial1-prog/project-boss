@@ -354,7 +354,7 @@ export class ReportService {
       totalFees += (order.midtransFee || 0) + (order.appFee || 0);
 
       order.items.forEach((item: any) => {
-        totalHpp += (item.hppAtTimeOfOrder || 0) * item.quantity;
+        totalHpp += (item.hppAtTimeOfOrder || 0);
         gaji += (item.commissionAtTimeOfOrder || 0) * item.quantity;
       });
     });

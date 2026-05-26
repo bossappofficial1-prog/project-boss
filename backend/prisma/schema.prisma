@@ -181,6 +181,7 @@ model Outlet {
   productCategories         ProductCategory[]
   attendances               Attendance[]
   ingredients               Ingredient[]
+  purchaseOrders            PurchaseOrder[]
 
   @@index([businessId])
   @@index([slug])
@@ -351,10 +352,29 @@ model ProductGoods {
   product      Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
   stockLogs    StockLog[]
   suppliers    SupplierProduct[]
+  batches      GoodsStockBatch[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@index([barcode])
   @@index([productId])
   @@index([currentStock])
+}
+
+// Model Batch Stok Masuk Retail (Mendukung FIFO)
+model GoodsStockBatch {
+  id                String    @id @default(uuid())
+  productGoodsId    String
+  purchaseQuantity  Int // Kuantitas awal yang dibeli
+  remainingQuantity Int // Kuantitas yang tersisa untuk dikonsumsi
+  costPerUnit       Float // Harga beli per unit (HPP unit dari batch tersebut)
+  expiryDate        DateTime? // Tanggal kedaluwarsa barang
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  productGoods ProductGoods @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
+
+  @@index([productGoodsId])
+  @@index([createdAt]) // Diperlukan untuk pengurutan FIFO (oldest first)
 }
 
 model Supplier {
@@ -369,6 +389,7 @@ model Supplier {
   updatedAt DateTime          @updatedAt
   outlet    Outlet            @relation(fields: [outletId], references: [id], onDelete: Cascade)
   products  SupplierProduct[]
+  purchaseOrders PurchaseOrder[]
 
   @@index([outletId])
   @@index([name])
@@ -1045,19 +1066,21 @@ model Ingredient {
   batches   IngredientStockBatch[]
   recipes   RecipeIngredient[]
   stockLogs IngredientStockLog[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@index([outletId])
 }
 
 // Model Batch Stok Masuk (Mendukung FIFO)
 model IngredientStockBatch {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   ingredientId      String
   purchaseQuantity  Float // Kuantitas awal yang dibeli (dalam satuan resep)
   remainingQuantity Float // Kuantitas yang tersisa untuk dikonsumsi (dalam satuan resep)
   costPerRecipeUnit Float // Harga beli per unit resep (total_cost / (qty_beli * factor))
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  expiryDate        DateTime? // Tanggal kedaluwarsa bahan baku
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
 
@@ -1107,3 +1130,48 @@ model IngredientStockLog {
 
   @@index([ingredientId])
 }
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  COMPLETED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id            String              @id @default(uuid())
+  poNumber      String              @unique // Format: PO-YYYYMMDD-XXXX
+  supplierId    String
+  outletId      String
+  status        PurchaseOrderStatus @default(DRAFT)
+  notes         String?
+  totalEstimate Float               @default(0)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  supplier      Supplier            @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  outlet        Outlet              @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  items         PurchaseOrderItem[]
+
+  @@index([supplierId])
+  @@index([outletId])
+  @@index([status])
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  productGoodsId  String?
+  ingredientId    String?
+  quantity        Float         // Mendukung berat bahan baku desimal (contoh: 2.5 kg)
+  priceAtOrder    Float         @default(0)
+
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productGoods    ProductGoods? @relation(fields: [productGoodsId], references: [id], onDelete: Cascade)
+  ingredient      Ingredient?   @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderId])
+  @@index([productGoodsId])
+  @@index([ingredientId])
+}
+

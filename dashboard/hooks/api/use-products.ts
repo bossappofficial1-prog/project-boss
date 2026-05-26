@@ -40,6 +40,8 @@ const goodsSchema = z.object({
   unit: z.string().min(1, "Unit wajib diisi"),
   sellingPrice: z.coerce.number().min(1, "Harga jual harus > 0"),
   averageHpp: z.coerce.number().min(1, "HPP harus > 0"),
+  barcode: z.string().optional().or(z.literal("")),
+  sku: z.string().optional().or(z.literal("")),
 });
 
 export type GoodsSchemaType = z.infer<typeof goodsSchema>;
@@ -221,6 +223,8 @@ export function useProductFormSubmit({
             unit: values.goods.unit,
             minStock: values.goods.minStock,
             maxStock: values.goods.maxStock,
+            barcode: values.goods.barcode || undefined,
+            sku: values.goods.sku || undefined,
           };
           payload.media = mediaItems.length > 0 ? mediaItems : [];
         } else if (values.type === "SERVICE" && values.service) {
@@ -285,6 +289,8 @@ export function useProductFormSubmit({
             unit: values.goods.unit,
             minStock: values.goods.minStock,
             maxStock: values.goods.maxStock,
+            barcode: values.goods.barcode || undefined,
+            sku: values.goods.sku || undefined,
           };
           payload.media = mediaItems.length > 0 ? mediaItems : [];
         } else if (values.type === "SERVICE" && values.service) {

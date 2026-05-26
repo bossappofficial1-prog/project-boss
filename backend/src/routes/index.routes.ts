@@ -48,6 +48,7 @@ import productCategoryRouter from "./product-category.route";
 import attendanceRouter from "./attendance.route";
 import ingredientRouter from "./ingredient.route";
 import recipeRouter from "./recipe.route";
+import purchaseOrderRouter from "./purchase-order.route";
 
 const apiRouter = Router();
 
@@ -95,6 +96,7 @@ apiRouter.use("/product-categories", productCategoryRouter);
 apiRouter.use("/attendance", attendanceRouter);
 apiRouter.use("/ingredients", ingredientRouter);
 apiRouter.use("/recipes", recipeRouter);
+apiRouter.use("/purchase-orders", purchaseOrderRouter);
 
 apiRouter.get("/payment-methods", async (req, res) => {
   ResponseUtil.success(res, paymentMethod);

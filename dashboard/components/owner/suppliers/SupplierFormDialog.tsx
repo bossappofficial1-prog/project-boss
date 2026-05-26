@@ -1,29 +1,23 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { toast } from "sonner";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Check, Package, Search, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { ReusableForm, FormFieldConfig } from "@/components/ui/reuseable-form";
 import {
   useCreateSupplier,
   useUpdateSupplier,
 } from "@/hooks/api/use-suppliers";
+import { posV2Api } from "@/lib/apis/pos-v2";
 import type { Supplier } from "@/lib/apis/supplier";
 
-const supplierFormSchema = z.object({
+// ─── Schema ────────────────────────────────────────────────────────────────
+
+const supplierSchema = z.object({
   name: z.string().min(1, "Nama supplier wajib diisi"),
   phone: z.string().optional(),
   email: z
@@ -33,9 +27,12 @@ const supplierFormSchema = z.object({
     .or(z.literal("")),
   address: z.string().optional(),
   notes: z.string().optional(),
+  productGoodsIds: z.array(z.string()).optional(),
 });
 
-type SupplierFormValues = z.infer<typeof supplierFormSchema>;
+type SupplierFormValues = z.infer<typeof supplierSchema>;
+
+// ─── Props ─────────────────────────────────────────────────────────────────
 
 interface SupplierFormDialogProps {
   open: boolean;
@@ -43,6 +40,8 @@ interface SupplierFormDialogProps {
   supplier: Supplier | null;
   outletId: string;
 }
+
+// ─── Component ─────────────────────────────────────────────────────────────
 
 export function SupplierFormDialog({
   open,
@@ -53,142 +52,239 @@ export function SupplierFormDialog({
   const isEdit = !!supplier;
   const createMutation = useCreateSupplier();
   const updateMutation = useUpdateSupplier();
-  const isPending = createMutation.isPending || updateMutation.isPending;
 
-  const form = useForm<SupplierFormValues>({
-    resolver: zodResolver(supplierFormSchema),
-    defaultValues: {
-      name: "",
-      phone: "",
-      email: "",
-      address: "",
-      notes: "",
-    },
+  // Fetch produk GOODS outlet (hanya saat dialog terbuka)
+  const { data: productsData, isLoading: productsLoading } = useQuery({
+    queryKey: ["supplier-goods-products", outletId],
+    queryFn: () => posV2Api.getProducts(outletId, undefined, "GOODS"),
+    enabled: open && !!outletId,
+    staleTime: 30_000,
   });
 
-  // Reset form when dialog opens/supplier changes
-  React.useEffect(() => {
-    if (open) {
-      form.reset({
-        name: supplier?.name ?? "",
-        phone: supplier?.phone ?? "",
-        email: supplier?.email ?? "",
-        address: supplier?.address ?? "",
-        notes: supplier?.notes ?? "",
-      });
-    }
-  }, [open, supplier, form]);
+  const goodsProducts = (productsData?.products ?? []).filter(
+    (p) => p.goodsId && !p.hasRecipe
+  );
 
-  const onSubmit = async (values: SupplierFormValues) => {
-    try {
-      if (isEdit) {
-        await updateMutation.mutateAsync({
-          id: supplier.id,
-          payload: values,
-        });
-        toast.success("Supplier berhasil diperbarui");
-      } else {
-        await createMutation.mutateAsync({
-          ...values,
-          outletId,
-        });
-        toast.success("Supplier berhasil ditambahkan");
-      }
-      onOpenChange(false);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Gagal menyimpan supplier");
-    }
+  // ─── Default values ───────────────────────────────────────────────────
+
+  const defaultValues: SupplierFormValues = {
+    name: supplier?.name ?? "",
+    phone: supplier?.phone ?? "",
+    email: supplier?.email ?? "",
+    address: supplier?.address ?? "",
+    notes: supplier?.notes ?? "",
+    productGoodsIds: supplier?.products?.map((sp) => sp.productGoods.id) ?? [],
   };
 
+  // ─── Submit ───────────────────────────────────────────────────────────
+
+  const handleSubmit = async (values: SupplierFormValues) => {
+    if (isEdit) {
+      await updateMutation.mutateAsync({ id: supplier.id, payload: values });
+      toast.success("Supplier berhasil diperbarui");
+    } else {
+      await createMutation.mutateAsync({ ...values, outletId });
+      toast.success("Supplier berhasil ditambahkan");
+    }
+    onOpenChange(false);
+  };
+
+  // ─── Fields ───────────────────────────────────────────────────────────
+
+  const fields: FormFieldConfig<SupplierFormValues>[] = [
+    {
+      name: "name",
+      label: "Nama Supplier",
+      type: "text",
+      placeholder: "Contoh: PT Sumber Makmur",
+      colSpan: 2,
+    },
+    {
+      name: "phone",
+      label: "Telepon",
+      type: "tel",
+      placeholder: "08xxxxxxxxxx",
+      colSpan: 1,
+    },
+    {
+      name: "email",
+      label: "Email",
+      type: "email",
+      placeholder: "supplier@email.com",
+      colSpan: 1,
+    },
+    {
+      name: "address",
+      label: "Alamat",
+      type: "text",
+      placeholder: "Alamat supplier",
+      colSpan: 2,
+    },
+    {
+      name: "notes",
+      label: "Catatan",
+      type: "textarea",
+      placeholder: "Catatan tambahan (opsional)",
+      colSpan: 2,
+    },
+    {
+      name: "productGoodsIds",
+      label: "Produk yang Dipasok",
+      type: "custom",
+      colSpan: 2,
+      renderCustom: ({ field, form }) => {
+        const selected: string[] = (field.value as string[]) ?? [];
+
+        const handleToggle = (goodsId: string) => {
+          const next = selected.includes(goodsId)
+            ? selected.filter((id) => id !== goodsId)
+            : [...selected, goodsId];
+          form.setValue("productGoodsIds", next, { shouldDirty: true });
+        };
+
+        return (
+          <ProductSelector
+            goodsProducts={goodsProducts}
+            isLoading={productsLoading}
+            selected={selected}
+            onToggle={handleToggle}
+          />
+        );
+      },
+    },
+  ];
+
+  // ─── Render ───────────────────────────────────────────────────────────
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold">
-            {isEdit ? "Edit Supplier" : "Tambah Supplier"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? "Perbarui informasi supplier."
-              : "Isi data supplier baru untuk outlet ini."}
-          </DialogDescription>
-        </DialogHeader>
+    <ReusableForm
+      schema={supplierSchema}
+      defaultValues={defaultValues}
+      fields={fields}
+      onSubmit={handleSubmit}
+      gridCols={2}
+      withDialog
+      isDialogOpen={open}
+      onDialogOpenChange={onOpenChange}
+      dialogTitle={isEdit ? "Edit Supplier" : "Tambah Supplier"}
+      dialogDescription={
+        isEdit
+          ? "Perbarui informasi dan produk yang dipasok supplier ini."
+          : "Isi data supplier dan pilih produk yang mereka pasok."
+      }
+      submitText={isEdit ? "Simpan Perubahan" : "Tambah Supplier"}
+      loadingText="Menyimpan..."
+      cancelText="Batal"
+    />
+  );
+}
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nama Supplier *</Label>
-            <Input
-              id="name"
-              placeholder="Contoh: PT Sumber Makmur"
-              {...form.register("name")}
-            />
-            {form.formState.errors.name && (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.name.message}
-              </p>
-            )}
-          </div>
+// ─── ProductSelector (sub-komponen untuk renderCustom) ─────────────────────
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telepon</Label>
-              <Input
-                id="phone"
-                placeholder="08xxxxxxxxxx"
-                {...form.register("phone")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="supplier@email.com"
-                {...form.register("email")}
-              />
-              {form.formState.errors.email && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.email.message}
-                </p>
-              )}
-            </div>
-          </div>
+interface ProductSelectorProps {
+  goodsProducts: { id: string; name: string; goodsId: string | null; unit: string | null }[];
+  isLoading: boolean;
+  selected: string[];
+  onToggle: (goodsId: string) => void;
+}
 
-          <div className="space-y-2">
-            <Label htmlFor="address">Alamat</Label>
-            <Input
-              id="address"
-              placeholder="Alamat supplier"
-              {...form.register("address")}
-            />
-          </div>
+function ProductSelector({ goodsProducts, isLoading, selected, onToggle }: ProductSelectorProps) {
+  const [productSearch, setProductSearch] = useState("");
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Catatan</Label>
-            <Textarea
-              id="notes"
-              placeholder="Catatan tambahan (opsional)"
-              rows={3}
-              {...form.register("notes")}
-            />
-          </div>
+  const filtered = productSearch.trim()
+    ? goodsProducts.filter((p) =>
+        p.name.toLowerCase().includes(productSearch.toLowerCase())
+      )
+    : goodsProducts;
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isPending}
-            >
-              Batal
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {isEdit ? "Simpan Perubahan" : "Tambah Supplier"}
-            </Button>
+  return (
+    <div className="space-y-2">
+      {/* Header count */}
+      <div className="flex items-center justify-between">
+        {selected.length > 0 && (
+          <Badge variant="secondary" className="text-[10px] font-bold">
+            {selected.length} dipilih
+          </Badge>
+        )}
+      </div>
+
+      {/* Search produk */}
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder="Cari produk..."
+          value={productSearch}
+          onChange={(e) => setProductSearch(e.target.value)}
+          className="pl-8 h-9 text-xs"
+        />
+      </div>
+
+      {/* Product list */}
+      <div className="border rounded-md max-h-[180px] overflow-y-auto bg-muted/20">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">
+            Memuat produk...
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-6 text-xs text-muted-foreground">
+            <Package className="h-5 w-5 mb-1 opacity-40" />
+            {productSearch ? "Produk tidak ditemukan" : "Belum ada produk GOODS"}
+          </div>
+        ) : (
+          <div className="divide-y">
+            {filtered.map((product) => {
+              const isSelected = product.goodsId
+                ? selected.includes(product.goodsId)
+                : false;
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => product.goodsId && onToggle(product.goodsId)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 text-left text-xs transition-colors hover:bg-muted/60 ${
+                    isSelected ? "bg-primary/5" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Package className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="font-medium truncate">{product.name}</span>
+                    {product.unit && (
+                      <span className="text-muted-foreground shrink-0">/ {product.unit}</span>
+                    )}
+                  </div>
+                  {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Chips produk terpilih */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1 pt-1">
+          {selected.map((gid) => {
+            const prod = goodsProducts.find((p) => p.goodsId === gid);
+            if (!prod) return null;
+            return (
+              <Badge
+                key={gid}
+                variant="secondary"
+                className="text-[10px] font-medium gap-1 pr-1"
+              >
+                {prod.name}
+                <button
+                  type="button"
+                  onClick={() => onToggle(gid)}
+                  className="hover:text-destructive ml-0.5"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </Badge>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

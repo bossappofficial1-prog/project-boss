@@ -8,6 +8,7 @@ import { MidtransWebhookPayloadType } from '../types/Others';
 import { OperatingHoursRepository } from '../repositories/operating-hours.repository';
 import { generateTicketCode } from '../utils/code-generator';
 import { RedisUtils } from '../utils/redis.utils';
+import { ProductGoodsRepository } from '../repositories/product-goods.repository';
 
 export async function handlePaymentSuccess(orderId: string) {
     let order = await db.order.findUnique({
@@ -60,13 +61,27 @@ export async function handlePaymentSuccess(orderId: string) {
                 data: { status: PaymentStatus.SUCCESS },
             });
 
-            // 4. Kurangi stock produk untuk GOODS
+            // 4. Kurangi stock produk untuk GOODS menggunakan FIFO HPP
             for (const item of order.items) {
                 if (item.product.type === 'GOODS') {
-                    await tx.productGoods.update({
-                        where: { productId: item.productId },
-                        data: { currentStock: { decrement: item.quantity } },
+                    const productGoods = await tx.productGoods.findUnique({
+                        where: { productId: item.productId }
                     });
+                    if (productGoods) {
+                        const deductResult = await ProductGoodsRepository.deductStockFIFO(
+                            productGoods.id,
+                            item.quantity,
+                            orderId,
+                            `Paid Online Order Item: ${item.product.name} x${item.quantity}`,
+                            tx
+                        );
+                        
+                        const roundedHpp = Math.round(deductResult.actualHppCost * 100) / 100;
+                        await tx.orderItem.update({
+                            where: { id: item.id },
+                            data: { hppAtTimeOfOrder: roundedHpp }
+                        });
+                    }
                 }
             }
 
@@ -207,10 +222,22 @@ export async function handlePaymentFailure(orderId: string) {
     await db.$transaction(async (tx) => {
         for (const item of order.items) {
             if (item.product.type === "GOODS" && (item.product as any).goods) {
-                await tx.productGoods.update({
-                    where: { id: (item.product as any).goods.id },
-                    data: { currentStock: { increment: item.quantity } },
-                });
+                const productGoodsId = (item.product as any).goods.id;
+                const costPerUnit = item.hppAtTimeOfOrder > 0
+                    ? item.hppAtTimeOfOrder / item.quantity
+                    : ((item.product as any).goods.averageHpp || 0);
+                const totalCost = costPerUnit * item.quantity;
+
+                await ProductGoodsRepository.addStockBatch(
+                    productGoodsId,
+                    item.quantity,
+                    totalCost,
+                    orderId,
+                    `Payment Failed/Cancelled - Restored Stock`,
+                    undefined,
+                    tx,
+                    'RETURN'
+                );
             }
 
             if (item.product.type === "TICKET" && (item.product as any).ticket) {
