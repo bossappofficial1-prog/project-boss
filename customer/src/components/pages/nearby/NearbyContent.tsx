@@ -898,7 +898,12 @@ export function NearbyOutletContent() {
           </div>
         )}
 
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-none w-full max-w-[calc(100vw-32px)] sm:max-w-md">
+        <div
+          style={{
+            bottom: "var(--bottomnav-height, 80px)",
+          }}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-none w-full max-w-[calc(100vw-32px)] sm:max-w-md"
+        >
           {activeRouteCoords && routeInfo && activeRouteOutlet ? (
             /* Unified premium Route + Toggle Capsule when route is active */
             <div className="pointer-events-auto bg-background/95 backdrop-blur-md border border-border shadow-xl rounded-full p-1 flex items-center gap-1 select-none hover:shadow-2xl transition-all duration-300">
