@@ -14,6 +14,15 @@ export class ProductRepository {
         goods: true,
         service: true,
         ticket: true,
+        recipe: {
+          include: {
+            ingredients: {
+              include: {
+                ingredient: true
+              }
+            }
+          }
+        },
       },
     });
   }

@@ -72,7 +72,70 @@ export default function CashierLayoutClient({
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").then((reg) => {
+        console.log("Service Worker registered in dashboard with scope:", reg.scope);
+      }).catch((err) => {
+        console.error("Dashboard Service Worker registration failed:", err);
+      });
+    }
   }, []);
+
+  // Online/Offline Background Auto Sync for Offline POS Orders
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleOnline = async () => {
+      const OFFLINE_ORDERS_KEY = "boss_offline_orders_v2";
+      const raw = localStorage.getItem(OFFLINE_ORDERS_KEY);
+      if (!raw) return;
+
+      try {
+        const orders = JSON.parse(raw);
+        if (orders.length === 0) return;
+
+        toast.info(`Koneksi kembali terhubung! Sinkronisasi ${orders.length} transaksi offline sedang berjalan... 📡`);
+        
+        let successCount = 0;
+        const remainingOrders = [];
+
+        const { posV2Api } = await import("@/lib/apis/pos-v2");
+
+        for (const order of orders) {
+          try {
+            const { offlineId, ...cleanOrder } = order;
+            await posV2Api.createOrder(cleanOrder);
+            successCount++;
+          } catch (err) {
+            console.error("Gagal sinkronisasi satu transaksi, akan dicoba nanti:", err);
+            remainingOrders.push(order);
+          }
+        }
+
+        if (remainingOrders.length > 0) {
+          localStorage.setItem(OFFLINE_ORDERS_KEY, JSON.stringify(remainingOrders));
+        } else {
+          localStorage.removeItem(OFFLINE_ORDERS_KEY);
+        }
+
+        if (successCount > 0) {
+          toast.success(`Sukses! ${successCount} transaksi offline berhasil disinkronisasikan ke server. 🎉`);
+          queryClient.invalidateQueries({ queryKey: ["pos-v2"] });
+        }
+      } catch (e) {
+        console.error("Kesalahan sinkronisasi transaksi offline:", e);
+      }
+    };
+
+    window.addEventListener("online", handleOnline);
+    if (navigator.onLine) {
+      handleOnline();
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+    };
+  }, [queryClient]);
 
   const outletData = cashierData?.outlet;
 

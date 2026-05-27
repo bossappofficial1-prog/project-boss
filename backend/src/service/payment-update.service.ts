@@ -9,6 +9,8 @@ import { OperatingHoursRepository } from '../repositories/operating-hours.reposi
 import { generateTicketCode } from '../utils/code-generator';
 import { RedisUtils } from '../utils/redis.utils';
 import { ProductGoodsRepository } from '../repositories/product-goods.repository';
+import { PushNotificationRepository } from '../repositories/push-notification.repository';
+import { PushNotificationService } from '../service/push-notification.service';
 
 export async function handlePaymentSuccess(orderId: string) {
     let order = await db.order.findUnique({
@@ -133,18 +135,45 @@ export async function handlePaymentSuccess(orderId: string) {
         if (!outletId) {
             console.warn(`⚠️ Unable to emit payment_success event because outlet ${order.outlet?.name ?? ''} has no id`);
         } else {
+            const firstItemName = order.items[0]?.product?.name || "Produk";
+            const itemsDescription = order.items.length > 1 
+                ? `${firstItemName} dan ${order.items.length - 1} item lainnya`
+                : firstItemName;
+
             SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
                 type: 'payment_success',
                 orderId: order.id,
                 amount: order.totalAmount!,
                 customerName: order.guestCustomer?.name || 'Customer',
                 paymentMethod: order.transaction?.paymentMethod || "unknown",
+                itemsDescription,
                 timestamp: new Date()
             });
             console.log(`📡 Emitted payment_success event for outlet ${outletId}`);
+
+            // Trigger web push notification to staff of this outlet
+            try {
+                const pushNotificationRepo = new PushNotificationRepository();
+                const pushNotificationService = new PushNotificationService(pushNotificationRepo);
+
+                const formattedAmount = new Intl.NumberFormat("id-ID", {
+                    style: "currency",
+                    currency: "IDR",
+                    maximumFractionDigits: 0
+                }).format(order.totalAmount!);
+
+                await pushNotificationService.sendNotificationToStaff(outletId, {
+                    title: "Pesanan Baru! ☕",
+                    body: `Ada pesanan masuk ${itemsDescription} senilai ${formattedAmount} dari ${order.guestCustomer?.name || 'Customer'}.`,
+                    url: "/cashier/orders"
+                });
+                console.log(`✉️ Sent web push notification to staff of outlet ${outletId}`);
+            } catch (pushError) {
+                console.error('❌ Error sending staff push notification:', pushError);
+            }
         }
     } catch (socketError) {
-        console.error('❌ Error emitting payment_success event:', socketError);
+        console.error('❌ Error emitting payment_success event or triggering push:', socketError);
     }
 
     try {

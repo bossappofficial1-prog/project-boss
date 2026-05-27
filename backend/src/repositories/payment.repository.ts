@@ -6,7 +6,22 @@ import { Messages } from "../constants/message";
 import { HttpStatus } from "../constants/http-status";
 import { getStaffAvailabilityForWindow } from "../service/staff.service";
 
-type ProductWithDetails = Prisma.ProductGetPayload<{ include: { goods: true; service: true; ticket: true } }>;
+type ProductWithDetails = Prisma.ProductGetPayload<{
+  include: {
+    goods: true;
+    service: true;
+    ticket: true;
+    recipe: {
+      include: {
+        ingredients: {
+          include: {
+            ingredient: true
+          }
+        }
+      }
+    }
+  }
+}>;
 
 export class PaymentRepository {
   static async getProductsByIds(productIds: string[]): Promise<ProductWithDetails[]> {
@@ -19,6 +34,15 @@ export class PaymentRepository {
         goods: true,
         service: true,
         ticket: true,
+        recipe: {
+          include: {
+            ingredients: {
+              include: {
+                ingredient: true
+              }
+            }
+          }
+        },
       },
     });
   }
@@ -33,7 +57,20 @@ export class PaymentRepository {
   ): Promise<{ available: boolean; product: ProductWithDetails | null; message: string }> {
     const product = await db.product.findUnique({
       where: { id: productId },
-      include: { goods: true, service: true, ticket: true },
+      include: {
+        goods: true,
+        service: true,
+        ticket: true,
+        recipe: {
+          include: {
+            ingredients: {
+              include: {
+                ingredient: true
+              }
+            }
+          }
+        },
+      },
     });
 
     if (!product) {
@@ -45,13 +82,36 @@ export class PaymentRepository {
     }
 
     if (product.type === "GOODS") {
-      const stock = product.goods?.currentStock ?? 0;
-      if (stock < quantity) {
-        return {
-          available: false,
-          product,
-          message: `Stok tidak mencukupi. Stok tersedia: ${stock}`,
-        };
+      const hasRecipe = !!(product as any).recipe?.ingredients?.length;
+      if (hasRecipe) {
+        let minIngredientStock = Infinity;
+        for (const recipeIngredient of (product as any).recipe.ingredients) {
+          const ingStock = recipeIngredient.ingredient?.currentStock ?? 0;
+          const ingQtyNeeded = recipeIngredient.quantity;
+          if (ingQtyNeeded > 0) {
+            const maxServings = Math.floor(ingStock / ingQtyNeeded);
+            if (maxServings < minIngredientStock) {
+              minIngredientStock = maxServings;
+            }
+          }
+        }
+        const dynamicStock = minIngredientStock === Infinity ? 0 : minIngredientStock;
+        if (dynamicStock < quantity) {
+          return {
+            available: false,
+            product,
+            message: `Stok bahan baku tidak cukup. Tersedia: ${dynamicStock}`,
+          };
+        }
+      } else {
+        const stock = product.goods?.currentStock ?? 0;
+        if (stock < quantity) {
+          return {
+            available: false,
+            product,
+            message: `Stok tidak mencukupi. Stok tersedia: ${stock}`,
+          };
+        }
       }
     }
 
@@ -337,7 +397,20 @@ export class PaymentRepository {
       for (const item of items) {
         const product = await tr.product.findUnique({
           where: { id: item.productId },
-          include: { goods: true, service: true, ticket: true },
+          include: {
+            goods: true,
+            service: true,
+            ticket: true,
+            recipe: {
+              include: {
+                ingredients: {
+                  include: {
+                    ingredient: true
+                  }
+                }
+              }
+            }
+          },
         });
 
         if (!product) {
@@ -353,12 +426,34 @@ export class PaymentRepository {
         }
 
         if (product.type === "GOODS") {
-          const stock = product.goods?.currentStock ?? 0;
-          if (stock < item.quantity) {
-            throw new AppError(
-              `Stok tidak mencukupi untuk produk ${product.name}`,
-              HttpStatus.BAD_REQUEST,
-            );
+          const hasRecipe = !!(product as any).recipe?.ingredients?.length;
+          if (hasRecipe) {
+            let minIngredientStock = Infinity;
+            for (const recipeIngredient of (product as any).recipe.ingredients) {
+              const ingStock = recipeIngredient.ingredient?.currentStock ?? 0;
+              const ingQtyNeeded = recipeIngredient.quantity;
+              if (ingQtyNeeded > 0) {
+                const maxServings = Math.floor(ingStock / ingQtyNeeded);
+                if (maxServings < minIngredientStock) {
+                  minIngredientStock = maxServings;
+                }
+              }
+            }
+            const dynamicStock = minIngredientStock === Infinity ? 0 : minIngredientStock;
+            if (dynamicStock < item.quantity) {
+              throw new AppError(
+                `Stok bahan baku tidak cukup untuk membuat ${product.name}. Tersedia: ${dynamicStock}`,
+                HttpStatus.BAD_REQUEST,
+              );
+            }
+          } else {
+            const stock = product.goods?.currentStock ?? 0;
+            if (stock < item.quantity) {
+              throw new AppError(
+                `Stok tidak mencukupi untuk produk ${product.name}`,
+                HttpStatus.BAD_REQUEST,
+              );
+            }
           }
         }
 

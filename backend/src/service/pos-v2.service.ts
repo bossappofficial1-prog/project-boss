@@ -54,6 +54,28 @@ export class PosV2Service {
       else if (p.type === "SERVICE") price = p.service?.sellingPrice ?? 0;
       else if (p.type === "TICKET") price = p.ticket?.sellingPrice ?? 0;
 
+      const hasRecipe = p.type === "GOODS" ? !!p.recipe : false;
+      
+      let stock = null;
+      if (p.type === "GOODS") {
+        if (hasRecipe && p.recipe && (p.recipe as any).ingredients && (p.recipe as any).ingredients.length > 0) {
+          let minIngredientStock = Infinity;
+          for (const recipeIngredient of (p.recipe as any).ingredients) {
+            const ingStock = recipeIngredient.ingredient?.currentStock ?? 0;
+            const ingQtyNeeded = recipeIngredient.quantity;
+            if (ingQtyNeeded > 0) {
+              const maxServings = Math.floor(ingStock / ingQtyNeeded);
+              if (maxServings < minIngredientStock) {
+                minIngredientStock = maxServings;
+              }
+            }
+          }
+          stock = minIngredientStock === Infinity ? 0 : minIngredientStock;
+        } else {
+          stock = p.goods?.currentStock ?? 0;
+        }
+      }
+
       return {
         id: p.id,
         name: p.name,
@@ -65,8 +87,8 @@ export class PosV2Service {
         taxPercentage: p.taxPercentage ?? null,
         taxName: p.taxName ?? null,
         price,
-        hasRecipe: p.type === "GOODS" ? !!p.recipe : false,
-        stock: p.type === "GOODS" ? (p.goods?.currentStock ?? 0) : null,
+        hasRecipe,
+        stock,
         unit: p.type === "GOODS" ? (p.goods?.unit ?? "pcs") : null,
         barcode: p.type === "GOODS" ? (p.goods?.barcode ?? null) : null,
         sku: p.type === "GOODS" ? (p.goods?.sku ?? null) : null,
@@ -200,12 +222,34 @@ export class PosV2Service {
         if (!product.goods) {
           throw new AppError(`Data barang "${product.name}" tidak lengkap`, HttpStatus.BAD_REQUEST);
         }
-        // Skip stock validation for recipe-based products (FnB — stock tracked via ingredients)
-        if (!product.recipe && product.goods.currentStock < item.quantity) {
-          throw new AppError(
-            `Stok "${product.name}" tidak cukup. Tersedia: ${product.goods.currentStock}`,
-            HttpStatus.BAD_REQUEST,
-          );
+        const hasRecipe = !!product.recipe;
+        if (hasRecipe) {
+          let minIngredientStock = Infinity;
+          for (const recipeIngredient of (product as any).recipe.ingredients) {
+            const ingStock = recipeIngredient.ingredient?.currentStock ?? 0;
+            const ingQtyNeeded = recipeIngredient.quantity;
+            if (ingQtyNeeded > 0) {
+              const maxServings = Math.floor(ingStock / ingQtyNeeded);
+              if (maxServings < minIngredientStock) {
+                minIngredientStock = maxServings;
+              }
+            }
+          }
+          const dynamicStock = minIngredientStock === Infinity ? 0 : minIngredientStock;
+          
+          if (dynamicStock < item.quantity) {
+            throw new AppError(
+              `Stok bahan baku tidak cukup untuk membuat "${product.name}". Tersedia: ${dynamicStock}`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+        } else {
+          if (product.goods.currentStock < item.quantity) {
+            throw new AppError(
+              `Stok "${product.name}" tidak cukup. Tersedia: ${product.goods.currentStock}`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
         }
         const price = product.goods.sellingPrice;
         subtotal += price * item.quantity;

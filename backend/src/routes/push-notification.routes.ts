@@ -17,5 +17,8 @@ pushNotification.post(
 pushNotification.post(
     '/unsubscribe',
     controller.unsubscribe)
+pushNotification.get(
+    '/vapid-key',
+    controller.getVapidKey)
 
 export default pushNotification

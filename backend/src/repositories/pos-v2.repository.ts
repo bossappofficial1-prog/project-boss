@@ -78,7 +78,13 @@ export class PosV2Repository {
                         select: { id: true, name: true },
                     },
                     recipe: {
-                        select: { id: true },
+                        include: {
+                            ingredients: {
+                                include: {
+                                    ingredient: true
+                                }
+                            }
+                        }
                     },
                     goods: {
                         select: {
@@ -130,7 +136,15 @@ export class PosV2Repository {
                 goods: true,
                 service: true,
                 ticket: true,
-                recipe: true,
+                recipe: {
+                    include: {
+                        ingredients: {
+                            include: {
+                                ingredient: true
+                            }
+                        }
+                    }
+                },
             },
         });
     }

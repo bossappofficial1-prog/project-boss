@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { posV2Api } from "@/lib/apis/pos-v2";
 import type { PosV2OrderRequest } from "@/lib/apis/pos-v2";
+import { toast } from "sonner";
 
 const KEYS = {
     products: (outletId: string) => ["pos-v2", "products", outletId] as const,
@@ -11,6 +12,33 @@ const KEYS = {
     outletQris: (outletId: string) => ["pos-v2", "outlet-qris", outletId] as const,
     openOrders: (outletId: string) => ["pos-v2", "open-orders", outletId] as const,
 };
+
+const OFFLINE_ORDERS_KEY = "boss_offline_orders_v2";
+
+export function getOfflineOrders(): any[] {
+    if (typeof window === "undefined") return [];
+    try {
+        const data = localStorage.getItem(OFFLINE_ORDERS_KEY);
+        return data ? JSON.parse(data) : [];
+    } catch {
+        return [];
+    }
+}
+
+export function saveOfflineOrder(order: any) {
+    if (typeof window === "undefined") return;
+    try {
+        const orders = getOfflineOrders();
+        orders.push({
+            ...order,
+            offlineId: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            createdAt: new Date().toISOString()
+        });
+        localStorage.setItem(OFFLINE_ORDERS_KEY, JSON.stringify(orders));
+    } catch (e) {
+        console.error("Gagal menyimpan transaksi offline:", e);
+    }
+}
 
 export function usePosV2Products(outletId: string, search?: string) {
     return useQuery({
@@ -78,8 +106,51 @@ export function usePosV2CreateOrder() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: PosV2OrderRequest) => posV2Api.createOrder(data),
-        onSuccess: (_data, variables) => {
+        mutationFn: async (data: PosV2OrderRequest) => {
+            const isOffline = typeof window !== "undefined" && !navigator.onLine;
+            
+            if (isOffline) {
+                const offlineId = `offline-${Date.now()}`;
+                saveOfflineOrder(data);
+                return {
+                    orderId: offlineId,
+                    totalAmount: 0,
+                    itemCount: data.items.length,
+                    cashReceived: data.cashReceived || 0,
+                    change: 0,
+                    customerName: data.customer?.name || "Walk-in",
+                    createdAt: new Date().toISOString(),
+                    hasTickets: false,
+                    isOffline: true,
+                } as any;
+            }
+
+            try {
+                return await posV2Api.createOrder(data);
+            } catch (err: any) {
+                console.warn("Koneksi gagal saat kirim pesanan, menyimpan secara offline:", err);
+                const offlineId = `offline-${Date.now()}`;
+                saveOfflineOrder(data);
+                return {
+                    orderId: offlineId,
+                    totalAmount: 0,
+                    itemCount: data.items.length,
+                    cashReceived: data.cashReceived || 0,
+                    change: 0,
+                    customerName: data.customer?.name || "Walk-in",
+                    createdAt: new Date().toISOString(),
+                    hasTickets: false,
+                    isOffline: true,
+                } as any;
+            }
+        },
+        onSuccess: (data: any, variables) => {
+            if (data.isOffline) {
+                toast.warning("Koneksi internet bermasalah! Transaksi disimpan secara lokal di browser dan akan disinkronkan otomatis saat online kembali. 📡");
+            } else {
+                toast.success("Transaksi berhasil!");
+            }
+            
             queryClient.invalidateQueries({
                 queryKey: KEYS.products(variables.outletId),
             });

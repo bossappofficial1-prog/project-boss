@@ -42,6 +42,7 @@ export class SocketEmitter {
       timestamp: Date;
       type?: string;
       message?: string;
+      itemsDescription?: string;
     },
   ) {
     const io = this.getIO();

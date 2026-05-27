@@ -72,7 +72,37 @@ export const SocketCashierProvider = ({
             });
 
             notifAudioRef.current.play()
-                .catch((err) => console.warn('Audio gagal diputar:', err))
+                .catch((err) => console.warn('Audio gagal diputar:', err));
+
+            // Text-to-Speech verbal announcement
+            if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                const itemsName = payload.itemsDescription || "Produk";
+                
+                // Format the currency amount verbally in Indonesian
+                const verbalAmount = new Intl.NumberFormat("id-ID", {
+                    style: "currency",
+                    currency: "IDR",
+                    maximumFractionDigits: 0
+                }).format(payload.amount);
+
+                const verbalText = `Ada pesanan masuk, ${itemsName}, senilai ${verbalAmount}`;
+
+                setTimeout(() => {
+                    const utterance = new SpeechSynthesisUtterance(verbalText);
+                    utterance.lang = "id-ID";
+
+                    // Search for Indonesian voice
+                    const voices = window.speechSynthesis.getVoices();
+                    const indonesianVoice = voices.find(
+                        voice => voice.lang.includes("id") || voice.name.toLowerCase().includes("indonesia")
+                    );
+                    if (indonesianVoice) {
+                        utterance.voice = indonesianVoice;
+                    }
+                    
+                    window.speechSynthesis.speak(utterance);
+                }, 800);
+            }
         };
 
         const handleConnect = () => {

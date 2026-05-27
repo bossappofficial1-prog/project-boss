@@ -79,4 +79,46 @@ export class PushNotificationService {
             return
         }
     }
+
+    public async sendNotificationToStaff(outletId: string, payload: {
+        title: string,
+        body: string,
+        url: string
+    }) {
+        try {
+            const subscriptions = await this.repo.getStaffSubscriptionsByOutlet(outletId);
+
+            if (subscriptions.length === 0) {
+                console.log(`Tidak ada subscription aktif untuk staff di outlet ${outletId}`);
+                return;
+            }
+
+            const payloadParse = JSON.stringify(payload);
+
+            const sendPromises = subscriptions.map(async (subDb) => {
+                const pushSubFormat = {
+                    endpoint: subDb.endpoint,
+                    keys: {
+                        p256dh: subDb.p256dh,
+                        auth: subDb.auth
+                    }
+                };
+
+                try {
+                    await webpush.sendNotification(pushSubFormat, payloadParse);
+                } catch (err: any) {
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        console.log(`Menghapus subscription staff yang sudah tidak valid: ${subDb.id}`);
+                        await this.repo.delete(subDb.id);
+                    } else {
+                        console.error('Gagal kirim push ke staff device:', err);
+                    }
+                }
+            });
+
+            await Promise.all(sendPromises);
+        } catch (error) {
+            console.error('Error sending staff notifications:', error);
+        }
+    }
 }

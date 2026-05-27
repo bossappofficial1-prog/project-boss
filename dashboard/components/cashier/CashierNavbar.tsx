@@ -37,6 +37,7 @@ import {
 } from "@/hooks/api/use-cashier-shifts";
 import { useCashierContext } from "./layout/CashierLayoutClient";
 import { ReusableForm } from "@/components/ui/reuseable-form";
+import { NotificationToggle } from "./NotificationToggle";
 import {
   closeShiftSchema,
   type CloseShiftValues,
@@ -225,7 +226,7 @@ export function CashierNavbar({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-semibold tracking-tight text-foreground truncate max-w-30 sm:max-w-50">
+                <span className="text-sm font-semibold tracking-tight text-foreground truncate max-w-[75px] xs:max-w-[120px] sm:max-w-[200px]">
                   {outletName}
                 </span>
                 <Badge
@@ -390,7 +391,7 @@ export function CashierNavbar({
                     className="h-8 rounded-md text-xs gap-1.5"
                   >
                     <Clock className="h-3.5 w-3.5" />
-                    {attendanceLoading ? "..." : "Absen Pulang"}
+                    <span className="hidden sm:inline">{attendanceLoading ? "..." : "Absen Pulang"}</span>
                   </Button>
                 )
               ) : (
@@ -406,14 +407,14 @@ export function CashierNavbar({
                       let lng: number | undefined;
                       if (navigator.geolocation) {
                         const pos = await new Promise<GeolocationPosition>(
-                          (resolve, reject) =>
-                            navigator.geolocation.getCurrentPosition(
-                              resolve,
-                              reject,
-                              {
-                                timeout: 5000,
-                              },
-                            ),
+                           (resolve, reject) =>
+                             navigator.geolocation.getCurrentPosition(
+                               resolve,
+                               reject,
+                               {
+                                 timeout: 5000,
+                               },
+                             ),
                         ).catch(() => undefined);
                         lat = pos?.coords?.latitude;
                         lng = pos?.coords?.longitude;
@@ -440,10 +441,11 @@ export function CashierNavbar({
                   className="h-8 rounded-md text-xs gap-1.5"
                 >
                   <Clock className="h-3.5 w-3.5" />
-                  {attendanceLoading ? "..." : "Absen Masuk"}
+                  <span className="hidden sm:inline">{attendanceLoading ? "..." : "Absen Masuk"}</span>
                 </Button>
               )}
             </div>
+            <NotificationToggle staffId={cashierId} />
             <PrinterSettings outletId={selectedOutletId!} />
             <ThemeToggle />
             <Button

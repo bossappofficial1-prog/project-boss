@@ -6,14 +6,27 @@ import { PushSubscriptionPayload } from "../schemas/push-notification.schema";
 
 export class PushNotificationRepository {
     public async subscribe(data: PushSubscriptionPayload) {
-        const customer = await this.findCustomerbyPhone(data.guestPhone!, data.guestName!)
+        let guestCustomerId: string | null = null;
+        let staffId: string | null = null;
+        let userId: string | null = null;
+
+        if (data.guestPhone) {
+            const customer = await this.findCustomerbyPhone(data.guestPhone, data.guestName || 'Customer');
+            guestCustomerId = customer.id;
+        } else if (data.staffId) {
+            staffId = data.staffId;
+        } else if (data.userId) {
+            userId = data.userId;
+        }
 
         return db.pushSubscription.upsert({
             where: {
                 endpoint: data.subscription.endpoint
             },
             update: {
-                guestCustomerId: customer.id,
+                guestCustomerId,
+                staffId,
+                userId,
                 p256dh: data.subscription.keys.p256dh,
                 auth: data.subscription.keys.auth
             },
@@ -21,9 +34,22 @@ export class PushNotificationRepository {
                 endpoint: data.subscription.endpoint,
                 p256dh: data.subscription.keys.p256dh,
                 auth: data.subscription.keys.auth,
-                guestCustomerId: customer.id
+                guestCustomerId,
+                staffId,
+                userId
             }
         })
+    }
+
+    public async getStaffSubscriptionsByOutlet(outletId: string) {
+        return db.pushSubscription.findMany({
+            where: {
+                staffId: { not: null },
+                staff: {
+                    outletId: outletId
+                }
+            }
+        });
     }
 
     public async findCustomerbyPhone(phone: string, name: string) {

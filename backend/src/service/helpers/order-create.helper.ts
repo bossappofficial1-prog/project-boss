@@ -112,7 +112,20 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
       for (const item of items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
-          include: { goods: true, service: true, ticket: true },
+          include: {
+            goods: true,
+            service: true,
+            ticket: true,
+            recipe: {
+              include: {
+                ingredients: {
+                  include: {
+                    ingredient: true
+                  }
+                }
+              }
+            }
+          },
         });
 
         if (!product || product.outletId !== outletId || product.status !== "ACTIVE") {
@@ -129,11 +142,34 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
               `Data missing for goods: ${product.name}`,
               HttpStatus.INTERNAL_SERVER_ERROR,
             );
-          if (product.goods.currentStock < item.quantity) {
-            throw new AppError(
-              `Insufficient stock for ${product.name}. Available: ${product.goods.currentStock}`,
-              HttpStatus.BAD_REQUEST,
-            );
+          const hasRecipe = !!(product as any).recipe;
+          if (hasRecipe) {
+            let minIngredientStock = Infinity;
+            for (const recipeIngredient of (product as any).recipe.ingredients) {
+              const ingStock = recipeIngredient.ingredient?.currentStock ?? 0;
+              const ingQtyNeeded = recipeIngredient.quantity;
+              if (ingQtyNeeded > 0) {
+                const maxServings = Math.floor(ingStock / ingQtyNeeded);
+                if (maxServings < minIngredientStock) {
+                  minIngredientStock = maxServings;
+                }
+              }
+            }
+            const dynamicStock = minIngredientStock === Infinity ? 0 : minIngredientStock;
+            
+            if (dynamicStock < item.quantity) {
+              throw new AppError(
+                `Stok bahan baku tidak cukup untuk membuat ${product.name}. Tersedia: ${dynamicStock}`,
+                HttpStatus.BAD_REQUEST,
+              );
+            }
+          } else {
+            if (product.goods.currentStock < item.quantity) {
+              throw new AppError(
+                `Insufficient stock for ${product.name}. Available: ${product.goods.currentStock}`,
+                HttpStatus.BAD_REQUEST,
+              );
+            }
           }
           price = product.goods.sellingPrice;
         } else if (product.type === "TICKET") {
