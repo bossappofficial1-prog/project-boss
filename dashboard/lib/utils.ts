@@ -166,7 +166,9 @@ export const parseOperatingHours = (operatingHours: OperatingHours[]) => {
   operatingHours.forEach((hour: OperatingHours) => {
     // Convert ISO time strings to HH:MM format
     let openTime = "09:00";
-    let closeTime = "17:00";
+    let closeTime = "06:00";
+    let breakStart = null;
+    let breakEnd = null;
 
     if (hour.openTime) {
       const openDate = new Date(hour.openTime);
@@ -178,12 +180,24 @@ export const parseOperatingHours = (operatingHours: OperatingHours[]) => {
       closeTime = closeDate.toTimeString().slice(0, 5);
     }
 
+    if (hour.breakStart) {
+      const breakStartDate = new Date(hour.breakStart);
+      breakStart = breakStartDate.toTimeString().slice(0, 5);
+    }
+
+    if (hour.breakEnd) {
+      const breakEndDate = new Date(hour.breakEnd);
+      breakEnd = breakEndDate.toTimeString().slice(0, 5);
+    }
+
     hoursMap[hour.dayOfWeek] = {
       id: hour.id,
       outletId: hour.outletId,
       dayOfWeek: hour.dayOfWeek,
       openTime: openTime,
       closeTime: closeTime,
+      breakStart: breakStart,
+      breakEnd: breakEnd,
       isOpen: hour.isOpen,
     };
   });

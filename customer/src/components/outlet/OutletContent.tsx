@@ -72,49 +72,256 @@ const formatOperatingHours = (
     (a, b) => a.dayOfWeek - b.dayOfWeek,
   );
 
-  return sortedHours.map((hour) => ({
-    ...hour,
-    dayName: dayNames[hour.dayOfWeek],
-    formattedOpenTime: formatTime(new Date(hour.openTime)),
-    formattedCloseTime: formatTime(new Date(hour.closeTime)),
-  }));
+  return sortedHours.map((hour) => {
+    let formattedBreak = "";
+    if (hour.breakStart && hour.breakEnd) {
+      const bStart = formatTime(new Date(hour.breakStart));
+      const bEnd = formatTime(new Date(hour.breakEnd));
+      formattedBreak = locale === "id"
+        ? ` (Istirahat: ${bStart} — ${bEnd})`
+        : ` (Break: ${bStart} — ${bEnd})`;
+    }
+
+    return {
+      ...hour,
+      dayName: dayNames[hour.dayOfWeek],
+      formattedOpenTime: formatTime(new Date(hour.openTime)),
+      formattedCloseTime: formatTime(new Date(hour.closeTime)),
+      formattedBreakTime: formattedBreak,
+    };
+  });
 };
 
 // Helper function to get current day status
 const getCurrentDayStatus = (
   operatingHours: OperatingHourType[],
   outletIsOpen: boolean,
+  t: any,
+  locale: LanguageType,
 ) => {
-  if (typeof window === "undefined") return;
-  const today = new Date().getDay();
-  const todayHours = operatingHours.find((hour) => hour.dayOfWeek === today);
-  const t = useTranslations("outletDetail");
+  if (typeof window === "undefined") return { isOpen: false, message: "" };
 
-  if (!todayHours || !todayHours.isOpen || !outletIsOpen) {
+  if (!outletIsOpen || !operatingHours || operatingHours.length === 0) {
     return { isOpen: false, message: t("closedToday") };
   }
 
   const now = new Date();
-  const openTime = new Date(todayHours.openTime);
-  const closeTime = new Date(todayHours.closeTime);
+  const todayDay = now.getDay(); // 0 = Sunday, 1 = Monday, ...
+  const yesterdayDay = (todayDay + 6) % 7;
 
-  // Set dates to today for comparison
-  openTime.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
-  closeTime.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-  if (now >= openTime && now <= closeTime) {
-    return {
-      isOpen: true,
-      message: t("openUntil", { time: formatTime(closeTime) }),
-    };
-  } else if (now < openTime) {
+  const timeToMinutes = (timeStr: string | Date) => {
+    const d = new Date(timeStr);
+    return d.getHours() * 60 + d.getMinutes();
+  };
+
+  // 1. Cek apakah outlet buka hari ini
+  const todayHours = operatingHours.find((hour) => hour.dayOfWeek === todayDay);
+  // 2. Cek apakah outlet buka kemarin (untuk shift overnight kemarin)
+  const yesterdayHours = operatingHours.find((hour) => hour.dayOfWeek === yesterdayDay);
+
+  let isCurrentOpen = false;
+  let activeCloseTime: Date | null = null;
+  let isCurrentlyResting = false;
+  let breakEndTime: Date | null = null;
+
+  // Cek shift kemarin dulu (early morning today)
+  if (yesterdayHours && yesterdayHours.isOpen) {
+    const openMin = timeToMinutes(yesterdayHours.openTime);
+    const closeMin = timeToMinutes(yesterdayHours.closeTime);
+
+    if (closeMin < openMin) {
+      // Overnight shift kemarin: tutup hari ini jam closeMin
+      if (nowMinutes < closeMin) {
+        isCurrentOpen = true;
+        activeCloseTime = new Date(yesterdayHours.closeTime);
+
+        // Cek jika sedang istirahat pada shift kemarin
+        if (yesterdayHours.breakStart && yesterdayHours.breakEnd) {
+          const breakOpen = timeToMinutes(yesterdayHours.breakStart);
+          const breakClose = timeToMinutes(yesterdayHours.breakEnd);
+          if (breakOpen !== breakClose) {
+            if (breakClose > breakOpen) {
+              if (breakOpen < openMin) {
+                // Istirahat di dini hari ini
+                if (nowMinutes >= breakOpen && nowMinutes < breakClose) {
+                  isCurrentlyResting = true;
+                  breakEndTime = new Date(yesterdayHours.breakEnd);
+                }
+              }
+            } else {
+              // Istirahat melewati tengah malam (breakClose < breakOpen)
+              if (nowMinutes < breakClose) {
+                isCurrentlyResting = true;
+                breakEndTime = new Date(yesterdayHours.breakEnd);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Jika tidak aktif di shift kemarin, cek shift hari ini
+  if (!isCurrentOpen && todayHours && todayHours.isOpen) {
+    const openMin = timeToMinutes(todayHours.openTime);
+    const closeMin = timeToMinutes(todayHours.closeTime);
+
+    if (closeMin > openMin) {
+      // Normal shift hari ini
+      if (nowMinutes >= openMin && nowMinutes < closeMin) {
+        isCurrentOpen = true;
+        activeCloseTime = new Date(todayHours.closeTime);
+
+        // Cek jika sedang istirahat hari ini
+        if (todayHours.breakStart && todayHours.breakEnd) {
+          const breakOpen = timeToMinutes(todayHours.breakStart);
+          const breakClose = timeToMinutes(todayHours.breakEnd);
+          if (breakOpen !== breakClose) {
+            if (nowMinutes >= breakOpen && nowMinutes < breakClose) {
+              isCurrentlyResting = true;
+              breakEndTime = new Date(todayHours.breakEnd);
+            }
+          }
+        }
+      }
+    } else if (closeMin < openMin) {
+      // Overnight shift hari ini
+      if (nowMinutes >= openMin || nowMinutes < closeMin) {
+        isCurrentOpen = true;
+        activeCloseTime = new Date(todayHours.closeTime);
+
+        // Cek jika sedang istirahat pada shift overnight hari ini
+        if (todayHours.breakStart && todayHours.breakEnd) {
+          const breakOpen = timeToMinutes(todayHours.breakStart);
+          const breakClose = timeToMinutes(todayHours.breakEnd);
+          if (breakOpen !== breakClose) {
+            if (breakClose > breakOpen) {
+              if (breakOpen >= openMin) {
+                if (nowMinutes >= breakOpen) {
+                  isCurrentlyResting = true;
+                  breakEndTime = new Date(todayHours.breakEnd);
+                }
+              } else {
+                if (nowMinutes < breakClose) {
+                  isCurrentlyResting = true;
+                  breakEndTime = new Date(todayHours.breakEnd);
+                }
+              }
+            } else {
+              // Break melewati tengah malam
+              if (nowMinutes >= breakOpen || nowMinutes < breakClose) {
+                isCurrentlyResting = true;
+                breakEndTime = new Date(todayHours.breakEnd);
+              }
+            }
+          }
+        }
+      }
+    } else {
+      // 24 jam (openTime == closeTime) dianggap selalu buka di hari tersebut
+      isCurrentOpen = true;
+      activeCloseTime = new Date(todayHours.closeTime);
+
+      // Cek jika sedang istirahat
+      if (todayHours.breakStart && todayHours.breakEnd) {
+        const breakOpen = timeToMinutes(todayHours.breakStart);
+        const breakClose = timeToMinutes(todayHours.breakEnd);
+        if (breakOpen !== breakClose) {
+          if (breakClose > breakOpen) {
+            if (nowMinutes >= breakOpen && nowMinutes < breakClose) {
+              isCurrentlyResting = true;
+              breakEndTime = new Date(todayHours.breakEnd);
+            }
+          } else {
+            if (nowMinutes >= breakOpen || nowMinutes < breakClose) {
+              isCurrentlyResting = true;
+              breakEndTime = new Date(todayHours.breakEnd);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Jika terdeteksi sedang istirahat
+  if (isCurrentlyResting && breakEndTime) {
+    const displayBreakEnd = new Date();
+    displayBreakEnd.setHours(breakEndTime.getHours(), breakEndTime.getMinutes(), 0, 0);
+    // Jika breakEnd hari esok
+    if (todayHours && todayHours.isOpen && todayHours.breakStart && todayHours.breakEnd) {
+      const openMin = timeToMinutes(todayHours.openTime);
+      const breakOpen = timeToMinutes(todayHours.breakStart);
+      const breakClose = timeToMinutes(todayHours.breakEnd);
+      if (breakClose < breakOpen && nowMinutes >= breakOpen) {
+        displayBreakEnd.setDate(displayBreakEnd.getDate() + 1);
+      }
+    }
+
     return {
       isOpen: false,
-      message: t("opensAt", { time: formatTime(openTime) }),
+      message: locale === "id"
+        ? `Sedang Istirahat (Buka kembali pukul ${formatTime(displayBreakEnd)})`
+        : `On Break (Opens at ${formatTime(displayBreakEnd)})`,
     };
-  } else {
-    return { isOpen: false, message: t("closedToday") };
   }
+
+  if (isCurrentOpen && activeCloseTime) {
+    const displayCloseTime = new Date();
+    displayCloseTime.setHours(activeCloseTime.getHours(), activeCloseTime.getMinutes(), 0, 0);
+    // Jika lewat tengah malam dan kita berada di fase "hari yang sama setelah jam buka" (nowMinutes >= openMin), maka jam tutupnya besok
+    if (todayHours && todayHours.isOpen) {
+      const openMin = timeToMinutes(todayHours.openTime);
+      const closeMinToday = timeToMinutes(todayHours.closeTime);
+      if (closeMinToday < openMin && nowMinutes >= openMin) {
+        displayCloseTime.setDate(displayCloseTime.getDate() + 1);
+      }
+    }
+
+    return {
+      isOpen: true,
+      message: t("openUntil", { time: formatTime(displayCloseTime) }),
+    };
+  }
+
+  // Jika sedang tutup, cari kapan buka berikutnya
+  if (todayHours && todayHours.isOpen) {
+    const openMin = timeToMinutes(todayHours.openTime);
+    if (nowMinutes < openMin) {
+      const displayOpenTime = new Date();
+      const ot = new Date(todayHours.openTime);
+      displayOpenTime.setHours(ot.getHours(), ot.getMinutes(), 0, 0);
+      return {
+        isOpen: false,
+        message: t("opensAt", { time: formatTime(displayOpenTime) }),
+      };
+    }
+  }
+
+  // Cari hari buka berikutnya
+  const dayNames = DAY_NAMES[locale];
+  const sortedDays = [...operatingHours]
+    .filter(oh => oh.isOpen)
+    .sort((a, b) => {
+      const dayA = a.dayOfWeek <= todayDay ? a.dayOfWeek + 7 : a.dayOfWeek;
+      const dayB = b.dayOfWeek <= todayDay ? b.dayOfWeek + 7 : b.dayOfWeek;
+      return dayA - dayB;
+    });
+
+  if (sortedDays.length > 0) {
+    const nextOpen = sortedDays[0];
+    const nextOpenTime = new Date(nextOpen.openTime);
+    const dayLabel = dayNames[nextOpen.dayOfWeek];
+    return {
+      isOpen: false,
+      message: locale === "id"
+        ? `Buka hari ${dayLabel} pukul ${formatTime(nextOpenTime)}`
+        : `Opens on ${dayLabel} at ${formatTime(nextOpenTime)}`,
+    };
+  }
+
+  return { isOpen: false, message: t("closedToday") };
 };
 
 const OperatingHoursTab = ({
@@ -125,10 +332,10 @@ const OperatingHoursTab = ({
   outletOpen: boolean;
 }) => {
   const locale = useLocale() as LanguageType;
-  const formattedHours = formatOperatingHours(operatingHours, locale);
-  const currentStatus = getCurrentDayStatus(operatingHours, outletOpen);
-  const today = new Date().getDay();
   const t = useTranslations("outletDetail");
+  const formattedHours = formatOperatingHours(operatingHours, locale);
+  const currentStatus = getCurrentDayStatus(operatingHours, outletOpen, t, locale);
+  const today = new Date().getDay();
   const isOpen = outletOpen && currentStatus?.isOpen;
 
   return (
@@ -186,11 +393,18 @@ const OperatingHoursTab = ({
             </div>
             <div className="text-right">
               {hour.isOpen ? (
-                <span
-                  className={`text-sm tabular-nums ${hour.dayOfWeek === today ? "font-semibold" : ""}`}
-                >
-                  {hour.formattedOpenTime} — {hour.formattedCloseTime}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span
+                    className={`text-sm tabular-nums ${hour.dayOfWeek === today ? "font-semibold text-primary" : ""}`}
+                  >
+                    {hour.formattedOpenTime} — {hour.formattedCloseTime}
+                  </span>
+                  {hour.formattedBreakTime && (
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5">
+                      {hour.formattedBreakTime.trim()}
+                    </span>
+                  )}
+                </div>
               ) : (
                 <span className="text-sm text-muted-foreground italic">
                   {t("closed")}

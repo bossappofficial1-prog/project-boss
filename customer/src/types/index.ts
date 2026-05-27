@@ -48,6 +48,8 @@ export interface OperatingHourType {
   dayOfWeek: number;
   openTime: string;
   closeTime: string;
+  breakStart?: string | null;
+  breakEnd?: string | null;
   isOpen: boolean;
 }
 

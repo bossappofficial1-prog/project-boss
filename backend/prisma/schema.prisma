@@ -229,15 +229,17 @@ model OutletTransferRequest {
 }
 
 model OutletOperatingHours {
-  id        String   @id @default(uuid())
-  dayOfWeek Int
-  openTime  DateTime
-  closeTime DateTime
-  isOpen    Boolean  @default(true)
-  outletId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  outlet    Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  id         String    @id @default(uuid())
+  dayOfWeek  Int
+  openTime   DateTime
+  closeTime  DateTime
+  breakStart DateTime?
+  breakEnd   DateTime?
+  isOpen     Boolean   @default(true)
+  outletId   String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  outlet     Outlet    @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
   @@unique([outletId, dayOfWeek])
   @@index([outletId])

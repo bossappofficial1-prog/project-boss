@@ -59,18 +59,6 @@ function formatDistance(meters: number): string {
   return `${Math.round(meters)} m`;
 }
 
-function formatDuration(seconds: number): string {
-  const minutes = Math.ceil(seconds / 60);
-  if (minutes >= 60) {
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return remainingMinutes > 0
-      ? `${hours} jam ${remainingMinutes} mnt`
-      : `${hours} jam`;
-  }
-  return `${minutes} mnt`;
-}
-
 function formatDurationCompact(seconds: number): string {
   const minutes = Math.ceil(seconds / 60);
   if (minutes >= 60) {
@@ -663,7 +651,7 @@ export function NearbyOutletContent() {
         className="fixed inset-0 z-10"
         style={{
           top: "var(--appbar-height, 56px)",
-          bottom: "var(--bottomnav-height, 64px)",
+          // bottom: "var(--bottomnav-height, 64px)",
         }}
       >
         {/* Map fills the entire remaining space */}

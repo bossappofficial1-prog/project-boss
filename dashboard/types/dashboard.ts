@@ -65,6 +65,8 @@ export interface OperatingHours {
   dayOfWeek: number;
   openTime: string; // ISO string from backend (e.g., "1970-01-01T02:00:00.000Z")
   closeTime: string; // ISO string from backend (e.g., "1970-01-01T10:00:00.000Z")
+  breakStart?: string | null; // ISO string from backend
+  breakEnd?: string | null; // ISO string from backend
   isOpen: boolean;
   outletId: string;
   createdAt?: string;
@@ -77,6 +79,8 @@ export interface OperatingHoursFormData {
   dayOfWeek: number;
   openTime: string; // HH:MM format for form (e.g., "02:00")
   closeTime: string; // HH:MM format for form (e.g., "10:00")
+  breakStart?: string | null; // HH:MM format for form or null
+  breakEnd?: string | null; // HH:MM format for form or null
   isOpen: boolean;
 }
 

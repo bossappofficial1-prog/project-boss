@@ -42,20 +42,55 @@ export const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: D
         const sameDay = scheduleDay === todayDay;
 
         // 24 jam (open == close) dianggap selalu buka di hari tersebut
-        if (openMinutes === closeMinutes) {
-            return sameDay;
-        }
-
-        if (closeMinutes > openMinutes) {
-            // Tutup di hari yang sama
-            return sameDay && todayMinutes >= openMinutes && todayMinutes < closeMinutes;
-        }
-
-        // Tutup lewat tengah malam (closeMinutes < openMinutes)
+        let isShiftOpen = false;
+        let isLateSameDay = false;
+        let isEarlyNextDay = false;
         const nextDay = (scheduleDay + 1) % 7;
-        const isLateSameDay = sameDay && todayMinutes >= openMinutes;
-        const isEarlyNextDay = todayDay === nextDay && todayMinutes < closeMinutes;
-        return isLateSameDay || isEarlyNextDay;
+
+        if (openMinutes === closeMinutes) {
+            isShiftOpen = sameDay;
+        } else if (closeMinutes > openMinutes) {
+            // Tutup di hari yang sama
+            isShiftOpen = sameDay && todayMinutes >= openMinutes && todayMinutes < closeMinutes;
+        } else {
+            // Tutup lewat tengah malam (closeMinutes < openMinutes)
+            isLateSameDay = sameDay && todayMinutes >= openMinutes;
+            isEarlyNextDay = todayDay === nextDay && todayMinutes < closeMinutes;
+            isShiftOpen = isLateSameDay || isEarlyNextDay;
+        }
+
+        if (!isShiftOpen) return false;
+
+        // Cek jika sedang istirahat (breakStart & breakEnd)
+        if (oper.breakStart && oper.breakEnd) {
+            const breakOpen = getWibMinutes(oper.breakStart);
+            const breakClose = getWibMinutes(oper.breakEnd);
+
+            if (breakOpen !== breakClose) {
+                let isResting = false;
+                if (breakClose > breakOpen) {
+                    // Istirahat tidak melewati tengah malam
+                    if (breakOpen >= openMinutes) {
+                        // Istirahat berada pada hari pertama shift (sameDay)
+                        isResting = sameDay && todayMinutes >= breakOpen && todayMinutes < breakClose;
+                    } else {
+                        // Istirahat berada pada hari berikutnya (nextDay)
+                        isResting = todayDay === nextDay && todayMinutes >= breakOpen && todayMinutes < breakClose;
+                    }
+                } else {
+                    // Istirahat melewati tengah malam
+                    const isRestingLate = sameDay && todayMinutes >= breakOpen;
+                    const isRestingEarly = todayDay === nextDay && todayMinutes < breakClose;
+                    isResting = isRestingLate || isRestingEarly;
+                }
+
+                if (isResting) {
+                    return false; // Sedang istirahat, jadi outlet tutup
+                }
+            }
+        }
+
+        return true;
     });
 }
 

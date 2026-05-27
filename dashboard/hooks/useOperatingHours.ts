@@ -7,6 +7,8 @@ interface OperatingHoursData {
     dayOfWeek: number
     openTime: Date
     closeTime: Date
+    breakStart?: Date | string | null
+    breakEnd?: Date | string | null
     isOpen: boolean
 }
 
@@ -15,6 +17,8 @@ interface CreateOperatingHoursInput {
     dayOfWeek: number
     openTime: Date
     closeTime: Date
+    breakStart?: Date | string | null
+    breakEnd?: Date | string | null
     isOpen: boolean
 }
 
@@ -22,12 +26,16 @@ export interface OperatingHoursInput {
     dayOfWeek: number
     openTime: Date
     closeTime: Date
+    breakStart?: Date | string | null
+    breakEnd?: Date | string | null
     isOpen: boolean
 }
 
 interface UpdateOperatingHoursInput {
     openTime?: Date
     closeTime?: Date
+    breakStart?: Date | string | null
+    breakEnd?: Date | string | null
     isOpen?: boolean
 }
 
