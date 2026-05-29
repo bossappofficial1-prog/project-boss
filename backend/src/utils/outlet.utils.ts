@@ -2,8 +2,15 @@ import { OutletOperatingHours } from "@prisma/client";
 
 const WIB_OFFSET_MINUTES = 7 * 60; // UTC+7
 
-function convertToOffsetMinutes(date: Date, offsetMinutes: number) {
-    const totalUtcMinutes = date.getUTCHours() * 60 + date.getUTCMinutes();
+function parseDate(date: Date | string): Date {
+    if (date instanceof Date) return date;
+    const dateStr = typeof date === 'string' ? date : String(date);
+    return new Date(dateStr.endsWith('Z') || dateStr.includes('+') || dateStr.includes('-') ? dateStr : dateStr + 'Z');
+}
+
+function convertToOffsetMinutes(date: Date | string, offsetMinutes: number) {
+    const parsedDate = parseDate(date);
+    const totalUtcMinutes = parsedDate.getUTCHours() * 60 + parsedDate.getUTCMinutes();
     const totalWithOffset = totalUtcMinutes + offsetMinutes;
     let minutesOfDay = totalWithOffset % 1440;
     if (minutesOfDay < 0) {
@@ -13,13 +20,14 @@ function convertToOffsetMinutes(date: Date, offsetMinutes: number) {
     return { minutesOfDay, dayOffset };
 }
 
-function getWibMinutes(date: Date) {
+function getWibMinutes(date: Date | string) {
     return convertToOffsetMinutes(date, WIB_OFFSET_MINUTES).minutesOfDay;
 }
 
-function getWibDay(date: Date) {
-    const utcDay = date.getUTCDay();
-    const { dayOffset } = convertToOffsetMinutes(date, WIB_OFFSET_MINUTES);
+function getWibDay(date: Date | string) {
+    const parsedDate = parseDate(date);
+    const utcDay = parsedDate.getUTCDay();
+    const { dayOffset } = convertToOffsetMinutes(parsedDate, WIB_OFFSET_MINUTES);
     const wibDay = (utcDay + dayOffset) % 7;
     return wibDay < 0 ? wibDay + 7 : wibDay;
 }
@@ -29,7 +37,7 @@ export interface Location {
     longitude: number;
 }
 
-export const getIsOutletOpen = (operatingHours: OutletOperatingHours[], today: Date) => {
+export const getIsOutletOpen = (operatingHours: any[], today: Date | string) => {
     const todayMinutes = getWibMinutes(today);
     const todayDay = getWibDay(today);
 
@@ -152,7 +160,7 @@ export function validateRadius(radiusKm: number) {
     }
 }
 
-export function mapOutletsWithOpenStatus(outlets: any[], today: Date = new Date()) {
+export function mapOutletsWithOpenStatus(outlets: any[], today: Date | string = new Date()) {
     return outlets.map((outlet) => ({
         ...outlet,
         isOpen: outlet.isOpen && (

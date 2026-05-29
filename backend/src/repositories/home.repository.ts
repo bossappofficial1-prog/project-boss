@@ -60,6 +60,8 @@ export class HomeRepository {
                 ...oh,
                 openTime: new Date(typeof oh.openTime === 'string' && !oh.openTime.endsWith('Z') ? oh.openTime + 'Z' : oh.openTime),
                 closeTime: new Date(typeof oh.closeTime === 'string' && !oh.closeTime.endsWith('Z') ? oh.closeTime + 'Z' : oh.closeTime),
+                breakStart: oh.breakStart ? new Date(typeof oh.breakStart === 'string' && !oh.breakStart.endsWith('Z') ? oh.breakStart + 'Z' : oh.breakStart) : null,
+                breakEnd: oh.breakEnd ? new Date(typeof oh.breakEnd === 'string' && !oh.breakEnd.endsWith('Z') ? oh.breakEnd + 'Z' : oh.breakEnd) : null,
                 createdAt: new Date(typeof oh.createdAt === 'string' && !oh.createdAt.endsWith('Z') ? oh.createdAt + 'Z' : oh.createdAt),
                 updatedAt: new Date(typeof oh.updatedAt === 'string' && !oh.updatedAt.endsWith('Z') ? oh.updatedAt + 'Z' : oh.updatedAt)
             }));
