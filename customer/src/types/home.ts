@@ -55,6 +55,7 @@ export interface HomeOutletSummary {
     phone?: string | null
     image?: string | null
     isOpen?: boolean | null
+    isBreak?: boolean | null
     latitude?: number | null
     longitude?: number | null
     business?: {

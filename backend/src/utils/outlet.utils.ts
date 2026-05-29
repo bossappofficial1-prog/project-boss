@@ -102,6 +102,63 @@ export const getIsOutletOpen = (operatingHours: any[], today: Date | string) => 
     });
 }
 
+export const getIsOutletOnBreak = (operatingHours: any[], today: Date | string) => {
+    const todayMinutes = getWibMinutes(today);
+    const todayDay = getWibDay(today);
+
+    return operatingHours.some((oper) => {
+        if (!oper.isOpen) return false;
+
+        const openMinutes = getWibMinutes(oper.openTime);
+        const closeMinutes = getWibMinutes(oper.closeTime);
+        const scheduleDay = oper.dayOfWeek;
+        const sameDay = scheduleDay === todayDay;
+
+        let isShiftOpen = false;
+        let isLateSameDay = false;
+        let isEarlyNextDay = false;
+        const nextDay = (scheduleDay + 1) % 7;
+
+        if (openMinutes === closeMinutes) {
+            isShiftOpen = sameDay;
+        } else if (closeMinutes > openMinutes) {
+            isShiftOpen = sameDay && todayMinutes >= openMinutes && todayMinutes < closeMinutes;
+        } else {
+            isLateSameDay = sameDay && todayMinutes >= openMinutes;
+            isEarlyNextDay = todayDay === nextDay && todayMinutes < closeMinutes;
+            isShiftOpen = isLateSameDay || isEarlyNextDay;
+        }
+
+        if (!isShiftOpen) return false;
+
+        if (oper.breakStart && oper.breakEnd) {
+            const breakOpen = getWibMinutes(oper.breakStart);
+            const breakClose = getWibMinutes(oper.breakEnd);
+
+            if (breakOpen !== breakClose) {
+                let isResting = false;
+                if (breakClose > breakOpen) {
+                    if (breakOpen >= openMinutes) {
+                        isResting = sameDay && todayMinutes >= breakOpen && todayMinutes < breakClose;
+                    } else {
+                        isResting = todayDay === nextDay && todayMinutes >= breakOpen && todayMinutes < breakClose;
+                    }
+                } else {
+                    const isRestingLate = sameDay && todayMinutes >= breakOpen;
+                    const isRestingEarly = todayDay === nextDay && todayMinutes < breakClose;
+                    isResting = isRestingLate || isRestingEarly;
+                }
+
+                if (isResting) {
+                    return true; // Sedang istirahat!
+                }
+            }
+        }
+
+        return false;
+    });
+}
+
 export function calculateDistance(point1: Location, point2: Location): number {
     const R = 6371; // Radius of the Earth in kilometers
     const dLat = toRadian(point2.latitude - point1.latitude);
@@ -161,14 +218,16 @@ export function validateRadius(radiusKm: number) {
 }
 
 export function mapOutletsWithOpenStatus(outlets: any[], today: Date | string = new Date()) {
-    return outlets.map((outlet) => ({
-        ...outlet,
-        isOpen: outlet.isOpen && (
-            outlet.operatingHours.length > 0
-                ? getIsOutletOpen(outlet.operatingHours, today)
-                : false
-        )
-    }));
+    return outlets.map((outlet) => {
+        const hasHours = outlet.operatingHours && outlet.operatingHours.length > 0;
+        const isOpen = outlet.isOpen && (hasHours ? getIsOutletOpen(outlet.operatingHours, today) : false);
+        const isBreak = outlet.isOpen && (hasHours ? getIsOutletOnBreak(outlet.operatingHours, today) : false);
+        return {
+            ...outlet,
+            isOpen,
+            isBreak
+        };
+    });
 }
 
 export function removeOperatingHoursFromOutlets(outlets: any[]) {

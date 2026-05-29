@@ -18,6 +18,7 @@ export interface OutletType {
   latitude: number;
   longitude: number;
   isOpen: boolean;
+  isBreak?: boolean | null;
   status: boolean;
   businessId: string;
   operatingHours: OperatingHourType[];

@@ -6,6 +6,7 @@
     "common": {
         "open": "Buka",
         "closed": "Tutup",
+        "break": "Istirahat",
         "km": "KM",
         "m": "M",
         "emptyStates": {

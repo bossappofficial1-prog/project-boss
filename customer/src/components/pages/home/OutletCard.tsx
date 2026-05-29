@@ -38,11 +38,30 @@ const OutletImage = ({ outlet, imageSize }: { outlet: OutletCardProps['outlet'],
                         <Crown className="w-3 h-3" />
                     </Badge>
                 )}
-                <Badge variant={outlet.isOpen ? "default" : "secondary"} className={`h-5 px-2 text-xs font-medium border-none backdrop-blur-sm ${outlet.isOpen ? "bg-green-500/90 text-white shadow-sm" : "bg-gray-700/90 text-white"}`}>
-                    {outlet.isOpen ? t("open") : t("closed")}
-                </Badge>
+                {(() => {
+                    let badgeBgClass = "bg-gray-700/90 text-white";
+                    let badgeText = t("closed");
+                    let badgeVariant: "default" | "secondary" = "secondary";
+
+                    if (outlet.isOpen) {
+                        badgeBgClass = "bg-green-500/90 text-white shadow-sm";
+                        badgeText = t("open");
+                        badgeVariant = "default";
+                    } else if (outlet.isBreak) {
+                        badgeBgClass = "bg-amber-500/90 text-white shadow-sm";
+                        badgeText = t("break");
+                        badgeVariant = "default";
+                    }
+
+                    return (
+                        <Badge variant={badgeVariant} className={`h-5 px-2 text-xs font-medium border-none backdrop-blur-sm ${badgeBgClass}`}>
+                            {badgeText}
+                        </Badge>
+                    );
+                })()}
             </div>
-            {!outlet.isOpen && <div className="absolute inset-0 bg-black/20" />}
+            {!outlet.isOpen && !outlet.isBreak && <div className="absolute inset-0 bg-black/20" />}
+            {!outlet.isOpen && outlet.isBreak && <div className="absolute inset-0 bg-amber-500/5" />}
         </div>
     )
 };

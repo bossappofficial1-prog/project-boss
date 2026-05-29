@@ -77,9 +77,10 @@ const formatOperatingHours = (
     if (hour.breakStart && hour.breakEnd) {
       const bStart = formatTime(new Date(hour.breakStart));
       const bEnd = formatTime(new Date(hour.breakEnd));
-      formattedBreak = locale === "id"
-        ? ` (Istirahat: ${bStart} — ${bEnd})`
-        : ` (Break: ${bStart} — ${bEnd})`;
+      formattedBreak =
+        locale === "id"
+          ? ` (Istirahat: ${bStart} — ${bEnd})`
+          : ` (Break: ${bStart} — ${bEnd})`;
     }
 
     return {
@@ -99,10 +100,11 @@ const getCurrentDayStatus = (
   t: any,
   locale: LanguageType,
 ) => {
-  if (typeof window === "undefined") return { isOpen: false, message: "" };
+  if (typeof window === "undefined")
+    return { isOpen: false, isBreak: false, message: "" };
 
   if (!outletIsOpen || !operatingHours || operatingHours.length === 0) {
-    return { isOpen: false, message: t("closedToday") };
+    return { isOpen: false, isBreak: false, message: t("closedToday") };
   }
 
   const now = new Date();
@@ -118,8 +120,11 @@ const getCurrentDayStatus = (
 
   // 1. Cek apakah outlet buka hari ini
   const todayHours = operatingHours.find((hour) => hour.dayOfWeek === todayDay);
+
   // 2. Cek apakah outlet buka kemarin (untuk shift overnight kemarin)
-  const yesterdayHours = operatingHours.find((hour) => hour.dayOfWeek === yesterdayDay);
+  const yesterdayHours = operatingHours.find(
+    (hour) => hour.dayOfWeek === yesterdayDay,
+  );
 
   let isCurrentOpen = false;
   let activeCloseTime: Date | null = null;
@@ -248,9 +253,19 @@ const getCurrentDayStatus = (
   // Jika terdeteksi sedang istirahat
   if (isCurrentlyResting && breakEndTime) {
     const displayBreakEnd = new Date();
-    displayBreakEnd.setHours(breakEndTime.getHours(), breakEndTime.getMinutes(), 0, 0);
+    displayBreakEnd.setHours(
+      breakEndTime.getHours(),
+      breakEndTime.getMinutes(),
+      0,
+      0,
+    );
     // Jika breakEnd hari esok
-    if (todayHours && todayHours.isOpen && todayHours.breakStart && todayHours.breakEnd) {
+    if (
+      todayHours &&
+      todayHours.isOpen &&
+      todayHours.breakStart &&
+      todayHours.breakEnd
+    ) {
       const openMin = timeToMinutes(todayHours.openTime);
       const breakOpen = timeToMinutes(todayHours.breakStart);
       const breakClose = timeToMinutes(todayHours.breakEnd);
@@ -261,15 +276,22 @@ const getCurrentDayStatus = (
 
     return {
       isOpen: false,
-      message: locale === "id"
-        ? `Sedang Istirahat (Buka kembali pukul ${formatTime(displayBreakEnd)})`
-        : `On Break (Opens at ${formatTime(displayBreakEnd)})`,
+      isBreak: true,
+      message:
+        locale === "id"
+          ? `Sedang Istirahat (Buka kembali pukul ${formatTime(displayBreakEnd)})`
+          : `On Break (Opens at ${formatTime(displayBreakEnd)})`,
     };
   }
 
   if (isCurrentOpen && activeCloseTime) {
     const displayCloseTime = new Date();
-    displayCloseTime.setHours(activeCloseTime.getHours(), activeCloseTime.getMinutes(), 0, 0);
+    displayCloseTime.setHours(
+      activeCloseTime.getHours(),
+      activeCloseTime.getMinutes(),
+      0,
+      0,
+    );
     // Jika lewat tengah malam dan kita berada di fase "hari yang sama setelah jam buka" (nowMinutes >= openMin), maka jam tutupnya besok
     if (todayHours && todayHours.isOpen) {
       const openMin = timeToMinutes(todayHours.openTime);
@@ -281,6 +303,7 @@ const getCurrentDayStatus = (
 
     return {
       isOpen: true,
+      isBreak: false,
       message: t("openUntil", { time: formatTime(displayCloseTime) }),
     };
   }
@@ -294,6 +317,7 @@ const getCurrentDayStatus = (
       displayOpenTime.setHours(ot.getHours(), ot.getMinutes(), 0, 0);
       return {
         isOpen: false,
+        isBreak: false,
         message: t("opensAt", { time: formatTime(displayOpenTime) }),
       };
     }
@@ -302,7 +326,7 @@ const getCurrentDayStatus = (
   // Cari hari buka berikutnya
   const dayNames = DAY_NAMES[locale];
   const sortedDays = [...operatingHours]
-    .filter(oh => oh.isOpen)
+    .filter((oh) => oh.isOpen)
     .sort((a, b) => {
       const dayA = a.dayOfWeek <= todayDay ? a.dayOfWeek + 7 : a.dayOfWeek;
       const dayB = b.dayOfWeek <= todayDay ? b.dayOfWeek + 7 : b.dayOfWeek;
@@ -315,37 +339,67 @@ const getCurrentDayStatus = (
     const dayLabel = dayNames[nextOpen.dayOfWeek];
     return {
       isOpen: false,
-      message: locale === "id"
-        ? `Buka hari ${dayLabel} pukul ${formatTime(nextOpenTime)}`
-        : `Opens on ${dayLabel} at ${formatTime(nextOpenTime)}`,
+      isBreak: false,
+      message:
+        locale === "id"
+          ? `Buka hari ${dayLabel} pukul ${formatTime(nextOpenTime)}`
+          : `Opens on ${dayLabel} at ${formatTime(nextOpenTime)}`,
     };
   }
 
-  return { isOpen: false, message: t("closedToday") };
+  return { isOpen: false, isBreak: false, message: t("closedToday") };
 };
 
 const OperatingHoursTab = ({
   operatingHours,
   outletOpen,
+  isBreak,
 }: {
   operatingHours: OperatingHourType[];
   outletOpen: boolean;
+  isBreak: boolean;
 }) => {
   const locale = useLocale() as LanguageType;
   const t = useTranslations("outletDetail");
   const formattedHours = formatOperatingHours(operatingHours, locale);
-  const currentStatus = getCurrentDayStatus(operatingHours, outletOpen, t, locale);
+  const currentStatus = getCurrentDayStatus(
+    operatingHours,
+    outletOpen,
+    t,
+    locale,
+  );
   const today = new Date().getDay();
   const isOpen = outletOpen && currentStatus?.isOpen;
+
+  let cardBgClass = "from-gray-500/5 to-gray-500/10 border-gray-500/10";
+  let iconBgClass = "bg-gray-100 text-gray-500";
+  let badgeClass = "bg-gray-200 text-gray-600";
+  let badgeText = t("closed");
+  let badgeVariant: "default" | "secondary" | "outline" | "destructive" =
+    "secondary";
+
+  if (isOpen) {
+    cardBgClass = "from-green-500/5 to-green-500/10 border-green-500/10";
+    iconBgClass = "bg-green-100 text-green-600";
+    badgeClass = "bg-green-500 hover:bg-green-600 text-white";
+    badgeText = t("open");
+    badgeVariant = "default";
+  } else if (isBreak) {
+    cardBgClass = "from-amber-500/5 to-amber-500/10 border-amber-500/10";
+    iconBgClass = "bg-amber-100 text-amber-600";
+    badgeClass = "bg-amber-500 hover:bg-amber-600 text-white";
+    badgeText = locale === "id" ? "Istirahat" : "On Break";
+    badgeVariant = "default";
+  }
 
   return (
     <div className="space-y-4">
       {/* Status card */}
-      <div className="rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 p-4 border border-primary/10">
+      <div className={`rounded-xl bg-linear-to-r ${cardBgClass} p-4 border`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${isOpen ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${iconBgClass}`}
             >
               <Clock className="w-5 h-5" />
             </div>
@@ -357,10 +411,10 @@ const OperatingHoursTab = ({
             </div>
           </div>
           <Badge
-            variant={isOpen ? "default" : "secondary"}
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${isOpen ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-200 text-gray-600"}`}
+            variant={badgeVariant}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}
           >
-            {isOpen ? t("open") : t("closed")}
+            {badgeText}
           </Badge>
         </div>
       </div>
@@ -827,12 +881,30 @@ export function OutletContent({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1.5">
-                <Badge
-                  variant={outlet.status ? "default" : "secondary"}
-                  className={`rounded-full text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-wider ${outlet.status ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-200 text-gray-600"}`}
-                >
-                  {outlet.status ? t("open") : t("closed")}
-                </Badge>
+                {(() => {
+                  let badgeVariant: "default" | "secondary" = "secondary";
+                  let badgeClass = "bg-gray-200 text-gray-600";
+                  let badgeText = t("closed");
+
+                  if (outlet.status) {
+                    badgeVariant = "default";
+                    badgeClass = "bg-green-500 hover:bg-green-600 text-white";
+                    badgeText = t("open");
+                  } else if (outlet.isBreak) {
+                    badgeVariant = "default";
+                    badgeClass = "bg-amber-500 hover:bg-amber-600 text-white";
+                    badgeText = locale === "id" ? "Istirahat" : "On Break";
+                  }
+
+                  return (
+                    <Badge
+                      variant={badgeVariant}
+                      className={`rounded-full text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-wider ${badgeClass}`}
+                    >
+                      {badgeText}
+                    </Badge>
+                  );
+                })()}
               </div>
               <h1 className="text-xl font-extrabold leading-tight tracking-tight line-clamp-2 text-foreground/90">
                 {outlet.name}
@@ -890,7 +962,7 @@ export function OutletContent({
                         dy="4"
                         stdDeviation="4"
                         floodColor="#000000"
-                        flood-opacity="0.25"
+                        floodOpacity="0.25"
                       />
                     </filter>
                   </defs>
@@ -1119,6 +1191,7 @@ export function OutletContent({
           <TabsContent value="hours" className="mt-3 space-y-2">
             {outlet.operatingHours?.length ? (
               <OperatingHoursTab
+                isBreak={outlet.isBreak!}
                 operatingHours={outlet.operatingHours}
                 outletOpen={outlet.isOpen}
               />

@@ -6,6 +6,7 @@
     "common": {
         "open": "Open",
         "closed": "Closed",
+        "break": "On Break",
         "km": "KM",
         "m": "M",
         "emptyStates": {

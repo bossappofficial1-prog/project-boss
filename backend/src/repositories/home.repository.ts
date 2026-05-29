@@ -1,6 +1,6 @@
 import { db } from "../config/prisma";
 import { Prisma } from "@prisma/client";
-import { getIsOutletOpen } from "../utils/outlet.utils";
+import { getIsOutletOpen, getIsOutletOnBreak } from "../utils/outlet.utils";
 
 export class HomeRepository {
     static async countVerifiedUmkm() {
@@ -66,15 +66,14 @@ export class HomeRepository {
                 updatedAt: new Date(typeof oh.updatedAt === 'string' && !oh.updatedAt.endsWith('Z') ? oh.updatedAt + 'Z' : oh.updatedAt)
             }));
 
-            const isOpenOutlet = outlet.isOpen && (
-                mappedOperatingHours.length > 0
-                    ? getIsOutletOpen(mappedOperatingHours, new Date())
-                    : false
-            );
+            const hasHours = mappedOperatingHours.length > 0;
+            const isOpenOutlet = outlet.isOpen && (hasHours ? getIsOutletOpen(mappedOperatingHours, new Date()) : false);
+            const isBreakOutlet = outlet.isOpen && (hasHours ? getIsOutletOnBreak(mappedOperatingHours, new Date()) : false);
 
             return {
                 ...outlet,
                 isOpen: isOpenOutlet,
+                isBreak: isBreakOutlet,
                 status: isOpenOutlet,
                 operatingHours: mappedOperatingHours
             };

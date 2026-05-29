@@ -48,12 +48,24 @@ function OutletCard({ outlet, numberFormatter, t, tCommon }: OutletCardProps) {
                     </div>
                 )}
                 {/* Status pill */}
-                <div className={`absolute top-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm ${outlet.isOpen
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-white/90 text-muted-foreground backdrop-blur-sm'
-                    }`}>
-                    {outlet.isOpen ? tCommon("open") : tCommon("closed")}
-                </div>
+                {(() => {
+                    let pillBgClass = 'bg-white/90 text-muted-foreground backdrop-blur-sm';
+                    let pillText = tCommon("closed");
+
+                    if (outlet.isOpen) {
+                        pillBgClass = 'bg-emerald-500 text-white';
+                        pillText = tCommon("open");
+                    } else if (outlet.isBreak) {
+                        pillBgClass = 'bg-amber-500 text-white';
+                        pillText = tCommon("break");
+                    }
+
+                    return (
+                        <div className={`absolute top-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm ${pillBgClass}`}>
+                            {pillText}
+                        </div>
+                    );
+                })()}
             </div>
             <div className="flex flex-col gap-1 px-1 pt-2 pb-1">
                 <p className="text-sm font-semibold leading-snug text-foreground line-clamp-1">{outlet.name}</p>
