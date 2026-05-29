@@ -19,24 +19,33 @@ const poppins = Poppins({
 });
 
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#000000',
-}
+  themeColor: "#000000",
+};
 
 export const metadata: Metadata = {
   title: {
-    default: 'Boss',
-    template: '%s | Boss'
+    default: "Boss",
+    template: "%s | Boss",
   },
-  description: "Urus operasional usaha, atur jadwal, dan jaga pelanggan kamu lebih gampang bareng BOSS.",
+  description:
+    "Urus operasional usaha, atur jadwal, dan jaga pelanggan kamu lebih gampang bareng BOSS.",
   icons: {
     icon: [
       { url: "/assets/logo/favicon.ico", type: "image/x-icon" },
-      { url: "/assets/logo/web-icon-192x192.png", type: "image/png", sizes: "192x192" },
-      { url: "/assets/logo/web-icon-512x512.png", type: "image/png", sizes: "512x512" },
+      {
+        url: "/assets/logo/web-icon-192x192.png",
+        type: "image/png",
+        sizes: "192x192",
+      },
+      {
+        url: "/assets/logo/web-icon-512x512.png",
+        type: "image/png",
+        sizes: "512x512",
+      },
     ],
     apple: "/assets/logo/web-icon-192x192.png",
     shortcut: "/assets/logo/favicon.ico",
@@ -46,13 +55,12 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Boss",
-    startupImage: [
-      `${process.env.SITE_URL}/assets/logo/og-image.png`,
-    ],
+    startupImage: [`${process.env.SITE_URL}/assets/logo/og-image.png`],
   },
   openGraph: {
     title: "Boss",
-    description: "BOSS bantu kamu merapikan operasional bisnis, jadwal layanan, sampai urusan pelanggan dalam satu tempat.",
+    description:
+      "BOSS bantu kamu merapikan operasional bisnis, jadwal layanan, sampai urusan pelanggan dalam satu tempat.",
     url: "https://bossapp.id",
     siteName: "BOSS",
     images: [
@@ -69,7 +77,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Boss",
-    description: "Optimalkan operasional, jadwal, dan pengalaman pelanggan bisnis kamu cukup lewat BOSS.",
+    description:
+      "Optimalkan operasional, jadwal, dan pengalaman pelanggan bisnis kamu cukup lewat BOSS.",
     images: [`${process.env.SITE_URL}/assets/logo/og-image.png`],
   },
   robots: {
@@ -83,7 +92,13 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  keywords: ["business management", "scheduling", "customer management", "BOSS", "business platform"],
+  keywords: [
+    "business management",
+    "scheduling",
+    "customer management",
+    "BOSS",
+    "business platform",
+  ],
   authors: [{ name: "BOSS Team" }],
   creator: "BOSS Team",
   publisher: "BOSS",
@@ -93,31 +108,27 @@ export const metadata: Metadata = {
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "Boss",
-  "description": "BOSS customer",
-  "url": process.env.SITE_URL || 'http://localhost:3000',
-  "applicationCategory": "BusinessApplication",
-  "operatingSystem": "Web Browser",
-  "offers": {
+  name: "Boss",
+  description: "BOSS customer",
+  url: process.env.SITE_URL || "http://localhost:3000",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web Browser",
+  offers: {
     "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "IDR"
+    price: "0",
+    priceCurrency: "IDR",
   },
-  "creator": {
+  creator: {
     "@type": "Organization",
-    "name": "BOSS Development Team"
+    name: "BOSS Development Team",
   },
-  "publisher": {
+  publisher: {
     "@type": "Organization",
-    "name": "BOSS"
-  }
+    name: "BOSS",
+  },
 };
 
-export default function Layout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" suppressHydrationWarning={true}>
       <head>
@@ -125,13 +136,19 @@ export default function Layout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Boss" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/assets/logo/icon-192x192.png" />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/assets/logo/icon-192x192.png"
+        />
         <link rel="icon" type="image/x-icon" href="/assets/logo/favicon.ico" />
         <link rel="shortcut icon" href="/assets/logo/favicon.ico" />
-        <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#eb2525" />
         <meta name="color-scheme" content="light dark" />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -161,9 +178,7 @@ export default function Layout({
           }}
         />
       </head>
-      <body
-        className={`${poppins.variable} font-poppins antialiased`}
-      >
+      <body className={`${poppins.variable} font-poppins antialiased`}>
         {/* Splash screen */}
         <SplashScreen />
         <SerwistRegister />

@@ -1,28 +1,38 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const router = useRouter();
+  const hostname =
+    typeof window !== "undefined" ? window.location.hostname : "";
+
+  const isDashboardDomain = hostname.startsWith("dashboard");
 
   useEffect(() => {
-    const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+    const userRaw =
+      typeof window !== "undefined" ? localStorage.getItem("user") : null;
 
     if (!userRaw) {
-      router.push('/auth/login');
+      router.push("/auth/login");
+      return;
+    }
+
+    if (isDashboardDomain) {
+      router.push("/owner");
       return;
     }
 
     try {
       const user = JSON.parse(userRaw);
-      if (user?.role === 'ADMIN') {
-        router.push('/admin/dashboard');
+      if (user?.role === "ADMIN") {
+        router.push("/admin/dashboard");
       } else {
-        router.push('/owner');
+        router.push("/owner");
       }
     } catch {
-      router.push('/auth/login');
+      router.push("/auth/login");
     }
   }, [router]);
 

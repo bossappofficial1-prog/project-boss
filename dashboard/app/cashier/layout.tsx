@@ -5,6 +5,7 @@ import { FeatureGuideProvider } from "@/components/guides/FeatureGuideProvider";
 const appName = "BOSS - Business One Stop System";
 
 export const metadata: Metadata = {
+  manifest: "/cashier/manifest.webmanifest",
   title: {
     template: "%s | Kasir BOSS",
     default: "Kasir BOSS",
