@@ -727,6 +727,35 @@
         }
       ],
       "warning": "Pastikan koneksi internet stabil saat melakukan pemindaian tiket agar proses verifikasi berjalan lancar dan tidak ada tiket yang lolos tanpa validasi."
+    },
+    {
+      "id": "advanced-accounting",
+      "role": "owner",
+      "category": "reports",
+      "title": "Sistem Akuntansi Tingkat Lanjut & Neraca Keuangan",
+      "description": "Cara mencatat entri jurnal manual secara double-entry, mengelola Bagan Perkiraan Akun (COA), serta memantau laporan Neraca dan Laba Rugi lanjutan secara real-time.",
+      "icon": "Calculator",
+      "steps": [
+        {
+          "title": "Buka Menu Akuntansi Tingkat Lanjut",
+          "desc": "Klik menu 'Akuntansi' di bagian grup 'Keuangan' pada menu sebelah kiri. Fitur ini hanya tersedia untuk pengguna paket TRIAL, PRO, atau ENTERPRISE."
+        },
+        {
+          "title": "Pahami Bagan Akun Keuangan (Chart of Accounts)",
+          "desc": "Pada tab 'Bagan Akun (COA)', Anda dapat melihat daftar perkiraan akun standar (Aset, Kewajiban, Ekuitas, Pendapatan, Beban). Klik 'Tambah Akun Baru' untuk membuat akun kustom baru sesuai kebutuhan pelaporan bisnis Anda."
+        },
+        {
+          "title": "Catat Jurnal Manual (Double Entry)",
+          "desc": "Pada tab 'Jurnal Umum', klik 'Catat Jurnal Manual'. Masukkan tanggal, keterangan, dan pilih minimal 2 baris transaksi berpasangan (Debit dan Kredit). Pastikan nilai total Debit dan Kredit Anda seimbang sebelum menekan 'Posting Jurnal'."
+        },
+        {
+          "title": "Pantau Laporan Neraca & Laba Rugi Lanjutan",
+          "desc": "Pilih tab 'Laporan Keuangan'. Saring posisi keuangan (Neraca) per tanggal tertentu, atau hitung Laba Rugi dinamis dengan mengatur rentang tanggal pencarian untuk mengetahui kinerja laba bersih Anda secara akurat."
+        }
+      ],
+      "tip": "Gunakan kode akun yang sistematis (contoh: kepala 1 untuk Aset, kepala 2 untuk Kewajiban, kepala 3 untuk Ekuitas) agar pengelompokan laporan keuangan Anda rapi dan mudah dianalisis.",
+      "warning": "Transaksi jurnal umum yang sudah diposting akan langsung mempengaruhi nilai aset dan laba ditahan secara real-time. Lakukan pengecekan ganda pada nominal Debit & Kredit untuk menghindari kekeliruan laporan keuangan.",
+      "requirePro": true
     }
   ]
 }

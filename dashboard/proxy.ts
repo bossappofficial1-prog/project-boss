@@ -30,6 +30,7 @@ const PRO_ROUTES_PREFIXES = [
   "/owner/calculator-bep",
   "/owner/sales-target-breakdown",
   "/owner/outlets-manage-tables",
+  "/owner/accounting",
 ];
 
 const FNB_ONLY_ROUTES_PREFIXES = ["/owner/outlets-manage-tables"];

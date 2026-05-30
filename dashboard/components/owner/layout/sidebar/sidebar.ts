@@ -27,6 +27,7 @@ import {
   Truck,
   ChefHat,
   Salad,
+  Calculator,
 } from "lucide-react";
 import { OutletType } from "@/types";
 
@@ -261,6 +262,13 @@ export const MENU_GROUPS: MenuGroup[] = [
   {
     label: "Keuangan",
     items: [
+      {
+        id: "accounting",
+        name: "Akuntansi Lanjut",
+        href: "/owner/accounting",
+        icon: Calculator,
+        requirePro: true,
+      },
       {
         id: "reports",
         name: "Laporan Keuangan",

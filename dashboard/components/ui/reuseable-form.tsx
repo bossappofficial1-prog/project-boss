@@ -139,7 +139,9 @@ function adaptNestedField<T extends FieldValues>(
 ): FormFieldConfig<T> {
   const cloned = { ...subField, name: newName as Path<T> };
   if (cloned.type === "array") {
-    console.warn("Nested array fields are not supported, converting to text field");
+    console.warn(
+      "Nested array fields are not supported, converting to text field",
+    );
     (cloned as unknown as TextFieldConfig<T>).type = "text";
   }
   return cloned as FormFieldConfig<T>;
@@ -195,7 +197,10 @@ interface BaseFieldConfig<T extends FieldValues> {
 }
 
 interface TextFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
-  type?: Exclude<FieldType, "select" | "toggle" | "dual-option-switch" | "file" | "custom" | "array">;
+  type?: Exclude<
+    FieldType,
+    "select" | "toggle" | "dual-option-switch" | "file" | "custom" | "array"
+  >;
 }
 
 interface SelectFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
@@ -208,7 +213,9 @@ interface ToggleFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
   options: { label: string; value: string; disabled?: boolean }[];
 }
 
-interface DualSwitchFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
+interface DualSwitchFieldConfig<
+  T extends FieldValues,
+> extends BaseFieldConfig<T> {
   type: "dual-option-switch";
   switchOptions: {
     left: {
@@ -238,8 +245,10 @@ interface CustomFieldConfig<T extends FieldValues> extends BaseFieldConfig<T> {
   renderCustom: CustomRenderInput<T>;
 }
 
-interface ArrayFieldConfig<T extends FieldValues>
-  extends Omit<BaseFieldConfig<T>, "name"> {
+interface ArrayFieldConfig<T extends FieldValues> extends Omit<
+  BaseFieldConfig<T>,
+  "name"
+> {
   type: "array";
   name: ArrayPath<T>;
   arrayFields: FormFieldConfig<T>[];
@@ -323,14 +332,19 @@ interface WithFormDataProps<T extends FieldValues> extends SharedFormProps<T> {
   onSubmit: (values: FormData) => void | Promise<void>;
 }
 
-interface WithoutFormDataProps<T extends FieldValues> extends SharedFormProps<T> {
+interface WithoutFormDataProps<
+  T extends FieldValues,
+> extends SharedFormProps<T> {
   useFormData?: false;
   onSubmit: (values: NoInfer<T>) => void | Promise<void>;
 }
 
-type BaseFormProps<T extends FieldValues> = WithFormDataProps<T> | WithoutFormDataProps<T>;
+type BaseFormProps<T extends FieldValues> =
+  | WithFormDataProps<T>
+  | WithoutFormDataProps<T>;
 
-export type ReusableFormProps<T extends FieldValues> = BaseFormProps<T> & (DialogProps | NoDialogProps);
+export type ReusableFormProps<T extends FieldValues> = BaseFormProps<T> &
+  (DialogProps | NoDialogProps);
 
 export function ReusableForm<T extends FieldValues>({
   form: externalForm,
@@ -386,7 +400,7 @@ export function ReusableForm<T extends FieldValues>({
     } else if (hasChanged) {
       form.reset(defaultValues);
     }
-    
+
     prevDefaultValuesStrRef.current = defaultValuesStr;
   }, [dialogProps?.isDialogOpen, defaultValues, form]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -407,7 +421,10 @@ export function ReusableForm<T extends FieldValues>({
       if (autoSaveOnSaveRef.current) {
         autoSaveOnSaveRef.current(watchedValues);
       } else if (autoSave.storageKey) {
-        localStorage.setItem(autoSave.storageKey, JSON.stringify(watchedValues));
+        localStorage.setItem(
+          autoSave.storageKey,
+          JSON.stringify(watchedValues),
+        );
       }
     }, delay);
     return () => clearTimeout(id);
@@ -426,7 +443,9 @@ export function ReusableForm<T extends FieldValues>({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isWizard = !!steps?.length;
-  const currentStepFields = isWizard ? steps![currentStep].fields : fields.map((f) => f.name);
+  const currentStepFields = isWizard
+    ? steps![currentStep].fields
+    : fields.map((f) => f.name);
   const visibleFields = isWizard
     ? fields.filter((f) => currentStepFields.includes(f.name))
     : fields;
@@ -446,7 +465,9 @@ export function ReusableForm<T extends FieldValues>({
     if (!dialogProps) return true;
     if (dialogProps.preventClose) return false;
     if ((dialogProps.confirmClose ?? true) && form.formState.isDirty) {
-      const message = dialogProps.confirmCloseMessage ?? "Perubahan belum disimpan. Tutup form?";
+      const message =
+        dialogProps.confirmCloseMessage ??
+        "Perubahan belum disimpan. Tutup form?";
       return typeof window !== "undefined" && window.confirm(message);
     }
     return true;
@@ -486,7 +507,9 @@ export function ReusableForm<T extends FieldValues>({
           const axiosError = error as AxiosError<ApiErrorResponse>;
           form.setError("root", {
             type: "server",
-            message: axiosError?.response?.data?.message ?? "Terjadi kesalahan pada server",
+            message:
+              axiosError?.response?.data?.message ??
+              "Terjadi kesalahan pada server",
           });
         }
       } finally {
@@ -497,7 +520,9 @@ export function ReusableForm<T extends FieldValues>({
   );
 
   const scrollToField = useCallback((fieldName: string) => {
-    const element = document.querySelector<HTMLElement>(`[name="${fieldName}"]`);
+    const element = document.querySelector<HTMLElement>(
+      `[name="${fieldName}"]`,
+    );
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
       element.focus();
@@ -533,14 +558,17 @@ export function ReusableForm<T extends FieldValues>({
         <div className="mb-4">
           <h3 className="text-lg font-medium">{steps![currentStep].title}</h3>
           {steps![currentStep].description && (
-            <p className="text-sm text-muted-foreground">{steps![currentStep].description}</p>
+            <p className="text-sm text-muted-foreground">
+              {steps![currentStep].description}
+            </p>
           )}
         </div>
       )}
 
       <div className={`grid grid-cols-1 gap-4 ${gridClass}`}>
         {visibleFields.map((fieldConfig) => {
-          if (fieldConfig.condition && !fieldConfig.condition(watchedValues)) return null;
+          if (fieldConfig.condition && !fieldConfig.condition(watchedValues))
+            return null;
           return (
             <RenderField
               key={fieldConfig.name}
@@ -562,7 +590,12 @@ export function ReusableForm<T extends FieldValues>({
       return (
         <div className="flex justify-between gap-2">
           {currentStep > 0 && (
-            <Button type="button" variant="outline" onClick={goToPrevStep} disabled={busy}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={goToPrevStep}
+              disabled={busy}
+            >
               Kembali
             </Button>
           )}
@@ -582,7 +615,12 @@ export function ReusableForm<T extends FieldValues>({
     if (dialogProps) {
       return (
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={handleClose} disabled={busy}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            disabled={busy}
+          >
             {dialogProps.cancelText ?? "Batal"}
           </Button>
           <Button type="submit" disabled={busy || submitDisabled}>
@@ -593,14 +631,22 @@ export function ReusableForm<T extends FieldValues>({
     }
 
     return (
-      <Button type="submit" disabled={busy || submitDisabled} className="w-full">
+      <Button
+        type="submit"
+        disabled={busy || submitDisabled}
+        className="w-full"
+      >
         {busy ? loadingText : submitText}
       </Button>
     );
   })();
 
   const formContent = (
-    <form id={id} onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+    <form
+      id={id}
+      onSubmit={form.handleSubmit(handleFormSubmit)}
+      className="space-y-6"
+    >
       {form.formState.errors.root && (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {form.formState.errors.root.message}
@@ -613,7 +659,10 @@ export function ReusableForm<T extends FieldValues>({
 
   if (dialogProps) {
     return (
-      <Dialog open={dialogProps.isDialogOpen} onOpenChange={handleDialogOpenChange}>
+      <Dialog
+        open={dialogProps.isDialogOpen}
+        onOpenChange={handleDialogOpenChange}
+      >
         <DialogContent
           showCloseButton={dialogProps.showDialogCloseButton}
           className={cn(
@@ -668,7 +717,9 @@ function RenderField<T extends FieldValues>({
   }
 
   const resolvedType = finalField.typeResolver?.(values) ?? finalField.type;
-  const colSpanClass = finalField.colSpan ? COL_SPAN_CLASS[finalField.colSpan] : undefined;
+  const colSpanClass = finalField.colSpan
+    ? COL_SPAN_CLASS[finalField.colSpan]
+    : undefined;
 
   return (
     <FormField
@@ -679,13 +730,19 @@ function RenderField<T extends FieldValues>({
           <FormLabel htmlFor={finalField.name}>{finalField.label}</FormLabel>
           <FormControl>
             <FieldInputSwitch
-              field={{ ...finalField, type: resolvedType } as FormFieldConfig<T>}
+              field={
+                { ...finalField, type: resolvedType } as FormFieldConfig<T>
+              }
               formField={formField}
               values={values}
               form={form}
             />
           </FormControl>
-          {finalField.description && <FormDescription className="text-xs">{finalField.description}</FormDescription>}
+          {finalField.description && (
+            <FormDescription className="text-xs">
+              {finalField.description}
+            </FormDescription>
+          )}
           <FormMessage className="text-sm" />
         </FormItem>
       )}
@@ -812,7 +869,7 @@ function FieldInputSwitch<T extends FieldValues>({
       );
 
     case "select":
-      return withIcon(
+      return (
         <SelectOption
           {...formField}
           id={formField.name}
@@ -822,7 +879,7 @@ function FieldInputSwitch<T extends FieldValues>({
           value={formField.value as string}
           placeholder={placeholder}
           className={cn(iconClass, baseClass)}
-        />,
+        />
       );
 
     case "toggle":
@@ -905,7 +962,9 @@ function FieldInputSwitch<T extends FieldValues>({
     case "date": {
       const rawValue = formField.value;
       const value =
-        typeof rawValue === "string" && !isNaN(Date.parse(rawValue)) ? rawValue : "";
+        typeof rawValue === "string" && !isNaN(Date.parse(rawValue))
+          ? rawValue
+          : "";
       return (
         <DatePicker
           id={formField.name}
@@ -942,7 +1001,9 @@ function FieldInputSwitch<T extends FieldValues>({
           className={cn(iconClass, baseClass)}
           {...formField}
           onChange={(e) =>
-            formField.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+            formField.onChange(
+              e.target.value === "" ? undefined : Number(e.target.value),
+            )
           }
         />,
       );

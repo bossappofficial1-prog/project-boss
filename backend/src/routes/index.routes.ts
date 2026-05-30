@@ -50,6 +50,7 @@ import ingredientRouter from "./ingredient.route";
 import recipeRouter from "./recipe.route";
 import purchaseOrderRouter from "./purchase-order.route";
 import stockTransferRouter from "./stock-transfer.route";
+import accountingRouter from "./accounting.route";
 
 const apiRouter = Router();
 
@@ -93,6 +94,7 @@ apiRouter.use("/upload", uploadRouter);
 apiRouter.use("/users", userRouter);
 apiRouter.use("/reservations", reservationRouter);
 apiRouter.use("/transaction-deletes", transactionDeleteRouter);
+apiRouter.use("/accounting", accountingRouter);
 apiRouter.use("/product-categories", productCategoryRouter);
 apiRouter.use("/attendance", attendanceRouter);
 apiRouter.use("/ingredients", ingredientRouter);

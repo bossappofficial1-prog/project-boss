@@ -1,5 +1,5 @@
 // Shared API utilities for BOSS Dashboard (used by all API categories)
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import axios, { AxiosInstance } from "axios";
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:1234/api/v1";
@@ -68,7 +68,10 @@ apiClient.interceptors.response.use(
       typeof window !== "undefined" ? window.location.pathname : "";
 
     if (isInvalidLogin) {
-      if (redirectPath.startsWith("/cashier") || redirectPath.startsWith("/manager")) {
+      if (
+        redirectPath.startsWith("/cashier") ||
+        redirectPath.startsWith("/manager")
+      ) {
         window.location.href = `/auth/login/cashier?redirect=${encodeURIComponent(redirectPath)}`;
       } else {
         window.location.href = `/auth/login?redirect=${encodeURIComponent(redirectPath)}`;

@@ -73,6 +73,8 @@ model Business {
   outlets               Outlet[]
   subscriptionInvoices  SubscriptionInvoice[]
   stockTransfers        StockTransfer[]
+  accounts              Account[]
+  journalEntries        JournalEntry[]
 
   @@index([ownerId])
   @@index([subscriptionStatus])
@@ -1325,4 +1327,58 @@ model StockTransferItem {
 
   @@index([stockTransferId])
   @@index([productId])
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model Account {
+  id           String        @id @default(uuid())
+  businessId   String
+  code         String
+  name         String
+  type         AccountType
+  isSystem     Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  journalItems JournalItem[]
+
+  @@unique([businessId, code])
+  @@index([businessId])
+}
+
+model JournalEntry {
+  id           String        @id @default(uuid())
+  businessId   String
+  date         DateTime
+  reference    String?
+  description  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items        JournalItem[]
+
+  @@index([businessId])
+}
+
+model JournalItem {
+  id             String       @id @default(uuid())
+  journalEntryId String
+  accountId      String
+  debit          Float        @default(0)
+  credit         Float        @default(0)
+
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([journalEntryId])
+  @@index([accountId])
 }
