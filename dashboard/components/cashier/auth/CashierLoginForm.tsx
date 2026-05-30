@@ -92,6 +92,9 @@ function CashierLoginFormInner() {
         cashierValues.username,
         cashierValues.password,
       );
+      try {
+        sessionStorage.setItem("auth-role", "CASHIER");
+      } catch {}
       saveToHistory(cashierValues.username);
       refreshHistory();
       toast.success(response.message || "Login berhasil");
@@ -121,6 +124,9 @@ function CashierLoginFormInner() {
         managerValues.name,
         managerValues.pin,
       );
+      try {
+        sessionStorage.setItem("auth-role", "MANAGER");
+      } catch {}
       toast.success(response.message || "Login manager berhasil");
       await new Promise((resolve) => setTimeout(resolve, 300));
       router.push("/manager/outlets");

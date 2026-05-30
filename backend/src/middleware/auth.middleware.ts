@@ -6,7 +6,11 @@ import { Messages } from "../constants/message";
 import { JwtUtil } from "../utils";
 import { StaffRole, UserRole } from "@prisma/client";
 import { redis } from "../config/redis";
-import { config } from "../config";
+import {
+  AUTH_COOKIE_NAMES,
+  clearAuthCookie,
+  getAuthRoleHint,
+} from "../utils/auth-cookie";
 
 type StaffSession = {
   id: string;
@@ -34,10 +38,16 @@ export function getAuthUser(
   roles?: (UserRole | StaffRole)[],
 ): OwnerSession | StaffSession | undefined {
   if (roles) {
-    if (req.storedUser && roles.includes(req.storedUser.role as UserRole | StaffRole)) {
+    if (
+      req.storedUser &&
+      roles.includes(req.storedUser.role as UserRole | StaffRole)
+    ) {
       return req.storedUser;
     }
-    if (req.storedCashier && roles.includes(req.storedCashier.role as UserRole | StaffRole)) {
+    if (
+      req.storedCashier &&
+      roles.includes(req.storedCashier.role as UserRole | StaffRole)
+    ) {
       return req.storedCashier;
     }
     return undefined;
@@ -49,7 +59,7 @@ export const protect = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     let hasValidSession = false;
 
-    const tryToken = async (t: string) => {
+    const tryToken = async (t: string, expectedRole?: string) => {
       try {
         const dec = JwtUtil.verify<{
           sessionId: string;
@@ -57,6 +67,7 @@ export const protect = asyncHandler(
           role?: string;
         }>(t);
         if (!dec || !dec.sessionId) return null;
+        if (expectedRole && dec.role !== expectedRole) return null;
 
         const sessionKey =
           dec.userType === "CASHIER" || dec.userType === "MANAGER"
@@ -72,19 +83,58 @@ export const protect = asyncHandler(
       }
     };
 
-    // Try owner token → storedUser
-    const ownerToken = req.cookies.token;
-    if (ownerToken) {
-      const result = await tryToken(ownerToken);
-      if (result) {
-        req.storedUser = JSON.parse(result.session);
-        hasValidSession = true;
+    const roleHint = getAuthRoleHint(req);
+
+    const legacyToken = req.cookies[AUTH_COOKIE_NAMES.legacy];
+    const ownerToken = req.cookies[AUTH_COOKIE_NAMES.owner];
+    const adminToken = req.cookies[AUTH_COOKIE_NAMES.admin];
+    const cashierToken = req.cookies[AUTH_COOKIE_NAMES.cashier];
+
+    const userTokenCandidates: Array<{
+      token: string;
+      expectedRole?: string;
+    }> = [];
+
+    if (roleHint === "ADMIN") {
+      if (adminToken) {
+        userTokenCandidates.push({ token: adminToken, expectedRole: "ADMIN" });
+      }
+      if (legacyToken) {
+        userTokenCandidates.push({ token: legacyToken, expectedRole: "ADMIN" });
+      }
+    } else if (roleHint === "OWNER") {
+      if (ownerToken) {
+        userTokenCandidates.push({ token: ownerToken, expectedRole: "OWNER" });
+      }
+      if (legacyToken) {
+        userTokenCandidates.push({ token: legacyToken, expectedRole: "OWNER" });
+      }
+    } else if (roleHint === "CASHIER" || roleHint === "MANAGER") {
+      // Skip owner/admin tokens for staff-scoped requests
+    } else {
+      if (ownerToken) {
+        userTokenCandidates.push({ token: ownerToken, expectedRole: "OWNER" });
+      }
+      if (adminToken) {
+        userTokenCandidates.push({ token: adminToken, expectedRole: "ADMIN" });
+      }
+      if (legacyToken) {
+        userTokenCandidates.push({ token: legacyToken });
       }
     }
 
-    // Try cashier token → storedCashier
-    const cashierToken = req.cookies.cashier_token;
-    if (cashierToken) {
+    for (const candidate of userTokenCandidates) {
+      const result = await tryToken(candidate.token, candidate.expectedRole);
+      if (result) {
+        req.storedUser = JSON.parse(result.session);
+        hasValidSession = true;
+        break;
+      }
+    }
+
+    const shouldTryCashier =
+      !roleHint || roleHint === "CASHIER" || roleHint === "MANAGER";
+    if (cashierToken && shouldTryCashier) {
       const result = await tryToken(cashierToken);
       if (result) {
         req.storedCashier = JSON.parse(result.session);
@@ -96,8 +146,19 @@ export const protect = asyncHandler(
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const headerToken = authHeader.substring(7);
-      const result = await tryToken(headerToken);
+      const expectedRole =
+        roleHint === "OWNER" || roleHint === "ADMIN" ? roleHint : undefined;
+      const result = await tryToken(headerToken, expectedRole);
       if (result) {
+        const isStaffHint =
+          roleHint === "CASHIER" || roleHint === "MANAGER";
+        if (
+          isStaffHint &&
+          result.decoded.role !== "CASHIER" &&
+          result.decoded.role !== "MANAGER"
+        ) {
+          // Ignore non-staff tokens for cashier/manager scoped requests
+        } else {
         const user = JSON.parse(result.session);
         if (user.userType === "CASHIER" || user.userType === "MANAGER") {
           req.storedCashier = user;
@@ -105,24 +166,29 @@ export const protect = asyncHandler(
           req.storedUser = user;
         }
         hasValidSession = true;
+        }
       }
     }
 
     if (!hasValidSession) {
-      res.clearCookie("token", {
-        httpOnly: true,
-        secure: !!config.COOKIES_DOMAIN,
-        sameSite: !!config.COOKIES_DOMAIN ? "none" : "lax",
-        domain: config.COOKIES_DOMAIN,
-        path: "/",
-      });
-      res.clearCookie("cashier_token", {
-        httpOnly: true,
-        secure: !!config.COOKIES_DOMAIN,
-        sameSite: !!config.COOKIES_DOMAIN ? "none" : "lax",
-        domain: config.COOKIES_DOMAIN,
-        path: "/",
-      });
+      const cookiesToClear = new Set<string>();
+
+      if (!roleHint) {
+        cookiesToClear.add(AUTH_COOKIE_NAMES.owner);
+        cookiesToClear.add(AUTH_COOKIE_NAMES.admin);
+        cookiesToClear.add(AUTH_COOKIE_NAMES.legacy);
+        cookiesToClear.add(AUTH_COOKIE_NAMES.cashier);
+      } else if (roleHint === "OWNER") {
+        cookiesToClear.add(AUTH_COOKIE_NAMES.owner);
+        cookiesToClear.add(AUTH_COOKIE_NAMES.legacy);
+      } else if (roleHint === "ADMIN") {
+        cookiesToClear.add(AUTH_COOKIE_NAMES.admin);
+        cookiesToClear.add(AUTH_COOKIE_NAMES.legacy);
+      } else {
+        cookiesToClear.add(AUTH_COOKIE_NAMES.cashier);
+      }
+
+      cookiesToClear.forEach((name) => clearAuthCookie(res, name));
       return next(
         new AppError(Messages.NOT_LOGGED_IN, HttpStatus.UNAUTHORIZED),
       );

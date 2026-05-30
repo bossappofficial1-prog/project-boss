@@ -10,170 +10,218 @@ import { SubscriptionService } from "../service/subscription.service";
 import { redis } from "../config/redis";
 import { JwtUtil } from "../utils";
 import { ensureString } from "../utils/request";
-import { RenewSubscriptionInput, SwitchBillingCycleInput } from "../schemas/subscription.schema";
+import {
+  RenewSubscriptionInput,
+  SwitchBillingCycleInput,
+} from "../schemas/subscription.schema";
+import {
+  AUTH_COOKIE_NAMES,
+  getUserCookieName,
+  setAuthCookie,
+} from "../utils/auth-cookie";
 
 // Magic numbers for image file validation
 const IMAGE_MAGIC_NUMBERS = {
-    'image/jpeg': ['FFD8FF'],
-    'image/png': ['89504E47'],
-    'image/gif': ['474946'],
-    'image/webp': ['52494946'] // RIFF for WebP
+  "image/jpeg": ["FFD8FF"],
+  "image/png": ["89504E47"],
+  "image/gif": ["474946"],
+  "image/webp": ["52494946"], // RIFF for WebP
 };
 
 const MAX_PROOF_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 // Function to get file magic number
 const getFileMagicNumber = (filePath: string): string => {
-    const buffer = Buffer.alloc(4);
-    const fd = fs.openSync(filePath, 'r');
-    fs.readSync(fd, buffer, 0, 4, 0);
-    fs.closeSync(fd);
-    return buffer.toString('hex').toUpperCase();
+  const buffer = Buffer.alloc(4);
+  const fd = fs.openSync(filePath, "r");
+  fs.readSync(fd, buffer, 0, 4, 0);
+  fs.closeSync(fd);
+  return buffer.toString("hex").toUpperCase();
 };
 
 // Enhanced file validation function
 const validateProofFile = (file: Express.Multer.File): void => {
-    // Check file size
-    if (file.size > MAX_PROOF_IMAGE_SIZE) {
-        throw new AppError('Ukuran file terlalu besar. Maksimal 5MB.', HttpStatus.BAD_REQUEST);
-    }
-
-    // Get magic number from uploaded file
-    const magicNumber = getFileMagicNumber(file.path);
-
-    // Validate magic number matches MIME type
-    const expectedMagicNumbers = IMAGE_MAGIC_NUMBERS[file.mimetype as keyof typeof IMAGE_MAGIC_NUMBERS];
-
-    if (!expectedMagicNumbers) {
-        fs.unlinkSync(file.path);
-        throw new AppError('Format file tidak didukung. Gunakan JPG, PNG, GIF, atau WebP.', HttpStatus.BAD_REQUEST);
-    }
-
-    // Check if magic number matches any expected patterns
-    const isValidMagicNumber = expectedMagicNumbers.some(pattern =>
-        magicNumber.startsWith(pattern)
+  // Check file size
+  if (file.size > MAX_PROOF_IMAGE_SIZE) {
+    throw new AppError(
+      "Ukuran file terlalu besar. Maksimal 5MB.",
+      HttpStatus.BAD_REQUEST,
     );
+  }
 
-    if (!isValidMagicNumber) {
-        fs.unlinkSync(file.path);
-        throw new AppError('File header tidak sesuai dengan format gambar yang dideklarasikan.', HttpStatus.BAD_REQUEST);
-    }
+  // Get magic number from uploaded file
+  const magicNumber = getFileMagicNumber(file.path);
+
+  // Validate magic number matches MIME type
+  const expectedMagicNumbers =
+    IMAGE_MAGIC_NUMBERS[file.mimetype as keyof typeof IMAGE_MAGIC_NUMBERS];
+
+  if (!expectedMagicNumbers) {
+    fs.unlinkSync(file.path);
+    throw new AppError(
+      "Format file tidak didukung. Gunakan JPG, PNG, GIF, atau WebP.",
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
+  // Check if magic number matches any expected patterns
+  const isValidMagicNumber = expectedMagicNumbers.some((pattern) =>
+    magicNumber.startsWith(pattern),
+  );
+
+  if (!isValidMagicNumber) {
+    fs.unlinkSync(file.path);
+    throw new AppError(
+      "File header tidak sesuai dengan format gambar yang dideklarasikan.",
+      HttpStatus.BAD_REQUEST,
+    );
+  }
 };
 
 /**
  * Upload bukti transfer pembayaran langganan
  * POST /api/v1/subscription/upload-proof
  */
-export const uploadPaymentProofController = asyncHandler(async (req: Request, res: Response) => {
+export const uploadPaymentProofController = asyncHandler(
+  async (req: Request, res: Response) => {
     const file = req.file;
     const storedUser = req.storedUser as typeof req.storedUser & {
-        businessId?: string;
-        business?: { id: string } | null;
+      businessId?: string;
+      business?: { id: string } | null;
     };
     const businessId = storedUser?.businessId ?? storedUser?.business?.id;
-    const invoiceId = ensureString(req.body?.invoiceId, 'invoiceId');
+    const invoiceId = ensureString(req.body?.invoiceId, "invoiceId");
 
     if (!file) {
-        throw new AppError('File bukti transfer tidak diunggah', HttpStatus.BAD_REQUEST);
+      throw new AppError(
+        "File bukti transfer tidak diunggah",
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     if (!businessId) {
-        throw new AppError('Business ID tidak ditemukan di token', HttpStatus.UNAUTHORIZED);
+      throw new AppError(
+        "Business ID tidak ditemukan di token",
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     if (!invoiceId) {
-        throw new AppError('Invoice ID diperlukan', HttpStatus.BAD_REQUEST);
+      throw new AppError("Invoice ID diperlukan", HttpStatus.BAD_REQUEST);
     }
 
     validateProofFile(file);
 
     const relativePath = path.relative(process.cwd(), file.path);
-    const proofUrl = `${config.BASE_URL}/${relativePath.replace(/\\/g, '/')}`;
+    const proofUrl = `${config.BASE_URL}/${relativePath.replace(/\\/g, "/")}`;
 
     let result;
     try {
-        result = await SubscriptionService.uploadPaymentProof(businessId, invoiceId, proofUrl);
+      result = await SubscriptionService.uploadPaymentProof(
+        businessId,
+        invoiceId,
+        proofUrl,
+      );
     } catch (error) {
-        fs.unlinkSync(file.path);
-        throw error;
+      fs.unlinkSync(file.path);
+      throw error;
     }
 
     if (req.storedUser) {
-        (req.storedUser as any).subscriptionStatus = result.subscription.status;
-        (req.storedUser as any).businessId = businessId;
+      (req.storedUser as any).subscriptionStatus = result.subscription.status;
+      (req.storedUser as any).businessId = businessId;
 
-        await redis.set(
-            `session:${req.storedUser.id}`,
-            JSON.stringify(req.storedUser),
-            'EX',
-            60 * 60 * 24
-        );
+      await redis.set(
+        `session:${req.storedUser.id}`,
+        JSON.stringify(req.storedUser),
+        "EX",
+        60 * 60 * 24,
+      );
 
-        const refreshedToken = JwtUtil.generate({
-            sessionId: req.storedUser.id,
-            role: req.storedUser.role,
-            name: req.storedUser.name,
-            email: req.storedUser.email,
-            provider: req.storedUser.provider ?? 'email',
-            isVerified: req.storedUser.isVerified,
-            businessId,
-            subscriptionStatus: result.subscription.status,
-            subscriptionPlan: result.subscription.plan.code,
-        });
+      const refreshedToken = JwtUtil.generate({
+        sessionId: req.storedUser.id,
+        role: req.storedUser.role,
+        name: req.storedUser.name,
+        email: req.storedUser.email,
+        provider: req.storedUser.provider ?? "email",
+        isVerified: req.storedUser.isVerified,
+        businessId,
+        subscriptionStatus: result.subscription.status,
+        subscriptionPlan: result.subscription.plan.code,
+      });
 
-        res.cookie("token", refreshedToken, {
-            httpOnly: true,
-            secure: !!config.COOKIES_DOMAIN,
-            sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
-            domain: config.COOKIES_DOMAIN,
-            maxAge: 24 * 60 * 60 * 1000,
-            path: '/'
-        });
+      const cookieName = getUserCookieName(req.storedUser.role);
+      setAuthCookie(res, cookieName, refreshedToken, TOKEN_MAX_AGE_MS);
+      setAuthCookie(
+        res,
+        AUTH_COOKIE_NAMES.legacy,
+        refreshedToken,
+        TOKEN_MAX_AGE_MS,
+      );
     }
 
-    return ResponseUtil.success(res, {
-        message: 'Bukti transfer berhasil diunggah. Menunggu verifikasi dari admin.',
+    return ResponseUtil.success(
+      res,
+      {
+        message:
+          "Bukti transfer berhasil diunggah. Menunggu verifikasi dari admin.",
         invoice: result.invoice,
         subscription: result.subscription,
-    }, HttpStatus.CREATED);
-});
+      },
+      HttpStatus.CREATED,
+    );
+  },
+);
 
 /**
  * Get subscription invoice details
  * GET /api/v1/subscription/invoice/:invoiceId
  */
-export const getSubscriptionInvoiceController = asyncHandler(async (req: Request, res: Response) => {
+export const getSubscriptionInvoiceController = asyncHandler(
+  async (req: Request, res: Response) => {
     const storedUser = req.storedUser as typeof req.storedUser & {
-        businessId?: string;
-        business?: { id: string } | null;
+      businessId?: string;
+      business?: { id: string } | null;
     };
     const businessId = storedUser?.businessId ?? storedUser?.business?.id;
-    const invoiceId = ensureString(req.params?.invoiceId, 'invoiceId');
+    const invoiceId = ensureString(req.params?.invoiceId, "invoiceId");
 
     if (!businessId) {
-        throw new AppError('Business ID tidak ditemukan di token', HttpStatus.UNAUTHORIZED);
+      throw new AppError(
+        "Business ID tidak ditemukan di token",
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
-    const invoice = await SubscriptionService.getInvoiceDetail(businessId, invoiceId as string);
+    const invoice = await SubscriptionService.getInvoiceDetail(
+      businessId,
+      invoiceId as string,
+    );
 
     return ResponseUtil.success(res, invoice, HttpStatus.OK);
-});
+  },
+);
 
 /**
  * Get current business subscription status
  * GET /api/v1/subscription/status
  * Also refreshes JWT cookie if subscription status changed in DB
  */
-export const getSubscriptionStatusController = asyncHandler(async (req: Request, res: Response) => {
+export const getSubscriptionStatusController = asyncHandler(
+  async (req: Request, res: Response) => {
     const storedUser = req.storedUser as typeof req.storedUser & {
-        businessId?: string;
-        business?: { id: string } | null;
-        subscriptionStatus?: string;
+      businessId?: string;
+      business?: { id: string } | null;
+      subscriptionStatus?: string;
     };
     const businessId = storedUser?.businessId ?? storedUser?.business?.id;
 
     if (!businessId) {
-        throw new AppError('Business ID tidak ditemukan di token', HttpStatus.UNAUTHORIZED);
+      throw new AppError(
+        "Business ID tidak ditemukan di token",
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const status = await SubscriptionService.getSubscriptionStatus(businessId);
@@ -183,137 +231,186 @@ export const getSubscriptionStatusController = asyncHandler(async (req: Request,
     const tokenStatus = storedUser?.subscriptionStatus;
 
     if (storedUser && dbStatus && dbStatus !== tokenStatus) {
-        const refreshedToken = JwtUtil.generate({
-            sessionId: storedUser.id,
-            role: storedUser.role,
-            name: storedUser.name,
-            email: storedUser.email,
-            provider: storedUser.provider ?? 'email',
-            isVerified: storedUser.isVerified,
-            businessId,
-            subscriptionStatus: dbStatus,
-            subscriptionPlan: status.business.subscriptionPlan,
-        });
+      const refreshedToken = JwtUtil.generate({
+        sessionId: storedUser.id,
+        role: storedUser.role,
+        name: storedUser.name,
+        email: storedUser.email,
+        provider: storedUser.provider ?? "email",
+        isVerified: storedUser.isVerified,
+        businessId,
+        subscriptionStatus: dbStatus,
+        subscriptionPlan: status.business.subscriptionPlan,
+      });
 
-        await redis.set(
-            `session:${storedUser.id}`,
-            JSON.stringify({ ...storedUser, subscriptionStatus: dbStatus }),
-            'EX',
-            60 * 60 * 24
-        );
+      await redis.set(
+        `session:${storedUser.id}`,
+        JSON.stringify({ ...storedUser, subscriptionStatus: dbStatus }),
+        "EX",
+        60 * 60 * 24,
+      );
 
-        res.cookie("token", refreshedToken, {
-            httpOnly: true,
-            secure: !!config.COOKIES_DOMAIN,
-            sameSite: !!config.COOKIES_DOMAIN ? 'none' : 'lax',
-            domain: config.COOKIES_DOMAIN,
-            maxAge: 24 * 60 * 60 * 1000,
-            path: '/'
-        });
+      const cookieName = getUserCookieName(storedUser.role);
+      setAuthCookie(res, cookieName, refreshedToken, TOKEN_MAX_AGE_MS);
+      setAuthCookie(
+        res,
+        AUTH_COOKIE_NAMES.legacy,
+        refreshedToken,
+        TOKEN_MAX_AGE_MS,
+      );
     }
 
     return ResponseUtil.success(res, status, HttpStatus.OK);
-});
+  },
+);
 
-export const getOwnerSubscriptionOverviewController = asyncHandler(async (req: Request, res: Response) => {
+export const getOwnerSubscriptionOverviewController = asyncHandler(
+  async (req: Request, res: Response) => {
     const storedUser = req.storedUser as typeof req.storedUser & {
-        businessId?: string;
-        business?: { id: string } | null;
+      businessId?: string;
+      business?: { id: string } | null;
     };
     const businessId = storedUser?.businessId ?? storedUser?.business?.id;
 
     if (!businessId) {
-        throw new AppError('Business ID tidak ditemukan di token', HttpStatus.UNAUTHORIZED);
+      throw new AppError(
+        "Business ID tidak ditemukan di token",
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
-    const overview = await SubscriptionService.getOwnerSubscriptionOverview(businessId);
+    const overview =
+      await SubscriptionService.getOwnerSubscriptionOverview(businessId);
     return ResponseUtil.success(res, overview, HttpStatus.OK);
-});
+  },
+);
 
-export const listOwnerInvoicesController = asyncHandler(async (req: Request, res: Response) => {
+export const listOwnerInvoicesController = asyncHandler(
+  async (req: Request, res: Response) => {
     const storedUser = req.storedUser as typeof req.storedUser & {
-        businessId?: string;
-        business?: { id: string } | null;
+      businessId?: string;
+      business?: { id: string } | null;
     };
     const businessId = storedUser?.businessId ?? storedUser?.business?.id;
 
     if (!businessId) {
-        throw new AppError('Business ID tidak ditemukan di token', HttpStatus.UNAUTHORIZED);
+      throw new AppError(
+        "Business ID tidak ditemukan di token",
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const page = Math.max(parseInt(req.query.page as string, 10) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit as string, 10) || 10, 1), 50);
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit as string, 10) || 10, 1),
+      50,
+    );
 
-    const invoices = await SubscriptionService.listInvoices(businessId, { page, limit });
+    const invoices = await SubscriptionService.listInvoices(businessId, {
+      page,
+      limit,
+    });
 
     return ResponseUtil.paginated(
-        res,
-        invoices.data,
-        invoices.page,
-        invoices.limit,
-        invoices.total,
-        { totalPages: invoices.totalPages },
+      res,
+      invoices.data,
+      invoices.page,
+      invoices.limit,
+      invoices.total,
+      { totalPages: invoices.totalPages },
     );
-});
+  },
+);
 
-export const renewSubscriptionController = asyncHandler(async (req: Request, res: Response) => {
+export const renewSubscriptionController = asyncHandler(
+  async (req: Request, res: Response) => {
     const storedUser = req.storedUser as typeof req.storedUser & {
-        businessId?: string;
-        business?: { id: string } | null;
+      businessId?: string;
+      business?: { id: string } | null;
     };
     const businessId = storedUser?.businessId ?? storedUser?.business?.id;
 
     if (!businessId) {
-        throw new AppError('Business ID tidak ditemukan di token', HttpStatus.UNAUTHORIZED);
+      throw new AppError(
+        "Business ID tidak ditemukan di token",
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const payload = req.body as RenewSubscriptionInput;
-    const renewal = await SubscriptionService.renewSubscription(businessId, payload);
+    const renewal = await SubscriptionService.renewSubscription(
+      businessId,
+      payload,
+    );
 
-    return ResponseUtil.success(res, {
-        message: 'Invoice perpanjangan berhasil dibuat',
+    return ResponseUtil.success(
+      res,
+      {
+        message: "Invoice perpanjangan berhasil dibuat",
         invoice: renewal.invoice,
         subscription: renewal.subscription,
-    }, HttpStatus.CREATED);
-});
+      },
+      HttpStatus.CREATED,
+    );
+  },
+);
 
-export const cancelSubscriptionInvoiceController = asyncHandler(async (req: Request, res: Response) => {
+export const cancelSubscriptionInvoiceController = asyncHandler(
+  async (req: Request, res: Response) => {
     const storedUser = req.storedUser as typeof req.storedUser & {
-        businessId?: string;
-        business?: { id: string } | null;
+      businessId?: string;
+      business?: { id: string } | null;
     };
     const businessId = storedUser?.businessId ?? storedUser?.business?.id;
-    const invoiceId = ensureString(req.params?.invoiceId, 'invoiceId');
+    const invoiceId = ensureString(req.params?.invoiceId, "invoiceId");
 
     if (!businessId) {
-        throw new AppError('Business ID tidak ditemukan di token', HttpStatus.UNAUTHORIZED);
+      throw new AppError(
+        "Business ID tidak ditemukan di token",
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     if (!invoiceId) {
-        throw new AppError('Invoice ID diperlukan', HttpStatus.BAD_REQUEST);
+      throw new AppError("Invoice ID diperlukan", HttpStatus.BAD_REQUEST);
     }
 
     await SubscriptionService.cancelInvoice(businessId, invoiceId);
 
-    return ResponseUtil.success(res, { message: 'Invoice berhasil dibatalkan' });
-});
+    return ResponseUtil.success(res, {
+      message: "Invoice berhasil dibatalkan",
+    });
+  },
+);
 
-export const switchBillingCycleController = asyncHandler(async (req: Request, res: Response) => {
+export const switchBillingCycleController = asyncHandler(
+  async (req: Request, res: Response) => {
     const storedUser = req.storedUser as typeof req.storedUser & {
-        businessId?: string;
-        business?: { id: string } | null;
+      businessId?: string;
+      business?: { id: string } | null;
     };
     const businessId = storedUser?.businessId ?? storedUser?.business?.id;
 
     if (!businessId) {
-        throw new AppError('Business ID tidak ditemukan di token', HttpStatus.UNAUTHORIZED);
+      throw new AppError(
+        "Business ID tidak ditemukan di token",
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const payload = req.body as SwitchBillingCycleInput;
-    const result = await SubscriptionService.switchBillingCycle(businessId, payload);
+    const result = await SubscriptionService.switchBillingCycle(
+      businessId,
+      payload,
+    );
 
-    return ResponseUtil.success(res, {
-        message: `Billing cycle berhasil diubah ke ${result.newBillingCycle === 365 ? 'Yearly' : 'Monthly'}`,
+    return ResponseUtil.success(
+      res,
+      {
+        message: `Billing cycle berhasil diubah ke ${result.newBillingCycle === 365 ? "Yearly" : "Monthly"}`,
         data: result,
-    }, HttpStatus.OK);
-});
+      },
+      HttpStatus.OK,
+    );
+  },
+);

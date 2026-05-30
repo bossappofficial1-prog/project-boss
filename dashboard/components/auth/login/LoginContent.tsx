@@ -68,15 +68,27 @@ export default function LoginContent() {
     setError("");
 
     try {
-      await apiClient.post("/auth/login", formData);
+      const loginResponse = await apiClient.post("/auth/login", formData);
 
       queryClient.removeQueries({ queryKey: ["auth-me"] });
       try {
         sessionStorage.removeItem("auth-me-cache-v2");
       } catch {}
 
-      const meResponse = await apiClient.get("/auth/me");
-      const userRole = meResponse.data.data.user.role;
+      let userRole =
+        loginResponse.data?.data?.user?.role || loginResponse.data?.user?.role;
+
+      if (userRole) {
+        try {
+          sessionStorage.setItem("auth-role", userRole);
+        } catch {}
+      } else {
+        const meResponse = await apiClient.get("/auth/me");
+        userRole = meResponse.data.data.user.role;
+        try {
+          sessionStorage.setItem("auth-role", userRole);
+        } catch {}
+      }
 
       if (
         redirectUrl &&

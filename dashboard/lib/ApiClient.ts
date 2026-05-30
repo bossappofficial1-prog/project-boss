@@ -1,19 +1,38 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from "axios";
+
+const AUTH_ROLE_SESSION_KEY = "auth-role";
+
+const getAuthRoleHint = (): string | undefined => {
+  if (typeof window === "undefined") return undefined;
+  const pathname = window.location.pathname || "";
+
+  if (pathname.startsWith("/admin")) return "ADMIN";
+  if (pathname.startsWith("/owner")) return "OWNER";
+  if (pathname.startsWith("/cashier")) return "CASHIER";
+  if (pathname.startsWith("/manager")) return "MANAGER";
+
+  try {
+    const stored = sessionStorage.getItem(AUTH_ROLE_SESSION_KEY);
+    return stored || undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 /**
  * Centralized API Client untuk semua HTTP requests
- * 
+ *
  * Features:
  * - Automatic JWT token injection
  * - Global error handling
  * - Response data extraction
  * - Auto redirect ke login jika unauthorized
- * 
+ *
  * @example
  * ```typescript
  * // GET request
  * const users = await apiClient.get<User[]>('/api/v1/users');
- * 
+ *
  * // POST request
  * const newUser = await apiClient.post<User>('/api/v1/users', userData);
  * ```
@@ -23,11 +42,15 @@ class ApiClient {
 
   constructor() {
     this.instance = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1234/api/v1',
+      baseURL:
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        process.env.NEXT_PUBLIC_API_URL ||
+        "http://localhost:1234/api/v1",
       timeout: 30000,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
+      withCredentials: true,
     });
 
     this.setupInterceptors();
@@ -41,8 +64,13 @@ class ApiClient {
     this.instance.interceptors.request.use(
       (config) => {
         // Only add token in browser environment
-        if (typeof window !== 'undefined') {
-          const token = localStorage.getItem('token');
+        if (typeof window !== "undefined") {
+          const roleHint = getAuthRoleHint();
+          if (roleHint) {
+            config.headers = config.headers ?? {};
+            config.headers["X-Auth-Role"] = roleHint;
+          }
+          const token = localStorage.getItem("token");
           if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
           }
@@ -51,7 +79,7 @@ class ApiClient {
       },
       (error) => {
         return Promise.reject(error);
-      }
+      },
     );
 
     // Response interceptor - Handle errors globally
@@ -63,26 +91,26 @@ class ApiClient {
       (error: AxiosError<any>) => {
         // Handle 401 Unauthorized - redirect to login
         if (error.response?.status === 401) {
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/auth/login';
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            window.location.href = "/auth/login";
           }
         }
 
         // Extract error message
-        const errorMessage = 
-          error.response?.data?.message || 
+        const errorMessage =
+          error.response?.data?.message ||
           error.response?.data?.error ||
-          error.message || 
-          'Terjadi kesalahan pada server';
+          error.message ||
+          "Terjadi kesalahan pada server";
 
         return Promise.reject({
           message: errorMessage,
           status: error.response?.status,
           data: error.response?.data,
         });
-      }
+      },
     );
   }
 
@@ -97,9 +125,9 @@ class ApiClient {
    * POST request
    */
   async post<T = any>(
-    url: string, 
-    data?: any, 
-    config?: AxiosRequestConfig
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
   ): Promise<T> {
     return this.instance.post<T, T>(url, data, config);
   }
@@ -108,9 +136,9 @@ class ApiClient {
    * PUT request
    */
   async put<T = any>(
-    url: string, 
-    data?: any, 
-    config?: AxiosRequestConfig
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
   ): Promise<T> {
     return this.instance.put<T, T>(url, data, config);
   }
@@ -119,9 +147,9 @@ class ApiClient {
    * PATCH request
    */
   async patch<T = any>(
-    url: string, 
-    data?: any, 
-    config?: AxiosRequestConfig
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
   ): Promise<T> {
     return this.instance.patch<T, T>(url, data, config);
   }
@@ -137,13 +165,13 @@ class ApiClient {
    * Upload file with multipart/form-data
    */
   async upload<T = any>(
-    url: string, 
-    formData: FormData, 
-    onUploadProgress?: (progressEvent: any) => void
+    url: string,
+    formData: FormData,
+    onUploadProgress?: (progressEvent: any) => void,
   ): Promise<T> {
     return this.instance.post<T, T>(url, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
       onUploadProgress,
     });
