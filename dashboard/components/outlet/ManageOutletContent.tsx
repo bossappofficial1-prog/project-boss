@@ -150,14 +150,22 @@ export default function ManageOutletContent() {
 
     // Only send image fields when the user uploads a new file.
     if (outletImage instanceof File) {
-      nextImageUrl = (
-        await uploadApi.uploadImage(outletImage, { scope: "outlet" })
-      ).url;
+      try {
+        nextImageUrl = (
+          await uploadApi.uploadImage(outletImage, { scope: "outlet" })
+        ).url;
+      } catch (error) {
+        throw error;
+      }
     }
     if (qrisImage instanceof File) {
-      nextQrImageUrl = (
-        await uploadApi.uploadImage(qrisImage, { scope: "outlet" })
-      ).url;
+      try {
+        nextQrImageUrl = (
+          await uploadApi.uploadImage(qrisImage, { scope: "outlet" })
+        ).url;
+      } catch (error) {
+        throw error;
+      }
     }
 
     const payload = {
@@ -204,7 +212,7 @@ export default function ManageOutletContent() {
     }
   };
 
-  const { mutate: submit, isPending: isSaving } = useMutation({
+  const { mutateAsync: submit, isPending: isSaving } = useMutation({
     mutationFn: handleSave,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["me"] });
@@ -244,14 +252,6 @@ export default function ManageOutletContent() {
           "image/png": [".png"],
           "image/webp": [".webp"],
         },
-        colSpan: 6,
-      },
-      {
-        name: "qrisString",
-        label: "Teks String QRIS EMVCo (Opsional)",
-        type: "textarea",
-        description: "Salin teks QRIS (diawali 000201...) dari hasil scan barcode QRIS statis outlet Anda. Ini dibutuhkan agar kasir bisa membuat QRIS Dinamis otomatis dengan nominal terisi.",
-        placeholder: "00020101021126650016ID.CO.QRIS.WWW...",
         colSpan: 6,
       },
       {
@@ -370,24 +370,28 @@ export default function ManageOutletContent() {
 
   if (!selectedOutlet?.id)
     return (
-      <EmptyOutletState
-        onAddOutlet={() => router.push("/owner#add-outlet")}
-      />
+      <EmptyOutletState onAddOutlet={() => router.push("/owner#add-outlet")} />
     );
   if (outletLoading) return <ManageOutletSkeleton />;
 
   return (
     <div className="space-y-4">
       {isPlanMismatch && (
-        <Alert variant="destructive" className="border-rose-500/50 bg-rose-500/5 py-4">
+        <Alert
+          variant="destructive"
+          className="border-rose-500/50 bg-rose-500/5 py-4"
+        >
           <AlertTriangle className="h-5 w-5 text-rose-500" />
           <div className="ml-3">
             <AlertTitle className="text-sm font-black uppercase tracking-widest text-rose-600">
               Limitasi Paket Terdeteksi
             </AlertTitle>
             <AlertDescription className="mt-1 text-xs font-medium text-rose-500/80 leading-relaxed">
-              Outlet ini bertipe <strong>CUSTOM</strong>, namun paket langganan Anda saat ini tidak mendukung tipe tersebut.
-              Beberapa fitur akan dibatasi dan outlet akan beroperasi dengan mode standar <strong>(F&B)</strong> sampai Anda melakukan upgrade ke paket <strong>PRO</strong> atau mengubah tipe outlet.
+              Outlet ini bertipe <strong>CUSTOM</strong>, namun paket langganan
+              Anda saat ini tidak mendukung tipe tersebut. Beberapa fitur akan
+              dibatasi dan outlet akan beroperasi dengan mode standar{" "}
+              <strong>(F&B)</strong> sampai Anda melakukan upgrade ke paket{" "}
+              <strong>PRO</strong> atau mengubah tipe outlet.
             </AlertDescription>
           </div>
           <div className="ml-auto">

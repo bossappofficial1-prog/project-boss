@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import ImportDataModal from "@/components/modals/ImportDataModal";
 import AddOrEditProductServiceModal from "@/components/modals/AddProductServiceModal";
+import ProductMediaModal from "@/components/modals/product-media-modal";
 import ConfirmationModal from "@/components/ui/confirmation-modal";
 import TicketDetailDialog from "./TicketDetailDialog";
 
@@ -33,6 +34,7 @@ import {
   Clock,
   Ticket,
   Eye,
+  ImageIcon,
 } from "lucide-react";
 import { EmptyOutletState } from "@/components/ui/empty-outlet";
 import { useRouter } from "next/navigation";
@@ -113,9 +115,7 @@ function OverviewCard({
           {icon}
         </div>
         <div className="space-y-0.5">
-          <p className="text-[10px] font-bold text-muted-foreground">
-            {label}
-          </p>
+          <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
           <p className="text-2xl font-bold tracking-tighter text-foreground/90 tabular-nums">
             {value}
           </p>
@@ -134,23 +134,28 @@ export default function ProductsContent() {
   const [showAddOrEditModal, setShowAddOrEditModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
   const [showTicketDetail, setShowTicketDetail] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(
     null,
   );
+  const [mediaProduct, setMediaProduct] = useState<ProductItem | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [action, setAction] = useState<"add" | "edit">("add");
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
-  const { allowedProductTypes, selectedOutlet: outletObj, isPlanMismatch } = useOutletContext();
+  const {
+    allowedProductTypes,
+    selectedOutlet: outletObj,
+    isPlanMismatch,
+  } = useOutletContext();
   const router = useRouter();
 
   const addButtonText = useMemo(() => {
     if (!outletObj) return "Tambah Produk";
 
-    const type = (outletObj.type === "CUSTOM" && isPlanMismatch)
-      ? "FNB"
-      : outletObj.type;
+    const type =
+      outletObj.type === "CUSTOM" && isPlanMismatch ? "FNB" : outletObj.type;
 
     switch (type) {
       case "EVENT":
@@ -233,7 +238,10 @@ export default function ProductsContent() {
         icon: <Package className="h-5 w-5" />,
         label: allowedProductTypes.length === 1 ? "Total Barang" : "Barang",
         value: overview.goods,
-        description: allowedProductTypes.length === 1 ? `${overview.active} aktif` : undefined,
+        description:
+          allowedProductTypes.length === 1
+            ? `${overview.active} aktif`
+            : undefined,
         variant: "default" as const,
       });
     }
@@ -242,9 +250,13 @@ export default function ProductsContent() {
       list.push({
         id: "services",
         icon: <Wrench className="h-5 w-5" />,
-        label: allowedProductTypes.length === 1 ? "Total Jasa" : "Jasa / Layanan",
+        label:
+          allowedProductTypes.length === 1 ? "Total Jasa" : "Jasa / Layanan",
         value: overview.services,
-        description: allowedProductTypes.length === 1 ? `${overview.active} aktif` : undefined,
+        description:
+          allowedProductTypes.length === 1
+            ? `${overview.active} aktif`
+            : undefined,
         variant: "success" as const,
       });
     }
@@ -253,9 +265,15 @@ export default function ProductsContent() {
       list.push({
         id: "tickets",
         icon: <Ticket className="h-5 w-5" />,
-        label: allowedProductTypes.length === 1 ? "Total Tiket Event" : "Tiket Event",
+        label:
+          allowedProductTypes.length === 1
+            ? "Total Tiket Event"
+            : "Tiket Event",
         value: overview.tickets,
-        description: allowedProductTypes.length === 1 ? `${overview.active} aktif` : undefined,
+        description:
+          allowedProductTypes.length === 1
+            ? `${overview.active} aktif`
+            : undefined,
         variant: "default" as const,
       });
     }
@@ -266,7 +284,8 @@ export default function ProductsContent() {
         icon: <AlertCircle className="h-5 w-5" />,
         label: "Stok Rendah",
         value: overview.lowStock,
-        variant: overview.lowStock > 0 ? ("danger" as const) : ("default" as const),
+        variant:
+          overview.lowStock > 0 ? ("danger" as const) : ("default" as const),
         description: overview.lowStock > 0 ? "Perlu tindakan" : "Semua aman",
       });
     }
@@ -299,13 +318,16 @@ export default function ProductsContent() {
     }
   };
 
+  const handleMediaModalChange = (open: boolean) => {
+    setShowMediaModal(open);
+    if (!open) setMediaProduct(null);
+  };
+
   if (isLoading && products.length === 0) return <PageSkeleton />;
 
   if (!isLoading && !hasBusinessProfile && !hasOutlet) {
     return (
-      <EmptyOutletState
-        onAddOutlet={() => router.push(`/owner#add-outlet`)}
-      />
+      <EmptyOutletState onAddOutlet={() => router.push(`/owner#add-outlet`)} />
     );
   }
 
@@ -322,44 +344,44 @@ export default function ProductsContent() {
       <div className="space-y-6">
         {/* Header */}
         <div data-guide="products-header">
-        <SectionHeader
-          title="Produk & Jasa"
-          description={`Kelola inventaris barang, layanan jasa, dan tiket event untuk ${currentOutletName}`}
-          actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  setAction("add");
-                  setShowAddOrEditModal(true);
-                }}
-                disabled={!hasOutlet}
-                className="h-9 px-4 gap-2 font-bold text-xs uppercase tracking-wider"
-              >
-                <Plus className="h-4 w-4" /> {addButtonText}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowImportModal(true)}
-                disabled={!hasOutlet}
-                className="h-9 px-4 font-bold text-xs uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none"
-              >
-                <Upload className="mr-2 h-4 w-4" /> Import
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExport}
-                disabled={isExporting || products.length === 0}
-                className="h-9 px-4 font-bold text-xs uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none"
-              >
-                <Download className="mr-2 h-4 w-4" />{" "}
-                {isExporting ? "Exporting..." : "Export"}
-              </Button>
-            </div>
-          }
-        />
+          <SectionHeader
+            title="Produk & Jasa"
+            description={`Kelola inventaris barang, layanan jasa, dan tiket event untuk ${currentOutletName}`}
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setAction("add");
+                    setShowAddOrEditModal(true);
+                  }}
+                  disabled={!hasOutlet}
+                  className="h-9 px-4 gap-2 font-bold text-xs uppercase tracking-wider"
+                >
+                  <Plus className="h-4 w-4" /> {addButtonText}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowImportModal(true)}
+                  disabled={!hasOutlet}
+                  className="h-9 px-4 font-bold text-xs uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none"
+                >
+                  <Upload className="mr-2 h-4 w-4" /> Import
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleExport}
+                  disabled={isExporting || products.length === 0}
+                  className="h-9 px-4 font-bold text-xs uppercase tracking-wider border-border/60 hover:bg-muted/50 transition-all shadow-none"
+                >
+                  <Download className="mr-2 h-4 w-4" />{" "}
+                  {isExporting ? "Exporting..." : "Export"}
+                </Button>
+              </div>
+            }
+          />
         </div>
 
         {/* Error */}
@@ -386,14 +408,22 @@ export default function ProductsContent() {
         )}
 
         {/* Overview Cards */}
-        <div data-guide="products-overview" className={cn("grid gap-4",
-          cards.length === 1 ? "grid-cols-1" : "grid-cols-2",
-          cards.length === 1 ? "sm:grid-cols-1" :
-            cards.length === 2 ? "sm:grid-cols-2" :
-              cards.length === 3 ? "sm:grid-cols-3" :
-                cards.length === 4 ? "sm:grid-cols-4" :
-                  "sm:grid-cols-5"
-        )}>
+        <div
+          data-guide="products-overview"
+          className={cn(
+            "grid gap-4",
+            cards.length === 1 ? "grid-cols-1" : "grid-cols-2",
+            cards.length === 1
+              ? "sm:grid-cols-1"
+              : cards.length === 2
+                ? "sm:grid-cols-2"
+                : cards.length === 3
+                  ? "sm:grid-cols-3"
+                  : cards.length === 4
+                    ? "sm:grid-cols-4"
+                    : "sm:grid-cols-5",
+          )}
+        >
           {cards.map((card) => (
             <OverviewCard
               key={card.id}
@@ -458,9 +488,9 @@ export default function ProductsContent() {
                   onPaginationChange={
                     tab === "all"
                       ? ({ page, limit }) => {
-                        setItemsPerPage(limit);
-                        setCurrentPage(page);
-                      }
+                          setItemsPerPage(limit);
+                          setCurrentPage(page);
+                        }
                       : undefined
                   }
                   pageSizeOptions={pageSizeOptions}
@@ -559,6 +589,54 @@ export default function ProductsContent() {
                                 tersisa
                               </p>
                             )}
+                          </div>
+                        );
+                      },
+                    },
+                    {
+                      accessorKey: "media",
+                      header: "Media",
+                      enableSorting: false,
+                      cell(props) {
+                        const p = props.row.original as ProductItem;
+                        if (p.type === "TICKET") {
+                          return (
+                            <span className="text-muted-foreground">—</span>
+                          );
+                        }
+                        const mediaCount = p.media?.length ?? 0;
+                        return (
+                          <div className="flex items-center gap-2">
+                            {mediaCount > 0 && (
+                              <Badge
+                                variant="outline"
+                                className="px-2 py-0 rounded-md border-border/60 text-[9px] font-bold uppercase tracking-tighter"
+                              >
+                                {mediaCount} Media
+                              </Badge>
+                            )}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setMediaProduct(p);
+                                setShowMediaModal(true);
+                              }}
+                              className="h-8 px-3 text-[10px] font-bold uppercase tracking-wider border-border/60"
+                            >
+                              {mediaCount > 0 ? (
+                                <>
+                                  <ImageIcon className="mr-1.5 h-3.5 w-3.5" />
+                                  Kelola
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                                  Tambah
+                                </>
+                              )}
+                            </Button>
                           </div>
                         );
                       },
@@ -680,17 +758,17 @@ export default function ProductsContent() {
                   rowActions={(row: ProductItem) => [
                     ...(row.type === "TICKET"
                       ? [
-                        {
-                          icon: Eye,
-                          variant: "ghost" as const,
-                          className:
-                            "h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-600",
-                          onClick(r: ProductItem) {
-                            setSelectedProduct(r);
-                            setShowTicketDetail(true);
+                          {
+                            icon: Eye,
+                            variant: "ghost" as const,
+                            className:
+                              "h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-600",
+                            onClick(r: ProductItem) {
+                              setSelectedProduct(r);
+                              setShowTicketDetail(true);
+                            },
                           },
-                        },
-                      ]
+                        ]
                       : []),
                     {
                       icon: PenBox,
@@ -719,7 +797,11 @@ export default function ProductsContent() {
                 />
               </TabsContent>
             ))}
-          <TabsContent value="categories" className="mt-3" data-guide="products-categories">
+          <TabsContent
+            value="categories"
+            className="mt-3"
+            data-guide="products-categories"
+          >
             {selectedOutlet ? (
               <CategoryManager outletId={selectedOutlet} />
             ) : (
@@ -750,6 +832,13 @@ export default function ProductsContent() {
         onOpenChange={setShowImportModal}
         outletId={selectedOutlet || null}
         onImported={handleRefreshData}
+      />
+
+      <ProductMediaModal
+        open={showMediaModal}
+        onOpenChange={handleMediaModalChange}
+        product={mediaProduct}
+        onSaved={handleRefreshData}
       />
 
       {showDeleteModal && selectedProduct && (

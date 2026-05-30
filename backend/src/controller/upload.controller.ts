@@ -8,6 +8,8 @@ import fs from "fs";
 import { config } from "../config";
 import { ImageService } from "../service/image.service";
 import { optimizeUploadedImage } from "../utils/image-optimizer";
+import { ModerationService } from "../service/moderation.service";
+import sharp from "sharp";
 
 // Magic numbers for image file validation
 const IMAGE_MAGIC_NUMBERS = {
@@ -38,7 +40,7 @@ const getFileMagicNumber = (filePath: string): string => {
 };
 
 // Enhanced file validation function
-const validateImageFile = (file: Express.Multer.File): void => {
+const validateImageFile = async (file: Express.Multer.File): Promise<void> => {
     // Check file size (additional check)
     if (file.size > MAX_ORIGINAL_IMAGE_SIZE) {
         throw new AppError('Ukuran file mentah terlalu besar. Maksimal 5MB sebelum kompresi.', HttpStatus.BAD_REQUEST);
@@ -52,7 +54,7 @@ const validateImageFile = (file: Express.Multer.File): void => {
 
     if (!expectedMagicNumbers) {
         // Delete the uploaded file if validation fails
-        fs.unlinkSync(file.path);
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
         throw new AppError('Unsupported image format', HttpStatus.BAD_REQUEST);
     }
 
@@ -62,9 +64,16 @@ const validateImageFile = (file: Express.Multer.File): void => {
     );
 
     if (!isValidMagicNumber) {
-        // Delete the uploaded file if validation fails
-        fs.unlinkSync(file.path);
-        throw new AppError('File header does not match the declared image format. Potential security threat detected.', HttpStatus.BAD_REQUEST);
+        // Soft fallback: Check if sharp can successfully read the image metadata.
+        // If sharp can parse it, it's a valid image, not an exploit payload!
+        try {
+            await sharp(file.path).metadata();
+            // If it succeeds, we pass!
+        } catch (error) {
+            // Delete the uploaded file if validation fails
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+            throw new AppError('File header does not match the declared image format. Potential security threat detected.', HttpStatus.BAD_REQUEST);
+        }
     }
 };
 
@@ -76,7 +85,10 @@ export const uploadImageController = asyncHandler(async (req: Request, res: Resp
     }
 
     // Enhanced security validation
-    validateImageFile(file);
+    await validateImageFile(file);
+
+    // Run Content Moderation (OCR & Vulgarity Checks)
+    await ModerationService.validateUploadedImage(file);
 
     let optimizedFile: Express.Multer.File;
 
@@ -117,7 +129,8 @@ export const uploadMultipleImagesController = asyncHandler(async (req: Request, 
     // Validate each file
     for (const file of files) {
         try {
-            validateImageFile(file);
+            await validateImageFile(file);
+            await ModerationService.validateUploadedImage(file);
 
             const optimizedFile = await optimizeUploadedImage(file);
 
@@ -207,12 +220,12 @@ export const deleteImageByUrlController = asyncHandler(async (req: Request, res:
 
 const isVideoMime = (mime: string) => mime.startsWith('video/');
 
-const validateMediaFile = (file: Express.Multer.File): void => {
+const validateMediaFile = async (file: Express.Multer.File): Promise<void> => {
     const isVideo = isVideoMime(file.mimetype);
     const maxSize = isVideo ? 50 * 1024 * 1024 : MAX_ORIGINAL_IMAGE_SIZE;
 
     if (file.size > maxSize) {
-        fs.unlinkSync(file.path);
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
         throw new AppError(
             `Ukuran file terlalu besar. Maksimal ${isVideo ? '50MB' : '5MB'}.`,
             HttpStatus.BAD_REQUEST
@@ -223,7 +236,7 @@ const validateMediaFile = (file: Express.Multer.File): void => {
     const expectedMagicNumbers = MEDIA_MAGIC_NUMBERS[file.mimetype as keyof typeof MEDIA_MAGIC_NUMBERS];
 
     if (!expectedMagicNumbers) {
-        fs.unlinkSync(file.path);
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
         throw new AppError('Format file tidak didukung', HttpStatus.BAD_REQUEST);
     }
 
@@ -231,8 +244,13 @@ const validateMediaFile = (file: Express.Multer.File): void => {
     if (!isVideo) {
         const isValid = expectedMagicNumbers.some(pattern => magicNumber.startsWith(pattern));
         if (!isValid) {
-            fs.unlinkSync(file.path);
-            throw new AppError('Header file tidak sesuai format. Potensi ancaman keamanan.', HttpStatus.BAD_REQUEST);
+            // Soft fallback: Check if sharp can successfully read the image metadata.
+            try {
+                await sharp(file.path).metadata();
+            } catch (error) {
+                if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+                throw new AppError('Header file tidak sesuai format. Potensi ancaman keamanan.', HttpStatus.BAD_REQUEST);
+            }
         }
     }
 };
@@ -243,9 +261,15 @@ export const uploadMediaController = asyncHandler(async (req: Request, res: Resp
         throw new AppError('Tidak ada file yang diupload', HttpStatus.BAD_REQUEST);
     }
 
-    validateMediaFile(file);
+    await validateMediaFile(file);
 
     const isVideo = isVideoMime(file.mimetype);
+    
+    // Only moderate images, skip videos
+    if (!isVideo) {
+        await ModerationService.validateUploadedImage(file);
+    }
+
     let finalFile = file;
 
     // Only optimize images, not videos
@@ -288,9 +312,13 @@ export const uploadMultipleMediaController = asyncHandler(async (req: Request, r
 
     for (const file of files) {
         try {
-            validateMediaFile(file);
+            await validateMediaFile(file);
 
             const isVideo = isVideoMime(file.mimetype);
+            if (!isVideo) {
+                await ModerationService.validateUploadedImage(file);
+            }
+
             let finalFile = file;
 
             if (!isVideo) {

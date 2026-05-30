@@ -77,6 +77,7 @@
     "puppeteer-core": "^24.40.0",
     "sharp": "^0.34.5",
     "socket.io": "^4.8.1",
+    "tesseract.js": "^7.0.0",
     "twilio": "^5.7.3",
     "web-push": "^3.6.7",
     "xendit-node": "^7.0.0",

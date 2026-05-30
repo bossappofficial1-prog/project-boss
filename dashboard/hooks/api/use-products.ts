@@ -4,7 +4,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { productApi, uploadApi } from "@/lib/api";
 import { toast } from "sonner";
 import z from "zod";
-import { type CreateProductPayload, type UpdateProductPayload } from "@/lib/apis/product";
+import {
+  type CreateProductPayload,
+  type UpdateProductPayload,
+} from "@/lib/apis/product";
 
 // ==========================================
 // Schemas and Types
@@ -21,7 +24,9 @@ const baseSchema = z.object({
   taxName: z.string().optional(),
   file: z
     .union([
-      z.instanceof(File).refine((f) => f.size <= 3 * 1024 * 1024, "Maksimal 3MB"),
+      z
+        .instanceof(File)
+        .refine((f) => f.size <= 3 * 1024 * 1024, "Maksimal 3MB"),
       z.string(),
     ])
     .optional(),
@@ -50,7 +55,10 @@ const serviceSchema = z.object({
   durationMinutes: z.coerce.number().min(1, "Durasi wajib diisi"),
   sellingPrice: z.coerce.number().min(1, "Harga wajib diisi"),
   providerName: z.string().min(1, "Nama provider wajib diisi"),
-  providerPhone: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
+  providerPhone: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.string().optional(),
+  ),
   providerEmail: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.string().email().optional(),
@@ -94,11 +102,14 @@ const ticketSchema = z.object({
   saleEndDate: z.coerce.date().nullable().optional(),
   terms: z.string().nullable().optional(),
   codeFormat: z.enum(["QR_CODE", "BARCODE_128"]).default("QR_CODE"),
-  designConfig: z.object({
-    primaryColor: z.string().optional(),
-    backgroundColor: z.string().optional(),
-    layoutType: z.string().optional(),
-  }).nullable().optional(),
+  designConfig: z
+    .object({
+      primaryColor: z.string().optional(),
+      backgroundColor: z.string().optional(),
+      layoutType: z.string().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type TicketSchemaType = z.infer<typeof ticketSchema>;
@@ -145,8 +156,13 @@ export function useCreateProduct() {
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateProductPayload }) =>
-      productApi.update(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateProductPayload;
+    }) => productApi.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["products"],
@@ -166,7 +182,6 @@ export interface UseProductFormSubmitProps {
   productId?: string | null;
   onSuccess?: () => void;
   onClose?: () => void;
-  mediaItems: any[];
 }
 
 export function useProductFormSubmit({
@@ -176,7 +191,6 @@ export function useProductFormSubmit({
   productId,
   onSuccess,
   onClose,
-  mediaItems,
 }: UseProductFormSubmitProps) {
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
@@ -191,7 +205,9 @@ export function useProductFormSubmit({
     try {
       // 1. Upload image if a new one is selected
       if (file) {
-        const uploaded = await uploadApi.uploadImage(file, { scope: "product" });
+        const uploaded = await uploadApi.uploadImage(file, {
+          scope: "product",
+        });
         uploadedImageUrl = uploaded.url;
       }
 
@@ -203,7 +219,9 @@ export function useProductFormSubmit({
         categoryId: values.categoryId || null,
         taxPercentage: values.taxPercentage,
         taxName: values.taxName || undefined,
-        image: uploadedImageUrl || (typeof values.file === "string" ? values.file : undefined),
+        image:
+          uploadedImageUrl ||
+          (typeof values.file === "string" ? values.file : undefined),
       };
 
       if (action === "add") {
@@ -226,7 +244,6 @@ export function useProductFormSubmit({
             barcode: values.goods.barcode || undefined,
             sku: values.goods.sku || undefined,
           };
-          payload.media = mediaItems.length > 0 ? mediaItems : [];
         } else if (values.type === "SERVICE" && values.service) {
           payload.service = {
             durationMinutes: values.service.durationMinutes,
@@ -252,7 +269,6 @@ export function useProductFormSubmit({
             sundayOpen: parseDate(values.service.sundayOpen),
             sundayClose: parseDate(values.service.sundayClose),
           };
-          payload.media = mediaItems.length > 0 ? mediaItems : [];
         } else if (values.type === "TICKET" && values.ticket) {
           payload.ticket = {
             sellingPrice: values.ticket.sellingPrice,
@@ -292,7 +308,6 @@ export function useProductFormSubmit({
             barcode: values.goods.barcode || undefined,
             sku: values.goods.sku || undefined,
           };
-          payload.media = mediaItems.length > 0 ? mediaItems : [];
         } else if (values.type === "SERVICE" && values.service) {
           payload.service = {
             durationMinutes: values.service.durationMinutes,
@@ -318,7 +333,6 @@ export function useProductFormSubmit({
             sundayOpen: parseDate(values.service.sundayOpen),
             sundayClose: parseDate(values.service.sundayClose),
           };
-          payload.media = mediaItems.length > 0 ? mediaItems : [];
         } else if (values.type === "TICKET" && values.ticket) {
           payload.ticket = {
             sellingPrice: values.ticket.sellingPrice,
@@ -349,7 +363,10 @@ export function useProductFormSubmit({
         try {
           await uploadApi.deleteByUrl(uploadedImageUrl);
         } catch (rollbackError) {
-          console.error("Failed to delete orphaned product image:", rollbackError);
+          console.error(
+            "Failed to delete orphaned product image:",
+            rollbackError,
+          );
         }
       }
       toast.error(error?.response?.data?.message || "Gagal menyimpan produk");

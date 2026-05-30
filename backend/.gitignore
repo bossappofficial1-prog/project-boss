@@ -24,6 +24,7 @@ package-lock.json
 # Temporary files & assets (kecuali yang diizinkan)
 tmp/*
 !tmp/info.txt
+eng.traineddata
 
 uploads/
 

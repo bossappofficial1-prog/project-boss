@@ -590,6 +590,186 @@
       "tip": "Segera laporkan kepada Manager jika terdapat selisih kas yang cukup besar saat penutupan shift untuk ditindaklanjuti bersama."
     },
     {
+      "id": "cashier-notification-setup",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Mengaktifkan Notifikasi di Kasir",
+      "description": "Cara mengizinkan notifikasi agar kasir menerima info pesanan baru, status pembayaran, dan pembaruan sistem secara real-time.",
+      "icon": "Bell",
+      "steps": [
+        {
+          "title": "Cari Ikon Notifikasi",
+          "desc": "Di bar atas kasir, klik ikon lonceng di sisi kanan. Ikon ini berubah jika notifikasi sudah aktif."
+        },
+        {
+          "title": "Izinkan Notifikasi Browser",
+          "desc": "Jika muncul prompt browser, pilih 'Allow/Izinkan' untuk mengaktifkan notifikasi."
+        },
+        {
+          "title": "Cek Status Ikon",
+          "desc": "Ikon lonceng akan berubah menjadi aktif ketika notifikasi berhasil diaktifkan."
+        }
+      ],
+      "tip": "Jika izin diblokir, klik ikon gembok di kiri alamat situs lalu ubah izin notifikasi ke 'Allow/Izinkan'.",
+      "warning": "Pada mode Private/Incognito atau browser tanpa Service Worker, notifikasi bisa gagal diaktifkan."
+    },
+    {
+      "id": "cashier-printer-setup",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Menghubungkan & Mengatur Printer Struk",
+      "description": "Cara menghubungkan printer kasir dan mengatur format struk dari ikon printer di bar atas.",
+      "icon": "Printer",
+      "steps": [
+        {
+          "title": "Buka Pengaturan Printer",
+          "desc": "Klik ikon printer di bar atas kasir untuk membuka dialog 'Pengaturan printer'."
+        },
+        {
+          "title": "Hubungkan Perangkat",
+          "desc": "Di tab 'Koneksi printer', pilih Bluetooth atau USB lalu ikuti dialog browser untuk menyambungkan perangkat."
+        },
+        {
+          "title": "Test Print",
+          "desc": "Setelah tersambung, klik tombol 'Test print' untuk memastikan printer berfungsi."
+        },
+        {
+          "title": "Atur Format Struk",
+          "desc": "Buka tab 'Format struk' untuk mengatur lebar kertas, logo, dan informasi struk, lalu simpan perubahan."
+        }
+      ],
+      "tip": "Jika ingin mengganti perangkat, klik tombol 'Ganti perangkat printer' di tab koneksi.",
+      "warning": "Pastikan browser mendukung Web Bluetooth atau WebUSB (Chrome/Edge) agar printer dapat terhubung."
+    },
+    {
+      "id": "cashier-quick-stock-in",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Stok Masuk Cepat via Barcode",
+      "description": "Cara menambah stok barang dengan cepat melalui dialog Stok Masuk di kasir.",
+      "icon": "ScanLine",
+      "steps": [
+        {
+          "title": "Buka Dialog Stok Masuk",
+          "desc": "Klik menu 'Stok Masuk' di navbar kasir untuk membuka dialog Stok Masuk Cepat."
+        },
+        {
+          "title": "Scan atau Ketik Barcode",
+          "desc": "Masukkan barcode produk lalu klik 'Cari Barang' untuk menarik data produk."
+        },
+        {
+          "title": "Isi Quantity & HPP",
+          "desc": "Isi jumlah stok masuk dan HPP per unit, lalu simpan."
+        },
+        {
+          "title": "(Opsional) Tanggal Kedaluwarsa",
+          "desc": "Tambahkan tanggal kedaluwarsa bila perlu, termasuk shortcut +1 bulan/+6 bulan/+1 tahun."
+        }
+      ],
+      "tip": "Pastikan barcode produk sudah terdaftar agar pencarian berhasil.",
+      "warning": "Menu ini hanya tersedia untuk outlet Retail/Custom yang menggunakan stok barang."
+    },
+    {
+      "id": "cashier-switch-account",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Ganti Akun Kasir",
+      "description": "Cara berpindah akun kasir tanpa keluar dari halaman POS.",
+      "icon": "UserPlus",
+      "steps": [
+        {
+          "title": "Buka Dialog Ganti Akun",
+          "desc": "Klik tombol 'Ganti Akun' di bar atas kasir (desktop)."
+        },
+        {
+          "title": "Pilih Akun",
+          "desc": "Pilih akun dari daftar riwayat login, lalu masukkan password."
+        },
+        {
+          "title": "Masuk",
+          "desc": "Klik 'Masuk' untuk berpindah ke akun yang dipilih."
+        }
+      ],
+      "tip": "Riwayat akun tersimpan di perangkat ini untuk memudahkan login cepat.",
+      "warning": "Jika akun tidak muncul, pastikan pernah login sebelumnya di perangkat yang sama."
+    },
+    {
+      "id": "cashier-attendance",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Absen Masuk & Pulang",
+      "description": "Cara mencatat kehadiran harian kasir langsung dari bar atas.",
+      "icon": "Clock",
+      "steps": [
+        {
+          "title": "Absen Masuk",
+          "desc": "Klik tombol 'Absen Masuk' di bar atas. Sistem akan meminta lokasi jika diizinkan browser."
+        },
+        {
+          "title": "Absen Pulang",
+          "desc": "Setelah shift selesai, klik 'Absen Pulang' di bar atas untuk menyimpan jam pulang."
+        },
+        {
+          "title": "Cek Status",
+          "desc": "Jika sudah absen pulang, status berubah menjadi 'Sudah Absen'."
+        }
+      ],
+      "tip": "Izinkan akses lokasi agar data kehadiran lebih akurat.",
+      "warning": "Jika tombol tidak muncul, pastikan outlet aktif dan akun kasir sudah login dengan benar."
+    },
+    {
+      "id": "cashier-close-shift",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Tutup Shift Kasir",
+      "description": "Cara menutup shift dan memasukkan cash akhir langsung dari bar atas.",
+      "icon": "LogOut",
+      "steps": [
+        {
+          "title": "Buka Dialog Tutup Shift",
+          "desc": "Klik tombol 'Tutup Shift' di bar atas (muncul saat shift retail sedang aktif)."
+        },
+        {
+          "title": "Isi Closing Cash",
+          "desc": "Masukkan nominal cash akhir dan catatan jika perlu, lalu klik 'Tutup Shift'."
+        },
+        {
+          "title": "Konfirmasi",
+          "desc": "Sistem akan menampilkan notifikasi jika shift berhasil ditutup."
+        }
+      ],
+      "tip": "Pastikan cash akhir sudah dihitung sebelum menutup shift.",
+      "warning": "Fitur ini hanya muncul pada outlet retail saat shift aktif."
+    },
+    {
+      "id": "cashier-pob-stock",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Stok Masuk & Retur via POB",
+      "description": "Mencatat pembelian stok barang (stok masuk) atau retur stok dengan faktur dan supplier.",
+      "icon": "Package",
+      "steps": [
+        {
+          "title": "Pilih Mode Transaksi",
+          "desc": "Di panel Katalog Barang, pilih tab 'Stok Masuk' untuk pembelian atau 'Retur Stok' untuk pengembalian."
+        },
+        {
+          "title": "Tambah Barang ke Keranjang",
+          "desc": "Cari barang di kolom 'Cari barang atau scan barcode...', lalu klik produk untuk menambahkannya ke keranjang."
+        },
+        {
+          "title": "Isi Informasi Transaksi",
+          "desc": "Lengkapi Supplier, Catatan (opsional), dan unggah 'Faktur Pembelian'."
+        },
+        {
+          "title": "Atur Qty & HPP, Lalu Simpan",
+          "desc": "Sesuaikan jumlah, HPP per unit, serta tanggal kedaluwarsa (bila perlu), kemudian klik 'Simpan Stok' atau 'Simpan Retur'."
+        }
+      ],
+      "tip": "Gunakan tombol 'Scan Barcode' untuk input cepat saat stok banyak.",
+      "warning": "Faktur pembelian wajib diunggah sebelum data bisa disimpan."
+    },
+    {
       "id": "manage-orders",
       "role": "cashier",
       "category": "orders",
@@ -620,32 +800,54 @@
       "id": "dine-in-tables",
       "role": "cashier",
       "category": "tables",
-      "title": "Mengelola Meja & Pesanan Dine-In (F&B)",
-      "description": "Cara menempatkan pelanggan di meja, menyimpan pesanan, memindahkan meja, dan memproses tagihan akhir.",
+      "title": "Meja & Bill",
+      "description": "Pantau status meja, buat bill, dan proses pembayaran untuk meja aktif.",
       "icon": "LayoutGrid",
       "steps": [
         {
-          "title": "Buka Panel Manajemen Meja",
-          "desc": "Klik menu 'Manajemen Meja' di navigasi kasir."
+          "title": "Buka Menu Meja & Bill",
+          "desc": "Klik menu 'Meja & Bill' di navigasi kasir."
         },
         {
-          "title": "Pilih Meja yang Kosong",
-          "desc": "Pilih meja berstatus 'Kosong' (ditandai warna hijau) sesuai lokasi tempat duduk pelanggan."
+          "title": "Filter & Cari Meja",
+          "desc": "Gunakan filter status (Semua/Available/Occupied/Reserved/Billed), kolom 'Cari meja...', dan tombol tampilan Grid/List."
         },
         {
-          "title": "Catat Pesanan & Kirim ke Dapur",
-          "desc": "Pilih menu makanan dan minuman pelanggan, lalu klik 'Simpan Pesanan' untuk mengirimkan instruksi ke dapur. Status meja akan berubah menjadi 'Terisi' (merah)."
+          "title": "Buka Detail Meja",
+          "desc": "Klik kartu/meja untuk melihat detail, bill aktif, dan ringkasan pesanan di panel detail."
         },
         {
-          "title": "Pindahkan Meja (Jika Perlu)",
-          "desc": "Jika pelanggan ingin berpindah tempat duduk, klik meja asal, pilih opsi 'Pindah Meja', lalu pilih nomor meja kosong yang dituju."
+          "title": "Buat atau Bayar Bill",
+          "desc": "Klik tombol 'Bill' untuk membuat tagihan pada meja occupied, lalu gunakan tombol 'Bayar' untuk menyelesaikan pembayaran bill." 
+        }
+      ]
+    },
+    {
+      "id": "cashier-reservations",
+      "role": "cashier",
+      "category": "tables",
+      "title": "Buat Reservasi Meja",
+      "description": "Mencatat reservasi meja untuk tanggal hari ini langsung dari kasir.",
+      "icon": "CalendarCheck",
+      "steps": [
+        {
+          "title": "Buka Menu Reservasi Meja",
+          "desc": "Klik menu 'Reservasi Meja' untuk melihat daftar reservasi hari ini."
         },
         {
-          "title": "Proses Pembayaran Akhir",
-          "desc": "Saat pelanggan siap membayar, klik meja yang berwarna merah, pilih 'Bayar', dan seluruh tagihan meja tersebut akan dimuat di kasir untuk diproses."
+          "title": "Klik Buat Reservasi",
+          "desc": "Tekan tombol 'Buat Reservasi' di kanan atas untuk membuka form input."
+        },
+        {
+          "title": "Isi Detail Tamu",
+          "desc": "Lengkapi Nama Tamu, Nomor Telepon, Tanggal Reservasi, Jam Mulai, Durasi (menit), dan Jumlah Tamu."
+        },
+        {
+          "title": "Pilih Meja & Simpan",
+          "desc": "Gunakan bagian 'Pilih Meja' untuk memilih meja tersedia, tambahkan Catatan bila perlu, lalu klik 'Buat Reservasi'."
         }
       ],
-      "tip": "Cek menu 'Reservasi Meja' untuk memastikan meja yang kosong tidak sedang dipesan oleh tamu yang belum tiba, sehingga tidak terjadi bentrok penempatan."
+      "tip": "Periksa jam operasional outlet yang tampil di form agar reservasi tidak di luar jam buka."
     },
     {
       "id": "cashier-expenses",
@@ -661,15 +863,15 @@
         },
         {
           "title": "Tambahkan Pengeluaran Baru",
-          "desc": "Klik 'Tambah Pengeluaran', lalu masukkan jumlah uang yang dikeluarkan dari kas."
+          "desc": "Klik 'Tambah Pengeluaran' untuk membuka form input." 
         },
         {
-          "title": "Isi Kategori & Keterangan",
-          "desc": "Pilih kategori pengeluaran (contoh: 'Operasional' atau 'Bahan Darurat') dan isi keterangan yang jelas (contoh: 'Beli air galon 2 buah', 'Beli sabun pembersih lantai')."
+          "title": "Isi Detail Pengeluaran",
+          "desc": "Lengkapi Deskripsi, Jumlah (Rp), Tanggal & Waktu, serta Bukti Transaksi (opsional)."
         },
         {
-          "title": "Simpan Catatan Pengeluaran",
-          "desc": "Klik 'Simpan'. Pengeluaran ini akan otomatis mengurangi saldo kas tercatat yang dihitung saat penutupan shift nanti."
+          "title": "Simpan Pengeluaran",
+          "desc": "Klik 'Tambah' untuk menyimpan. Data akan otomatis masuk ke laporan pengeluaran." 
         }
       ],
       "warning": "Simpan nota atau struk pembelian fisik dan serahkan kepada manager saat pergantian shift sebagai bukti pengeluaran kas yang sah."
@@ -678,28 +880,51 @@
       "id": "kitchen-and-queue",
       "role": "cashier",
       "category": "kitchen",
-      "title": "Sistem Antrean & Monitor Dapur",
-      "description": "Cara kasir mengelola nomor urut antrean pelanggan dan berkoordinasi dengan koki dapur untuk pesanan makanan.",
+      "title": "Kelola Antrian Layanan",
+      "description": "Memantau dan memperbarui status antrean layanan jasa secara real-time.",
       "icon": "ChefHat",
       "steps": [
         {
-          "title": "Buka Menu Antrean",
-          "desc": "Klik menu 'Antrean Layanan' di navigasi kasir sesuai pengaturan outlet Anda."
+          "title": "Buka Menu Antrian Layanan",
+          "desc": "Klik menu 'Antrian Layanan' di navigasi kasir."
         },
         {
-          "title": "Cetak Nomor Antrean",
-          "desc": "Saat pesanan disimpan, printer kasir akan otomatis mencetak nomor antrean yang diberikan kepada pelanggan sebagai tanda tunggu."
+          "title": "Pilih Tampilan",
+          "desc": "Gunakan tombol 'Focus' atau 'Kanban' untuk mengubah cara melihat antrean." 
         },
         {
-          "title": "Pantau Status Masak di Dapur",
-          "desc": "Setelah pesanan disimpan, instruksi masak langsung terkirim ke layar monitor dapur. Koki menandai status: 'SEDANG DIMASAK' lalu 'SIAP DISAJIKAN'."
+          "title": "Cari & Filter",
+          "desc": "Gunakan pencarian 'Cari (Nama / No Telpon / Order ID)...' dan filter tanggal 'Semua Tanggal' untuk mempersempit data." 
         },
         {
-          "title": "Panggil Pelanggan",
-          "desc": "Setelah makanan siap, gunakan tombol panggil di monitor antrean kasir untuk memberi tahu pelanggan agar mengambil pesanannya."
+          "title": "Perbarui Status",
+          "desc": "Klik kartu antrean untuk detail, lalu gunakan aksi status untuk memindahkan antrean hingga selesai." 
         }
       ],
-      "tip": "Pastikan kertas printer kasir selalu tersedia agar pencetakan nomor antrean untuk pelanggan tidak terganggu saat jam ramai."
+      "tip": "Gunakan tombol 'Tambah Antrian' untuk membuka POS dan membuat antrean baru."
+    },
+    {
+      "id": "cashier-kds",
+      "role": "cashier",
+      "category": "kitchen",
+      "title": "Pantau KDS Dapur",
+      "description": "Memantau tiket pesanan dapur dalam tiga kolom status secara real-time.",
+      "icon": "Monitor",
+      "steps": [
+        {
+          "title": "Buka Menu KDS",
+          "desc": "Klik menu 'KDS' untuk menampilkan layar dapur outlet." 
+        },
+        {
+          "title": "Pantau Kolom Status",
+          "desc": "Perhatikan kolom 'Antrian', 'Dimasak', dan 'Siap' untuk melihat progres pesanan." 
+        },
+        {
+          "title": "Pastikan Pembaruan Real-Time",
+          "desc": "Biarkan halaman tetap terbuka agar tiket terus diperbarui secara otomatis." 
+        }
+      ],
+      "tip": "Jika muncul pesan outlet tidak ditemukan, gunakan tombol 'Kembali' lalu pilih outlet yang benar."
     },
     {
       "id": "ticket-scanning",

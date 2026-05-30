@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormFieldConfig, ReusableForm } from "../ui/reuseable-form";
 import { ProductItem } from "@/hooks/useProductsData";
 import ServiceOperatingHoursSection from "./ServiceOperatingHoursSection";
-import ServiceMediaUploader, { MediaItem } from "./ServiceMediaUploader";
 import { useOutletContext } from "@/components/providers/OutletProvider";
 import {
   productSchema,
@@ -16,6 +15,7 @@ import {
 import { ProductType } from "@/types";
 import { productCategoryApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import { getProductFormDefaults } from "./product-form-utils";
 
 type Props = {
   open: boolean;
@@ -25,12 +25,6 @@ type Props = {
   action?: "add" | "edit";
   data?: ProductItem | null;
   initialData?: Partial<ProductItem & { image: string; taxName: string }>;
-};
-
-const parseDate = (date: string | Date | null | undefined): Date | null => {
-  if (!date) return null;
-  if (date instanceof Date) return date;
-  return new Date(date);
 };
 
 export default function AddOrEditProductServiceModal({
@@ -43,7 +37,6 @@ export default function AddOrEditProductServiceModal({
 }: Props) {
   const { allowedProductTypes, selectedOutlet } = useOutletContext();
   const isEdit = action === "edit";
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const outletType = selectedOutlet?.type!;
   const shouldProductType: `${ProductType}` =
     outletType == "RETAIL" || outletType == "FNB" || outletType == "CUSTOM"
@@ -59,142 +52,13 @@ export default function AddOrEditProductServiceModal({
     staleTime: 5 * 60_000,
   });
 
-  useEffect(() => {
-    if (isEdit && initialData?.media) {
-      setMediaItems(
-        initialData.media.map((m, i) => ({
-          url: m.url,
-          type: m.type as "IMAGE" | "VIDEO",
-          source: m.source as "UPLOAD" | "EMBED",
-          alt: m.alt,
-          order: m.order ?? i,
-          thumbnailUrl: m.thumbnailUrl,
-        })),
-      );
-    } else {
-      setMediaItems([]);
-    }
-  }, [isEdit, initialData]);
-
   const defaultValues = useMemo<ProductFormValues>(() => {
-    if (isEdit && initialData) {
-      const baseNormalized = {
-        name: initialData.name ?? "",
-        description: initialData.description ?? "",
-        status: initialData.status ?? ("ACTIVE" as const),
-        categoryId: initialData.categoryId ?? null,
-        taxPercentage: initialData.taxPercentage ?? null,
-        taxName: initialData.taxName ?? "",
-        file: initialData.image,
-      };
-
-      if (initialData.type === "GOODS") {
-        return {
-          ...baseNormalized,
-          type: "GOODS" as const,
-          goods: {
-            currentStock: initialData.goods?.currentStock ?? 0,
-            unit: initialData.goods?.unit ?? "pcs",
-            averageHpp: initialData.goods?.averageHpp ?? 0,
-            sellingPrice: initialData.goods?.sellingPrice ?? 0,
-            minStock: initialData.goods?.minStock ?? null,
-            maxStock: initialData.goods?.maxStock ?? null,
-            barcode: (initialData.goods as any)?.barcode ?? "",
-            sku: (initialData.goods as any)?.sku ?? "",
-          },
-          service: undefined,
-        } satisfies ProductFormValues;
-      }
-
-      if (initialData.type === "SERVICE") {
-        return {
-          ...baseNormalized,
-          type: "SERVICE" as const,
-          service: {
-            durationMinutes: initialData.service?.durationMinutes ?? 30,
-            sellingPrice: initialData.service?.sellingPrice ?? 0,
-            providerName: initialData.service?.providerName ?? "",
-            commissionType: initialData.service?.commissionType ?? "FIXED",
-            commissionValue: initialData.service?.commissionValue ?? 0,
-            providerEmail: initialData.service?.providerEmail ?? "",
-            providerPhone: initialData.service?.providerPhone ?? "",
-            bookingInWorkHours: initialData.service?.bookingInWorkHours ?? true,
-            // Operating hours
-            mondayOpen: parseDate(initialData.service?.mondayOpen),
-            mondayClose: parseDate(initialData.service?.mondayClose),
-            tuesdayOpen: parseDate(initialData.service?.tuesdayOpen),
-            tuesdayClose: parseDate(initialData.service?.tuesdayClose),
-            wednesdayOpen: parseDate(initialData.service?.wednesdayOpen),
-            wednesdayClose: parseDate(initialData.service?.wednesdayClose),
-            thursdayOpen: parseDate(initialData.service?.thursdayOpen),
-            thursdayClose: parseDate(initialData.service?.thursdayClose),
-            fridayOpen: parseDate(initialData.service?.fridayOpen),
-            fridayClose: parseDate(initialData.service?.fridayClose),
-            saturdayOpen: parseDate(initialData.service?.saturdayOpen),
-            saturdayClose: parseDate(initialData.service?.saturdayClose),
-            sundayOpen: parseDate(initialData.service?.sundayOpen),
-            sundayClose: parseDate(initialData.service?.sundayClose),
-          },
-          goods: undefined,
-          ticket: undefined,
-        } satisfies ProductFormValues;
-      }
-
-      if (initialData.type === "TICKET") {
-        return {
-          ...baseNormalized,
-          type: "TICKET" as const,
-          ticket: {
-            sellingPrice: initialData.ticket?.sellingPrice ?? 0,
-            eventDate: parseDate(initialData.ticket?.eventDate) ?? new Date(),
-            eventEndDate: parseDate(initialData.ticket?.eventEndDate),
-            venue: initialData.ticket?.venue ?? "",
-            venueAddress: initialData.ticket?.venueAddress ?? null,
-            mapUrl: initialData.ticket?.mapUrl ?? null,
-            totalQuota: initialData.ticket?.totalQuota ?? 100,
-            maxPerOrder: initialData.ticket?.maxPerOrder ?? 5,
-            saleStartDate: parseDate(initialData.ticket?.saleStartDate),
-            saleEndDate: parseDate(initialData.ticket?.saleEndDate),
-            terms: initialData.ticket?.terms ?? null,
-            codeFormat: (initialData.ticket?.codeFormat as any) ?? "QR_CODE",
-            designConfig: (initialData.ticket?.designConfig as any) ?? {
-              primaryColor: "",
-              backgroundColor: "",
-              layoutType: "standard",
-            },
-          },
-          goods: undefined,
-          service: undefined,
-        } satisfies ProductFormValues;
-      }
-
-      return baseNormalized as ProductFormValues;
-    }
-
-    return {
-      type: shouldProductType,
-      name: "",
-      description: "",
-      status: "ACTIVE",
-      categoryId: null,
-      taxPercentage: null,
-      taxName: "",
-      outletId: outletId!,
-
-      goods: {
-        currentStock: 0,
-        unit: "pcs",
-        averageHpp: 0,
-        sellingPrice: 0,
-        minStock: null,
-        maxStock: null,
-        barcode: "",
-        sku: "",
-      },
-
-      service: { commissionType: "FIXED" } as any,
-      file: undefined,
-    } as unknown as ProductFormValues;
+    return getProductFormDefaults({
+      isEdit,
+      initialData,
+      outletId,
+      shouldProductType,
+    });
   }, [isEdit, initialData, outletId, shouldProductType]);
 
   // Create explicit form instance
@@ -210,7 +74,6 @@ export default function AddOrEditProductServiceModal({
     productId: initialData?.id,
     onSuccess,
     onClose: () => onOpenChange(false),
-    mediaItems,
   });
 
   const fields: FormFieldConfig<ProductFormValues>[] = [
@@ -470,23 +333,6 @@ export default function AddOrEditProductServiceModal({
         />
       ),
     },
-    // Media gallery uploader for SERVICE / GOODS
-    {
-      name: "service.mediaGallery" as any,
-      label: "",
-      type: "custom",
-      colSpan: "full",
-      condition: (values) =>
-        values.type === "SERVICE" || values.type === "GOODS",
-      renderCustom: () => (
-        <ServiceMediaUploader
-          value={mediaItems}
-          onChange={setMediaItems}
-          maxItems={5}
-        />
-      ),
-    },
-
     // product === ticket
     {
       name: "ticket.sellingPrice" as any,
