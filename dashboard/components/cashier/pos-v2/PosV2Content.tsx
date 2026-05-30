@@ -208,7 +208,12 @@ export function PosV2Content() {
     if (!isWalkIn && (!customerName.trim() || !customerPhone.trim()))
       return false;
     if (paymentMethod === "cash" && cashReceived < grandTotal) return false;
-    if (paymentMethod === "qris" && !outletQris?.qrisImageUrl) return false;
+    if (
+      paymentMethod === "qris" &&
+      !outletQris?.qrisImageUrl &&
+      !outletQris?.qrisString
+    )
+      return false;
     if (hasUnscheduledService) return false;
     return true;
   }, [
@@ -558,7 +563,7 @@ export function PosV2Content() {
   return (
     <CashierShiftGate outletId={outletId} outletType={outletData?.type as any}>
       <div
-        className={`mx-auto flex w-full max-w-[1400px] flex-col gap-3 p-3 lg:pb-3 ${MOBILE_CONTENT_PB}`}
+        className={`mx-auto flex w-full max-w-350 flex-col gap-3 p-3 lg:pb-3 ${MOBILE_CONTENT_PB}`}
       >
         {/* Retail: Barcode Bar */}
         {isRetail && (
@@ -589,7 +594,7 @@ export function PosV2Content() {
               />
               {lastScannedProduct && (
                 <div className="hidden sm:flex items-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 animate-in fade-in slide-in-from-right-2 duration-300">
-                  <span className="text-xs font-bold text-emerald-600 truncate max-w-[120px]">
+                  <span className="text-xs font-bold text-emerald-600 truncate max-w-30">
                     ✓ {lastScannedProduct.name}
                   </span>
                 </div>
@@ -627,7 +632,7 @@ export function PosV2Content() {
             <ShoppingCart className="h-4 w-4" />
             Keranjang
             {totalCartItems > 0 && (
-              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
                 {totalCartItems}
               </span>
             )}
@@ -789,6 +794,7 @@ export function PosV2Content() {
                           cashReceived={cashReceived}
                           onCashReceivedChange={setCashReceived}
                           qrisImageUrl={outletQris?.qrisImageUrl}
+                          qrisString={outletQris?.qrisString}
                           isLoadingQris={qrisLoading}
                         />
                       </div>

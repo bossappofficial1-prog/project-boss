@@ -33,6 +33,7 @@ export interface PosV2OutletQris {
     outletName: string;
     businessName: string;
     qrisImageUrl: string | null;
+    qrisString?: string | null;
 }
 
 export interface PosV2OrderRequest {

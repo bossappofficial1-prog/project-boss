@@ -33,7 +33,7 @@ export const getUserCookieName = (role: UserRole): string => {
 const getCookieOptions = (maxAgeMs?: number) => ({
   httpOnly: true,
   secure: !!config.COOKIES_DOMAIN,
-  sameSite: !!config.COOKIES_DOMAIN ? "none" : "lax",
+  sameSite: (!!config.COOKIES_DOMAIN ? "none" : "lax") as "none" | "lax",
   domain: config.COOKIES_DOMAIN,
   path: "/",
   ...(maxAgeMs ? { maxAge: maxAgeMs } : {}),

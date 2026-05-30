@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { generateDynamicQRIS, getQrisQrCodeUrl } from "@/lib/qris";
+import { QRCodeSVG } from "qrcode.react";
 
 export type PaymentMethodType = "cash" | "qris" | "none";
 
@@ -23,6 +26,7 @@ interface PaymentSectionProps {
   cashReceived: number;
   onCashReceivedChange: (value: number) => void;
   qrisImageUrl?: string | null;
+  qrisString?: string | null;
   isLoadingQris?: boolean;
 }
 
@@ -37,14 +41,30 @@ export function PaymentSection({
   cashReceived,
   onCashReceivedChange,
   qrisImageUrl,
+  qrisString,
   isLoadingQris,
 }: PaymentSectionProps) {
   const change = cashReceived - total;
   const [showQrisModal, setShowQrisModal] = React.useState(false);
 
+  const isDynamic = !!qrisString;
+  const dynamicQrisString = React.useMemo(() => {
+    if (qrisString) {
+      return generateDynamicQRIS(qrisString, total);
+    }
+    return "";
+  }, [qrisString, total]);
+
+  const finalQrisImageUrl = React.useMemo(() => {
+    if (qrisString) {
+      return getQrisQrCodeUrl(dynamicQrisString);
+    }
+    return qrisImageUrl;
+  }, [qrisString, dynamicQrisString, qrisImageUrl]);
+
   const handleQrisMethodChange = () => {
     onMethodChange("qris");
-    if (qrisImageUrl) {
+    if (finalQrisImageUrl) {
       setShowQrisModal(true);
     }
   };
@@ -163,7 +183,7 @@ export function PaymentSection({
               <p className="text-sm text-muted-foreground">Memuat QRIS...</p>
             </div>
           )}
-          {!isLoadingQris && qrisImageUrl && (
+          {!isLoadingQris && finalQrisImageUrl && (
             <div
               className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-border bg-card p-4 transition-colors hover:border-primary/50"
               onClick={() => setShowQrisModal(true)}
@@ -171,21 +191,32 @@ export function PaymentSection({
               <p className="text-xs text-muted-foreground">
                 Tap untuk perbesar · Scan QR berikut untuk pembayaran
               </p>
-              <div className="relative h-56 w-56">
-                <Image
-                  src={qrisImageUrl}
-                  alt="QR Code Outlet"
-                  fill
-                  className="object-contain"
-                  unoptimized
-                />
-              </div>
-              <p className="text-center text-sm font-semibold text-foreground">
-                Total: Rp {fmt.format(total)}
+              {isDynamic ? (
+                <div className="flex items-center justify-center bg-white p-3 rounded-lg border border-border h-56 w-56">
+                  <QRCodeSVG
+                    value={dynamicQrisString}
+                    size={200}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+              ) : (
+                <div className="relative h-56 w-56">
+                  <Image
+                    src={finalQrisImageUrl!}
+                    alt="QR Code Outlet"
+                    fill
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
+              )}
+              <p className="text-center text-sm font-semibold text-foreground flex flex-col items-center">
+                <span>Total: Rp {fmt.format(total)}</span>
               </p>
             </div>
           )}
-          {!isLoadingQris && !qrisImageUrl && (
+          {!isLoadingQris && !finalQrisImageUrl && (
             <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-yellow-300 bg-yellow-50 p-4 text-center dark:border-yellow-600/40 dark:bg-yellow-500/10">
               <QrCode className="h-8 w-8 text-yellow-500" />
               <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
@@ -211,17 +242,28 @@ export function PaymentSection({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 flex flex-col justify-center w-full items-center py-2">
-            <div className="relative items-center border-2 rounded-lg h-80 w-80">
-              <Image
-                src={qrisImageUrl!}
-                alt="QR Code Outlet"
-                fill
-                className="object-contain"
-                unoptimized
-              />
+            <div className="flex items-center justify-center bg-white p-4 border-2 rounded-lg h-80 w-80">
+              {isDynamic ? (
+                <QRCodeSVG
+                  value={dynamicQrisString}
+                  size={260}
+                  level="H"
+                  includeMargin={true}
+                />
+              ) : (
+                <div className="relative h-full w-full">
+                  <Image
+                    src={finalQrisImageUrl!}
+                    alt="QR Code Outlet"
+                    fill
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
+              )}
             </div>
-            <p className="text-center text-xl font-semibold text-foreground">
-              Total: Rp {fmt.format(total)}
+            <p className="text-center text-xl font-semibold text-foreground flex flex-col items-center gap-1.5">
+              <span>Total: Rp {fmt.format(total)}</span>
             </p>
           </div>
         </DialogContent>

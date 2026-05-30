@@ -55,6 +55,7 @@ const outletSchema = z.object({
   longitude: z.number(),
   image: z.any().optional(),
   manualQrImageUrl: z.any().optional(),
+  qrisString: z.string().optional(),
 });
 
 type OutletFormValues = z.infer<typeof outletSchema>;
@@ -168,6 +169,7 @@ export default function ManageOutletContent() {
       latitude: Number(values.get("latitude")) as number,
       longitude: Number(values.get("longitude")) as number,
       description: values.get("description") as string,
+      qrisString: (values.get("qrisString") as string) || null,
     };
 
     try {
@@ -242,6 +244,14 @@ export default function ManageOutletContent() {
           "image/png": [".png"],
           "image/webp": [".webp"],
         },
+        colSpan: 6,
+      },
+      {
+        name: "qrisString",
+        label: "Teks String QRIS EMVCo (Opsional)",
+        type: "textarea",
+        description: "Salin teks QRIS (diawali 000201...) dari hasil scan barcode QRIS statis outlet Anda. Ini dibutuhkan agar kasir bisa membuat QRIS Dinamis otomatis dengan nominal terisi.",
+        placeholder: "00020101021126650016ID.CO.QRIS.WWW...",
         colSpan: 6,
       },
       {
@@ -480,6 +490,7 @@ export default function ManageOutletContent() {
                     longitude: selectedOutlet.longitude || 0,
                     image: selectedOutlet.image,
                     manualQrImageUrl: selectedOutlet.manualQrImageUrl,
+                    qrisString: (selectedOutlet as any).qrisString || "",
                   }}
                   onSubmit={(v) => submit(v)}
                   isLoading={isSaving}

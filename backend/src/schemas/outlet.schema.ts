@@ -29,6 +29,7 @@ export const updateOutletSchema = z.object({
     longitude: z.number().min(-180).max(180).optional(),
     isOpen: z.boolean().default(true).optional(),
     manualQrImageUrl: z.string().url().optional(),
+    qrisString: z.string().nullable().optional().or(z.literal("")),
     type: z.enum(["FNB", "RETAIL", "EVENT", "SERVICE", "CUSTOM"]).optional()
 }).refine(data => Object.keys(data).length > 0, {
     message: "Minimal satu field harus diisi untuk update",

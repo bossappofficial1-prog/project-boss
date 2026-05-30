@@ -31,7 +31,11 @@ import { Time } from "../constants/time";
 import Console from "../utils/logger";
 import { coreApi, snap } from "../config/midtrans";
 import { schedulePaymentExpiration } from "../queues/payment.queue";
-import { deleteFile, fileExists, validateFileMagicBytes } from "../utils/file.utils";
+import {
+  deleteFile,
+  fileExists,
+  validateFileMagicBytes,
+} from "../utils/file.utils";
 import { generateServiceOrderNotificationQueue } from "../queues/generate-service-order-notification";
 import { socketUtils } from "../utils/socket.utils";
 import { config } from "../config";
@@ -53,6 +57,7 @@ type ManualPaymentInstructions = {
   outletName: string;
   businessName: string;
   qrImageUrl?: string;
+  qrisString?: string | null;
   bankAccount?: {
     bankName: string;
     accountNumber: string;
@@ -75,8 +80,11 @@ export class PaymentService {
     private readonly operatingHoursRepo: typeof OperatingHoursRepository = OperatingHoursRepository,
     private readonly orderRepo: typeof OrderRepository = OrderRepository,
     /** Map provider yang digunakan, default: Midtrans */
-    private readonly providers: Map<string, IPaymentProvider> = defaultProviders
-  ) { }
+    private readonly providers: Map<
+      string,
+      IPaymentProvider
+    > = defaultProviders,
+  ) {}
 
   /** Dapatkan provider berdasarkan nama, throw jika tidak ditemukan */
   private getProvider(name: string): IPaymentProvider {
@@ -84,13 +92,16 @@ export class PaymentService {
     if (!provider) {
       throw new AppError(
         `Payment provider "${name}" tidak terdaftar`,
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
     return provider;
   }
 
-  private async validateItemsAndPrepareData(inputItems: any[], outletId: string) {
+  private async validateItemsAndPrepareData(
+    inputItems: any[],
+    outletId: string,
+  ) {
     const productIds = inputItems.map((item) => item.productId);
     const [products, outlet] = await Promise.all([
       this.productRepo.findManyByIds(productIds),
@@ -147,7 +158,11 @@ export class PaymentService {
     return { productMap, outlet, itemDetails, totalProductPrice };
   }
 
-  private calculateFees(totalProductPrice: number, outlet: any, payment_method: string) {
+  private calculateFees(
+    totalProductPrice: number,
+    outlet: any,
+    payment_method: string,
+  ) {
     let transactionFeeTotal: number = 0;
     let applicationFee: number = 0;
     let grossAmount: number = 0;
@@ -168,7 +183,7 @@ export class PaymentService {
 
   private buildManualInstructions(
     outlet: OutletWithBusiness,
-    manualType: ManualPaymentType
+    manualType: ManualPaymentType,
   ): ManualPaymentInstructions {
     if (!outlet) {
       throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -182,11 +197,15 @@ export class PaymentService {
 
     if (manualType === ManualPaymentType.QRIS_OFFLINE) {
       if (!outlet.manualQrImageUrl) {
-        throw new AppError(Messages.MANUAL_QRIS_NOT_CONFIGURED, HttpStatus.BAD_REQUEST);
+        throw new AppError(
+          Messages.MANUAL_QRIS_NOT_CONFIGURED,
+          HttpStatus.BAD_REQUEST,
+        );
       }
       return {
         ...baseInstruction,
         qrImageUrl: outlet.manualQrImageUrl,
+        qrisString: outlet.qrisString,
       };
     }
 
@@ -196,7 +215,10 @@ export class PaymentService {
         !outlet.business.bankName ||
         !outlet.business.accountHolder
       ) {
-        throw new AppError(Messages.MANUAL_TRANSFER_NOT_CONFIGURED, HttpStatus.BAD_REQUEST);
+        throw new AppError(
+          Messages.MANUAL_TRANSFER_NOT_CONFIGURED,
+          HttpStatus.BAD_REQUEST,
+        );
       }
       return {
         ...baseInstruction,
@@ -208,7 +230,10 @@ export class PaymentService {
       };
     }
 
-    throw new AppError(Messages.MANUAL_PAYMENT_TYPE_UNKNOWN, HttpStatus.BAD_REQUEST);
+    throw new AppError(
+      Messages.MANUAL_PAYMENT_TYPE_UNKNOWN,
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   private async createManualTransactionRecord(params: {
@@ -235,7 +260,9 @@ export class PaymentService {
   }
 
   private toPublicUrl(filePath: string) {
-    const relativePath = path.relative(process.cwd(), filePath).replace(/\\/g, "/");
+    const relativePath = path
+      .relative(process.cwd(), filePath)
+      .replace(/\\/g, "/");
     return `${config.BASE_URL}/${relativePath}`;
   }
 
@@ -278,7 +305,7 @@ export class PaymentService {
     inputItems: any[],
     productMap: Map<string, Product>,
     tableId?: string,
-    tableNumber?: string
+    tableNumber?: string,
   ) {
     try {
       await this.paymentRepo.createOrderWithItems({
@@ -290,23 +317,46 @@ export class PaymentService {
         staffId: staffId ?? null,
         outletId,
         customer: { name: customerDetails.name, phone: customerDetails.phone },
-        items: inputItems.map((it) => ({ productId: it.productId, quantity: it.quantity })),
+        items: inputItems.map((it) => ({
+          productId: it.productId,
+          quantity: it.quantity,
+        })),
         tableId,
         tableNumber,
       });
     } catch (err: any) {
       const msg = err && err.message ? String(err.message).toLowerCase() : "";
 
-      if (msg.includes("stok") || msg.includes("stok tidak") || msg.includes("stock")) {
-        throw new AppError(Messages.PRODUCT_OUT_OF_STOCK, HttpStatus.BAD_REQUEST);
+      if (
+        msg.includes("stok") ||
+        msg.includes("stok tidak") ||
+        msg.includes("stock")
+      ) {
+        throw new AppError(
+          Messages.PRODUCT_OUT_OF_STOCK,
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      if (msg.includes("booking slot required") || msg.includes("booking slot")) {
-        throw new AppError(Messages.BOOKING_SLOT_REQUIRED, HttpStatus.BAD_REQUEST);
+      if (
+        msg.includes("booking slot required") ||
+        msg.includes("booking slot")
+      ) {
+        throw new AppError(
+          Messages.BOOKING_SLOT_REQUIRED,
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      if (msg.includes("already booked") || msg.includes("booked") || msg.includes("blocked")) {
-        throw new AppError(Messages.BOOKING_SLOT_ALREADY_BOOKED, HttpStatus.BAD_REQUEST);
+      if (
+        msg.includes("already booked") ||
+        msg.includes("booked") ||
+        msg.includes("blocked")
+      ) {
+        throw new AppError(
+          Messages.BOOKING_SLOT_ALREADY_BOOKED,
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       if (msg.includes("product not found")) {
@@ -316,8 +366,6 @@ export class PaymentService {
       throw err;
     }
   }
-
-
 
   public async createPayment(data: CreatePaymentPayload) {
     const {
@@ -340,26 +388,31 @@ export class PaymentService {
     } = await this.validateItemsAndPrepareData(inputItems, outletId);
 
     const paymentMethodForFees =
-      payment_method === "online" && onlinePaymentChannel ? onlinePaymentChannel : payment_method;
+      payment_method === "online" && onlinePaymentChannel
+        ? onlinePaymentChannel
+        : payment_method;
 
-    const { transactionFeeTotal, applicationFee, grossAmount: grossFees } = this.calculateFees(
-      totalProductPrice,
-      outlet,
-      paymentMethodForFees
-    );
+    const {
+      transactionFeeTotal,
+      applicationFee,
+      grossAmount: grossFees,
+    } = this.calculateFees(totalProductPrice, outlet, paymentMethodForFees);
 
     // Calculate total tax from items
     let totalTax = 0;
     for (const item of inputItems) {
       const product = productMap.get(item.productId);
       if (product?.taxPercentage && product.taxPercentage > 0) {
-        const price = product.type === 'GOODS'
-          ? product.goods?.sellingPrice
-          : product.type === 'TICKET'
-            ? product.ticket?.sellingPrice
-            : product.service?.sellingPrice;
+        const price =
+          product.type === "GOODS"
+            ? product.goods?.sellingPrice
+            : product.type === "TICKET"
+              ? product.ticket?.sellingPrice
+              : product.service?.sellingPrice;
         if (price) {
-          totalTax += Math.round(price * item.quantity * (product.taxPercentage / 100));
+          totalTax += Math.round(
+            price * item.quantity * (product.taxPercentage / 100),
+          );
         }
       }
     }
@@ -382,18 +435,25 @@ export class PaymentService {
       quantity: 1,
     });
 
-    const orderId: string = generateOrderCode({ name: outlet?.name ?? "Order" });
+    const orderId: string = generateOrderCode({
+      name: outlet?.name ?? "Order",
+    });
 
     const paymentMethodIdForLookup =
       payment_method === "online" && onlinePaymentChannel
         ? onlinePaymentChannel
         : (payment_method as PaymentMethodId);
 
-    const methodDefinition = paymentMethod.find((method) => method.id === paymentMethodIdForLookup);
+    const methodDefinition = paymentMethod.find(
+      (method) => method.id === paymentMethodIdForLookup,
+    );
     const isOnlinePayment = payment_method === "online";
 
     if (!isOnlinePayment && !methodDefinition) {
-      throw new AppError(Messages.PAYMENT_METHOD_NOT_FOUND, HttpStatus.BAD_REQUEST);
+      throw new AppError(
+        Messages.PAYMENT_METHOD_NOT_FOUND,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const manualType =
@@ -403,7 +463,10 @@ export class PaymentService {
     const isManualFlow = methodDefinition?.flow === "manual";
 
     if (isManualFlow && !manualType) {
-      throw new AppError(Messages.MANUAL_PAYMENT_TYPE_UNKNOWN, HttpStatus.BAD_REQUEST);
+      throw new AppError(
+        Messages.MANUAL_PAYMENT_TYPE_UNKNOWN,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     if (isManualFlow && manualType) {
@@ -422,7 +485,7 @@ export class PaymentService {
           inputItems,
           productMap,
           tableId,
-          tableNumber
+          tableNumber,
         );
 
         const expiresAt = new Date(Date.now() + Time.PAYMENT_EXPIRY_TIME_MS);
@@ -434,7 +497,9 @@ export class PaymentService {
           expiresAt,
         });
 
-        const orderWithDetails = (await this.orderRepo.findWithDetails(orderId)) as OrderWithDetails | null;
+        const orderWithDetails = (await this.orderRepo.findWithDetails(
+          orderId,
+        )) as OrderWithDetails | null;
 
         if (!orderWithDetails) {
           throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -443,7 +508,7 @@ export class PaymentService {
         await this.orderRepo.updatePaymentStatus(
           orderId,
           OrderStatus.AWAITING_PAYMENT,
-          PaymentStatus.PENDING
+          PaymentStatus.PENDING,
         );
 
         try {
@@ -468,7 +533,10 @@ export class PaymentService {
             timestamp: new Date(),
           });
         } catch (socketError) {
-          console.error("❌ Error emitting manual_payment_created event:", socketError);
+          console.error(
+            "❌ Error emitting manual_payment_created event:",
+            socketError,
+          );
         }
 
         return this.formatManualPaymentResponse({
@@ -488,9 +556,15 @@ export class PaymentService {
         try {
           await this.paymentRepo.restockAndCancelOrder(orderId);
         } catch (cleanupError) {
-          const message = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+          const message =
+            cleanupError instanceof Error
+              ? cleanupError.message
+              : String(cleanupError);
           if (!message.toLowerCase().includes("order not found")) {
-            Console.error("Failed to rollback manual payment order", cleanupError);
+            Console.error(
+              "Failed to rollback manual payment order",
+              cleanupError,
+            );
           }
         }
         throw error;
@@ -510,11 +584,14 @@ export class PaymentService {
       inputItems,
       productMap,
       tableId,
-      tableNumber
+      tableNumber,
     );
 
     if (!onlinePaymentChannel) {
-      throw new AppError("Online payment channel wajib diisi", HttpStatus.BAD_REQUEST);
+      throw new AppError(
+        "Online payment channel wajib diisi",
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     // Delegasikan ke provider. Default: midtrans.
@@ -536,7 +613,7 @@ export class PaymentService {
     await this.orderRepo.updatePaymentStatus(
       orderId,
       OrderStatus.AWAITING_PAYMENT,
-      PaymentStatus.PENDING
+      PaymentStatus.PENDING,
     );
 
     orderExpiryJob.add(orderId);
@@ -589,8 +666,10 @@ export class PaymentService {
       status: PaymentStatus.PENDING,
       externalId: chargeResponse.transaction_id,
       paymentUrl:
-        chargeResponse.actions?.find((a: any) => a.name === "deeplink-redirect")?.url ||
-        chargeResponse.actions?.find((a: any) => a.name === "generate-qr-code")?.url,
+        chargeResponse.actions?.find((a: any) => a.name === "deeplink-redirect")
+          ?.url ||
+        chargeResponse.actions?.find((a: any) => a.name === "generate-qr-code")
+          ?.url,
       expiresAt: expiresAt,
     });
 
@@ -612,7 +691,8 @@ export class PaymentService {
   }
 
   public async cancelPayment(orderId: string, gateway: string = "midtrans") {
-    const transaction = await this.paymentRepo.findTransactionWithOrder(orderId);
+    const transaction =
+      await this.paymentRepo.findTransactionWithOrder(orderId);
 
     if (!transaction) {
       throw new AppError(Messages.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -624,8 +704,9 @@ export class PaymentService {
       transaction.status !== PaymentStatus.REJECTED_MANUAL
     ) {
       throw new AppError(
-        "Pembayaran tidak dapat dibatalkan karena status sudah " + transaction.status,
-        HttpStatus.BAD_REQUEST
+        "Pembayaran tidak dapat dibatalkan karena status sudah " +
+          transaction.status,
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -635,7 +716,10 @@ export class PaymentService {
         await provider.cancelTransaction(orderId);
       } catch (error) {
         Console.error("Error cancelling transaction:", error);
-        throw new AppError("Gagal membatalkan pembayaran", HttpStatus.INTERNAL_SERVER_ERROR);
+        throw new AppError(
+          "Gagal membatalkan pembayaran",
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
       }
     }
 
@@ -643,7 +727,10 @@ export class PaymentService {
       await this.paymentRepo.restockAndCancelOrder(orderId);
     } catch (err) {
       Console.error("Error restocking or cancelling order:", err);
-      throw new AppError("Gagal membatalkan pembayaran", HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new AppError(
+        "Gagal membatalkan pembayaran",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
 
     return { message: "Pembayaran berhasil dibatalkan", orderId };
@@ -651,7 +738,10 @@ export class PaymentService {
 
   public async uploadManualPaymentProof(orderId: string, filePath: string) {
     if (!fileExists(filePath)) {
-      throw new AppError("File tidak ditemukan setelah upload", HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new AppError(
+        "File tidak ditemukan setelah upload",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
     const ext = path.extname(filePath).toLowerCase();
     const mimeByExt: Record<string, string> = {
@@ -671,22 +761,32 @@ export class PaymentService {
       }
       throw new AppError(
         err instanceof Error ? err.message : "File tidak valid",
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
 
-    const transaction = await this.manualPaymentRepo.findManualTransactionByOrderId(orderId);
+    const transaction =
+      await this.manualPaymentRepo.findManualTransactionByOrderId(orderId);
 
     if (!transaction) {
-      throw new AppError(Messages.MANUAL_PAYMENT_NOT_FOUND, HttpStatus.NOT_FOUND);
+      throw new AppError(
+        Messages.MANUAL_PAYMENT_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     if (!transaction.isManual || !transaction.manualMethod) {
-      throw new AppError(Messages.MANUAL_PAYMENT_NOT_AVAILABLE, HttpStatus.BAD_REQUEST);
+      throw new AppError(
+        Messages.MANUAL_PAYMENT_NOT_AVAILABLE,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     if (transaction.status === PaymentStatus.SUCCESS) {
-      throw new AppError(Messages.MANUAL_PAYMENT_ALREADY_VERIFIED, HttpStatus.BAD_REQUEST);
+      throw new AppError(
+        Messages.MANUAL_PAYMENT_ALREADY_VERIFIED,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const uploadableStatuses: PaymentStatus[] = [
@@ -696,25 +796,37 @@ export class PaymentService {
     ];
 
     if (!uploadableStatuses.includes(transaction.status)) {
-      throw new AppError(Messages.MANUAL_PAYMENT_PROOF_NOT_ALLOWED, HttpStatus.BAD_REQUEST);
+      throw new AppError(
+        Messages.MANUAL_PAYMENT_PROOF_NOT_ALLOWED,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    if (transaction.expiresAt && new Date(transaction.expiresAt).getTime() < Date.now()) {
-      throw new AppError(Messages.MANUAL_PAYMENT_EXPIRED, HttpStatus.BAD_REQUEST);
+    if (
+      transaction.expiresAt &&
+      new Date(transaction.expiresAt).getTime() < Date.now()
+    ) {
+      throw new AppError(
+        Messages.MANUAL_PAYMENT_EXPIRED,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const proofUrl = this.toPublicUrl(filePath);
 
-    const updated = await this.manualPaymentRepo.updateManualTransaction(transaction.id, {
-      paymentProofUrl: proofUrl,
-      proofUploadedAt: new Date(),
-      status: PaymentStatus.AWAITING_VERIFICATION,
-    });
+    const updated = await this.manualPaymentRepo.updateManualTransaction(
+      transaction.id,
+      {
+        paymentProofUrl: proofUrl,
+        proofUploadedAt: new Date(),
+        status: PaymentStatus.AWAITING_VERIFICATION,
+      },
+    );
 
     await this.orderRepo.updatePaymentStatus(
       orderId,
       OrderStatus.AWAITING_PAYMENT,
-      PaymentStatus.AWAITING_VERIFICATION
+      PaymentStatus.AWAITING_VERIFICATION,
     );
 
     await this.orderRepo.confirmBookingSlotsForOrder(orderId);
@@ -722,50 +834,69 @@ export class PaymentService {
     try {
       orderExpiryJob.remove(transaction.orderId);
       orderNotificationJob.remove(orderId);
-      if (transaction.order.items.some((item) => item.product.type === "SERVICE")) {
+      if (
+        transaction.order.items.some((item) => item.product.type === "SERVICE")
+      ) {
         await generateServiceOrderNotificationQueue.add({ orderId });
       }
 
-      SocketEmitter.getInstance().emitNotificationToOutlet(transaction.order.outletId, {
-        message: `Pesanan \${orderId}, telah mengirim bukti pembayarannya.`,
-        timestamp: new Date(),
-      });
-      SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
-        orderId,
-        amount: transaction.amount,
-        customerName: transaction.order.guestCustomer?.name ?? "-",
-        paymentMethod: transaction.paymentMethod as string,
-        timestamp: new Date(transaction.createdAt),
-      });
+      SocketEmitter.getInstance().emitNotificationToOutlet(
+        transaction.order.outletId,
+        {
+          message: `Pesanan \${orderId}, telah mengirim bukti pembayarannya.`,
+          timestamp: new Date(),
+        },
+      );
+      SocketEmitter.getInstance().emitToBusinessOutlet(
+        transaction.order.outletId,
+        {
+          orderId,
+          amount: transaction.amount,
+          customerName: transaction.order.guestCustomer?.name ?? "-",
+          paymentMethod: transaction.paymentMethod as string,
+          timestamp: new Date(transaction.createdAt),
+        },
+      );
     } catch (socketError) {
-      console.error("❌ Error emitting manual_payment_proof_uploaded event:", socketError);
+      console.error(
+        "❌ Error emitting manual_payment_proof_uploaded event:",
+        socketError,
+      );
     }
 
     return updated;
   }
 
   public async verifyManualPayment(orderId: string, verifierId: string) {
-    const transaction = await this.manualPaymentRepo.findManualTransactionByOrderId(orderId);
+    const transaction =
+      await this.manualPaymentRepo.findManualTransactionByOrderId(orderId);
 
     if (!transaction) {
-      throw new AppError(Messages.MANUAL_PAYMENT_NOT_FOUND, HttpStatus.NOT_FOUND);
+      throw new AppError(
+        Messages.MANUAL_PAYMENT_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     if (transaction.status !== PaymentStatus.AWAITING_VERIFICATION) {
-      throw new AppError(Messages.MANUAL_PAYMENT_PROOF_REQUIRED, HttpStatus.BAD_REQUEST);
+      throw new AppError(
+        Messages.MANUAL_PAYMENT_PROOF_REQUIRED,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    const updatedTransaction = await this.manualPaymentRepo.updateManualTransaction(transaction.id, {
-      status: PaymentStatus.SUCCESS,
-      verifiedAt: new Date(),
-      verifiedById: verifierId,
-      rejectionNote: null,
-    });
+    const updatedTransaction =
+      await this.manualPaymentRepo.updateManualTransaction(transaction.id, {
+        status: PaymentStatus.SUCCESS,
+        verifiedAt: new Date(),
+        verifiedById: verifierId,
+        rejectionNote: null,
+      });
 
     await this.orderRepo.updatePaymentStatus(
       orderId,
       OrderStatus.PROCESSING,
-      PaymentStatus.SUCCESS
+      PaymentStatus.SUCCESS,
     );
 
     try {
@@ -777,10 +908,16 @@ export class PaymentService {
         timestamp: new Date(),
       });
     } catch (socketError) {
-      console.error("❌ Error emitting manual_payment_verified event:", socketError);
+      console.error(
+        "❌ Error emitting manual_payment_verified event:",
+        socketError,
+      );
     }
 
-    await messagePublisher.publishOrderStatusUpdate(orderId, OrderStatus.PROCESSING);
+    await messagePublisher.publishOrderStatusUpdate(
+      orderId,
+      OrderStatus.PROCESSING,
+    );
     await messagePublisher.publishWhatsAppPaymentSuccess(orderId);
 
     try {
@@ -798,34 +935,49 @@ export class PaymentService {
         });
       }
     } catch (customerSocketError) {
-      console.error("❌ Error emitting customer manual payment success event:", customerSocketError);
+      console.error(
+        "❌ Error emitting customer manual payment success event:",
+        customerSocketError,
+      );
     }
 
     return updatedTransaction;
   }
 
-  public async rejectManualPayment(orderId: string, verifierId: string, reason: string) {
-    const transaction = await this.manualPaymentRepo.findManualTransactionByOrderId(orderId);
+  public async rejectManualPayment(
+    orderId: string,
+    verifierId: string,
+    reason: string,
+  ) {
+    const transaction =
+      await this.manualPaymentRepo.findManualTransactionByOrderId(orderId);
 
     if (!transaction) {
-      throw new AppError(Messages.MANUAL_PAYMENT_NOT_FOUND, HttpStatus.NOT_FOUND);
+      throw new AppError(
+        Messages.MANUAL_PAYMENT_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     if (transaction.status !== PaymentStatus.AWAITING_VERIFICATION) {
-      throw new AppError(Messages.MANUAL_PAYMENT_PROOF_REQUIRED, HttpStatus.BAD_REQUEST);
+      throw new AppError(
+        Messages.MANUAL_PAYMENT_PROOF_REQUIRED,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    const updatedTransaction = await this.manualPaymentRepo.updateManualTransaction(transaction.id, {
-      status: PaymentStatus.REJECTED_MANUAL,
-      verifiedAt: new Date(),
-      verifiedById: verifierId,
-      rejectionNote: reason,
-    });
+    const updatedTransaction =
+      await this.manualPaymentRepo.updateManualTransaction(transaction.id, {
+        status: PaymentStatus.REJECTED_MANUAL,
+        verifiedAt: new Date(),
+        verifiedById: verifierId,
+        rejectionNote: reason,
+      });
 
     await this.orderRepo.updatePaymentStatus(
       orderId,
       OrderStatus.AWAITING_PAYMENT,
-      PaymentStatus.REJECTED_MANUAL
+      PaymentStatus.REJECTED_MANUAL,
     );
 
     try {
@@ -838,7 +990,10 @@ export class PaymentService {
         timestamp: new Date(),
       });
     } catch (socketError) {
-      console.error("❌ Error emitting manual_payment_rejected event:", socketError);
+      console.error(
+        "❌ Error emitting manual_payment_rejected event:",
+        socketError,
+      );
     }
 
     try {
@@ -856,7 +1011,10 @@ export class PaymentService {
         });
       }
     } catch (customerSocketError) {
-      console.error("❌ Error emitting customer manual payment rejected event:", customerSocketError);
+      console.error(
+        "❌ Error emitting customer manual payment rejected event:",
+        customerSocketError,
+      );
     }
 
     return updatedTransaction;
@@ -875,17 +1033,23 @@ export class PaymentService {
   public async getPaymentOrder(orderId: string) {
     const data = await this.paymentRepo.getByOrderId(orderId);
 
-    if (!data) throw new AppError("Orderid tidak ditemukan", HttpStatus.NOT_FOUND);
+    if (!data)
+      throw new AppError("Orderid tidak ditemukan", HttpStatus.NOT_FOUND);
 
     const { order: rawOrder, ...transaction } = data;
     const { guestCustomer, items, outlet, ...order } = rawOrder;
 
-    const convertMidtrans = transaction.rawMidtrans as unknown as PaymentResponse | null;
+    const convertMidtrans =
+      transaction.rawMidtrans as unknown as PaymentResponse | null;
 
-    const operatingHours = await this.operatingHoursRepo.findByOutletId(outlet.id);
+    const operatingHours = await this.operatingHoursRepo.findByOutletId(
+      outlet.id,
+    );
     const now = new Date();
     const currentDay = now.getDay();
-    const todaySchedule = operatingHours.find((oh) => oh.dayOfWeek === currentDay);
+    const todaySchedule = operatingHours.find(
+      (oh) => oh.dayOfWeek === currentDay,
+    );
 
     let isWithinOperatingHours = false;
     if (todaySchedule && todaySchedule.isOpen) {
@@ -894,10 +1058,12 @@ export class PaymentService {
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
       const openMinutes = openTime.getHours() * 60 + openTime.getMinutes();
       const closeMinutes = closeTime.getHours() * 60 + closeTime.getMinutes();
-      isWithinOperatingHours = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+      isWithinOperatingHours =
+        currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
     }
 
-    const mainTaxName = items.find(it => it.product.taxName)?.product.taxName || "Pajak";
+    const mainTaxName =
+      items.find((it) => it.product.taxName)?.product.taxName || "Pajak";
 
     return {
       id: transaction.orderId,
@@ -910,10 +1076,10 @@ export class PaymentService {
         isWithinOperatingHours,
         todaySchedule: todaySchedule
           ? {
-            isOpen: todaySchedule.isOpen,
-            openTime: todaySchedule.openTime,
-            closeTime: todaySchedule.closeTime,
-          }
+              isOpen: todaySchedule.isOpen,
+              openTime: todaySchedule.openTime,
+              closeTime: todaySchedule.closeTime,
+            }
           : null,
         operatingHours: operatingHours.map((oh) => ({
           dayOfWeek: oh.dayOfWeek,
@@ -928,38 +1094,39 @@ export class PaymentService {
         isManual: transaction.isManual,
         midtrans: convertMidtrans
           ? {
-            transaction_id: convertMidtrans?.transaction_id ?? null,
-            order_id: convertMidtrans?.order_id ?? null,
-            gross_amount: convertMidtrans?.gross_amount ?? null,
-            transaction_status: convertMidtrans?.transaction_status ?? null,
-            payment_type: convertMidtrans?.payment_type,
-            expiry_time: convertMidtrans?.expiry_time,
-            actions: convertMidtrans?.actions ?? null,
-            va_numbers: convertMidtrans?.va_numbers ?? null,
-            currency: "IDR",
-          }
+              transaction_id: convertMidtrans?.transaction_id ?? null,
+              order_id: convertMidtrans?.order_id ?? null,
+              gross_amount: convertMidtrans?.gross_amount ?? null,
+              transaction_status: convertMidtrans?.transaction_status ?? null,
+              payment_type: convertMidtrans?.payment_type,
+              expiry_time: convertMidtrans?.expiry_time,
+              actions: convertMidtrans?.actions ?? null,
+              va_numbers: convertMidtrans?.va_numbers ?? null,
+              currency: "IDR",
+            }
           : null,
         manual: transaction.isManual
           ? {
-            type: transaction.paymentMethod,
-            paymentProofUrl: transaction.paymentProofUrl,
-            intruction: {
-              manualType: transaction.paymentMethod,
-              outletName: outlet.name,
-              businessName: outlet.business.name,
-              note: null,
-              qrImageUrl: outlet.manualQrImageUrl,
-              expiry_time: transaction.expiresAt,
-              bankAccount:
-                transaction.paymentMethod === "manual-transfer"
-                  ? {
-                    bankName: outlet.business.bankName,
-                    accountNumber: outlet.business.bankAccount,
-                    accountHolder: outlet.business.accountHolder,
-                  }
-                  : null,
-            },
-          }
+              type: transaction.paymentMethod,
+              paymentProofUrl: transaction.paymentProofUrl,
+              intruction: {
+                manualType: transaction.paymentMethod,
+                outletName: outlet.name,
+                businessName: outlet.business.name,
+                note: null,
+                qrImageUrl: outlet.manualQrImageUrl,
+                expiry_time: transaction.expiresAt,
+                qrisString: outlet.qrisString,
+                bankAccount:
+                  transaction.paymentMethod === "manual-transfer"
+                    ? {
+                        bankName: outlet.business.bankName,
+                        accountNumber: outlet.business.bankAccount,
+                        accountHolder: outlet.business.accountHolder,
+                      }
+                    : null,
+              },
+            }
           : null,
       },
       customerDetails: {

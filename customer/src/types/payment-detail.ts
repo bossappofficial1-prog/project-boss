@@ -89,6 +89,7 @@ export interface PaymentManualInstruction {
     businessName?: string;
     note?: string | null;
     qrImageUrl?: string | null;
+    qrisString?: string | null;
     bankAccount?: PaymentManualBankAccount | null;
     expiry_time?: string;
     [key: string]: unknown;

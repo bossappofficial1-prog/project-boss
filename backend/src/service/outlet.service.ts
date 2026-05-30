@@ -18,6 +18,7 @@ import {
 } from "../utils/outlet.utils";
 import { ImageService } from "./image.service";
 import { EventPublisher } from "../events/publisher";
+import { decodeQRFromUrl } from "../utils/qr-decoder";
 import { PlanLimitService } from "./plan-limit.service";
 import { redis } from "../config/redis";
 
@@ -408,6 +409,14 @@ export async function updateOutletService(
     data.email = null as any; // Allow unsetting email
   }
 
+  // Try to decode QRIS string automatically if manualQrImageUrl is provided and qrisString is not explicitly sent/changed
+  if (data.manualQrImageUrl && !data.qrisString) {
+    const decoded = await decodeQRFromUrl(data.manualQrImageUrl);
+    if (decoded) {
+      data.qrisString = decoded;
+    }
+  }
+
   const updatedOutlet = await OutletRepository.update(id, data);
 
   if (data.image && outlet.image && updatedOutlet) {
@@ -487,9 +496,16 @@ export async function uploadQRISService(
   if (outlet?.manualQrImageUrl)
     await ImageService.deleteImageByUrl(outlet.manualQrImageUrl);
 
+  // Auto-decode QRIS string from uploaded image
+  let qrisString: string | null = null;
+  if (fileUrl) {
+    qrisString = await decodeQRFromUrl(fileUrl);
+  }
+
   // Update outlet dengan path QRIS baru
   const updatedOutlet = await OutletRepository.update(outletId, {
     manualQrImageUrl: fileUrl,
+    qrisString: qrisString || undefined,
   });
 
   return {
@@ -513,6 +529,7 @@ export async function getQRISService(outletId: string) {
     outletName: outlet.name,
     businessName: outlet.business.name,
     qrisImageUrl: outlet.manualQrImageUrl,
+    qrisString: outlet.qrisString,
   };
 }
 

@@ -162,6 +162,7 @@ model Outlet {
   manualAccountHolder String?
   manualPaymentNote   String?
   manualQrImageUrl    String?
+  qrisString          String?
   type                OutletType @default(CUSTOM)
 
   loyaltyConfig             LoyaltyConfig?
