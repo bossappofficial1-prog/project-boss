@@ -82,6 +82,7 @@ export default function BusinessProfileCard({
                   <div className="flex gap-2">
                     {[...new Set(business.type?.split("::"))].map((type) => (
                       <Badge
+                        key={type}
                         className="border-primary bg-primary/10 text-primary"
                         variant={"outline"}
                       >

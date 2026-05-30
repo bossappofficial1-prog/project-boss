@@ -900,7 +900,7 @@ export function NearbyOutletContent() {
 
         <div
           style={{
-            bottom: "var(--bottomnav-height, 80px)",
+            bottom: "calc(var(--bottomnav-height, 64px) + 16px)",
           }}
           className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-none w-full max-w-[calc(100vw-32px)] sm:max-w-md"
         >
@@ -1000,34 +1000,34 @@ export function NearbyOutletContent() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Compact Filter Bar — hanya di list mode */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 py-2 mb-4">
-        <div className="flex items-center gap-1 p-1 bg-background/90 backdrop-blur border border-border/80 shadow-md rounded-2xl">
-          <div className="flex-1 relative">
-            <Search
-              value={search}
-              onChange={setSearch}
-              namespace="nearby"
-              size="sm"
-              onSearch={setSearch}
-              className="mb-0"
-            >
-              <SearchInput
-                placeholder={t("searchPlaceholder")}
-                className="rounded-xl border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
-              />
-              <SearchDropdown />
-            </Search>
-          </div>
-
-          <div className="h-6 w-px bg-border/80" />
-
-          <div className="w-24 sm:w-28 relative flex items-center justify-center">
-            <DistanceSelector
-              value={selectedDistance}
-              onChange={setSelectedDistance}
-              className="mb-0 border-0 bg-transparent focus:ring-0 text-xs font-semibold text-foreground/80 hover:text-foreground transition-colors"
+      {/* <div className="sticky top-0 z-20 backdrop-blur supports-backdrop-filter:bg-background/60 py-2 mb-4">
+      </div> */}
+      <div className="flex items-center gap-1 p-1 backdrop-blur border border-border/80 shadow-md rounded-2xl">
+        <div className="flex-1 relative">
+          <Search
+            value={search}
+            onChange={setSearch}
+            namespace="nearby"
+            size="sm"
+            onSearch={setSearch}
+            className="mb-0"
+          >
+            <SearchInput
+              placeholder={t("searchPlaceholder")}
+              className="rounded-xl border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
             />
-          </div>
+            <SearchDropdown />
+          </Search>
+        </div>
+
+        <div className="h-6 w-px bg-border/80" />
+
+        <div className="w-24 sm:w-28 relative flex items-center justify-center">
+          <DistanceSelector
+            value={selectedDistance}
+            onChange={setSelectedDistance}
+            className="mb-0 border-0 bg-transparent focus:ring-0 text-xs font-semibold text-foreground/80 hover:text-foreground transition-colors"
+          />
         </div>
       </div>
 

@@ -62,13 +62,17 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     const isInvalidLogin =
-      error.response.data.message ==
+      error?.response?.data?.message ===
       "Anda belum login, silakan login terlebih dahulu";
     const redirectPath =
       typeof window !== "undefined" ? window.location.pathname : "";
 
     if (isInvalidLogin) {
-      window.location.href = `/auth/login?redirect=${redirectPath}`;
+      if (redirectPath.startsWith("/cashier") || redirectPath.startsWith("/manager")) {
+        window.location.href = `/auth/login/cashier?redirect=${encodeURIComponent(redirectPath)}`;
+      } else {
+        window.location.href = `/auth/login?redirect=${encodeURIComponent(redirectPath)}`;
+      }
     }
     return Promise.reject(error);
   },

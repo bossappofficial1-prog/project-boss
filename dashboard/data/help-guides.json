@@ -1,0 +1,704 @@
+{
+  "ownerCategories": [
+    { "id": "all", "label": "Semua Bantuan", "icon": "BookOpen" },
+    { "id": "start", "label": "Panduan Utama", "icon": "Lightbulb" },
+    { "id": "outlets", "label": "Outlet & Staff", "icon": "Building2" },
+    { "id": "products", "label": "Inventori & Stok", "icon": "ShoppingBag" },
+    { "id": "reports", "label": "Keuangan & Laporan", "icon": "TrendingUp" },
+    { "id": "loyalty", "label": "CRM & Loyalitas", "icon": "Gift" }
+  ],
+  "cashierCategories": [
+    { "id": "all", "label": "Semua Panduan", "icon": "BookOpen" },
+    { "id": "pos", "label": "Terminal Kasir", "icon": "Smartphone" },
+    { "id": "orders", "label": "Daftar Pesanan", "icon": "ShoppingBag" },
+    { "id": "tables", "label": "Meja & Booking", "icon": "LayoutGrid" },
+    { "id": "expenses", "label": "Kas Toko", "icon": "TrendingDown" },
+    { "id": "kitchen", "label": "Dapur & Antrean", "icon": "ChefHat" },
+    { "id": "ticket", "label": "Scan Tiket", "icon": "ScanBarcode" }
+  ],
+  "guides": [
+    {
+      "id": "setup-business",
+      "role": "owner",
+      "category": "start",
+      "title": "Konfigurasi Awal Profil Bisnis",
+      "description": "Langkah pertama mengisi data bisnis Anda agar informasi usaha tampil benar di struk belanja dan proses pencairan dana berjalan lancar.",
+      "icon": "Building2",
+      "steps": [
+        {
+          "title": "Buka Halaman Pengaturan",
+          "desc": "Klik tombol 'Pengaturan' di bagian paling bawah menu sebelah kiri, atau klik nama profil Anda di pojok kanan atas lalu pilih 'Pengaturan'."
+        },
+        {
+          "title": "Lengkapi Profil Bisnis",
+          "desc": "Isi Nama Bisnis, Deskripsi Usaha, Nomor Telepon, Alamat, dan Jenis Bisnis. Informasi ini akan otomatis muncul pada struk dan invoice yang diterima pelanggan."
+        },
+        {
+          "title": "Tentukan Penanggung Biaya Transaksi",
+          "desc": "Pilih siapa yang menanggung biaya layanan pembayaran (seperti biaya QRIS atau transfer): 'OWNER' berarti biaya dipotong dari laba bisnis, 'CUSTOMER' berarti biaya dibebankan sebagai tagihan tambahan kepada pelanggan."
+        },
+        {
+          "title": "Daftarkan Rekening Bank Usaha",
+          "desc": "Masukkan nama bank, nomor rekening, dan nama pemilik rekening. Rekening ini digunakan untuk menerima pencairan otomatis hasil penjualan dari seluruh outlet Anda."
+        }
+      ],
+      "tip": "Pastikan nama pemilik rekening bank sesuai dengan nama pemilik usaha yang terdaftar agar proses pencairan dana harian berjalan lancar tanpa hambatan verifikasi.",
+      "warning": "Mengubah rekening bank di tengah periode penjualan akan menghentikan sementara proses pencairan otomatis selama 1x24 jam untuk keperluan verifikasi keamanan."
+    },
+    {
+      "id": "subscription-management",
+      "role": "owner",
+      "category": "start",
+      "title": "Kelola Paket Langganan BOSS",
+      "description": "Cara memperpanjang masa aktif, memilih paket langganan yang sesuai skala bisnis, dan mengaktifkan fitur analitik premium.",
+      "icon": "CreditCard",
+      "steps": [
+        {
+          "title": "Buka Menu Langganan",
+          "desc": "Klik menu 'Langganan' di bagian grup 'Utama' pada menu sebelah kiri."
+        },
+        {
+          "title": "Pilih Paket yang Sesuai",
+          "desc": "Pilih paket langganan sesuai kebutuhan bisnis Anda: BASIC (fitur dasar), PRO (akses penuh ke kalkulator bisnis, reservasi meja, dan program loyalitas pelanggan), atau ENTERPRISE (untuk bisnis berskala besar)."
+        },
+        {
+          "title": "Lakukan Pembayaran",
+          "desc": "Pilih metode pembayaran yang tersedia (Transfer Bank, QRIS, atau Kartu Kredit), lalu selesaikan pembayaran sesuai instruksi yang muncul di layar."
+        },
+        {
+          "title": "Periksa Status Aktif Langganan",
+          "desc": "Setelah pembayaran berhasil, status paket (BASIC, PRO, atau ENTERPRISE) akan langsung diperbarui dan tampil pada profil bisnis Anda."
+        }
+      ],
+      "tip": "Upgrade ke paket PRO untuk membuka fitur analisis premium seperti grafik kesehatan bisnis, laporan profit per produk, analisis jam tersibuk, dan laporan laba rugi.",
+      "warning": "Batas toleransi keterlambatan perpanjangan langganan adalah 7 hari. Setelah melewati batas tersebut, akses dashboard akan dibatasi dan kasir tidak dapat memproses transaksi."
+    },
+    {
+      "id": "dashboard-overview",
+      "role": "owner",
+      "category": "start",
+      "title": "Memahami Ringkasan Metrik Dashboard",
+      "description": "Cara membaca ringkasan performa bisnis secara cepat melalui grafik dan angka utama di halaman beranda.",
+      "icon": "LayoutDashboard",
+      "steps": [
+        {
+          "title": "Buka Halaman Beranda",
+          "desc": "Klik menu 'Ringkasan' di bagian paling atas menu sebelah kiri. Ini adalah halaman utama dashboard Owner."
+        },
+        {
+          "title": "Baca Angka Performa Utama",
+          "desc": "Pantau kondisi bisnis melalui 4 angka utama: Total Produk Aktif, Pendapatan Hari Ini, Jumlah Pesanan Aktif, dan Jumlah Outlet yang sedang beroperasi."
+        },
+        {
+          "title": "Perhatikan Peringatan Rekening Bank",
+          "desc": "Jika rekening bank untuk pencairan belum diisi, sistem akan menampilkan peringatan khusus di halaman beranda. Segera lengkapi melalui menu Pengaturan."
+        },
+        {
+          "title": "Pantau Status Operasional Outlet",
+          "desc": "Gunakan panel 'Manajemen Outlet' di halaman beranda untuk melihat status buka/tutup setiap cabang secara langsung tanpa harus masuk ke menu Outlet."
+        }
+      ],
+      "tip": "Angka pendapatan diperbarui secara otomatis setiap kali kasir menyelesaikan transaksi pembayaran di terminal kasir."
+    },
+    {
+      "id": "manage-outlets",
+      "role": "owner",
+      "category": "outlets",
+      "title": "Mengelola Cabang & Operasional Outlet",
+      "description": "Panduan membuat cabang baru, mengedit profil cabang, memilih jenis usaha, serta menentukan titik lokasi outlet.",
+      "icon": "Building2",
+      "steps": [
+        {
+          "title": "Masuk ke Menu Kelola Outlet",
+          "desc": "Klik menu 'Kelola Outlet' di bagian grup 'Manajemen Outlet' pada menu sebelah kiri."
+        },
+        {
+          "title": "Tambah Cabang Baru",
+          "desc": "Klik tombol 'Tambah Outlet Baru'. Isi Nama Cabang, Alamat Lengkap, Nomor Telepon, lalu pilih Jenis Outlet: Makanan & Minuman (F&B), Toko Retail, Jasa, Event, atau Kustom."
+        },
+        {
+          "title": "Tambahkan Titik Lokasi (Opsional)",
+          "desc": "Isi koordinat lokasi outlet untuk mendukung integrasi peta digital dan penentuan jangkauan area layanan atau pengiriman."
+        },
+        {
+          "title": "Atur Jam Operasional",
+          "desc": "Klik opsi 'Jam Operasional' pada outlet terkait untuk menentukan jam buka dan tutup harian setiap cabang."
+        }
+      ],
+      "tip": "Pilih jenis outlet dengan tepat. Outlet Makanan & Minuman (F&B) akan membuka fitur Manajemen Meja dan Resep Bahan Baku. Outlet Jasa akan mengaktifkan fitur Kalender Reservasi.",
+      "warning": "Menghapus outlet akan menghapus secara permanen seluruh riwayat transaksi, data kasir, dan penyesuaian stok yang terkait dengan outlet tersebut."
+    },
+    {
+      "id": "table-management",
+      "role": "owner",
+      "category": "outlets",
+      "title": "Manajemen Meja & Area Outlet (Khusus F&B)",
+      "description": "Cara menyusun denah meja, menentukan nomor dan kapasitas meja, serta memantau status meja secara langsung.",
+      "icon": "LayoutGrid",
+      "steps": [
+        {
+          "title": "Masuk ke Menu Manajemen Meja",
+          "desc": "Pastikan outlet yang dipilih berjenis Makanan & Minuman (F&B), lalu klik menu 'Manajemen Meja' di menu sebelah kiri."
+        },
+        {
+          "title": "Buat Area atau Ruangan",
+          "desc": "Tambahkan area pelayanan baru untuk mengelompokkan meja (contoh: 'Lantai 1', 'Area Outdoor', 'Ruang VIP')."
+        },
+        {
+          "title": "Daftarkan Meja Baru",
+          "desc": "Klik 'Tambah Meja', lalu tentukan nomor atau nama meja, kapasitas tempat duduk, dan area penempatan meja."
+        },
+        {
+          "title": "Pantau Status Meja Secara Langsung",
+          "desc": "Lihat status setiap meja secara real-time: KOSONG (hijau), TERISI oleh tamu (merah), atau SUDAH DIPESAN/RESERVASI (biru)."
+        }
+      ],
+      "tip": "Gunakan penamaan meja yang berurutan dan terstruktur (contoh: M01, M02, VIP-01) agar kasir dan pelayan lebih mudah mengarahkan tamu.",
+      "requirePro": true
+    },
+    {
+      "id": "table-reservations",
+      "role": "owner",
+      "category": "outlets",
+      "title": "Sistem Reservasi Meja Pelanggan (F&B)",
+      "description": "Mencatat pemesanan meja dari pelanggan jauh hari sebelumnya, mengatur jadwal kedatangan, dan mengelola uang muka.",
+      "icon": "CalendarCheck",
+      "steps": [
+        {
+          "title": "Buka Menu Reservasi Meja",
+          "desc": "Klik menu 'Reservasi Meja' di bagian grup 'Manajemen Outlet' pada menu sebelah kiri."
+        },
+        {
+          "title": "Buat Reservasi Baru",
+          "desc": "Klik 'Tambah Reservasi'. Isi nama pelanggan, nomor WhatsApp, tanggal dan jam kedatangan, jumlah tamu, serta pilih meja yang akan dipesan."
+        },
+        {
+          "title": "Catat Uang Muka (Jika Ada)",
+          "desc": "Jika pelanggan membayar uang muka untuk mengamankan reservasi, masukkan jumlahnya dan pilih metode pembayaran yang digunakan."
+        },
+        {
+          "title": "Konfirmasi dan Proses Kedatangan",
+          "desc": "Ubah status reservasi menjadi 'TERKONFIRMASI'. Saat pelanggan tiba di hari-H, kasir mengubah status menjadi 'CHECK-IN' — meja akan otomatis terkunci di terminal kasir."
+        }
+      ],
+      "tip": "Uang muka yang tercatat akan otomatis memotong total tagihan saat kasir memproses pembayaran akhir pelanggan di terminal kasir.",
+      "requirePro": true
+    },
+    {
+      "id": "manage-staff",
+      "role": "owner",
+      "category": "outlets",
+      "title": "Pengaturan Akun Staff Kasir & Manager",
+      "description": "Langkah mendaftarkan karyawan, membuat akun kasir, PIN manager, dan mengatur izin akses masing-masing.",
+      "icon": "Users",
+      "steps": [
+        {
+          "title": "Buka Menu Kelola Staff",
+          "desc": "Klik menu 'Kelola Staff' di bagian grup 'Manajemen Outlet' pada menu sebelah kiri."
+        },
+        {
+          "title": "Daftarkan Akun Kasir",
+          "desc": "Klik 'Tambah Staff', pilih peran 'KASIR', tentukan outlet penempatannya, lalu isi nama lengkap dan buatkan username serta kata sandi untuk login kasir."
+        },
+        {
+          "title": "Daftarkan Akun Manager & Buat PIN",
+          "desc": "Pilih peran 'MANAGER', isi nama lengkap, lalu buat PIN 6 angka rahasia. PIN ini digunakan untuk mengotorisasi tindakan sensitif di kasir seperti pembatalan transaksi."
+        },
+        {
+          "title": "Atur Izin Akses Manager",
+          "desc": "Pilih akun manager yang ingin diatur, klik 'Akses Kontrol', lalu centang izin yang diberikan (contoh: Mengedit Harga Produk, Menyesuaikan Stok, Melihat Laporan Omset Harian)."
+        }
+      ],
+      "warning": "PIN Manager bersifat sangat rahasia. Hindari kombinasi angka yang mudah ditebak seperti urutan angka berurutan atau tanggal lahir."
+    },
+    {
+      "id": "manage-products",
+      "role": "owner",
+      "category": "products",
+      "title": "Manajemen Katalog Produk & Layanan",
+      "description": "Menambahkan produk baru, mengatur harga jual, menentukan jenis produk (Barang, Jasa, Tiket), dan menyimpan kode barcode.",
+      "icon": "Package",
+      "steps": [
+        {
+          "title": "Masuk ke Katalog Produk",
+          "desc": "Klik menu 'Produk & Layanan' di grup 'Inventori' pada menu sebelah kiri. Nama menu ini menyesuaikan jenis outlet secara otomatis (contoh: tampil sebagai 'Daftar Menu' untuk outlet F&B)."
+        },
+        {
+          "title": "Tambah Produk Baru",
+          "desc": "Klik 'Tambah Produk'. Isi Nama Produk, Kategori, Harga Beli, dan Harga Jual. Tentukan jenis produk: Barang Fisik, Jasa/Layanan, atau Tiket Acara."
+        },
+        {
+          "title": "Tambahkan Kode Barcode (Opsional)",
+          "desc": "Pindai atau ketik kode barcode produk pada kolom yang tersedia. Kode ini memungkinkan kasir memproses transaksi lebih cepat menggunakan alat pemindai barcode."
+        },
+        {
+          "title": "Unggah Foto Produk",
+          "desc": "Unggah foto produk yang jelas dan menarik (ukuran file maksimal 2MB) agar tampilan katalog di terminal kasir lebih informatif bagi kasir."
+        }
+      ],
+      "tip": "Jika produk Anda memiliki stok terbatas, pastikan stok awal diisi dan fitur 'Lacak Stok' diaktifkan agar sistem secara otomatis menghentikan penjualan saat stok habis."
+    },
+    {
+      "id": "manage-stock",
+      "role": "owner",
+      "category": "products",
+      "title": "Manajemen Stok Produk (Retail & Kustom)",
+      "description": "Cara memantau stok masuk dan keluar, melakukan penyesuaian stok, serta melihat riwayat pergerakan stok harian.",
+      "icon": "Box",
+      "steps": [
+        {
+          "title": "Buka Menu Stok Produk",
+          "desc": "Klik menu 'Stok Produk' di bawah grup 'Inventori' pada menu sebelah kiri."
+        },
+        {
+          "title": "Lakukan Penyesuaian Stok",
+          "desc": "Klik 'Penyesuaian Stok'. Pilih produk, masukkan jumlah stok fisik aktual yang Anda hitung di toko, tambahkan alasan penyesuaian (contoh: 'Barang rusak', 'Selisih hitung'), lalu simpan."
+        },
+        {
+          "title": "Lihat Riwayat Pergerakan Stok",
+          "desc": "Klik ikon 'Riwayat' pada produk untuk melihat catatan lengkap stok: tanggal barang masuk dari pembelian, barang keluar dari penjualan kasir, dan penyesuaian manual yang pernah dilakukan."
+        },
+        {
+          "title": "Atur Batas Minimum Stok",
+          "desc": "Tentukan jumlah stok minimum per produk. Sistem akan memberikan notifikasi merah secara otomatis jika persediaan sudah di bawah batas aman yang Anda tentukan."
+        }
+      ],
+      "tip": "Lakukan pengecekan stok fisik secara berkala, misalnya setiap akhir pekan, untuk memastikan data stok di sistem selalu akurat."
+    },
+    {
+      "id": "fnb-ingredients",
+      "role": "owner",
+      "category": "products",
+      "title": "Mengelola Bahan Baku & Resep Menu (F&B)",
+      "description": "Cara mendaftarkan bahan baku, membuat resep menu, dan mengatur agar stok bahan berkurang otomatis setiap kali produk terjual.",
+      "icon": "ChefHat",
+      "steps": [
+        {
+          "title": "Daftarkan Bahan Baku",
+          "desc": "Masuk ke menu 'Bahan Baku'. Tambahkan setiap bahan (contoh: 'Biji Kopi', 'Susu UHT'), tentukan satuan terkecilnya (gram atau mililiter), harga beli per kemasan, dan stok awal yang tersedia."
+        },
+        {
+          "title": "Buka Menu Resep",
+          "desc": "Masuk ke menu 'Resep Menu' di menu sebelah kiri."
+        },
+        {
+          "title": "Buat Resep untuk Setiap Produk",
+          "desc": "Pilih produk menu (contoh: 'Kopi Susu'), klik 'Atur Resep', lalu pilih bahan baku yang digunakan beserta takaran masing-masing (contoh: Biji Kopi 15 gram, Susu UHT 100 ml)."
+        },
+        {
+          "title": "Simpan Resep & Aktifkan Pemotongan Otomatis",
+          "desc": "Klik 'Simpan Resep'. Mulai saat ini, setiap kali kasir menyelesaikan pembayaran produk tersebut, stok bahan baku akan berkurang secara otomatis sesuai takaran resep."
+        }
+      ],
+      "tip": "Gunakan fitur kalkulator konversi bahan baku jika satuan pembelian berbeda dengan satuan resep (contoh: beli dalam kemasan 1 kg, tetapi resep menggunakan satuan gram)."
+    },
+    {
+      "id": "stock-transfer",
+      "role": "owner",
+      "category": "products",
+      "title": "Transfer Stok Produk Antar Cabang",
+      "description": "Langkah mengirimkan stok produk dari satu outlet ke outlet lain dengan aman dan tercatat.",
+      "icon": "ArrowRightLeft",
+      "steps": [
+        {
+          "title": "Buka Menu Transfer Outlet",
+          "desc": "Klik menu 'Transfer Outlet' di menu sebelah kiri."
+        },
+        {
+          "title": "Buat Permintaan Transfer Baru",
+          "desc": "Klik 'Buat Transfer'. Tentukan outlet pengirim, outlet penerima, tanggal pengiriman, dan tambahkan catatan jika diperlukan."
+        },
+        {
+          "title": "Pilih Produk & Jumlah",
+          "desc": "Masukkan daftar produk yang akan dikirimkan beserta jumlah stok masing-masing."
+        },
+        {
+          "title": "Kirim dan Konfirmasi Penerimaan",
+          "desc": "Klik 'Kirim Transfer'. Status akan berubah menjadi 'DALAM PERJALANAN'. Setelah barang tiba di outlet tujuan, manager penerima harus menekan tombol 'Terima Transfer' agar stok otomatis bertambah di outlet tersebut."
+        }
+      ],
+      "warning": "Pastikan jumlah stok di outlet pengirim mencukupi sebelum membuat transfer agar tidak terjadi kekurangan stok di outlet asal."
+    },
+    {
+      "id": "booking-service",
+      "role": "owner",
+      "category": "pos",
+      "title": "Kalender & Sistem Reservasi Layanan Jasa",
+      "description": "Mengatur jadwal pemesanan jasa (booking) berdasarkan ketersediaan slot waktu staf atau ruangan outlet.",
+      "icon": "CalendarDays",
+      "steps": [
+        {
+          "title": "Buka Kalender Booking",
+          "desc": "Klik menu 'Kalender Booking' di bagian grup 'Manajemen Layanan' pada menu sebelah kiri."
+        },
+        {
+          "title": "Lihat Jadwal yang Tersedia",
+          "desc": "Gunakan tampilan kalender harian, mingguan, atau bulanan untuk melihat jadwal kerja dan slot waktu yang masih kosong."
+        },
+        {
+          "title": "Tambahkan Jadwal Booking Baru",
+          "desc": "Klik pada slot tanggal dan jam yang kosong di kalender, atau masuk ke menu 'Daftar Booking' lalu klik 'Tambah Booking'. Isi data pelanggan, jenis layanan, staf pelaksana, serta status pembayaran uang muka."
+        },
+        {
+          "title": "Perbarui Status Pengerjaan",
+          "desc": "Manager atau owner dapat memantau dan memperbarui status layanan: SEDANG DIKERJAKAN (staf mulai melayani), SELESAI, atau DIBATALKAN."
+        }
+      ],
+      "tip": "Gunakan filter nama staf di kalender untuk memantau dan menyeimbangkan beban kerja harian setiap staf atau terapis di outlet Anda."
+    },
+    {
+      "id": "financial-reports",
+      "role": "owner",
+      "category": "reports",
+      "title": "Membaca Laporan Keuangan Harian & Bulanan",
+      "description": "Cara memantau arus kas bisnis, ringkasan transaksi, laporan pengeluaran, absensi karyawan, dan riwayat pembatalan transaksi.",
+      "icon": "FileText",
+      "steps": [
+        {
+          "title": "Buka Menu Laporan Keuangan",
+          "desc": "Klik menu 'Laporan Keuangan' di bagian grup 'Keuangan' pada menu sebelah kiri."
+        },
+        {
+          "title": "Saring Data Berdasarkan Tanggal & Outlet",
+          "desc": "Pilih rentang tanggal (hari ini, 7 hari terakhir, atau rentang khusus) dan pilih outlet tertentu untuk melihat data keuangan yang lebih spesifik."
+        },
+        {
+          "title": "Gunakan Menu Laporan Pendukung",
+          "desc": "Akses laporan tambahan di grup Keuangan: 'Pengeluaran' untuk mencatat biaya operasional toko, 'Shift Kasir' untuk rekap saldo dan setoran kasir, serta 'Laporan Absensi' untuk memantau kehadiran karyawan."
+        },
+        {
+          "title": "Unduh Laporan (Export)",
+          "desc": "Klik tombol 'Export Excel' atau 'Cetak PDF' di bagian atas tabel laporan untuk menyimpan laporan dalam format file yang bisa dicetak atau dibagikan."
+        }
+      ],
+      "warning": "Biasakan memeriksa menu 'Riwayat Transaksi' dan 'Pembatalan Transaksi' secara rutin untuk mendeteksi adanya kesalahan pencatatan atau pembatalan transaksi yang tidak wajar oleh kasir."
+    },
+    {
+      "id": "business-analytics",
+      "role": "owner",
+      "category": "reports",
+      "title": "Analitik Pro & Grafik Kesehatan Bisnis",
+      "description": "Fitur premium untuk menganalisis profit per produk, jam operasional tersibuk, dan laporan laba rugi bersih.",
+      "icon": "TrendingUp",
+      "steps": [
+        {
+          "title": "Lihat Profit Per Produk",
+          "desc": "Klik menu 'Profit per Produk' di grup 'Analitik Outlet'. Halaman ini menampilkan produk-produk yang paling menguntungkan berdasarkan selisih harga jual dan harga beli."
+        },
+        {
+          "title": "Baca Grafik Kesehatan Bisnis",
+          "desc": "Masuk ke menu 'Kesehatan Bisnis' untuk melihat analisis rasio keuntungan, tren penjualan, dan efisiensi pengeluaran operasional bisnis Anda."
+        },
+        {
+          "title": "Analisis Jam Tersibuk Outlet",
+          "desc": "Buka menu 'Analisis Jam Ramai' untuk melihat grafik jam-jam tersibuk di outlet Anda. Data ini berguna untuk merencanakan jadwal shift karyawan atau menentukan waktu promo terbaik."
+        },
+        {
+          "title": "Buka Laporan Laba Rugi",
+          "desc": "Masuk ke menu 'Laporan Laba Rugi' untuk melihat total pendapatan dikurangi biaya pembelian produk dan seluruh pengeluaran operasional, sehingga Anda mengetahui keuntungan bersih bisnis."
+        }
+      ],
+      "tip": "Data jam tersibuk dapat membantu Anda menghemat biaya operasional, misalnya dengan menambah kasir hanya di jam ramai seperti pukul 12.00–14.00.",
+      "requirePro": true
+    },
+    {
+      "id": "business-calculators",
+      "role": "owner",
+      "category": "reports",
+      "title": "Kalkulator Bisnis: Harga Pokok & Titik Impas",
+      "description": "Memanfaatkan alat simulasi keuangan untuk menghitung harga pokok produk, titik impas usaha, dan target penjualan harian.",
+      "icon": "Boxes",
+      "steps": [
+        {
+          "title": "Hitung Harga Pokok Produk (HPP)",
+          "desc": "Buka menu 'Kalkulator HPP' di grup 'Tools'. Masukkan harga beli bahan baku, biaya tenaga kerja, dan biaya operasional lainnya untuk mengetahui berapa biaya sebenarnya yang Anda keluarkan per produk."
+        },
+        {
+          "title": "Hitung Titik Impas Usaha (BEP)",
+          "desc": "Buka menu 'Kalkulator BEP'. Masukkan biaya tetap bulanan (sewa toko, gaji karyawan, listrik) untuk mengetahui berapa minimum penjualan yang harus dicapai agar bisnis Anda tidak merugi."
+        },
+        {
+          "title": "Pecah Target Omset Menjadi Target Harian",
+          "desc": "Buka menu 'Rincian Target Penjualan'. Ketik target omset bulanan yang ingin dicapai, maka sistem akan otomatis menghitung berapa target penjualan harian yang realistis untuk setiap outlet."
+        }
+      ],
+      "tip": "Simpan hasil perhitungan titik impas sebagai acuan untuk menetapkan target penjualan bulanan bagi manager setiap outlet.",
+      "requirePro": true
+    },
+    {
+      "id": "crm-loyalty",
+      "role": "owner",
+      "category": "loyalty",
+      "title": "Program Poin Member & Manajemen Pelanggan",
+      "description": "Menyimpan data pelanggan, memantau riwayat belanja, mengatur sistem poin, dan membuat hadiah penukaran.",
+      "icon": "Gift",
+      "steps": [
+        {
+          "title": "Kelola Data Pelanggan",
+          "desc": "Buka menu 'Data Pelanggan'. Anda dapat melihat nama, nomor WhatsApp, dan email setiap pelanggan terdaftar, serta memantau total riwayat belanja mereka."
+        },
+        {
+          "title": "Masuk ke Menu Poin & Loyalitas",
+          "desc": "Buka menu 'Loyalty & Poin' di bagian grup 'Manajemen Pelanggan' pada menu sebelah kiri."
+        },
+        {
+          "title": "Atur Aturan Poin Belanja",
+          "desc": "Tentukan cara pelanggan mendapatkan poin (contoh: setiap belanja Rp 25.000, pelanggan mendapatkan 1 poin yang bisa dikumpulkan untuk ditukar hadiah)."
+        },
+        {
+          "title": "Buat Katalog Hadiah",
+          "desc": "Tambahkan daftar hadiah yang bisa ditukar pelanggan menggunakan poin (contoh: 'Diskon Rp 50.000' dengan 100 poin, atau 'Minuman Gratis' dengan 50 poin)."
+        }
+      ],
+      "tip": "Kirimkan informasi penukaran poin kepada pelanggan terdaftar melalui WhatsApp untuk mendorong mereka kembali berbelanja sebelum akhir bulan.",
+      "requirePro": true
+    },
+    {
+      "id": "cashier-shift-open",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Membuka Shift & Mengisi Modal Awal Kasir",
+      "description": "Langkah wajib bagi kasir sebelum memulai transaksi harian untuk memastikan saldo laci uang tercatat dengan benar.",
+      "icon": "Clock",
+      "steps": [
+        {
+          "title": "Login ke Akun Kasir",
+          "desc": "Buka halaman login kasir di perangkat yang digunakan, lalu masukkan username dan kata sandi yang diberikan oleh pemilik atau manager toko."
+        },
+        {
+          "title": "Masukkan Jumlah Uang Modal Awal",
+          "desc": "Hitung uang tunai yang tersedia di dalam laci kasir, lalu masukkan jumlahnya ke sistem sebagai modal kembalian awal hari (contoh: Rp 200.000)."
+        },
+        {
+          "title": "Mulai Shift",
+          "desc": "Klik tombol 'Buka Shift' untuk mengaktifkan terminal kasir. Setelah ini, kasir siap memproses transaksi belanja pelanggan."
+        }
+      ],
+      "tip": "Hitung uang fisik modal awal dengan teliti sebelum mengisinya di sistem agar tidak ada selisih kas saat shift berakhir nanti."
+    },
+    {
+      "id": "pos-transaction",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Mencatat Transaksi di Kasir",
+      "description": "Langkah melayani pelanggan, memasukkan produk, menghubungkan data member, dan menerima pembayaran.",
+      "icon": "ShoppingCart",
+      "steps": [
+        {
+          "title": "Pilih Produk dari Katalog",
+          "desc": "Cari produk dengan mengetik namanya di kolom pencarian, klik kategori produk, atau langsung pindai barcode produk menggunakan alat pemindai."
+        },
+        {
+          "title": "Atur Keranjang & Catatan Pesanan",
+          "desc": "Klik item di keranjang untuk mengubah jumlah, memberikan diskon pada item tertentu, atau menambahkan catatan khusus (contoh: 'Tanpa es', 'Ekstra pedas')."
+        },
+        {
+          "title": "Hubungkan Data Pelanggan Member (Opsional)",
+          "desc": "Masukkan nomor telepon pelanggan untuk mencocokkan dengan data member. Poin belanja akan otomatis terakumulasi sesuai aturan yang berlaku."
+        },
+        {
+          "title": "Pilih Metode Pembayaran",
+          "desc": "Klik tombol 'Bayar'. Pilih TUNAI dan masukkan nominal uang yang diterima — sistem otomatis menghitung kembalian. Atau pilih QRIS agar pelanggan dapat membayar menggunakan aplikasi dompet digital manapun."
+        },
+        {
+          "title": "Selesaikan Transaksi & Cetak Struk",
+          "desc": "Klik 'Selesaikan Transaksi'. Laci kasir akan terbuka otomatis, struk belanja tercetak, dan keranjang direset untuk pesanan berikutnya."
+        }
+      ],
+      "tip": "Gunakan alat pemindai barcode untuk mempercepat proses input produk, terutama saat antrean pelanggan sedang ramai."
+    },
+    {
+      "id": "offline-pos",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Menggunakan Kasir Saat Internet Terputus",
+      "description": "Panduan melayani pelanggan dan mencatat pesanan ketika koneksi internet outlet mendadak terputus.",
+      "icon": "WifiOff",
+      "steps": [
+        {
+          "title": "Perhatikan Indikator Koneksi",
+          "desc": "Saat internet terputus, sistem kasir BOSS akan menampilkan pemberitahuan dan beralih ke mode tanpa internet secara otomatis tanpa perlu tindakan apapun dari kasir."
+        },
+        {
+          "title": "Lanjutkan Transaksi Seperti Biasa",
+          "desc": "Tetap pilih produk, atur keranjang, dan layani pelanggan. Catatan: pembayaran dalam mode tanpa internet hanya tersedia untuk metode TUNAI."
+        },
+        {
+          "title": "Simpan Transaksi",
+          "desc": "Selesaikan transaksi seperti biasa. Seluruh data pesanan akan tersimpan secara aman di perangkat kasir meskipun tidak terhubung internet."
+        },
+        {
+          "title": "Sinkronisasi Otomatis Saat Internet Kembali",
+          "desc": "Begitu koneksi internet pulih, semua transaksi yang tersimpan akan dikirimkan otomatis ke server pusat tanpa perlu input ulang."
+        }
+      ],
+      "warning": "Jangan menutup browser, menghapus data browser, atau keluar dari akun saat masih ada transaksi yang belum tersinkronisasi, karena data tersebut bisa hilang permanen."
+    },
+    {
+      "id": "cashier-shift-close",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Menutup Shift & Rekap Kas Akhir Hari",
+      "description": "Proses wajib di akhir shift untuk menghitung uang laci, mencetak laporan harian, dan menyerahkan tugas jaga.",
+      "icon": "LogOut",
+      "steps": [
+        {
+          "title": "Masuk ke Menu Shift Kasir",
+          "desc": "Klik tombol 'Shift Kasir' di bagian kanan atas tampilan kasir."
+        },
+        {
+          "title": "Hitung Uang Tunai di Laci",
+          "desc": "Keluarkan dan hitung seluruh uang tunai yang ada di dalam laci kasir secara teliti sebelum memasukkan angkanya ke sistem."
+        },
+        {
+          "title": "Masukkan Hasil Hitungan Fisik",
+          "desc": "Ketik jumlah uang fisik yang dihitung ke kolom 'Uang Fisik Akhir'. Sistem akan otomatis mendeteksi dan menampilkan selisih antara uang fisik dan catatan transaksi harian."
+        },
+        {
+          "title": "Tutup Shift & Cetak Laporan",
+          "desc": "Klik 'Tutup Shift', lalu cetak struk ringkasan penutupan kasir untuk diserahkan kepada Manager atau pemilik toko."
+        }
+      ],
+      "tip": "Segera laporkan kepada Manager jika terdapat selisih kas yang cukup besar saat penutupan shift untuk ditindaklanjuti bersama."
+    },
+    {
+      "id": "manage-orders",
+      "role": "cashier",
+      "category": "orders",
+      "title": "Manajemen & Pelacakan Daftar Pesanan",
+      "description": "Memeriksa riwayat pesanan aktif, mencetak ulang struk, dan mengajukan pembatalan transaksi.",
+      "icon": "ShoppingBag",
+      "steps": [
+        {
+          "title": "Buka Menu Daftar Pesanan",
+          "desc": "Klik menu 'Daftar Pesanan' di navigasi bar kasir."
+        },
+        {
+          "title": "Cari & Saring Pesanan",
+          "desc": "Cari pesanan berdasarkan nomor struk atau nama pelanggan, lalu saring berdasarkan status: Aktif, Selesai, atau Dibatalkan."
+        },
+        {
+          "title": "Cetak Ulang Struk",
+          "desc": "Pilih transaksi yang diinginkan, lalu klik 'Cetak Struk' jika struk sebelumnya rusak atau pelanggan meminta salinan tambahan."
+        },
+        {
+          "title": "Batalkan Transaksi yang Keliru",
+          "desc": "Jika terjadi kesalahan pada transaksi yang sudah dibayar, klik tombol 'Batalkan Transaksi'. Kasir wajib meminta otorisasi Manager dengan memasukkan PIN 6 angka untuk merampungkan pembatalan."
+        }
+      ],
+      "warning": "Setiap pembatalan transaksi tercatat permanen dalam riwayat audit yang bisa dilihat oleh owner, sehingga seluruh pembatalan dapat dipertanggungjawabkan."
+    },
+    {
+      "id": "dine-in-tables",
+      "role": "cashier",
+      "category": "tables",
+      "title": "Mengelola Meja & Pesanan Dine-In (F&B)",
+      "description": "Cara menempatkan pelanggan di meja, menyimpan pesanan, memindahkan meja, dan memproses tagihan akhir.",
+      "icon": "LayoutGrid",
+      "steps": [
+        {
+          "title": "Buka Panel Manajemen Meja",
+          "desc": "Klik menu 'Manajemen Meja' di navigasi kasir."
+        },
+        {
+          "title": "Pilih Meja yang Kosong",
+          "desc": "Pilih meja berstatus 'Kosong' (ditandai warna hijau) sesuai lokasi tempat duduk pelanggan."
+        },
+        {
+          "title": "Catat Pesanan & Kirim ke Dapur",
+          "desc": "Pilih menu makanan dan minuman pelanggan, lalu klik 'Simpan Pesanan' untuk mengirimkan instruksi ke dapur. Status meja akan berubah menjadi 'Terisi' (merah)."
+        },
+        {
+          "title": "Pindahkan Meja (Jika Perlu)",
+          "desc": "Jika pelanggan ingin berpindah tempat duduk, klik meja asal, pilih opsi 'Pindah Meja', lalu pilih nomor meja kosong yang dituju."
+        },
+        {
+          "title": "Proses Pembayaran Akhir",
+          "desc": "Saat pelanggan siap membayar, klik meja yang berwarna merah, pilih 'Bayar', dan seluruh tagihan meja tersebut akan dimuat di kasir untuk diproses."
+        }
+      ],
+      "tip": "Cek menu 'Reservasi Meja' untuk memastikan meja yang kosong tidak sedang dipesan oleh tamu yang belum tiba, sehingga tidak terjadi bentrok penempatan."
+    },
+    {
+      "id": "cashier-expenses",
+      "role": "cashier",
+      "category": "expenses",
+      "title": "Pencatatan Pengeluaran Kas Toko",
+      "description": "Cara mencatat biaya operasional kecil yang diambil langsung dari uang kas laci kasir.",
+      "icon": "TrendingDown",
+      "steps": [
+        {
+          "title": "Buka Menu Pengeluaran",
+          "desc": "Klik menu 'Pengeluaran' di navigasi bar kasir."
+        },
+        {
+          "title": "Tambahkan Pengeluaran Baru",
+          "desc": "Klik 'Tambah Pengeluaran', lalu masukkan jumlah uang yang dikeluarkan dari kas."
+        },
+        {
+          "title": "Isi Kategori & Keterangan",
+          "desc": "Pilih kategori pengeluaran (contoh: 'Operasional' atau 'Bahan Darurat') dan isi keterangan yang jelas (contoh: 'Beli air galon 2 buah', 'Beli sabun pembersih lantai')."
+        },
+        {
+          "title": "Simpan Catatan Pengeluaran",
+          "desc": "Klik 'Simpan'. Pengeluaran ini akan otomatis mengurangi saldo kas tercatat yang dihitung saat penutupan shift nanti."
+        }
+      ],
+      "warning": "Simpan nota atau struk pembelian fisik dan serahkan kepada manager saat pergantian shift sebagai bukti pengeluaran kas yang sah."
+    },
+    {
+      "id": "kitchen-and-queue",
+      "role": "cashier",
+      "category": "kitchen",
+      "title": "Sistem Antrean & Monitor Dapur",
+      "description": "Cara kasir mengelola nomor urut antrean pelanggan dan berkoordinasi dengan koki dapur untuk pesanan makanan.",
+      "icon": "ChefHat",
+      "steps": [
+        {
+          "title": "Buka Menu Antrean",
+          "desc": "Klik menu 'Antrean Layanan' di navigasi kasir sesuai pengaturan outlet Anda."
+        },
+        {
+          "title": "Cetak Nomor Antrean",
+          "desc": "Saat pesanan disimpan, printer kasir akan otomatis mencetak nomor antrean yang diberikan kepada pelanggan sebagai tanda tunggu."
+        },
+        {
+          "title": "Pantau Status Masak di Dapur",
+          "desc": "Setelah pesanan disimpan, instruksi masak langsung terkirim ke layar monitor dapur. Koki menandai status: 'SEDANG DIMASAK' lalu 'SIAP DISAJIKAN'."
+        },
+        {
+          "title": "Panggil Pelanggan",
+          "desc": "Setelah makanan siap, gunakan tombol panggil di monitor antrean kasir untuk memberi tahu pelanggan agar mengambil pesanannya."
+        }
+      ],
+      "tip": "Pastikan kertas printer kasir selalu tersedia agar pencetakan nomor antrean untuk pelanggan tidak terganggu saat jam ramai."
+    },
+    {
+      "id": "ticket-scanning",
+      "role": "cashier",
+      "category": "ticket",
+      "title": "Validasi & Scan Tiket Masuk Event",
+      "description": "Cara kasir memindai dan memverifikasi tiket acara milik pelanggan untuk proses check-in masuk venue atau wahana.",
+      "icon": "ScanBarcode",
+      "steps": [
+        {
+          "title": "Buka Menu Scan Tiket",
+          "desc": "Klik menu 'Scan Tiket' di navigasi bar kasir."
+        },
+        {
+          "title": "Aktifkan Kamera atau Hubungkan Pemindai",
+          "desc": "Aktifkan kamera tablet kasir, atau hubungkan alat pemindai barcode eksternal ke perangkat."
+        },
+        {
+          "title": "Pindai Kode Tiket Pelanggan",
+          "desc": "Arahkan kode QR yang ada di tiket pelanggan (bisa dari email atau ponsel) tepat di depan kamera atau alat pemindai."
+        },
+        {
+          "title": "Baca Hasil Validasi",
+          "desc": "Sistem memeriksa keabsahan tiket secara otomatis. Jika valid, layar menampilkan tanda centang hijau 'TIKET VALID – CHECK-IN BERHASIL'. Jika tiket sudah pernah dipindai sebelumnya, layar menampilkan peringatan merah 'TIKET SUDAH DIGUNAKAN'."
+        }
+      ],
+      "warning": "Pastikan koneksi internet stabil saat melakukan pemindaian tiket agar proses verifikasi berjalan lancar dan tidak ada tiket yang lolos tanpa validasi."
+    }
+  ]
+}

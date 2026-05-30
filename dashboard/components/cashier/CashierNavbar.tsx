@@ -19,6 +19,7 @@ import {
   Clock,
   CheckCircle2,
   ScanLine,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -447,6 +448,17 @@ export function CashierNavbar({
             </div>
             <NotificationToggle staffId={cashierId} />
             <PrinterSettings outletId={selectedOutletId!} />
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+              className="text-primary hover:bg-primary/10 hover:text-primary rounded-md h-8 w-8"
+            >
+              <Link href="/help?portal=cashier" target="_blank" title="Panduan Penggunaan">
+                <HelpCircle className="h-4 w-4" />
+                <span className="sr-only">Panduan Penggunaan</span>
+              </Link>
+            </Button>
             <ThemeToggle />
             <Button
               onClick={() => setSwitchDialogOpen(true)}

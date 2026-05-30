@@ -55,7 +55,7 @@ export default function CashierLayoutClient({
     gcTime: 30 * 60_000,
     retry: 1,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true, // Force background validation on mount to check for session expiration
     initialData: () => {
       if (typeof window === "undefined") return undefined;
 
@@ -171,8 +171,10 @@ export default function CashierLayoutClient({
     if (!isCashierAuthError) return;
 
     toast.error("Sesi login tidak valid, silakan login kembali");
-    router.replace("/auth/login/cashier");
-  }, [isCashierAuthError, router]);
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/login/cashier";
+    }
+  }, [isCashierAuthError]);
 
   if (!mounted || ((isLoadingAuth || isFetchingAuth) && !cashierData)) {
     return (
@@ -213,6 +215,21 @@ export default function CashierLayoutClient({
   }
 
   if (!cashierData || !outletData) {
+    if (isCashierAuthError) {
+      return (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background">
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-lg font-semibold tracking-tight text-foreground">
+              Sesi Berakhir
+            </span>
+            <span className="text-sm text-muted-foreground animate-pulse">
+              Mengalihkan ke halaman login...
+            </span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen text-slate-900 transition-colors dark:text-slate-50">
         <header className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">

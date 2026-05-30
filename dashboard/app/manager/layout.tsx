@@ -47,7 +47,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
     gcTime: 30 * 60_000,
     retry: 1,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true, // Force background validation on mount to check for session expiration
     initialData: () => {
       if (typeof window === "undefined") return undefined;
 
@@ -81,9 +81,11 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (isManagerAuthError) {
       toast.error("Sesi login tidak valid, silakan login kembali");
-      router.replace("/auth/login/cashier");
+      if (typeof window !== "undefined") {
+        window.location.href = "/auth/login/cashier";
+      }
     }
-  }, [isManagerAuthError, router]);
+  }, [isManagerAuthError]);
 
   useEffect(() => {
     if (cashierData && cashierData.role !== "MANAGER") {
@@ -154,6 +156,20 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
   }
 
   if (!cashierData || cashierData.role !== "MANAGER" || !outletData) {
+    if (isManagerAuthError) {
+      return (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background">
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-lg font-semibold tracking-tight text-foreground">
+              Sesi Berakhir
+            </span>
+            <span className="text-sm text-muted-foreground animate-pulse">
+              Mengalihkan ke halaman login...
+            </span>
+          </div>
+        </div>
+      );
+    }
     return null;
   }
 
